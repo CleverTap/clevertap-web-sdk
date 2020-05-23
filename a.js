@@ -33,6 +33,7 @@ function __wizrocket() {
   var LRU_CACHE, LRU_CACHE_SIZE = 100;
   var chromeAgent;
   var firefoxAgent;
+  var safariAgent;
 
   // for VAPID web push
   function urlBase64ToUint8Array(base64String) {
@@ -141,10 +142,57 @@ function __wizrocket() {
     }
   };
 
+  wiz.setUpWebPushNotifications = function (subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
+    if(navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1){
+      wiz.setUpChromeFirefoxNotifications(subscriptionCallback, serviceWorkerPath);
+    } else if(navigator.userAgent.indexOf('Safari') !== -1){
+      wiz.setUpSafariNotifications(subscriptionCallback, apnsWebPushId, apnsServiceUrl);
+    }
+  };
+
+  /**
+   * Sets up a service worker for chrome push notifications and sends the data to LC
+   */
+  wiz.setUpSafariNotifications= function (subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
+    // ensure that proper arguments are passed
+    if (typeof apnsWebPushId === "undefined") {
+      wc.e('Ensure that APNS Web Push ID is supplied');
+    }
+    if (typeof apnsServiceUrl === "undefined") {
+      wc.e('Ensure that APNS Web Push service path is supplied');
+    }
+    if ('safari' in window && 'pushNotification' in window['safari']) {
+      window['safari']['pushNotification']['requestPermission'](
+          apnsServiceUrl,
+          apnsWebPushId, {}, function (subscription) {
+            if (subscription['permission'] === 'granted') {
+              var subscriptionData = JSON.parse(JSON.stringify(subscription));
+              subscriptionData['endpoint'] = subscription['deviceToken'];
+              subscriptionData['browser'] = 'Safari';
+
+              var payload = subscriptionData;
+              payload = wiz.addSystemDataToObject(payload, true);
+              payload = JSON.stringify(payload);
+              var pageLoadUrl = dataPostURL;
+              pageLoadUrl = wiz.addToURL(pageLoadUrl, "type", "data");
+              pageLoadUrl = wiz.addToURL(pageLoadUrl, "d", wiz.compressData(payload));
+              wiz.fireRequest(pageLoadUrl);
+              //set in localstorage
+              if (wzrk_util.isLocalStorageSupported()) {
+                localStorage.setItem(STRING_CONSTANTS.WEBPUSH_LS_KEY, 'ok');
+              }
+              wc.l('Safari Web Push registered. Device Token: ' + subscription['deviceToken']);
+            } else if (subscription.permission === 'denied') {
+              wc.l('Error subscribing to Safari web push');
+            }
+          });
+    }
+  }
+
   /**
    * Sets up a service worker for WebPush(chrome/Firefox) push notifications and sends the data to LC
    */
-  wiz.setUpWebPushNotifications = function (subscriptionCallback, serviceWorkerPath) {
+  wiz.setUpChromeFirefoxNotifications = function (subscriptionCallback, serviceWorkerPath) {
 
 
     if ('serviceWorker' in navigator) {
@@ -267,7 +315,7 @@ function __wizrocket() {
       targetDomain = region + '.' + targetDomain;
     }
 
-    dataPostURL = wz_pr + '//' + targetDomain + '/a?t=95';
+    dataPostURL = wz_pr + '//' + targetDomain + '/a?t=96';
     recorderURL = wz_pr + '//' + targetDomain + '/r?r=1';
     emailURL = wz_pr + '//' + targetDomain + '/e?r=1';
 
@@ -2061,6 +2109,8 @@ function __wizrocket() {
     var serviceWorkerPath;
     var httpsPopupPath;
     var httpsIframePath;
+    var apnsWebPushId;
+    var apnsWebPushServiceUrl;
 
     if (displayArgs.length === 1) {
       if (wzrk_util.isObject(displayArgs[0])) {
@@ -2079,6 +2129,8 @@ function __wizrocket() {
         serviceWorkerPath = notifObj["serviceWorkerPath"];
         httpsPopupPath = notifObj["httpsPopupPath"];
         httpsIframePath = notifObj["httpsIframePath"];
+        apnsWebPushId = notifObj["apnsWebPushId"];
+        apnsWebPushServiceUrl = notifObj["apnsWebPushServiceUrl"];
       }
     } else {
       titleText = displayArgs[0];
@@ -2127,6 +2179,10 @@ function __wizrocket() {
       firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/);
       if(typeof firefoxAgent === STRING_CONSTANTS.UNDEFINED || parseInt(firefoxAgent[1], 10) < 50)
         return;
+    }else if(navigator.userAgent.indexOf('Safari') !== -1){
+      safariAgent = navigator.userAgent.match(/Safari\/(\d+)/);
+      if(typeof safariAgent === STRING_CONSTANTS.UNDEFINED || parseInt(safariAgent[1], 10) < 50)
+        return;
     } else {
       return;
     }
@@ -2140,7 +2196,7 @@ function __wizrocket() {
       // handle migrations from other services -> chrome notifications may have already been asked for before
       if (Notification.permission === 'granted') {
         // skip the dialog and register
-        wiz.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath);
+        wiz.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
         return;
       } else if (Notification.permission === 'denied') {
         // we've lost this profile :'(
@@ -2148,7 +2204,7 @@ function __wizrocket() {
       }
 
       if (skipDialog) {
-        wiz.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath);
+        wiz.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
         return;
       }
     }
@@ -2244,7 +2300,7 @@ function __wizrocket() {
             if (typeof okCallback !== "undefined" && typeof okCallback === "function") {
               okCallback();
             }
-            wiz.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath);
+            wiz.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
           } else {
             if (typeof rejectCallback !== "undefined" && typeof rejectCallback === "function") {
               rejectCallback();
