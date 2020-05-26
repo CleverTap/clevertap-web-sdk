@@ -542,6 +542,15 @@ function __wizrocket() {
           wiz.reportError(513, eventName + " is a restricted system event. It cannot be used as an event name.");
           continue;
         }
+
+        //ToDo : check in discarded event array
+        var isDiscarded = false;
+        if(isDiscarded){
+          wiz.reportError(510, eventName + " is a discarded event");
+          continue;
+        }
+
+
         var data = {};
         data['type'] = "event";
         data['evtName'] = wzrk_util.sanitize(eventName, unsupportedKeyCharRegex);
@@ -1226,6 +1235,10 @@ function __wizrocket() {
     };
 
     wizrocket['event'].push = function () {
+      //Todo : Check from discarded
+
+
+
       //since arguments is not an array, convert it into an array
       wiz.processEventArray(Array.prototype.slice.call(arguments));
       return 0;
