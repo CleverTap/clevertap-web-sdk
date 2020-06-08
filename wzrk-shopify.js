@@ -115,14 +115,14 @@ function wzrkShopify(id) {
     var profile_push_checkout = function() {
         if(Shopify.checkout != null){
             if(Shopify.checkout.billing_address != null){
-                clevertap.profile.push({
+                clevertap.onUserLogin.push({
                     "Site": {
                         "Name": Shopify.checkout.billing_address.first_name,
                         "Email": Shopify.checkout.email
                     }
                 });
             } else{
-                clevertap.profile.push({
+                clevertap.onUserLogin.push({
                     "Site": {
                         "Email": Shopify.checkout.email
                     }
