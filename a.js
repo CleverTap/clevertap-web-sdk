@@ -1521,8 +1521,8 @@ function __wizrocket() {
   };
 
 
-  wiz.getEmail = function () {
-    wiz.handleEmailSubscription('-1');
+  wiz.getEmail = function (reEncoded) {
+    wiz.handleEmailSubscription('-1', reEncoded);
   };
 
 
@@ -1530,8 +1530,8 @@ function __wizrocket() {
     wiz.handleEmailSubscription("0", reEncoded)
   };
 
-  wiz.subEmail = function () {
-    wiz.handleEmailSubscription("1")
+  wiz.subEmail = function (reEncoded) {
+    wiz.handleEmailSubscription("1", reEncoded)
   };
 
   wiz.handleEmailSubscription = function (subscription, reEncoded) {
