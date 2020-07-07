@@ -1521,20 +1521,20 @@ function __wizrocket() {
   };
 
 
-  wiz.getEmail = function () {
-    wiz.handleEmailSubscription('-1');
+  wiz.getEmail = function (reEncoded) {
+    wiz.handleEmailSubscription('-1', reEncoded);
   };
 
 
-  wiz.unSubEmail = function () {
-    wiz.handleEmailSubscription("0")
+  wiz.unSubEmail = function (reEncoded) {
+    wiz.handleEmailSubscription("0", reEncoded)
   };
 
-  wiz.subEmail = function () {
-    wiz.handleEmailSubscription("1")
+  wiz.subEmail = function (reEncoded) {
+    wiz.handleEmailSubscription("1", reEncoded)
   };
 
-  wiz.handleEmailSubscription = function (subscription) {
+  wiz.handleEmailSubscription = function (subscription, reEncoded) {
 
     var url_params_as_is = wzrk_util.getURLParams(location.href);  // can't use url_params as it is in lowercase above
     var encodedEmailId = url_params_as_is['e'];
@@ -1545,6 +1545,9 @@ function __wizrocket() {
       data['id'] = accountId;  //accountId
 
       var url = emailURL;
+      if(reEncoded) {
+        url = wiz.addToURL(url, "encoded", reEncoded);
+      }
       url = wiz.addToURL(url, "e", encodedEmailId);
       url = wiz.addToURL(url, "d", wiz.compressData(JSON.stringify(data)));
       if(encodedProfileProps){
