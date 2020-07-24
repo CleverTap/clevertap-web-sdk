@@ -20,6 +20,7 @@ function __wizrocket() {
   // to be used for checking whether the script loaded fine and the wiz.init function was called
   var onloadcalled = 0;  // 1 = fired
   var processingBackup = false;
+  var unsubGroups = []
 
   var gcookie, scookieObj;
   var accountId, region;
@@ -39,8 +40,8 @@ function __wizrocket() {
   function urlBase64ToUint8Array(base64String) {
     var padding = '='.repeat((4 - base64String.length % 4) % 4);
     var base64 = (base64String + padding)
-      .replace(/\-/g, '+')
-      .replace(/_/g, '/')
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/')
     ;
     var rawData = window.atob(base64);
     var processedData = []
@@ -207,7 +208,7 @@ function __wizrocket() {
         }
 
         serviceWorkerRegistration['pushManager']['subscribe'](subscribeObj)
-          ['then'](function (subscription) {
+            ['then'](function (subscription) {
           wc.l('Service Worker registered. Endpoint: ' + subscription['endpoint']);
 
           // convert the subscription keys to strings; this sets it up nicely for pushing to LC
@@ -586,7 +587,7 @@ function __wizrocket() {
         }
 
         if (eventName == "Stayed" || eventName == "UTM Visited" || eventName == "App Launched" ||
-          eventName == "Notification Sent" || eventName == "Notification Viewed" || eventName == "Notification Clicked") {
+            eventName == "Notification Sent" || eventName == "Notification Viewed" || eventName == "Notification Clicked") {
           wiz.reportError(513, eventName + " is a restricted system event. It cannot be used as an event name.");
           continue;
         }
@@ -789,8 +790,8 @@ function __wizrocket() {
         this.cache = deleteFromObject(key, this.cache);
       } else if (all_keys.length === this.max) {
         this.cache = deleteFromObject(
-          all_keys[0],
-          this.cache
+            all_keys[0],
+            this.cache
         );
       }
       this.cache[key] = value;
@@ -822,8 +823,8 @@ function __wizrocket() {
       for (var index in all_keys) {
         if(all_keys.hasOwnProperty(index)) {
           if (
-            this.cache[all_keys[index]] != null &&
-            this.cache[all_keys[index]] === givenVal
+              this.cache[all_keys[index]] != null &&
+              this.cache[all_keys[index]] === givenVal
           ) {
             return all_keys[index];
           }
@@ -971,11 +972,11 @@ function __wizrocket() {
 
 
   /*
-        We dont set the arp in cache for deregister requests.
-        For deregister requests we check for 'skipResARP' flag payload. If present we skip it.
+          We dont set the arp in cache for deregister requests.
+          For deregister requests we check for 'skipResARP' flag payload. If present we skip it.
 
-        Whenever we get 'isOUL' flag true in payload we delete the existing ARP instead of updating it.
-     */
+          Whenever we get 'isOUL' flag true in payload we delete the existing ARP instead of updating it.
+       */
   wiz.arp = function (jsonMap) {
     // For unregister calls dont set arp in LS
     if(typeof jsonMap["skipResARP"] !== STRING_CONSTANTS.UNDEFINED && jsonMap["skipResARP"]) {
@@ -984,7 +985,7 @@ function __wizrocket() {
     }
 
     var isOULARP = (typeof jsonMap[STRING_CONSTANTS.IS_OUL] !== STRING_CONSTANTS.UNDEFINED
-      && jsonMap[STRING_CONSTANTS.IS_OUL] === true) ? true : false;
+        && jsonMap[STRING_CONSTANTS.IS_OUL] === true) ? true : false;
 
     if (wzrk_util.isLocalStorageSupported()) {
       try {
@@ -1067,17 +1068,17 @@ function __wizrocket() {
   };
 
   /*
-        anonymousUser   => Only GUID present.
-        foundInCache    => Identity used in On User Login is present in LRU_CACHE. So use the guid associated with it.
+          anonymousUser   => Only GUID present.
+          foundInCache    => Identity used in On User Login is present in LRU_CACHE. So use the guid associated with it.
 
-        Clear the cache in case on On User Login and Block all the request till we get resume requests flag in the response.
-        When user is found in Cache or the user is anonymous then dont block any requests. Just clear cache (handleCookieFromCache)
+          Clear the cache in case on On User Login and Block all the request till we get resume requests flag in the response.
+          When user is found in Cache or the user is anonymous then dont block any requests. Just clear cache (handleCookieFromCache)
 
 
-        On every On User Login we deregister the token for older User.
-        If new user is found in Cache then we call deregister function now
-        Else we call it once we get guid for new user in 'wiz.s' function.
-     */
+          On every On User Login we deregister the token for older User.
+          If new user is found in Cache then we call deregister function now
+          Else we call it once we get guid for new user in 'wiz.s' function.
+       */
   wiz.processOUL = function (profileArr) {
     var sendOULFlag = true;
     var addToK = function (ids) {
@@ -1238,9 +1239,9 @@ function __wizrocket() {
     if (wzrk_util.isArray(loginArr) && loginArr.length > 0) {
       var profileObj = loginArr.pop();
       var processProfile = typeof profileObj != STRING_CONSTANTS.UNDEFINED && wzrk_util.isObject(profileObj) &&
-        ((typeof profileObj['Site'] != STRING_CONSTANTS.UNDEFINED && Object.keys(profileObj["Site"]).length > 0) ||
-          (typeof profileObj['Facebook'] != STRING_CONSTANTS.UNDEFINED && Object.keys(profileObj["Facebook"]).length > 0) ||
-          (typeof profileObj['Google Plus'] != "undefined" && Object.keys(profileObj["Google Plus"]).length > 0));
+          ((typeof profileObj['Site'] != STRING_CONSTANTS.UNDEFINED && Object.keys(profileObj["Site"]).length > 0) ||
+              (typeof profileObj['Facebook'] != STRING_CONSTANTS.UNDEFINED && Object.keys(profileObj["Facebook"]).length > 0) ||
+              (typeof profileObj['Google Plus'] != "undefined" && Object.keys(profileObj["Google Plus"]).length > 0));
       if (processProfile) {
         setInstantDeleteFlagInK();
         wiz.processOUL([profileObj]);
@@ -1382,7 +1383,7 @@ function __wizrocket() {
   };
 
 
-// profile like https://developers.google.com/+/api/latest/people
+  // profile like https://developers.google.com/+/api/latest/people
   wiz.processGPlusUserObj = function (user) {
 
     var profileData = {};
@@ -1530,6 +1531,30 @@ function __wizrocket() {
     wiz.handleEmailSubscription("0", reEncoded)
   };
 
+  wiz.unsubEmailGroups = function (reEncoded) {
+    unsubGroups = []
+    var elements = document.getElementsByClassName(
+        "ct-unsub-group-input-item");
+
+    for (var i = 0; i < elements.length; i++) {
+      var element = elements[i];
+      if(element.name) {
+        var data = {name: element.name, isUnsubscribed: element.checked}
+        unsubGroups.push(data)
+      }
+    }
+
+    wiz.handleEmailSubscription("2", reEncoded)
+  };
+
+  wiz.setSubscriptionGroups = function(value) {
+    unsubGroups = value
+  }
+
+  wiz.getSubscriptionGroups = function () {
+    return unsubGroups
+  }
+
   wiz.subEmail = function (reEncoded) {
     wiz.handleEmailSubscription("1", reEncoded)
   };
@@ -1543,6 +1568,7 @@ function __wizrocket() {
     if (typeof encodedEmailId !== STRING_CONSTANTS.UNDEFINED) {
       var data = {};
       data['id'] = accountId;  //accountId
+      data['unsubGroups'] = unsubGroups // unsubscribe groups
 
       var url = emailURL;
       if(reEncoded) {
@@ -1690,7 +1716,7 @@ function __wizrocket() {
     if (!wiz.isValueValid(guid)) {
       guid = wiz.readCookie(STRING_CONSTANTS.GCOOKIE_NAME);
       if (wiz.isValueValid(guid) && (guid.indexOf('%') === 0 ||
-        guid.indexOf('\'') === 0 || guid.indexOf('"') === 0)) {
+          guid.indexOf('\'') === 0 || guid.indexOf('"') === 0)) {
         guid = null;
       }
       if (wiz.isValueValid(guid)) {
@@ -1800,7 +1826,7 @@ function __wizrocket() {
           }
 
           var kId_from_LS = wiz.readFromLSorCookie(
-            STRING_CONSTANTS.KCOOKIE_NAME
+              STRING_CONSTANTS.KCOOKIE_NAME
           );
           if (kId_from_LS != null && kId_from_LS["id"] && resume) {
             var guidFromLRUCache = LRU_CACHE.cache[kId_from_LS["id"]];
@@ -1809,8 +1835,8 @@ function __wizrocket() {
             }
           }
           wiz.saveToLSorCookie(
-            STRING_CONSTANTS.GCOOKIE_NAME,
-            global
+              STRING_CONSTANTS.GCOOKIE_NAME,
+              global
           );
 
           var lastK = LRU_CACHE.getSecondLastKEY();
@@ -2001,9 +2027,9 @@ function __wizrocket() {
       return;
     }
     if (
-      !wiz.isValueValid(gcookie) &&
-      RESP_N < REQ_N - 1 &&
-      tries < MAX_TRIES
+        !wiz.isValueValid(gcookie) &&
+        RESP_N < REQ_N - 1 &&
+        tries < MAX_TRIES
     ) {
       setTimeout(function () {
         fireRequest(url, tries + 1, skipARP, sendOULFlag);
@@ -2331,8 +2357,8 @@ function __wizrocket() {
           targetingMsgJson[STRING_CONSTANTS.DISPLAY]['wmc'] = 1;
         }
         var excludeFromFreqCaps = -1, campaignSessionLimit = -1, campaignDailyLimit = -1,
-          campaignTotalLimit = -1,
-          totalDailyLimit = -1, totalSessionLimit = -1;
+            campaignTotalLimit = -1,
+            totalDailyLimit = -1, totalSessionLimit = -1;
         if (typeof targetingMsgJson[STRING_CONSTANTS.DISPLAY]['efc'] != STRING_CONSTANTS.UNDEFINED) {
           excludeFromFreqCaps = parseInt(targetingMsgJson[STRING_CONSTANTS.DISPLAY]['efc'], 10);
         }
@@ -2478,25 +2504,25 @@ function __wizrocket() {
 
         if (typeof ctaElement != STRING_CONSTANTS.UNDEFINED) {
           ctaElement.onclick =
-            function () {
-              //invoke js function call
-              if (typeof jsFunc != STRING_CONSTANTS.UNDEFINED) {
-                //track notification clicked event
-                if (typeof isPreview == STRING_CONSTANTS.UNDEFINED) {
-                  wiz.fireRequest(onClick);
+              function () {
+                //invoke js function call
+                if (typeof jsFunc != STRING_CONSTANTS.UNDEFINED) {
+                  //track notification clicked event
+                  if (typeof isPreview == STRING_CONSTANTS.UNDEFINED) {
+                    wiz.fireRequest(onClick);
+                  }
+                  invokeExternalJs(jsFunc, targetingMsgJson);
+                  //close iframe. using -1 for no campaignId
+                  wiz.closeIframe('-1', divId);
+                  return;
                 }
-                invokeExternalJs(jsFunc, targetingMsgJson);
-                //close iframe. using -1 for no campaignId
-                wiz.closeIframe('-1', divId);
-                return;
+                //pass on the gcookie|page|scookieId for capturing the click event
+                if (targetingMsgJson['display']['window'] == '1') {
+                  window.open(onClick, '_blank');
+                } else {
+                  window.location = onClick;
+                }
               }
-              //pass on the gcookie|page|scookieId for capturing the click event
-              if (targetingMsgJson['display']['window'] == '1') {
-                window.open(onClick, '_blank');
-              } else {
-                window.location = onClick;
-              }
-            }
         }
       }
     };
@@ -2604,20 +2630,20 @@ function __wizrocket() {
         html = html.replace('##campaignId##', campaignId);
       } else {
         var css = '' +
-          '<style type="text/css">' +
-          'body{margin:0;padding:0;}' +
-          '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' +
-          '#contentDiv.wzrk td{padding:15px 10px;}' +
-          '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' +
-          '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' +
-          '.PL15{padding-left:15px;}' +
-          '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' +
-          'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' +
-          'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' +
-          'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' +
-          'td{vertical-align:top;}' +
-          'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' +
-          '</style>';
+            '<style type="text/css">' +
+            'body{margin:0;padding:0;}' +
+            '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' +
+            '#contentDiv.wzrk td{padding:15px 10px;}' +
+            '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' +
+            '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' +
+            '.PL15{padding-left:15px;}' +
+            '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' +
+            'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' +
+            'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' +
+            'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' +
+            'td{vertical-align:top;}' +
+            'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' +
+            '</style>';
 
         var bgColor, textColor, btnBg, leftTd, btColor;
         if (targetingMsgJson['display']['theme'] == 'dark') {
@@ -2641,12 +2667,12 @@ function __wizrocket() {
         }
         var onClickStr = "parent.$WZRK_WR.closeIframe(" + campaignId + ",'" + divId + "');";
         var title = "<div class='wzrkPPwarp' style='color:" + textColor + ";background-color:" + bgColor + ";'>" +
-          "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ";color:" + btColor + "'>&times;</a>" +
-          "<div id='contentDiv' class='wzrk'>" +
-          "<table cellpadding='0' cellspacing='0' border='0'>" +
-          //"<tr><td colspan='2'></td></tr>"+
-          "<tr>" + imageTd + "<td style='vertical-align:top;'>" +
-          "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + "</div>";
+            "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ";color:" + btColor + "'>&times;</a>" +
+            "<div id='contentDiv' class='wzrk'>" +
+            "<table cellpadding='0' cellspacing='0' border='0'>" +
+            //"<tr><td colspan='2'></td></tr>"+
+            "<tr>" + imageTd + "<td style='vertical-align:top;'>" +
+            "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + "</div>";
         var body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + "<div></td></tr></table></div>";
         html = css + title + body;
       }
@@ -2711,8 +2737,8 @@ function __wizrocket() {
 
       var onClick = targetingMsgJson['display']['onClick'];
       if (wizrocket.hasOwnProperty("notificationCallback") &&
-        typeof wizrocket["notificationCallback"] !== "undefined" &&
-        typeof wizrocket["notificationCallback"] === "function") {
+          typeof wizrocket["notificationCallback"] !== "undefined" &&
+          typeof wizrocket["notificationCallback"] === "function") {
         var notificationCallback = wizrocket["notificationCallback"];
         if (!_callBackCalled) {
           var inaObj = {};
@@ -2769,8 +2795,8 @@ function __wizrocket() {
       }
       //dont show exit intent on tablet/mobile - only on desktop
       if (typeof targetingMsgJson['display']['layout'] == STRING_CONSTANTS.UNDEFINED &&
-        ((/mobile/i.test(navigator.userAgent)) || (/mini/i.test(navigator.userAgent)) || (/iPad/i.test(navigator.userAgent)) ||
-          ('ontouchstart' in window) || (/tablet/i.test(navigator.userAgent)))) {
+          ((/mobile/i.test(navigator.userAgent)) || (/mini/i.test(navigator.userAgent)) || (/iPad/i.test(navigator.userAgent)) ||
+              ('ontouchstart' in window) || (/tablet/i.test(navigator.userAgent)))) {
         return;
       }
 
@@ -2815,20 +2841,20 @@ function __wizrocket() {
         html = html.replace('##campaignId##', campaignId);
       } else {
         var css = '' +
-          '<style type="text/css">' +
-          'body{margin:0;padding:0;}' +
-          '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' +
-          '#contentDiv.wzrk td{padding:15px 10px;}' +
-          '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' +
-          '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' +
-          '.PL15{padding-left:15px;}' +
-          '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' +
-          'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' +
-          'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' +
-          'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' +
-          '#contentDiv .button{padding-top:20px;}' +
-          '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' +
-          '</style>';
+            '<style type="text/css">' +
+            'body{margin:0;padding:0;}' +
+            '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' +
+            '#contentDiv.wzrk td{padding:15px 10px;}' +
+            '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' +
+            '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' +
+            '.PL15{padding-left:15px;}' +
+            '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' +
+            'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' +
+            'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' +
+            'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' +
+            '#contentDiv .button{padding-top:20px;}' +
+            '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' +
+            '</style>';
 
         var bgColor, textColor, btnBg, btColor;
         if (targetingMsgJson['display']['theme'] == 'dark') {
@@ -2855,11 +2881,11 @@ function __wizrocket() {
         }
         var onClickStr = "parent.$WZRK_WR.closeIframe(" + campaignId + ",'intentPreview');";
         var title = "<div class='wzrkPPwarp' style='color:" + textColor + ";background-color:" + bgColor + ";'>" +
-          "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ";color:" + btColor + "'>&times;</a>" +
-          "<div id='contentDiv' class='wzrk'>" +
-          "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + "</div>";
+            "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ";color:" + btColor + "'>&times;</a>" +
+            "<div id='contentDiv' class='wzrk'>" +
+            "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + "</div>";
         var body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + "</div>" + imageTd + ctaText +
-          "</div></div>";
+            "</div></div>";
         html = css + title + body;
       }
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
@@ -3188,13 +3214,16 @@ function __wizrocket() {
   wiz['closeIframe'] = wiz.closeIframe;
   wiz['getEmail'] = wiz.getEmail;
   wiz['unSubEmail'] = wiz.unSubEmail;
+  wiz['unsubEmailGroups'] = wiz.unsubEmailGroups;
+  wiz['getSubscriptionGroups'] = wiz.getSubscriptionGroups;
+  wiz['setSubscriptionGroups'] = wiz.setSubscriptionGroups;
   wiz['subEmail'] = wiz.subEmail;
   wiz['logout'] = wiz.logout;
   wiz['clear'] = wiz.clear;
   wizrocket['getCleverTapID'] = wiz.getCleverTapID;
 
 
-// ---------- compression part ----------
+  // ---------- compression part ----------
 
   var LZS = {
 
@@ -3221,9 +3250,9 @@ function __wizrocket() {
 
     convertToFormattedHex: function (byte_arr) {
       var hex_str = "",
-        i,
-        len,
-        tmp_hex;
+          i,
+          len,
+          tmp_hex;
 
       if (!wzrk_util.isArray(byte_arr)) {
         return false;
@@ -3307,8 +3336,8 @@ function __wizrocket() {
         }
 
         output = output +
-          LZS._keyStr.charAt(enc1) + LZS._keyStr.charAt(enc2) +
-          LZS._keyStr.charAt(enc3) + LZS._keyStr.charAt(enc4);
+            LZS._keyStr.charAt(enc1) + LZS._keyStr.charAt(enc2) +
+            LZS._keyStr.charAt(enc3) + LZS._keyStr.charAt(enc4);
 
       }
 
@@ -3319,19 +3348,19 @@ function __wizrocket() {
     compress: function (uncompressed) {
       if (uncompressed == null) return "";
       var i, value,
-        context_dictionary = {},
-        context_dictionaryToCreate = {},
-        context_c = "",
-        context_wc = "",
-        context_w = "",
-        context_enlargeIn = 2, // Compensate for the first entry which should not count
-        context_dictSize = 3,
-        context_numBits = 2,
-        context_data_string = "",
-        context_data_val = 0,
-        context_data_position = 0,
-        ii,
-        f = LZS._f;
+          context_dictionary = {},
+          context_dictionaryToCreate = {},
+          context_c = "",
+          context_wc = "",
+          context_w = "",
+          context_enlargeIn = 2, // Compensate for the first entry which should not count
+          context_dictSize = 3,
+          context_numBits = 2,
+          context_data_string = "",
+          context_data_val = 0,
+          context_data_position = 0,
+          ii,
+          f = LZS._f;
 
       for (ii = 0; ii < uncompressed.length; ii += 1) {
         context_c = uncompressed.charAt(ii);
@@ -3562,8 +3591,8 @@ function __wizrocket() {
       var y = matches[1];
       var composedDate = new Date(y, m, d);
       return composedDate.getDate() == d &&
-        composedDate.getMonth() == m &&
-        composedDate.getFullYear() == y;
+          composedDate.getMonth() == m &&
+          composedDate.getFullYear() == y;
     },
 
     isArray: function (input) {
@@ -3619,17 +3648,17 @@ function __wizrocket() {
 
 
         var match,
-          pl = /\+/g,  // Regex for replacing addition symbol with a space
-          search = /([^&=]+)=?([^&]*)/g,
-          decode = function (s) {
-            var replacement = s.replace(pl, " ");
-            try {
-              replacement = decodeURIComponent(replacement);
-            } catch (e) {
-              //eat
-            }
-            return replacement;
-          };
+            pl = /\+/g,  // Regex for replacing addition symbol with a space
+            search = /([^&=]+)=?([^&]*)/g,
+            decode = function (s) {
+              var replacement = s.replace(pl, " ");
+              try {
+                replacement = decodeURIComponent(replacement);
+              } catch (e) {
+                //eat
+              }
+              return replacement;
+            };
 
 
         while (match = search.exec(uri)) {
@@ -3735,13 +3764,13 @@ function __wizrocket() {
 
   };
 
-// leading spaces, dot, colon, dollar, single quote, double quote, backslash, trailing spaces
+  // leading spaces, dot, colon, dollar, single quote, double quote, backslash, trailing spaces
   var unsupportedKeyCharRegex = new RegExp("^\\s+|\\\.|\:|\\\$|\'|\"|\\\\|\\s+$", "g");
 
-// leading spaces, single quote, double quote, backslash, trailing spaces
+  // leading spaces, single quote, double quote, backslash, trailing spaces
   var unsupportedValueCharRegex = new RegExp("^\\s+|\'|\"|\\\\|\\s+$", "g");
 
-//used to handle cookies in Opera mini
+  //used to handle cookies in Opera mini
   var doubleQuoteRegex = new RegExp("\"", "g");
   var singleQuoteRegex = new RegExp("\'", "g");
 
