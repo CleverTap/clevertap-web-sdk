@@ -91,6 +91,7 @@ function __wizrocket() {
 
   var SCOOKIE_EXP_TIME_IN_SECS = 60 * 20;  // 20 mins
 
+  var GROUP_SUBSCRIPTION_REQUEST_ID = "2";
 
   var EVT_PING = "ping", EVT_PUSH = "push";
 
@@ -1544,7 +1545,7 @@ function __wizrocket() {
       }
     }
 
-    wiz.handleEmailSubscription("2", reEncoded)
+    wiz.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
   };
 
   wiz.setSubscriptionGroups = function(value) {
