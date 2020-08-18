@@ -21,6 +21,8 @@ function __wizrocket() {
   var onloadcalled = 0;  // 1 = fired
   var processingBackup = false;
   var unsubGroups = []
+  var updatedCategoryLong;
+  var categoryLongKey = "cUsY";
 
   var gcookie, scookieObj;
   var accountId, region;
@@ -1527,7 +1529,6 @@ function __wizrocket() {
     wiz.handleEmailSubscription('-1', reEncoded);
   };
 
-
   wiz.unSubEmail = function (reEncoded) {
     wiz.handleEmailSubscription("0", reEncoded)
   };
@@ -1545,19 +1546,29 @@ function __wizrocket() {
       }
     }
 
-    wiz.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
+    wiz.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
+  };
+
+  wiz.changeSubscriptionGroups = function (reEncoded) {
+    wiz.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
+  };
+
+  wiz.setUpdatedCategoryLong = function (profile) {
+    if(profile[categoryLongKey]) {
+      updatedCategoryLong = profile[categoryLongKey];
+    }
   };
 
   wiz.setSubscriptionGroups = function(value) {
-    unsubGroups = value
-  }
+    unsubGroups = value;
+  };
 
   wiz.getSubscriptionGroups = function () {
-    return unsubGroups
-  }
+    return unsubGroups;
+  };
 
   wiz.subEmail = function (reEncoded) {
-    wiz.handleEmailSubscription("1", reEncoded)
+    wiz.handleEmailSubscription("1", reEncoded);
   };
 
   wiz.handleEmailSubscription = function (subscription, reEncoded) {
@@ -1569,7 +1580,10 @@ function __wizrocket() {
     if (typeof encodedEmailId !== STRING_CONSTANTS.UNDEFINED) {
       var data = {};
       data['id'] = accountId;  //accountId
-      data['unsubGroups'] = unsubGroups // unsubscribe groups
+      data['unsubGroups'] = unsubGroups; // unsubscribe groups
+      if(updatedCategoryLong) {
+        data[categoryLongKey] = updatedCategoryLong;
+      }
 
       var url = emailURL;
       if(reEncoded) {
@@ -3216,8 +3230,10 @@ function __wizrocket() {
   wiz['getEmail'] = wiz.getEmail;
   wiz['unSubEmail'] = wiz.unSubEmail;
   wiz['unsubEmailGroups'] = wiz.unsubEmailGroups;
+  wiz['changeSubscriptionGroups'] = wiz.changeSubscriptionGroups;
   wiz['getSubscriptionGroups'] = wiz.getSubscriptionGroups;
   wiz['setSubscriptionGroups'] = wiz.setSubscriptionGroups;
+  wiz['setUpdatedCategoryLong'] = wiz.setUpdatedCategoryLong;
   wiz['subEmail'] = wiz.subEmail;
   wiz['logout'] = wiz.logout;
   wiz['clear'] = wiz.clear;
