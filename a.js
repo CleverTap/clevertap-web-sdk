@@ -1588,7 +1588,7 @@ function __wizrocket() {
 
       var url = emailURL;
       if(fetchGroups) {
-        url = wiz.addToURL(url, "fetchGroups", reEncoded);
+        url = wiz.addToURL(url, "fetchGroups", fetchGroups);
       }
       if(reEncoded) {
         url = wiz.addToURL(url, "encoded", reEncoded);
