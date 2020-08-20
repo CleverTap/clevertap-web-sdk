@@ -1525,8 +1525,8 @@ function __wizrocket() {
   };
 
 
-  wiz.getEmail = function (reEncoded) {
-    wiz.handleEmailSubscription('-1', reEncoded);
+  wiz.getEmail = function (reEncoded, withGroups) {
+    wiz.handleEmailSubscription('-1', reEncoded, withGroups);
   };
 
   wiz.unSubEmail = function (reEncoded) {
@@ -1549,7 +1549,8 @@ function __wizrocket() {
     wiz.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
   };
 
-  wiz.changeSubscriptionGroups = function (reEncoded) {
+  wiz.changeSubscriptionGroups = function (reEncoded, updatedGroups) {
+    wiz.setSubscriptionGroups(updatedGroups);
     wiz.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
   };
 
@@ -1571,7 +1572,7 @@ function __wizrocket() {
     wiz.handleEmailSubscription("1", reEncoded);
   };
 
-  wiz.handleEmailSubscription = function (subscription, reEncoded) {
+  wiz.handleEmailSubscription = function (subscription, reEncoded, fetchGroups) {
 
     var url_params_as_is = wzrk_util.getURLParams(location.href);  // can't use url_params as it is in lowercase above
     var encodedEmailId = url_params_as_is['e'];
@@ -1586,6 +1587,9 @@ function __wizrocket() {
       }
 
       var url = emailURL;
+      if(fetchGroups) {
+        url = wiz.addToURL(url, "fetchGroups", reEncoded);
+      }
       if(reEncoded) {
         url = wiz.addToURL(url, "encoded", reEncoded);
       }
