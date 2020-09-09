@@ -60,6 +60,42 @@ test('Privacy can be pushed', () => {
   expect(ct.privacy.push).toBeInstanceOf(Function)
 })
 
+test('Clevertap event is always set as array', () => {
+  global.clevertap = {event: 'event', profile:[], account:[], onUserLogin:[], notifications:[], privacy:[]} // Will be added by customer during installation
+  const ct = new Clevertap(global.clevertap)
+  expect(ct.event).toBeInstanceOf(Array)
+})
+
+test('Clevertap profile is always set as array', () => {
+  global.clevertap = {event: [], profile: 1, account:[], onUserLogin:[], notifications:[], privacy:[]} // Will be added by customer during installation
+  const ct = new Clevertap(global.clevertap)
+  expect(ct.event).toBeInstanceOf(Array)
+})
+
+test('Clevertap account is always set as array', () => {
+  global.clevertap = {event: [], profile:[], account: 'WWW-WWW-WWWW', onUserLogin:[], notifications:[], privacy:[]} // Will be added by customer during installation
+  const ct = new Clevertap(global.clevertap)
+  expect(ct.account).toBeInstanceOf(Array)
+})
+
+test('Clevertap onUserLogin is always set as array', () => {
+  global.clevertap = {event: [], profile:[], account:[], onUserLogin: 'doSomething', notifications:[], privacy:[]} // Will be added by customer during installation
+  const ct = new Clevertap(global.clevertap)
+  expect(ct.onUserLogin).toBeInstanceOf(Array)
+})
+
+test('Clevertap notifications is always set as array', () => {
+  global.clevertap = {event: [], profile:[], account:[], onUserLogin:[], notifications: 1, privacy:[]} // Will be added by customer during installation
+  const ct = new Clevertap(global.clevertap)
+  expect(ct.notifications).toBeInstanceOf(Array)
+})
+
+test('Clevertap privacy is always set as array', () => {
+  global.clevertap = {event: [], profile: [], account: [], onUserLogin: [], notifications: [], privacy: {}} // Will be added by customer during installation
+  const ct = new Clevertap(global.clevertap)
+  expect(ct.privacy).toBeInstanceOf(Array)
+})
+
 test('Clevertap accepts account ID as per Web SDK docs', () => {
   global.clevertap = {event:[], profile:[], account:[], onUserLogin:[], notifications:[], privacy:[]} // Will be added by customer during installation
   global.clevertap.account.push({"id": "44Z-R45-995Z"})
