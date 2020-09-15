@@ -4,8 +4,9 @@ import {
 } from '../../../src/util/datetime'
 
 test('Now is generated', () => {
+  jest.setSystemTime(new Date('01-01-2020'))
   const a = now()
-  const b = Math.floor((new Date()).getTime() / 1000)
+  const b = 1577817000
   const result = Math.abs(Number(a) - Number(b)) < 10 // Within 10 seconds
   expect(result).toBe(true)
 })
