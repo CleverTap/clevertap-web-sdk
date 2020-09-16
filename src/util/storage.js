@@ -1,66 +1,41 @@
-const saveToStorage = (key, value) => {
-  if (!key || value == null) {
-    return
-  }
-  if (isLocalStorageSupported()) {
-    localStorage[key] = JSON.stringify(value)
-  }
-}
-
-const readFromStorage = (key) => {
-  if (!key) {
-    return
-  }
-  let data = null
-  if (isLocalStorageSupported()) {
-    data = localStorage[key]
-  }
-  if (data != null) {
-    try {
-      data = JSON.parse(data)
-    } catch (e) {}
-  }
-  return data
-}
-
-const removeFromStorage = (key) => {
-  if (!key) {
-    return
-  }
-  if (isLocalStorageSupported()) {
-    delete localStorage[key]
-  }
-}
-
-export const isLocalStorageSupported = () => {
-  try {
-    window.localStorage.setItem('wzrk_debug', '12345678')
-    window.localStorage.removeItem('wzrk_debug')
-    return 'localStorage' in window && window.localStorage !== null
-  } catch (e) {
-    return false
-  }
-}
-
-export default class StorageManager {
+export class StorageManager {
   static save (key, value) {
     if (!key || !value) {
-      return
+      return false
     }
-    saveToStorage(key, value)
+    if (this._isLocalStorageSupported()) {
+      localStorage.setItem(key, JSON.stringify(value))
+      return true
+    }
   }
 
   static read (key) {
     if (!key) {
-      return
+      return false
     }
-    return readFromStorage(key)
+    let data = null
+    if (this._isLocalStorageSupported()) {
+      data = localStorage.getItem(key)
+    }
+    if (data != null) {
+      try {
+        data = JSON.parse(data)
+      } catch (e) {}
+    }
+    return data
   }
 
   static remove (key) {
     if (!key) {
-      return
+      return false
     }
-    removeFromStorage(key)
+    if (this._isLocalStorageSupported()) {
+      localStorage.removeItem(key)
+      return true
+    }
+  }
+
+  static _isLocalStorageSupported = () => {
+    return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function'
   }
 }
