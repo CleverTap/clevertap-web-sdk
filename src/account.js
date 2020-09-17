@@ -1,4 +1,4 @@
-export default class Account {
+class Account {
   #accountID
   #region
   #appVersion
@@ -35,3 +35,5 @@ export default class Account {
     this.#appVersion = appVersion
   }
 }
+
+export const account = new Account()
