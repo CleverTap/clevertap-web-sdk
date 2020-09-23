@@ -9,15 +9,12 @@ if(typeof clevertap === "undefined"){
 }
 
 function wzrkShopify(id, region) {
-    if (typeof region === "undefined") {
-        region = "";
-    }
     clevertap.account.push({
         "id": id,
-        "region": region
     });
     clevertap.enablePersonalization = true; // enables Personalization
     clevertap.plugin = "shop";
+    clevertap.region = region;
     var wzrk = document.createElement('script');
     wzrk.type = 'text/javascript';
     wzrk.async = true;
@@ -195,7 +192,10 @@ function wzrkShopify(id, region) {
 }
 
 if (typeof __wzrk_account_id !== "undefined") {
-    // SUC-60553. Region introduced. Pass empty if undefined
+    // SUC-60553. Region introduced
+    if (typeof __wzrk_region === "undefined") {
+        __wzrk_region = "";
+    }
     wzrkShopify(__wzrk_account_id, __wzrk_region);
 } else {
     if (typeof Shopify !== "undefined") {
