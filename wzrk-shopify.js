@@ -8,9 +8,13 @@ if(typeof clevertap === "undefined"){
     };
 }
 
-function wzrkShopify(id) {
+function wzrkShopify(id, region) {
+    if (typeof region === "undefined") {
+        region = "";
+    }
     clevertap.account.push({
-        "id": id
+        "id": id,
+        "region": region
     });
     clevertap.enablePersonalization = true; // enables Personalization
     clevertap.plugin = "shop";
@@ -191,7 +195,8 @@ function wzrkShopify(id) {
 }
 
 if (typeof __wzrk_account_id !== "undefined") {
-    wzrkShopify(__wzrk_account_id);
+    // SUC-60553. Region introduced. Pass empty if undefined
+    wzrkShopify(__wzrk_account_id, __wzrk_region);
 } else {
     if (typeof Shopify !== "undefined") {
         (function(){
