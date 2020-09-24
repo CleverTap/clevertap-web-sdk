@@ -14,7 +14,9 @@ function wzrkShopify(id, region) {
     });
     clevertap.enablePersonalization = true; // enables Personalization
     clevertap.plugin = "shop";
-    clevertap.region = region;
+    if (region !== "") {
+        clevertap.region = region;
+    }
     var wzrk = document.createElement('script');
     wzrk.type = 'text/javascript';
     wzrk.async = true;
