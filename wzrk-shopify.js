@@ -10,7 +10,7 @@ if(typeof clevertap === "undefined"){
 
 function wzrkShopify(id, region) {
     clevertap.account.push({
-        "id": id,
+        "id": id
     });
     clevertap.enablePersonalization = true; // enables Personalization
     clevertap.plugin = "shop";
