@@ -1,3 +1,7 @@
+import {
+  errors
+} from '../util/messages'
+
 export const logLevels = {
   DISABLE: 0,
   ERROR: 1,
@@ -37,6 +41,10 @@ export class Logger {
     }
   }
 
+  reportError (code, description) {
+    this.error(`${errors.CLEVERTAP_ERROR_PREFIX} ${code}: ${description}`)
+  }
+
   _log (level, message) {
     if (window.console) {
       try {
@@ -47,9 +55,7 @@ export class Logger {
   }
 }
 
-export const logger = new Logger(logLevels.INFO)
-
 export default {
-  logger,
+  Logger,
   logLevels
 }

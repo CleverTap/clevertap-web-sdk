@@ -1,9 +1,2 @@
-const targetDomain = 'wzrkt.com'
-const wz_pr = 'https:'
-
-let dataPostURL, recorderURL, emailURL
-
-export default {
-  domain: targetDomain,
-  protocol: wz_pr, 
-}
+export const TARGET_DOMAIN = 'wzrkt.com'
+export const TARGET_PROTOCOL = 'https:'
