@@ -453,65 +453,7 @@ function __wizrocket() {
     wiz.saveAndFireRequest(pageLoadUrl, false);
   };
 
-  wiz.processEventArray = function (eventArr) {
-
-    if (wzrk_util.isArray(eventArr)) {
-
-      /** looping since the events could be fired in quick succession, and we could end up
-       with multiple pushes without getting a chance to process
-       */
-      while (eventArr.length > 0) {
-
-        var eventName = eventArr.shift(); // take out name of the event
-
-        if (!wzrk_util.isString(eventName)) {
-          console.error(wzrk_msg['event-error']);
-          return;
-        }
-
-        if (eventName.length > 1024) {
-          eventName = eventName.substring(0, 1024);
-          wiz.reportError(510, eventName + "... length exceeded 1024 chars. Trimmed.");
-        }
-
-        if (eventName == "Stayed" || eventName == "UTM Visited" || eventName == "App Launched" ||
-            eventName == "Notification Sent" || eventName == "Notification Viewed" || eventName == "Notification Clicked") {
-          wiz.reportError(513, eventName + " is a restricted system event. It cannot be used as an event name.");
-          continue;
-        }
-        var data = {};
-        data['type'] = "event";
-        data['evtName'] = wzrk_util.sanitize(eventName, unsupportedKeyCharRegex);
-
-        if (eventArr.length != 0) {
-          var eventObj = eventArr.shift();
-
-          if (!wzrk_util.isObject(eventObj)) {
-            eventArr.unshift(eventObj);    // put it back if it is not an object
-          } else {
-            //check Charged Event vs. other events.
-            if (eventName == "Charged") {
-              if (!wiz.isChargedEventStructureValid(eventObj)) {
-                wiz.reportError(511, "Charged event structure invalid. Not sent.");
-                continue;
-              }
-            } else {
-              if (!wiz.isEventStructureFlat(eventObj)) {
-                wiz.reportError(512, eventName + " event structure invalid. Not sent.");
-                continue;
-              }
-
-            }
-
-            data['evtData'] = eventObj;
-          }
-        }
-        processEvent(data);
-
-      }
-
-    }
-  };
+  // wiz.processEventArray = function (eventArr) -> event.js
 
   wiz.addToLocalEventMap = function (evtName) {
     if (wzrk_util.isLocalStorageSupported()) {
@@ -827,19 +769,9 @@ function __wizrocket() {
 
   };
 
-  var setInstantDeleteFlagInK = function () {
-    var k = wiz.readFromLSorCookie(STRING_CONSTANTS.KCOOKIE_NAME);
-    if (typeof k == STRING_CONSTANTS.UNDEFINED) {
-      k = {};
-    }
-    k['flag'] = true;
-    wiz.saveToLSorCookie(STRING_CONSTANTS.KCOOKIE_NAME, k);
-  };
+  // var setInstantDeleteFlagInK = function () -> Storage.js
 
-  wiz.logout = function () {
-    console.debug("logout called");
-    setInstantDeleteFlagInK();
-  };
+  // wiz.logout = function () -> session.js
 
 
   wiz.clear = function () {
@@ -1189,13 +1121,7 @@ function __wizrocket() {
 
   // var dropRequestDueToOptOut = -> applicationCache.js
 
-  var addUseIPToRequest = function (pageLoadUrl) {
-    var useIP = wiz.getMetaProp(STRING_CONSTANTS.USEIP_KEY);
-    if (typeof useIP !== 'boolean') {
-      useIP = false;
-    }
-    return wiz.addToURL(pageLoadUrl, STRING_CONSTANTS.USEIP_KEY, useIP ? 'true' : 'false');
-  };
+  // var addUseIPToRequest = function (pageLoadUrl) -> unused
 
   wiz.processPrivacyArray = function (privacyArr) {
     if (wzrk_util.isArray(privacyArr) && privacyArr.length > 0) {
@@ -1540,14 +1466,9 @@ function __wizrocket() {
   };
 
   // wiz.isValueValid -> equivalent to == null
-
   // wiz.getGuid = function ()  -> getGUID() device.js
-
   // wiz.g = function () -> part of Init now
-
   // wiz.setMetaProp = function (key, value) -> Storage.js
-
-
   // wiz.getMetaProp = function (key) -> getMetaProp in Storage.js
   // wiz.getAndClearMetaProp = function (key) -> Storage.js
 
@@ -1692,48 +1613,7 @@ function __wizrocket() {
 
   var MAX_TRIES = 50;
 
-  var fireRequest = function (url, tries, skipARP, sendOULFlag) {
-    if (dropRequestDueToOptOut()) {
-      console.debug("req dropped due to optout cookie: " + gcookie);
-      return;
-    }
-    if (
-        !wiz.isValueValid(gcookie) &&
-        RESP_N < REQ_N - 1 &&
-        tries < MAX_TRIES
-    ) {
-      setTimeout(function () {
-        fireRequest(url, tries + 1, skipARP, sendOULFlag);
-      }, 50);
-      return;
-    }
-
-    if(!sendOULFlag) {
-      if (wiz.isValueValid(gcookie)) {
-        //add cookie to url
-        url = wiz.addToURL(url, "gc", gcookie);
-      }
-      url = wiz.addARPToRequest(url, skipARP);
-    }
-    // url = addUseIPToRequest(url);
-    url = wiz.addToURL(url, "r", new Date().getTime()); // add epoch to beat caching of the URL
-    if (wizrocket.hasOwnProperty("plugin")) {
-      //used to add plugin name in request parameter
-      var plugin = wizrocket["plugin"];
-      url = wiz.addToURL(url, "ct_pl", plugin);
-    }
-    if (url.indexOf("chrome-extension:") != -1) {
-      url = url.replace("chrome-extension:", "https:");
-    }
-    var s = doc.createElement("script");
-    s.setAttribute("type", "text/javascript");
-    s.setAttribute("src", url);
-    s.setAttribute("rel", "nofollow");
-    s.async = true;
-
-    doc.getElementsByTagName("head")[0].appendChild(s);
-    console.debug("req snt -> url: " + url);
-  };
+  // var fireRequest = function (url, tries, skipARP, sendOULFlag) -> applicationCache.js
 
   wiz.fireRequest = function (url, skipARP, sendOULFlag) {
     fireRequest(url, 1, skipARP, sendOULFlag);
@@ -2708,163 +2588,10 @@ function __wizrocket() {
 
   };
 
-
-  wiz.isChargedEventStructureValid = function (chargedObj) {
-    if (wzrk_util.isObject(chargedObj)) {
-      for (var key in chargedObj) {
-        if (chargedObj.hasOwnProperty(key)) {
-
-
-          if (key == "Items") {
-            if (!wzrk_util.isArray(chargedObj[key])) {
-              return false;
-            }
-
-            if (chargedObj[key].length > 16) {
-              wiz.reportError(522, "Charged Items exceed 16 limit. Actual count: " + chargedObj[key].length + ". Additional items will be dropped.");
-            }
-
-            for (var itemKey in chargedObj[key]) {
-              if (chargedObj[key].hasOwnProperty(itemKey)) {    // since default array implementation could be overridden - e.g. Teabox site
-                if (!wzrk_util.isObject(chargedObj[key][itemKey]) || !wiz.isEventStructureFlat(chargedObj[key][itemKey])) {
-                  return false;
-                }
-              }
-            }
-          } else { //Items
-            if (wzrk_util.isObject(chargedObj[key]) || wzrk_util.isArray(chargedObj[key])) {
-              return false;
-            } else if (wzrk_util.isDateObject(chargedObj[key])) {
-              chargedObj[key] = wzrk_util.convertToWZRKDate(chargedObj[key]);
-            }
-
-          } // if key == Items
-        }
-      } //for..
-      //save charged Id
-      if (wzrk_util.isString(chargedObj[STRING_CONSTANTS.CHARGED_ID]) || wzrk_util.isNumber(chargedObj[STRING_CONSTANTS.CHARGED_ID])) {
-        //casting chargeedId to string
-        var chargedId = chargedObj[STRING_CONSTANTS.CHARGED_ID] + "";
-        if (typeof globalChargedId == STRING_CONSTANTS.UNDEFINED) {
-          globalChargedId = wiz.readFromLSorCookie(STRING_CONSTANTS.CHARGEDID_COOKIE_NAME);
-        }
-        if (typeof globalChargedId != STRING_CONSTANTS.UNDEFINED && globalChargedId.trim() === chargedId.trim()) {
-          //drop event- duplicate charged id
-          console.error("Duplicate Charged Id - Dropped" + chargedObj);
-          return false;
-        }
-        globalChargedId = chargedId;
-        wiz.saveToLSorCookie(STRING_CONSTANTS.CHARGEDID_COOKIE_NAME, chargedId);
-      }
-      return true;
-    } // if object (chargedObject)
-    return false;
-  };
-
-
-  //events can't have any nested structure or arrays
-  wiz.isEventStructureFlat = function (eventObj) {
-    if (wzrk_util.isObject(eventObj)) {
-      for (var key in eventObj) {
-        if (eventObj.hasOwnProperty(key)) {
-          if (wzrk_util.isObject(eventObj[key]) || wzrk_util.isArray(eventObj[key])) {
-            return false;
-          } else if (wzrk_util.isDateObject(eventObj[key])) {
-            eventObj[key] = wzrk_util.convertToWZRKDate(eventObj[key]);
-          }
-        }
-      }
-      return true;
-    }
-    return false;
-
-  };
-
-  wiz.isProfileValid = function (profileObj) {
-
-    if (wzrk_util.isObject(profileObj)) {
-      for (var profileKey in profileObj) {
-        if (profileObj.hasOwnProperty(profileKey)) {
-          var valid = true;
-          var profileVal = profileObj[profileKey];
-
-          if (typeof profileVal == STRING_CONSTANTS.UNDEFINED) {
-            delete profileObj[profileKey];
-            continue;
-          }
-          if (profileKey == 'Gender' && !profileVal.match(/^M$|^F$/)) {
-            valid = false;
-            console.error(wzrk_msg['gender-error']);
-          }
-
-          if (profileKey == 'Employed' && !profileVal.match(/^Y$|^N$/)) {
-            valid = false;
-            console.error(wzrk_msg['employed-error']);
-          }
-
-          if (profileKey == 'Married' && !profileVal.match(/^Y$|^N$/)) {
-            valid = false;
-            console.error(wzrk_msg['married-error']);
-          }
-
-          if (profileKey == 'Education' && !profileVal.match(/^School$|^College$|^Graduate$/)) {
-            valid = false;
-            console.error(wzrk_msg['education-error']);
-          }
-
-          if (profileKey == 'Age' && typeof profileVal != STRING_CONSTANTS.UNDEFINED) {
-            if (wzrk_util.isConvertibleToNumber(profileVal)) {
-              profileObj['Age'] = +profileVal;
-            } else {
-              valid = false;
-              console.error(wzrk_msg['age-error']);
-            }
-          }
-
-          // dob will come in like this - $dt_19470815 or dateObject
-          if (profileKey == 'DOB') {
-            if (((!(/^\$D_/).test(profileVal) || (profileVal + "").length != 11)) && !wzrk_util.isDateObject(profileVal)) {
-              valid = false;
-              console.error(wzrk_msg['dob-error']);
-            }
-
-            if (wzrk_util.isDateObject(profileVal)) {
-              profileObj[profileKey] = wzrk_util.convertToWZRKDate(profileVal);
-            }
-          } else if (wzrk_util.isDateObject(profileVal)) {
-            profileObj[profileKey] = wzrk_util.convertToWZRKDate(profileVal);
-          }
-
-          if (profileKey == 'Phone' && !wzrk_util.isObjectEmpty(profileVal)) {
-            if (profileVal.length > 8 && (profileVal.charAt(0) == '+')) { // valid phone number
-              profileVal = profileVal.substring(1, profileVal.length);
-              if (wzrk_util.isConvertibleToNumber(profileVal)) {
-                profileObj['Phone'] = +profileVal;
-              } else {
-                valid = false;
-                console.error(wzrk_msg['phone-format-error'] + ". Removed.");
-              }
-            } else {
-              valid = false;
-              console.error(wzrk_msg['phone-format-error'] + ". Removed.");
-            }
-          }
-
-
-          if (!valid) {
-            delete profileObj[profileKey];
-          }
-        }
-      }
-
-    }
-
-    return valid;
-  }; //isProfileValid
-
-  wiz.setDate = function (dt) {
-    return wzrk_util.setDate(dt);
-  };
+  // wiz.isChargedEventStructureValid = function (chargedObj) -> event.js
+  // wiz.isEventStructureFlat = function (eventObj) -> event.js
+  // wiz.isProfileValid = function (profileObj) -> event.js
+  // wiz.setDate = function (dt) -> datetime.js
 
   wiz.setEnum = function (enumVal) {
     if (wzrk_util.isString(enumVal) || wzrk_util.isNumber(enumVal)) {
@@ -2918,22 +2645,9 @@ function __wizrocket() {
   var singleQuoteRegex = new RegExp("\'", "g");
 
 
-  var wzrk_msg = {};
+  // var wzrk_msg = {}; -> messages.js
   // var wzrk_error_txt = "CleverTap error: "; -> messages.js
-  var data_not_sent_txt = "This property has been ignored.";
-  wzrk_msg['embed-error'] = wzrk_error_txt + "Incorrect embed script.";
-  wzrk_msg['event-error'] = wzrk_error_txt + "Event structure not valid. " + data_not_sent_txt;
-  wzrk_msg['gender-error'] = wzrk_error_txt + "Gender value should be either M or F. " + data_not_sent_txt;
-  wzrk_msg['employed-error'] = wzrk_error_txt + "Employed value should be either Y or N. " + data_not_sent_txt;
-  wzrk_msg['married-error'] = wzrk_error_txt + "Married value should be either Y or N. " + data_not_sent_txt;
-  wzrk_msg['education-error'] = wzrk_error_txt + "Education value should be either School, College or Graduate. " + data_not_sent_txt;
-  wzrk_msg['age-error'] = wzrk_error_txt + "Age value should be a number. " + data_not_sent_txt;
-  wzrk_msg['dob-error'] = wzrk_error_txt + "DOB value should be a Date Object";
-  wzrk_msg['obj-arr-error'] = wzrk_error_txt + "Expecting Object array in profile";
-  wzrk_msg['date-format-error'] = wzrk_error_txt + "setDate(number). number should be formatted as yyyymmdd";
-  wzrk_msg['enum-format-error'] = wzrk_error_txt + "setEnum(value). value should be a string or a number";
-  wzrk_msg['phone-format-error'] = wzrk_error_txt + "Phone number should be formatted as +[country code][number]";
-
+  var data_not_sent_txt = "";
 } // function __wizrocket
 
 $WZRK_WR = new __wizrocket();

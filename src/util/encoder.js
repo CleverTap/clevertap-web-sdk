@@ -246,7 +246,7 @@ export const getKeyStr = () => {
     key = key + String.fromCharCode(i + 97)
   }
 
-  for (var i = 0; i < 10; i++) {
+  for (i = 0; i < 10; i++) {
     key = key + i
   }
 

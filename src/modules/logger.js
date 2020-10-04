@@ -1,5 +1,5 @@
 import {
-  errors
+  CLEVERTAP_ERROR_PREFIX
 } from '../util/messages'
 
 export const logLevels = {
@@ -42,7 +42,7 @@ export class Logger {
   }
 
   reportError (code, description) {
-    this.error(`${errors.CLEVERTAP_ERROR_PREFIX} ${code}: ${description}`)
+    this.error(`${CLEVERTAP_ERROR_PREFIX} ${code}: ${description}`)
   }
 
   _log (level, message) {

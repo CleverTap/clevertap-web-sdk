@@ -1,5 +1,16 @@
-export const errors = {
-  INVALID_ACCOUNT: 'Invalid account ID',
-  INVALID_EVENT: `Event structure not valid. Unable to process event`,
-  CLEVERTAP_ERROR_PREFIX: 'CleverTap error:', // Formerly wzrk_error_txt
-}
+export const DATA_NOT_SENT_TEXT = `This property has been ignored.`
+export const INVALID_ACCOUNT = 'Invalid account ID'
+export const INVALID_EVENT = `Event structure not valid. Unable to process event`
+export const CLEVERTAP_ERROR_PREFIX = 'CleverTap error:' // Formerly wzrk_error_txt
+export const EMBED_ERROR = `${CLEVERTAP_ERROR_PREFIX} Incorrect embed script.`
+export const EVENT_ERROR = `${CLEVERTAP_ERROR_PREFIX} Event structure not valid. ${DATA_NOT_SENT_TEXT}`
+export const GENDER_ERROR = `${CLEVERTAP_ERROR_PREFIX} Gender value should be either M or F. ${DATA_NOT_SENT_TEXT}`
+export const EMPLOYED_ERROR = `${CLEVERTAP_ERROR_PREFIX} Employed value should be either Y or N. ${DATA_NOT_SENT_TEXT}`
+export const MARRIED_ERROR = `${CLEVERTAP_ERROR_PREFIX} Married value should be either Y or N. ${DATA_NOT_SENT_TEXT}`
+export const EDUCATION_ERROR = `${CLEVERTAP_ERROR_PREFIX} Education value should be either School, College or Graduate. ${DATA_NOT_SENT_TEXT}`
+export const AGE_ERROR = `${CLEVERTAP_ERROR_PREFIX} Age value should be a number. ${DATA_NOT_SENT_TEXT}`
+export const DOB_ERROR = `${CLEVERTAP_ERROR_PREFIX} DOB value should be a Date Object`
+export const OBJECT_ARRAY_ERROR = `${CLEVERTAP_ERROR_PREFIX} Expecting Object array in profile`
+export const DATE_FORMAT_ERROR = `${CLEVERTAP_ERROR_PREFIX} setDate(number). number should be formatted as yyyymmdd`
+export const ENUM_FORMAT_ERROR = `${CLEVERTAP_ERROR_PREFIX} setEnum(value). value should be a string or a number`
+export const PHONE_FORMAT_ERROR = `${CLEVERTAP_ERROR_PREFIX} Phone number should be formatted as +[country code][number]`

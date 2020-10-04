@@ -1,6 +1,7 @@
 import {
   GCOOKIE_NAME,
   META_COOKIE,
+  KCOOKIE_NAME,
 } from './constants'
 export class StorageManager {
   static save (key, value) {
@@ -190,5 +191,14 @@ export class StorageManager {
     let value = this.getMetaProp(property)
     this.setMetaProp(property, undefined)
     return value
-  } 
+  }
+
+  static setInstantDeleteFlagInK () {
+    let k = this.readFromLSorCookie(KCOOKIE_NAME)
+    if (k == null) {
+      k = {}
+    }
+    k['flag'] = true
+    this.saveToLSorCookie(KCOOKIE_NAME, k)
+  }
 }

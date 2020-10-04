@@ -2,7 +2,8 @@
 
 import { StorageManager } from './storage'
 import {
-  CAMP_COOKIE_NAME
+  CAMP_COOKIE_NAME,
+  singleQuoteRegex
 } from './constants'
 
 export const getCampaignObject = () => {
@@ -10,7 +11,7 @@ export const getCampaignObject = () => {
   if (StorageManager._isLocalStorageSupported()) {
     campObj = StorageManager.read(CAMP_COOKIE_NAME)
     if (campObj != null) {
-      campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, "\""))
+      campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'))
     } else {
       campObj = {}
     }

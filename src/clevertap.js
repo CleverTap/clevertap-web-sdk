@@ -3,7 +3,9 @@ import {
   logLevels,
   Logger
 } from './modules/logger'
-import { errors } from './util/messages'
+import {
+  INVALID_ACCOUNT
+} from './util/messages'
 import { StorageManager } from './util/storage'
 import {
   getURLParams
@@ -14,6 +16,7 @@ import {
 import { DeviceManager } from './modules/device'
 import { SessionManager } from './modules/session'
 import { EventHandler } from './modules/event'
+import { CleverTapAPI } from './modules/api'
 
 export default class CleverTap {
   #api
@@ -58,15 +61,18 @@ export default class CleverTap {
 
   constructor (clevertap = {}) {
     // this.options = {...options}
-    // this.event = Array.isArray(clevertap.event) ? clevertap.event : []
-    // this.profile = Array.isArray(clevertap.profile) ? clevertap.profile : []
-    // this.account = Array.isArray(clevertap.account) ? clevertap.account : []
-    // this.onUserLogin = Array.isArray(clevertap.onUserLogin) ? clevertap.onUserLogin : []
-    // this.notifications = Array.isArray(clevertap.notifications) ? clevertap.notifications : []
-    // this.privacy = Array.isArray(clevertap.privacy) ? clevertap.privacy : []
+    window.clevertap.event = Array.isArray(window.clevertap.event) ? window.clevertap.event : []
+    window.clevertap.profile = Array.isArray(window.clevertap.profile) ? window.clevertap.profile : []
+    window.clevertap.account = Array.isArray(window.clevertap.account) ? window.clevertap.account : []
+    window.clevertap.onUserLogin = Array.isArray(window.clevertap.onUserLogin) ? window.clevertap.onUserLogin : []
+    window.clevertap.notifications = Array.isArray(window.clevertap.notifications) ? window.clevertap.notifications : []
+    window.clevertap.privacy = Array.isArray(window.clevertap.privacy) ? window.clevertap.privacy : []
 
     // Initialize Modules
     this.#logger = new Logger(logLevels.INFO)
+    this.#api = new CleverTapAPI({
+      logger: this.#logger
+    })
     this.#account = new Account({
       logger: this.#logger
     })
@@ -81,7 +87,6 @@ export default class CleverTap {
     this.#wiz_counter = 0 // to keep track of number of times we load the body
     this.#globalCache = {}
     this.#onloadcalled = false
-    this.#processingBackup = false
     this.#unsubGroups = []
     this.#campaignDivMap = {}
     this.#blockRequeust = false
@@ -100,11 +105,14 @@ export default class CleverTap {
   
   init (id, region) {
     if (id + '' === '') {
-      this.#logger.error(errors.INVALID_ACCOUNT)
+      this.#logger.error(INVALID_ACCOUNT)
       return
     }
     this.#account.accountID = id
-    this.#session = new SessionManager(this.#account.accountID)
+    this.#session = new SessionManager({
+      accountID: this.#account.accountID,
+      logger: this.#logger
+    })
 
     if (region != null) {
       this.#account.region = region

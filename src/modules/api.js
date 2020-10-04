@@ -16,8 +16,7 @@ export class CleverTapAPI {
   #logger
   #event
   constructor ({
-    logger,
-    event
+    logger
   }) {
     this.#logger = logger
   }
@@ -43,7 +42,7 @@ export class CleverTapAPI {
   };
 
   fireRequest (url, tries, skipARP, sendOULFlag) {
-    if (StorageManager.dropRequestDueToOptOut()) {
+    if (dropRequestDueToOptOut()) {
       this.#logger.debug('req dropped due to optout cookie: ' + $ct.globalCache.gcookie)
       return
     }
@@ -60,29 +59,28 @@ export class CleverTapAPI {
 
     if(!sendOULFlag) {
       if ($ct.globalCache.gcookie) {
-        //add cookie to url
-        url = addToURL(url, 'gc', $ct.globalCache.gcookie)
+        url = addToURL(url, 'gc', $ct.globalCache.gcookie) //add cookie to url
       }
-      url = wiz.addARPToRequest(url, skipARP)
+      url = addARPToRequest(url, skipARP)
     }
-    // url = addUseIPToRequest(url);
-    url = wiz.addToURL(url, "r", new Date().getTime()); // add epoch to beat caching of the URL
-    if (wizrocket.hasOwnProperty("plugin")) {
+    
+    url = addToURL(url, 'r', new Date().getTime()) // add epoch to beat caching of the URL
+    if (wizrocket.hasOwnProperty('plugin')) {
       //used to add plugin name in request parameter
-      var plugin = wizrocket["plugin"];
-      url = wiz.addToURL(url, "ct_pl", plugin);
+      let plugin = wizrocket.plugin
+      url = addToURL(url, 'ct_pl', plugin)
     }
-    if (url.indexOf("chrome-extension:") != -1) {
-      url = url.replace("chrome-extension:", "https:");
+    if (url.indexOf('chrome-extension:') != -1) {
+      url = url.replace('chrome-extension:', 'https:')
     }
-    var s = doc.createElement("script");
-    s.setAttribute("type", "text/javascript");
-    s.setAttribute("src", url);
-    s.setAttribute("rel", "nofollow");
-    s.async = true;
+    let s = doc.createElement('script')
+    s.setAttribute('type', 'text/javascript')
+    s.setAttribute('src', url)
+    s.setAttribute('rel', 'nofollow')
+    s.async = true
 
-    doc.getElementsByTagName("head")[0].appendChild(s);
-    console.debug("req snt -> url: " + url);
+    doc.getElementsByTagName('head')[0].appendChild(s)
+    this.#logger.debug('req snt -> url: ' + url)
   }
   
 }

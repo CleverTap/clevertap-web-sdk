@@ -18,10 +18,6 @@ export const setDate = (dt) => {
   }
 }
 
-export const convertToWZRKDate = (dateObj) => {
-  return ('$D_' + Math.round(dateObj.getTime() / 1000))
-}
-
 export const isDateValid = (date) => {
   let matches = /^(\d{4})(\d{2})(\d{2})$/.exec(date)
   if (matches == null) return false

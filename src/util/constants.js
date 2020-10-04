@@ -23,6 +23,8 @@
   //   GPID: 'GPID',
   // },
 export const unsupportedKeyCharRegex = new RegExp('^\\s+|\\\.|\:|\\\$|\'|\"|\\\\|\\s+$', 'g')
+export const doubleQuoteRegex = new RegExp('\"', 'g')
+export const singleQuoteRegex = new RegExp('\'', 'g')
 export const CLEAR = 'clear'
 export const CHARGED_ID = 'Charged ID'
 export const CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID'

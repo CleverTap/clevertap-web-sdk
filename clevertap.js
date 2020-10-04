@@ -4,6 +4,22 @@
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.clevertap = factory());
 }(this, (function () { 'use strict';
 
+  function _typeof(obj) {
+    "@babel/helpers - typeof";
+
+    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+      _typeof = function (obj) {
+        return typeof obj;
+      };
+    } else {
+      _typeof = function (obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+      };
+    }
+
+    return _typeof(obj);
+  }
+
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
@@ -26,6 +42,21 @@
     return Constructor;
   }
 
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
   var id = 0;
 
   function _classPrivateFieldLooseKey(name) {
@@ -44,11 +75,18 @@
   var TARGET_PROTOCOL = 'https:';
 
   // CHARGEDID_COOKIE_NAME: 'WZRK_CHARGED_ID',
+  var CHARGED_ID = 'Charged ID';
+  var CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID';
   var GCOOKIE_NAME = 'WZRK_G';
+  var KCOOKIE_NAME = 'WZRK_K';
   var SCOOKIE_PREFIX = 'WZRK_S';
   var META_COOKIE = 'WZRK_META';
+  var ARP_COOKIE = 'WZRK_ARP';
   var LCOOKIE_NAME = 'WZRK_L';
+  var OPTOUT_COOKIE_ENDSWITH = ' =OO';
   var COOKIE_EXPIRY = 86400 * 365 * 10; // 10 Years in seconds
+
+  var MAX_TRIES = 50; // API tries
 
   var StorageManager = /*#__PURE__*/function () {
     function StorageManager() {
@@ -280,6 +318,18 @@
         this.setMetaProp(property, undefined);
         return value;
       }
+    }, {
+      key: "setInstantDeleteFlagInK",
+      value: function setInstantDeleteFlagInK() {
+        var k = this.readFromLSorCookie(KCOOKIE_NAME);
+
+        if (k == null) {
+          k = {};
+        }
+
+        k['flag'] = true;
+        this.saveToLSorCookie(KCOOKIE_NAME, k);
+      }
     }]);
 
     return StorageManager;
@@ -400,12 +450,17 @@
     return Account;
   }();
 
-  var errors = {
-    INVALID_ACCOUNT: 'Invalid account ID',
-    INVALID_EVENT: "Event structure not valid. Unable to process event",
-    CLEVERTAP_ERROR_PREFIX: 'CleverTap error:' // Formerly wzrk_error_txt
-
-  };
+  var DATA_NOT_SENT_TEXT = "This property has been ignored.";
+  var INVALID_ACCOUNT = 'Invalid account ID';
+  var CLEVERTAP_ERROR_PREFIX = 'CleverTap error:'; // Formerly wzrk_error_txt
+  var EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
+  var GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should be either M or F. ").concat(DATA_NOT_SENT_TEXT);
+  var EMPLOYED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Employed value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
+  var MARRIED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Married value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
+  var EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
+  var AGE_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Age value should be a number. ").concat(DATA_NOT_SENT_TEXT);
+  var DOB_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " DOB value should be a Date Object");
+  var PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
 
   var logLevels = {
     DISABLE: 0,
@@ -451,7 +506,7 @@
     }, {
       key: "reportError",
       value: function reportError(code, description) {
-        this.error("".concat(errors.CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
+        this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
       }
     }, {
       key: "_log",
@@ -504,6 +559,9 @@
     }
 
     return urlParams;
+  };
+  var addToURL = function addToURL(url, k, v) {
+    return url + '&' + k + '=' + encodeURIComponent(v);
   };
 
   var _guid = _classPrivateFieldLooseKey("guid");
@@ -591,8 +649,15 @@
 
   var _accountID$1 = _classPrivateFieldLooseKey("accountID");
 
+  var _logger$2 = _classPrivateFieldLooseKey("logger");
+
   var SessionManager = /*#__PURE__*/function () {
-    function SessionManager(accountID) {
+    function SessionManager() {
+      var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
+        accountID: accountID,
+        logger: logger
+      };
+
       _classCallCheck(this, SessionManager);
 
       Object.defineProperty(this, _SCOOKIE_NAME, {
@@ -603,11 +668,23 @@
         writable: true,
         value: void 0
       });
-      _classPrivateFieldLooseBase(this, _accountID$1)[_accountID$1] = accountID;
+      Object.defineProperty(this, _logger$2, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(this, _accountID$1)[_accountID$1] = params.accountID;
       _classPrivateFieldLooseBase(this, _SCOOKIE_NAME)[_SCOOKIE_NAME] = SCOOKIE_PREFIX + '_' + accountID;
+      _classPrivateFieldLooseBase(this, _logger$2)[_logger$2] = params.logger;
     }
 
     _createClass(SessionManager, [{
+      key: "logout",
+      value: function logout() {
+        _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].debug('logout called');
+
+        StorageManager.setInstantDeleteFlagInK();
+      }
+    }, {
       key: "SCOOKIE_NAME",
       get: function get() {
         return _classPrivateFieldLooseBase(this, _SCOOKIE_NAME)[_SCOOKIE_NAME];
@@ -620,11 +697,44 @@
     return SessionManager;
   }();
 
+  var isString = function isString(input) {
+    return typeof input == 'string' || input instanceof String;
+  };
+  var isObject = function isObject(input) {
+    // TODO: refine
+    return Object.prototype.toString.call(input) === '[object Object]';
+  };
+  var isDateObject = function isDateObject(input) {
+    return _typeof(input) === 'object' && input instanceof Date;
+  };
+  var isObjectEmpty = function isObjectEmpty(obj) {
+    for (var prop in obj) {
+      if (obj.hasOwnProperty(prop)) return false;
+    }
+
+    return true;
+  };
+  var isConvertibleToNumber = function isConvertibleToNumber(n) {
+    return !isNaN(parseFloat(n)) && isFinite(n);
+  };
+  var isNumber = function isNumber(n) {
+    return /^-?[\d.]+(?:e-?\d+)?$/.test(n) && typeof n == 'number';
+  };
+  var sanitize = function sanitize(input, regex) {
+    return input.replace(regex, '');
+  };
+
+  var convertToWZRKDate = function convertToWZRKDate(dateObj) {
+    return '$D_' + Math.round(dateObj.getTime() / 1000);
+  };
+
   var _api = _classPrivateFieldLooseKey("api");
 
-  var _logger$2 = _classPrivateFieldLooseKey("logger");
+  var _logger$3 = _classPrivateFieldLooseKey("logger");
 
   var _processingBackup = _classPrivateFieldLooseKey("processingBackup");
+
+  var _isOptInRequest = _classPrivateFieldLooseKey("isOptInRequest");
 
   var EventHandler = /*#__PURE__*/function () {
     function EventHandler(_ref, cachedQueue) {
@@ -637,7 +747,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _logger$2, {
+      Object.defineProperty(this, _logger$3, {
         writable: true,
         value: void 0
       });
@@ -645,8 +755,14 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _isOptInRequest, {
+        writable: true,
+        value: void 0
+      });
       _classPrivateFieldLooseBase(this, _api)[_api] = api;
-      _classPrivateFieldLooseBase(this, _logger$2)[_logger$2] = logger;
+      _classPrivateFieldLooseBase(this, _logger$3)[_logger$3] = logger;
+      this.processingBackup = false;
+      _classPrivateFieldLooseBase(this, _isOptInRequest)[_isOptInRequest] = false;
     }
 
     _createClass(EventHandler, [{
@@ -668,10 +784,10 @@
             var backupEvent = backupMap[idx];
 
             if (backupEvent['fired'] == null) {
-              console.debug("Processing backup event : " + backupEvent['q']);
+              _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Processing backup event : ' + backupEvent['q']);
 
-              if (typeof backupEvent['q'] != 'undefined') {
-                wiz.fireRequest(backupEvent['q']);
+              if (backupEvent['q'] != null) {
+                _classPrivateFieldLooseBase(this, _api)[_api].fireRequest(backupEvent['q']);
               }
 
               backupEvent['fired'] = true;
@@ -679,12 +795,791 @@
           }
         }
 
-        wiz.saveToLSorCookie(STRING_CONSTANTS.LCOOKIE_NAME, backupMap);
-        processingBackup = false;
+        StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap);
+        _classPrivateFieldLooseBase(this, _processingBackup)[_processingBackup] = false;
+      }
+    }, {
+      key: "isEventStructureFlat",
+      value: function isEventStructureFlat(eventObj) {
+        // events can't have any nested structure or arrays
+        if (isObject(eventObj)) {
+          for (var key in eventObj) {
+            if (eventObj.hasOwnProperty(key)) {
+              if (isObject(eventObj[key]) || Array.isArray(eventObj[key])) {
+                return false;
+              } else if (isDateObject(eventObj[key])) {
+                eventObj[key] = convertToWZRKDate(eventObj[key]);
+              }
+            }
+          }
+
+          return true;
+        }
+
+        return false;
+      }
+    }, {
+      key: "isChargedEventStructureValid",
+      value: function isChargedEventStructureValid(chargedObj) {
+        if (isObject(chargedObj)) {
+          for (var key in chargedObj) {
+            if (chargedObj.hasOwnProperty(key)) {
+              if (key == 'Items') {
+                if (!Array.isArray(chargedObj[key])) {
+                  return false;
+                }
+
+                if (chargedObj[key].length > 16) {
+                  _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].reportError(522, 'Charged Items exceed 16 limit. Actual count: ' + chargedObj[key].length + '. Additional items will be dropped.');
+                }
+
+                for (var itemKey in chargedObj[key]) {
+                  if (chargedObj[key].hasOwnProperty(itemKey)) {
+                    // since default array implementation could be overridden - e.g. Teabox site
+                    if (!isObject(chargedObj[key][itemKey]) || !isEventStructureFlat(chargedObj[key][itemKey])) {
+                      return false;
+                    }
+                  }
+                }
+              } else {
+                //Items
+                if (isObject(chargedObj[key]) || Array.isArray(chargedObj[key])) {
+                  return false;
+                } else if (isDateObject(chargedObj[key])) {
+                  chargedObj[key] = convertToWZRKDate(chargedObj[key]);
+                }
+              }
+            }
+          } //save charged Id
+
+
+          if (isString(chargedObj[CHARGED_ID]) || isNumber(chargedObj[CHARGED_ID])) {
+            var chargedId = chargedObj[CHARGED_ID] + ''; //casting chargeedId to string
+
+            if (globalChargedId == null) {
+              globalChargedId = StorageManager.readFromLSorCookie(CHARGEDID_COOKIE_NAME);
+            }
+
+            if (globalChargedId != null && globalChargedId.trim() === chargedId.trim()) {
+              //drop event- duplicate charged id
+              _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error('Duplicate Charged Id - Dropped' + chargedObj);
+
+              return false;
+            }
+
+            globalChargedId = chargedId;
+            StorageManager.saveToLSorCookie(CHARGEDID_COOKIE_NAME, chargedId);
+          }
+
+          return true;
+        } // if object (chargedObject)
+
+
+        return false;
+      }
+    }, {
+      key: "processEventArray",
+      value: function processEventArray(eventArr) {
+        if (Array.isArray(eventArr)) {
+          /** looping since the events could be fired in quick succession, and we could end up
+           with multiple pushes without getting a chance to process
+           */
+          while (eventArr.length > 0) {
+            var eventName = eventArr.shift(); // take out name of the event
+
+            if (!isString(eventName)) {
+              _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(EVENT_ERROR);
+
+              return;
+            }
+
+            if (eventName.length > 1024) {
+              eventName = eventName.substring(0, 1024);
+
+              _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].reportError(510, eventName + '... length exceeded 1024 chars. Trimmed.');
+            }
+
+            if (['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', 'Notification Viewed', 'Notification Clicked'].includes(eventName)) {
+              _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].reportError(513, eventName + ' is a restricted system event. It cannot be used as an event name.');
+
+              continue;
+            }
+
+            var data = {};
+            data['type'] = 'event';
+            data['evtName'] = sanitize(eventName, unsupportedKeyCharRegex);
+
+            if (eventArr.length != 0) {
+              var eventObj = eventArr.shift();
+
+              if (!isObject(eventObj)) {
+                eventArr.unshift(eventObj); // put it back if it is not an object
+              } else {
+                //check Charged Event vs. other events.
+                if (eventName == 'Charged') {
+                  if (!wiz.isChargedEventStructureValid(eventObj)) {
+                    wiz.reportError(511, "Charged event structure invalid. Not sent.");
+                    continue;
+                  }
+                } else {
+                  if (!wiz.isEventStructureFlat(eventObj)) {
+                    wiz.reportError(512, eventName + " event structure invalid. Not sent.");
+                    continue;
+                  }
+                }
+
+                data['evtData'] = eventObj;
+              }
+            }
+
+            processEvent(data);
+          }
+        }
+      }
+    }, {
+      key: "isProfileValid",
+      value: function isProfileValid(profileObj) {
+        if (isObject(profileObj)) {
+          for (var profileKey in profileObj) {
+            if (profileObj.hasOwnProperty(profileKey)) {
+              var _valid = true;
+              var profileVal = profileObj[profileKey];
+
+              if (profileVal == null) {
+                delete profileObj[profileKey];
+                continue;
+              }
+
+              if (profileKey == 'Gender' && !profileVal.match(/^M$|^F$/)) {
+                _valid = false;
+
+                _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(GENDER_ERROR);
+              }
+
+              if (profileKey == 'Employed' && !profileVal.match(/^Y$|^N$/)) {
+                _valid = false;
+
+                _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(EMPLOYED_ERROR);
+              }
+
+              if (profileKey == 'Married' && !profileVal.match(/^Y$|^N$/)) {
+                _valid = false;
+
+                _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(MARRIED_ERROR);
+              }
+
+              if (profileKey == 'Education' && !profileVal.match(/^School$|^College$|^Graduate$/)) {
+                _valid = false;
+
+                _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(EDUCATION_ERROR);
+              }
+
+              if (profileKey == 'Age' && profileVal != null) {
+                if (isConvertibleToNumber(profileVal)) {
+                  profileObj['Age'] = +profileVal;
+                } else {
+                  _valid = false;
+
+                  _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(AGE_ERROR);
+                }
+              } // dob will come in like this - $dt_19470815 or dateObject
+
+
+              if (profileKey == 'DOB') {
+                if ((!/^\$D_/.test(profileVal) || (profileVal + '').length != 11) && !isDateObject(profileVal)) {
+                  _valid = false;
+
+                  _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(DOB_ERROR);
+                }
+
+                if (isDateObject(profileVal)) {
+                  profileObj[profileKey] = convertToWZRKDate(profileVal);
+                }
+              } else if (isDateObject(profileVal)) {
+                profileObj[profileKey] = convertToWZRKDate(profileVal);
+              }
+
+              if (profileKey == 'Phone' && !isObjectEmpty(profileVal)) {
+                if (profileVal.length > 8 && profileVal.charAt(0) == '+') {
+                  // valid phone number
+                  profileVal = profileVal.substring(1, profileVal.length);
+
+                  if (isConvertibleToNumber(profileVal)) {
+                    profileObj['Phone'] = +profileVal;
+                  } else {
+                    _valid = false;
+
+                    _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(PHONE_FORMAT_ERROR + '. Removed.');
+                  }
+                } else {
+                  _valid = false;
+
+                  _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(PHONE_FORMAT_ERROR + '. Removed.');
+                }
+              }
+
+              if (!_valid) {
+                delete profileObj[profileKey];
+              }
+            }
+          }
+        }
+
+        return valid;
+      }
+    }, {
+      key: "processProfileArray",
+      value: function processProfileArray(profileArr) {
+        if (Array.isArray(profileArr) && profileArr.length > 0) {
+          for (var index in profileArr) {
+            if (profileArr.hasOwnProperty(index)) {
+              var outerObj = profileArr[index];
+              var data = {};
+              var profileObj = void 0;
+
+              if (outerObj['Site'] != null) {
+                //organic data from the site
+                profileObj = outerObj['Site'];
+
+                if (isObjectEmpty(profileObj) || !this.isProfileValid(profileObj)) {
+                  return;
+                }
+              } else if (outerObj['Facebook'] != null) {
+                //fb connect data
+                var FbProfileObj = outerObj['Facebook']; //make sure that the object contains any data at all
+
+                if (!isObjectEmpty(FbProfileObj) && !FbProfileObj['error']) {
+                  profileObj = wiz.processFBUserObj(FbProfileObj);
+                }
+              } else if (_typeof(outerObj['Google Plus']) != STRING_CONSTANTS.UNDEFINED) {
+                var GPlusProfileObj = outerObj['Google Plus'];
+
+                if (!wzrk_util.isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj['error']) {
+                  profileObj = wiz.processGPlusUserObj(GPlusProfileObj);
+                }
+              }
+
+              if (_typeof(profileObj) != STRING_CONSTANTS.UNDEFINED && !wzrk_util.isObjectEmpty(profileObj)) {
+                // profile got set from above
+                data['type'] = "profile";
+
+                if (_typeof(profileObj['tz']) === STRING_CONSTANTS.UNDEFINED) {
+                  //try to auto capture user timezone if not present
+                  profileObj['tz'] = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+                }
+
+                data['profile'] = profileObj;
+                wiz.addToLocalProfileMap(profileObj, true);
+                data = wiz.addSystemDataToObject(data, undefined);
+                wiz.addFlags(data);
+                var compressedData = wiz.compressData(JSON.stringify(data));
+                var pageLoadUrl = dataPostURL;
+                pageLoadUrl = wiz.addToURL(pageLoadUrl, "type", EVT_PUSH);
+                pageLoadUrl = wiz.addToURL(pageLoadUrl, "d", compressedData);
+                wiz.saveAndFireRequest(pageLoadUrl, blockRequeust);
+              }
+            }
+          }
+        }
+      }
+    }, {
+      key: "processFBUserObj",
+      value: function processFBUserObj(user) {
+        var profileData = {};
+        profileData['Name'] = user['name'];
+
+        if (user['id'] != null) {
+          profileData['FBID'] = user['id'] + '';
+        } // Feb 2014 - FB announced over 58 gender options, hence we specifically look for male or female.
+
+
+        if (user['gender'] == 'male') {
+          profileData['Gender'] = 'M';
+        } else if (user['gender'] == 'female') {
+          profileData['Gender'] = 'F';
+        } else {
+          profileData['Gender'] = 'O';
+        }
+
+        var getHighestEducation = function getHighestEducation(eduArr) {
+          if (eduArr != null) {
+            var college = '';
+            var highschool = '';
+
+            for (var i = 0; i < eduArr.length; i++) {
+              var _edu = eduArr[i];
+
+              if (_edu.type != null) {
+                var type = _edu.type;
+
+                if (type == 'Graduate School') {
+                  return 'Graduate';
+                } else if (type == 'College') {
+                  college = '1';
+                } else if (type == 'High School') {
+                  highschool = '1';
+                }
+              }
+            }
+
+            if (college == '1') {
+              return 'College';
+            } else if (highschool == '1') {
+              return 'School';
+            }
+          }
+        };
+
+        --TODO;
+
+        if (user['relationship_status'] != STRING_CONSTANTS.UNDEFINED) {
+          profileData['Married'] = 'N';
+
+          if (user['relationship_status'] == 'Married') {
+            profileData['Married'] = 'Y';
+          }
+        }
+
+        var edu = getHighestEducation(user['education']);
+
+        if (typeof edu !== "undefined") {
+          profileData['Education'] = edu;
+        }
+
+        var work = _typeof(user['work']) !== STRING_CONSTANTS.UNDEFINED ? user['work'].length : 0;
+
+        if (work > 0) {
+          profileData['Employed'] = 'Y';
+        } else {
+          profileData['Employed'] = 'N';
+        }
+
+        if (typeof user['email'] !== "undefined") {
+          profileData['Email'] = user['email'];
+        }
+
+        if (typeof user['birthday'] !== "undefined") {
+          var mmddyy = user['birthday'].split('/'); //comes in as "08/15/1947"
+
+          profileData['DOB'] = $WZRK_WR.setDate(mmddyy[2] + mmddyy[0] + mmddyy[1]);
+        }
+
+        return profileData;
       }
     }]);
 
     return EventHandler;
+  }();
+
+  var compressData = function compressData(dataObject) {
+    // console.debug('dobj:' + dataObject);
+    return compressToBase64(dataObject);
+  };
+  var compress = function compress(uncompressed) {
+    if (uncompressed == null) return '';
+    var i,
+        value,
+        context_dictionary = {},
+        context_dictionaryToCreate = {},
+        context_c = '',
+        context_wc = '',
+        context_w = '',
+        context_enlargeIn = 2,
+        // Compensate for the first entry which should not count
+    context_dictSize = 3,
+        context_numBits = 2,
+        context_data_string = '',
+        context_data_val = 0,
+        context_data_position = 0,
+        ii,
+        f = String.fromCharCode;
+
+    for (ii = 0; ii < uncompressed.length; ii += 1) {
+      context_c = uncompressed.charAt(ii);
+
+      if (!Object.prototype.hasOwnProperty.call(context_dictionary, context_c)) {
+        context_dictionary[context_c] = context_dictSize++;
+        context_dictionaryToCreate[context_c] = true;
+      }
+
+      context_wc = context_w + context_c;
+
+      if (Object.prototype.hasOwnProperty.call(context_dictionary, context_wc)) {
+        context_w = context_wc;
+      } else {
+        if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+          if (context_w.charCodeAt(0) < 256) {
+            for (i = 0; i < context_numBits; i++) {
+              context_data_val = context_data_val << 1;
+
+              if (context_data_position == 15) {
+                context_data_position = 0;
+                context_data_string += f(context_data_val);
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+            }
+
+            value = context_w.charCodeAt(0);
+
+            for (i = 0; i < 8; i++) {
+              context_data_val = context_data_val << 1 | value & 1;
+
+              if (context_data_position == 15) {
+                context_data_position = 0;
+                context_data_string += f(context_data_val);
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+
+              value = value >> 1;
+            }
+          } else {
+            value = 1;
+
+            for (i = 0; i < context_numBits; i++) {
+              context_data_val = context_data_val << 1 | value;
+
+              if (context_data_position == 15) {
+                context_data_position = 0;
+                context_data_string += f(context_data_val);
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+
+              value = 0;
+            }
+
+            value = context_w.charCodeAt(0);
+
+            for (i = 0; i < 16; i++) {
+              context_data_val = context_data_val << 1 | value & 1;
+
+              if (context_data_position == 15) {
+                context_data_position = 0;
+                context_data_string += f(context_data_val);
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+
+              value = value >> 1;
+            }
+          }
+
+          context_enlargeIn--;
+
+          if (context_enlargeIn == 0) {
+            context_enlargeIn = Math.pow(2, context_numBits);
+            context_numBits++;
+          }
+
+          delete context_dictionaryToCreate[context_w];
+        } else {
+          value = context_dictionary[context_w];
+
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = context_data_val << 1 | value & 1;
+
+            if (context_data_position == 15) {
+              context_data_position = 0;
+              context_data_string += f(context_data_val);
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+
+            value = value >> 1;
+          }
+        }
+
+        context_enlargeIn--;
+
+        if (context_enlargeIn == 0) {
+          context_enlargeIn = Math.pow(2, context_numBits);
+          context_numBits++;
+        } // Add wc to the dictionary.
+
+
+        context_dictionary[context_wc] = context_dictSize++;
+        context_w = String(context_c);
+      }
+    } // Output the code for w.
+
+
+    if (context_w !== '') {
+      if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+        if (context_w.charCodeAt(0) < 256) {
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = context_data_val << 1;
+
+            if (context_data_position == 15) {
+              context_data_position = 0;
+              context_data_string += f(context_data_val);
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+          }
+
+          value = context_w.charCodeAt(0);
+
+          for (i = 0; i < 8; i++) {
+            context_data_val = context_data_val << 1 | value & 1;
+
+            if (context_data_position == 15) {
+              context_data_position = 0;
+              context_data_string += f(context_data_val);
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+
+            value = value >> 1;
+          }
+        } else {
+          value = 1;
+
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = context_data_val << 1 | value;
+
+            if (context_data_position == 15) {
+              context_data_position = 0;
+              context_data_string += f(context_data_val);
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+
+            value = 0;
+          }
+
+          value = context_w.charCodeAt(0);
+
+          for (i = 0; i < 16; i++) {
+            context_data_val = context_data_val << 1 | value & 1;
+
+            if (context_data_position == 15) {
+              context_data_position = 0;
+              context_data_string += f(context_data_val);
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+
+            value = value >> 1;
+          }
+        }
+
+        context_enlargeIn--;
+
+        if (context_enlargeIn == 0) {
+          context_enlargeIn = Math.pow(2, context_numBits);
+          context_numBits++;
+        }
+
+        delete context_dictionaryToCreate[context_w];
+      } else {
+        value = context_dictionary[context_w];
+
+        for (i = 0; i < context_numBits; i++) {
+          context_data_val = context_data_val << 1 | value & 1;
+
+          if (context_data_position == 15) {
+            context_data_position = 0;
+            context_data_string += f(context_data_val);
+            context_data_val = 0;
+          } else {
+            context_data_position++;
+          }
+
+          value = value >> 1;
+        }
+      }
+
+      context_enlargeIn--;
+
+      if (context_enlargeIn == 0) {
+        context_enlargeIn = Math.pow(2, context_numBits);
+        context_numBits++;
+      }
+    } // Mark the end of the stream
+
+
+    value = 2;
+
+    for (i = 0; i < context_numBits; i++) {
+      context_data_val = context_data_val << 1 | value & 1;
+
+      if (context_data_position == 15) {
+        context_data_position = 0;
+        context_data_string += f(context_data_val);
+        context_data_val = 0;
+      } else {
+        context_data_position++;
+      }
+
+      value = value >> 1;
+    } // Flush the last char
+
+
+    while (true) {
+      context_data_val = context_data_val << 1;
+
+      if (context_data_position == 15) {
+        context_data_string += f(context_data_val);
+        break;
+      } else context_data_position++;
+    }
+
+    return context_data_string;
+  };
+  var compressToBase64 = function compressToBase64(input) {
+    if (input == null) return '';
+    var output = '';
+    var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
+    var i = 0;
+    input = compress(input);
+
+    while (i < input.length * 2) {
+      if (i % 2 == 0) {
+        chr1 = input.charCodeAt(i / 2) >> 8;
+        chr2 = input.charCodeAt(i / 2) & 255;
+        if (i / 2 + 1 < input.length) chr3 = input.charCodeAt(i / 2 + 1) >> 8;else chr3 = NaN;
+      } else {
+        chr1 = input.charCodeAt((i - 1) / 2) & 255;
+
+        if ((i + 1) / 2 < input.length) {
+          chr2 = input.charCodeAt((i + 1) / 2) >> 8;
+          chr3 = input.charCodeAt((i + 1) / 2) & 255;
+        } else chr2 = chr3 = NaN;
+      }
+
+      i += 3;
+      enc1 = chr1 >> 2;
+      enc2 = (chr1 & 3) << 4 | chr2 >> 4;
+      enc3 = (chr2 & 15) << 2 | chr3 >> 6;
+      enc4 = chr3 & 63;
+
+      if (isNaN(chr2)) {
+        enc3 = enc4 = 64;
+      } else if (isNaN(chr3)) {
+        enc4 = 64;
+      }
+
+      output = output + LZS._keyStr.charAt(enc1) + LZS._keyStr.charAt(enc2) + LZS._keyStr.charAt(enc3) + LZS._keyStr.charAt(enc4);
+    }
+
+    return output;
+  };
+
+  var _logger$4 = _classPrivateFieldLooseKey("logger");
+
+  var _event = _classPrivateFieldLooseKey("event");
+
+  var CleverTapAPI = /*#__PURE__*/function () {
+    function CleverTapAPI(_ref) {
+      var logger = _ref.logger;
+
+      _classCallCheck(this, CleverTapAPI);
+
+      Object.defineProperty(this, _logger$4, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _event, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
+    }
+
+    _createClass(CleverTapAPI, [{
+      key: "dropRequestDueToOptOut",
+      value: function dropRequestDueToOptOut() {
+        if (!$ct.globalCache.gcookie || isString($ct.globalCache.gcookie)) {
+          $ct.globalCache.isOptInRequest = false;
+          return false;
+        }
+
+        return $ct.globalCache.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
+      }
+    }, {
+      key: "addARPToRequest",
+      value: function addARPToRequest(url, skipResARP) {
+        if (skipResARP != null && skipResARP === true) {
+          var _arp = {};
+          _arp['skipResARP'] = true;
+          return addToURL(url, 'arp', compressData(JSON.stringify(_arp)));
+        }
+
+        if (StorageManager._isLocalStorageSupported() && StorageManager.read(ARP_COOKIE) != null) {
+          return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE))));
+        }
+
+        return url;
+      }
+    }, {
+      key: "fireRequest",
+      value: function (_fireRequest) {
+        function fireRequest(_x, _x2, _x3, _x4) {
+          return _fireRequest.apply(this, arguments);
+        }
+
+        fireRequest.toString = function () {
+          return _fireRequest.toString();
+        };
+
+        return fireRequest;
+      }(function (url, tries, skipARP, sendOULFlag) {
+        if (dropRequestDueToOptOut()) {
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('req dropped due to optout cookie: ' + $ct.globalCache.gcookie);
+
+          return;
+        }
+
+        if (!$ct.globalCache.gcookie && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
+          setTimeout(function () {
+            fireRequest(url, tries + 1, skipARP, sendOULFlag);
+          }, 50);
+          return;
+        }
+
+        if (!sendOULFlag) {
+          if ($ct.globalCache.gcookie) {
+            url = addToURL(url, 'gc', $ct.globalCache.gcookie); //add cookie to url
+          }
+
+          url = addARPToRequest(url, skipARP);
+        }
+
+        url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
+
+        if (wizrocket.hasOwnProperty('plugin')) {
+          //used to add plugin name in request parameter
+          var plugin = wizrocket.plugin;
+          url = addToURL(url, 'ct_pl', plugin);
+        }
+
+        if (url.indexOf('chrome-extension:') != -1) {
+          url = url.replace('chrome-extension:', 'https:');
+        }
+
+        var s = doc.createElement('script');
+        s.setAttribute('type', 'text/javascript');
+        s.setAttribute('src', url);
+        s.setAttribute('rel', 'nofollow');
+        s.async = true;
+        doc.getElementsByTagName('head')[0].appendChild(s);
+
+        _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('req snt -> url: ' + url);
+      })
+    }]);
+
+    return CleverTapAPI;
   }();
 
   var _api$1 = _classPrivateFieldLooseKey("api");
@@ -695,11 +1590,11 @@
 
   var _account = _classPrivateFieldLooseKey("account");
 
-  var _logger$3 = _classPrivateFieldLooseKey("logger");
+  var _logger$5 = _classPrivateFieldLooseKey("logger");
 
   var _device = _classPrivateFieldLooseKey("device");
 
-  var _event = _classPrivateFieldLooseKey("event");
+  var _event$1 = _classPrivateFieldLooseKey("event");
 
   var _domain = _classPrivateFieldLooseKey("domain");
 
@@ -714,8 +1609,6 @@
   var _globalCache = _classPrivateFieldLooseKey("globalCache");
 
   var _onloadcalled = _classPrivateFieldLooseKey("onloadcalled");
-
-  var _processingBackup$1 = _classPrivateFieldLooseKey("processingBackup");
 
   var _unsubGroups = _classPrivateFieldLooseKey("unsubGroups");
 
@@ -754,6 +1647,7 @@
     // #dataPostURL -> account.js
     // #recorderURL -> account.js
     // #emailURL -> account.js
+    // #processingBackup -> to event.js
     // #SCOOKIE_NAME -> in session
     function CleverTap() {
 
@@ -775,7 +1669,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _logger$3, {
+      Object.defineProperty(this, _logger$5, {
         writable: true,
         value: void 0
       });
@@ -783,7 +1677,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _event, {
+      Object.defineProperty(this, _event$1, {
         writable: true,
         value: void 0
       });
@@ -812,10 +1706,6 @@
         value: void 0
       });
       Object.defineProperty(this, _onloadcalled, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _processingBackup$1, {
         writable: true,
         value: void 0
       });
@@ -884,20 +1774,23 @@
         value: void 0
       });
       // this.options = {...options}
-      // this.event = Array.isArray(clevertap.event) ? clevertap.event : []
-      // this.profile = Array.isArray(clevertap.profile) ? clevertap.profile : []
-      // this.account = Array.isArray(clevertap.account) ? clevertap.account : []
-      // this.onUserLogin = Array.isArray(clevertap.onUserLogin) ? clevertap.onUserLogin : []
-      // this.notifications = Array.isArray(clevertap.notifications) ? clevertap.notifications : []
-      // this.privacy = Array.isArray(clevertap.privacy) ? clevertap.privacy : []
-      // Initialize Modules
-      _classPrivateFieldLooseBase(this, _logger$3)[_logger$3] = new Logger(logLevels.INFO);
-      _classPrivateFieldLooseBase(this, _account)[_account] = new Account({
-        logger: _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]
+      window.clevertap.event = Array.isArray(window.clevertap.event) ? window.clevertap.event : [];
+      window.clevertap.profile = Array.isArray(window.clevertap.profile) ? window.clevertap.profile : [];
+      window.clevertap.account = Array.isArray(window.clevertap.account) ? window.clevertap.account : [];
+      window.clevertap.onUserLogin = Array.isArray(window.clevertap.onUserLogin) ? window.clevertap.onUserLogin : [];
+      window.clevertap.notifications = Array.isArray(window.clevertap.notifications) ? window.clevertap.notifications : [];
+      window.clevertap.privacy = Array.isArray(window.clevertap.privacy) ? window.clevertap.privacy : []; // Initialize Modules
+
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = new Logger(logLevels.INFO);
+      _classPrivateFieldLooseBase(this, _api$1)[_api$1] = new CleverTapAPI({
+        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
       });
-      _classPrivateFieldLooseBase(this, _event)[_event] = new EventHandler({
+      _classPrivateFieldLooseBase(this, _account)[_account] = new Account({
+        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
+      });
+      _classPrivateFieldLooseBase(this, _event$1)[_event$1] = new EventHandler({
         api: _classPrivateFieldLooseBase(this, _api$1)[_api$1],
-        logger: _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]
+        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
       }); // Other Properties
 
       _classPrivateFieldLooseBase(this, _requestTime)[_requestTime] = 0;
@@ -906,7 +1799,6 @@
 
       _classPrivateFieldLooseBase(this, _globalCache)[_globalCache] = {};
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = false;
-      _classPrivateFieldLooseBase(this, _processingBackup$1)[_processingBackup$1] = false;
       _classPrivateFieldLooseBase(this, _unsubGroups)[_unsubGroups] = [];
       _classPrivateFieldLooseBase(this, _campaignDivMap)[_campaignDivMap] = {};
       _classPrivateFieldLooseBase(this, _blockRequeust)[_blockRequeust] = false;
@@ -914,7 +1806,10 @@
       _classPrivateFieldLooseBase(this, _LRU_CACHE_SIZE)[_LRU_CACHE_SIZE] = 100;
       _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = null;
       window.$ct = {
-        globalCache: {}
+        globalCache: _defineProperty({
+          gcookie: null,
+          RESP_N: 0
+        }, "RESP_N", 0)
       };
     }
 
@@ -922,13 +1817,16 @@
       key: "init",
       value: function init(id, region) {
         if (id + '' === '') {
-          _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(errors.INVALID_ACCOUNT);
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error(INVALID_ACCOUNT);
 
           return;
         }
 
         _classPrivateFieldLooseBase(this, _account)[_account].accountID = id;
-        _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager(_classPrivateFieldLooseBase(this, _account)[_account].accountID);
+        _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
+          accountID: _classPrivateFieldLooseBase(this, _account)[_account].accountID,
+          logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
+        });
 
         if (region != null) {
           _classPrivateFieldLooseBase(this, _account)[_account].region = region;
@@ -945,7 +1843,7 @@
         var url_params = getURLParams(currentLocation.toLowerCase());
         StorageManager.removeCookie('WZRK_P', _classPrivateFieldLooseBase(this, _domain)[_domain]); // delete pcookie
 
-        _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager(_classPrivateFieldLooseBase(this, _account)[_account].accountID, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
+        _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager(_classPrivateFieldLooseBase(this, _account)[_account].accountID, _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]);
         _classPrivateFieldLooseBase(this, _currentSessionId)[_currentSessionId] = StorageManager.getMetaProp('cs');
 
         if (url_params != null && url_params['wzrk_ex'] == '0') {
