@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/royson-ct/clevertap-web-sdk.git"
+    "url": "git+https://github.com/CleverTap/clevertap-web-sdk.git"
   },
   "keywords": [
     "clevertap",
@@ -18,9 +18,9 @@
   "author": "CleverTap",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/royson-ct/clevertap-web-sdk/issues"
+    "url": "https://github.com/CleverTap/clevertap-web-sdk/issues"
   },
-  "homepage": "https://github.com/royson-ct/clevertap-web-sdk#readme",
+  "homepage": "https://github.com/CleverTap/clevertap-web-sdk#readme",
   "devDependencies": {
     "@babel/core": "^7.11.4",
     "@babel/plugin-proposal-class-properties": "^7.10.4",
