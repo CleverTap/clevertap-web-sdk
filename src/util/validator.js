@@ -1,7 +1,9 @@
-import { logger } from './logger'
-import { isObject, isDateObject } from './datatypes'
+import { isObject, isDateObject, isString, isNumber } from './datatypes'
 import { convertToWZRKDate } from './datetime'
-import { CHARGED_ID } from './constants'
+import { CHARGED_ID, CHARGEDID_COOKIE_NAME } from './constants'
+import { StorageManager } from './storage'
+
+let _globalChargedId
 
 export const isEventStructureFlat = (eventObj) => {
   // Events cannot have nested structure or Arrays
@@ -20,7 +22,7 @@ export const isEventStructureFlat = (eventObj) => {
   return false
 }
 
-export const isChargedEventStructureValid = (chargedObj) => {
+export const isChargedEventStructureValid = (chargedObj, logger) => {
   if (isObject(chargedObj)) {
     for (var key in chargedObj) {
       if (chargedObj.hasOwnProperty(key)) {
@@ -30,11 +32,11 @@ export const isChargedEventStructureValid = (chargedObj) => {
           }
 
           if (chargedObj[key].length > 16) {
-            logger.error('Charged Items exceed 16 limit. Actual count: ' + chargedObj[key].length + '. Additional items will be dropped.')
+            logger.reportError(522, 'Charged Items exceed 16 limit. Actual count: ' + chargedObj[key].length + '. Additional items will be dropped.')
           }
 
           for (var itemKey in chargedObj[key]) {
-            if (chargedObj[key].hasOwnProperty(itemKey)) {    // since default array implementation could be overridden - e.g. Teabox site
+            if (chargedObj[key].hasOwnProperty(itemKey)) { // since default array implementation could be overridden - e.g. Teabox site
               if (!isObject(chargedObj[key][itemKey]) || !isEventStructureFlat(chargedObj[key][itemKey])) {
                 return false
               }
@@ -46,28 +48,26 @@ export const isChargedEventStructureValid = (chargedObj) => {
           } else if (isDateObject(chargedObj[key])) {
             chargedObj[key] = convertToWZRKDate(chargedObj[key])
           }
-
         }
       }
     }
 
-    if (typeof chargedObj[CHARGED_ID] !== 'undefined') {
-      const chargedId = chargedObj[CHARGED_ID]
+    if (isString(chargedObj[CHARGED_ID]) || isNumber(chargedObj[CHARGED_ID])) {
+      // save charged Id
+      const chargedId = chargedObj[CHARGED_ID] + '' // casting chargedId to string
 
-      // TODO from here
-      const CHARGEDIDKey = StorageManager.getChargedIdKey();
-      if (typeof _globalChargedId === Constants.UNDEFINED) {
-        _globalChargedId = StorageManager.read(CHARGEDIDKey);
+      if (typeof _globalChargedId === 'undefined') {
+        _globalChargedId = StorageManager.readFromLSorCookie(CHARGEDID_COOKIE_NAME)
       }
-      if (typeof _globalChargedId !== Constants.UNDEFINED && _globalChargedId === chargedId) {
-        //drop event- duplicate charged id
-        Utils.log.error("Duplicate charged Id - Dropped" + chargedObj);
-        return false;
+      if (typeof _globalChargedId !== 'undefined' && _globalChargedId.trim() === chargedId.trim()) {
+        // drop event- duplicate charged id
+        logger.error('Duplicate charged Id - Dropped' + chargedObj)
+        return false
       }
-      _globalChargedId = chargedId;
-      StorageManager.save(CHARGEDIDKey, chargedId);
+      _globalChargedId = chargedId
+      StorageManager.saveToLSorCookie(CHARGEDID_COOKIE_NAME, chargedId)
     }
-    return true;
+    return true
   } // if object (chargedObject)
-  return false;
+  return false
 }

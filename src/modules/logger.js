@@ -11,8 +11,10 @@ export const logLevels = {
 
 export class Logger {
   #logLevel
+  wzrkError = {}
   constructor (logLevel) {
     this.#logLevel = logLevel == null ? logLevel : logLevels.INFO
+    this.wzrkError = {}
   }
 
   get logLevel () {
@@ -25,33 +27,39 @@ export class Logger {
 
   error (message) {
     if (this.#logLevel >= logLevels.ERROR) {
-      this._log('error', message)
+      this.#log('error', message)
     }
   }
 
   info (message) {
     if (this.#logLevel >= logLevels.INFO) {
-      this._log('log', message)
+      this.#log('log', message)
     }
   }
 
   debug (message) {
-    if (this.#logLevel >= logLevels.DEBUG) {
-      this._log('error', message)
+    if (this.#logLevel >= logLevels.DEBUG || this.#isLegacyDebug) {
+      this.#log('debug', message)
     }
   }
 
   reportError (code, description) {
+    this.wzrkError.c = code
+    this.wzrkError.d = description
     this.error(`${CLEVERTAP_ERROR_PREFIX} ${code}: ${description}`)
   }
 
-  _log (level, message) {
+  #log (level, message) {
     if (window.console) {
       try {
-        let ts = new Date().getTime()
+        const ts = new Date().getTime()
         console[level](`CleverTap [${ts}]: ${message}`)
       } catch (e) {}
     }
+  }
+
+  get #isLegacyDebug () {
+    return (typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '')
   }
 }
 

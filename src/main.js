@@ -1,2 +1,6 @@
 import Clevertap from './clevertap'
-export default new Clevertap(window.clevertap)
+
+const clevertap = new Clevertap(window.clevertap)
+clevertap.init()
+
+export default clevertap

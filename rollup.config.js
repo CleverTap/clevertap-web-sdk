@@ -11,16 +11,7 @@ export default {
   plugins: [
     resolve(),
     babel({
-      presets: [
-        [
-          '@babel/preset-env',
-          {
-            modules: false
-          }
-        ]
-      ],
-      plugins: [],
-      babelrc: false
+      babelHelpers: 'bundled'
     })
   ]
 }
