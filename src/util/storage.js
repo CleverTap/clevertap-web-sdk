@@ -1,7 +1,8 @@
 import {
   GCOOKIE_NAME,
   META_COOKIE,
-  KCOOKIE_NAME
+  KCOOKIE_NAME,
+  LCOOKIE_NAME
 } from './constants'
 export class StorageManager {
   static save (key, value) {
@@ -203,5 +204,24 @@ export class StorageManager {
     }
     k.flag = true
     this.saveToLSorCookie(KCOOKIE_NAME, k)
+  }
+
+  static backupEvent (data, reqNo, logger) {
+    let backupArr = this.readFromLSorCookie(LCOOKIE_NAME)
+    if (typeof backupArr === 'undefined') {
+      backupArr = {}
+    }
+    backupArr[reqNo] = { q: data }
+    this.saveToLSorCookie(LCOOKIE_NAME, backupArr)
+    logger.debug(`stored in ${LCOOKIE_NAME} reqNo : ${reqNo} -> ${data}`)
+  }
+
+  static removeBackup (respNo, logger) {
+    const backupMap = this.readFromLSorCookie(LCOOKIE_NAME)
+    if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
+      logger.debug(`del event: ${respNo} data-> ${backupMap[respNo].q}`)
+      delete backupMap[respNo]
+      this.saveToLSorCookie(LCOOKIE_NAME, backupMap)
+    }
   }
 }

@@ -192,9 +192,14 @@ export default class CleverTap {
     })
     this.event = new EventHandler({ logger: this.#logger }, clevertap.event)
 
-    this.#api = new CleverTapAPI({ logger: this.#logger })
+    this.#api = new CleverTapAPI({
+      logger: this.#logger,
+      request: this.#request,
+      device: this.#device,
+      session: this.#session
+    })
 
-    window.$WZRK_WR = this.#api
+    window.$CLTP_WR = window.$WZRK_WR = this.#api
   }
 
   init (accountId, region, targetDomain) {

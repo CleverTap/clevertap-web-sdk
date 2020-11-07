@@ -50,6 +50,7 @@ export const CT_OPTOUT_KEY = 'ct_optout'
 export const OPTOUT_COOKIE_ENDSWITH = ':OO'
 export const USEIP_KEY = 'useIP'
 export const LRU_CACHE = 'WZRK_X'
+export const LRU_CACHE_SIZE = 100
 export const IS_OUL = 'isOUL'
 export const COOKIE_EXPIRY = 86400 * 365 * 10 // 10 Years in seconds
 export const MAX_TRIES = 50 // API tries

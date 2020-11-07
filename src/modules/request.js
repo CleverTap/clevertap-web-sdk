@@ -1,6 +1,7 @@
 import { CLEAR, LCOOKIE_NAME } from '../util/constants'
 import { isObjectEmpty, isValueValid, removeUnsupportedChars } from '../util/datatypes'
 import { getNow } from '../util/datetime'
+import { compressData } from '../util/encoder'
 import RequestDispatcher from '../util/requestDispatcher'
 import { StorageManager } from '../util/storage'
 import { addToURL } from '../util/url'
@@ -103,7 +104,7 @@ export default class RequestManager {
     const now = getNow()
     url = addToURL(url, 'rn', ++window.$ct.globalCache.REQ_N)
     const data = url + '&i=' + now + '&sn=' + seqNo
-    this.#backupEvent(data, window.$ct.globalCache.REQ_N)
+    StorageManager.backupEvent(data, window.$ct.globalCache.REQ_N, this.#logger)
 
     if (!window.$ct.blockRequest || override || (this.#clearCookie !== undefined && this.#clearCookie)) {
       if (now === requestTime) {
@@ -119,13 +120,24 @@ export default class RequestManager {
     }
   }
 
-  #backupEvent (data, reqNo) {
-    let backupArr = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
-    if (typeof backupArr === 'undefined') {
-      backupArr = {}
+  unregisterTokenForGuid (givenGUID) {
+    const data = {}
+    data.type = 'data'
+    if (isValueValid(givenGUID)) {
+      data.g = givenGUID
     }
-    backupArr[reqNo] = { q: data }
-    StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupArr)
-    this.#logger.debug(`stored in ${LCOOKIE_NAME} reqNo : ${reqNo} -> ${data}`)
+    data.action = 'unregister'
+    data.id = this.#account.id
+
+    const obj = this.#session.getSessionCookieObject()
+
+    data.s = obj.s // session cookie
+    const compressedData = compressData(JSON.stringify(data))
+
+    let pageLoadUrl = this.#account.dataPostURL
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+
+    RequestDispatcher.fireRequest(pageLoadUrl, true)
   }
 }
