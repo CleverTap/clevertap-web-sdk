@@ -1,10 +1,11 @@
-import { CLEAR, LCOOKIE_NAME } from '../util/constants'
+import { CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, LCOOKIE_NAME } from '../util/constants'
 import { isObjectEmpty, isValueValid, removeUnsupportedChars } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
 import RequestDispatcher from '../util/requestDispatcher'
 import { StorageManager } from '../util/storage'
 import { addToURL } from '../util/url'
+import { getCampaignObjForLc } from '../util/clevertap'
 
 let seqNo = 0
 let requestTime = 0
@@ -139,5 +140,43 @@ export default class RequestManager {
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
     RequestDispatcher.fireRequest(pageLoadUrl, true)
+  }
+
+  processEvent (data) {
+    this.#addToLocalEventMap(data.evtName)
+    data = this.addSystemDataToObject(data, undefined)
+    this.addFlags(data)
+    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    const compressedData = compressData(JSON.stringify(data))
+    let pageLoadUrl = this.#account.dataPostURL
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+
+    this.saveAndFireRequest(pageLoadUrl, false)
+  }
+
+  #addToLocalEventMap (evtName) {
+    if (StorageManager._isLocalStorageSupported()) {
+      if (typeof window.$ct.globalEventsMap === 'undefined') {
+        window.$ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE)
+        if (typeof window.$ct.globalEventsMap === 'undefined') {
+          window.$ct.globalEventsMap = {}
+        }
+      }
+
+      const nowTs = getNow()
+      let evtDetail = window.$ct.globalEventsMap[evtName]
+      if (typeof evtDetail !== 'undefined') {
+        evtDetail[2] = nowTs
+        evtDetail[0]++
+      } else {
+        evtDetail = []
+        evtDetail.push(1)
+        evtDetail.push(nowTs)
+        evtDetail.push(nowTs)
+      }
+      window.$ct.globalEventsMap[evtName] = evtDetail
+      StorageManager.saveToLSorCookie(EV_COOKIE, window.$ct.globalEventsMap)
+    }
   }
 }

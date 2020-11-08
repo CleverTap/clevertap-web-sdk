@@ -320,6 +320,8 @@
   var CAMP_COOKIE_NAME = 'WZRK_CAMP';
   var SCOOKIE_PREFIX = 'WZRK_S';
   var SCOOKIE_EXP_TIME_IN_SECS = 60 * 20; // 20 mins
+
+  var EV_COOKIE = 'WZRK_EV';
   var META_COOKIE = 'WZRK_META';
   var ARP_COOKIE = 'WZRK_ARP';
   var LCOOKIE_NAME = 'WZRK_L';
@@ -327,9 +329,15 @@
   var USEIP_KEY = 'useIP';
   var LRU_CACHE = 'WZRK_X';
   var LRU_CACHE_SIZE = 100;
+  var EVT_PUSH = 'push';
+  var EVT_PING = 'ping';
   var COOKIE_EXPIRY = 86400 * 365 * 10; // 10 Years in seconds
 
   var MAX_TRIES = 50; // API tries
+
+  var FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000; // 2 mins
+
+  var CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000; // 5 mins
 
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', 'Notification Viewed', 'Notification Clicked'];
 
@@ -1134,6 +1142,10 @@
 
   var _oldValues = _classPrivateFieldLooseKey("oldValues");
 
+  var _request$1 = _classPrivateFieldLooseKey("request");
+
+  var _isPersonalisationActive = _classPrivateFieldLooseKey("isPersonalisationActive");
+
   var _processEventArray = _classPrivateFieldLooseKey("processEventArray");
 
   var EventHandler = /*#__PURE__*/function (_Array) {
@@ -1144,7 +1156,9 @@
     function EventHandler(_ref, values) {
       var _this;
 
-      var logger = _ref.logger;
+      var logger = _ref.logger,
+          request = _ref.request,
+          isPersonalisationActive = _ref.isPersonalisationActive;
 
       _classCallCheck(this, EventHandler);
 
@@ -1160,8 +1174,18 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(_assertThisInitialized(_this), _request$1, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _isPersonalisationActive, {
+        writable: true,
+        value: void 0
+      });
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$2)[_logger$2] = logger;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues)[_oldValues] = values;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$1)[_request$1] = request;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _isPersonalisationActive)[_isPersonalisationActive] = isPersonalisationActive;
       return _this;
     }
 
@@ -1184,6 +1208,31 @@
         }
 
         _classPrivateFieldLooseBase(this, _oldValues)[_oldValues] = null;
+      }
+    }, {
+      key: "getDetails",
+      value: function getDetails(evtName) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive]()) {
+          return;
+        }
+
+        if (typeof window.$ct.globalEventsMap === 'undefined') {
+          window.$ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
+        }
+
+        if (typeof window.$ct.globalEventsMap === 'undefined') {
+          return;
+        }
+
+        var evtObj = window.$ct.globalEventsMap[evtName];
+        var respObj = {};
+
+        if (typeof evtObj !== 'undefined') {
+          respObj.firstTime = new Date(evtObj[1] * 1000);
+          respObj.lastTime = new Date(evtObj[2] * 1000);
+          respObj.count = evtObj[0];
+          return respObj;
+        }
       }
     }]);
 
@@ -1241,10 +1290,9 @@
 
             data.evtData = eventObj;
           }
-        } // TODO: processEvent call
+        }
 
-
-        console.log('event data', data);
+        _classPrivateFieldLooseBase(this, _request$1)[_request$1].processEvent(data);
       }
     }
   };
@@ -1913,6 +1961,73 @@
     value: _addARPToRequest2
   });
 
+  // CleverTap specific utilities
+  var getCampaignObject = function getCampaignObject() {
+    var campObj = {};
+
+    if (StorageManager._isLocalStorageSupported()) {
+      campObj = StorageManager.read(CAMP_COOKIE_NAME);
+
+      if (campObj != null) {
+        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
+      } else {
+        campObj = {};
+      }
+    }
+
+    return campObj;
+  };
+  var getCampaignObjForLc = function getCampaignObjForLc() {
+    var campObj = {};
+
+    if (StorageManager._isLocalStorageSupported()) {
+      campObj = getCampaignObject();
+      var resultObj = [];
+      var globalObj = campObj.global;
+      var today = getToday();
+      var dailyObj = campObj[today];
+
+      if (typeof globalObj !== 'undefined') {
+        var campaignIdArray = Object.keys(globalObj);
+
+        for (var index in campaignIdArray) {
+          if (campaignIdArray.hasOwnProperty(index)) {
+            var dailyC = 0;
+            var totalC = 0;
+            var campaignId = campaignIdArray[index];
+
+            if (campaignId === 'tc') {
+              continue;
+            }
+
+            if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
+              dailyC = dailyObj[campaignId];
+            }
+
+            if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
+              totalC = globalObj[campaignId];
+            }
+
+            var element = [campaignId, dailyC, totalC];
+            resultObj.push(element);
+          }
+        }
+      }
+
+      var todayC = 0;
+
+      if (typeof dailyObj !== 'undefined' && typeof dailyObj.tc !== 'undefined') {
+        todayC = dailyObj.tc;
+      }
+
+      resultObj = {
+        wmp: todayC,
+        tlc: resultObj
+      };
+      return resultObj;
+    }
+  };
+
   var seqNo = 0;
   var requestTime = 0;
 
@@ -1924,9 +2039,11 @@
 
   var _session$1 = _classPrivateFieldLooseKey("session");
 
-  var _isPersonalisationActive = _classPrivateFieldLooseKey("isPersonalisationActive");
+  var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   var _clearCookie = _classPrivateFieldLooseKey("clearCookie");
+
+  var _addToLocalEventMap = _classPrivateFieldLooseKey("addToLocalEventMap");
 
   var RequestManager = /*#__PURE__*/function () {
     function RequestManager(_ref) {
@@ -1938,6 +2055,9 @@
 
       _classCallCheck(this, RequestManager);
 
+      Object.defineProperty(this, _addToLocalEventMap, {
+        value: _addToLocalEventMap2
+      });
       Object.defineProperty(this, _logger$4, {
         writable: true,
         value: void 0
@@ -1954,7 +2074,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _isPersonalisationActive, {
+      Object.defineProperty(this, _isPersonalisationActive$1, {
         writable: true,
         value: void 0
       });
@@ -1967,7 +2087,7 @@
       _classPrivateFieldLooseBase(this, _account)[_account] = account;
       _classPrivateFieldLooseBase(this, _device$1)[_device$1] = device;
       _classPrivateFieldLooseBase(this, _session$1)[_session$1] = session;
-      _classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive] = isPersonalisationActive;
+      _classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
       RequestDispatcher.logger = logger;
       RequestDispatcher.device = device;
     }
@@ -2041,7 +2161,7 @@
           _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('reset cookie sent in request and cleared from meta for future requests.');
         }
 
-        if (_classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive]()) {
+        if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
           var lastSyncTime = StorageManager.getMetaProp('lsTime');
           var expirySeconds = StorageManager.getMetaProp('exTs'); // dsync not found in local storage - get data from server
 
@@ -2103,75 +2223,52 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
         RequestDispatcher.fireRequest(pageLoadUrl, true);
       }
+    }, {
+      key: "processEvent",
+      value: function processEvent(data) {
+        _classPrivateFieldLooseBase(this, _addToLocalEventMap)[_addToLocalEventMap](data.evtName);
+
+        data = this.addSystemDataToObject(data, undefined);
+        this.addFlags(data);
+        data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
+        var compressedData = compressData(JSON.stringify(data));
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+        this.saveAndFireRequest(pageLoadUrl, false);
+      }
     }]);
 
     return RequestManager;
   }();
 
-  // CleverTap specific utilities
-  var getCampaignObject = function getCampaignObject() {
-    var campObj = {};
-
+  var _addToLocalEventMap2 = function _addToLocalEventMap2(evtName) {
     if (StorageManager._isLocalStorageSupported()) {
-      campObj = StorageManager.read(CAMP_COOKIE_NAME);
+      if (typeof window.$ct.globalEventsMap === 'undefined') {
+        window.$ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
 
-      if (campObj != null) {
-        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
-      } else {
-        campObj = {};
-      }
-    }
-
-    return campObj;
-  };
-  var getCampaignObjForLc = function getCampaignObjForLc() {
-    var campObj = {};
-
-    if (StorageManager._isLocalStorageSupported()) {
-      campObj = getCampaignObject();
-      var resultObj = [];
-      var globalObj = campObj.global;
-      var today = getToday();
-      var dailyObj = campObj[today];
-
-      if (typeof globalObj !== 'undefined') {
-        var campaignIdArray = Object.keys(globalObj);
-
-        for (var index in campaignIdArray) {
-          if (campaignIdArray.hasOwnProperty(index)) {
-            var dailyC = 0;
-            var totalC = 0;
-            var campaignId = campaignIdArray[index];
-
-            if (campaignId === 'tc') {
-              continue;
-            }
-
-            if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-              dailyC = dailyObj[campaignId];
-            }
-
-            if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-              totalC = globalObj[campaignId];
-            }
-
-            var element = [campaignId, dailyC, totalC];
-            resultObj.push(element);
-          }
+        if (typeof window.$ct.globalEventsMap === 'undefined') {
+          window.$ct.globalEventsMap = {};
         }
       }
 
-      var todayC = 0;
+      var nowTs = getNow();
+      var evtDetail = window.$ct.globalEventsMap[evtName];
 
-      if (typeof dailyObj !== 'undefined' && typeof dailyObj.tc !== 'undefined') {
-        todayC = dailyObj.tc;
+      if (typeof evtDetail !== 'undefined') {
+        evtDetail[2] = nowTs;
+        evtDetail[0]++;
+      } else {
+        evtDetail = [];
+        evtDetail.push(1);
+        evtDetail.push(nowTs);
+        evtDetail.push(nowTs);
       }
 
-      resultObj = {
-        wmp: todayC,
-        tlc: resultObj
-      };
-      return resultObj;
+      window.$ct.globalEventsMap[evtName] = evtDetail;
+      StorageManager.saveToLSorCookie(EV_COOKIE, window.$ct.globalEventsMap);
     }
   };
 
@@ -2196,17 +2293,19 @@
 
   var _account$1 = _classPrivateFieldLooseKey("account");
 
-  var _request$1 = _classPrivateFieldLooseKey("request");
+  var _request$2 = _classPrivateFieldLooseKey("request");
 
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
-  var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
+  var _pingRequest = _classPrivateFieldLooseKey("pingRequest");
+
+  var _isPingContinuous = _classPrivateFieldLooseKey("isPingContinuous");
 
   var _overrideDSyncFlag = _classPrivateFieldLooseKey("overrideDSyncFlag");
 
   var CleverTap = /*#__PURE__*/function () {
     function CleverTap() {
-      var _clevertap$account;
+      var _clevertap$account, _clevertap$account2;
 
       var clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -2215,8 +2314,11 @@
       Object.defineProperty(this, _overrideDSyncFlag, {
         value: _overrideDSyncFlag2
       });
-      Object.defineProperty(this, _isPersonalisationActive$1, {
-        value: _isPersonalisationActive2
+      Object.defineProperty(this, _isPingContinuous, {
+        value: _isPingContinuous2
+      });
+      Object.defineProperty(this, _pingRequest, {
+        value: _pingRequest2
       });
       Object.defineProperty(this, _processOldValues, {
         value: _processOldValues2
@@ -2245,7 +2347,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _request$1, {
+      Object.defineProperty(this, _request$2, {
         writable: true,
         value: void 0
       });
@@ -2259,23 +2361,34 @@
       _classPrivateFieldLooseBase(this, _session$2)[_session$2] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
       });
-      _classPrivateFieldLooseBase(this, _request$1)[_request$1] = new RequestManager({
+      this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
+      _classPrivateFieldLooseBase(this, _request$2)[_request$2] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
         account: _classPrivateFieldLooseBase(this, _account$1)[_account$1],
         device: _classPrivateFieldLooseBase(this, _device$2)[_device$2],
         session: _classPrivateFieldLooseBase(this, _session$2)[_session$2],
-        isPersonalisationActive: _classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]
+        isPersonalisationActive: this._isPersonalisationActive
       });
+      this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
+        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+        request: _classPrivateFieldLooseBase(this, _request$2)[_request$2],
+        isPersonalisationActive: this._isPersonalisationActive
       }, clevertap.event);
       _classPrivateFieldLooseBase(this, _api)[_api] = new CleverTapAPI({
         logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
-        request: _classPrivateFieldLooseBase(this, _request$1)[_request$1],
+        request: _classPrivateFieldLooseBase(this, _request$2)[_request$2],
         device: _classPrivateFieldLooseBase(this, _device$2)[_device$2],
         session: _classPrivateFieldLooseBase(this, _session$2)[_session$2]
       });
       window.$CLTP_WR = window.$WZRK_WR = _classPrivateFieldLooseBase(this, _api)[_api];
+
+      if ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id) {
+        // The accountId is present so can init with empty values.
+        // Needed to maintain backward compatability with legacy implementations.
+        // Npm imports/require will need to call init explictly with accountId
+        this.init();
+      }
     }
 
     _createClass(CleverTap, [{
@@ -2315,7 +2428,7 @@
           return;
         }
 
-        _classPrivateFieldLooseBase(this, _request$1)[_request$1].processBackupEvents();
+        _classPrivateFieldLooseBase(this, _request$2)[_request$2].processBackupEvents();
 
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
@@ -2325,6 +2438,8 @@
     }, {
       key: "pageChanged",
       value: function pageChanged() {
+        var _this = this;
+
         var currLocation = location.href;
         var urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
 
@@ -2378,13 +2493,13 @@
           }
         }
 
-        data = _classPrivateFieldLooseBase(this, _request$1)[_request$1].addSystemDataToObject(data, undefined);
+        data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
         data.cpg = currLocation;
         data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
 
         var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostURL;
 
-        _classPrivateFieldLooseBase(this, _request$1)[_request$1].addFlags(data); // send dsync flag when page = 1
+        _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data); // send dsync flag when page = 1
 
 
         if (parseInt(data.pg) === 1) {
@@ -2394,7 +2509,25 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data)));
 
-        _classPrivateFieldLooseBase(this, _request$1)[_request$1].saveAndFireRequest(pageLoadUrl, false);
+        _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, false);
+
+        setTimeout(function () {
+          if (pgCount <= 3) {
+            // send ping for up to 3 pages
+            _classPrivateFieldLooseBase(_this, _pingRequest)[_pingRequest]();
+          }
+
+          if (_classPrivateFieldLooseBase(_this, _isPingContinuous)[_isPingContinuous]()) {
+            setInterval(function () {
+              _classPrivateFieldLooseBase(_this, _pingRequest)[_pingRequest]();
+            }, CONTINUOUS_PING_FREQ_IN_MILLIS);
+          }
+        }, FIRST_PING_FREQ_IN_MILLIS);
+      }
+    }, {
+      key: "_isPersonalisationActive",
+      value: function _isPersonalisationActive() {
+        return StorageManager._isLocalStorageSupported() && this.enablePersonalization;
       }
     }]);
 
@@ -2406,18 +2539,28 @@
     this.event.processOldValues();
   };
 
-  var _isPersonalisationActive2 = function _isPersonalisationActive2() {
-    return StorageManager._isLocalStorageSupported() && this.enablePersonalization;
+  var _pingRequest2 = function _pingRequest2() {
+    var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostURL;
+
+    var data = {};
+    data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING);
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data)));
+
+    _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, false);
+  };
+
+  var _isPingContinuous2 = function _isPingContinuous2() {
+    return typeof window.wzrk_d !== 'undefined' && window.wzrk_d.ping === 'continuous';
   };
 
   var _overrideDSyncFlag2 = function _overrideDSyncFlag2(data) {
-    if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
+    if (this._isPersonalisationActive()) {
       data.dsync = true;
     }
   };
 
   var clevertap = new CleverTap(window.clevertap);
-  clevertap.init();
 
   return clevertap;
 

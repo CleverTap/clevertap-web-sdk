@@ -150,7 +150,13 @@ import EventHandler from './modules/event'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
-import { CAMP_COOKIE_NAME, SCOOKIE_PREFIX } from './util/constants'
+import {
+  CAMP_COOKIE_NAME,
+  SCOOKIE_PREFIX,
+  EVT_PING,
+  FIRST_PING_FREQ_IN_MILLIS,
+  CONTINUOUS_PING_FREQ_IN_MILLIS
+} from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
@@ -183,14 +189,20 @@ export default class CleverTap {
     this.#account = new Account(clevertap.account?.[0], clevertap.region, clevertap.targetDomain)
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#session = new SessionManager({ logger: this.#logger })
+    this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.#request = new ReqestManager({
       logger: this.#logger,
       account: this.#account,
       device: this.#device,
       session: this.#session,
-      isPersonalisationActive: this.#isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive
     })
-    this.event = new EventHandler({ logger: this.#logger }, clevertap.event)
+    this.enablePersonalization = clevertap.enablePersonalization || false
+    this.event = new EventHandler({
+      logger: this.#logger,
+      request: this.#request,
+      isPersonalisationActive: this._isPersonalisationActive
+    }, clevertap.event)
 
     this.#api = new CleverTapAPI({
       logger: this.#logger,
@@ -200,6 +212,13 @@ export default class CleverTap {
     })
 
     window.$CLTP_WR = window.$WZRK_WR = this.#api
+
+    if (clevertap.account?.[0].id) {
+      // The accountId is present so can init with empty values.
+      // Needed to maintain backward compatability with legacy implementations.
+      // Npm imports/require will need to call init explictly with accountId
+      this.init()
+    }
   }
 
   init (accountId, region, targetDomain) {
@@ -306,14 +325,41 @@ export default class CleverTap {
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data)))
 
     this.#request.saveAndFireRequest(pageLoadUrl, false)
+
+    setTimeout(() => {
+      if (pgCount <= 3) {
+        // send ping for up to 3 pages
+        this.#pingRequest()
+      }
+
+      if (this.#isPingContinuous()) {
+        setInterval(() => {
+          this.#pingRequest()
+        }, CONTINUOUS_PING_FREQ_IN_MILLIS)
+      }
+    }, FIRST_PING_FREQ_IN_MILLIS)
   }
 
-  #isPersonalisationActive () {
+  #pingRequest () {
+    let pageLoadUrl = this.#account.dataPostURL
+    let data = {}
+    data = this.#request.addSystemDataToObject(data, undefined)
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data)))
+
+    this.#request.saveAndFireRequest(pageLoadUrl, false)
+  }
+
+  #isPingContinuous () {
+    return (typeof window.wzrk_d !== 'undefined' && window.wzrk_d.ping === 'continuous')
+  }
+
+  _isPersonalisationActive () {
     return StorageManager._isLocalStorageSupported() && this.enablePersonalization
   }
 
   #overrideDSyncFlag (data) {
-    if (this.#isPersonalisationActive()) {
+    if (this._isPersonalisationActive()) {
       data.dsync = true
     }
   }
