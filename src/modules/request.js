@@ -3,7 +3,7 @@ import { isObjectEmpty, isValueValid, removeUnsupportedChars } from '../util/dat
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
 import RequestDispatcher from '../util/requestDispatcher'
-import { StorageManager } from '../util/storage'
+import { StorageManager, $ct } from '../util/storage'
 import { addToURL } from '../util/url'
 import { getCampaignObjForLc } from '../util/clevertap'
 
@@ -103,11 +103,11 @@ export default class RequestManager {
 
   saveAndFireRequest (url, override, sendOULFlag) {
     const now = getNow()
-    url = addToURL(url, 'rn', ++window.$ct.globalCache.REQ_N)
+    url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N)
     const data = url + '&i=' + now + '&sn=' + seqNo
-    StorageManager.backupEvent(data, window.$ct.globalCache.REQ_N, this.#logger)
+    StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.#logger)
 
-    if (!window.$ct.blockRequest || override || (this.#clearCookie !== undefined && this.#clearCookie)) {
+    if (!$ct.blockRequest || override || (this.#clearCookie !== undefined && this.#clearCookie)) {
       if (now === requestTime) {
         seqNo++
       } else {
@@ -117,7 +117,7 @@ export default class RequestManager {
 
       RequestDispatcher.fireRequest(data, false, sendOULFlag)
     } else {
-      this.#logger.debug(`Not fired due to block request - ${window.$ct.blockRequest} or clearCookie - ${this.#clearCookie}`)
+      this.#logger.debug(`Not fired due to block request - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie}`)
     }
   }
 
@@ -157,15 +157,15 @@ export default class RequestManager {
 
   #addToLocalEventMap (evtName) {
     if (StorageManager._isLocalStorageSupported()) {
-      if (typeof window.$ct.globalEventsMap === 'undefined') {
-        window.$ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE)
-        if (typeof window.$ct.globalEventsMap === 'undefined') {
-          window.$ct.globalEventsMap = {}
+      if (typeof $ct.globalEventsMap === 'undefined') {
+        $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE)
+        if (typeof $ct.globalEventsMap === 'undefined') {
+          $ct.globalEventsMap = {}
         }
       }
 
       const nowTs = getNow()
-      let evtDetail = window.$ct.globalEventsMap[evtName]
+      let evtDetail = $ct.globalEventsMap[evtName]
       if (typeof evtDetail !== 'undefined') {
         evtDetail[2] = nowTs
         evtDetail[0]++
@@ -175,8 +175,8 @@ export default class RequestManager {
         evtDetail.push(nowTs)
         evtDetail.push(nowTs)
       }
-      window.$ct.globalEventsMap[evtName] = evtDetail
-      StorageManager.saveToLSorCookie(EV_COOKIE, window.$ct.globalEventsMap)
+      $ct.globalEventsMap[evtName] = evtDetail
+      StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap)
     }
   }
 }

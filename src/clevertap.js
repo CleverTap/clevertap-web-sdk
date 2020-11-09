@@ -163,16 +163,6 @@ import { addToURL, getDomain, getURLParams } from './util/url'
 import { getCampaignObjForLc } from './util/clevertap'
 import { compressData } from './util/encoder'
 
-// TODO: figure out a better way to do this. window is not a good approach
-window.$ct = {
-  globalCache: {
-    gcookie: null,
-    REQ_N: 0,
-    RESP_N: 0
-  },
-  blockRequest: false
-}
-
 export default class CleverTap {
   #logger
   #api

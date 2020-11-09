@@ -551,7 +551,7 @@
             }
           }
 
-          window.$ct.globalCache[property] = value;
+          $ct.globalCache[property] = value;
         } catch (e) {}
       }
     }, {
@@ -559,8 +559,8 @@
       value: function readFromLSorCookie(property) {
         var data;
 
-        if (window.$ct.globalCache.hasOwnProperty(property)) {
-          return window.$ct.globalCache[property];
+        if ($ct.globalCache.hasOwnProperty(property)) {
+          return $ct.globalCache[property];
         }
 
         if (this._isLocalStorageSupported()) {
@@ -571,7 +571,7 @@
 
         if (data != null && data.trim() !== '') {
           var value = JSON.parse(decodeURIComponent(data));
-          window.$ct.globalCache[property] = value;
+          $ct.globalCache[property] = value;
           return value;
         }
       }
@@ -584,7 +584,7 @@
         // to find out which "broadest" domain the cookie was set on. Then delete the test cookie, and use that domain
         // for updating the actual cookie.
         if (domain) {
-          var broadDomain = window.$ct.broadDomain;
+          var broadDomain = $ct.broadDomain;
 
           if (broadDomain == null) {
             // if we don't know the broadDomain yet, then find out
@@ -613,7 +613,7 @@
 
               if (tempCookie == value) {
                 broadDomain = testBroadDomain;
-                window.$ct.broadDomain = broadDomain;
+                $ct.broadDomain = broadDomain;
                 break;
               }
             }
@@ -701,6 +701,14 @@
 
     return StorageManager;
   }();
+  var $ct = {
+    globalCache: {
+      gcookie: null,
+      REQ_N: 0,
+      RESP_N: 0
+    },
+    blockRequest: false
+  };
 
   var _keyOrder = _classPrivateFieldLooseKey("keyOrder");
 
@@ -907,7 +915,7 @@
 
         StorageManager.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger)[_logger]);
 
-        if (respNumber > window.$ct.globalCache.REQ_N) {
+        if (respNumber > $ct.globalCache.REQ_N) {
           // request for some other user so ignore
           return;
         }
@@ -923,25 +931,25 @@
           _classPrivateFieldLooseBase(this, _device)[_device].gcookie = global;
 
           if (global && StorageManager._isLocalStorageSupported()) {
-            if (window.$ct.LRU_CACHE == null) {
-              window.$ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
+            if ($ct.LRU_CACHE == null) {
+              $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
             }
 
             var kIdFromLS = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
 
             if (kIdFromLS != null && kIdFromLS.id && resume) {
-              var guidFromLRUCache = window.$ct.LRU_CACHE.cache[kIdFromLS.id];
+              var guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
 
               if (!guidFromLRUCache) {
-                window.$ct.LRU_CACHE.set(kIdFromLS.id, global);
+                $ct.LRU_CACHE.set(kIdFromLS.id, global);
               }
             }
 
             StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
-            var lastK = window.$ct.LRU_CACHE.getSecondLastKey();
+            var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
             if (lastK !== -1) {
-              var lastGUID = window.$ct.LRU_CACHE.cache[lastK];
+              var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
               _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
             }
@@ -952,7 +960,7 @@
         }
 
         if (resume) {
-          window.$ct.blockRequest = false;
+          $ct.blockRequest = false;
 
           _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Resumed requests');
         }
@@ -976,7 +984,7 @@
           _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
         }
 
-        window.$ct.globalCache.RESP_N = respNumber;
+        $ct.globalCache.RESP_N = respNumber;
       }
     }]);
 
@@ -1216,15 +1224,15 @@
           return;
         }
 
-        if (typeof window.$ct.globalEventsMap === 'undefined') {
-          window.$ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
+        if (typeof $ct.globalEventsMap === 'undefined') {
+          $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
         }
 
-        if (typeof window.$ct.globalEventsMap === 'undefined') {
+        if (typeof $ct.globalEventsMap === 'undefined') {
           return;
         }
 
-        var evtObj = window.$ct.globalEventsMap[evtName];
+        var evtObj = $ct.globalEventsMap[evtName];
         var respObj = {};
 
         if (typeof evtObj !== 'undefined') {
@@ -1909,7 +1917,7 @@
       return;
     }
 
-    if (!isValueValid(this.device.gcookie) && window.$ct.globalCache.RESP_N < window.$ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
+    if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
       setTimeout(function () {
         _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
       }, 50);
@@ -2181,11 +2189,11 @@
       key: "saveAndFireRequest",
       value: function saveAndFireRequest(url, override, sendOULFlag) {
         var now = getNow();
-        url = addToURL(url, 'rn', ++window.$ct.globalCache.REQ_N);
+        url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
         var data = url + '&i=' + now + '&sn=' + seqNo;
-        StorageManager.backupEvent(data, window.$ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]);
+        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]);
 
-        if (!window.$ct.blockRequest || override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
+        if (!$ct.blockRequest || override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           if (now === requestTime) {
             seqNo++;
           } else {
@@ -2195,7 +2203,7 @@
 
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
-          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug("Not fired due to block request - ".concat(window.$ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug("Not fired due to block request - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
         }
       }
     }, {
@@ -2246,16 +2254,16 @@
 
   var _addToLocalEventMap2 = function _addToLocalEventMap2(evtName) {
     if (StorageManager._isLocalStorageSupported()) {
-      if (typeof window.$ct.globalEventsMap === 'undefined') {
-        window.$ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
+      if (typeof $ct.globalEventsMap === 'undefined') {
+        $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
 
-        if (typeof window.$ct.globalEventsMap === 'undefined') {
-          window.$ct.globalEventsMap = {};
+        if (typeof $ct.globalEventsMap === 'undefined') {
+          $ct.globalEventsMap = {};
         }
       }
 
       var nowTs = getNow();
-      var evtDetail = window.$ct.globalEventsMap[evtName];
+      var evtDetail = $ct.globalEventsMap[evtName];
 
       if (typeof evtDetail !== 'undefined') {
         evtDetail[2] = nowTs;
@@ -2267,18 +2275,9 @@
         evtDetail.push(nowTs);
       }
 
-      window.$ct.globalEventsMap[evtName] = evtDetail;
-      StorageManager.saveToLSorCookie(EV_COOKIE, window.$ct.globalEventsMap);
+      $ct.globalEventsMap[evtName] = evtDetail;
+      StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
     }
-  };
-
-  window.$ct = {
-    globalCache: {
-      gcookie: null,
-      REQ_N: 0,
-      RESP_N: 0
-    },
-    blockRequest: false
   };
 
   var _logger$5 = _classPrivateFieldLooseKey("logger");

@@ -104,14 +104,14 @@ export class StorageManager {
           this.createCookie(property, encodeURIComponent(JSON.stringify(value)), 0, window.location.hostname)
         }
       }
-      window.$ct.globalCache[property] = value
+      $ct.globalCache[property] = value
     } catch (e) {}
   }
 
   static readFromLSorCookie (property) {
     let data
-    if (window.$ct.globalCache.hasOwnProperty(property)) {
-      return window.$ct.globalCache[property]
+    if ($ct.globalCache.hasOwnProperty(property)) {
+      return $ct.globalCache[property]
     }
     if (this._isLocalStorageSupported()) {
       data = this.read(property)
@@ -120,7 +120,7 @@ export class StorageManager {
     }
     if (data != null && data.trim() !== '') {
       const value = JSON.parse(decodeURIComponent(data))
-      window.$ct.globalCache[property] = value
+      $ct.globalCache[property] = value
       return value
     }
   }
@@ -133,7 +133,7 @@ export class StorageManager {
     // for updating the actual cookie.
 
     if (domain) {
-      let broadDomain = window.$ct.broadDomain
+      let broadDomain = $ct.broadDomain
       if (broadDomain == null) { // if we don't know the broadDomain yet, then find out
         const domainParts = domain.split('.')
         let testBroadDomain = ''
@@ -157,7 +157,7 @@ export class StorageManager {
           // eslint-disable-next-line eqeqeq
           if (tempCookie == value) {
             broadDomain = testBroadDomain
-            window.$ct.broadDomain = broadDomain
+            $ct.broadDomain = broadDomain
             break
           }
         }
@@ -224,4 +224,13 @@ export class StorageManager {
       this.saveToLSorCookie(LCOOKIE_NAME, backupMap)
     }
   }
+}
+
+export const $ct = {
+  globalCache: {
+    gcookie: null,
+    REQ_N: 0,
+    RESP_N: 0
+  },
+  blockRequest: false
 }

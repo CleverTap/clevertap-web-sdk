@@ -412,7 +412,7 @@ import { isString, isObject, sanitize } from '../util/datatypes'
 import { EVENT_ERROR } from '../util/messages'
 import { EV_COOKIE, SYSTEM_EVENTS, unsupportedKeyCharRegex } from '../util/constants'
 import { isChargedEventStructureValid, isEventStructureFlat } from '../util/validator'
-import { StorageManager } from '../util/storage'
+import { StorageManager, $ct } from '../util/storage'
 
 export default class EventHandler extends Array {
   #logger
@@ -494,13 +494,13 @@ export default class EventHandler extends Array {
     if (!this.#isPersonalisationActive()) {
       return
     }
-    if (typeof window.$ct.globalEventsMap === 'undefined') {
-      window.$ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE)
+    if (typeof $ct.globalEventsMap === 'undefined') {
+      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE)
     }
-    if (typeof window.$ct.globalEventsMap === 'undefined') {
+    if (typeof $ct.globalEventsMap === 'undefined') {
       return
     }
-    const evtObj = window.$ct.globalEventsMap[evtName]
+    const evtObj = $ct.globalEventsMap[evtName]
     const respObj = {}
     if (typeof evtObj !== 'undefined') {
       respObj.firstTime = new Date(evtObj[1] * 1000)

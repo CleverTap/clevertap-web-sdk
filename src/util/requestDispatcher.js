@@ -1,7 +1,7 @@
 import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH } from './constants'
 import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
-import { StorageManager } from './storage'
+import { StorageManager, $ct } from './storage'
 import { addToURL } from './url'
 
 export default class RequestDispatcher {
@@ -16,7 +16,7 @@ export default class RequestDispatcher {
     }
 
     if (!isValueValid(this.device.gcookie) &&
-    (window.$ct.globalCache.RESP_N < window.$ct.globalCache.REQ_N - 1) &&
+    ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
     tries < MAX_TRIES) {
       setTimeout(() => {
         this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)

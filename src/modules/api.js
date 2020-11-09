@@ -88,7 +88,7 @@ import { COOKIE_EXPIRY, GCOOKIE_NAME, KCOOKIE_NAME, LRU_CACHE_SIZE, USEIP_KEY } 
 import { isValueValid } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import LRUCache from '../util/lruCache'
-import { StorageManager } from '../util/storage'
+import { StorageManager, $ct } from '../util/storage'
 
 export default class CleverTapAPI {
   #logger
@@ -111,7 +111,7 @@ export default class CleverTapAPI {
 
     StorageManager.removeBackup(respNumber, this.#logger)
 
-    if (respNumber > window.$ct.globalCache.REQ_N) {
+    if (respNumber > $ct.globalCache.REQ_N) {
       // request for some other user so ignore
       return
     }
@@ -125,22 +125,22 @@ export default class CleverTapAPI {
       this.#device.gcookie = global
 
       if (global && StorageManager._isLocalStorageSupported()) {
-        if (window.$ct.LRU_CACHE == null) {
-          window.$ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
+        if ($ct.LRU_CACHE == null) {
+          $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
         }
 
         const kIdFromLS = StorageManager.readFromLSorCookie(KCOOKIE_NAME)
         if (kIdFromLS != null && kIdFromLS.id && resume) {
-          const guidFromLRUCache = window.$ct.LRU_CACHE.cache[kIdFromLS.id]
+          const guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id]
           if (!guidFromLRUCache) {
-            window.$ct.LRU_CACHE.set(kIdFromLS.id, global)
+            $ct.LRU_CACHE.set(kIdFromLS.id, global)
           }
         }
 
         StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
-        const lastK = window.$ct.LRU_CACHE.getSecondLastKey()
+        const lastK = $ct.LRU_CACHE.getSecondLastKey()
         if (lastK !== -1) {
-          const lastGUID = window.$ct.LRU_CACHE.cache[lastK]
+          const lastGUID = $ct.LRU_CACHE.cache[lastK]
           this.#request.unregisterTokenForGuid(lastGUID)
         }
       }
@@ -150,7 +150,7 @@ export default class CleverTapAPI {
     }
 
     if (resume) {
-      window.$ct.blockRequest = false
+      $ct.blockRequest = false
       this.#logger.debug('Resumed requests')
     }
 
@@ -172,6 +172,6 @@ export default class CleverTapAPI {
       this.#request.processBackupEvents()
     }
 
-    window.$ct.globalCache.RESP_N = respNumber
+    $ct.globalCache.RESP_N = respNumber
   }
 }
