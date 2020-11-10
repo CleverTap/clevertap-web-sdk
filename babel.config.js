@@ -3,13 +3,13 @@ module.exports = {
     [
       '@babel/preset-env',
       {
-        targets: {
-          node: 'current',
-        },
-      },
-    ],
+        targets: '> 0.25%, not dead',
+        modules: false
+      }
+    ]
   ],
   plugins: [
-    ["@babel/plugin-proposal-class-properties", { "loose": true }]
+    ['@babel/plugin-proposal-class-properties', { loose: true }],
+    ['@babel/plugin-proposal-private-methods', { loose: true }]
   ]
 }

@@ -12,20 +12,19 @@ export const convertToWZRKDate = (dateObj) => {
 }
 
 export const setDate = (dt) => {
-  //expecting  yyyymmdd format either as a number or a string
+  // expecting  yyyymmdd format either as a number or a string
   if (isDateValid(dt)) {
     return '$D_' + dt
   }
 }
 
 export const isDateValid = (date) => {
-  let matches = /^(\d{4})(\d{2})(\d{2})$/.exec(date)
+  const matches = /^(\d{4})(\d{2})(\d{2})$/.exec(date)
   if (matches == null) return false
-  let d = matches[3]
-  let m = matches[2] - 1
-  let y = matches[1]
-  let composedDate = new Date(y, m, d)
-  return composedDate.getDate() == d &&
-      composedDate.getMonth() == m &&
-      composedDate.getFullYear() == y
+  const d = matches[3]
+  const m = matches[2] - 1
+  const y = matches[1]
+  const composedDate = new Date(y, m, d)
+  // eslint-disable-next-line eqeqeq
+  return composedDate.getDate() == d && composedDate.getMonth() == m && composedDate.getFullYear() == y
 }

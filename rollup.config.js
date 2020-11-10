@@ -1,5 +1,6 @@
 import resolve from '@rollup/plugin-node-resolve'
 import babel from '@rollup/plugin-babel'
+import { eslint } from 'rollup-plugin-eslint'
 
 export default {
   input: 'src/main.js',
@@ -10,17 +11,12 @@ export default {
   },
   plugins: [
     resolve(),
+    eslint({
+      fix: true,
+      throwOnError: true
+    }),
     babel({
-      presets: [
-        [
-          '@babel/preset-env',
-          {
-            modules: false
-          }
-        ]
-      ],
-      plugins: [],
-      babelrc: false
+      babelHelpers: 'bundled'
     })
   ]
 }

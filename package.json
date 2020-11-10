@@ -23,7 +23,9 @@
   "homepage": "https://github.com/CleverTap/clevertap-web-sdk#readme",
   "devDependencies": {
     "@babel/core": "^7.11.4",
+    "@babel/eslint-parser": "^7.12.1",
     "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/plugin-proposal-private-methods": "^7.12.1",
     "@babel/preset-env": "^7.11.0",
     "@rollup/plugin-babel": "^5.2.0",
     "@rollup/plugin-node-resolve": "^9.0.0",
@@ -34,6 +36,7 @@
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
     "jest": "^26.4.2",
-    "rollup": "^2.26.5"
+    "rollup": "^2.26.5",
+    "rollup-plugin-eslint": "^7.0.0"
   }
 }

@@ -1,3 +1,4 @@
+/* eslint-disable */
 export const urlBase64ToUint8Array = (base64String) => {
   let padding = '='.repeat((4 - base64String.length % 4) % 4)
   let base64 = (base64String + padding)
@@ -253,6 +254,8 @@ export const getKeyStr = () => {
   return key + '+/='
 }
 
+const _keyStr = getKeyStr()
+
 export const convertToFormattedHex = (byte_arr) => {
   let hex_str = '',
       i,
@@ -338,8 +341,8 @@ export const compressToBase64 = (input) => {
     }
 
     output = output +
-      LZS._keyStr.charAt(enc1) + LZS._keyStr.charAt(enc2) +
-      LZS._keyStr.charAt(enc3) + LZS._keyStr.charAt(enc4)
+      _keyStr.charAt(enc1) + _keyStr.charAt(enc2) +
+      _keyStr.charAt(enc3) + _keyStr.charAt(enc4)
 
   }
 

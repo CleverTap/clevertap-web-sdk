@@ -2,6 +2,7 @@ import {
   GCOOKIE_NAME,
   META_COOKIE,
   KCOOKIE_NAME,
+  LCOOKIE_NAME
 } from './constants'
 export class StorageManager {
   static save (key, value) {
@@ -54,7 +55,7 @@ export class StorageManager {
     let expires = ''
     let domainStr = ''
     if (seconds) {
-      let date = new Date()
+      const date = new Date()
       date.setTime(date.getTime() + (seconds * 1000))
 
       expires = '; expires=' + date.toGMTString()
@@ -70,13 +71,14 @@ export class StorageManager {
   }
 
   static readCookie (name) {
-    let nameEQ = name + ''
-    let ca = document.cookie.split(';')
+    const nameEQ = name + '='
+    const ca = document.cookie.split(';')
     for (let idx = 0; idx < ca.length; idx++) {
       let c = ca[idx]
-      while (c.charAt(0) == ' ') {
+      while (c.charAt(0) === ' ') {
         c = c.substring(1, c.length)
       }
+      // eslint-disable-next-line eqeqeq
       if (c.indexOf(nameEQ) == 0) {
         return decodeURIComponent(c.substring(nameEQ.length, c.length))
       }
@@ -89,41 +91,41 @@ export class StorageManager {
   }
 
   static saveToLSorCookie (property, value) {
-    if (val == null) {
+    if (value == null) {
       return
     }
     try {
-      if (this._isLocalStorageSupported) {
-        this.save(property, JSON.stringify(value))
+      if (this._isLocalStorageSupported()) {
+        this.save(property, encodeURIComponent(JSON.stringify(value)))
       } else {
         if (property === GCOOKIE_NAME) {
           this.createCookie(property, encodeURIComponent(value), 0, window.location.hostname)
         } else {
-          wiz.createCookie(property, encodeURIComponent(JSON.stringify(value)), 0, window.location.hostname)
+          this.createCookie(property, encodeURIComponent(JSON.stringify(value)), 0, window.location.hostname)
         }
       }
-      window.$ct.globalCache[property] = value
+      $ct.globalCache[property] = value
     } catch (e) {}
   }
 
   static readFromLSorCookie (property) {
     let data
-    if (window.$ct.globalCache.hasOwnProperty(property)) {
-      return window.$ct.globalCache[property]
+    if ($ct.globalCache.hasOwnProperty(property)) {
+      return $ct.globalCache[property]
     }
     if (this._isLocalStorageSupported()) {
       data = this.read(property)
     } else {
       data = this.readCookie(property)
     }
-    if (data != null && data.trim() != '') {
-      let value = JSON.parse(decodeURIComponent(data))
-      window.$ct.globalCache[property] = value
+    if (data != null && data.trim() !== '') {
+      const value = JSON.parse(decodeURIComponent(data))
+      $ct.globalCache[property] = value
       return value
     }
   }
 
-  static createBroadCookie (name, value, seconds, domain) { 
+  static createBroadCookie (name, value, seconds, domain) {
     // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
     // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
     // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
@@ -131,9 +133,9 @@ export class StorageManager {
     // for updating the actual cookie.
 
     if (domain) {
-      let broadDomain = window.$ct.broadDomain
-      if (broadDomain == null) {  // if we don't know the broadDomain yet, then find out
-        let domainParts = domain.split('.')
+      let broadDomain = $ct.broadDomain
+      if (broadDomain == null) { // if we don't know the broadDomain yet, then find out
+        const domainParts = domain.split('.')
         let testBroadDomain = ''
         for (let idx = domainParts.length - 1; idx >= 0; idx--) {
           testBroadDomain = '.' + domainParts[idx] + testBroadDomain
@@ -143,17 +145,19 @@ export class StorageManager {
             // no guarantee that browser will delete cookie, hence create short lived cookies
             var testCookieName = 'test_' + name + idx
             this.createCookie(testCookieName, value, 10, testBroadDomain) // self-destruct after 10 seconds
-            if (!this.readCookie(testCookieName)) {  // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
+            if (!this.readCookie(testCookieName)) { // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
               continue
-            } else {                                // else if cookie set, then delete the test and the original cookie
+            } else { // else if cookie set, then delete the test and the original cookie
               this.removeCookie(testCookieName, testBroadDomain)
             }
           }
 
           this.createCookie(name, value, seconds, testBroadDomain)
-          let tempCookie = this.readCookie(name)
+          const tempCookie = this.readCookie(name)
+          // eslint-disable-next-line eqeqeq
           if (tempCookie == value) {
             broadDomain = testBroadDomain
+            $ct.broadDomain = broadDomain
             break
           }
         }
@@ -161,12 +165,12 @@ export class StorageManager {
         this.createCookie(name, value, seconds, broadDomain)
       }
     } else {
-      this.createCookie(name, value, seconds, domain);
+      this.createCookie(name, value, seconds, domain)
     }
   }
 
   static getMetaProp (property) {
-    let metaObj = this.readFromLSorCookie(META_COOKIE)
+    const metaObj = this.readFromLSorCookie(META_COOKIE)
     if (metaObj != null) {
       return metaObj[property]
     }
@@ -188,7 +192,7 @@ export class StorageManager {
   }
 
   static getAndClearMetaProp (property) {
-    let value = this.getMetaProp(property)
+    const value = this.getMetaProp(property)
     this.setMetaProp(property, undefined)
     return value
   }
@@ -198,7 +202,35 @@ export class StorageManager {
     if (k == null) {
       k = {}
     }
-    k['flag'] = true
+    k.flag = true
     this.saveToLSorCookie(KCOOKIE_NAME, k)
   }
+
+  static backupEvent (data, reqNo, logger) {
+    let backupArr = this.readFromLSorCookie(LCOOKIE_NAME)
+    if (typeof backupArr === 'undefined') {
+      backupArr = {}
+    }
+    backupArr[reqNo] = { q: data }
+    this.saveToLSorCookie(LCOOKIE_NAME, backupArr)
+    logger.debug(`stored in ${LCOOKIE_NAME} reqNo : ${reqNo} -> ${data}`)
+  }
+
+  static removeBackup (respNo, logger) {
+    const backupMap = this.readFromLSorCookie(LCOOKIE_NAME)
+    if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
+      logger.debug(`del event: ${respNo} data-> ${backupMap[respNo].q}`)
+      delete backupMap[respNo]
+      this.saveToLSorCookie(LCOOKIE_NAME, backupMap)
+    }
+  }
+}
+
+export const $ct = {
+  globalCache: {
+    gcookie: null,
+    REQ_N: 0,
+    RESP_N: 0
+  },
+  blockRequest: false
 }

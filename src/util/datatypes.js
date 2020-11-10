@@ -1,9 +1,10 @@
 import {
-  unsupportedKeyCharRegex
+  unsupportedKeyCharRegex,
+  unsupportedValueCharRegex
 } from './constants'
 
 export const isString = (input) => {
-  return (typeof input == 'string' || input instanceof String)
+  return (typeof input === 'string' || input instanceof String)
 }
 
 export const isObject = (input) => {
@@ -12,13 +13,12 @@ export const isObject = (input) => {
 }
 
 export const isDateObject = (input) => {
-  return typeof(input) === 'object' && (input instanceof Date)
+  return typeof (input) === 'object' && (input instanceof Date)
 }
 
 export const isObjectEmpty = (obj) => {
-  for (let prop in obj) {
-    if (obj.hasOwnProperty(prop))
-      return false
+  for (const prop in obj) {
+    if (obj.hasOwnProperty(prop)) { return false }
   }
   return true
 }
@@ -28,11 +28,18 @@ export const isConvertibleToNumber = (n) => {
 }
 
 export const isNumber = (n) => {
-  return /^-?[\d.]+(?:e-?\d+)?$/.test(n) && typeof n == 'number'
+  return /^-?[\d.]+(?:e-?\d+)?$/.test(n) && typeof n === 'number'
+}
+
+export const isValueValid = (value) => {
+  if (value === null || value === undefined || value === 'undefined') {
+    return false
+  }
+  return true
 }
 
 export const arrayContains = (arr, obj) => {
-  var i = arr.length;
+  var i = arr.length
   while (i--) {
     if (arr[i] === obj) {
       return true
@@ -41,19 +48,19 @@ export const arrayContains = (arr, obj) => {
   return false
 }
 
-export const removeUnsupportedChars = (o) => {
+export const removeUnsupportedChars = (o, logger) => {
   // keys can't be greater than 1024 chars, values can't be greater than 1024 chars
-  if (typeof o == 'object') {
-    for (let key in o) {
+  if (typeof o === 'object') {
+    for (const key in o) {
       if (o.hasOwnProperty(key)) {
-        let sanitizedVal = removeUnsupportedChars(o[key])
+        const sanitizedVal = removeUnsupportedChars(o[key], logger)
         let sanitizedKey = isString(key) ? sanitize(key, unsupportedKeyCharRegex) : key
 
         if (isString(key)) {
           sanitizedKey = sanitize(key, unsupportedKeyCharRegex)
           if (sanitizedKey.length > 1024) {
             sanitizedKey = sanitizedKey.substring(0, 1024)
-            // $WZRK_WR.reportError(520, sanitizedKey + "... length exceeded 1024 chars. Trimmed.")
+            logger.reportError(520, sanitizedKey + '... length exceeded 1024 chars. Trimmed.')
           }
         } else {
           sanitizedKey = key
@@ -69,7 +76,7 @@ export const removeUnsupportedChars = (o) => {
       val = sanitize(o, unsupportedValueCharRegex)
       if (val.length > 1024) {
         val = val.substring(0, 1024)
-        // $WZRK_WR.reportError(521, val + "... length exceeded 1024 chars. Trimmed.")
+        logger.reportError(521, val + '... length exceeded 1024 chars. Trimmed.')
       }
     } else {
       val = o
