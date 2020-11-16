@@ -1,5 +1,6 @@
 const { default: constants } = require("./src/util/constants");
 const { logger } = require("./src/modules/logger");
+const { default: CleverTap } = require("./src/clevertap");
 
 function __wizrocket() {
   // var targetDomain = 'wzrkt.com'; -> options.js
@@ -437,117 +438,19 @@ function __wizrocket() {
   // wiz.readFromLSorCookie = function (property) -> Storage.js
   // wiz.saveToLSorCookie -> Storage.js
 
-  var processEvent = function (data) {
-
-    wiz.addToLocalEventMap(data['evtName']);
-    data = wiz.addSystemDataToObject(data, undefined);
-    wiz.addFlags(data);
-    data[STRING_CONSTANTS.CAMP_COOKIE_NAME] = wiz.getCampaignObjForLc();
-    var compressedData = wiz.compressData(JSON.stringify(data));
-
-    var pageLoadUrl = dataPostURL;
-    pageLoadUrl = wiz.addToURL(pageLoadUrl, "type", EVT_PUSH);
-    pageLoadUrl = wiz.addToURL(pageLoadUrl, "d", compressedData);
-
-
-    wiz.saveAndFireRequest(pageLoadUrl, false);
-  };
+  // var processEvent = function (data) -> request.js
 
   // wiz.processEventArray = function (eventArr) -> event.js
 
-  wiz.addToLocalEventMap = function (evtName) {
-    if (wzrk_util.isLocalStorageSupported()) {
-      if (typeof globalEventsMap == STRING_CONSTANTS.UNDEFINED) {
-        globalEventsMap = wiz.readFromLSorCookie(STRING_CONSTANTS.EV_COOKIE);
-        if (typeof globalEventsMap == STRING_CONSTANTS.UNDEFINED) {
-          globalEventsMap = {};
-        }
-      }
-      var nowTs = wzrk_util.getNow();
-      var evtDetail = globalEventsMap[evtName];
-      if (typeof evtDetail != STRING_CONSTANTS.UNDEFINED) {
-        evtDetail[2] = nowTs;
-        evtDetail[0]++;
-      } else {
-        evtDetail = [];
-        evtDetail.push(1);
-        evtDetail.push(nowTs);
-        evtDetail.push(nowTs);
-      }
-      globalEventsMap[evtName] = evtDetail;
-      wiz.saveToLSorCookie(STRING_CONSTANTS.EV_COOKIE, globalEventsMap);
-    }
-  };
+  // wiz.addToLocalEventMap = function (evtName) -> request.js
 
-  wiz.addToLocalProfileMap = function (profileObj, override) {
-    if (wzrk_util.isLocalStorageSupported()) {
-      if (typeof globalProfileMap == STRING_CONSTANTS.UNDEFINED) {
-        globalProfileMap = wiz.readFromLSorCookie(STRING_CONSTANTS.PR_COOKIE);
-        if (typeof globalProfileMap == STRING_CONSTANTS.UNDEFINED) {
-          globalProfileMap = {};
-        }
-      }
+  // wiz.addToLocalProfileMap = function (profileObj, override) -> profile.js
 
-      //Move props from custom bucket to outside.
-      if (typeof profileObj['_custom'] != STRING_CONSTANTS.UNDEFINED) {
-        var keys = profileObj['_custom'];
-        for (var key in keys) {
-          if (keys.hasOwnProperty(key)) {
-            profileObj[key] = keys[key];
-          }
-        }
-        delete profileObj['_custom'];
-      }
-
-      for (var prop in profileObj) {
-        if (profileObj.hasOwnProperty(prop)) {
-          if (globalProfileMap.hasOwnProperty(prop) && !override) {
-            continue;
-          }
-          globalProfileMap[prop] = profileObj[prop];
-        }
-      }
-      if (typeof globalProfileMap['_custom'] != STRING_CONSTANTS.UNDEFINED) {
-        delete globalProfileMap['_custom'];
-      }
-      wiz.saveToLSorCookie(STRING_CONSTANTS.PR_COOKIE, globalProfileMap);
-    }
-  };
-
-  wiz.overrideDSyncFlag = function (data) {
-    if (wzrk_util.isPersonalizationActive()) {
-      data['dsync'] = true;
-    }
-  };
+  // wiz.overrideDSyncFlag = function (data) -> CleverTap.js
 
   // wiz.addARPToRequest = function (url, skipResARP) -> api.js
 
-  wiz.addFlags = function (data) {
-
-    //check if cookie should be cleared.
-    clearCookie = wiz.getAndClearMetaProp(STRING_CONSTANTS.CLEAR);
-    if (clearCookie !== undefined && clearCookie) {
-      data['rc'] = true;
-      console.debug("reset cookie sent in request and cleared from meta for future requests.");
-    }
-    if (wzrk_util.isPersonalizationActive()) {
-      var lastSyncTime = wiz.getMetaProp('lsTime');
-      var expirySeconds = wiz.getMetaProp('exTs');
-
-      //dsync not found in local storage - get data from server
-      if (typeof lastSyncTime == STRING_CONSTANTS.UNDEFINED || typeof expirySeconds == STRING_CONSTANTS.UNDEFINED) {
-        data['dsync'] = true;
-        return;
-      }
-      var now = wzrk_util.getNow();
-      //last sync time has expired - get fresh data from server
-      if (lastSyncTime + expirySeconds < now) {
-        data['dsync'] = true;
-      }
-    }
-
-
-  };
+  // wiz.addFlags = function (data) -> request.js
 
   var unregisterTokenForGuid = function (givenGUID) {
     var data = {};
@@ -823,59 +726,7 @@ function __wizrocket() {
     }
   };
 
-  wiz.processProfileArray = function (profileArr) {
-    if (wzrk_util.isArray(profileArr) && profileArr.length > 0) {
-
-      for (var index in profileArr) {
-        if(profileArr.hasOwnProperty(index)) {
-          var outerObj = profileArr[index];
-          var data = {};
-          var profileObj;
-          if (typeof outerObj['Site'] != STRING_CONSTANTS.UNDEFINED) {       //organic data from the site
-            profileObj = outerObj['Site'];
-            if (wzrk_util.isObjectEmpty(profileObj) || !wiz.isProfileValid(profileObj)) {
-              return;
-            }
-
-          } else if (typeof outerObj['Facebook'] != STRING_CONSTANTS.UNDEFINED) {   //fb connect data
-            var FbProfileObj = outerObj['Facebook'];
-            //make sure that the object contains any data at all
-
-            if (!wzrk_util.isObjectEmpty(FbProfileObj) && (!FbProfileObj['error'])) {
-              profileObj = wiz.processFBUserObj(FbProfileObj);
-            }
-
-          } else if (typeof outerObj['Google Plus'] != STRING_CONSTANTS.UNDEFINED) {
-            var GPlusProfileObj = outerObj['Google Plus'];
-            if (!wzrk_util.isObjectEmpty(GPlusProfileObj) && (!GPlusProfileObj['error'])) {
-              profileObj = wiz.processGPlusUserObj(GPlusProfileObj);
-            }
-          }
-          if (typeof profileObj != STRING_CONSTANTS.UNDEFINED && (!wzrk_util.isObjectEmpty(profileObj))) {   // profile got set from above
-            data['type'] = "profile";
-            if (typeof profileObj['tz'] === STRING_CONSTANTS.UNDEFINED) {
-              //try to auto capture user timezone if not present
-              profileObj['tz'] = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
-            }
-
-            data['profile'] = profileObj;
-            wiz.addToLocalProfileMap(profileObj, true);
-            data = wiz.addSystemDataToObject(data, undefined);
-
-            wiz.addFlags(data);
-            var compressedData = wiz.compressData(JSON.stringify(data));
-
-            var pageLoadUrl = dataPostURL;
-            pageLoadUrl = wiz.addToURL(pageLoadUrl, "type", EVT_PUSH);
-            pageLoadUrl = wiz.addToURL(pageLoadUrl, "d", compressedData);
-
-            wiz.saveAndFireRequest(pageLoadUrl, blockRequeust);
-
-          }
-        }
-      }
-    }
-  };
+  // wiz.processProfileArray = function (profileArr) -> event.js
 
   /*
           anonymousUser   => Only GUID present.
@@ -1084,12 +935,8 @@ function __wizrocket() {
       return 0;
     };
 
-    wizrocket['event'].push = function () {
-      //since arguments is not an array, convert it into an array
-      wiz.processEventArray(Array.prototype.slice.call(arguments));
-      return 0;
-    };
-
+    // wizrocket['event'].push = function () -> event.js
+    
     if (typeof wizrocket['notifications'] === STRING_CONSTANTS.UNDEFINED)
       wizrocket['notifications'] = [];
 
@@ -1099,17 +946,17 @@ function __wizrocket() {
     };
 
 
-    wizrocket['profile'].push = function () {
-      //since arguments is not an array, convert it into an array
-      wiz.processProfileArray(Array.prototype.slice.call(arguments));
-      return 0;
-    };
+    // wizrocket['profile'].push = function () ->profile.js
+    //   //since arguments is not an array, convert it into an array
+    //   wiz.processProfileArray(Array.prototype.slice.call(arguments));
+    //   return 0;
+    // };
     wizrocket['logout'] = wiz.logout;
     wizrocket['clear'] = wiz.clear;
     wiz.processLoginArray(wizrocket['onUserLogin']);  // process old stuff from the login array before we overloaded the push method
     wiz.processPrivacyArray(wizrocket['privacy']);  // process old stuff from the privacy array before we overloaded the push method
-    wiz.processEventArray(wizrocket['event']);      // process old stuff from the event array before we overloaded the push method
-    wiz.processProfileArray(wizrocket['profile']);  // process old stuff from the profile array before we overloaded the push method
+    // wiz.processEventArray(wizrocket['event']);      // process old stuff from the event array before we overloaded the push method
+    // wiz.processProfileArray(wizrocket['profile']);  // process old stuff from the profile array before we overloaded the push method
     wiz.setUpWebPush(wizrocket['notifications']); // process old stuff from notifications array before overload
 
     // clean up the notifications array
@@ -1182,142 +1029,9 @@ function __wizrocket() {
 
 
   // profile like https://developers.google.com/+/api/latest/people
-  wiz.processGPlusUserObj = function (user) {
+  // wiz.processGPlusUserObj = function (user) -> profile.js
 
-    var profileData = {};
-    if (typeof user['displayName'] != STRING_CONSTANTS.UNDEFINED) {
-      profileData['Name'] = user['displayName'];
-    }
-    if (typeof user['id'] != STRING_CONSTANTS.UNDEFINED) {
-      profileData['GPID'] = user['id'] + "";
-    }
-
-    if (typeof user['gender'] != STRING_CONSTANTS.UNDEFINED) {
-      if (user['gender'] == "male") {
-        profileData['Gender'] = "M";
-      } else if (user['gender'] == "female") {
-        profileData['Gender'] = "F";
-      } else if (user['gender'] == "other") {
-        profileData['Gender'] = "O";
-      }
-    }
-
-    if (typeof user['image'] != STRING_CONSTANTS.UNDEFINED) {
-      if (user['image']['isDefault'] == false) {
-        profileData['Photo'] = user['image'].url.split('?sz')[0];
-      }
-    }
-
-    if (typeof user['emails'] != "undefined") {
-      for (var emailIdx = 0; emailIdx < user['emails'].length; emailIdx++) {
-        var emailObj = user['emails'][emailIdx];
-        if (emailObj.type == 'account') {
-          profileData['Email'] = emailObj.value;
-        }
-      }
-    }
-
-
-    if (typeof user['organizations'] != "undefined") {
-      profileData['Employed'] = 'N';
-      for (var i = 0; i < user['organizations'].length; i++) {
-        var orgObj = user['organizations'][i];
-        if (orgObj.type == 'work') {
-          profileData['Employed'] = 'Y';
-        }
-      }
-    }
-
-
-    if (typeof user['birthday'] != STRING_CONSTANTS.UNDEFINED) {
-      var yyyymmdd = user['birthday'].split('-'); //comes in as "1976-07-27"
-      profileData['DOB'] = $WZRK_WR.setDate(yyyymmdd[0] + yyyymmdd[1] + yyyymmdd[2]);
-    }
-
-
-    if (typeof user['relationshipStatus'] != STRING_CONSTANTS.UNDEFINED) {
-      profileData['Married'] = 'N';
-      if (user['relationshipStatus'] == 'married') {
-        profileData['Married'] = 'Y';
-      }
-    }
-    console.debug("gplus usr profile " + JSON.stringify(profileData));
-
-    return profileData;
-  };
-
-  wiz.processFBUserObj = function (user) {
-    var profileData = {};
-    profileData['Name'] = user['name'];
-    if (typeof user['id'] != STRING_CONSTANTS.UNDEFINED) {
-      profileData['FBID'] = user['id'] + "";
-    }
-    // Feb 2014 - FB announced over 58 gender options, hence we specifically look for male or female. Rest we don't care.
-    if (user['gender'] == "male") {
-      profileData['Gender'] = "M";
-    } else if (user['gender'] == "female") {
-      profileData['Gender'] = "F";
-    } else {
-      profileData['Gender'] = "O";
-    }
-
-    var getHighestEducation = function (eduArr) {
-      if (typeof eduArr != "undefined") {
-        var college = "";
-        var highschool = "";
-
-        for (var i = 0; i < eduArr.length; i++) {
-          var edu = eduArr[i];
-          if (typeof edu.type != "undefined") {
-            var type = edu.type;
-            if (type == "Graduate School") {
-              return "Graduate";
-            } else if (type == "College") {
-              college = "1";
-            } else if (type == "High School") {
-              highschool = "1";
-            }
-          }
-        }
-
-        if (college == "1") {
-          return "College";
-        } else if (highschool == "1") {
-          return "School";
-        }
-      }
-
-    };
-
-    if (user['relationship_status'] != STRING_CONSTANTS.UNDEFINED) {
-      profileData['Married'] = 'N';
-      if (user['relationship_status'] == 'Married') {
-        profileData['Married'] = 'Y';
-      }
-    }
-
-    var edu = getHighestEducation(user['education']);
-    if (typeof edu !== "undefined") {
-      profileData['Education'] = edu;
-    }
-
-    var work = (typeof user['work'] !== STRING_CONSTANTS.UNDEFINED) ? user['work'].length : 0;
-    if (work > 0) {
-      profileData['Employed'] = 'Y';
-    } else {
-      profileData['Employed'] = 'N';
-    }
-
-    if (typeof user['email'] !== "undefined") {
-      profileData['Email'] = user['email'];
-    }
-
-    if (typeof user['birthday'] !== "undefined") {
-      var mmddyy = user['birthday'].split('/'); //comes in as "08/15/1947"
-      profileData['DOB'] = $WZRK_WR.setDate(mmddyy[2] + mmddyy[0] + mmddyy[1]);
-    }
-    return profileData;
-  };
+  // wiz.processFBUserObj = function (user) -> profile.js
 
 
   wiz.getEmail = function (reEncoded) {
@@ -1401,30 +1115,7 @@ function __wizrocket() {
   // wiz.compressData = -> encodeURIComponent.js
 
 
-  wiz.addSystemDataToObject = function (dataObject, ignoreTrim) {
-    // ignore trim for chrome notifications; undefined everywhere else
-    if (typeof ignoreTrim === STRING_CONSTANTS.UNDEFINED) {
-      dataObject = wzrk_util.removeUnsupportedChars(dataObject);
-    }
-    if (!wzrk_util.isObjectEmpty(wzrk_error)) {
-      dataObject['wzrk_error'] = wzrk_error;
-      wzrk_error = {};
-    }
-
-    dataObject['id'] = accountId;
-
-    //Global cookie
-    if (wiz.isValueValid(gcookie)) {
-      dataObject['g'] = gcookie;
-    }
-
-    var obj = wiz.getSessionCookieObject();
-
-    dataObject['s'] = obj['s'];                                                      //Session cookie
-    dataObject['pg'] = (typeof obj['p'] == STRING_CONSTANTS.UNDEFINED) ? 1 : obj['p'];                //Page count
-
-    return dataObject;
-  };
+  // wiz.addSystemDataToObject = function (dataObject, ignoreTrim) -> request.js
 
 
   wiz.getSessionCookieObject = function () {

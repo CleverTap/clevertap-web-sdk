@@ -232,5 +232,6 @@ export const $ct = {
     REQ_N: 0,
     RESP_N: 0
   },
+  globalProfileMap: null,
   blockRequest: false
 }

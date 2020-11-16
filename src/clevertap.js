@@ -147,6 +147,7 @@ import Account from './modules/account'
 import CleverTapAPI from './modules/api'
 import DeviceManager from './modules/device'
 import EventHandler from './modules/event'
+import ProfileHandler from './modules/profile'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
@@ -193,6 +194,12 @@ export default class CleverTap {
       request: this.#request,
       isPersonalisationActive: this._isPersonalisationActive
     }, clevertap.event)
+
+    this.profile = new ProfileHandler({
+      logger: this.#logger,
+      request: this.#request,
+      account: this.#account
+    }, clevertap.profile)
 
     this.#api = new CleverTapAPI({
       logger: this.#logger,

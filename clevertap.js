@@ -323,6 +323,7 @@
 
   var EV_COOKIE = 'WZRK_EV';
   var META_COOKIE = 'WZRK_META';
+  var PR_COOKIE = 'WZRK_PR';
   var ARP_COOKIE = 'WZRK_ARP';
   var LCOOKIE_NAME = 'WZRK_L';
   var OPTOUT_COOKIE_ENDSWITH = ':OO';
@@ -359,6 +360,9 @@
     }
 
     return true;
+  };
+  var isConvertibleToNumber = function isConvertibleToNumber(n) {
+    return !isNaN(parseFloat(n)) && isFinite(n);
   };
   var isNumber = function isNumber(n) {
     return /^-?[\d.]+(?:e-?\d+)?$/.test(n) && typeof n === 'number';
@@ -425,6 +429,22 @@
   };
   var convertToWZRKDate = function convertToWZRKDate(dateObj) {
     return '$D_' + Math.round(dateObj.getTime() / 1000);
+  };
+  var setDate = function setDate(dt) {
+    // expecting  yyyymmdd format either as a number or a string
+    if (isDateValid(dt)) {
+      return '$D_' + dt;
+    }
+  };
+  var isDateValid = function isDateValid(date) {
+    var matches = /^(\d{4})(\d{2})(\d{2})$/.exec(date);
+    if (matches == null) return false;
+    var d = matches[3];
+    var m = matches[2] - 1;
+    var y = matches[1];
+    var composedDate = new Date(y, m, d); // eslint-disable-next-line eqeqeq
+
+    return composedDate.getDate() == d && composedDate.getMonth() == m && composedDate.getFullYear() == y;
   };
 
   var StorageManager = /*#__PURE__*/function () {
@@ -707,6 +727,7 @@
       REQ_N: 0,
       RESP_N: 0
     },
+    globalProfileMap: null,
     blockRequest: false
   };
 
@@ -1069,6 +1090,13 @@
 
   var EMBED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Incorrect embed script.");
   var EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
+  var GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should be either M or F. ").concat(DATA_NOT_SENT_TEXT);
+  var EMPLOYED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Employed value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
+  var MARRIED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Married value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
+  var EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
+  var AGE_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Age value should be a number. ").concat(DATA_NOT_SENT_TEXT);
+  var DOB_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " DOB value should be a Date Object");
+  var PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
 
   var _globalChargedId;
 
@@ -1305,195 +1333,47 @@
     }
   };
 
-  var logLevels = {
-    DISABLE: 0,
-    ERROR: 1,
-    INFO: 2,
-    DEBUG: 3
-  };
+  var getURLParams = function getURLParams(url) {
+    var urlParams = {};
+    var idx = url.indexOf('?');
 
-  var _logLevel = _classPrivateFieldLooseKey("logLevel");
+    if (idx > 1) {
+      var uri = url.substring(idx + 1);
+      var match;
+      var pl = /\+/g; // Regex for replacing addition symbol with a space
 
-  var _log = _classPrivateFieldLooseKey("log");
+      var search = /([^&=]+)=?([^&]*)/g;
 
-  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
+      var decode = function decode(s) {
+        var replacement = s.replace(pl, ' ');
 
-  var Logger = /*#__PURE__*/function () {
-    function Logger(logLevel) {
-      _classCallCheck(this, Logger);
+        try {
+          replacement = decodeURIComponent(replacement);
+        } catch (e) {// eat
+        }
 
-      Object.defineProperty(this, _isLegacyDebug, {
-        get: _get_isLegacyDebug,
-        set: void 0
-      });
-      Object.defineProperty(this, _log, {
-        value: _log2
-      });
-      Object.defineProperty(this, _logLevel, {
-        writable: true,
-        value: void 0
-      });
-      this.wzrkError = {};
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevel : logLevels.INFO;
-      this.wzrkError = {};
+        return replacement;
+      };
+
+      match = search.exec(uri);
+
+      while (match) {
+        urlParams[decode(match[1])] = decode(match[2]);
+        match = search.exec(uri);
+      }
     }
 
-    _createClass(Logger, [{
-      key: "error",
-      value: function error(message) {
-        if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
-          _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
-        }
-      }
-    }, {
-      key: "info",
-      value: function info(message) {
-        if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
-          _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
-        }
-      }
-    }, {
-      key: "debug",
-      value: function debug(message) {
-        if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
-          _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
-        }
-      }
-    }, {
-      key: "reportError",
-      value: function reportError(code, description) {
-        this.wzrkError.c = code;
-        this.wzrkError.d = description;
-        this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
-      }
-    }, {
-      key: "logLevel",
-      get: function get() {
-        return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
-      },
-      set: function set(logLevel) {
-        _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
-      }
-    }]);
-
-    return Logger;
-  }();
-
-  var _log2 = function _log2(level, message) {
-    if (window.console) {
-      try {
-        var ts = new Date().getTime();
-        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
-    }
+    return urlParams;
   };
-
-  var _get_isLegacyDebug = function _get_isLegacyDebug() {
-    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
+  var getDomain = function getDomain(url) {
+    if (url === '') return '';
+    var a = document.createElement('a');
+    a.href = url;
+    return a.hostname;
   };
-
-  var _logger$3 = _classPrivateFieldLooseKey("logger");
-
-  var _sessionId = _classPrivateFieldLooseKey("sessionId");
-
-  var SessionManager = /*#__PURE__*/function () {
-    function SessionManager(_ref) {
-      var logger = _ref.logger;
-
-      _classCallCheck(this, SessionManager);
-
-      Object.defineProperty(this, _logger$3, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _sessionId, {
-        writable: true,
-        value: void 0
-      });
-      this.cookieName = void 0;
-      this.scookieObj = void 0;
-      this.sessionId = StorageManager.getMetaProp('cs');
-      _classPrivateFieldLooseBase(this, _logger$3)[_logger$3] = logger;
-    }
-
-    _createClass(SessionManager, [{
-      key: "getSessionCookieObject",
-      value: function getSessionCookieObject() {
-        var scookieStr = StorageManager.readCookie(this.cookieName);
-        var obj = {};
-
-        if (scookieStr != null) {
-          // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
-          scookieStr = scookieStr.replace(singleQuoteRegex, '"');
-          obj = JSON.parse(scookieStr);
-
-          if (!isObject(obj)) {
-            obj = {};
-          } else {
-            if (typeof obj.t !== 'undefined') {
-              // check time elapsed since last request
-              var lastTime = obj.t;
-              var now = getNow();
-
-              if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
-                // adding 60 seconds to compensate for in-journey requests
-                // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
-                // hence we shouldn't use it.
-                obj = {};
-              }
-            }
-          }
-        }
-
-        this.scookieObj = obj;
-        return obj;
-      }
-    }, {
-      key: "setSessionCookieObject",
-      value: function setSessionCookieObject(obj) {
-        var objStr = JSON.stringify(obj);
-        StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, window.location.hostname);
-      }
-    }, {
-      key: "manageSession",
-      value: function manageSession(session) {
-        // first time. check if current session id in localstorage is same
-        // if not same then prev = current and current = this new session
-        if (typeof this.sessionId === 'undefined' || this.sessionId !== session) {
-          var currentSessionInLS = StorageManager.getMetaProp('cs'); // if sessionId in meta is undefined - set current to both
-
-          if (typeof currentSessionInLS === 'undefined') {
-            StorageManager.setMetaProp('ps', session);
-            StorageManager.setMetaProp('cs', session);
-            StorageManager.setMetaProp('sc', 1);
-          } else if (currentSessionInLS !== session) {
-            // not same as session in local storage. new session
-            StorageManager.setMetaProp('ps', currentSessionInLS);
-            StorageManager.setMetaProp('cs', session);
-            var sessionCount = StorageManager.getMetaProp('sc');
-
-            if (typeof sessionCount === 'undefined') {
-              sessionCount = 0;
-            }
-
-            StorageManager.setMetaProp('sc', sessionCount + 1);
-          }
-
-          this.sessionId = session;
-        }
-      }
-    }, {
-      key: "sessionId",
-      get: function get() {
-        return _classPrivateFieldLooseBase(this, _sessionId)[_sessionId];
-      },
-      set: function set(sessionId) {
-        _classPrivateFieldLooseBase(this, _sessionId)[_sessionId] = sessionId;
-      }
-    }]);
-
-    return SessionManager;
-  }();
+  var addToURL = function addToURL(url, k, v) {
+    return url + '&' + k + '=' + encodeURIComponent(v);
+  };
 
   /* eslint-disable */
   var compressData = function compressData(dataObject) {
@@ -1821,47 +1701,627 @@
     return output;
   };
 
-  var getURLParams = function getURLParams(url) {
-    var urlParams = {};
-    var idx = url.indexOf('?');
+  var _logger$3 = _classPrivateFieldLooseKey("logger");
 
-    if (idx > 1) {
-      var uri = url.substring(idx + 1);
-      var match;
-      var pl = /\+/g; // Regex for replacing addition symbol with a space
+  var _request$2 = _classPrivateFieldLooseKey("request");
 
-      var search = /([^&=]+)=?([^&]*)/g;
+  var _account = _classPrivateFieldLooseKey("account");
 
-      var decode = function decode(s) {
-        var replacement = s.replace(pl, ' ');
+  var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
 
-        try {
-          replacement = decodeURIComponent(replacement);
-        } catch (e) {// eat
+  var _isProfileValid = _classPrivateFieldLooseKey("isProfileValid");
+
+  var _processFBUserObj = _classPrivateFieldLooseKey("processFBUserObj");
+
+  var _processGPlusUserObj = _classPrivateFieldLooseKey("processGPlusUserObj");
+
+  var _addToLocalProfileMap = _classPrivateFieldLooseKey("addToLocalProfileMap");
+
+  var _processProfileArray = _classPrivateFieldLooseKey("processProfileArray");
+
+  var ProfileHandler = /*#__PURE__*/function (_Array) {
+    _inherits(ProfileHandler, _Array);
+
+    var _super = _createSuper(ProfileHandler);
+
+    function ProfileHandler(_ref, values) {
+      var _this;
+
+      var logger = _ref.logger,
+          request = _ref.request,
+          account = _ref.account;
+
+      _classCallCheck(this, ProfileHandler);
+
+      _this = _super.call(this);
+      Object.defineProperty(_assertThisInitialized(_this), _processProfileArray, {
+        value: _processProfileArray2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _addToLocalProfileMap, {
+        value: _addToLocalProfileMap2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _processGPlusUserObj, {
+        value: _processGPlusUserObj2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _processFBUserObj, {
+        value: _processFBUserObj2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _isProfileValid, {
+        value: _isProfileValid2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _logger$3, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _request$2, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _account, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _oldValues$1, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$3)[_logger$3] = logger;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$2)[_request$2] = request;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account)[_account] = account;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$1)[_oldValues$1] = values;
+      return _this;
+    }
+
+    _createClass(ProfileHandler, [{
+      key: "push",
+      value: function push() {
+        for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          profilesArr[_key] = arguments[_key];
         }
 
-        return replacement;
-      };
+        _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](profilesArr);
 
-      match = search.exec(uri);
+        return 0;
+      }
+    }]);
 
-      while (match) {
-        urlParams[decode(match[1])] = decode(match[2]);
-        match = search.exec(uri);
+    return ProfileHandler;
+  }( /*#__PURE__*/_wrapNativeSuper(Array));
+
+  var _isProfileValid2 = function _isProfileValid2(profileObj) {
+    var valid = false;
+
+    if (isObject(profileObj)) {
+      for (var profileKey in profileObj) {
+        if (profileObj.hasOwnProperty(profileKey)) {
+          valid = true;
+          var profileVal = profileObj[profileKey];
+
+          if (profileVal == null) {
+            delete profileObj[profileKey];
+            continue;
+          }
+
+          if (profileKey === 'Gender' && !profileVal.match(/^M$|^F$/)) {
+            valid = false;
+
+            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(GENDER_ERROR);
+          }
+
+          if (profileKey === 'Employed' && !profileVal.match(/^Y$|^N$/)) {
+            valid = false;
+
+            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(EMPLOYED_ERROR);
+          }
+
+          if (profileKey === 'Married' && !profileVal.match(/^Y$|^N$/)) {
+            valid = false;
+
+            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(MARRIED_ERROR);
+          }
+
+          if (profileKey === 'Education' && !profileVal.match(/^School$|^College$|^Graduate$/)) {
+            valid = false;
+
+            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(EDUCATION_ERROR);
+          }
+
+          if (profileKey === 'Age' && profileVal != null) {
+            if (isConvertibleToNumber(profileVal)) {
+              profileObj.Age = +profileVal;
+            } else {
+              valid = false;
+
+              _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(AGE_ERROR);
+            }
+          } // dob will come in like this - $dt_19470815 or dateObject
+
+
+          if (profileKey === 'DOB') {
+            if ((!/^\$D_/.test(profileVal) || (profileVal + '').length !== 11) && !isDateObject(profileVal)) {
+              valid = false;
+
+              _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(DOB_ERROR);
+            }
+
+            if (isDateObject(profileVal)) {
+              profileObj[profileKey] = convertToWZRKDate(profileVal);
+            }
+          } else if (isDateObject(profileVal)) {
+            profileObj[profileKey] = convertToWZRKDate(profileVal);
+          }
+
+          if (profileKey === 'Phone' && !isObjectEmpty(profileVal)) {
+            if (profileVal.length > 8 && profileVal.charAt(0) === '+') {
+              // valid phone number
+              profileVal = profileVal.substring(1, profileVal.length);
+
+              if (isConvertibleToNumber(profileVal)) {
+                profileObj.Phone = +profileVal;
+              } else {
+                valid = false;
+
+                _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(PHONE_FORMAT_ERROR + '. Removed.');
+              }
+            } else {
+              valid = false;
+
+              _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(PHONE_FORMAT_ERROR + '. Removed.');
+            }
+          }
+
+          if (!valid) {
+            delete profileObj[profileKey];
+          }
+        }
       }
     }
 
-    return urlParams;
+    return valid;
   };
-  var getDomain = function getDomain(url) {
-    if (url === '') return '';
-    var a = document.createElement('a');
-    a.href = url;
-    return a.hostname;
+
+  var _processFBUserObj2 = function _processFBUserObj2(user) {
+    var profileData = {};
+    profileData.Name = user.name;
+
+    if (user.id != null) {
+      profileData.FBID = user.id + '';
+    } // Feb 2014 - FB announced over 58 gender options, hence we specifically look for male or female. Rest we don't care.
+
+
+    if (user.gender === 'male') {
+      profileData.Gender = 'M';
+    } else if (user.gender === 'female') {
+      profileData.Gender = 'F';
+    } else {
+      profileData.Gender = 'O';
+    }
+
+    var getHighestEducation = function getHighestEducation(eduArr) {
+      if (eduArr != null) {
+        var college = '';
+        var highschool = '';
+
+        for (var i = 0; i < eduArr.length; i++) {
+          var _edu = eduArr[i];
+
+          if (_edu.type != null) {
+            var type = _edu.type;
+
+            if (type === 'Graduate School') {
+              return 'Graduate';
+            } else if (type === 'College') {
+              college = '1';
+            } else if (type === 'High School') {
+              highschool = '1';
+            }
+          }
+        }
+
+        if (college === '1') {
+          return 'College';
+        } else if (highschool === '1') {
+          return 'School';
+        }
+      }
+    };
+
+    if (user.relationship_status != null) {
+      profileData.Married = 'N';
+
+      if (user.relationship_status === 'Married') {
+        profileData.Married = 'Y';
+      }
+    }
+
+    var edu = getHighestEducation(user.education);
+
+    if (edu != null) {
+      profileData.Education = edu;
+    }
+
+    var work = user.work != null ? user.work.length : 0;
+
+    if (work > 0) {
+      profileData.Employed = 'Y';
+    } else {
+      profileData.Employed = 'N';
+    }
+
+    if (user.email != null) {
+      profileData.Email = user.email;
+    }
+
+    if (user.birthday != null) {
+      var mmddyy = user.birthday.split('/'); // comes in as "08/15/1947"
+
+      profileData.DOB = setDate(mmddyy[2] + mmddyy[0] + mmddyy[1]);
+    }
+
+    return profileData;
   };
-  var addToURL = function addToURL(url, k, v) {
-    return url + '&' + k + '=' + encodeURIComponent(v);
+
+  var _processGPlusUserObj2 = function _processGPlusUserObj2(user) {
+    var profileData = {};
+
+    if (user.displayName != null) {
+      profileData.Name = user.displayName;
+    }
+
+    if (user.id != null) {
+      profileData.GPID = user.id + '';
+    }
+
+    if (user.gender != null) {
+      if (user.gender === 'male') {
+        profileData.Gender = 'M';
+      } else if (user.gender === 'female') {
+        profileData.Gender = 'F';
+      } else if (user.gender === 'other') {
+        profileData.Gender = 'O';
+      }
+    }
+
+    if (user.image != null) {
+      if (user.image.isDefault === false) {
+        profileData.Photo = user.image.url.split('?sz')[0];
+      }
+    }
+
+    if (user.emails != null) {
+      for (var emailIdx = 0; emailIdx < user.emails.length; emailIdx++) {
+        var emailObj = user.emails[emailIdx];
+
+        if (emailObj.type === 'account') {
+          profileData.Email = emailObj.value;
+        }
+      }
+    }
+
+    if (user.organizations != null) {
+      profileData.Employed = 'N';
+
+      for (var i = 0; i < user.organizations.length; i++) {
+        var orgObj = user.organizations[i];
+
+        if (orgObj.type === 'work') {
+          profileData.Employed = 'Y';
+        }
+      }
+    }
+
+    if (user.birthday != null) {
+      var yyyymmdd = user.birthday.split('-'); // comes in as "1976-07-27"
+
+      profileData.DOB = setDate(yyyymmdd[0] + yyyymmdd[1] + yyyymmdd[2]);
+    }
+
+    if (user.relationshipStatus != null) {
+      profileData.Married = 'N';
+
+      if (user.relationshipStatus === 'married') {
+        profileData.Married = 'Y';
+      }
+    }
+
+    _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('gplus usr profile ' + JSON.stringify(profileData));
+
+    return profileData;
   };
+
+  var _addToLocalProfileMap2 = function _addToLocalProfileMap2(profileObj, override) {
+    var globalProfileMap = $ct.globalProfileMap;
+
+    if (StorageManager._isLocalStorageSupported()) {
+      if (globalProfileMap == null) {
+        globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
+
+        if (globalProfileMap == null) {
+          globalProfileMap = {};
+        }
+      } // Move props from custom bucket to outside.
+
+
+      if (profileObj._custom != null) {
+        var keys = profileObj._custom;
+
+        for (var key in keys) {
+          if (keys.hasOwnProperty(key)) {
+            profileObj[key] = keys[key];
+          }
+        }
+
+        delete profileObj._custom;
+      }
+
+      for (var prop in profileObj) {
+        if (profileObj.hasOwnProperty(prop)) {
+          if (globalProfileMap.hasOwnProperty(prop) && !override) {
+            continue;
+          }
+
+          globalProfileMap[prop] = profileObj[prop];
+        }
+      }
+
+      if (globalProfileMap._custom != null) {
+        delete globalProfileMap._custom;
+      }
+
+      StorageManager.saveToLSorCookie(PR_COOKIE, globalProfileMap);
+    }
+  };
+
+  var _processProfileArray2 = function _processProfileArray2(profileArr) {
+    if (Array.isArray(profileArr) && profileArr.length > 0) {
+      for (var index in profileArr) {
+        if (profileArr.hasOwnProperty(index)) {
+          var outerObj = profileArr[index];
+          var data = {};
+          var profileObj = void 0;
+
+          if (outerObj.Site != null) {
+            // organic data from the site
+            profileObj = outerObj.Site;
+
+            if (isObjectEmpty(profileObj) || !_classPrivateFieldLooseBase(this, _isProfileValid)[_isProfileValid](profileObj)) {
+              return;
+            }
+          } else if (outerObj.Facebook != null) {
+            // fb connect data
+            var FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
+
+            if (!isObjectEmpty(FbProfileObj) && !FbProfileObj.error) {
+              profileObj = _classPrivateFieldLooseBase(this, _processFBUserObj)[_processFBUserObj](FbProfileObj);
+            }
+          } else if (outerObj['Google Plus'] != null) {
+            var GPlusProfileObj = outerObj['Google Plus'];
+
+            if (!isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
+              profileObj = _classPrivateFieldLooseBase(this, _processGPlusUserObj)[_processGPlusUserObj](GPlusProfileObj);
+            }
+          }
+
+          if (profileObj != null && !isObjectEmpty(profileObj)) {
+            // profile got set from above
+            data.type = 'profile';
+
+            if (profileObj.tz == null) {
+              // try to auto capture user timezone if not present
+              profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+            }
+
+            data.profile = profileObj;
+
+            _classPrivateFieldLooseBase(this, _addToLocalProfileMap)[_addToLocalProfileMap](profileObj, true);
+
+            data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
+
+            _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data);
+
+            var compressedData = compressData(JSON.stringify(data));
+
+            var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+
+            pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+
+            _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust);
+          }
+        }
+      }
+    }
+  };
+
+  var logLevels = {
+    DISABLE: 0,
+    ERROR: 1,
+    INFO: 2,
+    DEBUG: 3
+  };
+
+  var _logLevel = _classPrivateFieldLooseKey("logLevel");
+
+  var _log = _classPrivateFieldLooseKey("log");
+
+  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
+
+  var Logger = /*#__PURE__*/function () {
+    function Logger(logLevel) {
+      _classCallCheck(this, Logger);
+
+      Object.defineProperty(this, _isLegacyDebug, {
+        get: _get_isLegacyDebug,
+        set: void 0
+      });
+      Object.defineProperty(this, _log, {
+        value: _log2
+      });
+      Object.defineProperty(this, _logLevel, {
+        writable: true,
+        value: void 0
+      });
+      this.wzrkError = {};
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevel : logLevels.INFO;
+      this.wzrkError = {};
+    }
+
+    _createClass(Logger, [{
+      key: "error",
+      value: function error(message) {
+        if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
+          _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
+        }
+      }
+    }, {
+      key: "info",
+      value: function info(message) {
+        if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
+          _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
+        }
+      }
+    }, {
+      key: "debug",
+      value: function debug(message) {
+        if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
+          _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
+        }
+      }
+    }, {
+      key: "reportError",
+      value: function reportError(code, description) {
+        this.wzrkError.c = code;
+        this.wzrkError.d = description;
+        this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
+      }
+    }, {
+      key: "logLevel",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
+      },
+      set: function set(logLevel) {
+        _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
+      }
+    }]);
+
+    return Logger;
+  }();
+
+  var _log2 = function _log2(level, message) {
+    if (window.console) {
+      try {
+        var ts = new Date().getTime();
+        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
+      } catch (e) {}
+    }
+  };
+
+  var _get_isLegacyDebug = function _get_isLegacyDebug() {
+    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
+  };
+
+  var _logger$4 = _classPrivateFieldLooseKey("logger");
+
+  var _sessionId = _classPrivateFieldLooseKey("sessionId");
+
+  var SessionManager = /*#__PURE__*/function () {
+    function SessionManager(_ref) {
+      var logger = _ref.logger;
+
+      _classCallCheck(this, SessionManager);
+
+      Object.defineProperty(this, _logger$4, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _sessionId, {
+        writable: true,
+        value: void 0
+      });
+      this.cookieName = void 0;
+      this.scookieObj = void 0;
+      this.sessionId = StorageManager.getMetaProp('cs');
+      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
+    }
+
+    _createClass(SessionManager, [{
+      key: "getSessionCookieObject",
+      value: function getSessionCookieObject() {
+        var scookieStr = StorageManager.readCookie(this.cookieName);
+        var obj = {};
+
+        if (scookieStr != null) {
+          // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
+          scookieStr = scookieStr.replace(singleQuoteRegex, '"');
+          obj = JSON.parse(scookieStr);
+
+          if (!isObject(obj)) {
+            obj = {};
+          } else {
+            if (typeof obj.t !== 'undefined') {
+              // check time elapsed since last request
+              var lastTime = obj.t;
+              var now = getNow();
+
+              if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
+                // adding 60 seconds to compensate for in-journey requests
+                // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
+                // hence we shouldn't use it.
+                obj = {};
+              }
+            }
+          }
+        }
+
+        this.scookieObj = obj;
+        return obj;
+      }
+    }, {
+      key: "setSessionCookieObject",
+      value: function setSessionCookieObject(obj) {
+        var objStr = JSON.stringify(obj);
+        StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, window.location.hostname);
+      }
+    }, {
+      key: "manageSession",
+      value: function manageSession(session) {
+        // first time. check if current session id in localstorage is same
+        // if not same then prev = current and current = this new session
+        if (typeof this.sessionId === 'undefined' || this.sessionId !== session) {
+          var currentSessionInLS = StorageManager.getMetaProp('cs'); // if sessionId in meta is undefined - set current to both
+
+          if (typeof currentSessionInLS === 'undefined') {
+            StorageManager.setMetaProp('ps', session);
+            StorageManager.setMetaProp('cs', session);
+            StorageManager.setMetaProp('sc', 1);
+          } else if (currentSessionInLS !== session) {
+            // not same as session in local storage. new session
+            StorageManager.setMetaProp('ps', currentSessionInLS);
+            StorageManager.setMetaProp('cs', session);
+            var sessionCount = StorageManager.getMetaProp('sc');
+
+            if (typeof sessionCount === 'undefined') {
+              sessionCount = 0;
+            }
+
+            StorageManager.setMetaProp('sc', sessionCount + 1);
+          }
+
+          this.sessionId = session;
+        }
+      }
+    }, {
+      key: "sessionId",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _sessionId)[_sessionId];
+      },
+      set: function set(sessionId) {
+        _classPrivateFieldLooseBase(this, _sessionId)[_sessionId] = sessionId;
+      }
+    }]);
+
+    return SessionManager;
+  }();
 
   var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
 
@@ -2039,9 +2499,9 @@
   var seqNo = 0;
   var requestTime = 0;
 
-  var _logger$4 = _classPrivateFieldLooseKey("logger");
+  var _logger$5 = _classPrivateFieldLooseKey("logger");
 
-  var _account = _classPrivateFieldLooseKey("account");
+  var _account$1 = _classPrivateFieldLooseKey("account");
 
   var _device$1 = _classPrivateFieldLooseKey("device");
 
@@ -2066,11 +2526,11 @@
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
       });
-      Object.defineProperty(this, _logger$4, {
+      Object.defineProperty(this, _logger$5, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _account, {
+      Object.defineProperty(this, _account$1, {
         writable: true,
         value: void 0
       });
@@ -2091,8 +2551,8 @@
         value: false
       });
       this.processingBackup = false;
-      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
-      _classPrivateFieldLooseBase(this, _account)[_account] = account;
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
+      _classPrivateFieldLooseBase(this, _account$1)[_account$1] = account;
       _classPrivateFieldLooseBase(this, _device$1)[_device$1] = device;
       _classPrivateFieldLooseBase(this, _session$1)[_session$1] = session;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
@@ -2116,7 +2576,7 @@
             var backupEvent = backupMap[idx];
 
             if (typeof backupEvent.fired === 'undefined') {
-              _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Processing backup event : ' + backupEvent.q);
+              _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Processing backup event : ' + backupEvent.q);
 
               if (typeof backupEvent.q !== 'undefined') {
                 RequestDispatcher.fireRequest(backupEvent.q);
@@ -2135,15 +2595,15 @@
       value: function addSystemDataToObject(dataObject, ignoreTrim) {
         // ignore trim for chrome notifications; undefined everywhere else
         if (typeof ignoreTrim === 'undefined') {
-          dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]);
+          dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]);
         }
 
-        if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$4)[_logger$4].wzrkError)) {
-          dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].wzrkError;
-          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].wzrkError = {};
+        if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5].wzrkError)) {
+          dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].wzrkError;
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].wzrkError = {};
         }
 
-        dataObject.id = _classPrivateFieldLooseBase(this, _account)[_account].id;
+        dataObject.id = _classPrivateFieldLooseBase(this, _account$1)[_account$1].id;
 
         if (isValueValid(_classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie)) {
           dataObject.g = _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie;
@@ -2166,7 +2626,7 @@
         if (_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           data.rc = true;
 
-          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('reset cookie sent in request and cleared from meta for future requests.');
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('reset cookie sent in request and cleared from meta for future requests.');
         }
 
         if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
@@ -2191,7 +2651,7 @@
         var now = getNow();
         url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
         var data = url + '&i=' + now + '&sn=' + seqNo;
-        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]);
+        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]);
 
         if (!$ct.blockRequest || override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           if (now === requestTime) {
@@ -2203,7 +2663,7 @@
 
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
-          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug("Not fired due to block request - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug("Not fired due to block request - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
         }
       }
     }, {
@@ -2217,7 +2677,7 @@
         }
 
         data.action = 'unregister';
-        data.id = _classPrivateFieldLooseBase(this, _account)[_account].id;
+        data.id = _classPrivateFieldLooseBase(this, _account$1)[_account$1].id;
 
         var obj = _classPrivateFieldLooseBase(this, _session$1)[_session$1].getSessionCookieObject();
 
@@ -2225,7 +2685,7 @@
 
         var compressedData = compressData(JSON.stringify(data));
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -2241,7 +2701,7 @@
         data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
         var compressedData = compressData(JSON.stringify(data));
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -2280,7 +2740,7 @@
     }
   };
 
-  var _logger$5 = _classPrivateFieldLooseKey("logger");
+  var _logger$6 = _classPrivateFieldLooseKey("logger");
 
   var _api = _classPrivateFieldLooseKey("api");
 
@@ -2290,9 +2750,9 @@
 
   var _session$2 = _classPrivateFieldLooseKey("session");
 
-  var _account$1 = _classPrivateFieldLooseKey("account");
+  var _account$2 = _classPrivateFieldLooseKey("account");
 
-  var _request$2 = _classPrivateFieldLooseKey("request");
+  var _request$3 = _classPrivateFieldLooseKey("request");
 
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
@@ -2322,7 +2782,7 @@
       Object.defineProperty(this, _processOldValues, {
         value: _processOldValues2
       });
-      Object.defineProperty(this, _logger$5, {
+      Object.defineProperty(this, _logger$6, {
         writable: true,
         value: void 0
       });
@@ -2342,41 +2802,46 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _account$1, {
+      Object.defineProperty(this, _account$2, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _request$2, {
+      Object.defineProperty(this, _request$3, {
         writable: true,
         value: void 0
       });
       this.enablePersonalization = void 0;
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = new Logger(logLevels.INFO);
-      _classPrivateFieldLooseBase(this, _account$1)[_account$1] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = new Logger(logLevels.INFO);
+      _classPrivateFieldLooseBase(this, _account$2)[_account$2] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
       _classPrivateFieldLooseBase(this, _device$2)[_device$2] = new DeviceManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
+        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
       });
       _classPrivateFieldLooseBase(this, _session$2)[_session$2] = new SessionManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
+        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
       });
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
-      _classPrivateFieldLooseBase(this, _request$2)[_request$2] = new RequestManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
-        account: _classPrivateFieldLooseBase(this, _account$1)[_account$1],
+      _classPrivateFieldLooseBase(this, _request$3)[_request$3] = new RequestManager({
+        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
+        account: _classPrivateFieldLooseBase(this, _account$2)[_account$2],
         device: _classPrivateFieldLooseBase(this, _device$2)[_device$2],
         session: _classPrivateFieldLooseBase(this, _session$2)[_session$2],
         isPersonalisationActive: this._isPersonalisationActive
       });
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
-        request: _classPrivateFieldLooseBase(this, _request$2)[_request$2],
+        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
+        request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
         isPersonalisationActive: this._isPersonalisationActive
       }, clevertap.event);
+      this.profile = new ProfileHandler({
+        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
+        request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
+        account: _classPrivateFieldLooseBase(this, _account$2)[_account$2]
+      }, clevertap.profile);
       _classPrivateFieldLooseBase(this, _api)[_api] = new CleverTapAPI({
-        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
-        request: _classPrivateFieldLooseBase(this, _request$2)[_request$2],
+        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
+        request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
         device: _classPrivateFieldLooseBase(this, _device$2)[_device$2],
         session: _classPrivateFieldLooseBase(this, _session$2)[_session$2]
       });
@@ -2400,24 +2865,24 @@
 
         StorageManager.removeCookie('WZRK_P', window.location.hostname);
 
-        if (!_classPrivateFieldLooseBase(this, _account$1)[_account$1].id) {
+        if (!_classPrivateFieldLooseBase(this, _account$2)[_account$2].id) {
           if (!accountId) {
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error(EMBED_ERROR);
+            _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error(EMBED_ERROR);
 
             return;
           }
 
-          _classPrivateFieldLooseBase(this, _account$1)[_account$1].id = accountId;
+          _classPrivateFieldLooseBase(this, _account$2)[_account$2].id = accountId;
         }
 
-        _classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$1)[_account$1].id;
+        _classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
 
         if (region) {
-          _classPrivateFieldLooseBase(this, _account$1)[_account$1].region = region;
+          _classPrivateFieldLooseBase(this, _account$2)[_account$2].region = region;
         }
 
         if (targetDomain) {
-          _classPrivateFieldLooseBase(this, _account$1)[_account$1].targetDomain = targetDomain;
+          _classPrivateFieldLooseBase(this, _account$2)[_account$2].targetDomain = targetDomain;
         }
 
         var currLocation = location.href;
@@ -2427,7 +2892,7 @@
           return;
         }
 
-        _classPrivateFieldLooseBase(this, _request$2)[_request$2].processBackupEvents();
+        _classPrivateFieldLooseBase(this, _request$3)[_request$3].processBackupEvents();
 
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
@@ -2492,13 +2957,13 @@
           }
         }
 
-        data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
+        data = _classPrivateFieldLooseBase(this, _request$3)[_request$3].addSystemDataToObject(data, undefined);
         data.cpg = currLocation;
         data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
 
-        _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data); // send dsync flag when page = 1
+        _classPrivateFieldLooseBase(this, _request$3)[_request$3].addFlags(data); // send dsync flag when page = 1
 
 
         if (parseInt(data.pg) === 1) {
@@ -2508,7 +2973,7 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data)));
 
-        _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, false);
+        _classPrivateFieldLooseBase(this, _request$3)[_request$3].saveAndFireRequest(pageLoadUrl, false);
 
         setTimeout(function () {
           if (pgCount <= 3) {
@@ -2539,14 +3004,14 @@
   };
 
   var _pingRequest2 = function _pingRequest2() {
-    var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostURL;
+    var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
 
     var data = {};
-    data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
+    data = _classPrivateFieldLooseBase(this, _request$3)[_request$3].addSystemDataToObject(data, undefined);
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING);
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data)));
 
-    _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, false);
+    _classPrivateFieldLooseBase(this, _request$3)[_request$3].saveAndFireRequest(pageLoadUrl, false);
   };
 
   var _isPingContinuous2 = function _isPingContinuous2() {

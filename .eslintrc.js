@@ -19,7 +19,8 @@ module.exports = {
   ignorePatterns: ['/clevertap.js'],
   rules: {
     'no-prototype-builtins': 'off',
-    'no-useless-escape': 'off' // should probably remove this?
+    'no-useless-escape': 'off', // should probably remove this?,
+    'eqeqeq': [2, 'smart']
   },
   parser: '@babel/eslint-parser'
 }
