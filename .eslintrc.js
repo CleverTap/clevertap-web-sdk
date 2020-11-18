@@ -16,7 +16,7 @@ module.exports = {
       ]
     }
   },
-  ignorePatterns: ['/clevertap.js'],
+  ignorePatterns: ['/clevertap.js', '/clevertap.min.js'],
   rules: {
     'no-prototype-builtins': 'off',
     'no-useless-escape': 'off' // should probably remove this?
