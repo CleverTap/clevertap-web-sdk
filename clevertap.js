@@ -2294,7 +2294,15 @@
 
   var _request$2 = _classPrivateFieldLooseKey("request");
 
+  var _isSpa = _classPrivateFieldLooseKey("isSpa");
+
+  var _previousUrl = _classPrivateFieldLooseKey("previousUrl");
+
+  var _boundCheckPageChanged = _classPrivateFieldLooseKey("boundCheckPageChanged");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
+
+  var _checkPageChanged = _classPrivateFieldLooseKey("checkPageChanged");
 
   var _pingRequest = _classPrivateFieldLooseKey("pingRequest");
 
@@ -2303,6 +2311,27 @@
   var _overrideDSyncFlag = _classPrivateFieldLooseKey("overrideDSyncFlag");
 
   var CleverTap = /*#__PURE__*/function () {
+    _createClass(CleverTap, [{
+      key: "spa",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _isSpa)[_isSpa];
+      },
+      set: function set(value) {
+        var isSpa = value === true;
+
+        if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa] !== isSpa && _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
+          // if clevertap.spa is changed after init has been called then update the click listeners
+          if (isSpa) {
+            document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+          } else {
+            document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+          }
+        }
+
+        _classPrivateFieldLooseBase(this, _isSpa)[_isSpa] = isSpa;
+      }
+    }]);
+
     function CleverTap() {
       var _clevertap$account, _clevertap$account2;
 
@@ -2318,6 +2347,9 @@
       });
       Object.defineProperty(this, _pingRequest, {
         value: _pingRequest2
+      });
+      Object.defineProperty(this, _checkPageChanged, {
+        value: _checkPageChanged2
       });
       Object.defineProperty(this, _processOldValues, {
         value: _processOldValues2
@@ -2350,6 +2382,18 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _isSpa, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _previousUrl, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _boundCheckPageChanged, {
+        writable: true,
+        value: _classPrivateFieldLooseBase(this, _checkPageChanged)[_checkPageChanged].bind(this)
+      });
       this.enablePersonalization = void 0;
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = new Logger(logLevels.INFO);
@@ -2380,6 +2424,7 @@
         device: _classPrivateFieldLooseBase(this, _device$2)[_device$2],
         session: _classPrivateFieldLooseBase(this, _session$2)[_session$2]
       });
+      this.spa = clevertap.spa;
       window.$CLTP_WR = window.$WZRK_WR = _classPrivateFieldLooseBase(this, _api)[_api];
 
       if ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id) {
@@ -2432,6 +2477,15 @@
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
         this.pageChanged();
+
+        if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa]) {
+          // listen to click on the document and check if URL has changed.
+          document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+        } else {
+          // remove existing click listeners if any
+          document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+        }
+
         _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 1;
       }
     }, {
@@ -2510,6 +2564,7 @@
 
         _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, false);
 
+        _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation;
         setTimeout(function () {
           if (pgCount <= 3) {
             // send ping for up to 3 pages
@@ -2536,6 +2591,12 @@
   var _processOldValues2 = function _processOldValues2() {
     // TODO create classes old data handlers for OUL, Privacy, notifications
     this.event.processOldValues();
+  };
+
+  var _checkPageChanged2 = function _checkPageChanged2() {
+    if (_classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] !== location.href) {
+      this.pageChanged();
+    }
   };
 
   var _pingRequest2 = function _pingRequest2() {

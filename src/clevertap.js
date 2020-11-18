@@ -171,7 +171,27 @@ export default class CleverTap {
   #session
   #account
   #request
+  #isSpa
+  #previousUrl
+  #boundCheckPageChanged = this.#checkPageChanged.bind(this)
   enablePersonalization
+
+  get spa () {
+    return this.#isSpa
+  }
+
+  set spa (value) {
+    const isSpa = value === true
+    if (this.#isSpa !== isSpa && this.#onloadcalled === 1) {
+      // if clevertap.spa is changed after init has been called then update the click listeners
+      if (isSpa) {
+        document.addEventListener('click', this.#boundCheckPageChanged)
+      } else {
+        document.removeEventListener('click', this.#boundCheckPageChanged)
+      }
+    }
+    this.#isSpa = isSpa
+  }
 
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
@@ -200,6 +220,8 @@ export default class CleverTap {
       device: this.#device,
       session: this.#session
     })
+
+    this.spa = clevertap.spa
 
     window.$CLTP_WR = window.$WZRK_WR = this.#api
 
@@ -246,12 +268,25 @@ export default class CleverTap {
 
     this.pageChanged()
 
+    if (this.#isSpa) {
+      // listen to click on the document and check if URL has changed.
+      document.addEventListener('click', this.#boundCheckPageChanged)
+    } else {
+      // remove existing click listeners if any
+      document.removeEventListener('click', this.#boundCheckPageChanged)
+    }
     this.#onloadcalled = 1
   }
 
   #processOldValues () {
     // TODO create classes old data handlers for OUL, Privacy, notifications
     this.event.processOldValues()
+  }
+
+  #checkPageChanged () {
+    if (this.#previousUrl !== location.href) {
+      this.pageChanged()
+    }
   }
 
   pageChanged () {
@@ -316,6 +351,7 @@ export default class CleverTap {
 
     this.#request.saveAndFireRequest(pageLoadUrl, false)
 
+    this.#previousUrl = currLocation
     setTimeout(() => {
       if (pgCount <= 3) {
         // send ping for up to 3 pages
