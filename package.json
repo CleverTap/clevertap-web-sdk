@@ -5,7 +5,7 @@
   "main": "clevertap.js",
   "scripts": {
     "build": "rollup --config rollup.config.js",
-    "test": "jest && yarn build"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
