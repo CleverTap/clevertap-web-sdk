@@ -237,6 +237,5 @@ export const $ct = {
   blockRequest: false,
   broadDomain: null,
   domain: window.location.hostname,
-  gcookie: null,
-  session: null
+  gcookie: null
 }

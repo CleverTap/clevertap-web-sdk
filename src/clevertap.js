@@ -36,7 +36,6 @@ export default class CleverTap {
     this.#account = new Account(clevertap.account?.[0], clevertap.region, clevertap.targetDomain)
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#session = new SessionManager({ logger: this.#logger })
-    this.$ct.session = this.#session // Session is needed in storage manager
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.#request = new ReqestManager({
       logger: this.#logger,

@@ -733,8 +733,7 @@
     blockRequest: false,
     broadDomain: null,
     domain: window.location.hostname,
-    gcookie: null,
-    session: null
+    gcookie: null
   };
 
   var _keyOrder = _classPrivateFieldLooseKey("keyOrder");
@@ -3139,8 +3138,6 @@
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
       });
-      this.$ct.session = _classPrivateFieldLooseBase(this, _session$3)[_session$3]; // Session is needed in storage manager
-
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
       _classPrivateFieldLooseBase(this, _request$4)[_request$4] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
