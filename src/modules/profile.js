@@ -48,7 +48,7 @@ export default class ProfileHandler extends Array {
     return 0
   }
 
-  #isProfileValid (profileObj) {
+  isProfileValid (profileObj) {
     let valid = false
     if (isObject(profileObj)) {
       for (const profileKey in profileObj) {
@@ -126,7 +126,7 @@ export default class ProfileHandler extends Array {
     return valid
   }
 
-  #processFBUserObj (user) {
+  processFBUserObj (user) {
     const profileData = {}
     profileData.Name = user.name
     if (user.id != null) {
@@ -198,7 +198,7 @@ export default class ProfileHandler extends Array {
     return profileData
   }
 
-  #processGPlusUserObj (user) {
+  processGPlusUserObj (user) {
     const profileData = {}
     if (user.displayName != null) {
       profileData.Name = user.displayName
@@ -258,7 +258,7 @@ export default class ProfileHandler extends Array {
     return profileData
   }
 
-  #addToLocalProfileMap (profileObj, override) {
+  addToLocalProfileMap (profileObj, override) {
     let globalProfileMap = $ct.globalProfileMap
     if (StorageManager._isLocalStorageSupported()) {
       if (globalProfileMap == null) {
@@ -303,7 +303,7 @@ export default class ProfileHandler extends Array {
           let profileObj
           if (outerObj.Site != null) { // organic data from the site
             profileObj = outerObj.Site
-            if (isObjectEmpty(profileObj) || !this.#isProfileValid(profileObj)) {
+            if (isObjectEmpty(profileObj) || !this.isProfileValid(profileObj)) {
               return
             }
           } else if (outerObj.Facebook != null) { // fb connect data
@@ -311,12 +311,12 @@ export default class ProfileHandler extends Array {
             // make sure that the object contains any data at all
 
             if (!isObjectEmpty(FbProfileObj) && (!FbProfileObj.error)) {
-              profileObj = this.#processFBUserObj(FbProfileObj)
+              profileObj = this.processFBUserObj(FbProfileObj)
             }
           } else if (outerObj['Google Plus'] != null) {
             const GPlusProfileObj = outerObj['Google Plus']
             if (!isObjectEmpty(GPlusProfileObj) && (!GPlusProfileObj.error)) {
-              profileObj = this.#processGPlusUserObj(GPlusProfileObj)
+              profileObj = this.processGPlusUserObj(GPlusProfileObj)
             }
           }
           if (profileObj != null && (!isObjectEmpty(profileObj))) { // profile got set from above
@@ -327,7 +327,7 @@ export default class ProfileHandler extends Array {
             }
 
             data.profile = profileObj
-            this.#addToLocalProfileMap(profileObj, true)
+            this.addToLocalProfileMap(profileObj, true)
             data = this.#request.addSystemDataToObject(data, undefined)
 
             this.#request.addFlags(data)

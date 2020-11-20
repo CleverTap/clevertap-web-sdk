@@ -232,6 +232,11 @@ export const $ct = {
     REQ_N: 0,
     RESP_N: 0
   },
+  LRU_cache: null,
   globalProfileMap: null,
-  blockRequest: false
+  blockRequest: false,
+  broadDomain: null,
+  domain: window.location.hostname,
+  gcookie: null,
+  session: null
 }

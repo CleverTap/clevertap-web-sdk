@@ -38,7 +38,7 @@ import { StorageManager } from '../util/storage'
 export default class SessionManager {
   #logger
   #sessionId
-  cookieName
+  cookieName // SCOOKIE_NAME
   scookieObj
 
   constructor ({ logger }) {
