@@ -59,9 +59,9 @@ export default class CleverTap {
 
     this.onUserLogin = new UserLoginHandler({
       request: this.#request,
-      profile: this.profile,
       account: this.#account,
-      session: this.#session
+      session: this.#session,
+      logger: this.#logger
     })
 
     this.#api = new CleverTapAPI({

@@ -1338,6 +1338,346 @@
     }
   };
 
+  // CleverTap specific utilities
+  var getCampaignObject = function getCampaignObject() {
+    var campObj = {};
+
+    if (StorageManager._isLocalStorageSupported()) {
+      campObj = StorageManager.read(CAMP_COOKIE_NAME);
+
+      if (campObj != null) {
+        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
+      } else {
+        campObj = {};
+      }
+    }
+
+    return campObj;
+  };
+  var getCampaignObjForLc = function getCampaignObjForLc() {
+    var campObj = {};
+
+    if (StorageManager._isLocalStorageSupported()) {
+      campObj = getCampaignObject();
+      var resultObj = [];
+      var globalObj = campObj.global;
+      var today = getToday();
+      var dailyObj = campObj[today];
+
+      if (typeof globalObj !== 'undefined') {
+        var campaignIdArray = Object.keys(globalObj);
+
+        for (var index in campaignIdArray) {
+          if (campaignIdArray.hasOwnProperty(index)) {
+            var dailyC = 0;
+            var totalC = 0;
+            var campaignId = campaignIdArray[index];
+
+            if (campaignId === 'tc') {
+              continue;
+            }
+
+            if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
+              dailyC = dailyObj[campaignId];
+            }
+
+            if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
+              totalC = globalObj[campaignId];
+            }
+
+            var element = [campaignId, dailyC, totalC];
+            resultObj.push(element);
+          }
+        }
+      }
+
+      var todayC = 0;
+
+      if (typeof dailyObj !== 'undefined' && typeof dailyObj.tc !== 'undefined') {
+        todayC = dailyObj.tc;
+      }
+
+      resultObj = {
+        wmp: todayC,
+        tlc: resultObj
+      };
+      return resultObj;
+    }
+  };
+  var isProfileValid = function isProfileValid(profileObj, _ref) {
+    var logger = _ref.logger;
+    var valid = false;
+
+    if (isObject(profileObj)) {
+      for (var profileKey in profileObj) {
+        if (profileObj.hasOwnProperty(profileKey)) {
+          valid = true;
+          var profileVal = profileObj[profileKey];
+
+          if (profileVal == null) {
+            delete profileObj[profileKey];
+            continue;
+          }
+
+          if (profileKey === 'Gender' && !profileVal.match(/^M$|^F$/)) {
+            valid = false;
+            logger.error(GENDER_ERROR);
+          }
+
+          if (profileKey === 'Employed' && !profileVal.match(/^Y$|^N$/)) {
+            valid = false;
+            logger.error(EMPLOYED_ERROR);
+          }
+
+          if (profileKey === 'Married' && !profileVal.match(/^Y$|^N$/)) {
+            valid = false;
+            logger.error(MARRIED_ERROR);
+          }
+
+          if (profileKey === 'Education' && !profileVal.match(/^School$|^College$|^Graduate$/)) {
+            valid = false;
+            logger.error(EDUCATION_ERROR);
+          }
+
+          if (profileKey === 'Age' && profileVal != null) {
+            if (isConvertibleToNumber(profileVal)) {
+              profileObj.Age = +profileVal;
+            } else {
+              valid = false;
+              logger.error(AGE_ERROR);
+            }
+          } // dob will come in like this - $dt_19470815 or dateObject
+
+
+          if (profileKey === 'DOB') {
+            if ((!/^\$D_/.test(profileVal) || (profileVal + '').length !== 11) && !isDateObject(profileVal)) {
+              valid = false;
+              logger.error(DOB_ERROR);
+            }
+
+            if (isDateObject(profileVal)) {
+              profileObj[profileKey] = convertToWZRKDate(profileVal);
+            }
+          } else if (isDateObject(profileVal)) {
+            profileObj[profileKey] = convertToWZRKDate(profileVal);
+          }
+
+          if (profileKey === 'Phone' && !isObjectEmpty(profileVal)) {
+            if (profileVal.length > 8 && profileVal.charAt(0) === '+') {
+              // valid phone number
+              profileVal = profileVal.substring(1, profileVal.length);
+
+              if (isConvertibleToNumber(profileVal)) {
+                profileObj.Phone = +profileVal;
+              } else {
+                valid = false;
+                logger.error(PHONE_FORMAT_ERROR + '. Removed.');
+              }
+            } else {
+              valid = false;
+              logger.error(PHONE_FORMAT_ERROR + '. Removed.');
+            }
+          }
+
+          if (!valid) {
+            delete profileObj[profileKey];
+          }
+        }
+      }
+    }
+
+    return valid;
+  };
+  var processFBUserObj = function processFBUserObj(user) {
+    var profileData = {};
+    profileData.Name = user.name;
+
+    if (user.id != null) {
+      profileData.FBID = user.id + '';
+    } // Feb 2014 - FB announced over 58 gender options, hence we specifically look for male or female. Rest we don't care.
+
+
+    if (user.gender === 'male') {
+      profileData.Gender = 'M';
+    } else if (user.gender === 'female') {
+      profileData.Gender = 'F';
+    } else {
+      profileData.Gender = 'O';
+    }
+
+    var getHighestEducation = function getHighestEducation(eduArr) {
+      if (eduArr != null) {
+        var college = '';
+        var highschool = '';
+
+        for (var i = 0; i < eduArr.length; i++) {
+          var _edu = eduArr[i];
+
+          if (_edu.type != null) {
+            var type = _edu.type;
+
+            if (type === 'Graduate School') {
+              return 'Graduate';
+            } else if (type === 'College') {
+              college = '1';
+            } else if (type === 'High School') {
+              highschool = '1';
+            }
+          }
+        }
+
+        if (college === '1') {
+          return 'College';
+        } else if (highschool === '1') {
+          return 'School';
+        }
+      }
+    };
+
+    if (user.relationship_status != null) {
+      profileData.Married = 'N';
+
+      if (user.relationship_status === 'Married') {
+        profileData.Married = 'Y';
+      }
+    }
+
+    var edu = getHighestEducation(user.education);
+
+    if (edu != null) {
+      profileData.Education = edu;
+    }
+
+    var work = user.work != null ? user.work.length : 0;
+
+    if (work > 0) {
+      profileData.Employed = 'Y';
+    } else {
+      profileData.Employed = 'N';
+    }
+
+    if (user.email != null) {
+      profileData.Email = user.email;
+    }
+
+    if (user.birthday != null) {
+      var mmddyy = user.birthday.split('/'); // comes in as "08/15/1947"
+
+      profileData.DOB = setDate(mmddyy[2] + mmddyy[0] + mmddyy[1]);
+    }
+
+    return profileData;
+  };
+  var processGPlusUserObj = function processGPlusUserObj(user, _ref2) {
+    var logger = _ref2.logger;
+    var profileData = {};
+
+    if (user.displayName != null) {
+      profileData.Name = user.displayName;
+    }
+
+    if (user.id != null) {
+      profileData.GPID = user.id + '';
+    }
+
+    if (user.gender != null) {
+      if (user.gender === 'male') {
+        profileData.Gender = 'M';
+      } else if (user.gender === 'female') {
+        profileData.Gender = 'F';
+      } else if (user.gender === 'other') {
+        profileData.Gender = 'O';
+      }
+    }
+
+    if (user.image != null) {
+      if (user.image.isDefault === false) {
+        profileData.Photo = user.image.url.split('?sz')[0];
+      }
+    }
+
+    if (user.emails != null) {
+      for (var emailIdx = 0; emailIdx < user.emails.length; emailIdx++) {
+        var emailObj = user.emails[emailIdx];
+
+        if (emailObj.type === 'account') {
+          profileData.Email = emailObj.value;
+        }
+      }
+    }
+
+    if (user.organizations != null) {
+      profileData.Employed = 'N';
+
+      for (var i = 0; i < user.organizations.length; i++) {
+        var orgObj = user.organizations[i];
+
+        if (orgObj.type === 'work') {
+          profileData.Employed = 'Y';
+        }
+      }
+    }
+
+    if (user.birthday != null) {
+      var yyyymmdd = user.birthday.split('-'); // comes in as "1976-07-27"
+
+      profileData.DOB = setDate(yyyymmdd[0] + yyyymmdd[1] + yyyymmdd[2]);
+    }
+
+    if (user.relationshipStatus != null) {
+      profileData.Married = 'N';
+
+      if (user.relationshipStatus === 'married') {
+        profileData.Married = 'Y';
+      }
+    }
+
+    logger.debug('gplus usr profile ' + JSON.stringify(profileData));
+    return profileData;
+  };
+  var addToLocalProfileMap = function addToLocalProfileMap(profileObj, override) {
+    var globalProfileMap = $ct.globalProfileMap;
+
+    if (StorageManager._isLocalStorageSupported()) {
+      if (globalProfileMap == null) {
+        globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
+
+        if (globalProfileMap == null) {
+          globalProfileMap = {};
+        }
+      } // Move props from custom bucket to outside.
+
+
+      if (profileObj._custom != null) {
+        var keys = profileObj._custom;
+
+        for (var key in keys) {
+          if (keys.hasOwnProperty(key)) {
+            profileObj[key] = keys[key];
+          }
+        }
+
+        delete profileObj._custom;
+      }
+
+      for (var prop in profileObj) {
+        if (profileObj.hasOwnProperty(prop)) {
+          if (globalProfileMap.hasOwnProperty(prop) && !override) {
+            continue;
+          }
+
+          globalProfileMap[prop] = profileObj[prop];
+        }
+      }
+
+      if (globalProfileMap._custom != null) {
+        delete globalProfileMap._custom;
+      }
+
+      StorageManager.saveToLSorCookie(PR_COOKIE, globalProfileMap);
+    }
+  };
+
   var getURLParams = function getURLParams(url) {
     var urlParams = {};
     var idx = url.indexOf('?');
@@ -1768,294 +2108,6 @@
 
         return 0;
       }
-    }, {
-      key: "isProfileValid",
-      value: function isProfileValid(profileObj) {
-        var valid = false;
-
-        if (isObject(profileObj)) {
-          for (var profileKey in profileObj) {
-            if (profileObj.hasOwnProperty(profileKey)) {
-              valid = true;
-              var profileVal = profileObj[profileKey];
-
-              if (profileVal == null) {
-                delete profileObj[profileKey];
-                continue;
-              }
-
-              if (profileKey === 'Gender' && !profileVal.match(/^M$|^F$/)) {
-                valid = false;
-
-                _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(GENDER_ERROR);
-              }
-
-              if (profileKey === 'Employed' && !profileVal.match(/^Y$|^N$/)) {
-                valid = false;
-
-                _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(EMPLOYED_ERROR);
-              }
-
-              if (profileKey === 'Married' && !profileVal.match(/^Y$|^N$/)) {
-                valid = false;
-
-                _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(MARRIED_ERROR);
-              }
-
-              if (profileKey === 'Education' && !profileVal.match(/^School$|^College$|^Graduate$/)) {
-                valid = false;
-
-                _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(EDUCATION_ERROR);
-              }
-
-              if (profileKey === 'Age' && profileVal != null) {
-                if (isConvertibleToNumber(profileVal)) {
-                  profileObj.Age = +profileVal;
-                } else {
-                  valid = false;
-
-                  _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(AGE_ERROR);
-                }
-              } // dob will come in like this - $dt_19470815 or dateObject
-
-
-              if (profileKey === 'DOB') {
-                if ((!/^\$D_/.test(profileVal) || (profileVal + '').length !== 11) && !isDateObject(profileVal)) {
-                  valid = false;
-
-                  _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(DOB_ERROR);
-                }
-
-                if (isDateObject(profileVal)) {
-                  profileObj[profileKey] = convertToWZRKDate(profileVal);
-                }
-              } else if (isDateObject(profileVal)) {
-                profileObj[profileKey] = convertToWZRKDate(profileVal);
-              }
-
-              if (profileKey === 'Phone' && !isObjectEmpty(profileVal)) {
-                if (profileVal.length > 8 && profileVal.charAt(0) === '+') {
-                  // valid phone number
-                  profileVal = profileVal.substring(1, profileVal.length);
-
-                  if (isConvertibleToNumber(profileVal)) {
-                    profileObj.Phone = +profileVal;
-                  } else {
-                    valid = false;
-
-                    _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(PHONE_FORMAT_ERROR + '. Removed.');
-                  }
-                } else {
-                  valid = false;
-
-                  _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error(PHONE_FORMAT_ERROR + '. Removed.');
-                }
-              }
-
-              if (!valid) {
-                delete profileObj[profileKey];
-              }
-            }
-          }
-        }
-
-        return valid;
-      }
-    }, {
-      key: "processFBUserObj",
-      value: function processFBUserObj(user) {
-        var profileData = {};
-        profileData.Name = user.name;
-
-        if (user.id != null) {
-          profileData.FBID = user.id + '';
-        } // Feb 2014 - FB announced over 58 gender options, hence we specifically look for male or female. Rest we don't care.
-
-
-        if (user.gender === 'male') {
-          profileData.Gender = 'M';
-        } else if (user.gender === 'female') {
-          profileData.Gender = 'F';
-        } else {
-          profileData.Gender = 'O';
-        }
-
-        var getHighestEducation = function getHighestEducation(eduArr) {
-          if (eduArr != null) {
-            var college = '';
-            var highschool = '';
-
-            for (var i = 0; i < eduArr.length; i++) {
-              var _edu = eduArr[i];
-
-              if (_edu.type != null) {
-                var type = _edu.type;
-
-                if (type === 'Graduate School') {
-                  return 'Graduate';
-                } else if (type === 'College') {
-                  college = '1';
-                } else if (type === 'High School') {
-                  highschool = '1';
-                }
-              }
-            }
-
-            if (college === '1') {
-              return 'College';
-            } else if (highschool === '1') {
-              return 'School';
-            }
-          }
-        };
-
-        if (user.relationship_status != null) {
-          profileData.Married = 'N';
-
-          if (user.relationship_status === 'Married') {
-            profileData.Married = 'Y';
-          }
-        }
-
-        var edu = getHighestEducation(user.education);
-
-        if (edu != null) {
-          profileData.Education = edu;
-        }
-
-        var work = user.work != null ? user.work.length : 0;
-
-        if (work > 0) {
-          profileData.Employed = 'Y';
-        } else {
-          profileData.Employed = 'N';
-        }
-
-        if (user.email != null) {
-          profileData.Email = user.email;
-        }
-
-        if (user.birthday != null) {
-          var mmddyy = user.birthday.split('/'); // comes in as "08/15/1947"
-
-          profileData.DOB = setDate(mmddyy[2] + mmddyy[0] + mmddyy[1]);
-        }
-
-        return profileData;
-      }
-    }, {
-      key: "processGPlusUserObj",
-      value: function processGPlusUserObj(user) {
-        var profileData = {};
-
-        if (user.displayName != null) {
-          profileData.Name = user.displayName;
-        }
-
-        if (user.id != null) {
-          profileData.GPID = user.id + '';
-        }
-
-        if (user.gender != null) {
-          if (user.gender === 'male') {
-            profileData.Gender = 'M';
-          } else if (user.gender === 'female') {
-            profileData.Gender = 'F';
-          } else if (user.gender === 'other') {
-            profileData.Gender = 'O';
-          }
-        }
-
-        if (user.image != null) {
-          if (user.image.isDefault === false) {
-            profileData.Photo = user.image.url.split('?sz')[0];
-          }
-        }
-
-        if (user.emails != null) {
-          for (var emailIdx = 0; emailIdx < user.emails.length; emailIdx++) {
-            var emailObj = user.emails[emailIdx];
-
-            if (emailObj.type === 'account') {
-              profileData.Email = emailObj.value;
-            }
-          }
-        }
-
-        if (user.organizations != null) {
-          profileData.Employed = 'N';
-
-          for (var i = 0; i < user.organizations.length; i++) {
-            var orgObj = user.organizations[i];
-
-            if (orgObj.type === 'work') {
-              profileData.Employed = 'Y';
-            }
-          }
-        }
-
-        if (user.birthday != null) {
-          var yyyymmdd = user.birthday.split('-'); // comes in as "1976-07-27"
-
-          profileData.DOB = setDate(yyyymmdd[0] + yyyymmdd[1] + yyyymmdd[2]);
-        }
-
-        if (user.relationshipStatus != null) {
-          profileData.Married = 'N';
-
-          if (user.relationshipStatus === 'married') {
-            profileData.Married = 'Y';
-          }
-        }
-
-        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('gplus usr profile ' + JSON.stringify(profileData));
-
-        return profileData;
-      }
-    }, {
-      key: "addToLocalProfileMap",
-      value: function addToLocalProfileMap(profileObj, override) {
-        var globalProfileMap = $ct.globalProfileMap;
-
-        if (StorageManager._isLocalStorageSupported()) {
-          if (globalProfileMap == null) {
-            globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
-
-            if (globalProfileMap == null) {
-              globalProfileMap = {};
-            }
-          } // Move props from custom bucket to outside.
-
-
-          if (profileObj._custom != null) {
-            var keys = profileObj._custom;
-
-            for (var key in keys) {
-              if (keys.hasOwnProperty(key)) {
-                profileObj[key] = keys[key];
-              }
-            }
-
-            delete profileObj._custom;
-          }
-
-          for (var prop in profileObj) {
-            if (profileObj.hasOwnProperty(prop)) {
-              if (globalProfileMap.hasOwnProperty(prop) && !override) {
-                continue;
-              }
-
-              globalProfileMap[prop] = profileObj[prop];
-            }
-          }
-
-          if (globalProfileMap._custom != null) {
-            delete globalProfileMap._custom;
-          }
-
-          StorageManager.saveToLSorCookie(PR_COOKIE, globalProfileMap);
-        }
-      }
     }]);
 
     return ProfileHandler;
@@ -2073,7 +2125,9 @@
             // organic data from the site
             profileObj = outerObj.Site;
 
-            if (isObjectEmpty(profileObj) || !this.isProfileValid(profileObj)) {
+            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
+              logger: _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]
+            })) {
               return;
             }
           } else if (outerObj.Facebook != null) {
@@ -2081,13 +2135,15 @@
             var FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
 
             if (!isObjectEmpty(FbProfileObj) && !FbProfileObj.error) {
-              profileObj = this.processFBUserObj(FbProfileObj);
+              profileObj = processFBUserObj(FbProfileObj);
             }
           } else if (outerObj['Google Plus'] != null) {
             var GPlusProfileObj = outerObj['Google Plus'];
 
             if (!isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
-              profileObj = this.processGPlusUserObj(GPlusProfileObj);
+              profileObj = processGPlusUserObj(GPlusProfileObj, {
+                logger: _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]
+              });
             }
           }
 
@@ -2101,7 +2157,7 @@
             }
 
             data.profile = profileObj;
-            this.addToLocalProfileMap(profileObj, true);
+            addToLocalProfileMap(profileObj, true);
             data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
 
             _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data);
@@ -2122,7 +2178,7 @@
 
   var _request$3 = _classPrivateFieldLooseKey("request");
 
-  var _profile = _classPrivateFieldLooseKey("profile");
+  var _logger$4 = _classPrivateFieldLooseKey("logger");
 
   var _account$1 = _classPrivateFieldLooseKey("account");
 
@@ -2147,9 +2203,9 @@
       var _this;
 
       var request = _ref.request,
-          profile = _ref.profile,
           account = _ref.account,
-          session = _ref.session;
+          session = _ref.session,
+          logger = _ref.logger;
 
       _classCallCheck(this, UserLoginHandler);
 
@@ -2173,7 +2229,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _profile, {
+      Object.defineProperty(_assertThisInitialized(_this), _logger$4, {
         writable: true,
         value: void 0
       });
@@ -2186,9 +2242,9 @@
         value: void 0
       });
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$3)[_request$3] = request;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _profile)[_profile] = profile;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$1)[_account$1] = account;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _session$1)[_session$1] = session;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$4)[_logger$4] = logger;
       return _this;
     }
 
@@ -2302,7 +2358,7 @@
             // organic data from the site
             profileObj = outerObj.Site;
 
-            if (isObjectEmpty(profileObj) || !_classPrivateFieldLooseBase(this, _profile)[_profile].isProfileValid(profileObj)) {
+            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj)) {
               return;
             }
           } else if (outerObj.Facebook != null) {
@@ -2310,13 +2366,15 @@
             var FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
 
             if (!isObjectEmpty(FbProfileObj) && !FbProfileObj.error) {
-              profileObj = _classPrivateFieldLooseBase(this, _profile)[_profile].processFBUserObj(FbProfileObj);
+              profileObj = processFBUserObj(FbProfileObj);
             }
           } else if (outerObj['Google Plus'] != null) {
             var GPlusProfileObj = outerObj['Google Plus'];
 
             if (isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
-              profileObj = _classPrivateFieldLooseBase(this, _profile)[_profile].processGPlusUserObj(GPlusProfileObj);
+              profileObj = processGPlusUserObj(GPlusProfileObj, {
+                logger: _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]
+              });
             }
           }
 
@@ -2354,8 +2412,7 @@
               }
             }
 
-            _classPrivateFieldLooseBase(this, _profile)[_profile].addToLocalProfileMap(profileObj, true);
-
+            addToLocalProfileMap(profileObj, true);
             data = _classPrivateFieldLooseBase(this, _request$3)[_request$3].addSystemDataToObject(data, undefined);
 
             _classPrivateFieldLooseBase(this, _request$3)[_request$3].addFlags(data); // Adding 'isOUL' flag in true for OUL cases which.
@@ -2537,7 +2594,7 @@
     return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
   };
 
-  var _logger$4 = _classPrivateFieldLooseKey("logger");
+  var _logger$5 = _classPrivateFieldLooseKey("logger");
 
   var _sessionId = _classPrivateFieldLooseKey("sessionId");
 
@@ -2548,7 +2605,7 @@
 
       _classCallCheck(this, SessionManager);
 
-      Object.defineProperty(this, _logger$4, {
+      Object.defineProperty(this, _logger$5, {
         writable: true,
         value: void 0
       });
@@ -2559,7 +2616,7 @@
       this.cookieName = void 0;
       this.scookieObj = void 0;
       this.sessionId = StorageManager.getMetaProp('cs');
-      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
     }
 
     _createClass(SessionManager, [{
@@ -2747,77 +2804,10 @@
     value: _addARPToRequest2
   });
 
-  // CleverTap specific utilities
-  var getCampaignObject = function getCampaignObject() {
-    var campObj = {};
-
-    if (StorageManager._isLocalStorageSupported()) {
-      campObj = StorageManager.read(CAMP_COOKIE_NAME);
-
-      if (campObj != null) {
-        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
-      } else {
-        campObj = {};
-      }
-    }
-
-    return campObj;
-  };
-  var getCampaignObjForLc = function getCampaignObjForLc() {
-    var campObj = {};
-
-    if (StorageManager._isLocalStorageSupported()) {
-      campObj = getCampaignObject();
-      var resultObj = [];
-      var globalObj = campObj.global;
-      var today = getToday();
-      var dailyObj = campObj[today];
-
-      if (typeof globalObj !== 'undefined') {
-        var campaignIdArray = Object.keys(globalObj);
-
-        for (var index in campaignIdArray) {
-          if (campaignIdArray.hasOwnProperty(index)) {
-            var dailyC = 0;
-            var totalC = 0;
-            var campaignId = campaignIdArray[index];
-
-            if (campaignId === 'tc') {
-              continue;
-            }
-
-            if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-              dailyC = dailyObj[campaignId];
-            }
-
-            if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-              totalC = globalObj[campaignId];
-            }
-
-            var element = [campaignId, dailyC, totalC];
-            resultObj.push(element);
-          }
-        }
-      }
-
-      var todayC = 0;
-
-      if (typeof dailyObj !== 'undefined' && typeof dailyObj.tc !== 'undefined') {
-        todayC = dailyObj.tc;
-      }
-
-      resultObj = {
-        wmp: todayC,
-        tlc: resultObj
-      };
-      return resultObj;
-    }
-  };
-
   var seqNo = 0;
   var requestTime = 0;
 
-  var _logger$5 = _classPrivateFieldLooseKey("logger");
+  var _logger$6 = _classPrivateFieldLooseKey("logger");
 
   var _account$2 = _classPrivateFieldLooseKey("account");
 
@@ -2844,7 +2834,7 @@
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
       });
-      Object.defineProperty(this, _logger$5, {
+      Object.defineProperty(this, _logger$6, {
         writable: true,
         value: void 0
       });
@@ -2869,7 +2859,7 @@
         value: false
       });
       this.processingBackup = false;
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
       _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
       _classPrivateFieldLooseBase(this, _device$1)[_device$1] = device;
       _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
@@ -2894,7 +2884,7 @@
             var backupEvent = backupMap[idx];
 
             if (typeof backupEvent.fired === 'undefined') {
-              _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Processing backup event : ' + backupEvent.q);
+              _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Processing backup event : ' + backupEvent.q);
 
               if (typeof backupEvent.q !== 'undefined') {
                 RequestDispatcher.fireRequest(backupEvent.q);
@@ -2913,12 +2903,12 @@
       value: function addSystemDataToObject(dataObject, ignoreTrim) {
         // ignore trim for chrome notifications; undefined everywhere else
         if (typeof ignoreTrim === 'undefined') {
-          dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]);
+          dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
         }
 
-        if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5].wzrkError)) {
-          dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].wzrkError;
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].wzrkError = {};
+        if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError)) {
+          dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError;
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError = {};
         }
 
         dataObject.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
@@ -2944,7 +2934,7 @@
         if (_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           data.rc = true;
 
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('reset cookie sent in request and cleared from meta for future requests.');
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('reset cookie sent in request and cleared from meta for future requests.');
         }
 
         if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
@@ -2969,7 +2959,7 @@
         var now = getNow();
         url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
         var data = url + '&i=' + now + '&sn=' + seqNo;
-        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]);
+        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
 
         if (!$ct.blockRequest || override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           if (now === requestTime) {
@@ -2981,7 +2971,7 @@
 
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug("Not fired due to block request - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to block request - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
         }
       }
     }, {
@@ -3058,7 +3048,7 @@
     }
   };
 
-  var _logger$6 = _classPrivateFieldLooseKey("logger");
+  var _logger$7 = _classPrivateFieldLooseKey("logger");
 
   var _api = _classPrivateFieldLooseKey("api");
 
@@ -3100,7 +3090,7 @@
       Object.defineProperty(this, _processOldValues, {
         value: _processOldValues2
       });
-      Object.defineProperty(this, _logger$6, {
+      Object.defineProperty(this, _logger$7, {
         writable: true,
         value: void 0
       });
@@ -3130,17 +3120,17 @@
       });
       this.enablePersonalization = void 0;
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = new Logger(logLevels.DEBUG);
+      _classPrivateFieldLooseBase(this, _logger$7)[_logger$7] = new Logger(logLevels.DEBUG);
       _classPrivateFieldLooseBase(this, _account$3)[_account$3] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
       _classPrivateFieldLooseBase(this, _device$2)[_device$2] = new DeviceManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]
       });
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]
       });
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
       _classPrivateFieldLooseBase(this, _request$4)[_request$4] = new RequestManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
         account: _classPrivateFieldLooseBase(this, _account$3)[_account$3],
         device: _classPrivateFieldLooseBase(this, _device$2)[_device$2],
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
@@ -3148,23 +3138,23 @@
       });
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
         request: _classPrivateFieldLooseBase(this, _request$4)[_request$4],
         isPersonalisationActive: this._isPersonalisationActive
       }, clevertap.event);
       this.profile = new ProfileHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
         request: _classPrivateFieldLooseBase(this, _request$4)[_request$4],
         account: _classPrivateFieldLooseBase(this, _account$3)[_account$3]
       }, clevertap.profile);
       this.onUserLogin = new UserLoginHandler({
         request: _classPrivateFieldLooseBase(this, _request$4)[_request$4],
-        profile: this.profile,
         account: _classPrivateFieldLooseBase(this, _account$3)[_account$3],
-        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
+        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]
       });
       _classPrivateFieldLooseBase(this, _api)[_api] = new CleverTapAPI({
-        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
         request: _classPrivateFieldLooseBase(this, _request$4)[_request$4],
         device: _classPrivateFieldLooseBase(this, _device$2)[_device$2],
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
@@ -3191,7 +3181,7 @@
 
         if (!_classPrivateFieldLooseBase(this, _account$3)[_account$3].id) {
           if (!accountId) {
-            _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error(EMBED_ERROR);
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error(EMBED_ERROR);
 
             return;
           }

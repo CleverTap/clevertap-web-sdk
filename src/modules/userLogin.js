@@ -27,24 +27,30 @@ import {
 import {
   addToURL
 } from '../util/url'
+import {
+  isProfileValid,
+  processFBUserObj,
+  processGPlusUserObj,
+  addToLocalProfileMap
+} from '../util/clevertap'
 
 export default class UserLoginHandler extends Array {
   #request
-  #profile
+  #logger
   #account
   #session
 
   constructor ({
     request,
-    profile,
     account,
-    session
+    session,
+    logger
   }) {
     super()
     this.#request = request
-    this.#profile = profile
     this.#account = account
     this.#session = session
+    this.#logger = logger
   }
 
   #processOUL (profileArr) {
@@ -129,7 +135,7 @@ export default class UserLoginHandler extends Array {
           let profileObj
           if (outerObj.Site != null) { // organic data from the site
             profileObj = outerObj.Site
-            if (isObjectEmpty(profileObj) || !this.#profile.isProfileValid(profileObj)) {
+            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj)) {
               return
             }
           } else if (outerObj.Facebook != null) { // fb connect data
@@ -137,12 +143,12 @@ export default class UserLoginHandler extends Array {
             // make sure that the object contains any data at all
 
             if (!isObjectEmpty(FbProfileObj) && (!FbProfileObj.error)) {
-              profileObj = this.#profile.processFBUserObj(FbProfileObj)
+              profileObj = processFBUserObj(FbProfileObj)
             }
           } else if (outerObj['Google Plus'] != null) {
             const GPlusProfileObj = outerObj['Google Plus']
             if (isObjectEmpty(GPlusProfileObj) && (!GPlusProfileObj.error)) {
-              profileObj = this.#profile.processGPlusUserObj(GPlusProfileObj)
+              profileObj = processGPlusUserObj(GPlusProfileObj, { logger: this.#logger })
             }
           }
           if (profileObj != null && (!isObjectEmpty(profileObj))) { // profile got set from above
@@ -171,7 +177,7 @@ export default class UserLoginHandler extends Array {
                 addToK(ids)
               }
             }
-            this.#profile.addToLocalProfileMap(profileObj, true)
+            addToLocalProfileMap(profileObj, true)
             data = this.#request.addSystemDataToObject(data, undefined)
 
             this.#request.addFlags(data)
