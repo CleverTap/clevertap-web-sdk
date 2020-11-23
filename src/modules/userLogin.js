@@ -40,18 +40,21 @@ export default class UserLoginHandler extends Array {
   #logger
   #account
   #session
+  #oldValues
 
   constructor ({
     request,
     account,
     session,
     logger
-  }) {
+  },
+  values) {
     super()
     this.#request = request
     this.#account = account
     this.#session = session
     this.#logger = logger
+    this.#oldValues = values
   }
 
   #processOUL (profileArr) {
@@ -270,5 +273,12 @@ export default class UserLoginHandler extends Array {
   push (...profilesArr) {
     this.#processLoginArray(profilesArr)
     return 0
+  }
+
+  processOldValues () {
+    if (this.#oldValues) {
+      this.#processLoginArray(this.#oldValues)
+    }
+    this.#oldValues = null
   }
 }

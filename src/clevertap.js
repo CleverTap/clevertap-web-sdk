@@ -4,6 +4,7 @@ import DeviceManager from './modules/device'
 import EventHandler from './modules/event'
 import ProfileHandler from './modules/profile'
 import UserLoginHandler from './modules/userLogin'
+import User from './modules/user'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
@@ -32,11 +33,14 @@ export default class CleverTap {
 
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
+    this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region, clevertap.targetDomain)
     this.#device = new DeviceManager({ logger: this.#logger })
-    this.#session = new SessionManager({ logger: this.#logger })
-    this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
+    this.#session = new SessionManager({
+      logger: this.#logger,
+      isPersonalizationActive: this._isPersonalisationActive
+    })
     this.#request = new ReqestManager({
       logger: this.#logger,
       account: this.#account,
@@ -54,7 +58,8 @@ export default class CleverTap {
     this.profile = new ProfileHandler({
       logger: this.#logger,
       request: this.#request,
-      account: this.#account
+      account: this.#account,
+      isPersonalisationActive: this._isPersonalisationActive
     }, clevertap.profile)
 
     this.onUserLogin = new UserLoginHandler({
@@ -62,13 +67,17 @@ export default class CleverTap {
       account: this.#account,
       session: this.#session,
       logger: this.#logger
-    })
+    }, clevertap.onUserLogin)
 
     this.#api = new CleverTapAPI({
       logger: this.#logger,
       request: this.#request,
       device: this.#device,
       session: this.#session
+    })
+
+    this.user = new User({
+      isPersonalisationActive: this._isPersonalisationActive
     })
 
     window.$CLTP_WR = window.$WZRK_WR = this.#api

@@ -39,12 +39,17 @@ import { getHostName } from '../util/url'
 export default class SessionManager {
   #logger
   #sessionId
+  #isPersonalizationActive
   cookieName // SCOOKIE_NAME
   scookieObj
 
-  constructor ({ logger }) {
+  constructor ({
+    logger,
+    isPersonalizationActive
+  }) {
     this.sessionId = StorageManager.getMetaProp('cs')
     this.#logger = logger
+    this.#isPersonalizationActive = isPersonalizationActive
   }
 
   get sessionId () {
@@ -110,5 +115,30 @@ export default class SessionManager {
       }
       this.sessionId = session
     }
+  }
+
+  getTimeElapsed () {
+    if (!this.#isPersonalizationActive()) {
+      return
+    }
+    if (this.scookieObj != null) { // TODO: check logic?
+      this.scookieObj = this.getSessionCookieObject()
+    }
+    const sessionStart = this.scookieObj.s
+    if (sessionStart != null) {
+      const ts = getNow()
+      return Math.floor(ts - sessionStart)
+    }
+  }
+
+  getPageCount () {
+    if (!this.#isPersonalizationActive()) {
+      return
+    }
+
+    if (this.scookieObj != null) { // TODO: check logic
+      this.scookieObj = this.getSessionCookieObject()
+    }
+    return this.scookieObj.p
   }
 }

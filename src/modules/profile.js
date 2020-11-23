@@ -8,7 +8,8 @@ import {
   addToLocalProfileMap
 } from '../util/clevertap'
 import {
-  EVT_PUSH
+  EVT_PUSH,
+  PR_COOKIE
 } from '../util/constants'
 import {
   addToURL
@@ -22,13 +23,20 @@ export default class ProfileHandler extends Array {
   #request
   #account
   #oldValues
+  #isPersonalisationActive
 
-  constructor ({ logger, request, account }, values) {
+  constructor ({
+    logger,
+    request,
+    account,
+    isPersonalisationActive
+  }, values) {
     super()
     this.#logger = logger
     this.#request = request
     this.#account = account
     this.#oldValues = values
+    this.#isPersonalisationActive = isPersonalisationActive
   }
 
   push (...profilesArr) {
@@ -41,6 +49,18 @@ export default class ProfileHandler extends Array {
       this.#processProfileArray(this.#oldValues)
     }
     this.#oldValues = null
+  }
+
+  getAttribute (propName) {
+    if (!this.#isPersonalisationActive()) {
+      return
+    }
+    if ($ct.globalProfileMap == null) {
+      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
+    }
+    if ($ct.globalProfileMap != null) {
+      return $ct.globalProfileMap[propName]
+    }
   }
 
   #processProfileArray (profileArr) {
