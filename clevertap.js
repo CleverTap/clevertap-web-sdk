@@ -732,7 +732,7 @@
     globalProfileMap: null,
     blockRequest: false,
     broadDomain: null,
-    domain: window.location.hostname,
+    // domain: window.location.hostname, url -> getHostName()
     gcookie: null
   };
 
@@ -1719,6 +1719,9 @@
   var addToURL = function addToURL(url, k, v) {
     return url + '&' + k + '=' + encodeURIComponent(v);
   };
+  var getHostName = function getHostName() {
+    return window.location.hostname;
+  };
 
   /* eslint-disable */
   var compressData = function compressData(dataObject) {
@@ -2454,10 +2457,11 @@
       delete localStorage[CHARGEDID_COOKIE_NAME];
     }
 
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, $ct.domain);
+    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
     StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
     StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
-    $ct.scookieObj = '';
+
+    _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
   };
 
   var _deleteUser2 = function _deleteUser2() {
@@ -2477,12 +2481,13 @@
     }
 
     StorageManager.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, $ct.domain);
-    StorageManager.removeCookie(KCOOKIE_NAME, $ct.domain);
+    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
+    StorageManager.removeCookie(KCOOKIE_NAME, getHostName());
     StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
     StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
     $ct.gcookie = null;
-    $ct.scookieObj = '';
+
+    _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
   };
 
   var _processLoginArray2 = function _processLoginArray2(loginArr) {
@@ -2495,7 +2500,7 @@
 
         _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
       } else {
-        console.error('Profile object is in incorrect format');
+        _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].error('Profile object is in incorrect format');
       }
     }
   };
@@ -2648,7 +2653,7 @@
       key: "setSessionCookieObject",
       value: function setSessionCookieObject(obj) {
         var objStr = JSON.stringify(obj);
-        StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, window.location.hostname);
+        StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
       }
     }, {
       key: "manageSession",
@@ -3113,7 +3118,7 @@
       });
       this.enablePersonalization = void 0;
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
-      _classPrivateFieldLooseBase(this, _logger$7)[_logger$7] = new Logger(logLevels.DEBUG);
+      _classPrivateFieldLooseBase(this, _logger$7)[_logger$7] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account$3)[_account$3] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
       _classPrivateFieldLooseBase(this, _device$2)[_device$2] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]

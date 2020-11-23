@@ -32,7 +32,7 @@ export default class CleverTap {
 
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
-    this.#logger = new Logger(logLevels.DEBUG)
+    this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region, clevertap.targetDomain)
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#session = new SessionManager({ logger: this.#logger })
@@ -121,11 +121,15 @@ export default class CleverTap {
 
   #processOldValues () {
     // TODO create classes old data handlers for OUL, Privacy, notifications
+    this.onUserLogin.processOldValues()
+    // Privacy
     this.event.processOldValues()
+    this.profile.processOldValues()
+    // Notifications
   }
 
   pageChanged () {
-    const currLocation = location.href
+    const currLocation = window.location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
     // -- update page count
     const obj = this.#session.getSessionCookieObject()

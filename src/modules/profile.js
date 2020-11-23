@@ -21,17 +21,26 @@ export default class ProfileHandler extends Array {
   #logger
   #request
   #account
+  #oldValues
 
-  constructor ({ logger, request, account }) {
+  constructor ({ logger, request, account }, values) {
     super()
     this.#logger = logger
     this.#request = request
     this.#account = account
+    this.#oldValues = values
   }
 
   push (...profilesArr) {
     this.#processProfileArray(profilesArr)
     return 0
+  }
+
+  processOldValues () {
+    if (this.#oldValues) {
+      this.#processProfileArray(this.#oldValues)
+    }
+    this.#oldValues = null
   }
 
   #processProfileArray (profileArr) {

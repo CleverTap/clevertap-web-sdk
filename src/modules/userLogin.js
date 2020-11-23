@@ -25,7 +25,8 @@ import {
   compressData
 } from '../util/encoder'
 import {
-  addToURL
+  addToURL,
+  getHostName
 } from '../util/url'
 import {
   isProfileValid,
@@ -221,10 +222,10 @@ export default class UserLoginHandler extends Array {
       delete localStorage[CAMP_COOKIE_NAME]
       delete localStorage[CHARGEDID_COOKIE_NAME]
     }
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, $ct.domain)
+    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName())
     StorageManager.removeCookie(this.#session.cookieName, $ct.broadDomain)
     StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain)
-    $ct.scookieObj = ''
+    this.#session.setSessionCookieObject('')
   }
 
   #deleteUser () {
@@ -242,12 +243,12 @@ export default class UserLoginHandler extends Array {
       delete localStorage[CHARGEDID_COOKIE_NAME]
     }
     StorageManager.removeCookie(GCOOKIE_NAME, $ct.broadDomain)
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, $ct.domain)
-    StorageManager.removeCookie(KCOOKIE_NAME, $ct.domain)
+    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName())
+    StorageManager.removeCookie(KCOOKIE_NAME, getHostName())
     StorageManager.removeCookie(this.#session.cookieName, $ct.broadDomain)
     StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain)
     $ct.gcookie = null
-    $ct.scookieObj = ''
+    this.#session.setSessionCookieObject('')
   }
 
   #processLoginArray (loginArr) {
@@ -261,7 +262,7 @@ export default class UserLoginHandler extends Array {
         StorageManager.setInstantDeleteFlagInK()
         this.#processOUL([profileObj])
       } else {
-        console.error('Profile object is in incorrect format')
+        this.#logger.error('Profile object is in incorrect format')
       }
     }
   }

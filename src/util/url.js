@@ -35,3 +35,7 @@ export const getDomain = (url) => {
 export const addToURL = (url, k, v) => {
   return url + '&' + k + '=' + encodeURIComponent(v)
 }
+
+export const getHostName = () => {
+  return window.location.hostname
+}

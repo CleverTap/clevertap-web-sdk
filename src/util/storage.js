@@ -236,6 +236,6 @@ export const $ct = {
   globalProfileMap: null,
   blockRequest: false,
   broadDomain: null,
-  domain: window.location.hostname,
+  // domain: window.location.hostname, url -> getHostName()
   gcookie: null
 }

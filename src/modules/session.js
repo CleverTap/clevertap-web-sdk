@@ -34,6 +34,7 @@ import { singleQuoteRegex, SCOOKIE_EXP_TIME_IN_SECS } from '../util/constants'
 import { isObject } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { StorageManager } from '../util/storage'
+import { getHostName } from '../util/url'
 
 export default class SessionManager {
   #logger
@@ -84,7 +85,7 @@ export default class SessionManager {
 
   setSessionCookieObject (obj) {
     const objStr = JSON.stringify(obj)
-    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, window.location.hostname)
+    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName())
   }
 
   manageSession (session) {
