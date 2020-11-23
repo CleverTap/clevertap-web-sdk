@@ -86,6 +86,15 @@ export default class CleverTap {
       isPersonalisationActive: this._isPersonalisationActive
     })
 
+    this.logout = () => {
+      this.#logger.debug('logout called')
+      StorageManager.setInstantDeleteFlagInK()
+    }
+
+    this.clear = () => {
+      this.onUserLogin.clear()
+    }
+
     window.$CLTP_WR = window.$WZRK_WR = this.#api
 
     if (clevertap.account?.[0].id) {

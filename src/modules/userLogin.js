@@ -75,7 +75,7 @@ export default class UserLoginHandler extends Array {
           anonymousUser = true
         }
 
-        if ($ct.LRU_CACHE == null && StorageManager.isLocalStorageSupported()) {
+        if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
           $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
         }
 
@@ -116,7 +116,7 @@ export default class UserLoginHandler extends Array {
           }
         } else {
           if (!anonymousUser) {
-            this.#clear()
+            this.clear()
           } else {
             if ((g) != null) {
               $ct.gcookie = g
@@ -164,7 +164,7 @@ export default class UserLoginHandler extends Array {
 
             data.profile = profileObj
             const ids = []
-            if (StorageManager.isLocalStorageSupported()) {
+            if (StorageManager._isLocalStorageSupported()) {
               if (profileObj.Identity != null) {
                 ids.push(profileObj.Identity)
               }
@@ -208,16 +208,16 @@ export default class UserLoginHandler extends Array {
     }
   }
 
-  #clear () {
-    console.debug('clear called. Reset flag has been set.')
-    this.#deleteUser()
+  clear () {
+    this.#logger.debug('clear called. Reset flag has been set.')
+    this.deleteUser()
     StorageManager.setMetaProp(CLEAR, true)
   }
 
   #handleCookieFromCache () {
     $ct.blockRequeust = false
     console.debug('Block request is false')
-    if (StorageManager.isLocalStorageSupported()) {
+    if (StorageManager._isLocalStorageSupported()) {
       delete localStorage[PR_COOKIE]
       delete localStorage[EV_COOKIE]
       delete localStorage[META_COOKIE]
@@ -231,11 +231,11 @@ export default class UserLoginHandler extends Array {
     this.#session.setSessionCookieObject('')
   }
 
-  #deleteUser () {
+  deleteUser () {
     $ct.blockRequeust = true
-    console.debug('Block request is true')
+    this.#logger.debug('Block request is true')
     $ct.globalCache = {}
-    if (StorageManager.isLocalStorageSupported()) {
+    if (StorageManager._isLocalStorageSupported()) {
       delete localStorage[GCOOKIE_NAME]
       delete localStorage[KCOOKIE_NAME]
       delete localStorage[PR_COOKIE]

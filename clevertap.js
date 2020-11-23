@@ -2226,11 +2226,7 @@
 
   var _processOUL = _classPrivateFieldLooseKey("processOUL");
 
-  var _clear = _classPrivateFieldLooseKey("clear");
-
   var _handleCookieFromCache = _classPrivateFieldLooseKey("handleCookieFromCache");
-
-  var _deleteUser = _classPrivateFieldLooseKey("deleteUser");
 
   var _processLoginArray = _classPrivateFieldLooseKey("processLoginArray");
 
@@ -2253,14 +2249,8 @@
       Object.defineProperty(_assertThisInitialized(_this), _processLoginArray, {
         value: _processLoginArray2
       });
-      Object.defineProperty(_assertThisInitialized(_this), _deleteUser, {
-        value: _deleteUser2
-      });
       Object.defineProperty(_assertThisInitialized(_this), _handleCookieFromCache, {
         value: _handleCookieFromCache2
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _clear, {
-        value: _clear2
       });
       Object.defineProperty(_assertThisInitialized(_this), _processOUL, {
         value: _processOUL2
@@ -2294,6 +2284,43 @@
     }
 
     _createClass(UserLoginHandler, [{
+      key: "clear",
+      value: function clear() {
+        _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('clear called. Reset flag has been set.');
+
+        this.deleteUser();
+        StorageManager$1.setMetaProp(CLEAR, true);
+      }
+    }, {
+      key: "deleteUser",
+      value: function deleteUser() {
+        $ct.blockRequeust = true;
+
+        _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Block request is true');
+
+        $ct.globalCache = {};
+
+        if (StorageManager$1._isLocalStorageSupported()) {
+          delete localStorage[GCOOKIE_NAME];
+          delete localStorage[KCOOKIE_NAME];
+          delete localStorage[PR_COOKIE];
+          delete localStorage[EV_COOKIE];
+          delete localStorage[META_COOKIE];
+          delete localStorage[ARP_COOKIE];
+          delete localStorage[CAMP_COOKIE_NAME];
+          delete localStorage[CHARGEDID_COOKIE_NAME];
+        }
+
+        StorageManager$1.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
+        StorageManager$1.removeCookie(CAMP_COOKIE_NAME, getHostName());
+        StorageManager$1.removeCookie(KCOOKIE_NAME, getHostName());
+        StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
+        StorageManager$1.removeCookie(ARP_COOKIE, $ct.broadDomain);
+        $ct.gcookie = null;
+
+        _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
+      }
+    }, {
       key: "push",
       value: function push() {
         for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -2340,7 +2367,7 @@
           anonymousUser = true;
         }
 
-        if ($ct.LRU_CACHE == null && StorageManager$1.isLocalStorageSupported()) {
+        if ($ct.LRU_CACHE == null && StorageManager$1._isLocalStorageSupported()) {
           $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
         }
 
@@ -2384,7 +2411,7 @@
           }
         } else {
           if (!anonymousUser) {
-            _classPrivateFieldLooseBase(this, _clear)[_clear]();
+            this.clear();
           } else {
             if (g != null) {
               $ct.gcookie = g;
@@ -2444,7 +2471,7 @@
             data.profile = profileObj;
             var ids = [];
 
-            if (StorageManager$1.isLocalStorageSupported()) {
+            if (StorageManager$1._isLocalStorageSupported()) {
               if (profileObj.Identity != null) {
                 ids.push(profileObj.Identity);
               }
@@ -2494,19 +2521,11 @@
     }
   };
 
-  var _clear2 = function _clear2() {
-    console.debug('clear called. Reset flag has been set.');
-
-    _classPrivateFieldLooseBase(this, _deleteUser)[_deleteUser]();
-
-    StorageManager$1.setMetaProp(CLEAR, true);
-  };
-
   var _handleCookieFromCache2 = function _handleCookieFromCache2() {
     $ct.blockRequeust = false;
     console.debug('Block request is false');
 
-    if (StorageManager$1.isLocalStorageSupported()) {
+    if (StorageManager$1._isLocalStorageSupported()) {
       delete localStorage[PR_COOKIE];
       delete localStorage[EV_COOKIE];
       delete localStorage[META_COOKIE];
@@ -2518,32 +2537,6 @@
     StorageManager$1.removeCookie(CAMP_COOKIE_NAME, getHostName());
     StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
     StorageManager$1.removeCookie(ARP_COOKIE, $ct.broadDomain);
-
-    _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
-  };
-
-  var _deleteUser2 = function _deleteUser2() {
-    $ct.blockRequeust = true;
-    console.debug('Block request is true');
-    $ct.globalCache = {};
-
-    if (StorageManager$1.isLocalStorageSupported()) {
-      delete localStorage[GCOOKIE_NAME];
-      delete localStorage[KCOOKIE_NAME];
-      delete localStorage[PR_COOKIE];
-      delete localStorage[EV_COOKIE];
-      delete localStorage[META_COOKIE];
-      delete localStorage[ARP_COOKIE];
-      delete localStorage[CAMP_COOKIE_NAME];
-      delete localStorage[CHARGEDID_COOKIE_NAME];
-    }
-
-    StorageManager$1.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
-    StorageManager$1.removeCookie(CAMP_COOKIE_NAME, getHostName());
-    StorageManager$1.removeCookie(KCOOKIE_NAME, getHostName());
-    StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
-    StorageManager$1.removeCookie(ARP_COOKIE, $ct.broadDomain);
-    $ct.gcookie = null;
 
     _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
   };
@@ -3324,7 +3317,9 @@
 
   var CleverTap = /*#__PURE__*/function () {
     function CleverTap() {
-      var _clevertap$account, _clevertap$account2;
+      var _clevertap$account,
+          _this = this,
+          _clevertap$account2;
 
       var clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -3420,6 +3415,17 @@
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
+
+      this.logout = function () {
+        _classPrivateFieldLooseBase(_this, _logger$7)[_logger$7].debug('logout called');
+
+        StorageManager$1.setInstantDeleteFlagInK();
+      };
+
+      this.clear = function () {
+        _this.onUserLogin.clear();
+      };
+
       window.$CLTP_WR = window.$WZRK_WR = _classPrivateFieldLooseBase(this, _api)[_api];
 
       if ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id) {
@@ -3477,7 +3483,7 @@
     }, {
       key: "pageChanged",
       value: function pageChanged() {
-        var _this = this;
+        var _this2 = this;
 
         var currLocation = window.location.href;
         var urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
@@ -3553,12 +3559,12 @@
         setTimeout(function () {
           if (pgCount <= 3) {
             // send ping for up to 3 pages
-            _classPrivateFieldLooseBase(_this, _pingRequest)[_pingRequest]();
+            _classPrivateFieldLooseBase(_this2, _pingRequest)[_pingRequest]();
           }
 
-          if (_classPrivateFieldLooseBase(_this, _isPingContinuous)[_isPingContinuous]()) {
+          if (_classPrivateFieldLooseBase(_this2, _isPingContinuous)[_isPingContinuous]()) {
             setInterval(function () {
-              _classPrivateFieldLooseBase(_this, _pingRequest)[_pingRequest]();
+              _classPrivateFieldLooseBase(_this2, _pingRequest)[_pingRequest]();
             }, CONTINUOUS_PING_FREQ_IN_MILLIS);
           }
         }, FIRST_PING_FREQ_IN_MILLIS);
