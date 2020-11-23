@@ -8,6 +8,7 @@ on:
     branches:
       - master
       - develop
+    types: [opened, synchronize, reopened]
 jobs:
   build:
     runs-on: macos-latest
