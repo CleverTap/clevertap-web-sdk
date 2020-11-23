@@ -20,6 +20,7 @@ import { StorageManager } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
 import { getCampaignObjForLc } from './util/clevertap'
 import { compressData } from './util/encoder'
+import Privacy from './modules/privacy'
 
 export default class CleverTap {
   #logger
@@ -68,6 +69,11 @@ export default class CleverTap {
       session: this.#session,
       logger: this.#logger
     }, clevertap.onUserLogin)
+
+    this.privacy = new Privacy({
+      request: this.#request,
+      account: this.#account
+    }, clevertap.privacy)
 
     this.#api = new CleverTapAPI({
       logger: this.#logger,
@@ -131,7 +137,7 @@ export default class CleverTap {
   #processOldValues () {
     // TODO create classes old data handlers for OUL, Privacy, notifications
     this.onUserLogin.processOldValues()
-    // Privacy
+    this.privacy.processOldValues()
     this.event.processOldValues()
     this.profile.processOldValues()
     // Notifications

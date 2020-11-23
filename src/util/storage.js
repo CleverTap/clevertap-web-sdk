@@ -235,6 +235,7 @@ export const $ct = {
   LRU_cache: null,
   globalProfileMap: null,
   blockRequest: false,
+  isOptInRequest: false,
   broadDomain: null,
   // domain: window.location.hostname, url -> getHostName()
   gcookie: null
