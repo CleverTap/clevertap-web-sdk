@@ -2052,8 +2052,6 @@
 
   var _account = _classPrivateFieldLooseKey("account");
 
-  var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
-
   var _processProfileArray = _classPrivateFieldLooseKey("processProfileArray");
 
   var ProfileHandler = /*#__PURE__*/function (_Array) {
@@ -2061,7 +2059,7 @@
 
     var _super = _createSuper(ProfileHandler);
 
-    function ProfileHandler(_ref, values) {
+    function ProfileHandler(_ref) {
       var _this;
 
       var logger = _ref.logger,
@@ -2086,14 +2084,9 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _oldValues$1, {
-        writable: true,
-        value: void 0
-      });
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$3)[_logger$3] = logger;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$2)[_request$2] = request;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account)[_account] = account;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$1)[_oldValues$1] = values;
       return _this;
     }
 

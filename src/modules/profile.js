@@ -21,14 +21,12 @@ export default class ProfileHandler extends Array {
   #logger
   #request
   #account
-  #oldValues
 
-  constructor ({ logger, request, account }, values) {
+  constructor ({ logger, request, account }) {
     super()
     this.#logger = logger
     this.#request = request
     this.#account = account
-    this.#oldValues = values
   }
 
   push (...profilesArr) {
