@@ -7,7 +7,6 @@ import { addToURL } from './url'
 export default class RequestDispatcher {
   static logger
   static device
-  static isOptInRequest = false
 
   static #fireRequest (url, tries, skipARP, sendOULFlag) {
     if (this.#dropRequestDueToOptOut()) {
@@ -59,8 +58,8 @@ export default class RequestDispatcher {
   }
 
   static #dropRequestDueToOptOut () {
-    if (this.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
-      this.isOptInRequest = false
+    if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
+      $ct.isOptInRequest = false
       return false
     }
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH

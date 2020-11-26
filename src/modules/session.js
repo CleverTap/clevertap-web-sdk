@@ -1,49 +1,23 @@
-// import {
-//   SCOOKIE_PREFIX
-// } from '../util/constants'
-// import { StorageManager } from '../util/storage'
-
-// export class SessionManager {
-//   #SCOOKIE_NAME
-//   #accountID
-//   #logger
-
-//   constructor (params = {
-//     accountID,
-//     logger
-//   }) {
-//     this.#accountID = params.accountID
-//     this.#SCOOKIE_NAME = SCOOKIE_PREFIX + '_' + accountID
-//     this.#logger = params.logger
-//   }
-
-//   get SCOOKIE_NAME () {
-//     return this.#SCOOKIE_NAME
-//   }
-
-//   set SCOOKIE_NAME (accountID) {
-//     this.#SCOOKIE_NAME = SCOOKIE_PREFIX + '_' + accountID
-//   }
-
-//   logout () {
-//     this.#logger.debug('logout called')
-//     StorageManager.setInstantDeleteFlagInK()
-//   }
-// }
 import { singleQuoteRegex, SCOOKIE_EXP_TIME_IN_SECS } from '../util/constants'
 import { isObject } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { StorageManager } from '../util/storage'
+import { getHostName } from '../util/url'
 
 export default class SessionManager {
   #logger
   #sessionId
-  cookieName
+  #isPersonalizationActive
+  cookieName // SCOOKIE_NAME
   scookieObj
 
-  constructor ({ logger }) {
+  constructor ({
+    logger,
+    isPersonalizationActive
+  }) {
     this.sessionId = StorageManager.getMetaProp('cs')
     this.#logger = logger
+    this.#isPersonalizationActive = isPersonalizationActive
   }
 
   get sessionId () {
@@ -84,7 +58,7 @@ export default class SessionManager {
 
   setSessionCookieObject (obj) {
     const objStr = JSON.stringify(obj)
-    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, window.location.hostname)
+    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName())
   }
 
   manageSession (session) {
@@ -109,5 +83,30 @@ export default class SessionManager {
       }
       this.sessionId = session
     }
+  }
+
+  getTimeElapsed () {
+    if (!this.#isPersonalizationActive()) {
+      return
+    }
+    if (this.scookieObj != null) { // TODO: check logic?
+      this.scookieObj = this.getSessionCookieObject()
+    }
+    const sessionStart = this.scookieObj.s
+    if (sessionStart != null) {
+      const ts = getNow()
+      return Math.floor(ts - sessionStart)
+    }
+  }
+
+  getPageCount () {
+    if (!this.#isPersonalizationActive()) {
+      return
+    }
+
+    if (this.scookieObj != null) { // TODO: check logic
+      this.scookieObj = this.getSessionCookieObject()
+    }
+    return this.scookieObj.p
   }
 }
