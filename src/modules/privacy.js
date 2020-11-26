@@ -11,7 +11,6 @@ import {
   StorageManager,
   $ct
 } from '../util/storage'
-// import LRUCache from '../util/lruCache'
 import {
   compressData
 } from '../util/encoder'
