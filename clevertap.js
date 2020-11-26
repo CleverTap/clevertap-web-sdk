@@ -42,6 +42,55 @@
     return Constructor;
   }
 
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
+  }
+
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -323,12 +372,16 @@
 
   var EV_COOKIE = 'WZRK_EV';
   var META_COOKIE = 'WZRK_META';
+  var PR_COOKIE = 'WZRK_PR';
   var ARP_COOKIE = 'WZRK_ARP';
   var LCOOKIE_NAME = 'WZRK_L';
+  var OPTOUT_KEY = 'optOut';
+  var CT_OPTOUT_KEY = 'ct_optout';
   var OPTOUT_COOKIE_ENDSWITH = ':OO';
   var USEIP_KEY = 'useIP';
   var LRU_CACHE = 'WZRK_X';
   var LRU_CACHE_SIZE = 100;
+  var IS_OUL = 'isOUL';
   var EVT_PUSH = 'push';
   var EVT_PING = 'ping';
   var COOKIE_EXPIRY = 86400 * 365 * 10; // 10 Years in seconds
@@ -359,6 +412,9 @@
     }
 
     return true;
+  };
+  var isConvertibleToNumber = function isConvertibleToNumber(n) {
+    return !isNaN(parseFloat(n)) && isFinite(n);
   };
   var isNumber = function isNumber(n) {
     return /^-?[\d.]+(?:e-?\d+)?$/.test(n) && typeof n === 'number';
@@ -426,8 +482,24 @@
   var convertToWZRKDate = function convertToWZRKDate(dateObj) {
     return '$D_' + Math.round(dateObj.getTime() / 1000);
   };
+  var setDate = function setDate(dt) {
+    // expecting  yyyymmdd format either as a number or a string
+    if (isDateValid(dt)) {
+      return '$D_' + dt;
+    }
+  };
+  var isDateValid = function isDateValid(date) {
+    var matches = /^(\d{4})(\d{2})(\d{2})$/.exec(date);
+    if (matches == null) return false;
+    var d = matches[3];
+    var m = matches[2] - 1;
+    var y = matches[1];
+    var composedDate = new Date(y, m, d); // eslint-disable-next-line eqeqeq
 
-  var StorageManager = /*#__PURE__*/function () {
+    return composedDate.getDate() == d && composedDate.getMonth() == m && composedDate.getFullYear() == y;
+  };
+
+  var StorageManager$1 = /*#__PURE__*/function () {
     function StorageManager() {
       _classCallCheck(this, StorageManager);
     }
@@ -707,7 +779,13 @@
       REQ_N: 0,
       RESP_N: 0
     },
-    blockRequest: false
+    LRU_cache: null,
+    globalProfileMap: null,
+    blockRequest: false,
+    isOptInRequest: false,
+    broadDomain: null // domain: window.location.hostname, url -> getHostName()
+    // gcookie: -> device
+
   };
 
   var _keyOrder = _classPrivateFieldLooseKey("keyOrder");
@@ -726,7 +804,7 @@
         value: void 0
       });
       this.max = max;
-      var lruCache = StorageManager.readFromLSorCookie(LRU_CACHE);
+      var lruCache = StorageManager$1.readFromLSorCookie(LRU_CACHE);
 
       if (lruCache) {
         var tempLruCache = {};
@@ -800,7 +878,7 @@
           }
         }
 
-        StorageManager.saveToLSorCookie(LRU_CACHE, objToArray);
+        StorageManager$1.saveToLSorCookie(LRU_CACHE, objToArray);
       }
     }, {
       key: "getKey",
@@ -913,7 +991,7 @@
           respNumber = 0;
         }
 
-        StorageManager.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger)[_logger]);
+        StorageManager$1.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger)[_logger]);
 
         if (respNumber > $ct.globalCache.REQ_N) {
           // request for some other user so ignore
@@ -923,19 +1001,19 @@
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
           if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
             // clear useIP meta prop
-            StorageManager.getAndClearMetaProp(USEIP_KEY);
+            StorageManager$1.getAndClearMetaProp(USEIP_KEY);
           }
 
           _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
 
           _classPrivateFieldLooseBase(this, _device)[_device].gcookie = global;
 
-          if (global && StorageManager._isLocalStorageSupported()) {
+          if (global && StorageManager$1._isLocalStorageSupported()) {
             if ($ct.LRU_CACHE == null) {
               $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
             }
 
-            var kIdFromLS = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
+            var kIdFromLS = StorageManager$1.readFromLSorCookie(KCOOKIE_NAME);
 
             if (kIdFromLS != null && kIdFromLS.id && resume) {
               var guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
@@ -945,7 +1023,7 @@
               }
             }
 
-            StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
+            StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, global);
             var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
             if (lastK !== -1) {
@@ -955,8 +1033,8 @@
             }
           }
 
-          StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
-          StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
+          StorageManager$1.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
+          StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, global);
         }
 
         if (resume) {
@@ -965,7 +1043,7 @@
           _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Resumed requests');
         }
 
-        if (StorageManager._isLocalStorageSupported()) {
+        if (StorageManager$1._isLocalStorageSupported()) {
           _classPrivateFieldLooseBase(this, _session)[_session].manageSession(session);
         } // session cookie
 
@@ -1017,8 +1095,8 @@
           return this.gcookie;
         }
 
-        if (StorageManager._isLocalStorageSupported()) {
-          var value = StorageManager.read(GCOOKIE_NAME);
+        if (StorageManager$1._isLocalStorageSupported()) {
+          var value = StorageManager$1.read(GCOOKIE_NAME);
 
           if (isValueValid(value)) {
             try {
@@ -1032,7 +1110,7 @@
 
               if (value.length === 32) {
                 guid = value;
-                StorageManager.saveToLSorCookie(GCOOKIE_NAME, value);
+                StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, value);
               } else {
                 _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error('Illegal guid ' + value);
               }
@@ -1040,20 +1118,20 @@
 
 
             if (isValueValid(guid)) {
-              StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname);
+              StorageManager$1.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname);
             }
           }
         }
 
         if (!isValueValid(guid)) {
-          guid = StorageManager.readCookie(GCOOKIE_NAME);
+          guid = StorageManager$1.readCookie(GCOOKIE_NAME);
 
           if (isValueValid(guid) && (guid.indexOf('%') === 0 || guid.indexOf('\'') === 0 || guid.indexOf('"') === 0)) {
             guid = null;
           }
 
           if (isValueValid(guid)) {
-            StorageManager.saveToLSorCookie(GCOOKIE_NAME, guid);
+            StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, guid);
           }
         }
 
@@ -1069,6 +1147,13 @@
 
   var EMBED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Incorrect embed script.");
   var EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
+  var GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should be either M or F. ").concat(DATA_NOT_SENT_TEXT);
+  var EMPLOYED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Employed value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
+  var MARRIED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Married value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
+  var EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
+  var AGE_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Age value should be a number. ").concat(DATA_NOT_SENT_TEXT);
+  var DOB_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " DOB value should be a Date Object");
+  var PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
 
   var _globalChargedId;
 
@@ -1126,7 +1211,7 @@
         var chargedId = chargedObj[CHARGED_ID] + ''; // casting chargedId to string
 
         if (typeof _globalChargedId === 'undefined') {
-          _globalChargedId = StorageManager.readFromLSorCookie(CHARGEDID_COOKIE_NAME);
+          _globalChargedId = StorageManager$1.readFromLSorCookie(CHARGEDID_COOKIE_NAME);
         }
 
         if (typeof _globalChargedId !== 'undefined' && _globalChargedId.trim() === chargedId.trim()) {
@@ -1136,7 +1221,7 @@
         }
 
         _globalChargedId = chargedId;
-        StorageManager.saveToLSorCookie(CHARGEDID_COOKIE_NAME, chargedId);
+        StorageManager$1.saveToLSorCookie(CHARGEDID_COOKIE_NAME, chargedId);
       }
 
       return true;
@@ -1209,8 +1294,8 @@
         return 0;
       }
     }, {
-      key: "processOldValues",
-      value: function processOldValues() {
+      key: "_processOldValues",
+      value: function _processOldValues() {
         if (_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]) {
           _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]);
         }
@@ -1225,7 +1310,7 @@
         }
 
         if (typeof $ct.globalEventsMap === 'undefined') {
-          $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
+          $ct.globalEventsMap = StorageManager$1.readFromLSorCookie(EV_COOKIE);
         }
 
         if (typeof $ct.globalEventsMap === 'undefined') {
@@ -1305,195 +1390,390 @@
     }
   };
 
-  var logLevels = {
-    DISABLE: 0,
-    ERROR: 1,
-    INFO: 2,
-    DEBUG: 3
-  };
+  // CleverTap specific utilities
+  var getCampaignObject = function getCampaignObject() {
+    var campObj = {};
 
-  var _logLevel = _classPrivateFieldLooseKey("logLevel");
+    if (StorageManager$1._isLocalStorageSupported()) {
+      campObj = StorageManager$1.read(CAMP_COOKIE_NAME);
 
-  var _log = _classPrivateFieldLooseKey("log");
-
-  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
-
-  var Logger = /*#__PURE__*/function () {
-    function Logger(logLevel) {
-      _classCallCheck(this, Logger);
-
-      Object.defineProperty(this, _isLegacyDebug, {
-        get: _get_isLegacyDebug,
-        set: void 0
-      });
-      Object.defineProperty(this, _log, {
-        value: _log2
-      });
-      Object.defineProperty(this, _logLevel, {
-        writable: true,
-        value: void 0
-      });
-      this.wzrkError = {};
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevel : logLevels.INFO;
-      this.wzrkError = {};
+      if (campObj != null) {
+        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
+      } else {
+        campObj = {};
+      }
     }
 
-    _createClass(Logger, [{
-      key: "error",
-      value: function error(message) {
-        if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
-          _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
-        }
-      }
-    }, {
-      key: "info",
-      value: function info(message) {
-        if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
-          _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
-        }
-      }
-    }, {
-      key: "debug",
-      value: function debug(message) {
-        if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
-          _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
-        }
-      }
-    }, {
-      key: "reportError",
-      value: function reportError(code, description) {
-        this.wzrkError.c = code;
-        this.wzrkError.d = description;
-        this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
-      }
-    }, {
-      key: "logLevel",
-      get: function get() {
-        return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
-      },
-      set: function set(logLevel) {
-        _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
-      }
-    }]);
+    return campObj;
+  };
+  var getCampaignObjForLc = function getCampaignObjForLc() {
+    var campObj = {};
 
-    return Logger;
-  }();
+    if (StorageManager$1._isLocalStorageSupported()) {
+      campObj = getCampaignObject();
+      var resultObj = [];
+      var globalObj = campObj.global;
+      var today = getToday();
+      var dailyObj = campObj[today];
 
-  var _log2 = function _log2(level, message) {
-    if (window.console) {
-      try {
-        var ts = new Date().getTime();
-        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
+      if (typeof globalObj !== 'undefined') {
+        var campaignIdArray = Object.keys(globalObj);
+
+        for (var index in campaignIdArray) {
+          if (campaignIdArray.hasOwnProperty(index)) {
+            var dailyC = 0;
+            var totalC = 0;
+            var campaignId = campaignIdArray[index];
+
+            if (campaignId === 'tc') {
+              continue;
+            }
+
+            if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
+              dailyC = dailyObj[campaignId];
+            }
+
+            if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
+              totalC = globalObj[campaignId];
+            }
+
+            var element = [campaignId, dailyC, totalC];
+            resultObj.push(element);
+          }
+        }
+      }
+
+      var todayC = 0;
+
+      if (typeof dailyObj !== 'undefined' && typeof dailyObj.tc !== 'undefined') {
+        todayC = dailyObj.tc;
+      }
+
+      resultObj = {
+        wmp: todayC,
+        tlc: resultObj
+      };
+      return resultObj;
     }
   };
+  var isProfileValid = function isProfileValid(profileObj, _ref) {
+    var logger = _ref.logger;
+    var valid = false;
 
-  var _get_isLegacyDebug = function _get_isLegacyDebug() {
-    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
-  };
+    if (isObject(profileObj)) {
+      for (var profileKey in profileObj) {
+        if (profileObj.hasOwnProperty(profileKey)) {
+          valid = true;
+          var profileVal = profileObj[profileKey];
 
-  var _logger$3 = _classPrivateFieldLooseKey("logger");
+          if (profileVal == null) {
+            delete profileObj[profileKey];
+            continue;
+          }
 
-  var _sessionId = _classPrivateFieldLooseKey("sessionId");
+          if (profileKey === 'Gender' && !profileVal.match(/^M$|^F$/)) {
+            valid = false;
+            logger.error(GENDER_ERROR);
+          }
 
-  var SessionManager = /*#__PURE__*/function () {
-    function SessionManager(_ref) {
-      var logger = _ref.logger;
+          if (profileKey === 'Employed' && !profileVal.match(/^Y$|^N$/)) {
+            valid = false;
+            logger.error(EMPLOYED_ERROR);
+          }
 
-      _classCallCheck(this, SessionManager);
+          if (profileKey === 'Married' && !profileVal.match(/^Y$|^N$/)) {
+            valid = false;
+            logger.error(MARRIED_ERROR);
+          }
 
-      Object.defineProperty(this, _logger$3, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _sessionId, {
-        writable: true,
-        value: void 0
-      });
-      this.cookieName = void 0;
-      this.scookieObj = void 0;
-      this.sessionId = StorageManager.getMetaProp('cs');
-      _classPrivateFieldLooseBase(this, _logger$3)[_logger$3] = logger;
-    }
+          if (profileKey === 'Education' && !profileVal.match(/^School$|^College$|^Graduate$/)) {
+            valid = false;
+            logger.error(EDUCATION_ERROR);
+          }
 
-    _createClass(SessionManager, [{
-      key: "getSessionCookieObject",
-      value: function getSessionCookieObject() {
-        var scookieStr = StorageManager.readCookie(this.cookieName);
-        var obj = {};
+          if (profileKey === 'Age' && profileVal != null) {
+            if (isConvertibleToNumber(profileVal)) {
+              profileObj.Age = +profileVal;
+            } else {
+              valid = false;
+              logger.error(AGE_ERROR);
+            }
+          } // dob will come in like this - $dt_19470815 or dateObject
 
-        if (scookieStr != null) {
-          // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
-          scookieStr = scookieStr.replace(singleQuoteRegex, '"');
-          obj = JSON.parse(scookieStr);
 
-          if (!isObject(obj)) {
-            obj = {};
-          } else {
-            if (typeof obj.t !== 'undefined') {
-              // check time elapsed since last request
-              var lastTime = obj.t;
-              var now = getNow();
+          if (profileKey === 'DOB') {
+            if ((!/^\$D_/.test(profileVal) || (profileVal + '').length !== 11) && !isDateObject(profileVal)) {
+              valid = false;
+              logger.error(DOB_ERROR);
+            }
 
-              if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
-                // adding 60 seconds to compensate for in-journey requests
-                // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
-                // hence we shouldn't use it.
-                obj = {};
+            if (isDateObject(profileVal)) {
+              profileObj[profileKey] = convertToWZRKDate(profileVal);
+            }
+          } else if (isDateObject(profileVal)) {
+            profileObj[profileKey] = convertToWZRKDate(profileVal);
+          }
+
+          if (profileKey === 'Phone' && !isObjectEmpty(profileVal)) {
+            if (profileVal.length > 8 && profileVal.charAt(0) === '+') {
+              // valid phone number
+              profileVal = profileVal.substring(1, profileVal.length);
+
+              if (isConvertibleToNumber(profileVal)) {
+                profileObj.Phone = +profileVal;
+              } else {
+                valid = false;
+                logger.error(PHONE_FORMAT_ERROR + '. Removed.');
               }
+            } else {
+              valid = false;
+              logger.error(PHONE_FORMAT_ERROR + '. Removed.');
+            }
+          }
+
+          if (!valid) {
+            delete profileObj[profileKey];
+          }
+        }
+      }
+    }
+
+    return valid;
+  };
+  var processFBUserObj = function processFBUserObj(user) {
+    var profileData = {};
+    profileData.Name = user.name;
+
+    if (user.id != null) {
+      profileData.FBID = user.id + '';
+    } // Feb 2014 - FB announced over 58 gender options, hence we specifically look for male or female. Rest we don't care.
+
+
+    if (user.gender === 'male') {
+      profileData.Gender = 'M';
+    } else if (user.gender === 'female') {
+      profileData.Gender = 'F';
+    } else {
+      profileData.Gender = 'O';
+    }
+
+    var getHighestEducation = function getHighestEducation(eduArr) {
+      if (eduArr != null) {
+        var college = '';
+        var highschool = '';
+
+        for (var i = 0; i < eduArr.length; i++) {
+          var _edu = eduArr[i];
+
+          if (_edu.type != null) {
+            var type = _edu.type;
+
+            if (type === 'Graduate School') {
+              return 'Graduate';
+            } else if (type === 'College') {
+              college = '1';
+            } else if (type === 'High School') {
+              highschool = '1';
             }
           }
         }
 
-        this.scookieObj = obj;
-        return obj;
-      }
-    }, {
-      key: "setSessionCookieObject",
-      value: function setSessionCookieObject(obj) {
-        var objStr = JSON.stringify(obj);
-        StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, window.location.hostname);
-      }
-    }, {
-      key: "manageSession",
-      value: function manageSession(session) {
-        // first time. check if current session id in localstorage is same
-        // if not same then prev = current and current = this new session
-        if (typeof this.sessionId === 'undefined' || this.sessionId !== session) {
-          var currentSessionInLS = StorageManager.getMetaProp('cs'); // if sessionId in meta is undefined - set current to both
-
-          if (typeof currentSessionInLS === 'undefined') {
-            StorageManager.setMetaProp('ps', session);
-            StorageManager.setMetaProp('cs', session);
-            StorageManager.setMetaProp('sc', 1);
-          } else if (currentSessionInLS !== session) {
-            // not same as session in local storage. new session
-            StorageManager.setMetaProp('ps', currentSessionInLS);
-            StorageManager.setMetaProp('cs', session);
-            var sessionCount = StorageManager.getMetaProp('sc');
-
-            if (typeof sessionCount === 'undefined') {
-              sessionCount = 0;
-            }
-
-            StorageManager.setMetaProp('sc', sessionCount + 1);
-          }
-
-          this.sessionId = session;
+        if (college === '1') {
+          return 'College';
+        } else if (highschool === '1') {
+          return 'School';
         }
       }
-    }, {
-      key: "sessionId",
-      get: function get() {
-        return _classPrivateFieldLooseBase(this, _sessionId)[_sessionId];
-      },
-      set: function set(sessionId) {
-        _classPrivateFieldLooseBase(this, _sessionId)[_sessionId] = sessionId;
-      }
-    }]);
+    };
 
-    return SessionManager;
-  }();
+    if (user.relationship_status != null) {
+      profileData.Married = 'N';
+
+      if (user.relationship_status === 'Married') {
+        profileData.Married = 'Y';
+      }
+    }
+
+    var edu = getHighestEducation(user.education);
+
+    if (edu != null) {
+      profileData.Education = edu;
+    }
+
+    var work = user.work != null ? user.work.length : 0;
+
+    if (work > 0) {
+      profileData.Employed = 'Y';
+    } else {
+      profileData.Employed = 'N';
+    }
+
+    if (user.email != null) {
+      profileData.Email = user.email;
+    }
+
+    if (user.birthday != null) {
+      var mmddyy = user.birthday.split('/'); // comes in as "08/15/1947"
+
+      profileData.DOB = setDate(mmddyy[2] + mmddyy[0] + mmddyy[1]);
+    }
+
+    return profileData;
+  };
+  var processGPlusUserObj = function processGPlusUserObj(user, _ref2) {
+    var logger = _ref2.logger;
+    var profileData = {};
+
+    if (user.displayName != null) {
+      profileData.Name = user.displayName;
+    }
+
+    if (user.id != null) {
+      profileData.GPID = user.id + '';
+    }
+
+    if (user.gender != null) {
+      if (user.gender === 'male') {
+        profileData.Gender = 'M';
+      } else if (user.gender === 'female') {
+        profileData.Gender = 'F';
+      } else if (user.gender === 'other') {
+        profileData.Gender = 'O';
+      }
+    }
+
+    if (user.image != null) {
+      if (user.image.isDefault === false) {
+        profileData.Photo = user.image.url.split('?sz')[0];
+      }
+    }
+
+    if (user.emails != null) {
+      for (var emailIdx = 0; emailIdx < user.emails.length; emailIdx++) {
+        var emailObj = user.emails[emailIdx];
+
+        if (emailObj.type === 'account') {
+          profileData.Email = emailObj.value;
+        }
+      }
+    }
+
+    if (user.organizations != null) {
+      profileData.Employed = 'N';
+
+      for (var i = 0; i < user.organizations.length; i++) {
+        var orgObj = user.organizations[i];
+
+        if (orgObj.type === 'work') {
+          profileData.Employed = 'Y';
+        }
+      }
+    }
+
+    if (user.birthday != null) {
+      var yyyymmdd = user.birthday.split('-'); // comes in as "1976-07-27"
+
+      profileData.DOB = setDate(yyyymmdd[0] + yyyymmdd[1] + yyyymmdd[2]);
+    }
+
+    if (user.relationshipStatus != null) {
+      profileData.Married = 'N';
+
+      if (user.relationshipStatus === 'married') {
+        profileData.Married = 'Y';
+      }
+    }
+
+    logger.debug('gplus usr profile ' + JSON.stringify(profileData));
+    return profileData;
+  };
+  var addToLocalProfileMap = function addToLocalProfileMap(profileObj, override) {
+    var globalProfileMap = $ct.globalProfileMap;
+
+    if (StorageManager$1._isLocalStorageSupported()) {
+      if (globalProfileMap == null) {
+        globalProfileMap = StorageManager$1.readFromLSorCookie(PR_COOKIE);
+
+        if (globalProfileMap == null) {
+          globalProfileMap = {};
+        }
+      } // Move props from custom bucket to outside.
+
+
+      if (profileObj._custom != null) {
+        var keys = profileObj._custom;
+
+        for (var key in keys) {
+          if (keys.hasOwnProperty(key)) {
+            profileObj[key] = keys[key];
+          }
+        }
+
+        delete profileObj._custom;
+      }
+
+      for (var prop in profileObj) {
+        if (profileObj.hasOwnProperty(prop)) {
+          if (globalProfileMap.hasOwnProperty(prop) && !override) {
+            continue;
+          }
+
+          globalProfileMap[prop] = profileObj[prop];
+        }
+      }
+
+      if (globalProfileMap._custom != null) {
+        delete globalProfileMap._custom;
+      }
+
+      StorageManager$1.saveToLSorCookie(PR_COOKIE, globalProfileMap);
+    }
+  };
+
+  var getURLParams = function getURLParams(url) {
+    var urlParams = {};
+    var idx = url.indexOf('?');
+
+    if (idx > 1) {
+      var uri = url.substring(idx + 1);
+      var match;
+      var pl = /\+/g; // Regex for replacing addition symbol with a space
+
+      var search = /([^&=]+)=?([^&]*)/g;
+
+      var decode = function decode(s) {
+        var replacement = s.replace(pl, ' ');
+
+        try {
+          replacement = decodeURIComponent(replacement);
+        } catch (e) {// eat
+        }
+
+        return replacement;
+      };
+
+      match = search.exec(uri);
+
+      while (match) {
+        urlParams[decode(match[1])] = decode(match[2]);
+        match = search.exec(uri);
+      }
+    }
+
+    return urlParams;
+  };
+  var getDomain = function getDomain(url) {
+    if (url === '') return '';
+    var a = document.createElement('a');
+    a.href = url;
+    return a.hostname;
+  };
+  var addToURL = function addToURL(url, k, v) {
+    return url + '&' + k + '=' + encodeURIComponent(v);
+  };
+  var getHostName = function getHostName() {
+    return window.location.hostname;
+  };
 
   /* eslint-disable */
   var compressData = function compressData(dataObject) {
@@ -1821,47 +2101,802 @@
     return output;
   };
 
-  var getURLParams = function getURLParams(url) {
-    var urlParams = {};
-    var idx = url.indexOf('?');
+  var _logger$3 = _classPrivateFieldLooseKey("logger");
 
-    if (idx > 1) {
-      var uri = url.substring(idx + 1);
-      var match;
-      var pl = /\+/g; // Regex for replacing addition symbol with a space
+  var _request$2 = _classPrivateFieldLooseKey("request");
 
-      var search = /([^&=]+)=?([^&]*)/g;
+  var _account = _classPrivateFieldLooseKey("account");
 
-      var decode = function decode(s) {
-        var replacement = s.replace(pl, ' ');
+  var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
 
-        try {
-          replacement = decodeURIComponent(replacement);
-        } catch (e) {// eat
-        }
+  var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
-        return replacement;
-      };
+  var _processProfileArray = _classPrivateFieldLooseKey("processProfileArray");
 
-      match = search.exec(uri);
+  var ProfileHandler = /*#__PURE__*/function (_Array) {
+    _inherits(ProfileHandler, _Array);
 
-      while (match) {
-        urlParams[decode(match[1])] = decode(match[2]);
-        match = search.exec(uri);
-      }
+    var _super = _createSuper(ProfileHandler);
+
+    function ProfileHandler(_ref, values) {
+      var _this;
+
+      var logger = _ref.logger,
+          request = _ref.request,
+          account = _ref.account,
+          isPersonalisationActive = _ref.isPersonalisationActive;
+
+      _classCallCheck(this, ProfileHandler);
+
+      _this = _super.call(this);
+      Object.defineProperty(_assertThisInitialized(_this), _processProfileArray, {
+        value: _processProfileArray2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _logger$3, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _request$2, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _account, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _oldValues$1, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _isPersonalisationActive$1, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$3)[_logger$3] = logger;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$2)[_request$2] = request;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account)[_account] = account;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$1)[_oldValues$1] = values;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
+      return _this;
     }
 
-    return urlParams;
+    _createClass(ProfileHandler, [{
+      key: "push",
+      value: function push() {
+        for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          profilesArr[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](profilesArr);
+
+        return 0;
+      }
+    }, {
+      key: "_processOldValues",
+      value: function _processOldValues() {
+        if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
+          _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
+        }
+
+        _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = null;
+      }
+    }, {
+      key: "getAttribute",
+      value: function getAttribute(propName) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
+          return;
+        }
+
+        if ($ct.globalProfileMap == null) {
+          $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
+        }
+
+        if ($ct.globalProfileMap != null) {
+          return $ct.globalProfileMap[propName];
+        }
+      }
+    }]);
+
+    return ProfileHandler;
+  }( /*#__PURE__*/_wrapNativeSuper(Array));
+
+  var _processProfileArray2 = function _processProfileArray2(profileArr) {
+    if (Array.isArray(profileArr) && profileArr.length > 0) {
+      for (var index in profileArr) {
+        if (profileArr.hasOwnProperty(index)) {
+          var outerObj = profileArr[index];
+          var data = {};
+          var profileObj = void 0;
+
+          if (outerObj.Site != null) {
+            // organic data from the site
+            profileObj = outerObj.Site;
+
+            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
+              logger: _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]
+            })) {
+              return;
+            }
+          } else if (outerObj.Facebook != null) {
+            // fb connect data
+            var FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
+
+            if (!isObjectEmpty(FbProfileObj) && !FbProfileObj.error) {
+              profileObj = processFBUserObj(FbProfileObj);
+            }
+          } else if (outerObj['Google Plus'] != null) {
+            var GPlusProfileObj = outerObj['Google Plus'];
+
+            if (!isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
+              profileObj = processGPlusUserObj(GPlusProfileObj, {
+                logger: _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]
+              });
+            }
+          }
+
+          if (profileObj != null && !isObjectEmpty(profileObj)) {
+            // profile got set from above
+            data.type = 'profile';
+
+            if (profileObj.tz == null) {
+              // try to auto capture user timezone if not present
+              profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+            }
+
+            data.profile = profileObj;
+            addToLocalProfileMap(profileObj, true);
+            data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
+
+            _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data);
+
+            var compressedData = compressData(JSON.stringify(data));
+
+            var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+
+            pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+
+            _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust);
+          }
+        }
+      }
+    }
   };
-  var getDomain = function getDomain(url) {
-    if (url === '') return '';
-    var a = document.createElement('a');
-    a.href = url;
-    return a.hostname;
+
+  var _request$3 = _classPrivateFieldLooseKey("request");
+
+  var _logger$4 = _classPrivateFieldLooseKey("logger");
+
+  var _account$1 = _classPrivateFieldLooseKey("account");
+
+  var _session$1 = _classPrivateFieldLooseKey("session");
+
+  var _oldValues$2 = _classPrivateFieldLooseKey("oldValues");
+
+  var _device$1 = _classPrivateFieldLooseKey("device");
+
+  var _processOUL = _classPrivateFieldLooseKey("processOUL");
+
+  var _handleCookieFromCache = _classPrivateFieldLooseKey("handleCookieFromCache");
+
+  var _deleteUser = _classPrivateFieldLooseKey("deleteUser");
+
+  var _processLoginArray = _classPrivateFieldLooseKey("processLoginArray");
+
+  var UserLoginHandler = /*#__PURE__*/function (_Array) {
+    _inherits(UserLoginHandler, _Array);
+
+    var _super = _createSuper(UserLoginHandler);
+
+    function UserLoginHandler(_ref, values) {
+      var _this;
+
+      var request = _ref.request,
+          account = _ref.account,
+          session = _ref.session,
+          logger = _ref.logger,
+          device = _ref.device;
+
+      _classCallCheck(this, UserLoginHandler);
+
+      _this = _super.call(this);
+      Object.defineProperty(_assertThisInitialized(_this), _processLoginArray, {
+        value: _processLoginArray2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _deleteUser, {
+        value: _deleteUser2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _handleCookieFromCache, {
+        value: _handleCookieFromCache2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _processOUL, {
+        value: _processOUL2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _request$3, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _logger$4, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _account$1, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _session$1, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _oldValues$2, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _device$1, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$3)[_request$3] = request;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$1)[_account$1] = account;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _session$1)[_session$1] = session;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$4)[_logger$4] = logger;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$2)[_oldValues$2] = values;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _device$1)[_device$1] = device;
+      return _this;
+    }
+
+    _createClass(UserLoginHandler, [{
+      key: "clear",
+      value: function clear() {
+        _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('clear called. Reset flag has been set.');
+
+        _classPrivateFieldLooseBase(this, _deleteUser)[_deleteUser]();
+
+        StorageManager$1.setMetaProp(CLEAR, true);
+      }
+    }, {
+      key: "push",
+      value: function push() {
+        for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          profilesArr[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](profilesArr);
+
+        return 0;
+      }
+    }, {
+      key: "_processOldValues",
+      value: function _processOldValues() {
+        if (_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]) {
+          _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]);
+        }
+
+        _classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2] = null;
+      }
+    }]);
+
+    return UserLoginHandler;
+  }( /*#__PURE__*/_wrapNativeSuper(Array));
+
+  var _processOUL2 = function _processOUL2(profileArr) {
+    var sendOULFlag = true;
+
+    var addToK = function addToK(ids) {
+      var k = StorageManager$1.readFromLSorCookie(KCOOKIE_NAME);
+      var g = StorageManager$1.readFromLSorCookie(GCOOKIE_NAME);
+      var kId;
+
+      if (k == null) {
+        k = {};
+        kId = ids;
+      } else {
+        /* check if already exists */
+        kId = k.id;
+        var anonymousUser = false;
+        var foundInCache = false;
+
+        if (kId == null) {
+          kId = ids[0];
+          anonymousUser = true;
+        }
+
+        if ($ct.LRU_CACHE == null && StorageManager$1._isLocalStorageSupported()) {
+          $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
+        }
+
+        if (anonymousUser) {
+          if (g != null) {
+            $ct.LRU_CACHE.set(kId, g);
+            $ct.blockRequeust = false;
+          }
+        } else {
+          for (var idx in ids) {
+            if (ids.hasOwnProperty(idx)) {
+              var id = ids[idx];
+
+              if ($ct.LRU_CACHE.cache[id]) {
+                kId = id;
+                foundInCache = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (foundInCache) {
+          if (kId !== $ct.LRU_CACHE.getLastKey()) {
+            // Same User
+            _classPrivateFieldLooseBase(this, _handleCookieFromCache)[_handleCookieFromCache]();
+          } else {
+            sendOULFlag = false;
+          }
+
+          var gFromCache = $ct.LRU_CACHE.get(kId);
+          $ct.LRU_CACHE.set(kId, gFromCache);
+          StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
+          _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie = gFromCache;
+          var lastK = $ct.LRU_CACHE.getSecondLastKEY();
+
+          if (lastK !== -1) {
+            var lastGUID = $ct.LRU_CACHE.cache[lastK];
+
+            _classPrivateFieldLooseBase(this, _request$3)[_request$3].unregisterTokenForGuid(lastGUID);
+          }
+        } else {
+          if (!anonymousUser) {
+            this.clear();
+          } else {
+            if (g != null) {
+              _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie = g;
+              StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, g);
+              sendOULFlag = false;
+            }
+          }
+
+          kId = ids[0];
+        }
+      }
+
+      k.id = kId;
+      StorageManager$1.saveToLSorCookie(KCOOKIE_NAME, k);
+    };
+
+    if (Array.isArray(profileArr) && profileArr.length > 0) {
+      for (var index in profileArr) {
+        if (profileArr.hasOwnProperty(index)) {
+          var outerObj = profileArr[index];
+          var data = {};
+          var profileObj = void 0;
+
+          if (outerObj.Site != null) {
+            // organic data from the site
+            profileObj = outerObj.Site;
+
+            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj)) {
+              return;
+            }
+          } else if (outerObj.Facebook != null) {
+            // fb connect data
+            var FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
+
+            if (!isObjectEmpty(FbProfileObj) && !FbProfileObj.error) {
+              profileObj = processFBUserObj(FbProfileObj);
+            }
+          } else if (outerObj['Google Plus'] != null) {
+            var GPlusProfileObj = outerObj['Google Plus'];
+
+            if (isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
+              profileObj = processGPlusUserObj(GPlusProfileObj, {
+                logger: _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]
+              });
+            }
+          }
+
+          if (profileObj != null && !isObjectEmpty(profileObj)) {
+            // profile got set from above
+            data.type = 'profile';
+
+            if (profileObj.tz == null) {
+              // try to auto capture user timezone if not present
+              profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+            }
+
+            data.profile = profileObj;
+            var ids = [];
+
+            if (StorageManager$1._isLocalStorageSupported()) {
+              if (profileObj.Identity != null) {
+                ids.push(profileObj.Identity);
+              }
+
+              if (profileObj.Email != null) {
+                ids.push(profileObj.Email);
+              }
+
+              if (profileObj.GPID != null) {
+                ids.push('GP:' + profileObj.GPID);
+              }
+
+              if (profileObj.FBID != null) {
+                ids.push('FB:' + profileObj.FBID);
+              }
+
+              if (ids.length > 0) {
+                addToK(ids);
+              }
+            }
+
+            addToLocalProfileMap(profileObj, true);
+            data = _classPrivateFieldLooseBase(this, _request$3)[_request$3].addSystemDataToObject(data, undefined);
+
+            _classPrivateFieldLooseBase(this, _request$3)[_request$3].addFlags(data); // Adding 'isOUL' flag in true for OUL cases which.
+            // This flag tells LC to create a new arp object.
+            // Also we will receive the same flag in response arp which tells to delete existing arp object.
+
+
+            if (sendOULFlag) {
+              data[IS_OUL] = true;
+            }
+
+            var compressedData = compressData(JSON.stringify(data));
+
+            var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostURL;
+
+            pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData); // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
+            // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
+            // stored in the cache and replace it with the response arp.
+
+            _classPrivateFieldLooseBase(this, _request$3)[_request$3].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust, sendOULFlag);
+          }
+        }
+      }
+    }
   };
-  var addToURL = function addToURL(url, k, v) {
-    return url + '&' + k + '=' + encodeURIComponent(v);
+
+  var _handleCookieFromCache2 = function _handleCookieFromCache2() {
+    $ct.blockRequeust = false;
+    console.debug('Block request is false');
+
+    if (StorageManager$1._isLocalStorageSupported()) {
+      delete localStorage[PR_COOKIE];
+      delete localStorage[EV_COOKIE];
+      delete localStorage[META_COOKIE];
+      delete localStorage[ARP_COOKIE];
+      delete localStorage[CAMP_COOKIE_NAME];
+      delete localStorage[CHARGEDID_COOKIE_NAME];
+    }
+
+    StorageManager$1.removeCookie(CAMP_COOKIE_NAME, getHostName());
+    StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
+    StorageManager$1.removeCookie(ARP_COOKIE, $ct.broadDomain);
+
+    _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
   };
+
+  var _deleteUser2 = function _deleteUser2() {
+    $ct.blockRequeust = true;
+
+    _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Block request is true');
+
+    $ct.globalCache = {};
+
+    if (StorageManager$1._isLocalStorageSupported()) {
+      delete localStorage[GCOOKIE_NAME];
+      delete localStorage[KCOOKIE_NAME];
+      delete localStorage[PR_COOKIE];
+      delete localStorage[EV_COOKIE];
+      delete localStorage[META_COOKIE];
+      delete localStorage[ARP_COOKIE];
+      delete localStorage[CAMP_COOKIE_NAME];
+      delete localStorage[CHARGEDID_COOKIE_NAME];
+    }
+
+    StorageManager$1.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
+    StorageManager$1.removeCookie(CAMP_COOKIE_NAME, getHostName());
+    StorageManager$1.removeCookie(KCOOKIE_NAME, getHostName());
+    StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
+    StorageManager$1.removeCookie(ARP_COOKIE, $ct.broadDomain);
+    _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie = null;
+
+    _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
+  };
+
+  var _processLoginArray2 = function _processLoginArray2(loginArr) {
+    if (Array.isArray(loginArr) && loginArr.length > 0) {
+      var profileObj = loginArr.pop();
+      var processProfile = profileObj != null && isObject(profileObj) && (profileObj.Site != null && Object.keys(profileObj.Site).length > 0 || profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0 || profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0);
+
+      if (processProfile) {
+        StorageManager$1.setInstantDeleteFlagInK();
+
+        _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].error('Profile object is in incorrect format');
+      }
+    }
+  };
+
+  var _isPersonalizationActive = _classPrivateFieldLooseKey("isPersonalizationActive");
+
+  var User = /*#__PURE__*/function () {
+    function User(_ref) {
+      var isPersonalizationActive = _ref.isPersonalizationActive;
+
+      _classCallCheck(this, User);
+
+      Object.defineProperty(this, _isPersonalizationActive, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive] = isPersonalizationActive;
+    }
+
+    _createClass(User, [{
+      key: "getTotalVisits",
+      value: function getTotalVisits() {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive]()) {
+          return;
+        }
+
+        var visitCount = StorageManager$1.getMetaProp('sc');
+
+        if (visitCount == null) {
+          visitCount = 1;
+        }
+
+        return visitCount;
+      }
+    }, {
+      key: "getLastVisit",
+      value: function getLastVisit() {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive]()) {
+          return;
+        }
+
+        var prevSession = StorageManager$1.getMetaProp('ps');
+
+        if (prevSession != null) {
+          return new Date(prevSession * 1000);
+        }
+      }
+    }]);
+
+    return User;
+  }();
+
+  var logLevels = {
+    DISABLE: 0,
+    ERROR: 1,
+    INFO: 2,
+    DEBUG: 3
+  };
+
+  var _logLevel = _classPrivateFieldLooseKey("logLevel");
+
+  var _log = _classPrivateFieldLooseKey("log");
+
+  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
+
+  var Logger = /*#__PURE__*/function () {
+    function Logger(logLevel) {
+      _classCallCheck(this, Logger);
+
+      Object.defineProperty(this, _isLegacyDebug, {
+        get: _get_isLegacyDebug,
+        set: void 0
+      });
+      Object.defineProperty(this, _log, {
+        value: _log2
+      });
+      Object.defineProperty(this, _logLevel, {
+        writable: true,
+        value: void 0
+      });
+      this.wzrkError = {};
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevel : logLevels.INFO;
+      this.wzrkError = {};
+    }
+
+    _createClass(Logger, [{
+      key: "error",
+      value: function error(message) {
+        if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
+          _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
+        }
+      }
+    }, {
+      key: "info",
+      value: function info(message) {
+        if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
+          _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
+        }
+      }
+    }, {
+      key: "debug",
+      value: function debug(message) {
+        if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
+          _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
+        }
+      }
+    }, {
+      key: "reportError",
+      value: function reportError(code, description) {
+        this.wzrkError.c = code;
+        this.wzrkError.d = description;
+        this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
+      }
+    }, {
+      key: "logLevel",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
+      },
+      set: function set(logLevel) {
+        _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
+      }
+    }]);
+
+    return Logger;
+  }();
+
+  var _log2 = function _log2(level, message) {
+    if (window.console) {
+      try {
+        var ts = new Date().getTime();
+        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
+      } catch (e) {}
+    }
+  };
+
+  var _get_isLegacyDebug = function _get_isLegacyDebug() {
+    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
+  };
+
+  var _logger$5 = _classPrivateFieldLooseKey("logger");
+
+  var _sessionId = _classPrivateFieldLooseKey("sessionId");
+
+  var _isPersonalizationActive$1 = _classPrivateFieldLooseKey("isPersonalizationActive");
+
+  var SessionManager = /*#__PURE__*/function () {
+    // SCOOKIE_NAME
+    function SessionManager(_ref) {
+      var logger = _ref.logger,
+          isPersonalizationActive = _ref.isPersonalizationActive;
+
+      _classCallCheck(this, SessionManager);
+
+      Object.defineProperty(this, _logger$5, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _sessionId, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _isPersonalizationActive$1, {
+        writable: true,
+        value: void 0
+      });
+      this.cookieName = void 0;
+      this.scookieObj = void 0;
+      this.sessionId = StorageManager$1.getMetaProp('cs');
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
+      _classPrivateFieldLooseBase(this, _isPersonalizationActive$1)[_isPersonalizationActive$1] = isPersonalizationActive;
+    }
+
+    _createClass(SessionManager, [{
+      key: "getSessionCookieObject",
+      value: function getSessionCookieObject() {
+        var scookieStr = StorageManager$1.readCookie(this.cookieName);
+        var obj = {};
+
+        if (scookieStr != null) {
+          // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
+          scookieStr = scookieStr.replace(singleQuoteRegex, '"');
+          obj = JSON.parse(scookieStr);
+
+          if (!isObject(obj)) {
+            obj = {};
+          } else {
+            if (typeof obj.t !== 'undefined') {
+              // check time elapsed since last request
+              var lastTime = obj.t;
+              var now = getNow();
+
+              if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
+                // adding 60 seconds to compensate for in-journey requests
+                // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
+                // hence we shouldn't use it.
+                obj = {};
+              }
+            }
+          }
+        }
+
+        this.scookieObj = obj;
+        return obj;
+      }
+    }, {
+      key: "setSessionCookieObject",
+      value: function setSessionCookieObject(obj) {
+        var objStr = JSON.stringify(obj);
+        StorageManager$1.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
+      }
+    }, {
+      key: "manageSession",
+      value: function manageSession(session) {
+        // first time. check if current session id in localstorage is same
+        // if not same then prev = current and current = this new session
+        if (typeof this.sessionId === 'undefined' || this.sessionId !== session) {
+          var currentSessionInLS = StorageManager$1.getMetaProp('cs'); // if sessionId in meta is undefined - set current to both
+
+          if (typeof currentSessionInLS === 'undefined') {
+            StorageManager$1.setMetaProp('ps', session);
+            StorageManager$1.setMetaProp('cs', session);
+            StorageManager$1.setMetaProp('sc', 1);
+          } else if (currentSessionInLS !== session) {
+            // not same as session in local storage. new session
+            StorageManager$1.setMetaProp('ps', currentSessionInLS);
+            StorageManager$1.setMetaProp('cs', session);
+            var sessionCount = StorageManager$1.getMetaProp('sc');
+
+            if (typeof sessionCount === 'undefined') {
+              sessionCount = 0;
+            }
+
+            StorageManager$1.setMetaProp('sc', sessionCount + 1);
+          }
+
+          this.sessionId = session;
+        }
+      }
+    }, {
+      key: "getTimeElapsed",
+      value: function getTimeElapsed() {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive$1)[_isPersonalizationActive$1]()) {
+          return;
+        }
+
+        if (this.scookieObj != null) {
+          // TODO: check logic?
+          this.scookieObj = this.getSessionCookieObject();
+        }
+
+        var sessionStart = this.scookieObj.s;
+
+        if (sessionStart != null) {
+          var ts = getNow();
+          return Math.floor(ts - sessionStart);
+        }
+      }
+    }, {
+      key: "getPageCount",
+      value: function getPageCount() {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive$1)[_isPersonalizationActive$1]()) {
+          return;
+        }
+
+        if (this.scookieObj != null) {
+          // TODO: check logic
+          this.scookieObj = this.getSessionCookieObject();
+        }
+
+        return this.scookieObj.p;
+      }
+    }, {
+      key: "sessionId",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _sessionId)[_sessionId];
+      },
+      set: function set(sessionId) {
+        _classPrivateFieldLooseBase(this, _sessionId)[_sessionId] = sessionId;
+      }
+    }]);
+
+    return SessionManager;
+  }();
 
   var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
 
@@ -1891,16 +2926,16 @@
       return addToURL(url, 'arp', compressData(JSON.stringify(_arp)));
     }
 
-    if (StorageManager._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined') {
-      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE))));
+    if (StorageManager$1._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined') {
+      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager$1.readFromLSorCookie(ARP_COOKIE))));
     }
 
     return url;
   };
 
   var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
-    if (this.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
-      this.isOptInRequest = false;
+    if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
+      $ct.isOptInRequest = false;
       return false;
     }
 
@@ -1958,7 +2993,6 @@
 
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
-  RequestDispatcher.isOptInRequest = false;
   Object.defineProperty(RequestDispatcher, _fireRequest, {
     value: _fireRequest2
   });
@@ -1969,85 +3003,18 @@
     value: _addARPToRequest2
   });
 
-  // CleverTap specific utilities
-  var getCampaignObject = function getCampaignObject() {
-    var campObj = {};
-
-    if (StorageManager._isLocalStorageSupported()) {
-      campObj = StorageManager.read(CAMP_COOKIE_NAME);
-
-      if (campObj != null) {
-        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
-      } else {
-        campObj = {};
-      }
-    }
-
-    return campObj;
-  };
-  var getCampaignObjForLc = function getCampaignObjForLc() {
-    var campObj = {};
-
-    if (StorageManager._isLocalStorageSupported()) {
-      campObj = getCampaignObject();
-      var resultObj = [];
-      var globalObj = campObj.global;
-      var today = getToday();
-      var dailyObj = campObj[today];
-
-      if (typeof globalObj !== 'undefined') {
-        var campaignIdArray = Object.keys(globalObj);
-
-        for (var index in campaignIdArray) {
-          if (campaignIdArray.hasOwnProperty(index)) {
-            var dailyC = 0;
-            var totalC = 0;
-            var campaignId = campaignIdArray[index];
-
-            if (campaignId === 'tc') {
-              continue;
-            }
-
-            if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-              dailyC = dailyObj[campaignId];
-            }
-
-            if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-              totalC = globalObj[campaignId];
-            }
-
-            var element = [campaignId, dailyC, totalC];
-            resultObj.push(element);
-          }
-        }
-      }
-
-      var todayC = 0;
-
-      if (typeof dailyObj !== 'undefined' && typeof dailyObj.tc !== 'undefined') {
-        todayC = dailyObj.tc;
-      }
-
-      resultObj = {
-        wmp: todayC,
-        tlc: resultObj
-      };
-      return resultObj;
-    }
-  };
-
   var seqNo = 0;
   var requestTime = 0;
 
-  var _logger$4 = _classPrivateFieldLooseKey("logger");
+  var _logger$6 = _classPrivateFieldLooseKey("logger");
 
-  var _account = _classPrivateFieldLooseKey("account");
+  var _account$2 = _classPrivateFieldLooseKey("account");
 
-  var _device$1 = _classPrivateFieldLooseKey("device");
+  var _device$2 = _classPrivateFieldLooseKey("device");
 
-  var _session$1 = _classPrivateFieldLooseKey("session");
+  var _session$2 = _classPrivateFieldLooseKey("session");
 
-  var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
+  var _isPersonalisationActive$2 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   var _clearCookie = _classPrivateFieldLooseKey("clearCookie");
 
@@ -2066,23 +3033,23 @@
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
       });
-      Object.defineProperty(this, _logger$4, {
+      Object.defineProperty(this, _logger$6, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _account, {
+      Object.defineProperty(this, _account$2, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device$1, {
+      Object.defineProperty(this, _device$2, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _session$1, {
+      Object.defineProperty(this, _session$2, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _isPersonalisationActive$1, {
+      Object.defineProperty(this, _isPersonalisationActive$2, {
         writable: true,
         value: void 0
       });
@@ -2091,11 +3058,11 @@
         value: false
       });
       this.processingBackup = false;
-      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
-      _classPrivateFieldLooseBase(this, _account)[_account] = account;
-      _classPrivateFieldLooseBase(this, _device$1)[_device$1] = device;
-      _classPrivateFieldLooseBase(this, _session$1)[_session$1] = session;
-      _classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
+      _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
+      _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
+      _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
+      _classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2] = isPersonalisationActive;
       RequestDispatcher.logger = logger;
       RequestDispatcher.device = device;
     }
@@ -2103,7 +3070,7 @@
     _createClass(RequestManager, [{
       key: "processBackupEvents",
       value: function processBackupEvents() {
-        var backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
+        var backupMap = StorageManager$1.readFromLSorCookie(LCOOKIE_NAME);
 
         if (typeof backupMap === 'undefined' || backupMap === null) {
           return;
@@ -2116,7 +3083,7 @@
             var backupEvent = backupMap[idx];
 
             if (typeof backupEvent.fired === 'undefined') {
-              _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Processing backup event : ' + backupEvent.q);
+              _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Processing backup event : ' + backupEvent.q);
 
               if (typeof backupEvent.q !== 'undefined') {
                 RequestDispatcher.fireRequest(backupEvent.q);
@@ -2127,7 +3094,7 @@
           }
         }
 
-        StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap);
+        StorageManager$1.saveToLSorCookie(LCOOKIE_NAME, backupMap);
         this.processingBackup = false;
       }
     }, {
@@ -2135,21 +3102,21 @@
       value: function addSystemDataToObject(dataObject, ignoreTrim) {
         // ignore trim for chrome notifications; undefined everywhere else
         if (typeof ignoreTrim === 'undefined') {
-          dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]);
+          dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
         }
 
-        if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$4)[_logger$4].wzrkError)) {
-          dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].wzrkError;
-          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].wzrkError = {};
+        if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError)) {
+          dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError;
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError = {};
         }
 
-        dataObject.id = _classPrivateFieldLooseBase(this, _account)[_account].id;
+        dataObject.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
 
-        if (isValueValid(_classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie)) {
-          dataObject.g = _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie;
+        if (isValueValid(_classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie)) {
+          dataObject.g = _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie;
         }
 
-        var obj = _classPrivateFieldLooseBase(this, _session$1)[_session$1].getSessionCookieObject();
+        var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
 
         dataObject.s = obj.s; // session cookie
 
@@ -2161,17 +3128,17 @@
       key: "addFlags",
       value: function addFlags(data) {
         // check if cookie should be cleared.
-        _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] = StorageManager.getAndClearMetaProp(CLEAR);
+        _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] = StorageManager$1.getAndClearMetaProp(CLEAR);
 
         if (_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           data.rc = true;
 
-          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('reset cookie sent in request and cleared from meta for future requests.');
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('reset cookie sent in request and cleared from meta for future requests.');
         }
 
-        if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
-          var lastSyncTime = StorageManager.getMetaProp('lsTime');
-          var expirySeconds = StorageManager.getMetaProp('exTs'); // dsync not found in local storage - get data from server
+        if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2]()) {
+          var lastSyncTime = StorageManager$1.getMetaProp('lsTime');
+          var expirySeconds = StorageManager$1.getMetaProp('exTs'); // dsync not found in local storage - get data from server
 
           if (typeof lastSyncTime === 'undefined' || typeof expirySeconds === 'undefined') {
             data.dsync = true;
@@ -2191,7 +3158,7 @@
         var now = getNow();
         url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
         var data = url + '&i=' + now + '&sn=' + seqNo;
-        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]);
+        StorageManager$1.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
 
         if (!$ct.blockRequest || override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           if (now === requestTime) {
@@ -2203,7 +3170,7 @@
 
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
-          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug("Not fired due to block request - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to block request - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
         }
       }
     }, {
@@ -2217,15 +3184,15 @@
         }
 
         data.action = 'unregister';
-        data.id = _classPrivateFieldLooseBase(this, _account)[_account].id;
+        data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
 
-        var obj = _classPrivateFieldLooseBase(this, _session$1)[_session$1].getSessionCookieObject();
+        var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
 
         data.s = obj.s; // session cookie
 
         var compressedData = compressData(JSON.stringify(data));
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -2241,7 +3208,7 @@
         data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
         var compressedData = compressData(JSON.stringify(data));
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -2253,9 +3220,9 @@
   }();
 
   var _addToLocalEventMap2 = function _addToLocalEventMap2(evtName) {
-    if (StorageManager._isLocalStorageSupported()) {
+    if (StorageManager$1._isLocalStorageSupported()) {
       if (typeof $ct.globalEventsMap === 'undefined') {
-        $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
+        $ct.globalEventsMap = StorageManager$1.readFromLSorCookie(EV_COOKIE);
 
         if (typeof $ct.globalEventsMap === 'undefined') {
           $ct.globalEventsMap = {};
@@ -2276,23 +3243,131 @@
       }
 
       $ct.globalEventsMap[evtName] = evtDetail;
-      StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
+      StorageManager$1.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
     }
   };
 
-  var _logger$5 = _classPrivateFieldLooseKey("logger");
+  var _request$4 = _classPrivateFieldLooseKey("request");
+
+  var _account$3 = _classPrivateFieldLooseKey("account");
+
+  var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
+
+  var _processPrivacyArray = _classPrivateFieldLooseKey("processPrivacyArray");
+
+  var Privacy = /*#__PURE__*/function (_Array) {
+    _inherits(Privacy, _Array);
+
+    var _super = _createSuper(Privacy);
+
+    function Privacy(_ref, values) {
+      var _this;
+
+      var request = _ref.request,
+          account = _ref.account;
+
+      _classCallCheck(this, Privacy);
+
+      _this = _super.call(this);
+      Object.defineProperty(_assertThisInitialized(_this), _processPrivacyArray, {
+        value: _processPrivacyArray2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _request$4, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _account$3, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _oldValues$3, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$4)[_request$4] = request;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$3)[_account$3] = account;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$3)[_oldValues$3] = values;
+      return _this;
+    }
+
+    _createClass(Privacy, [{
+      key: "push",
+      value: function push() {
+        for (var _len = arguments.length, privacyArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          privacyArr[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](privacyArr);
+
+        return 0;
+      }
+    }, {
+      key: "_processOldValues",
+      value: function _processOldValues() {
+        if (_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]) {
+          _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
+        }
+
+        _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = null;
+      }
+    }]);
+
+    return Privacy;
+  }( /*#__PURE__*/_wrapNativeSuper(Array));
+
+  var _processPrivacyArray2 = function _processPrivacyArray2(privacyArr) {
+    if (Array.isArray(privacyArr) && privacyArr.length > 0) {
+      var privacyObj = privacyArr[0];
+      var data = {};
+      var profileObj = {};
+      var optOut = privacyObj[OPTOUT_KEY];
+
+      if (privacyObj.hasOwnProperty(OPTOUT_KEY)) {
+        if (typeof optOut === 'boolean') {
+          profileObj[CT_OPTOUT_KEY] = optOut; // should be true when user wants to opt in
+
+          $ct.isOptInRequest = !optOut;
+        }
+      }
+
+      if (privacyObj.hasOwnProperty(USEIP_KEY)) {
+        var useIP = privacyObj[USEIP_KEY];
+
+        if (typeof useIP === 'boolean') {
+          StorageManager$1.setMetaProp(USEIP_KEY, useIP);
+        }
+      }
+
+      if (!isObjectEmpty(profileObj)) {
+        data.type = 'profile';
+        data.profile = profileObj;
+        data = _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
+        var compressedData = compressData(JSON.stringify(data));
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
+
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+        pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false');
+
+        _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust);
+      }
+    }
+  };
+
+  var _logger$7 = _classPrivateFieldLooseKey("logger");
 
   var _api = _classPrivateFieldLooseKey("api");
 
   var _onloadcalled = _classPrivateFieldLooseKey("onloadcalled");
 
-  var _device$2 = _classPrivateFieldLooseKey("device");
+  var _device$3 = _classPrivateFieldLooseKey("device");
 
-  var _session$2 = _classPrivateFieldLooseKey("session");
+  var _session$3 = _classPrivateFieldLooseKey("session");
 
-  var _account$1 = _classPrivateFieldLooseKey("account");
+  var _account$4 = _classPrivateFieldLooseKey("account");
 
-  var _request$2 = _classPrivateFieldLooseKey("request");
+  var _request$5 = _classPrivateFieldLooseKey("request");
 
   var _isSpa = _classPrivateFieldLooseKey("isSpa");
 
@@ -2333,7 +3408,9 @@
     }]);
 
     function CleverTap() {
-      var _clevertap$account, _clevertap$account2;
+      var _clevertap$account,
+          _this = this,
+          _clevertap$account2;
 
       var clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -2354,7 +3431,7 @@
       Object.defineProperty(this, _processOldValues, {
         value: _processOldValues2
       });
-      Object.defineProperty(this, _logger$5, {
+      Object.defineProperty(this, _logger$7, {
         writable: true,
         value: void 0
       });
@@ -2366,19 +3443,19 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device$2, {
+      Object.defineProperty(this, _device$3, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _session$2, {
+      Object.defineProperty(this, _session$3, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _account$1, {
+      Object.defineProperty(this, _account$4, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _request$2, {
+      Object.defineProperty(this, _request$5, {
         writable: true,
         value: void 0
       });
@@ -2396,36 +3473,76 @@
       });
       this.enablePersonalization = void 0;
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = new Logger(logLevels.INFO);
-      _classPrivateFieldLooseBase(this, _account$1)[_account$1] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
-      _classPrivateFieldLooseBase(this, _device$2)[_device$2] = new DeviceManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
-      });
-      _classPrivateFieldLooseBase(this, _session$2)[_session$2] = new SessionManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
-      });
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
-      _classPrivateFieldLooseBase(this, _request$2)[_request$2] = new RequestManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
-        account: _classPrivateFieldLooseBase(this, _account$1)[_account$1],
-        device: _classPrivateFieldLooseBase(this, _device$2)[_device$2],
-        session: _classPrivateFieldLooseBase(this, _session$2)[_session$2],
+      _classPrivateFieldLooseBase(this, _logger$7)[_logger$7] = new Logger(logLevels.INFO);
+      _classPrivateFieldLooseBase(this, _account$4)[_account$4] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
+      _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]
+      });
+      _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
+        isPersonalizationActive: this._isPersonalisationActive
+      });
+      _classPrivateFieldLooseBase(this, _request$5)[_request$5] = new RequestManager({
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
+        account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
+        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
+        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
         isPersonalisationActive: this._isPersonalisationActive
       });
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
-        request: _classPrivateFieldLooseBase(this, _request$2)[_request$2],
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
+        request: _classPrivateFieldLooseBase(this, _request$5)[_request$5],
         isPersonalisationActive: this._isPersonalisationActive
       }, clevertap.event);
+      this.profile = new ProfileHandler({
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
+        request: _classPrivateFieldLooseBase(this, _request$5)[_request$5],
+        account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
+        isPersonalisationActive: this._isPersonalisationActive
+      }, clevertap.profile);
+      this.onUserLogin = new UserLoginHandler({
+        request: _classPrivateFieldLooseBase(this, _request$5)[_request$5],
+        account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
+        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
+        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3]
+      }, clevertap.onUserLogin);
+      this.privacy = new Privacy({
+        request: _classPrivateFieldLooseBase(this, _request$5)[_request$5],
+        account: _classPrivateFieldLooseBase(this, _account$4)[_account$4]
+      }, clevertap.privacy);
       _classPrivateFieldLooseBase(this, _api)[_api] = new CleverTapAPI({
-        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
-        request: _classPrivateFieldLooseBase(this, _request$2)[_request$2],
-        device: _classPrivateFieldLooseBase(this, _device$2)[_device$2],
-        session: _classPrivateFieldLooseBase(this, _session$2)[_session$2]
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
+        request: _classPrivateFieldLooseBase(this, _request$5)[_request$5],
+        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
+        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
       });
-      this.spa = clevertap.spa;
-      window.$CLTP_WR = window.$WZRK_WR = _classPrivateFieldLooseBase(this, _api)[_api];
+      this.user = new User({
+        isPersonalisationActive: this._isPersonalisationActive
+      });
+      this.session = {
+        getTimeElapsed: function getTimeElapsed() {
+          return _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getTimeElapsed();
+        },
+        getPageCount: _classPrivateFieldLooseBase(this, _session$3)[_session$3].getPageCount
+      };
+
+      this.logout = function () {
+        _classPrivateFieldLooseBase(_this, _logger$7)[_logger$7].debug('logout called');
+
+        StorageManager$1.setInstantDeleteFlagInK();
+      };
+
+      this.clear = function () {
+        _this.onUserLogin.clear();
+      };
+
+      window.$CLTP_WR = window.$WZRK_WR = _objectSpread2(_objectSpread2({}, _classPrivateFieldLooseBase(this, _api)[_api]), {}, {
+        logout: this.logout,
+        clear: this.clear
+      });
 
       if ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id) {
         // The accountId is present so can init with empty values.
@@ -2443,26 +3560,26 @@
           return;
         }
 
-        StorageManager.removeCookie('WZRK_P', window.location.hostname);
+        StorageManager$1.removeCookie('WZRK_P', window.location.hostname);
 
-        if (!_classPrivateFieldLooseBase(this, _account$1)[_account$1].id) {
+        if (!_classPrivateFieldLooseBase(this, _account$4)[_account$4].id) {
           if (!accountId) {
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error(EMBED_ERROR);
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error(EMBED_ERROR);
 
             return;
           }
 
-          _classPrivateFieldLooseBase(this, _account$1)[_account$1].id = accountId;
+          _classPrivateFieldLooseBase(this, _account$4)[_account$4].id = accountId;
         }
 
-        _classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$1)[_account$1].id;
+        _classPrivateFieldLooseBase(this, _session$3)[_session$3].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$4)[_account$4].id;
 
         if (region) {
-          _classPrivateFieldLooseBase(this, _account$1)[_account$1].region = region;
+          _classPrivateFieldLooseBase(this, _account$4)[_account$4].region = region;
         }
 
         if (targetDomain) {
-          _classPrivateFieldLooseBase(this, _account$1)[_account$1].targetDomain = targetDomain;
+          _classPrivateFieldLooseBase(this, _account$4)[_account$4].targetDomain = targetDomain;
         }
 
         var currLocation = location.href;
@@ -2472,7 +3589,7 @@
           return;
         }
 
-        _classPrivateFieldLooseBase(this, _request$2)[_request$2].processBackupEvents();
+        _classPrivateFieldLooseBase(this, _request$5)[_request$5].processBackupEvents();
 
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
@@ -2491,17 +3608,17 @@
     }, {
       key: "pageChanged",
       value: function pageChanged() {
-        var _this = this;
+        var _this2 = this;
 
-        var currLocation = location.href;
+        var currLocation = window.location.href;
         var urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
 
-        var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
+        var obj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
 
         var pgCount = typeof obj.p === 'undefined' ? 0 : obj.p;
         obj.p = ++pgCount;
 
-        _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject(obj); // -- update page count
+        _classPrivateFieldLooseBase(this, _session$3)[_session$3].setSessionCookieObject(obj); // -- update page count
 
 
         var data = {};
@@ -2546,13 +3663,13 @@
           }
         }
 
-        data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
+        data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, undefined);
         data.cpg = currLocation;
         data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$4)[_account$4].dataPostURL;
 
-        _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data); // send dsync flag when page = 1
+        _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data); // send dsync flag when page = 1
 
 
         if (parseInt(data.pg) === 1) {
@@ -2562,18 +3679,18 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data)));
 
-        _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, false);
+        _classPrivateFieldLooseBase(this, _request$5)[_request$5].saveAndFireRequest(pageLoadUrl, false);
 
         _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation;
         setTimeout(function () {
           if (pgCount <= 3) {
             // send ping for up to 3 pages
-            _classPrivateFieldLooseBase(_this, _pingRequest)[_pingRequest]();
+            _classPrivateFieldLooseBase(_this2, _pingRequest)[_pingRequest]();
           }
 
-          if (_classPrivateFieldLooseBase(_this, _isPingContinuous)[_isPingContinuous]()) {
+          if (_classPrivateFieldLooseBase(_this2, _isPingContinuous)[_isPingContinuous]()) {
             setInterval(function () {
-              _classPrivateFieldLooseBase(_this, _pingRequest)[_pingRequest]();
+              _classPrivateFieldLooseBase(_this2, _pingRequest)[_pingRequest]();
             }, CONTINUOUS_PING_FREQ_IN_MILLIS);
           }
         }, FIRST_PING_FREQ_IN_MILLIS);
@@ -2581,7 +3698,7 @@
     }, {
       key: "_isPersonalisationActive",
       value: function _isPersonalisationActive() {
-        return StorageManager._isLocalStorageSupported() && this.enablePersonalization;
+        return StorageManager$1._isLocalStorageSupported() && this.enablePersonalization;
       }
     }]);
 
@@ -2590,7 +3707,14 @@
 
   var _processOldValues2 = function _processOldValues2() {
     // TODO create classes old data handlers for OUL, Privacy, notifications
-    this.event.processOldValues();
+    this.onUserLogin._processOldValues();
+
+    this.privacy._processOldValues();
+
+    this.event._processOldValues();
+
+    this.profile._processOldValues(); // Notifications
+
   };
 
   var _checkPageChanged2 = function _checkPageChanged2() {
@@ -2600,14 +3724,14 @@
   };
 
   var _pingRequest2 = function _pingRequest2() {
-    var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostURL;
+    var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$4)[_account$4].dataPostURL;
 
     var data = {};
-    data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
+    data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, undefined);
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING);
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data)));
 
-    _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, false);
+    _classPrivateFieldLooseBase(this, _request$5)[_request$5].saveAndFireRequest(pageLoadUrl, false);
   };
 
   var _isPingContinuous2 = function _isPingContinuous2() {

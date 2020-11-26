@@ -1,152 +1,10 @@
-// import { Account } from './modules/account'
-// import {
-//   logLevels,
-//   Logger
-// } from './modules/logger'
-// import {
-//   INVALID_ACCOUNT
-// } from './util/messages'
-// import { StorageManager } from './util/storage'
-// import {
-//   getURLParams
-// } from './util/url'
-// // import { api } from './api'
-// // import { session } from './session'
-// // import { user } from './user'
-// import { DeviceManager } from './modules/device'
-// import { SessionManager } from './modules/session'
-// import { EventHandler } from './modules/event'
-// import { CleverTapAPI } from './modules/api'
-
-// export default class CleverTap {
-//   #api
-//   #session
-//   #user
-
-//   #account
-//   #logger
-//   #device
-//   #event
-
-//   // Globals Used. To be sorted later
-
-//   // #dataPostURL -> account.js
-//   // #recorderURL -> account.js
-//   // #emailURL -> account.js
-//   #domain
-//   #broadDomain
-//   #requestTime
-//   #seqNo
-//   #wiz_counter
-//   #globalCache
-//   #onloadcalled
-//   // #processingBackup -> to event.js
-//   #unsubGroups
-//   #gcookie
-//   #scookieObj
-//   #campaignDivMap
-//   #blockRequeust
-//   #clearCookie
-//   // #SCOOKIE_NAME -> in session
-//   #globalChargedId
-//   #globalEventsMap
-//   #globalProfileMap
-//   #currentSessionId
-//   #LRU_CACHE
-//   #LRU_CACHE_SIZE
-//   #chromeAgent
-//   #firefoxAgent
-//   #safariAgent
-//   #fcmPublicKey
-
-//   constructor (clevertap = {}) {
-//     // this.options = {...options}
-//     window.clevertap.event = Array.isArray(window.clevertap.event) ? window.clevertap.event : []
-//     window.clevertap.profile = Array.isArray(window.clevertap.profile) ? window.clevertap.profile : []
-//     window.clevertap.account = Array.isArray(window.clevertap.account) ? window.clevertap.account : []
-//     window.clevertap.onUserLogin = Array.isArray(window.clevertap.onUserLogin) ? window.clevertap.onUserLogin : []
-//     window.clevertap.notifications = Array.isArray(window.clevertap.notifications) ? window.clevertap.notifications : []
-//     window.clevertap.privacy = Array.isArray(window.clevertap.privacy) ? window.clevertap.privacy : []
-
-//     // Initialize Modules
-//     this.#logger = new Logger(logLevels.INFO)
-//     this.#api = new CleverTapAPI({
-//       logger: this.#logger
-//     })
-//     this.#account = new Account({
-//       logger: this.#logger
-//     })
-//     this.#event = new EventHandler({
-//       api: this.#api,
-//       logger: this.#logger
-//     })
-
-//     // Other Properties
-//     this.#requestTime = 0
-//     this.#seqNo = 0
-//     this.#wiz_counter = 0 // to keep track of number of times we load the body
-//     this.#globalCache = {}
-//     this.#onloadcalled = false
-//     this.#unsubGroups = []
-//     this.#campaignDivMap = {}
-//     this.#blockRequeust = false
-//     this.#clearCookie = false
-//     this.#LRU_CACHE_SIZE = 100
-//     this.#fcmPublicKey = null
-
-// window.$ct = {
-//   globalCache: {
-//     gcookie: null,
-//     RESP_N: 0,
-//     RESP_N: 0,
-//   }
-// }
-//   }
-
-//   init (id, region) {
-//     if (id + '' === '') {
-//       this.#logger.error(INVALID_ACCOUNT)
-//       return
-//     }
-//     this.#account.accountID = id
-//     this.#session = new SessionManager({
-//       accountID: this.#account.accountID,
-//       logger: this.#logger
-//     })
-
-//     if (region != null) {
-//       this.#account.region = region
-//     }
-
-//     if (window.wizrocket != null && window.clevertap == null) {
-//       window.clevertap = window.wizrocket
-//     } else {
-//       window.wizrocket = window.clevertap
-//     }
-
-//     this.#domain = window.location.hostname
-//     let currentLocation = window.location.href
-//     let url_params = getURLParams(currentLocation.toLowerCase())
-
-//     StorageManager.removeCookie('WZRK_P', this.#domain) // delete pcookie
-//     this.#device = new DeviceManager(
-//       this.#account.accountID,
-//       this.#logger
-//     )
-//     this.#currentSessionId = StorageManager.getMetaProp('cs')
-
-//     if (url_params != null && url_params['wzrk_ex'] == '0') {
-//       return
-//     }
-
-//     this.#onloadcalled = true // Always set at the end
-//   }
-// }
-
 import Account from './modules/account'
 import CleverTapAPI from './modules/api'
 import DeviceManager from './modules/device'
 import EventHandler from './modules/event'
+import ProfileHandler from './modules/profile'
+import UserLoginHandler from './modules/userLogin'
+import User from './modules/user'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
@@ -162,6 +20,7 @@ import { StorageManager } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
 import { getCampaignObjForLc } from './util/clevertap'
 import { compressData } from './util/encoder'
+import Privacy from './modules/privacy'
 
 export default class CleverTap {
   #logger
@@ -195,11 +54,14 @@ export default class CleverTap {
 
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
+    this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region, clevertap.targetDomain)
     this.#device = new DeviceManager({ logger: this.#logger })
-    this.#session = new SessionManager({ logger: this.#logger })
-    this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
+    this.#session = new SessionManager({
+      logger: this.#logger,
+      isPersonalizationActive: this._isPersonalisationActive
+    })
     this.#request = new ReqestManager({
       logger: this.#logger,
       account: this.#account,
@@ -214,6 +76,26 @@ export default class CleverTap {
       isPersonalisationActive: this._isPersonalisationActive
     }, clevertap.event)
 
+    this.profile = new ProfileHandler({
+      logger: this.#logger,
+      request: this.#request,
+      account: this.#account,
+      isPersonalisationActive: this._isPersonalisationActive
+    }, clevertap.profile)
+
+    this.onUserLogin = new UserLoginHandler({
+      request: this.#request,
+      account: this.#account,
+      session: this.#session,
+      logger: this.#logger,
+      device: this.#device
+    }, clevertap.onUserLogin)
+
+    this.privacy = new Privacy({
+      request: this.#request,
+      account: this.#account
+    }, clevertap.privacy)
+
     this.#api = new CleverTapAPI({
       logger: this.#logger,
       request: this.#request,
@@ -223,7 +105,33 @@ export default class CleverTap {
 
     this.spa = clevertap.spa
 
-    window.$CLTP_WR = window.$WZRK_WR = this.#api
+    this.user = new User({
+      isPersonalisationActive: this._isPersonalisationActive
+    })
+
+    this.session = {
+      getTimeElapsed: () => {
+        return this.#session.getTimeElapsed()
+      },
+      getPageCount: () => {
+        return this.#session.getPageCount()
+      }
+    }
+
+    this.logout = () => {
+      this.#logger.debug('logout called')
+      StorageManager.setInstantDeleteFlagInK()
+    }
+
+    this.clear = () => {
+      this.onUserLogin.clear()
+    }
+
+    window.$CLTP_WR = window.$WZRK_WR = {
+      ...this.#api,
+      logout: this.logout,
+      clear: this.clear
+    }
 
     if (clevertap.account?.[0].id) {
       // The accountId is present so can init with empty values.
@@ -280,7 +188,11 @@ export default class CleverTap {
 
   #processOldValues () {
     // TODO create classes old data handlers for OUL, Privacy, notifications
-    this.event.processOldValues()
+    this.onUserLogin._processOldValues()
+    this.privacy._processOldValues()
+    this.event._processOldValues()
+    this.profile._processOldValues()
+    // Notifications
   }
 
   #checkPageChanged () {
@@ -290,7 +202,7 @@ export default class CleverTap {
   }
 
   pageChanged () {
-    const currLocation = location.href
+    const currLocation = window.location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
     // -- update page count
     const obj = this.#session.getSessionCookieObject()

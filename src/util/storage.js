@@ -232,5 +232,11 @@ export const $ct = {
     REQ_N: 0,
     RESP_N: 0
   },
-  blockRequest: false
+  LRU_cache: null,
+  globalProfileMap: null,
+  blockRequest: false,
+  isOptInRequest: false,
+  broadDomain: null
+  // domain: window.location.hostname, url -> getHostName()
+  // gcookie: -> device
 }

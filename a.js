@@ -1,5 +1,7 @@
 const { default: constants } = require("./src/util/constants");
 const { logger } = require("./src/modules/logger");
+const { default: CleverTap } = require("./src/clevertap");
+const { default: LRUCache } = require("./src/util/lruCache");
 
 function __wizrocket() {
   // var targetDomain = 'wzrkt.com'; -> options.js
@@ -242,12 +244,12 @@ function __wizrocket() {
     // recorderURL = wz_pr + '//' + targetDomain + '/r?r=1';
     // emailURL = wz_pr + '//' + targetDomain + '/e?r=1';
 
-    var currLocation = location.href;
-    var url_params = wzrk_util.getURLParams(location.href.toLowerCase());
+    // var currLocation = location.href;
+    // var url_params = wzrk_util.getURLParams(location.href.toLowerCase());
 
-    if (typeof url_params['e'] != STRING_CONSTANTS.UNDEFINED && url_params['wzrk_ex'] == '0') {
-      return;
-    }
+    // if (typeof url_params['e'] != STRING_CONSTANTS.UNDEFINED && url_params['wzrk_ex'] == '0') {
+    //   return;
+    // }
 
     wiz.processBackupEvents();
     wiz.overloadArrayPush();
@@ -347,87 +349,18 @@ function __wizrocket() {
 
     if (typeof wizrocket['session'] == STRING_CONSTANTS.UNDEFINED) {
 
-      wizrocket['event']['getDetails'] = function (evtName) {
-        if (!wzrk_util.isPersonalizationActive()) {
-          return;
-        }
-        if (typeof globalEventsMap == STRING_CONSTANTS.UNDEFINED) {
-          globalEventsMap = wiz.readFromLSorCookie(STRING_CONSTANTS.EV_COOKIE);
-        }
-        if (typeof globalEventsMap == STRING_CONSTANTS.UNDEFINED) {
-          return;
-        }
-        var evtObj = globalEventsMap[evtName];
-        var respObj = {};
+      // wizrocket['event']['getDetails'] = function (evtName) -> event.js
 
-        if (typeof evtObj != STRING_CONSTANTS.UNDEFINED) {
-          respObj['firstTime'] = new Date(evtObj[1] * 1000);
-          respObj['lastTime'] = new Date(evtObj[2] * 1000);
-          respObj['count'] = evtObj[0];
-          return respObj;
-        }
-
-
-      };
-
-      wizrocket['profile']['getAttribute'] = function (propName) {
-        if (!wzrk_util.isPersonalizationActive()) {
-          return;
-        }
-        if (typeof globalProfileMap == STRING_CONSTANTS.UNDEFINED) {
-          globalProfileMap = wiz.readFromLSorCookie(STRING_CONSTANTS.PR_COOKIE);
-        }
-        if (typeof globalProfileMap != STRING_CONSTANTS.UNDEFINED) {
-          return globalProfileMap[propName];
-        }
-      };
+      // wizrocket['profile']['getAttribute'] = function (propName) -> profile.js
       wizrocket['session'] = {};
-      wizrocket['session']['getTimeElapsed'] = function () {
-        if (!wzrk_util.isPersonalizationActive()) {
-          return;
-        }
-        if (typeof scookieObj != STRING_CONSTANTS.UNDEFINED) {
-          scookieObj = wiz.getSessionCookieObject();
-        }
-        var sessionStart = scookieObj['s'];
-        if (typeof sessionStart != STRING_CONSTANTS.UNDEFINED) {
-          var ts = wzrk_util.getNow();
-          return Math.floor(ts - sessionStart);
-        }
-      };
+      // wizrocket['session']['getTimeElapsed'] = function () -> session.js
 
       wizrocket['user'] = {};
-      wizrocket['user']['getTotalVisits'] = function () {
-        if (!wzrk_util.isPersonalizationActive()) {
-          return;
-        }
-        var visitCount = wiz.getMetaProp('sc');
-        if (typeof visitCount == STRING_CONSTANTS.UNDEFINED) {
-          visitCount = 1;
-        }
-        return visitCount;
-      };
+      // wizrocket['user']['getTotalVisits'] = function () -> user.js
 
-      wizrocket['session']['getPageCount'] = function () {
-        if (!wzrk_util.isPersonalizationActive()) {
-          return;
-        }
+      // wizrocket['session']['getPageCount'] = function () -> session.js
 
-        if (typeof scookieObj != STRING_CONSTANTS.UNDEFINED) {
-          scookieObj = wiz.getSessionCookieObject();
-        }
-        return scookieObj['p'];
-      };
-
-      wizrocket['user']['getLastVisit'] = function () {
-        if (!wzrk_util.isPersonalizationActive()) {
-          return;
-        }
-        var prevSession = wiz.getMetaProp('ps');
-        if (typeof prevSession != STRING_CONSTANTS.UNDEFINED) {
-          return new Date(prevSession * 1000);
-        }
-      };
+      // wizrocket['user']['getLastVisit'] = function () -> user.js
     }
     onloadcalled = 1;   //always the last line in this function
 
@@ -437,348 +370,36 @@ function __wizrocket() {
   // wiz.readFromLSorCookie = function (property) -> Storage.js
   // wiz.saveToLSorCookie -> Storage.js
 
-  var processEvent = function (data) {
-
-    wiz.addToLocalEventMap(data['evtName']);
-    data = wiz.addSystemDataToObject(data, undefined);
-    wiz.addFlags(data);
-    data[STRING_CONSTANTS.CAMP_COOKIE_NAME] = wiz.getCampaignObjForLc();
-    var compressedData = wiz.compressData(JSON.stringify(data));
-
-    var pageLoadUrl = dataPostURL;
-    pageLoadUrl = wiz.addToURL(pageLoadUrl, "type", EVT_PUSH);
-    pageLoadUrl = wiz.addToURL(pageLoadUrl, "d", compressedData);
-
-
-    wiz.saveAndFireRequest(pageLoadUrl, false);
-  };
+  // var processEvent = function (data) -> request.js
 
   // wiz.processEventArray = function (eventArr) -> event.js
 
-  wiz.addToLocalEventMap = function (evtName) {
-    if (wzrk_util.isLocalStorageSupported()) {
-      if (typeof globalEventsMap == STRING_CONSTANTS.UNDEFINED) {
-        globalEventsMap = wiz.readFromLSorCookie(STRING_CONSTANTS.EV_COOKIE);
-        if (typeof globalEventsMap == STRING_CONSTANTS.UNDEFINED) {
-          globalEventsMap = {};
-        }
-      }
-      var nowTs = wzrk_util.getNow();
-      var evtDetail = globalEventsMap[evtName];
-      if (typeof evtDetail != STRING_CONSTANTS.UNDEFINED) {
-        evtDetail[2] = nowTs;
-        evtDetail[0]++;
-      } else {
-        evtDetail = [];
-        evtDetail.push(1);
-        evtDetail.push(nowTs);
-        evtDetail.push(nowTs);
-      }
-      globalEventsMap[evtName] = evtDetail;
-      wiz.saveToLSorCookie(STRING_CONSTANTS.EV_COOKIE, globalEventsMap);
-    }
-  };
+  // wiz.addToLocalEventMap = function (evtName) -> request.js
 
-  wiz.addToLocalProfileMap = function (profileObj, override) {
-    if (wzrk_util.isLocalStorageSupported()) {
-      if (typeof globalProfileMap == STRING_CONSTANTS.UNDEFINED) {
-        globalProfileMap = wiz.readFromLSorCookie(STRING_CONSTANTS.PR_COOKIE);
-        if (typeof globalProfileMap == STRING_CONSTANTS.UNDEFINED) {
-          globalProfileMap = {};
-        }
-      }
+  // wiz.addToLocalProfileMap = function (profileObj, override) -> profile.js
 
-      //Move props from custom bucket to outside.
-      if (typeof profileObj['_custom'] != STRING_CONSTANTS.UNDEFINED) {
-        var keys = profileObj['_custom'];
-        for (var key in keys) {
-          if (keys.hasOwnProperty(key)) {
-            profileObj[key] = keys[key];
-          }
-        }
-        delete profileObj['_custom'];
-      }
-
-      for (var prop in profileObj) {
-        if (profileObj.hasOwnProperty(prop)) {
-          if (globalProfileMap.hasOwnProperty(prop) && !override) {
-            continue;
-          }
-          globalProfileMap[prop] = profileObj[prop];
-        }
-      }
-      if (typeof globalProfileMap['_custom'] != STRING_CONSTANTS.UNDEFINED) {
-        delete globalProfileMap['_custom'];
-      }
-      wiz.saveToLSorCookie(STRING_CONSTANTS.PR_COOKIE, globalProfileMap);
-    }
-  };
-
-  wiz.overrideDSyncFlag = function (data) {
-    if (wzrk_util.isPersonalizationActive()) {
-      data['dsync'] = true;
-    }
-  };
+  // wiz.overrideDSyncFlag = function (data) -> CleverTap.js
 
   // wiz.addARPToRequest = function (url, skipResARP) -> api.js
 
-  wiz.addFlags = function (data) {
+  // wiz.addFlags = function (data) -> request.js
 
-    //check if cookie should be cleared.
-    clearCookie = wiz.getAndClearMetaProp(STRING_CONSTANTS.CLEAR);
-    if (clearCookie !== undefined && clearCookie) {
-      data['rc'] = true;
-      console.debug("reset cookie sent in request and cleared from meta for future requests.");
-    }
-    if (wzrk_util.isPersonalizationActive()) {
-      var lastSyncTime = wiz.getMetaProp('lsTime');
-      var expirySeconds = wiz.getMetaProp('exTs');
+  // var unregisterTokenForGuid = function (givenGUID) -> request.js
 
-      //dsync not found in local storage - get data from server
-      if (typeof lastSyncTime == STRING_CONSTANTS.UNDEFINED || typeof expirySeconds == STRING_CONSTANTS.UNDEFINED) {
-        data['dsync'] = true;
-        return;
-      }
-      var now = wzrk_util.getNow();
-      //last sync time has expired - get fresh data from server
-      if (lastSyncTime + expirySeconds < now) {
-        data['dsync'] = true;
-      }
-    }
+  // var LRU_cache = function (max) -> LRUCache.js
 
+  // wiz.getCampaignObjForLc = function () -> util/clevertap
 
-  };
+  // var handleCookieFromCache = function () -> Storage.js
 
-  var unregisterTokenForGuid = function (givenGUID) {
-    var data = {};
-    data["type"] = "data";
-    if (wiz.isValueValid(givenGUID)) {
-      data["g"] = givenGUID;
-    }
-    data["action"] = "unregister";
-    data["id"] = accountId;
-
-    var obj = wiz.getSessionCookieObject();
-
-    data["s"] = obj["s"]; //Session cookie
-    var compressedData = wiz.compressData(JSON.stringify(data));
-
-    var pageLoadUrl = dataPostURL;
-    pageLoadUrl = wiz.addToURL(pageLoadUrl, "type", "data");
-    pageLoadUrl = wiz.addToURL(pageLoadUrl, "d", compressedData);
-
-    wiz.fireRequest(pageLoadUrl, true);
-  };
-
-  var LRU_cache = function (max) {
-    this.max = max;
-    var keyOrder;
-    var LRU_CACHE = wiz.readFromLSorCookie(STRING_CONSTANTS.LRU_CACHE);
-    if (LRU_CACHE) {
-      var lru_cache = {};
-      keyOrder = [];
-      LRU_CACHE = LRU_CACHE.cache;
-      for (var entry in LRU_CACHE) {
-        if(LRU_CACHE.hasOwnProperty(entry)) {
-          lru_cache[LRU_CACHE[entry][0]] = LRU_CACHE[entry][1];
-          keyOrder.push(LRU_CACHE[entry][0]);
-        }
-
-      }
-      this.cache = lru_cache;
-    } else {
-      this.cache = {};
-      keyOrder = [];
-    }
-
-    this.get = function (key) {
-      var item = this.cache[key];
-      if (item) {
-        var temp_val = item;
-        this.cache = deleteFromObject(key, this.cache);
-        this.cache[key] = item;
-        keyOrder.push(key);
-      }
-      this.saveCacheToLS(this.cache);
-      return item;
-    };
-
-    this.set = function (key, value) {
-      var item = this.cache[key];
-      var all_keys = keyOrder;
-      if (item != null) {
-        this.cache = deleteFromObject(key, this.cache);
-      } else if (all_keys.length === this.max) {
-        this.cache = deleteFromObject(
-            all_keys[0],
-            this.cache
-        );
-      }
-      this.cache[key] = value;
-      if (keyOrder[keyOrder.length - 1] !== key) {
-        keyOrder.push(key);
-      }
-      this.saveCacheToLS(this.cache);
-    };
-
-    this.saveCacheToLS = function (cache) {
-      var obj_to_array = [];
-      var all_keys = keyOrder;
-      for (var index in all_keys) {
-        if(all_keys.hasOwnProperty(index)) {
-          var temp = [];
-          temp.push(all_keys[index]);
-          temp.push(cache[all_keys[index]]);
-          obj_to_array.push(temp);
-        }
-      }
-      wiz.saveToLSorCookie(STRING_CONSTANTS.LRU_CACHE, {
-        cache: obj_to_array
-      });
-    };
-
-    this.getKEY = function (givenVal) {
-      if (givenVal == null) return null;
-      var all_keys = keyOrder;
-      for (var index in all_keys) {
-        if(all_keys.hasOwnProperty(index)) {
-          if (
-              this.cache[all_keys[index]] != null &&
-              this.cache[all_keys[index]] === givenVal
-          ) {
-            return all_keys[index];
-          }
-        }
-      }
-      return null;
-    };
-
-    this.getSecondLastKEY = function () {
-      var keysArr = keyOrder;
-      if (keysArr != null && keysArr.length > 1) {
-        return keysArr[keysArr.length - 2];
-      } else {
-        return -1;
-      }
-    };
-
-    this.getLastKey = function () {
-      if (keyOrder.length) {
-        return keyOrder[keyOrder.length - 1];
-      }
-    };
-
-
-    var deleteFromObject = function (key, obj) {
-      var all_keys = JSON.parse(JSON.stringify(keyOrder));
-      var new_cache = {};
-      var indexToDelete;
-      for (var index in all_keys) {
-        if(all_keys.hasOwnProperty(index)) {
-          if (all_keys[index] !== key) {
-            new_cache[all_keys[index]] = obj[all_keys[index]];
-          } else {
-            indexToDelete = index;
-          }
-        }
-      }
-      all_keys.splice(indexToDelete, 1);
-      keyOrder = JSON.parse(JSON.stringify(all_keys));
-      return new_cache;
-    };
-  };
-
-  wiz.getCampaignObjForLc = function () {
-    var campObj = {};
-    if (wzrk_util.isLocalStorageSupported()) {
-      campObj = wzrk_util.getCampaignObject();
-
-      var resultObj = [];
-      var globalObj = campObj['global'];
-      var today = wzrk_util.getToday();
-      var dailyObj = campObj[today];
-
-      if (typeof globalObj != STRING_CONSTANTS.UNDEFINED) {
-        var campaignIdArray = Object.keys(globalObj);
-        for (var index in campaignIdArray) {
-          if (campaignIdArray.hasOwnProperty(index)) {
-            var dailyC = 0;
-            var totalC = 0;
-            var campaignId = campaignIdArray[index];
-            if (campaignId == 'tc') {
-              continue;
-            }
-            if (typeof dailyObj != STRING_CONSTANTS.UNDEFINED && typeof dailyObj[campaignId] != STRING_CONSTANTS.UNDEFINED) {
-              dailyC = dailyObj[campaignId];
-            }
-            if (typeof globalObj != STRING_CONSTANTS.UNDEFINED && typeof globalObj[campaignId] != STRING_CONSTANTS.UNDEFINED) {
-              totalC = globalObj[campaignId];
-            }
-            var element = [campaignId, dailyC, totalC];
-            resultObj.push(element);
-          }
-        }
-      }
-      var todayC = 0;
-      if (typeof dailyObj != STRING_CONSTANTS.UNDEFINED && typeof dailyObj['tc'] != STRING_CONSTANTS.UNDEFINED) {
-        todayC = dailyObj['tc'];
-      }
-      resultObj = {"wmp": todayC, 'tlc': resultObj};
-      return resultObj;
-    }
-  };
-
-  var handleCookieFromCache = function () {
-    blockRequeust = false;
-    console.debug("Block request is false");
-    if (wzrk_util.isLocalStorageSupported()) {
-      delete localStorage[STRING_CONSTANTS.PR_COOKIE];
-      delete localStorage[STRING_CONSTANTS.EV_COOKIE];
-      delete localStorage[STRING_CONSTANTS.META_COOKIE];
-      delete localStorage[STRING_CONSTANTS.ARP_COOKIE];
-      delete localStorage[STRING_CONSTANTS.CAMP_COOKIE_NAME];
-      delete localStorage[STRING_CONSTANTS.CHARGEDID_COOKIE_NAME];
-    }
-    wiz.deleteCookie(STRING_CONSTANTS.CAMP_COOKIE_NAME, domain);
-    wiz.deleteCookie(SCOOKIE_NAME, broadDomain);
-    wiz.deleteCookie(STRING_CONSTANTS.ARP_COOKIE, broadDomain);
-    scookieObj = '';
-  };
-
-  var deleteUser = function () {
-    blockRequeust = true;
-    console.debug("Block request is true");
-    globalCache = {};
-    if (wzrk_util.isLocalStorageSupported()) {
-      delete localStorage[STRING_CONSTANTS.GCOOKIE_NAME];
-      delete localStorage[STRING_CONSTANTS.KCOOKIE_NAME];
-      delete localStorage[STRING_CONSTANTS.PR_COOKIE];
-      delete localStorage[STRING_CONSTANTS.EV_COOKIE];
-      delete localStorage[STRING_CONSTANTS.META_COOKIE];
-      delete localStorage[STRING_CONSTANTS.ARP_COOKIE];
-      delete localStorage[STRING_CONSTANTS.CAMP_COOKIE_NAME];
-      delete localStorage[STRING_CONSTANTS.CHARGEDID_COOKIE_NAME];
-    }
-    wiz.deleteCookie(STRING_CONSTANTS.GCOOKIE_NAME, broadDomain);
-    wiz.deleteCookie(STRING_CONSTANTS.CAMP_COOKIE_NAME, domain);
-    wiz.deleteCookie(STRING_CONSTANTS.KCOOKIE_NAME, domain);
-    wiz.deleteCookie(SCOOKIE_NAME, broadDomain);
-    wiz.deleteCookie(STRING_CONSTANTS.ARP_COOKIE, broadDomain);
-    gcookie = null;
-    scookieObj = '';
-
-  };
+  // var deleteUser = function () -> Storage.js
 
   // var setInstantDeleteFlagInK = function () -> Storage.js
 
   // wiz.logout = function () -> session.js
 
 
-  wiz.clear = function () {
-    console.debug("clear called. Reset flag has been set.");
-    deleteUser();
-    wiz.setMetaProp(STRING_CONSTANTS.CLEAR, true);
-  };
+  // wiz.clear = function () -> storage.js
 
 
   /*
@@ -823,273 +444,24 @@ function __wizrocket() {
     }
   };
 
-  wiz.processProfileArray = function (profileArr) {
-    if (wzrk_util.isArray(profileArr) && profileArr.length > 0) {
+  // wiz.processProfileArray = function (profileArr) -> event.js
 
-      for (var index in profileArr) {
-        if(profileArr.hasOwnProperty(index)) {
-          var outerObj = profileArr[index];
-          var data = {};
-          var profileObj;
-          if (typeof outerObj['Site'] != STRING_CONSTANTS.UNDEFINED) {       //organic data from the site
-            profileObj = outerObj['Site'];
-            if (wzrk_util.isObjectEmpty(profileObj) || !wiz.isProfileValid(profileObj)) {
-              return;
-            }
+  // wiz.processOUL = function (profileArr) -> userLogin.js
 
-          } else if (typeof outerObj['Facebook'] != STRING_CONSTANTS.UNDEFINED) {   //fb connect data
-            var FbProfileObj = outerObj['Facebook'];
-            //make sure that the object contains any data at all
-
-            if (!wzrk_util.isObjectEmpty(FbProfileObj) && (!FbProfileObj['error'])) {
-              profileObj = wiz.processFBUserObj(FbProfileObj);
-            }
-
-          } else if (typeof outerObj['Google Plus'] != STRING_CONSTANTS.UNDEFINED) {
-            var GPlusProfileObj = outerObj['Google Plus'];
-            if (!wzrk_util.isObjectEmpty(GPlusProfileObj) && (!GPlusProfileObj['error'])) {
-              profileObj = wiz.processGPlusUserObj(GPlusProfileObj);
-            }
-          }
-          if (typeof profileObj != STRING_CONSTANTS.UNDEFINED && (!wzrk_util.isObjectEmpty(profileObj))) {   // profile got set from above
-            data['type'] = "profile";
-            if (typeof profileObj['tz'] === STRING_CONSTANTS.UNDEFINED) {
-              //try to auto capture user timezone if not present
-              profileObj['tz'] = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
-            }
-
-            data['profile'] = profileObj;
-            wiz.addToLocalProfileMap(profileObj, true);
-            data = wiz.addSystemDataToObject(data, undefined);
-
-            wiz.addFlags(data);
-            var compressedData = wiz.compressData(JSON.stringify(data));
-
-            var pageLoadUrl = dataPostURL;
-            pageLoadUrl = wiz.addToURL(pageLoadUrl, "type", EVT_PUSH);
-            pageLoadUrl = wiz.addToURL(pageLoadUrl, "d", compressedData);
-
-            wiz.saveAndFireRequest(pageLoadUrl, blockRequeust);
-
-          }
-        }
-      }
-    }
-  };
-
-  /*
-          anonymousUser   => Only GUID present.
-          foundInCache    => Identity used in On User Login is present in LRU_CACHE. So use the guid associated with it.
-
-          Clear the cache in case on On User Login and Block all the request till we get resume requests flag in the response.
-          When user is found in Cache or the user is anonymous then dont block any requests. Just clear cache (handleCookieFromCache)
-
-
-          On every On User Login we deregister the token for older User.
-          If new user is found in Cache then we call deregister function now
-          Else we call it once we get guid for new user in 'wiz.s' function.
-       */
-  wiz.processOUL = function (profileArr) {
-    var sendOULFlag = true;
-    var addToK = function (ids) {
-      var k = wiz.readFromLSorCookie(STRING_CONSTANTS.KCOOKIE_NAME);
-      var g = wiz.readFromLSorCookie(STRING_CONSTANTS.GCOOKIE_NAME);
-      var kId, flag;
-      var nowDate = new Date();
-      if (typeof k == STRING_CONSTANTS.UNDEFINED) {
-        k = {};
-        kId = ids;
-      } else {/*check if already exists*/
-        kId = k['id'];
-        var anonymousUser = false;
-        var foundInCache = false;
-        if (kId == null) {
-          kId = ids[0];
-          anonymousUser = true;
-        }
-
-        if (LRU_CACHE == null && wzrk_util.isLocalStorageSupported()) {
-          LRU_CACHE = new LRU_cache(LRU_CACHE_SIZE);
-        }
-
-        if (anonymousUser) {
-          if (wiz.isValueValid(g)) {
-            LRU_CACHE.set(kId, g);
-            blockRequeust = false;
-          }
-        } else {
-          for (var idx in ids) {
-            if(ids.hasOwnProperty(idx)) {
-              var id = ids[idx];
-              if (LRU_CACHE.cache[id]) {
-                kId = id;
-                foundInCache = true;
-                break;
-              }
-            }
-          }
-        }
-
-        if (foundInCache) {
-          if (kId !== LRU_CACHE.getLastKey()) {
-            // Same User
-            handleCookieFromCache();
-          } else {
-            sendOULFlag = false;
-          }
-          var g_from_cache = LRU_CACHE.get(kId);
-          LRU_CACHE.set(kId, g_from_cache);
-          wiz.saveToLSorCookie(STRING_CONSTANTS.GCOOKIE_NAME, g_from_cache);
-          gcookie = g_from_cache;
-
-          var lastK = LRU_CACHE.getSecondLastKEY();
-          if(lastK !== -1) {
-            var lastGUID = LRU_CACHE.cache[lastK];
-            unregisterTokenForGuid(lastGUID);
-          }
-        } else {
-          if (!anonymousUser) {
-            wiz.clear();
-          } else {
-            if (wiz.isValueValid(g)) {
-              gcookie = g;
-              wiz.saveToLSorCookie(STRING_CONSTANTS.GCOOKIE_NAME, g);
-              sendOULFlag = false;
-            }
-          }
-          kId = ids[0];
-        }
-      }
-      k['id'] = kId;
-      wiz.saveToLSorCookie(STRING_CONSTANTS.KCOOKIE_NAME, k);
-    };
-
-    if (wzrk_util.isArray(profileArr) && profileArr.length > 0) {
-
-      for (var index in profileArr) {
-        if(profileArr.hasOwnProperty(index)) {
-          var outerObj = profileArr[index];
-          var data = {};
-          var profileObj;
-          if (typeof outerObj['Site'] != STRING_CONSTANTS.UNDEFINED) {       //organic data from the site
-            profileObj = outerObj['Site'];
-            if (wzrk_util.isObjectEmpty(profileObj) || !wiz.isProfileValid(profileObj)) {
-              return;
-            }
-
-          } else if (typeof outerObj['Facebook'] != STRING_CONSTANTS.UNDEFINED) {   //fb connect data
-            var FbProfileObj = outerObj['Facebook'];
-            //make sure that the object contains any data at all
-
-            if (!wzrk_util.isObjectEmpty(FbProfileObj) && (!FbProfileObj['error'])) {
-              profileObj = wiz.processFBUserObj(FbProfileObj);
-            }
-
-          } else if (typeof outerObj['Google Plus'] != STRING_CONSTANTS.UNDEFINED) {
-            var GPlusProfileObj = outerObj['Google Plus'];
-            if (!wzrk_util.isObjectEmpty(GPlusProfileObj) && (!GPlusProfileObj['error'])) {
-              profileObj = wiz.processGPlusUserObj(GPlusProfileObj);
-            }
-          }
-          if (typeof profileObj != STRING_CONSTANTS.UNDEFINED && (!wzrk_util.isObjectEmpty(profileObj))) {   // profile got set from above
-            data['type'] = "profile";
-            if (typeof profileObj['tz'] === STRING_CONSTANTS.UNDEFINED) {
-              //try to auto capture user timezone if not present
-              profileObj['tz'] = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
-            }
-
-            data['profile'] = profileObj;
-            var ids = [];
-            if (wzrk_util.isLocalStorageSupported()) {
-              if (typeof profileObj['Identity'] != STRING_CONSTANTS.UNDEFINED) {
-                ids.push(profileObj['Identity']);
-              }
-              if (typeof profileObj['Email'] != STRING_CONSTANTS.UNDEFINED) {
-                ids.push(profileObj['Email']);
-              }
-              if (typeof profileObj['GPID'] != STRING_CONSTANTS.UNDEFINED) {
-                ids.push("GP:" + profileObj['GPID']);
-              }
-              if (typeof profileObj['FBID'] != STRING_CONSTANTS.UNDEFINED) {
-                ids.push("FB:" + profileObj['FBID']);
-              }
-              if (ids.length > 0) {
-                addToK(ids);
-              }
-            }
-            wiz.addToLocalProfileMap(profileObj, true);
-            data = wiz.addSystemDataToObject(data, undefined);
-
-            wiz.addFlags(data);
-            // Adding 'isOUL' flag in true for OUL cases which.
-            // This flag tells LC to create a new arp object.
-            // Also we will receive the same flag in response arp which tells to delete existing arp object.
-            if(sendOULFlag) {
-              data[STRING_CONSTANTS.IS_OUL] = true;
-            }
-
-            var compressedData = wiz.compressData(JSON.stringify(data));
-
-            var pageLoadUrl = dataPostURL;
-            pageLoadUrl = wiz.addToURL(pageLoadUrl, "type", EVT_PUSH);
-            pageLoadUrl = wiz.addToURL(pageLoadUrl, "d", compressedData);
-
-            // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
-            // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
-            // stored in the cache and replace it with the response arp.
-            wiz.saveAndFireRequest(pageLoadUrl, blockRequeust, sendOULFlag);
-
-          }
-        }
-      }
-    }
-  };
-
-  wiz.processLoginArray = function (loginArr) {
-    if (wzrk_util.isArray(loginArr) && loginArr.length > 0) {
-      var profileObj = loginArr.pop();
-      var processProfile = typeof profileObj != STRING_CONSTANTS.UNDEFINED && wzrk_util.isObject(profileObj) &&
-          ((typeof profileObj['Site'] != STRING_CONSTANTS.UNDEFINED && Object.keys(profileObj["Site"]).length > 0) ||
-              (typeof profileObj['Facebook'] != STRING_CONSTANTS.UNDEFINED && Object.keys(profileObj["Facebook"]).length > 0) ||
-              (typeof profileObj['Google Plus'] != "undefined" && Object.keys(profileObj["Google Plus"]).length > 0));
-      if (processProfile) {
-        setInstantDeleteFlagInK();
-        wiz.processOUL([profileObj]);
-      } else {
-        //console.error
-        console.error("Profile object is in incorrect format");
-      }
-    }
-  };
+  // wiz.processLoginArray = function (loginArr) -> userLogin.js
 
   wiz.overloadArrayPush = function () {
 
-    if (typeof wizrocket['onUserLogin'] === "undefined") {
-      wizrocket['onUserLogin'] = [];
-    }
+    // if (typeof wizrocket['onUserLogin'] === "undefined") -> CleverTap.js
 
-    wizrocket['onUserLogin'].push = function () {
-      //since arguments is not an array, convert it into an array
-      wiz.processLoginArray(Array.prototype.slice.call(arguments));
-      return 0;
-    };
+    // wizrocket['onUserLogin'].push = -> userLogin.js
 
-    if (typeof wizrocket['privacy'] === "undefined") {
-      wizrocket['privacy'] = [];
-    }
+    // if (typeof wizrocket['privacy'] === "undefined") -> privacy.js
 
-    wizrocket['privacy'].push = function () {
-      //since arguments is not an array, convert it into an array
-      wiz.processPrivacyArray(Array.prototype.slice.call(arguments));
-      return 0;
-    };
+    // wizrocket['privacy'].push = function () -> privacy.js
 
-    wizrocket['event'].push = function () {
-      //since arguments is not an array, convert it into an array
-      wiz.processEventArray(Array.prototype.slice.call(arguments));
-      return 0;
-    };
-
+    // wizrocket['event'].push = function () -> event.js
+    
     if (typeof wizrocket['notifications'] === STRING_CONSTANTS.UNDEFINED)
       wizrocket['notifications'] = [];
 
@@ -1099,17 +471,17 @@ function __wizrocket() {
     };
 
 
-    wizrocket['profile'].push = function () {
-      //since arguments is not an array, convert it into an array
-      wiz.processProfileArray(Array.prototype.slice.call(arguments));
-      return 0;
-    };
+    // wizrocket['profile'].push = function () ->profile.js
+    //   //since arguments is not an array, convert it into an array
+    //   wiz.processProfileArray(Array.prototype.slice.call(arguments));
+    //   return 0;
+    // };
     wizrocket['logout'] = wiz.logout;
     wizrocket['clear'] = wiz.clear;
     wiz.processLoginArray(wizrocket['onUserLogin']);  // process old stuff from the login array before we overloaded the push method
     wiz.processPrivacyArray(wizrocket['privacy']);  // process old stuff from the privacy array before we overloaded the push method
-    wiz.processEventArray(wizrocket['event']);      // process old stuff from the event array before we overloaded the push method
-    wiz.processProfileArray(wizrocket['profile']);  // process old stuff from the profile array before we overloaded the push method
+    // wiz.processEventArray(wizrocket['event']);      // process old stuff from the event array before we overloaded the push method
+    // wiz.processProfileArray(wizrocket['profile']);  // process old stuff from the profile array before we overloaded the push method
     wiz.setUpWebPush(wizrocket['notifications']); // process old stuff from notifications array before overload
 
     // clean up the notifications array
@@ -1123,38 +495,7 @@ function __wizrocket() {
 
   // var addUseIPToRequest = function (pageLoadUrl) -> unused
 
-  wiz.processPrivacyArray = function (privacyArr) {
-    if (wzrk_util.isArray(privacyArr) && privacyArr.length > 0) {
-      var privacyObj = privacyArr[0];
-      var data = {};
-      var profileObj = {};
-      if (privacyObj.hasOwnProperty(STRING_CONSTANTS.OPTOUT_KEY)) {
-        var optOut = privacyObj[STRING_CONSTANTS.OPTOUT_KEY];
-        if (typeof optOut === 'boolean') {
-          profileObj[STRING_CONSTANTS.CT_OPTOUT_KEY] = optOut;
-          //should be true when user wants to opt in
-          isOptInRequest = !optOut;
-        }
-      }
-      if (privacyObj.hasOwnProperty(STRING_CONSTANTS.USEIP_KEY)) {
-        var useIP = privacyObj[STRING_CONSTANTS.USEIP_KEY];
-        if (typeof useIP === 'boolean') {
-          wiz.setMetaProp(STRING_CONSTANTS.USEIP_KEY, useIP);
-        }
-      }
-      if (!wzrk_util.isObjectEmpty(profileObj)) {
-        data['type'] = "profile";
-        data['profile'] = profileObj;
-        data = wiz.addSystemDataToObject(data, undefined);
-        var compressedData = wiz.compressData(JSON.stringify(data));
-        var pageLoadUrl = dataPostURL;
-        pageLoadUrl = wiz.addToURL(pageLoadUrl, "type", EVT_PUSH);
-        pageLoadUrl = wiz.addToURL(pageLoadUrl, "d", compressedData);
-        pageLoadUrl = wiz.addToURL(pageLoadUrl, STRING_CONSTANTS.OPTOUT_KEY, optOut ? 'true' : 'false');
-        wiz.saveAndFireRequest(pageLoadUrl, blockRequeust);
-      }
-    }
-  };
+  // wiz.processPrivacyArray = function (privacyArr) -> privacy.js
 
   wiz.saveAndFireRequest = function (url, override, sendOULFlag) {
 
@@ -1182,142 +523,9 @@ function __wizrocket() {
 
 
   // profile like https://developers.google.com/+/api/latest/people
-  wiz.processGPlusUserObj = function (user) {
+  // wiz.processGPlusUserObj = function (user) -> profile.js
 
-    var profileData = {};
-    if (typeof user['displayName'] != STRING_CONSTANTS.UNDEFINED) {
-      profileData['Name'] = user['displayName'];
-    }
-    if (typeof user['id'] != STRING_CONSTANTS.UNDEFINED) {
-      profileData['GPID'] = user['id'] + "";
-    }
-
-    if (typeof user['gender'] != STRING_CONSTANTS.UNDEFINED) {
-      if (user['gender'] == "male") {
-        profileData['Gender'] = "M";
-      } else if (user['gender'] == "female") {
-        profileData['Gender'] = "F";
-      } else if (user['gender'] == "other") {
-        profileData['Gender'] = "O";
-      }
-    }
-
-    if (typeof user['image'] != STRING_CONSTANTS.UNDEFINED) {
-      if (user['image']['isDefault'] == false) {
-        profileData['Photo'] = user['image'].url.split('?sz')[0];
-      }
-    }
-
-    if (typeof user['emails'] != "undefined") {
-      for (var emailIdx = 0; emailIdx < user['emails'].length; emailIdx++) {
-        var emailObj = user['emails'][emailIdx];
-        if (emailObj.type == 'account') {
-          profileData['Email'] = emailObj.value;
-        }
-      }
-    }
-
-
-    if (typeof user['organizations'] != "undefined") {
-      profileData['Employed'] = 'N';
-      for (var i = 0; i < user['organizations'].length; i++) {
-        var orgObj = user['organizations'][i];
-        if (orgObj.type == 'work') {
-          profileData['Employed'] = 'Y';
-        }
-      }
-    }
-
-
-    if (typeof user['birthday'] != STRING_CONSTANTS.UNDEFINED) {
-      var yyyymmdd = user['birthday'].split('-'); //comes in as "1976-07-27"
-      profileData['DOB'] = $WZRK_WR.setDate(yyyymmdd[0] + yyyymmdd[1] + yyyymmdd[2]);
-    }
-
-
-    if (typeof user['relationshipStatus'] != STRING_CONSTANTS.UNDEFINED) {
-      profileData['Married'] = 'N';
-      if (user['relationshipStatus'] == 'married') {
-        profileData['Married'] = 'Y';
-      }
-    }
-    console.debug("gplus usr profile " + JSON.stringify(profileData));
-
-    return profileData;
-  };
-
-  wiz.processFBUserObj = function (user) {
-    var profileData = {};
-    profileData['Name'] = user['name'];
-    if (typeof user['id'] != STRING_CONSTANTS.UNDEFINED) {
-      profileData['FBID'] = user['id'] + "";
-    }
-    // Feb 2014 - FB announced over 58 gender options, hence we specifically look for male or female. Rest we don't care.
-    if (user['gender'] == "male") {
-      profileData['Gender'] = "M";
-    } else if (user['gender'] == "female") {
-      profileData['Gender'] = "F";
-    } else {
-      profileData['Gender'] = "O";
-    }
-
-    var getHighestEducation = function (eduArr) {
-      if (typeof eduArr != "undefined") {
-        var college = "";
-        var highschool = "";
-
-        for (var i = 0; i < eduArr.length; i++) {
-          var edu = eduArr[i];
-          if (typeof edu.type != "undefined") {
-            var type = edu.type;
-            if (type == "Graduate School") {
-              return "Graduate";
-            } else if (type == "College") {
-              college = "1";
-            } else if (type == "High School") {
-              highschool = "1";
-            }
-          }
-        }
-
-        if (college == "1") {
-          return "College";
-        } else if (highschool == "1") {
-          return "School";
-        }
-      }
-
-    };
-
-    if (user['relationship_status'] != STRING_CONSTANTS.UNDEFINED) {
-      profileData['Married'] = 'N';
-      if (user['relationship_status'] == 'Married') {
-        profileData['Married'] = 'Y';
-      }
-    }
-
-    var edu = getHighestEducation(user['education']);
-    if (typeof edu !== "undefined") {
-      profileData['Education'] = edu;
-    }
-
-    var work = (typeof user['work'] !== STRING_CONSTANTS.UNDEFINED) ? user['work'].length : 0;
-    if (work > 0) {
-      profileData['Employed'] = 'Y';
-    } else {
-      profileData['Employed'] = 'N';
-    }
-
-    if (typeof user['email'] !== "undefined") {
-      profileData['Email'] = user['email'];
-    }
-
-    if (typeof user['birthday'] !== "undefined") {
-      var mmddyy = user['birthday'].split('/'); //comes in as "08/15/1947"
-      profileData['DOB'] = $WZRK_WR.setDate(mmddyy[2] + mmddyy[0] + mmddyy[1]);
-    }
-    return profileData;
-  };
+  // wiz.processFBUserObj = function (user) -> profile.js
 
 
   wiz.getEmail = function (reEncoded) {
@@ -1401,69 +609,13 @@ function __wizrocket() {
   // wiz.compressData = -> encodeURIComponent.js
 
 
-  wiz.addSystemDataToObject = function (dataObject, ignoreTrim) {
-    // ignore trim for chrome notifications; undefined everywhere else
-    if (typeof ignoreTrim === STRING_CONSTANTS.UNDEFINED) {
-      dataObject = wzrk_util.removeUnsupportedChars(dataObject);
-    }
-    if (!wzrk_util.isObjectEmpty(wzrk_error)) {
-      dataObject['wzrk_error'] = wzrk_error;
-      wzrk_error = {};
-    }
-
-    dataObject['id'] = accountId;
-
-    //Global cookie
-    if (wiz.isValueValid(gcookie)) {
-      dataObject['g'] = gcookie;
-    }
-
-    var obj = wiz.getSessionCookieObject();
-
-    dataObject['s'] = obj['s'];                                                      //Session cookie
-    dataObject['pg'] = (typeof obj['p'] == STRING_CONSTANTS.UNDEFINED) ? 1 : obj['p'];                //Page count
-
-    return dataObject;
-  };
+  // wiz.addSystemDataToObject = function (dataObject, ignoreTrim) -> request.js
 
 
-  wiz.getSessionCookieObject = function () {
-    var scookieStr = wiz.readCookie(SCOOKIE_NAME);
-    var obj = {};
-
-    if (scookieStr != null) {
-      // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
-      scookieStr = scookieStr.replace(singleQuoteRegex, "\"");
-
-      obj = JSON.parse(scookieStr);
-      if (!wzrk_util.isObject(obj)) {
-        obj = {};
-      } else {
-        if (typeof obj['t'] != STRING_CONSTANTS.UNDEFINED) {   // check time elapsed since last request
-          var lasttime = obj['t'];
-          var now = wzrk_util.getNow();
-          if ((now - lasttime) > (SCOOKIE_EXP_TIME_IN_SECS + 60)) // adding 60 seconds to compensate for in-journey requests
-
-          //ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
-          //hence we shouldn't use it.
-
-            obj = {};
-
-        }
-      }
-    }
-    scookieObj = obj;
-    return obj;
-  };
+  // wiz.getSessionCookieObject = function () -> session.js
 
 
-  wiz.setSessionCookieObject = function (obj) {
-
-    var objStr = JSON.stringify(obj);
-
-    wiz.createBroadCookie(SCOOKIE_NAME, objStr, SCOOKIE_EXP_TIME_IN_SECS, domain);
-
-  };
+  // wiz.setSessionCookieObject = function (obj) -> session.js
 
   // wiz.isValueValid -> equivalent to == null
   // wiz.getGuid = function ()  -> getGUID() device.js
@@ -1472,30 +624,7 @@ function __wizrocket() {
   // wiz.getMetaProp = function (key) -> getMetaProp in Storage.js
   // wiz.getAndClearMetaProp = function (key) -> Storage.js
 
-  wiz.manageSession = function (session) {
-    //first time. check if current session id in localstorage is same
-    //if not same then prev = current and current = this new session
-    if (typeof currentSessionId === STRING_CONSTANTS.UNDEFINED || currentSessionId !== session) {
-      var currentSessionInLS = wiz.getMetaProp('cs');
-      //if sessionId in meta is undefined - set current to both
-      if (typeof currentSessionInLS === STRING_CONSTANTS.UNDEFINED) {
-        wiz.setMetaProp('ps', session);
-        wiz.setMetaProp('cs', session);
-        wiz.setMetaProp('sc', 1);
-      }
-      //not same as session in local storage. new session
-      else if (currentSessionInLS !== session) {
-        wiz.setMetaProp('ps', currentSessionInLS);
-        wiz.setMetaProp('cs', session);
-        var sessionCount = wiz.getMetaProp('sc');
-        if (typeof sessionCount === STRING_CONSTANTS.UNDEFINED) {
-          sessionCount = 0;
-        }
-        wiz.setMetaProp('sc', sessionCount + 1);
-      }
-      currentSessionId = session;
-    }
-  };
+  // wiz.manageSession = function (session) -> session.js
 
 
   // call back function used to store global and session ids for the user
