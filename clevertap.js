@@ -334,30 +334,6 @@
     return Account;
   }();
 
-  // CHARGEDID_COOKIE_NAME: 'WZRK_CHARGED_ID',
-  // ECOOKIE_PREFIX: 'CT_E',
-  // GCOOKIE_NAME: 'CT_G',
-  // KCOOKIE_NAME: 'CT_K',
-  // PCOOKIE_PREFIX: 'CT_P',
-  // SEQCOOKIE_PREFIX: 'CT_SEQ',
-  // SCOOKIE_PREFIX: 'CT_S',
-  // EV_COOKIE: 'CT_EV',
-  // PR_COOKIE: 'CT_PR',
-  // ARP_COOKIE: 'CT_ARP',
-  // UNDEFINED: 'undefined',
-  // PING_FREQ_IN_MILLIS: (2 * 60 * 1000), // 2 mins
-  // EVENT_TYPES: {
-  //   EVENT: 'event',
-  //   PROFILE: 'profile',
-  //   PAGE: 'page',
-  //   PING: 'ping',
-  // },
-  // IDENTITY_TYPES: {
-  //   IDENTITY: 'Identity',
-  //   EMAIL: 'Email',
-  //   FBID: 'FBID',
-  //   GPID: 'GPID',
-  // },
   var unsupportedKeyCharRegex = new RegExp('^\\s+|\\\.|\:|\\\$|\'|\"|\\\\|\\s+$', 'g');
   var unsupportedValueCharRegex = new RegExp("^\\s+|\'|\"|\\\\|\\s+$", 'g');
   var singleQuoteRegex = new RegExp('\'', 'g');
@@ -3519,6 +3495,7 @@
         device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
       });
+      this.spa = clevertap.spa;
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
@@ -3526,7 +3503,9 @@
         getTimeElapsed: function getTimeElapsed() {
           return _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getTimeElapsed();
         },
-        getPageCount: _classPrivateFieldLooseBase(this, _session$3)[_session$3].getPageCount
+        getPageCount: function getPageCount() {
+          return _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getPageCount();
+        }
       };
 
       this.logout = function () {
