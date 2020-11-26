@@ -44,7 +44,7 @@ export default class ProfileHandler extends Array {
     return 0
   }
 
-  processOldValues () {
+  _processOldValues () {
     if (this.#oldValues) {
       this.#processProfileArray(this.#oldValues)
     }

@@ -40,7 +40,7 @@ export default class Privacy extends Array {
     return 0
   }
 
-  processOldValues () {
+  _processOldValues () {
     if (this.#oldValues) {
       this.#processPrivacyArray(this.#oldValues)
     }

@@ -67,7 +67,8 @@ export default class CleverTap {
       request: this.#request,
       account: this.#account,
       session: this.#session,
-      logger: this.#logger
+      logger: this.#logger,
+      device: this.#device
     }, clevertap.onUserLogin)
 
     this.privacy = new Privacy({
@@ -86,6 +87,15 @@ export default class CleverTap {
       isPersonalisationActive: this._isPersonalisationActive
     })
 
+    this.session = {
+      getTimeElapsed: () => {
+        return this.#session.getTimeElapsed()
+      },
+      getPageCount: () => {
+        return this.#session.getPageCount()
+      }
+    }
+
     this.logout = () => {
       this.#logger.debug('logout called')
       StorageManager.setInstantDeleteFlagInK()
@@ -95,7 +105,11 @@ export default class CleverTap {
       this.onUserLogin.clear()
     }
 
-    window.$CLTP_WR = window.$WZRK_WR = this.#api
+    window.$CLTP_WR = window.$WZRK_WR = {
+      ...this.#api,
+      logout: this.logout,
+      clear: this.clear
+    }
 
     if (clevertap.account?.[0].id) {
       // The accountId is present so can init with empty values.
@@ -145,10 +159,10 @@ export default class CleverTap {
 
   #processOldValues () {
     // TODO create classes old data handlers for OUL, Privacy, notifications
-    this.onUserLogin.processOldValues()
-    this.privacy.processOldValues()
-    this.event.processOldValues()
-    this.profile.processOldValues()
+    this.onUserLogin._processOldValues()
+    this.privacy._processOldValues()
+    this.event._processOldValues()
+    this.profile._processOldValues()
     // Notifications
   }
 

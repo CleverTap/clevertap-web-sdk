@@ -42,6 +42,55 @@
     return Constructor;
   }
 
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
+  }
+
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -734,9 +783,9 @@
     globalProfileMap: null,
     blockRequest: false,
     isOptInRequest: false,
-    broadDomain: null,
-    // domain: window.location.hostname, url -> getHostName()
-    gcookie: null
+    broadDomain: null // domain: window.location.hostname, url -> getHostName()
+    // gcookie: -> device
+
   };
 
   var _keyOrder = _classPrivateFieldLooseKey("keyOrder");
@@ -1245,8 +1294,8 @@
         return 0;
       }
     }, {
-      key: "processOldValues",
-      value: function processOldValues() {
+      key: "_processOldValues",
+      value: function _processOldValues() {
         if (_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]) {
           _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]);
         }
@@ -2123,8 +2172,8 @@
         return 0;
       }
     }, {
-      key: "processOldValues",
-      value: function processOldValues() {
+      key: "_processOldValues",
+      value: function _processOldValues() {
         if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
           _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
         }
@@ -2224,9 +2273,13 @@
 
   var _oldValues$2 = _classPrivateFieldLooseKey("oldValues");
 
+  var _device$1 = _classPrivateFieldLooseKey("device");
+
   var _processOUL = _classPrivateFieldLooseKey("processOUL");
 
   var _handleCookieFromCache = _classPrivateFieldLooseKey("handleCookieFromCache");
+
+  var _deleteUser = _classPrivateFieldLooseKey("deleteUser");
 
   var _processLoginArray = _classPrivateFieldLooseKey("processLoginArray");
 
@@ -2241,13 +2294,17 @@
       var request = _ref.request,
           account = _ref.account,
           session = _ref.session,
-          logger = _ref.logger;
+          logger = _ref.logger,
+          device = _ref.device;
 
       _classCallCheck(this, UserLoginHandler);
 
       _this = _super.call(this);
       Object.defineProperty(_assertThisInitialized(_this), _processLoginArray, {
         value: _processLoginArray2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _deleteUser, {
+        value: _deleteUser2
       });
       Object.defineProperty(_assertThisInitialized(_this), _handleCookieFromCache, {
         value: _handleCookieFromCache2
@@ -2275,11 +2332,16 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(_assertThisInitialized(_this), _device$1, {
+        writable: true,
+        value: void 0
+      });
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$3)[_request$3] = request;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$1)[_account$1] = account;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _session$1)[_session$1] = session;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$4)[_logger$4] = logger;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$2)[_oldValues$2] = values;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _device$1)[_device$1] = device;
       return _this;
     }
 
@@ -2288,37 +2350,9 @@
       value: function clear() {
         _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('clear called. Reset flag has been set.');
 
-        this.deleteUser();
+        _classPrivateFieldLooseBase(this, _deleteUser)[_deleteUser]();
+
         StorageManager$1.setMetaProp(CLEAR, true);
-      }
-    }, {
-      key: "deleteUser",
-      value: function deleteUser() {
-        $ct.blockRequeust = true;
-
-        _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Block request is true');
-
-        $ct.globalCache = {};
-
-        if (StorageManager$1._isLocalStorageSupported()) {
-          delete localStorage[GCOOKIE_NAME];
-          delete localStorage[KCOOKIE_NAME];
-          delete localStorage[PR_COOKIE];
-          delete localStorage[EV_COOKIE];
-          delete localStorage[META_COOKIE];
-          delete localStorage[ARP_COOKIE];
-          delete localStorage[CAMP_COOKIE_NAME];
-          delete localStorage[CHARGEDID_COOKIE_NAME];
-        }
-
-        StorageManager$1.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
-        StorageManager$1.removeCookie(CAMP_COOKIE_NAME, getHostName());
-        StorageManager$1.removeCookie(KCOOKIE_NAME, getHostName());
-        StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
-        StorageManager$1.removeCookie(ARP_COOKIE, $ct.broadDomain);
-        $ct.gcookie = null;
-
-        _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
       }
     }, {
       key: "push",
@@ -2332,8 +2366,8 @@
         return 0;
       }
     }, {
-      key: "processOldValues",
-      value: function processOldValues() {
+      key: "_processOldValues",
+      value: function _processOldValues() {
         if (_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]) {
           _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]);
         }
@@ -2401,7 +2435,7 @@
           var gFromCache = $ct.LRU_CACHE.get(kId);
           $ct.LRU_CACHE.set(kId, gFromCache);
           StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
-          $ct.gcookie = gFromCache;
+          _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie = gFromCache;
           var lastK = $ct.LRU_CACHE.getSecondLastKEY();
 
           if (lastK !== -1) {
@@ -2414,7 +2448,7 @@
             this.clear();
           } else {
             if (g != null) {
-              $ct.gcookie = g;
+              _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie = g;
               StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, g);
               sendOULFlag = false;
             }
@@ -2537,6 +2571,34 @@
     StorageManager$1.removeCookie(CAMP_COOKIE_NAME, getHostName());
     StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
     StorageManager$1.removeCookie(ARP_COOKIE, $ct.broadDomain);
+
+    _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
+  };
+
+  var _deleteUser2 = function _deleteUser2() {
+    $ct.blockRequeust = true;
+
+    _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Block request is true');
+
+    $ct.globalCache = {};
+
+    if (StorageManager$1._isLocalStorageSupported()) {
+      delete localStorage[GCOOKIE_NAME];
+      delete localStorage[KCOOKIE_NAME];
+      delete localStorage[PR_COOKIE];
+      delete localStorage[EV_COOKIE];
+      delete localStorage[META_COOKIE];
+      delete localStorage[ARP_COOKIE];
+      delete localStorage[CAMP_COOKIE_NAME];
+      delete localStorage[CHARGEDID_COOKIE_NAME];
+    }
+
+    StorageManager$1.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
+    StorageManager$1.removeCookie(CAMP_COOKIE_NAME, getHostName());
+    StorageManager$1.removeCookie(KCOOKIE_NAME, getHostName());
+    StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
+    StorageManager$1.removeCookie(ARP_COOKIE, $ct.broadDomain);
+    _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie = null;
 
     _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
   };
@@ -2948,7 +3010,7 @@
 
   var _account$2 = _classPrivateFieldLooseKey("account");
 
-  var _device$1 = _classPrivateFieldLooseKey("device");
+  var _device$2 = _classPrivateFieldLooseKey("device");
 
   var _session$2 = _classPrivateFieldLooseKey("session");
 
@@ -2979,7 +3041,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device$1, {
+      Object.defineProperty(this, _device$2, {
         writable: true,
         value: void 0
       });
@@ -2998,7 +3060,7 @@
       this.processingBackup = false;
       _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
       _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
-      _classPrivateFieldLooseBase(this, _device$1)[_device$1] = device;
+      _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
       _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2] = isPersonalisationActive;
       RequestDispatcher.logger = logger;
@@ -3050,8 +3112,8 @@
 
         dataObject.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
 
-        if (isValueValid(_classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie)) {
-          dataObject.g = _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie;
+        if (isValueValid(_classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie)) {
+          dataObject.g = _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie;
         }
 
         var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
@@ -3240,8 +3302,8 @@
         return 0;
       }
     }, {
-      key: "processOldValues",
-      value: function processOldValues() {
+      key: "_processOldValues",
+      value: function _processOldValues() {
         if (_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]) {
           _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
         }
@@ -3299,7 +3361,7 @@
 
   var _onloadcalled = _classPrivateFieldLooseKey("onloadcalled");
 
-  var _device$2 = _classPrivateFieldLooseKey("device");
+  var _device$3 = _classPrivateFieldLooseKey("device");
 
   var _session$3 = _classPrivateFieldLooseKey("session");
 
@@ -3349,7 +3411,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device$2, {
+      Object.defineProperty(this, _device$3, {
         writable: true,
         value: void 0
       });
@@ -3370,7 +3432,7 @@
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
       _classPrivateFieldLooseBase(this, _logger$7)[_logger$7] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account$4)[_account$4] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
-      _classPrivateFieldLooseBase(this, _device$2)[_device$2] = new DeviceManager({
+      _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]
       });
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
@@ -3380,7 +3442,7 @@
       _classPrivateFieldLooseBase(this, _request$5)[_request$5] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
         account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
-        device: _classPrivateFieldLooseBase(this, _device$2)[_device$2],
+        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
         isPersonalisationActive: this._isPersonalisationActive
       });
@@ -3400,7 +3462,8 @@
         request: _classPrivateFieldLooseBase(this, _request$5)[_request$5],
         account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
-        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]
+        logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
+        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3]
       }, clevertap.onUserLogin);
       this.privacy = new Privacy({
         request: _classPrivateFieldLooseBase(this, _request$5)[_request$5],
@@ -3409,12 +3472,18 @@
       _classPrivateFieldLooseBase(this, _api)[_api] = new CleverTapAPI({
         logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7],
         request: _classPrivateFieldLooseBase(this, _request$5)[_request$5],
-        device: _classPrivateFieldLooseBase(this, _device$2)[_device$2],
+        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
       });
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
+      this.session = {
+        getTimeElapsed: function getTimeElapsed() {
+          return _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getTimeElapsed();
+        },
+        getPageCount: _classPrivateFieldLooseBase(this, _session$3)[_session$3].getPageCount
+      };
 
       this.logout = function () {
         _classPrivateFieldLooseBase(_this, _logger$7)[_logger$7].debug('logout called');
@@ -3426,7 +3495,10 @@
         _this.onUserLogin.clear();
       };
 
-      window.$CLTP_WR = window.$WZRK_WR = _classPrivateFieldLooseBase(this, _api)[_api];
+      window.$CLTP_WR = window.$WZRK_WR = _objectSpread2(_objectSpread2({}, _classPrivateFieldLooseBase(this, _api)[_api]), {}, {
+        logout: this.logout,
+        clear: this.clear
+      });
 
       if ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id) {
         // The accountId is present so can init with empty values.
@@ -3581,10 +3653,14 @@
 
   var _processOldValues2 = function _processOldValues2() {
     // TODO create classes old data handlers for OUL, Privacy, notifications
-    this.onUserLogin.processOldValues();
-    this.privacy.processOldValues();
-    this.event.processOldValues();
-    this.profile.processOldValues(); // Notifications
+    this.onUserLogin._processOldValues();
+
+    this.privacy._processOldValues();
+
+    this.event._processOldValues();
+
+    this.profile._processOldValues(); // Notifications
+
   };
 
   var _pingRequest2 = function _pingRequest2() {

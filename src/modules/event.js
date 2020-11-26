@@ -433,7 +433,7 @@ export default class EventHandler extends Array {
     return 0
   }
 
-  processOldValues () {
+  _processOldValues () {
     if (this.#oldValues) {
       this.#processEventArray(this.#oldValues)
     }

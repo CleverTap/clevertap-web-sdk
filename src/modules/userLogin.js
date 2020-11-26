@@ -41,12 +41,14 @@ export default class UserLoginHandler extends Array {
   #account
   #session
   #oldValues
+  #device
 
   constructor ({
     request,
     account,
     session,
-    logger
+    logger,
+    device
   },
   values) {
     super()
@@ -55,6 +57,7 @@ export default class UserLoginHandler extends Array {
     this.#session = session
     this.#logger = logger
     this.#oldValues = values
+    this.#device = device
   }
 
   #processOUL (profileArr) {
@@ -107,7 +110,7 @@ export default class UserLoginHandler extends Array {
           const gFromCache = $ct.LRU_CACHE.get(kId)
           $ct.LRU_CACHE.set(kId, gFromCache)
           StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache)
-          $ct.gcookie = gFromCache
+          this.#device.gcookie = gFromCache
 
           const lastK = $ct.LRU_CACHE.getSecondLastKEY()
           if (lastK !== -1) {
@@ -119,7 +122,7 @@ export default class UserLoginHandler extends Array {
             this.clear()
           } else {
             if ((g) != null) {
-              $ct.gcookie = g
+              this.#device.gcookie = g
               StorageManager.saveToLSorCookie(GCOOKIE_NAME, g)
               sendOULFlag = false
             }
@@ -210,7 +213,7 @@ export default class UserLoginHandler extends Array {
 
   clear () {
     this.#logger.debug('clear called. Reset flag has been set.')
-    this.deleteUser()
+    this.#deleteUser()
     StorageManager.setMetaProp(CLEAR, true)
   }
 
@@ -231,7 +234,7 @@ export default class UserLoginHandler extends Array {
     this.#session.setSessionCookieObject('')
   }
 
-  deleteUser () {
+  #deleteUser () {
     $ct.blockRequeust = true
     this.#logger.debug('Block request is true')
     $ct.globalCache = {}
@@ -250,7 +253,7 @@ export default class UserLoginHandler extends Array {
     StorageManager.removeCookie(KCOOKIE_NAME, getHostName())
     StorageManager.removeCookie(this.#session.cookieName, $ct.broadDomain)
     StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain)
-    $ct.gcookie = null
+    this.#device.gcookie = null
     this.#session.setSessionCookieObject('')
   }
 
@@ -275,7 +278,7 @@ export default class UserLoginHandler extends Array {
     return 0
   }
 
-  processOldValues () {
+  _processOldValues () {
     if (this.#oldValues) {
       this.#processLoginArray(this.#oldValues)
     }
