@@ -1,6 +1,8 @@
 import main from '../../src/main'
 import CleverTap from '../../src/clevertap'
 
-test('Main exports CleverTap instance', () => {
-  expect(main).toBeInstanceOf(CleverTap)
+describe('main.js', function () {
+  test('Main exports CleverTap instance', () => {
+    expect(main).toBeInstanceOf(CleverTap)
+  })
 })
