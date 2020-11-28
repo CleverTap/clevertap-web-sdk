@@ -148,7 +148,7 @@ module.exports = {
     // '**/__tests__/**/*.[jt]s?(x)',
     // '**/?(*.)+(spec|test).[tj]s?(x)'
     // Use below option to test a specific file. Revert this before commiting.
-    '<rootDir>/test/unit/*.spec.js'
+    '<rootDir>/test/unit/**/*.spec.js'
   ],
 
   // An array of regexp pattern strings that are matched against all test paths, matched tests are skipped
@@ -166,7 +166,7 @@ module.exports = {
   // testRunner: "jasmine2",
 
   // This option sets the URL for the jsdom environment. It is reflected in properties such as location.href
-  // testURL: "http://localhost",
+  testURL: 'http://www.example.com',
 
   // Setting this value to "fake" allows the use of fake timers for functions such as "setTimeout"
   timers: 'modern'
