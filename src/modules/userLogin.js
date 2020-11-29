@@ -142,7 +142,9 @@ export default class UserLoginHandler extends Array {
           let profileObj
           if (outerObj.Site != null) { // organic data from the site
             profileObj = outerObj.Site
-            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj)) {
+            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
+              logger: this.#logger
+            })) {
               return
             }
           } else if (outerObj.Facebook != null) { // fb connect data
