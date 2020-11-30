@@ -61,7 +61,7 @@ export default class LRUCache {
         objToArray.push(temp)
       }
     }
-    StorageManager.saveToLSorCookie(LRU_CACHE, objToArray)
+    StorageManager.saveToLSorCookie(LRU_CACHE, { cache: objToArray })
   }
 
   getKey (value) {

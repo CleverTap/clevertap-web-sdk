@@ -11,7 +11,7 @@ import { StorageManager } from '../../src/util/storage'
 import { CONTINUOUS_PING_FREQ_IN_MILLIS, FIRST_PING_FREQ_IN_MILLIS } from '../../src/util/constants'
 import UserLoginHandler from '../../src/modules/userLogin'
 
-// mock everything except for the module that's being tested
+// mock everything except for the module that's being tested and constants
 jest.enableAutomock().unmock('../../src/clevertap').unmock('../../src/util/constants')
 
 const string121Char = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut posuere nisi id velit laoreet condimentum. Mauris tempor sed.'

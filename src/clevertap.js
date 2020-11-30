@@ -105,11 +105,15 @@ export default class CleverTap {
       this.onUserLogin.clear()
     }
 
-    window.$CLTP_WR = window.$WZRK_WR = {
-      ...this.#api,
-      logout: this.logout,
-      clear: this.clear
-    }
+    const api = this.#api
+    api.logout = this.logout
+    api.clear = this.clear
+    window.$CLTP_WR = window.$WZRK_WR = api
+    // window.$CLTP_WR = window.$WZRK_WR = {
+    //   ...this.#api,
+    //   logout: this.logout,
+    //   clear: this.clear
+    // }
 
     if (clevertap.account?.[0].id) {
       // The accountId is present so can init with empty values.
