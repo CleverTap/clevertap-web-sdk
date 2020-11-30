@@ -62,7 +62,7 @@ export default class UserLoginHandler extends Array {
 
   #processOUL (profileArr) {
     let sendOULFlag = true
-    const addToK = function (ids) {
+    const addToK = (ids) => {
       let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME)
       const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME)
       let kId
