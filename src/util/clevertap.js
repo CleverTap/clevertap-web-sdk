@@ -302,12 +302,11 @@ export const processGPlusUserObj = (user, { logger }) => {
 }
 
 export const addToLocalProfileMap = (profileObj, override) => {
-  let globalProfileMap = $ct.globalProfileMap
   if (StorageManager._isLocalStorageSupported()) {
-    if (globalProfileMap == null) {
-      globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
-      if (globalProfileMap == null) {
-        globalProfileMap = {}
+    if ($ct.globalProfileMap == null) {
+      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
+      if ($ct.globalProfileMap == null) {
+        $ct.globalProfileMap = {}
       }
     }
 
@@ -324,15 +323,15 @@ export const addToLocalProfileMap = (profileObj, override) => {
 
     for (const prop in profileObj) {
       if (profileObj.hasOwnProperty(prop)) {
-        if (globalProfileMap.hasOwnProperty(prop) && !override) {
+        if ($ct.globalProfileMap.hasOwnProperty(prop) && !override) {
           continue
         }
-        globalProfileMap[prop] = profileObj[prop]
+        $ct.globalProfileMap[prop] = profileObj[prop]
       }
     }
-    if (globalProfileMap._custom != null) {
-      delete globalProfileMap._custom
+    if ($ct.globalProfileMap._custom != null) {
+      delete $ct.globalProfileMap._custom
     }
-    StorageManager.saveToLSorCookie(PR_COOKIE, globalProfileMap)
+    StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
   }
 }

@@ -1619,14 +1619,12 @@
     return profileData;
   };
   var addToLocalProfileMap = function addToLocalProfileMap(profileObj, override) {
-    var globalProfileMap = $ct.globalProfileMap;
-
     if (StorageManager$1._isLocalStorageSupported()) {
-      if (globalProfileMap == null) {
-        globalProfileMap = StorageManager$1.readFromLSorCookie(PR_COOKIE);
+      if ($ct.globalProfileMap == null) {
+        $ct.globalProfileMap = StorageManager$1.readFromLSorCookie(PR_COOKIE);
 
-        if (globalProfileMap == null) {
-          globalProfileMap = {};
+        if ($ct.globalProfileMap == null) {
+          $ct.globalProfileMap = {};
         }
       } // Move props from custom bucket to outside.
 
@@ -1645,19 +1643,19 @@
 
       for (var prop in profileObj) {
         if (profileObj.hasOwnProperty(prop)) {
-          if (globalProfileMap.hasOwnProperty(prop) && !override) {
+          if ($ct.globalProfileMap.hasOwnProperty(prop) && !override) {
             continue;
           }
 
-          globalProfileMap[prop] = profileObj[prop];
+          $ct.globalProfileMap[prop] = profileObj[prop];
         }
       }
 
-      if (globalProfileMap._custom != null) {
-        delete globalProfileMap._custom;
+      if ($ct.globalProfileMap._custom != null) {
+        delete $ct.globalProfileMap._custom;
       }
 
-      StorageManager$1.saveToLSorCookie(PR_COOKIE, globalProfileMap);
+      StorageManager$1.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
     }
   };
 
@@ -2861,7 +2859,7 @@
       return addToURL(url, 'arp', compressData(JSON.stringify(_arp)));
     }
 
-    if (StorageManager$1._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined') {
+    if (StorageManager$1._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
       return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager$1.readFromLSorCookie(ARP_COOKIE))));
     }
 
@@ -2889,6 +2887,8 @@
 
     if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
       setTimeout(function () {
+        _this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
+
         _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
       }, 50);
       return;
