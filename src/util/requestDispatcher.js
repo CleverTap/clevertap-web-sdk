@@ -18,6 +18,7 @@ export default class RequestDispatcher {
     ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
     tries < MAX_TRIES) {
       setTimeout(() => {
+        this.logger.debug(`retrying fire request for url: ${url}, tries: ${tries}`)
         this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
       }, 50)
       return
@@ -71,7 +72,7 @@ export default class RequestDispatcher {
       _arp.skipResARP = true
       return addToURL(url, 'arp', compressData(JSON.stringify(_arp)))
     }
-    if (StorageManager._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined') {
+    if (StorageManager._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
       return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE))))
     }
     return url
