@@ -7,7 +7,9 @@ import {
 import {
   CAMP_COOKIE_NAME,
   singleQuoteRegex,
-  PR_COOKIE
+  PR_COOKIE,
+  ARP_COOKIE,
+  IS_OUL
 } from './constants'
 import {
   GENDER_ERROR,
@@ -334,5 +336,64 @@ export const addToLocalProfileMap = (profileObj, override) => {
       delete globalProfileMap._custom
     }
     StorageManager.saveToLSorCookie(PR_COOKIE, globalProfileMap)
+  }
+}
+
+export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
+  if (campaignId != null && campaignId !== '-1') {
+    if (StorageManager._isLocalStorageSupported()) {
+      const campaignObj = getCampaignObject()
+
+      let sessionCampaignObj = campaignObj[currentSessionId]
+      if (sessionCampaignObj == null) {
+        sessionCampaignObj = {}
+        campaignObj[currentSessionId] = sessionCampaignObj
+      }
+      sessionCampaignObj[campaignId] = 'dnd'
+      saveCampaignObject(campaignObj)
+    }
+  }
+  if ($ct.campaignDivMap != null) {
+    const divId = $ct.campaignDivMap[campaignId]
+    if (divId != null) {
+      document.getElementById(divId).style.display = 'none'
+      if (divId === 'intentPreview') {
+        if (document.getElementById('intentOpacityDiv') != null) {
+          document.getElementById('intentOpacityDiv').style.display = 'none'
+        }
+      }
+    }
+  }
+}
+
+export const arp = (jsonMap) => {
+  // For unregister calls dont set arp in LS
+  if (jsonMap.skipResARP != null && jsonMap.skipResARP) {
+    console.debug('Update ARP Request rejected', jsonMap)
+    return null
+  }
+
+  const isOULARP = !!((jsonMap[IS_OUL] != null && jsonMap[IS_OUL] === true))
+
+  if (StorageManager._isLocalStorageSupported()) {
+    try {
+      let arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE)
+      if (arpFromStorage == null || isOULARP) {
+        arpFromStorage = {}
+      }
+
+      for (const key in jsonMap) {
+        if (jsonMap.hasOwnProperty(key)) {
+          if (jsonMap[key] === -1) {
+            delete arpFromStorage[key]
+          } else {
+            arpFromStorage[key] = jsonMap[key]
+          }
+        }
+      }
+      StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage)
+    } catch (e) {
+      console.error('Unable to parse ARP JSON: ' + e)
+    }
   }
 }

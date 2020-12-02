@@ -21,6 +21,7 @@ import { addToURL, getDomain, getURLParams } from './util/url'
 import { getCampaignObjForLc } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
+import NotificationHandler from './modules/notification'
 
 export default class CleverTap {
   #logger
@@ -76,6 +77,15 @@ export default class CleverTap {
       account: this.#account
     }, clevertap.privacy)
 
+    this.notification = new NotificationHandler({
+      logger: this.#logger,
+      session: this.#session,
+      device: this.#device,
+      request: this.#request,
+      account: this.#account,
+      clevertapInstance: this
+    }, clevertap.notifications)
+
     this.#api = new CleverTapAPI({
       logger: this.#logger,
       request: this.#request,
@@ -108,7 +118,13 @@ export default class CleverTap {
     window.$CLTP_WR = window.$WZRK_WR = {
       ...this.#api,
       logout: this.logout,
-      clear: this.clear
+      clear: this.clear,
+      closeIframe: (campaignId, divIdIgnored) => {
+        this.notification.closeIframe(campaignId, divIdIgnored)
+      },
+      enableWebPush: (enabled, applicationServerKey) => {
+        this.notification.enableWebPush(enabled, applicationServerKey)
+      }
     }
 
     if (clevertap.account?.[0].id) {
@@ -163,7 +179,7 @@ export default class CleverTap {
     this.privacy._processOldValues()
     this.event._processOldValues()
     this.profile._processOldValues()
-    // Notifications
+    this.notification._processOldValues()
   }
 
   pageChanged () {
@@ -179,7 +195,7 @@ export default class CleverTap {
     let data = {}
     let referrerDomain = getDomain(document.referrer)
 
-    if (location.hostname !== referrerDomain) {
+    if (window.location.hostname !== referrerDomain) {
       const maxLen = 120
       if (referrerDomain !== '') {
         referrerDomain = referrerDomain.length > maxLen ? referrerDomain.substring(0, maxLen) : referrerDomain
