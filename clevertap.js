@@ -759,8 +759,8 @@
       RESP_N: 0
     },
     LRU_cache: null,
-    globalProfileMap: null,
-    globalEventsMap: null,
+    globalProfileMap: undefined,
+    globalEventsMap: undefined,
     blockRequest: false,
     isOptInRequest: false,
     broadDomain: null,

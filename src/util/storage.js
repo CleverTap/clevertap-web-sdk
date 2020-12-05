@@ -233,8 +233,8 @@ export const $ct = {
     RESP_N: 0
   },
   LRU_cache: null,
-  globalProfileMap: null,
-  globalEventsMap: null,
+  globalProfileMap: undefined,
+  globalEventsMap: undefined,
   blockRequest: false,
   isOptInRequest: false,
   broadDomain: null,
@@ -243,7 +243,8 @@ export const $ct = {
   currentSessionId: null,
   wiz_counter: 0, // to keep track of number of times we load the body
   notifApi: {}, // helper variable to handle race condition and check when notifications were called
-  doc: document // iframe or main, depends
+  doc: document, // iframe or main, depends
+  unsubGroups: []
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }
