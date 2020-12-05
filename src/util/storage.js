@@ -119,7 +119,12 @@ export class StorageManager {
       data = this.readCookie(property)
     }
     if (data != null && data.trim() !== '') {
-      const value = JSON.parse(decodeURIComponent(data))
+      let value
+      if (property === GCOOKIE_NAME) {
+        value = decodeURIComponent(data)
+      } else {
+        value = JSON.parse(decodeURIComponent(data))
+      }
       $ct.globalCache[property] = value
       return value
     }

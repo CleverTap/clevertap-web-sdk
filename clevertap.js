@@ -42,55 +42,6 @@
     return Constructor;
   }
 
-  function _defineProperty(obj, key, value) {
-    if (key in obj) {
-      Object.defineProperty(obj, key, {
-        value: value,
-        enumerable: true,
-        configurable: true,
-        writable: true
-      });
-    } else {
-      obj[key] = value;
-    }
-
-    return obj;
-  }
-
-  function ownKeys(object, enumerableOnly) {
-    var keys = Object.keys(object);
-
-    if (Object.getOwnPropertySymbols) {
-      var symbols = Object.getOwnPropertySymbols(object);
-      if (enumerableOnly) symbols = symbols.filter(function (sym) {
-        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-      });
-      keys.push.apply(keys, symbols);
-    }
-
-    return keys;
-  }
-
-  function _objectSpread2(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i] != null ? arguments[i] : {};
-
-      if (i % 2) {
-        ownKeys(Object(source), true).forEach(function (key) {
-          _defineProperty(target, key, source[key]);
-        });
-      } else if (Object.getOwnPropertyDescriptors) {
-        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-      } else {
-        ownKeys(Object(source)).forEach(function (key) {
-          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-        });
-      }
-    }
-
-    return target;
-  }
-
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -411,17 +362,12 @@
       for (var key in o) {
         if (o.hasOwnProperty(key)) {
           var sanitizedVal = removeUnsupportedChars(o[key], logger);
-          var sanitizedKey = isString(key) ? sanitize(key, unsupportedKeyCharRegex) : key;
+          var sanitizedKey = void 0;
+          sanitizedKey = sanitize(key, unsupportedKeyCharRegex);
 
-          if (isString(key)) {
-            sanitizedKey = sanitize(key, unsupportedKeyCharRegex);
-
-            if (sanitizedKey.length > 1024) {
-              sanitizedKey = sanitizedKey.substring(0, 1024);
-              logger.reportError(520, sanitizedKey + '... length exceeded 1024 chars. Trimmed.');
-            }
-          } else {
-            sanitizedKey = key;
+          if (sanitizedKey.length > 1024) {
+            sanitizedKey = sanitizedKey.substring(0, 1024);
+            logger.reportError(520, sanitizedKey + '... length exceeded 1024 chars. Trimmed.');
           }
 
           delete o[key];
@@ -621,7 +567,14 @@
         }
 
         if (data != null && data.trim() !== '') {
-          var value = JSON.parse(decodeURIComponent(data));
+          var value;
+
+          if (property === GCOOKIE_NAME) {
+            value = decodeURIComponent(data);
+          } else {
+            value = JSON.parse(decodeURIComponent(data));
+          }
+
           $ct.globalCache[property] = value;
           return value;
         }
@@ -867,7 +820,9 @@
           }
         }
 
-        StorageManager$1.saveToLSorCookie(LRU_CACHE, objToArray);
+        StorageManager$1.saveToLSorCookie(LRU_CACHE, {
+          cache: objToArray
+        });
       }
     }, {
       key: "getKey",
@@ -1683,14 +1638,12 @@
     return profileData;
   };
   var addToLocalProfileMap = function addToLocalProfileMap(profileObj, override) {
-    var globalProfileMap = $ct.globalProfileMap;
-
     if (StorageManager$1._isLocalStorageSupported()) {
-      if (globalProfileMap == null) {
-        globalProfileMap = StorageManager$1.readFromLSorCookie(PR_COOKIE);
+      if ($ct.globalProfileMap == null) {
+        $ct.globalProfileMap = StorageManager$1.readFromLSorCookie(PR_COOKIE);
 
-        if (globalProfileMap == null) {
-          globalProfileMap = {};
+        if ($ct.globalProfileMap == null) {
+          $ct.globalProfileMap = {};
         }
       } // Move props from custom bucket to outside.
 
@@ -1709,19 +1662,19 @@
 
       for (var prop in profileObj) {
         if (profileObj.hasOwnProperty(prop)) {
-          if (globalProfileMap.hasOwnProperty(prop) && !override) {
+          if ($ct.globalProfileMap.hasOwnProperty(prop) && !override) {
             continue;
           }
 
-          globalProfileMap[prop] = profileObj[prop];
+          $ct.globalProfileMap[prop] = profileObj[prop];
         }
       }
 
-      if (globalProfileMap._custom != null) {
-        delete globalProfileMap._custom;
+      if ($ct.globalProfileMap._custom != null) {
+        delete $ct.globalProfileMap._custom;
       }
 
-      StorageManager$1.saveToLSorCookie(PR_COOKIE, globalProfileMap);
+      StorageManager$1.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
     }
   };
   var closeIframe = function closeIframe(campaignId, divIdIgnored, currentSessionId) {
@@ -2436,6 +2389,8 @@
   }( /*#__PURE__*/_wrapNativeSuper(Array));
 
   var _processOUL2 = function _processOUL2(profileArr) {
+    var _this2 = this;
+
     var sendOULFlag = true;
 
     var addToK = function addToK(ids) {
@@ -2483,7 +2438,7 @@
         if (foundInCache) {
           if (kId !== $ct.LRU_CACHE.getLastKey()) {
             // Same User
-            _classPrivateFieldLooseBase(this, _handleCookieFromCache)[_handleCookieFromCache]();
+            _classPrivateFieldLooseBase(_this2, _handleCookieFromCache)[_handleCookieFromCache]();
           } else {
             sendOULFlag = false;
           }
@@ -2491,20 +2446,20 @@
           var gFromCache = $ct.LRU_CACHE.get(kId);
           $ct.LRU_CACHE.set(kId, gFromCache);
           StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
-          _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie = gFromCache;
+          _classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie = gFromCache;
           var lastK = $ct.LRU_CACHE.getSecondLastKEY();
 
           if (lastK !== -1) {
             var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
-            _classPrivateFieldLooseBase(this, _request$3)[_request$3].unregisterTokenForGuid(lastGUID);
+            _classPrivateFieldLooseBase(_this2, _request$3)[_request$3].unregisterTokenForGuid(lastGUID);
           }
         } else {
           if (!anonymousUser) {
-            this.clear();
+            _this2.clear();
           } else {
             if (g != null) {
-              _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie = g;
+              _classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie = g;
               StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, g);
               sendOULFlag = false;
             }
@@ -2529,7 +2484,9 @@
             // organic data from the site
             profileObj = outerObj.Site;
 
-            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj)) {
+            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
+              logger: _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]
+            })) {
               return;
             }
           } else if (outerObj.Facebook != null) {
@@ -2982,7 +2939,7 @@
       return addToURL(url, 'arp', compressData(JSON.stringify(_arp)));
     }
 
-    if (StorageManager$1._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined') {
+    if (StorageManager$1._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
       return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager$1.readFromLSorCookie(ARP_COOKIE))));
     }
 
@@ -3010,6 +2967,8 @@
 
     if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
       setTimeout(function () {
+        _this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
+
         _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
       }, 50);
       return;
@@ -4766,16 +4725,15 @@
         _this.onUserLogin.clear();
       };
 
-      window.$CLTP_WR = window.$WZRK_WR = _objectSpread2(_objectSpread2({}, _classPrivateFieldLooseBase(this, _api)[_api]), {}, {
-        logout: this.logout,
-        clear: this.clear,
-        closeIframe: function closeIframe(campaignId, divIdIgnored) {
-          _this.notification.closeIframe(campaignId, divIdIgnored);
-        },
-        enableWebPush: function enableWebPush(enabled, applicationServerKey) {
-          _this.notification.enableWebPush(enabled, applicationServerKey);
-        }
-      });
+      var api = _classPrivateFieldLooseBase(this, _api)[_api];
+
+      api.logout = this.logout;
+      api.clear = this.clear;
+      window.$CLTP_WR = window.$WZRK_WR = api; // window.$CLTP_WR = window.$WZRK_WR = {
+      //   ...this.#api,
+      //   logout: this.logout,
+      //   clear: this.clear
+      // }
 
       if ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id) {
         // The accountId is present so can init with empty values.

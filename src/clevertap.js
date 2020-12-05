@@ -119,13 +119,18 @@ export default class CleverTap {
       ...this.#api,
       logout: this.logout,
       clear: this.clear,
-      closeIframe: (campaignId, divIdIgnored) => {
-        this.notification.closeIframe(campaignId, divIdIgnored)
-      },
-      enableWebPush: (enabled, applicationServerKey) => {
-        this.notification.enableWebPush(enabled, applicationServerKey)
-      }
+      
     }
+    const api = this.#api
+    api.logout = this.logout
+    api.clear = this.clear
+    api.closeIframe = (campaignId, divIdIgnored) => {
+      this.notification.closeIframe(campaignId, divIdIgnored)
+    },
+    api.enableWebPush = (enabled, applicationServerKey) => {
+      this.notification.enableWebPush(enabled, applicationServerKey)
+    }
+    window.$CLTP_WR = window.$WZRK_WR = api
 
     if (clevertap.account?.[0].id) {
       // The accountId is present so can init with empty values.

@@ -54,16 +54,11 @@ export const removeUnsupportedChars = (o, logger) => {
     for (const key in o) {
       if (o.hasOwnProperty(key)) {
         const sanitizedVal = removeUnsupportedChars(o[key], logger)
-        let sanitizedKey = isString(key) ? sanitize(key, unsupportedKeyCharRegex) : key
-
-        if (isString(key)) {
-          sanitizedKey = sanitize(key, unsupportedKeyCharRegex)
-          if (sanitizedKey.length > 1024) {
-            sanitizedKey = sanitizedKey.substring(0, 1024)
-            logger.reportError(520, sanitizedKey + '... length exceeded 1024 chars. Trimmed.')
-          }
-        } else {
-          sanitizedKey = key
+        let sanitizedKey
+        sanitizedKey = sanitize(key, unsupportedKeyCharRegex)
+        if (sanitizedKey.length > 1024) {
+          sanitizedKey = sanitizedKey.substring(0, 1024)
+          logger.reportError(520, sanitizedKey + '... length exceeded 1024 chars. Trimmed.')
         }
         delete o[key]
         o[sanitizedKey] = sanitizedVal
