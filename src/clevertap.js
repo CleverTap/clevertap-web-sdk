@@ -132,7 +132,7 @@ export default class CleverTap {
       this.notifications.closeIframe(campaignId, divIdIgnored)
     }
     api.enableWebPush = (enabled, applicationServerKey) => {
-      this.notifications.enableWebPush(enabled, applicationServerKey)
+      this.notifications._enableWebPush(enabled, applicationServerKey)
     }
     api.tr = (msg) => {
       this.notifications.tr(msg)

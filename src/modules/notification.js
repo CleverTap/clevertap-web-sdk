@@ -119,7 +119,7 @@ export default class NotificationHandler extends Array {
             pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload))
             RequestDispatcher.fireRequest(pageLoadUrl)
             // set in localstorage
-            localStorage.save(WEBPUSH_LS_KEY, 'ok')
+            StorageManager.save(WEBPUSH_LS_KEY, 'ok')
             this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
           } else if (subscription.permission === 'denied') {
             this.#logger.info('Error subscribing to Safari web push')
@@ -166,16 +166,14 @@ export default class NotificationHandler extends Array {
               pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload))
               RequestDispatcher.fireRequest(pageLoadUrl)
               // set in localstorage
-              if (StorageManager._isLocalStorageSupported()) {
-                localStorage.setItem(WEBPUSH_LS_KEY, 'ok')
-              }
+              StorageManager.save(WEBPUSH_LS_KEY, 'ok')
             }
 
             if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
               subscriptionCallback()
             }
           }).catch((error) => {
-            this.#logger.info('Error subscribing: ' + error)
+            this.#logger.error('Error subscribing: ' + error)
             // unsubscribe from webpush if error
             serviceWorkerRegistration.pushManager.getSubscription().then((subscription) => {
               if (subscription !== null) {
@@ -184,13 +182,13 @@ export default class NotificationHandler extends Array {
                   this.#logger.info('Unsubscription successful')
                 }).catch((e) => {
                 // Unsubscription failed
-                  this.#logger.info('Error unsubscribing: ' + e)
+                  this.#logger.error('Error unsubscribing: ' + e)
                 })
               }
             })
           })
       }).catch((err) => {
-        this.#logger.info('error registering service worker: ' + err)
+        this.#logger.error('error registering service worker: ' + err)
       })
     }
   }
@@ -1055,7 +1053,7 @@ export default class NotificationHandler extends Array {
     }
   }
 
-  enableWebPush (enabled, applicationServerKey) {
+  _enableWebPush (enabled, applicationServerKey) {
     $ct.webPushEnabled = enabled
     if (applicationServerKey != null) {
       this.#setApplicationServerKey(applicationServerKey)

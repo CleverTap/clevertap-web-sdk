@@ -4229,8 +4229,8 @@
         }
       }
     }, {
-      key: "enableWebPush",
-      value: function enableWebPush(enabled, applicationServerKey) {
+      key: "_enableWebPush",
+      value: function _enableWebPush(enabled, applicationServerKey) {
         $ct.webPushEnabled = enabled;
 
         if (applicationServerKey != null) {
@@ -4304,9 +4304,7 @@
           pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload));
           RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
 
-          if (StorageManager$1._isLocalStorageSupported()) {
-            localStorage.setItem(WEBPUSH_LS_KEY, 'ok');
-          }
+          StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
 
           _classPrivateFieldLooseBase(_this3, _logger$7)[_logger$7].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
         } else if (subscription.permission === 'denied') {
@@ -4356,16 +4354,14 @@
             pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload));
             RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
 
-            if (StorageManager$1._isLocalStorageSupported()) {
-              localStorage.setItem(WEBPUSH_LS_KEY, 'ok');
-            }
+            StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
           }
 
           if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
             subscriptionCallback();
           }
         }).catch(function (error) {
-          _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].info('Error subscribing: ' + error); // unsubscribe from webpush if error
+          _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].error('Error subscribing: ' + error); // unsubscribe from webpush if error
 
 
           serviceWorkerRegistration.pushManager.getSubscription().then(function (subscription) {
@@ -4375,13 +4371,13 @@
                 _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].info('Unsubscription successful');
               }).catch(function (e) {
                 // Unsubscription failed
-                _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].info('Error unsubscribing: ' + e);
+                _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].error('Error unsubscribing: ' + e);
               });
             }
           });
         });
       }).catch(function (err) {
-        _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].info('error registering service worker: ' + err);
+        _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].error('error registering service worker: ' + err);
       });
     }
   };
@@ -4805,7 +4801,7 @@
       };
 
       api.enableWebPush = function (enabled, applicationServerKey) {
-        _this.notifications.enableWebPush(enabled, applicationServerKey);
+        _this.notifications._enableWebPush(enabled, applicationServerKey);
       };
 
       api.tr = function (msg) {
