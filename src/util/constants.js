@@ -35,6 +35,7 @@ export const MAX_TRIES = 50 // API tries
 export const FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000 // 2 mins
 export const CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000 // 5 mins
 export const GROUP_SUBSCRIPTION_REQUEST_ID = '2'
+export const categoryLongKey = 'cUsY'
 
 export const SYSTEM_EVENTS = [
   'Stayed',

@@ -323,6 +323,7 @@
   var CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000; // 5 mins
 
   var GROUP_SUBSCRIPTION_REQUEST_ID = '2';
+  var categoryLongKey = 'cUsY';
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', 'Notification Viewed', 'Notification Clicked'];
 
   var isString = function isString(input) {
@@ -729,7 +730,8 @@
     // helper variable to handle race condition and check when notifications were called
     doc: document,
     // iframe or main, depends
-    unsubGroups: [] // domain: window.location.hostname, url -> getHostName()
+    unsubGroups: [],
+    updatedCategoryLong: null // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -2133,6 +2135,10 @@
 
       data.unsubGroups = $ct.unsubGroups; // unsubscribe groups
 
+      if ($ct.updatedCategoryLong) {
+        data[categoryLongKey] = $ct.updatedCategoryLong;
+      }
+
       var url = account.emailURL;
 
       if (reEncoded) {
@@ -2675,25 +2681,25 @@
     }
   };
 
-  var _isPersonalizationActive = _classPrivateFieldLooseKey("isPersonalizationActive");
+  var _isPersonalisationActive$2 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   var User = /*#__PURE__*/function () {
     function User(_ref) {
-      var isPersonalizationActive = _ref.isPersonalizationActive;
+      var isPersonalisationActive = _ref.isPersonalisationActive;
 
       _classCallCheck(this, User);
 
-      Object.defineProperty(this, _isPersonalizationActive, {
+      Object.defineProperty(this, _isPersonalisationActive$2, {
         writable: true,
         value: void 0
       });
-      _classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive] = isPersonalizationActive;
+      _classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2] = isPersonalisationActive;
     }
 
     _createClass(User, [{
       key: "getTotalVisits",
       value: function getTotalVisits() {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive]()) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2]()) {
           return;
         }
 
@@ -2708,7 +2714,7 @@
     }, {
       key: "getLastVisit",
       value: function getLastVisit() {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive]()) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2]()) {
           return;
         }
 
@@ -2814,13 +2820,13 @@
 
   var _sessionId = _classPrivateFieldLooseKey("sessionId");
 
-  var _isPersonalizationActive$1 = _classPrivateFieldLooseKey("isPersonalizationActive");
+  var _isPersonalisationActive$3 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   var SessionManager = /*#__PURE__*/function () {
     // SCOOKIE_NAME
     function SessionManager(_ref) {
       var logger = _ref.logger,
-          isPersonalizationActive = _ref.isPersonalizationActive;
+          isPersonalisationActive = _ref.isPersonalisationActive;
 
       _classCallCheck(this, SessionManager);
 
@@ -2832,7 +2838,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _isPersonalizationActive$1, {
+      Object.defineProperty(this, _isPersonalisationActive$3, {
         writable: true,
         value: void 0
       });
@@ -2840,7 +2846,7 @@
       this.scookieObj = void 0;
       this.sessionId = StorageManager$1.getMetaProp('cs');
       _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
-      _classPrivateFieldLooseBase(this, _isPersonalizationActive$1)[_isPersonalizationActive$1] = isPersonalizationActive;
+      _classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3] = isPersonalisationActive;
     }
 
     _createClass(SessionManager, [{
@@ -2912,7 +2918,7 @@
     }, {
       key: "getTimeElapsed",
       value: function getTimeElapsed() {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive$1)[_isPersonalizationActive$1]()) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3]()) {
           return;
         }
 
@@ -2931,7 +2937,7 @@
     }, {
       key: "getPageCount",
       value: function getPageCount() {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive$1)[_isPersonalizationActive$1]()) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3]()) {
           return;
         }
 
@@ -3073,7 +3079,7 @@
 
   var _session$2 = _classPrivateFieldLooseKey("session");
 
-  var _isPersonalisationActive$2 = _classPrivateFieldLooseKey("isPersonalisationActive");
+  var _isPersonalisationActive$4 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   var _clearCookie = _classPrivateFieldLooseKey("clearCookie");
 
@@ -3108,7 +3114,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _isPersonalisationActive$2, {
+      Object.defineProperty(this, _isPersonalisationActive$4, {
         writable: true,
         value: void 0
       });
@@ -3121,7 +3127,7 @@
       _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
       _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
       _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
-      _classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2] = isPersonalisationActive;
+      _classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4] = isPersonalisationActive;
       RequestDispatcher.logger = logger;
       RequestDispatcher.device = device;
     }
@@ -3195,7 +3201,7 @@
           _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('reset cookie sent in request and cleared from meta for future requests.');
         }
 
-        if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2]()) {
+        if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4]()) {
           var lastSyncTime = StorageManager$1.getMetaProp('lsTime');
           var expirySeconds = StorageManager$1.getMetaProp('exTs'); // dsync not found in local storage - get data from server
 
@@ -4701,7 +4707,7 @@
       });
       _classPrivateFieldLooseBase(this, _session$4)[_session$4] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
-        isPersonalizationActive: this._isPersonalisationActive
+        isPersonalisationActive: this._isPersonalisationActive
       });
       _classPrivateFieldLooseBase(this, _request$6)[_request$6] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
@@ -4846,8 +4852,17 @@
         return $ct.unsubGroups;
       };
 
+      api.changeSubscriptionGroups = function (reEncoded) {
+        _this.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
+      };
+
+      api.setUpdatedCategoryLong = function (profile) {
+        if (profile[categoryLongKey]) {
+          $ct.updatedCategoryLong = profile[categoryLongKey];
+        }
+      };
+
       window.$CLTP_WR = window.$WZRK_WR = api;
-      window.clevertap = window.wizrocket = this;
 
       if ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id) {
         // The accountId is present so can init with empty values.
@@ -5038,6 +5053,7 @@
   };
 
   var clevertap = new CleverTap(window.clevertap);
+  window.clevertap = window.wizrocket = clevertap;
 
   return clevertap;
 

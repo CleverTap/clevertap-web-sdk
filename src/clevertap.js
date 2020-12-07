@@ -14,7 +14,8 @@ import {
   EVT_PING,
   FIRST_PING_FREQ_IN_MILLIS,
   CONTINUOUS_PING_FREQ_IN_MILLIS,
-  GROUP_SUBSCRIPTION_REQUEST_ID
+  GROUP_SUBSCRIPTION_REQUEST_ID,
+  categoryLongKey
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -42,7 +43,7 @@ export default class CleverTap {
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#session = new SessionManager({
       logger: this.#logger,
-      isPersonalizationActive: this._isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive
     })
     this.#request = new ReqestManager({
       logger: this.#logger,
@@ -181,9 +182,15 @@ export default class CleverTap {
     api.getSubscriptionGroups = () => {
       return $ct.unsubGroups
     }
+    api.changeSubscriptionGroups = (reEncoded) => {
+      this.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
+    }
+    api.setUpdatedCategoryLong = (profile) => {
+      if (profile[categoryLongKey]) {
+        $ct.updatedCategoryLong = profile[categoryLongKey]
+      }
+    }
     window.$CLTP_WR = window.$WZRK_WR = api
-
-    window.clevertap = window.wizrocket = this
 
     if (clevertap.account?.[0].id) {
       // The accountId is present so can init with empty values.

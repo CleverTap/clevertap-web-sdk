@@ -251,7 +251,8 @@ export const $ct = {
     notifEnabledFromApi: false
   }, // helper variable to handle race condition and check when notifications were called
   doc: document, // iframe or main, depends
-  unsubGroups: []
+  unsubGroups: [],
+  updatedCategoryLong: null
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }

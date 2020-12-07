@@ -9,7 +9,8 @@ import {
   singleQuoteRegex,
   PR_COOKIE,
   ARP_COOKIE,
-  IS_OUL
+  IS_OUL,
+  categoryLongKey
 } from './constants'
 import {
   GENDER_ERROR,
@@ -461,6 +462,10 @@ export const handleEmailSubscription = (subscription, reEncoded, account, reques
     const data = {}
     data.id = account.id // accountId
     data.unsubGroups = $ct.unsubGroups // unsubscribe groups
+
+    if ($ct.updatedCategoryLong) {
+      data[categoryLongKey] = $ct.updatedCategoryLong
+    }
 
     let url = account.emailURL
     if (reEncoded) {
