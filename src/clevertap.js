@@ -141,8 +141,8 @@ export default class CleverTap {
       return this.#device.getGuid()
     }
 
-    this.handleEmailSubscription = (subscription, reEncoded) => {
-      handleEmailSubscription(subscription, reEncoded, this.#account, this.#request)
+    this.handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
+      handleEmailSubscription(subscription, reEncoded, fetchGroups, this.#account, this.#request)
     }
 
     const api = this.#api
@@ -156,8 +156,8 @@ export default class CleverTap {
     api.subEmail = (reEncoded) => {
       this.handleEmailSubscription('1', reEncoded)
     }
-    api.getEmail = (reEncoded) => {
-      this.handleEmailSubscription('-1', reEncoded)
+    api.getEmail = (reEncoded, withGroups) => {
+      this.handleEmailSubscription('-1', reEncoded, withGroups)
     }
     api.unSubEmail = (reEncoded) => {
       this.handleEmailSubscription('0', reEncoded)
@@ -182,7 +182,8 @@ export default class CleverTap {
     api.getSubscriptionGroups = () => {
       return $ct.unsubGroups
     }
-    api.changeSubscriptionGroups = (reEncoded) => {
+    api.changeSubscriptionGroups = (reEncoded, updatedGroups) => {
+      this.setSubscriptionGroups(updatedGroups)
       this.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
     }
     api.setUpdatedCategoryLong = (profile) => {

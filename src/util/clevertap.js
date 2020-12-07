@@ -453,7 +453,7 @@ export const setEnum = (enumVal, logger) => {
   logger.error(ENUM_FORMAT_ERROR)
 }
 
-export const handleEmailSubscription = (subscription, reEncoded, account, request) => {
+export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, account, request) => {
   const urlParamsAsIs = getURLParams(location.href) // can't use url_params as it is in lowercase above
   const encodedEmailId = urlParamsAsIs.e
   const encodedProfileProps = urlParamsAsIs.p
@@ -468,6 +468,9 @@ export const handleEmailSubscription = (subscription, reEncoded, account, reques
     }
 
     let url = account.emailURL
+    if (fetchGroups) {
+      url = addToURL(url, 'fetchGroups', reEncoded)
+    }
     if (reEncoded) {
       url = addToURL(url, 'encoded', reEncoded)
     }

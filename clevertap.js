@@ -2123,7 +2123,7 @@
 
     logger.error(ENUM_FORMAT_ERROR);
   };
-  var handleEmailSubscription = function handleEmailSubscription(subscription, reEncoded, account, request) {
+  var handleEmailSubscription = function handleEmailSubscription(subscription, reEncoded, fetchGroups, account, request) {
     var urlParamsAsIs = getURLParams(location.href); // can't use url_params as it is in lowercase above
 
     var encodedEmailId = urlParamsAsIs.e;
@@ -2140,6 +2140,10 @@
       }
 
       var url = account.emailURL;
+
+      if (fetchGroups) {
+        url = addToURL(url, 'fetchGroups', reEncoded);
+      }
 
       if (reEncoded) {
         url = addToURL(url, 'encoded', reEncoded);
@@ -4799,8 +4803,8 @@
         return _classPrivateFieldLooseBase(_this, _device$4)[_device$4].getGuid();
       };
 
-      this.handleEmailSubscription = function (subscription, reEncoded) {
-        handleEmailSubscription(subscription, reEncoded, _classPrivateFieldLooseBase(_this, _account$5)[_account$5], _classPrivateFieldLooseBase(_this, _request$6)[_request$6]);
+      this.handleEmailSubscription = function (subscription, reEncoded, fetchGroups) {
+        handleEmailSubscription(subscription, reEncoded, fetchGroups, _classPrivateFieldLooseBase(_this, _account$5)[_account$5], _classPrivateFieldLooseBase(_this, _request$6)[_request$6]);
       };
 
       var api = _classPrivateFieldLooseBase(this, _api)[_api];
@@ -4817,8 +4821,8 @@
         _this.handleEmailSubscription('1', reEncoded);
       };
 
-      api.getEmail = function (reEncoded) {
-        _this.handleEmailSubscription('-1', reEncoded);
+      api.getEmail = function (reEncoded, withGroups) {
+        _this.handleEmailSubscription('-1', reEncoded, withGroups);
       };
 
       api.unSubEmail = function (reEncoded) {
@@ -4852,7 +4856,9 @@
         return $ct.unsubGroups;
       };
 
-      api.changeSubscriptionGroups = function (reEncoded) {
+      api.changeSubscriptionGroups = function (reEncoded, updatedGroups) {
+        _this.setSubscriptionGroups(updatedGroups);
+
         _this.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
       };
 
