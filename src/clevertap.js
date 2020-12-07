@@ -13,12 +13,13 @@ import {
   SCOOKIE_PREFIX,
   EVT_PING,
   FIRST_PING_FREQ_IN_MILLIS,
-  CONTINUOUS_PING_FREQ_IN_MILLIS
+  CONTINUOUS_PING_FREQ_IN_MILLIS,
+  GROUP_SUBSCRIPTION_REQUEST_ID
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
-import { StorageManager } from './util/storage'
+import { StorageManager, $ct } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
-import { getCampaignObjForLc, setEnum } from './util/clevertap'
+import { getCampaignObjForLc, setEnum, handleEmailSubscription } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
@@ -77,7 +78,7 @@ export default class CleverTap {
       account: this.#account
     }, clevertap.privacy)
 
-    this.notification = new NotificationHandler({
+    this.notifications = new NotificationHandler({
       logger: this.#logger,
       session: this.#session,
       device: this.#device,
@@ -116,15 +117,15 @@ export default class CleverTap {
     }
 
     this.closeIframe = (campaignId, divIdIgnored) => {
-      this.notification.closeIframe(campaignId, divIdIgnored)
+      this.notifications.closeIframe(campaignId, divIdIgnored)
     }
 
     this.enableWebPush = (enabled, applicationServerKey) => {
-      this.notification.enableWebPush(enabled, applicationServerKey)
+      this.notifications.enableWebPush(enabled, applicationServerKey)
     }
 
     this.tr = (msg) => {
-      this.notification.tr(msg)
+      this.notifications.tr(msg)
     }
 
     this.setEnum = (enumVal) => {
@@ -139,6 +140,10 @@ export default class CleverTap {
       return this.#device.getGuid()
     }
 
+    this.handleEmailSubscription = (subscription, reEncoded) => {
+      handleEmailSubscription(subscription, reEncoded, this.#account, this.#request)
+    }
+
     const api = this.#api
     api.logout = this.logout
     api.clear = this.clear
@@ -147,6 +152,35 @@ export default class CleverTap {
     api.tr = this.tr
     api.setEnum = this.setEnum
     api.is_onloadcalled = this.is_onloadcalled
+    api.subEmail = (reEncoded) => {
+      this.handleEmailSubscription('1', reEncoded)
+    }
+    api.getEmail = (reEncoded) => {
+      this.handleEmailSubscription('-1', reEncoded)
+    }
+    api.unSubEmail = (reEncoded) => {
+      this.handleEmailSubscription('0', reEncoded)
+    }
+    api.unsubEmailGroups = (reEncoded) => {
+      $ct.unsubGroups = []
+      const elements = document.getElementsByClassName('ct-unsub-group-input-item')
+
+      for (let i = 0; i < elements.length; i++) {
+        const element = elements[i]
+        if (element.name) {
+          const data = { name: element.name, isUnsubscribed: element.checked }
+          $ct.unsubGroups.push(data)
+        }
+      }
+
+      this.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
+    }
+    api.setSubscriptionGroups = (value) => {
+      $ct.unsubGroups = value
+    }
+    api.getSubscriptionGroups = () => {
+      return $ct.unsubGroups
+    }
     window.$CLTP_WR = window.$WZRK_WR = api
 
     window.clevertap = window.wizrocket = this
@@ -198,12 +232,15 @@ export default class CleverTap {
   }
 
   #processOldValues () {
-    // TODO create classes old data handlers for OUL, Privacy, notifications
     this.onUserLogin._processOldValues()
     this.privacy._processOldValues()
     this.event._processOldValues()
     this.profile._processOldValues()
-    this.notification._processOldValues()
+    this.notifications._processOldValues()
+
+    while (this.notifications.length > 0) {
+      this.notifications.pop()
+    }
   }
 
   pageChanged () {

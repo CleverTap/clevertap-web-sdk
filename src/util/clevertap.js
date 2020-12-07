@@ -35,7 +35,7 @@ import {
   isString,
   isNumber
 } from './datatypes'
-import { addToURL } from './url'
+import { addToURL, getURLParams } from './url'
 import { compressData } from './encoder'
 
 export const getCampaignObject = () => {
@@ -450,4 +450,32 @@ export const setEnum = (enumVal, logger) => {
     return '$E_' + enumVal
   }
   logger.error(ENUM_FORMAT_ERROR)
+}
+
+export const handleEmailSubscription = (subscription, reEncoded, account, request) => {
+  const urlParamsAsIs = getURLParams(location.href) // can't use url_params as it is in lowercase above
+  const encodedEmailId = urlParamsAsIs.e
+  const encodedProfileProps = urlParamsAsIs.p
+
+  if (typeof encodedEmailId !== 'undefined') {
+    const data = {}
+    data.id = account.id // accountId
+    data.unsubGroups = $ct.unsubGroups // unsubscribe groups
+
+    let url = account.emailURL
+    if (reEncoded) {
+      url = addToURL(url, 'encoded', reEncoded)
+    }
+    url = addToURL(url, 'e', encodedEmailId)
+    url = addToURL(url, 'd', compressData(JSON.stringify(data)))
+    if (encodedProfileProps) {
+      url = addToURL(url, 'p', encodedProfileProps)
+    }
+
+    if (subscription !== '-1') {
+      url = addToURL(url, 'sub', subscription)
+    }
+
+    request.fireRequest(url)
+  }
 }
