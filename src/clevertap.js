@@ -18,7 +18,7 @@ import {
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
-import { getCampaignObjForLc } from './util/clevertap'
+import { getCampaignObjForLc, setEnum } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
@@ -115,22 +115,41 @@ export default class CleverTap {
       this.onUserLogin.clear()
     }
 
-    window.$CLTP_WR = window.$WZRK_WR = {
-      ...this.#api,
-      logout: this.logout,
-      clear: this.clear,
-      
+    this.closeIframe = (campaignId, divIdIgnored) => {
+      this.notification.closeIframe(campaignId, divIdIgnored)
     }
+
+    this.enableWebPush = (enabled, applicationServerKey) => {
+      this.notification.enableWebPush(enabled, applicationServerKey)
+    }
+
+    this.tr = (msg) => {
+      this.notification.tr(msg)
+    }
+
+    this.setEnum = (enumVal) => {
+      setEnum(enumVal, this.#logger)
+    }
+
+    this.is_onloadcalled = () => {
+      return (this.#onloadcalled === 1)
+    }
+
+    this.getCleverTapID = () => {
+      return this.#device.getGuid()
+    }
+
     const api = this.#api
     api.logout = this.logout
     api.clear = this.clear
-    api.closeIframe = (campaignId, divIdIgnored) => {
-      this.notification.closeIframe(campaignId, divIdIgnored)
-    },
-    api.enableWebPush = (enabled, applicationServerKey) => {
-      this.notification.enableWebPush(enabled, applicationServerKey)
-    }
+    api.closeIframe = this.closeIframe
+    api.enableWebPush = this.enableWebPush
+    api.tr = this.tr
+    api.setEnum = this.setEnum
+    api.is_onloadcalled = this.is_onloadcalled
     window.$CLTP_WR = window.$WZRK_WR = api
+
+    window.clevertap = window.wizrocket = this
 
     if (clevertap.account?.[0].id) {
       // The accountId is present so can init with empty values.

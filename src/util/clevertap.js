@@ -18,19 +18,25 @@ import {
   EDUCATION_ERROR,
   AGE_ERROR,
   DOB_ERROR,
-  PHONE_FORMAT_ERROR
+  PHONE_FORMAT_ERROR,
+  ENUM_FORMAT_ERROR
 } from './messages'
 import {
   getToday,
   convertToWZRKDate,
-  setDate
+  setDate,
+  getNow
 } from './datetime'
 import {
   isObject,
   isDateObject,
   isConvertibleToNumber,
-  isObjectEmpty
+  isObjectEmpty,
+  isString,
+  isNumber
 } from './datatypes'
+import { addToURL } from './url'
+import { compressData } from './encoder'
 
 export const getCampaignObject = () => {
   let campObj = {}
@@ -395,4 +401,53 @@ export const arp = (jsonMap) => {
       console.error('Unable to parse ARP JSON: ' + e)
     }
   }
+}
+
+export const getWrappedLink = (link, targetId, type, request, account) => {
+  let data = {}
+  data.sendTo = link
+  data.targetId = targetId
+  data.epoch = getNow()
+
+  if (type != null) {
+    data.type = type
+  } else {
+    data.type = 'view'
+  }
+
+  data = request.addSystemDataToObject(data, undefined)
+  return addToURL(account.recorderURL, 'd', compressData(JSON.stringify(data)))
+} // TODO: check usage
+
+export const getMessageTemplate = () => {
+  return `<div class="notice-message">
+    <a href="[RECORDER_HREF]" class="box">
+      <div class="avatar"><span class="fa [ICON] fa-4x fa-fw"></span></div>
+      <div class="info">
+        <div class="title">[TITLE]</div>
+        <div class="clearfix"></div>
+        <div class="text">[TEXT]</div>
+      </div>
+      <div class="clearfix"></div>
+    </a>
+  </div>
+  <div class="clearfix"></div>`
+} // TODO: check usage
+
+export const getMessageHeadTemplate = () => {
+  return `<head>
+    <base target="_parent" />
+    <link rel="stylesheet" href="http://static.clevertap.com/fa/font-awesome.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+    [STYLE]
+    </style>
+  </head>`
+}
+
+export const setEnum = (enumVal, logger) => {
+  if (isString(enumVal) || isNumber(enumVal)) {
+    return '$E_' + enumVal
+  }
+  logger.error(ENUM_FORMAT_ERROR)
 }

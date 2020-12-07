@@ -722,10 +722,13 @@
     currentSessionId: null,
     wiz_counter: 0,
     // to keep track of number of times we load the body
-    notifApi: {},
+    notifApi: {
+      notifEnabledFromApi: false
+    },
     // helper variable to handle race condition and check when notifications were called
-    doc: document // iframe or main, depends
-    // domain: window.location.hostname, url -> getHostName()
+    doc: document,
+    // iframe or main, depends
+    unsubGroups: [] // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -1097,6 +1100,7 @@
   var EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
   var AGE_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Age value should be a number. ").concat(DATA_NOT_SENT_TEXT);
   var DOB_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " DOB value should be a Date Object");
+  var ENUM_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " setEnum(value). value should be a string or a number");
   var PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
 
   var _globalChargedId;
@@ -1332,6 +1336,389 @@
         _classPrivateFieldLooseBase(this, _request$1)[_request$1].processEvent(data);
       }
     }
+  };
+
+  var getURLParams = function getURLParams(url) {
+    var urlParams = {};
+    var idx = url.indexOf('?');
+
+    if (idx > 1) {
+      var uri = url.substring(idx + 1);
+      var match;
+      var pl = /\+/g; // Regex for replacing addition symbol with a space
+
+      var search = /([^&=]+)=?([^&]*)/g;
+
+      var decode = function decode(s) {
+        var replacement = s.replace(pl, ' ');
+
+        try {
+          replacement = decodeURIComponent(replacement);
+        } catch (e) {// eat
+        }
+
+        return replacement;
+      };
+
+      match = search.exec(uri);
+
+      while (match) {
+        urlParams[decode(match[1])] = decode(match[2]);
+        match = search.exec(uri);
+      }
+    }
+
+    return urlParams;
+  };
+  var getDomain = function getDomain(url) {
+    if (url === '') return '';
+    var a = document.createElement('a');
+    a.href = url;
+    return a.hostname;
+  };
+  var addToURL = function addToURL(url, k, v) {
+    return url + '&' + k + '=' + encodeURIComponent(v);
+  };
+  var getHostName = function getHostName() {
+    return window.location.hostname;
+  };
+
+  /* eslint-disable */
+  var urlBase64ToUint8Array = function urlBase64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    var rawData = window.atob(base64);
+    var processedData = [];
+
+    for (var i = 0; i < rawData.length; i++) {
+      processedData.push(rawData.charCodeAt(i));
+    }
+
+    return new Uint8Array(processedData);
+  };
+  var compressData = function compressData(dataObject) {
+    // console.debug('dobj:' + dataObject);
+    return compressToBase64(dataObject);
+  };
+  var compress = function compress(uncompressed) {
+    if (uncompressed == null) return '';
+    var i,
+        value,
+        context_dictionary = {},
+        context_dictionaryToCreate = {},
+        context_c = '',
+        context_wc = '',
+        context_w = '',
+        context_enlargeIn = 2,
+        // Compensate for the first entry which should not count
+    context_dictSize = 3,
+        context_numBits = 2,
+        context_data_string = '',
+        context_data_val = 0,
+        context_data_position = 0,
+        ii,
+        f = String.fromCharCode;
+
+    for (ii = 0; ii < uncompressed.length; ii += 1) {
+      context_c = uncompressed.charAt(ii);
+
+      if (!Object.prototype.hasOwnProperty.call(context_dictionary, context_c)) {
+        context_dictionary[context_c] = context_dictSize++;
+        context_dictionaryToCreate[context_c] = true;
+      }
+
+      context_wc = context_w + context_c;
+
+      if (Object.prototype.hasOwnProperty.call(context_dictionary, context_wc)) {
+        context_w = context_wc;
+      } else {
+        if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+          if (context_w.charCodeAt(0) < 256) {
+            for (i = 0; i < context_numBits; i++) {
+              context_data_val = context_data_val << 1;
+
+              if (context_data_position == 15) {
+                context_data_position = 0;
+                context_data_string += f(context_data_val);
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+            }
+
+            value = context_w.charCodeAt(0);
+
+            for (i = 0; i < 8; i++) {
+              context_data_val = context_data_val << 1 | value & 1;
+
+              if (context_data_position == 15) {
+                context_data_position = 0;
+                context_data_string += f(context_data_val);
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+
+              value = value >> 1;
+            }
+          } else {
+            value = 1;
+
+            for (i = 0; i < context_numBits; i++) {
+              context_data_val = context_data_val << 1 | value;
+
+              if (context_data_position == 15) {
+                context_data_position = 0;
+                context_data_string += f(context_data_val);
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+
+              value = 0;
+            }
+
+            value = context_w.charCodeAt(0);
+
+            for (i = 0; i < 16; i++) {
+              context_data_val = context_data_val << 1 | value & 1;
+
+              if (context_data_position == 15) {
+                context_data_position = 0;
+                context_data_string += f(context_data_val);
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+
+              value = value >> 1;
+            }
+          }
+
+          context_enlargeIn--;
+
+          if (context_enlargeIn == 0) {
+            context_enlargeIn = Math.pow(2, context_numBits);
+            context_numBits++;
+          }
+
+          delete context_dictionaryToCreate[context_w];
+        } else {
+          value = context_dictionary[context_w];
+
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = context_data_val << 1 | value & 1;
+
+            if (context_data_position == 15) {
+              context_data_position = 0;
+              context_data_string += f(context_data_val);
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+
+            value = value >> 1;
+          }
+        }
+
+        context_enlargeIn--;
+
+        if (context_enlargeIn == 0) {
+          context_enlargeIn = Math.pow(2, context_numBits);
+          context_numBits++;
+        } // Add wc to the dictionary.
+
+
+        context_dictionary[context_wc] = context_dictSize++;
+        context_w = String(context_c);
+      }
+    } // Output the code for w.
+
+
+    if (context_w !== '') {
+      if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+        if (context_w.charCodeAt(0) < 256) {
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = context_data_val << 1;
+
+            if (context_data_position == 15) {
+              context_data_position = 0;
+              context_data_string += f(context_data_val);
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+          }
+
+          value = context_w.charCodeAt(0);
+
+          for (i = 0; i < 8; i++) {
+            context_data_val = context_data_val << 1 | value & 1;
+
+            if (context_data_position == 15) {
+              context_data_position = 0;
+              context_data_string += f(context_data_val);
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+
+            value = value >> 1;
+          }
+        } else {
+          value = 1;
+
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = context_data_val << 1 | value;
+
+            if (context_data_position == 15) {
+              context_data_position = 0;
+              context_data_string += f(context_data_val);
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+
+            value = 0;
+          }
+
+          value = context_w.charCodeAt(0);
+
+          for (i = 0; i < 16; i++) {
+            context_data_val = context_data_val << 1 | value & 1;
+
+            if (context_data_position == 15) {
+              context_data_position = 0;
+              context_data_string += f(context_data_val);
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+
+            value = value >> 1;
+          }
+        }
+
+        context_enlargeIn--;
+
+        if (context_enlargeIn == 0) {
+          context_enlargeIn = Math.pow(2, context_numBits);
+          context_numBits++;
+        }
+
+        delete context_dictionaryToCreate[context_w];
+      } else {
+        value = context_dictionary[context_w];
+
+        for (i = 0; i < context_numBits; i++) {
+          context_data_val = context_data_val << 1 | value & 1;
+
+          if (context_data_position == 15) {
+            context_data_position = 0;
+            context_data_string += f(context_data_val);
+            context_data_val = 0;
+          } else {
+            context_data_position++;
+          }
+
+          value = value >> 1;
+        }
+      }
+
+      context_enlargeIn--;
+
+      if (context_enlargeIn == 0) {
+        context_enlargeIn = Math.pow(2, context_numBits);
+        context_numBits++;
+      }
+    } // Mark the end of the stream
+
+
+    value = 2;
+
+    for (i = 0; i < context_numBits; i++) {
+      context_data_val = context_data_val << 1 | value & 1;
+
+      if (context_data_position == 15) {
+        context_data_position = 0;
+        context_data_string += f(context_data_val);
+        context_data_val = 0;
+      } else {
+        context_data_position++;
+      }
+
+      value = value >> 1;
+    } // Flush the last char
+
+
+    while (true) {
+      context_data_val = context_data_val << 1;
+
+      if (context_data_position == 15) {
+        context_data_string += f(context_data_val);
+        break;
+      } else context_data_position++;
+    }
+
+    return context_data_string;
+  };
+  var getKeyStr = function getKeyStr() {
+    var key = '';
+    var i = 0;
+
+    for (i = 0; i <= 25; i++) {
+      key = key + String.fromCharCode(i + 65);
+    }
+
+    for (i = 0; i <= 25; i++) {
+      key = key + String.fromCharCode(i + 97);
+    }
+
+    for (i = 0; i < 10; i++) {
+      key = key + i;
+    }
+
+    return key + '+/=';
+  };
+
+  var _keyStr = getKeyStr();
+  var compressToBase64 = function compressToBase64(input) {
+    if (input == null) return '';
+    var output = '';
+    var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
+    var i = 0;
+    input = compress(input);
+
+    while (i < input.length * 2) {
+      if (i % 2 == 0) {
+        chr1 = input.charCodeAt(i / 2) >> 8;
+        chr2 = input.charCodeAt(i / 2) & 255;
+        if (i / 2 + 1 < input.length) chr3 = input.charCodeAt(i / 2 + 1) >> 8;else chr3 = NaN;
+      } else {
+        chr1 = input.charCodeAt((i - 1) / 2) & 255;
+
+        if ((i + 1) / 2 < input.length) {
+          chr2 = input.charCodeAt((i + 1) / 2) >> 8;
+          chr3 = input.charCodeAt((i + 1) / 2) & 255;
+        } else chr2 = chr3 = NaN;
+      }
+
+      i += 3;
+      enc1 = chr1 >> 2;
+      enc2 = (chr1 & 3) << 4 | chr2 >> 4;
+      enc3 = (chr2 & 15) << 2 | chr3 >> 6;
+      enc4 = chr3 & 63;
+
+      if (isNaN(chr2)) {
+        enc3 = enc4 = 64;
+      } else if (isNaN(chr3)) {
+        enc4 = 64;
+      }
+
+      output = output + _keyStr.charAt(enc1) + _keyStr.charAt(enc2) + _keyStr.charAt(enc3) + _keyStr.charAt(enc4);
+    }
+
+    return output;
   };
 
   // CleverTap specific utilities
@@ -1726,388 +2113,12 @@
       }
     }
   };
-
-  var getURLParams = function getURLParams(url) {
-    var urlParams = {};
-    var idx = url.indexOf('?');
-
-    if (idx > 1) {
-      var uri = url.substring(idx + 1);
-      var match;
-      var pl = /\+/g; // Regex for replacing addition symbol with a space
-
-      var search = /([^&=]+)=?([^&]*)/g;
-
-      var decode = function decode(s) {
-        var replacement = s.replace(pl, ' ');
-
-        try {
-          replacement = decodeURIComponent(replacement);
-        } catch (e) {// eat
-        }
-
-        return replacement;
-      };
-
-      match = search.exec(uri);
-
-      while (match) {
-        urlParams[decode(match[1])] = decode(match[2]);
-        match = search.exec(uri);
-      }
+  var setEnum = function setEnum(enumVal, logger) {
+    if (isString(enumVal) || isNumber(enumVal)) {
+      return '$E_' + enumVal;
     }
 
-    return urlParams;
-  };
-  var getDomain = function getDomain(url) {
-    if (url === '') return '';
-    var a = document.createElement('a');
-    a.href = url;
-    return a.hostname;
-  };
-  var addToURL = function addToURL(url, k, v) {
-    return url + '&' + k + '=' + encodeURIComponent(v);
-  };
-  var getHostName = function getHostName() {
-    return window.location.hostname;
-  };
-
-  /* eslint-disable */
-  var urlBase64ToUint8Array = function urlBase64ToUint8Array(base64String) {
-    var padding = '='.repeat((4 - base64String.length % 4) % 4);
-    var base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-    var rawData = window.atob(base64);
-    var processedData = [];
-
-    for (var i = 0; i < rawData.length; i++) {
-      processedData.push(rawData.charCodeAt(i));
-    }
-
-    return new Uint8Array(processedData);
-  };
-  var compressData = function compressData(dataObject) {
-    // console.debug('dobj:' + dataObject);
-    return compressToBase64(dataObject);
-  };
-  var compress = function compress(uncompressed) {
-    if (uncompressed == null) return '';
-    var i,
-        value,
-        context_dictionary = {},
-        context_dictionaryToCreate = {},
-        context_c = '',
-        context_wc = '',
-        context_w = '',
-        context_enlargeIn = 2,
-        // Compensate for the first entry which should not count
-    context_dictSize = 3,
-        context_numBits = 2,
-        context_data_string = '',
-        context_data_val = 0,
-        context_data_position = 0,
-        ii,
-        f = String.fromCharCode;
-
-    for (ii = 0; ii < uncompressed.length; ii += 1) {
-      context_c = uncompressed.charAt(ii);
-
-      if (!Object.prototype.hasOwnProperty.call(context_dictionary, context_c)) {
-        context_dictionary[context_c] = context_dictSize++;
-        context_dictionaryToCreate[context_c] = true;
-      }
-
-      context_wc = context_w + context_c;
-
-      if (Object.prototype.hasOwnProperty.call(context_dictionary, context_wc)) {
-        context_w = context_wc;
-      } else {
-        if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
-          if (context_w.charCodeAt(0) < 256) {
-            for (i = 0; i < context_numBits; i++) {
-              context_data_val = context_data_val << 1;
-
-              if (context_data_position == 15) {
-                context_data_position = 0;
-                context_data_string += f(context_data_val);
-                context_data_val = 0;
-              } else {
-                context_data_position++;
-              }
-            }
-
-            value = context_w.charCodeAt(0);
-
-            for (i = 0; i < 8; i++) {
-              context_data_val = context_data_val << 1 | value & 1;
-
-              if (context_data_position == 15) {
-                context_data_position = 0;
-                context_data_string += f(context_data_val);
-                context_data_val = 0;
-              } else {
-                context_data_position++;
-              }
-
-              value = value >> 1;
-            }
-          } else {
-            value = 1;
-
-            for (i = 0; i < context_numBits; i++) {
-              context_data_val = context_data_val << 1 | value;
-
-              if (context_data_position == 15) {
-                context_data_position = 0;
-                context_data_string += f(context_data_val);
-                context_data_val = 0;
-              } else {
-                context_data_position++;
-              }
-
-              value = 0;
-            }
-
-            value = context_w.charCodeAt(0);
-
-            for (i = 0; i < 16; i++) {
-              context_data_val = context_data_val << 1 | value & 1;
-
-              if (context_data_position == 15) {
-                context_data_position = 0;
-                context_data_string += f(context_data_val);
-                context_data_val = 0;
-              } else {
-                context_data_position++;
-              }
-
-              value = value >> 1;
-            }
-          }
-
-          context_enlargeIn--;
-
-          if (context_enlargeIn == 0) {
-            context_enlargeIn = Math.pow(2, context_numBits);
-            context_numBits++;
-          }
-
-          delete context_dictionaryToCreate[context_w];
-        } else {
-          value = context_dictionary[context_w];
-
-          for (i = 0; i < context_numBits; i++) {
-            context_data_val = context_data_val << 1 | value & 1;
-
-            if (context_data_position == 15) {
-              context_data_position = 0;
-              context_data_string += f(context_data_val);
-              context_data_val = 0;
-            } else {
-              context_data_position++;
-            }
-
-            value = value >> 1;
-          }
-        }
-
-        context_enlargeIn--;
-
-        if (context_enlargeIn == 0) {
-          context_enlargeIn = Math.pow(2, context_numBits);
-          context_numBits++;
-        } // Add wc to the dictionary.
-
-
-        context_dictionary[context_wc] = context_dictSize++;
-        context_w = String(context_c);
-      }
-    } // Output the code for w.
-
-
-    if (context_w !== '') {
-      if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
-        if (context_w.charCodeAt(0) < 256) {
-          for (i = 0; i < context_numBits; i++) {
-            context_data_val = context_data_val << 1;
-
-            if (context_data_position == 15) {
-              context_data_position = 0;
-              context_data_string += f(context_data_val);
-              context_data_val = 0;
-            } else {
-              context_data_position++;
-            }
-          }
-
-          value = context_w.charCodeAt(0);
-
-          for (i = 0; i < 8; i++) {
-            context_data_val = context_data_val << 1 | value & 1;
-
-            if (context_data_position == 15) {
-              context_data_position = 0;
-              context_data_string += f(context_data_val);
-              context_data_val = 0;
-            } else {
-              context_data_position++;
-            }
-
-            value = value >> 1;
-          }
-        } else {
-          value = 1;
-
-          for (i = 0; i < context_numBits; i++) {
-            context_data_val = context_data_val << 1 | value;
-
-            if (context_data_position == 15) {
-              context_data_position = 0;
-              context_data_string += f(context_data_val);
-              context_data_val = 0;
-            } else {
-              context_data_position++;
-            }
-
-            value = 0;
-          }
-
-          value = context_w.charCodeAt(0);
-
-          for (i = 0; i < 16; i++) {
-            context_data_val = context_data_val << 1 | value & 1;
-
-            if (context_data_position == 15) {
-              context_data_position = 0;
-              context_data_string += f(context_data_val);
-              context_data_val = 0;
-            } else {
-              context_data_position++;
-            }
-
-            value = value >> 1;
-          }
-        }
-
-        context_enlargeIn--;
-
-        if (context_enlargeIn == 0) {
-          context_enlargeIn = Math.pow(2, context_numBits);
-          context_numBits++;
-        }
-
-        delete context_dictionaryToCreate[context_w];
-      } else {
-        value = context_dictionary[context_w];
-
-        for (i = 0; i < context_numBits; i++) {
-          context_data_val = context_data_val << 1 | value & 1;
-
-          if (context_data_position == 15) {
-            context_data_position = 0;
-            context_data_string += f(context_data_val);
-            context_data_val = 0;
-          } else {
-            context_data_position++;
-          }
-
-          value = value >> 1;
-        }
-      }
-
-      context_enlargeIn--;
-
-      if (context_enlargeIn == 0) {
-        context_enlargeIn = Math.pow(2, context_numBits);
-        context_numBits++;
-      }
-    } // Mark the end of the stream
-
-
-    value = 2;
-
-    for (i = 0; i < context_numBits; i++) {
-      context_data_val = context_data_val << 1 | value & 1;
-
-      if (context_data_position == 15) {
-        context_data_position = 0;
-        context_data_string += f(context_data_val);
-        context_data_val = 0;
-      } else {
-        context_data_position++;
-      }
-
-      value = value >> 1;
-    } // Flush the last char
-
-
-    while (true) {
-      context_data_val = context_data_val << 1;
-
-      if (context_data_position == 15) {
-        context_data_string += f(context_data_val);
-        break;
-      } else context_data_position++;
-    }
-
-    return context_data_string;
-  };
-  var getKeyStr = function getKeyStr() {
-    var key = '';
-    var i = 0;
-
-    for (i = 0; i <= 25; i++) {
-      key = key + String.fromCharCode(i + 65);
-    }
-
-    for (i = 0; i <= 25; i++) {
-      key = key + String.fromCharCode(i + 97);
-    }
-
-    for (i = 0; i < 10; i++) {
-      key = key + i;
-    }
-
-    return key + '+/=';
-  };
-
-  var _keyStr = getKeyStr();
-  var compressToBase64 = function compressToBase64(input) {
-    if (input == null) return '';
-    var output = '';
-    var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
-    var i = 0;
-    input = compress(input);
-
-    while (i < input.length * 2) {
-      if (i % 2 == 0) {
-        chr1 = input.charCodeAt(i / 2) >> 8;
-        chr2 = input.charCodeAt(i / 2) & 255;
-        if (i / 2 + 1 < input.length) chr3 = input.charCodeAt(i / 2 + 1) >> 8;else chr3 = NaN;
-      } else {
-        chr1 = input.charCodeAt((i - 1) / 2) & 255;
-
-        if ((i + 1) / 2 < input.length) {
-          chr2 = input.charCodeAt((i + 1) / 2) >> 8;
-          chr3 = input.charCodeAt((i + 1) / 2) & 255;
-        } else chr2 = chr3 = NaN;
-      }
-
-      i += 3;
-      enc1 = chr1 >> 2;
-      enc2 = (chr1 & 3) << 4 | chr2 >> 4;
-      enc3 = (chr2 & 15) << 2 | chr3 >> 6;
-      enc4 = chr3 & 63;
-
-      if (isNaN(chr2)) {
-        enc3 = enc4 = 64;
-      } else if (isNaN(chr3)) {
-        enc4 = 64;
-      }
-
-      output = output + _keyStr.charAt(enc1) + _keyStr.charAt(enc2) + _keyStr.charAt(enc3) + _keyStr.charAt(enc4);
-    }
-
-    return output;
+    logger.error(ENUM_FORMAT_ERROR);
   };
 
   var _logger$3 = _classPrivateFieldLooseKey("logger");
@@ -2631,25 +2642,20 @@
     }
   };
 
-  var _isPersonalizationActive = _classPrivateFieldLooseKey("isPersonalizationActive");
-
   var User = /*#__PURE__*/function () {
     function User(_ref) {
       var isPersonalizationActive = _ref.isPersonalizationActive;
 
       _classCallCheck(this, User);
 
-      Object.defineProperty(this, _isPersonalizationActive, {
-        writable: true,
-        value: void 0
-      });
-      _classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive] = isPersonalizationActive;
+      this.isPersonalizationActive = void 0;
+      this.isPersonalizationActive = isPersonalizationActive;
     }
 
     _createClass(User, [{
       key: "getTotalVisits",
       value: function getTotalVisits() {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive]()) {
+        if (!this.isPersonalizationActive) {
           return;
         }
 
@@ -2664,7 +2670,7 @@
     }, {
       key: "getLastVisit",
       value: function getLastVisit() {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive]()) {
+        if (!this.isPersonalizationActive) {
           return;
         }
 
@@ -2770,7 +2776,7 @@
 
   var _sessionId = _classPrivateFieldLooseKey("sessionId");
 
-  var _isPersonalizationActive$1 = _classPrivateFieldLooseKey("isPersonalizationActive");
+  var _isPersonalizationActive = _classPrivateFieldLooseKey("isPersonalizationActive");
 
   var SessionManager = /*#__PURE__*/function () {
     // SCOOKIE_NAME
@@ -2788,7 +2794,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _isPersonalizationActive$1, {
+      Object.defineProperty(this, _isPersonalizationActive, {
         writable: true,
         value: void 0
       });
@@ -2796,7 +2802,7 @@
       this.scookieObj = void 0;
       this.sessionId = StorageManager$1.getMetaProp('cs');
       _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
-      _classPrivateFieldLooseBase(this, _isPersonalizationActive$1)[_isPersonalizationActive$1] = isPersonalizationActive;
+      _classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive] = isPersonalizationActive;
     }
 
     _createClass(SessionManager, [{
@@ -2868,7 +2874,7 @@
     }, {
       key: "getTimeElapsed",
       value: function getTimeElapsed() {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive$1)[_isPersonalizationActive$1]()) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive]()) {
           return;
         }
 
@@ -2887,7 +2893,7 @@
     }, {
       key: "getPageCount",
       value: function getPageCount() {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive$1)[_isPersonalizationActive$1]()) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive]()) {
           return;
         }
 
@@ -4177,6 +4183,8 @@
     }, {
       key: "enableWebPush",
       value: function enableWebPush(enabled, applicationServerKey) {
+        // eslint-disable-next-line
+        debugger;
         $ct.webPushEnabled = enabled;
 
         if (applicationServerKey != null) {
@@ -4725,15 +4733,41 @@
         _this.onUserLogin.clear();
       };
 
+      this.closeIframe = function (campaignId, divIdIgnored) {
+        _this.notification.closeIframe(campaignId, divIdIgnored);
+      };
+
+      this.enableWebPush = function (enabled, applicationServerKey) {
+        _this.notification.enableWebPush(enabled, applicationServerKey);
+      };
+
+      this.tr = function (msg) {
+        _this.notification.tr(msg);
+      };
+
+      this.setEnum = function (enumVal) {
+        setEnum(enumVal, _classPrivateFieldLooseBase(_this, _logger$8)[_logger$8]);
+      };
+
+      this.is_onloadcalled = function () {
+        return _classPrivateFieldLooseBase(_this, _onloadcalled)[_onloadcalled] === 1;
+      };
+
+      this.getCleverTapID = function () {
+        return _classPrivateFieldLooseBase(_this, _device$4)[_device$4].getGuid();
+      };
+
       var api = _classPrivateFieldLooseBase(this, _api)[_api];
 
       api.logout = this.logout;
       api.clear = this.clear;
-      window.$CLTP_WR = window.$WZRK_WR = api; // window.$CLTP_WR = window.$WZRK_WR = {
-      //   ...this.#api,
-      //   logout: this.logout,
-      //   clear: this.clear
-      // }
+      api.closeIframe = this.closeIframe;
+      api.enableWebPush = this.enableWebPush;
+      api.tr = this.tr;
+      api.setEnum = this.setEnum;
+      api.is_onloadcalled = this.is_onloadcalled;
+      window.$CLTP_WR = window.$WZRK_WR = api;
+      window.clevertap = window.wizrocket = this;
 
       if ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id) {
         // The accountId is present so can init with empty values.

@@ -247,7 +247,9 @@ export const $ct = {
   campaignDivMap: null,
   currentSessionId: null,
   wiz_counter: 0, // to keep track of number of times we load the body
-  notifApi: {}, // helper variable to handle race condition and check when notifications were called
+  notifApi: {
+    notifEnabledFromApi: false
+  }, // helper variable to handle race condition and check when notifications were called
   doc: document, // iframe or main, depends
   unsubGroups: []
   // domain: window.location.hostname, url -> getHostName()
