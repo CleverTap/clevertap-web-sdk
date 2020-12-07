@@ -1,3 +1,5 @@
+const { default: CleverTap } = require("./src/clevertap");
+
 function __wizrocket() {
   // var targetDomain = 'wzrkt.com'; -> options.js
   // var wz_pr = "https:"; -> options.js
@@ -37,25 +39,23 @@ function __wizrocket() {
   // path to reference the JS for our dialog
   // var wizAlertJSPath = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js'; -> notification.js
 
-  var FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000; // 2 mins
-  var CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000; // 5 mins
+  // var FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000; // 2 mins
+  // var CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000; // 5 mins
 
-  var TWENTY_MINS = 20 * 60 * 1000;
+  // var TWENTY_MINS = 20 * 60 * 1000; // unused
 
   var SCOOKIE_EXP_TIME_IN_SECS = 60 * 20;  // 20 mins
 
-  var GROUP_SUBSCRIPTION_REQUEST_ID = "2";
+  // var GROUP_SUBSCRIPTION_REQUEST_ID = "2";
 
-  var EVT_PING = "ping", EVT_PUSH = "push";
+  // var EVT_PING = "ping", EVT_PUSH = "push";
 
   var REQ_N = 0;
   var RESP_N = 0;
 
   var webPushEnabled; // gets set to true on page request, when chrome notifs have been integrated completely -> $ct
 
-  wiz.is_onloadcalled = function () {
-    return (onloadcalled === 1);
-  };
+  // wiz.is_onloadcalled = function () -> CleverTap.js
 
   // use these to add and remove sweet alert dialogs as necessary
   // wiz.addWizAlertJS = function () -> notification.js
@@ -77,9 +77,7 @@ function __wizrocket() {
    */
   // wiz.setUpChromeFirefoxNotifications = function (subscriptionCallback, serviceWorkerPath) -> notification.js
 
-  wiz.getCleverTapID = function () {
-    return gcookie;
-  };
+  // wiz.getCleverTapID = function () -> CleverTap.js
 
   wiz.init = function () {
 
@@ -184,15 +182,7 @@ function __wizrocket() {
 
     // -- ping request logic
 
-    var pingRequest = function () {
-      var pageLoadUrl = dataPostURL;
-      var data = {};
-      data = wiz.addSystemDataToObject(data, undefined);
-
-      pageLoadUrl = wiz.addToURL(pageLoadUrl, "type", EVT_PING);
-      pageLoadUrl = wiz.addToURL(pageLoadUrl, "d", wiz.compressData(JSON.stringify(data)));
-      wiz.saveAndFireRequest(pageLoadUrl, false);
-    };
+    // var pingRequest = function () -> CleverTap.js
 
     setTimeout(function () {
       if (pgCount <= 3) {  // send ping for up to 3 pages
@@ -290,13 +280,10 @@ function __wizrocket() {
 
     // wizrocket['event'].push = function () -> event.js
     
-    if (typeof wizrocket['notifications'] === STRING_CONSTANTS.UNDEFINED)
-      wizrocket['notifications'] = [];
+    // if (typeof wizrocket['notifications'] === STRING_CONSTANTS.UNDEFINED)
+    //   wizrocket['notifications'] = [];
 
-    wizrocket['notifications'].push = function () {
-      wiz.setUpWebPush(Array.prototype.slice.call(arguments));
-      return 0;
-    };
+    // wizrocket['notifications'].push = function () -> notification.js
 
 
     // wizrocket['profile'].push = function () ->profile.js
@@ -304,17 +291,17 @@ function __wizrocket() {
     //   wiz.processProfileArray(Array.prototype.slice.call(arguments));
     //   return 0;
     // };
-    wizrocket['logout'] = wiz.logout;
-    wizrocket['clear'] = wiz.clear;
-    wiz.processLoginArray(wizrocket['onUserLogin']);  // process old stuff from the login array before we overloaded the push method
-    wiz.processPrivacyArray(wizrocket['privacy']);  // process old stuff from the privacy array before we overloaded the push method
+    // wizrocket['logout'] = wiz.logout;
+    // wizrocket['clear'] = wiz.clear;
+    // wiz.processLoginArray(wizrocket['onUserLogin']);  // process old stuff from the login array before we overloaded the push method
+    // wiz.processPrivacyArray(wizrocket['privacy']);  // process old stuff from the privacy array before we overloaded the push method
     // wiz.processEventArray(wizrocket['event']);      // process old stuff from the event array before we overloaded the push method
     // wiz.processProfileArray(wizrocket['profile']);  // process old stuff from the profile array before we overloaded the push method
-    wiz.setUpWebPush(wizrocket['notifications']); // process old stuff from notifications array before overload
+    // wiz.setUpWebPush(wizrocket['notifications']); // process old stuff from notifications array before overload
 
     // clean up the notifications array
-    while (wizrocket['notifications'].length > 0)
-      wizrocket['notifications'].pop();
+    // while (wizrocket['notifications'].length > 0)
+    //   wizrocket['notifications'].pop();
   };
 
   var isOptInRequest = false;
@@ -325,29 +312,7 @@ function __wizrocket() {
 
   // wiz.processPrivacyArray = function (privacyArr) -> privacy.js
 
-  wiz.saveAndFireRequest = function (url, override, sendOULFlag) {
-
-    var now = wzrk_util.getNow();
-    url = wiz.addToURL(url, "rn", ++REQ_N);
-    var data = url + '&i=' + now + "&sn=" + seqNo;
-    wiz.backUpEvent(data, REQ_N);
-
-
-    if (!blockRequeust || override || (clearCookie !== undefined && clearCookie)) {
-      if (now == requestTime) {
-        seqNo++;
-      } else {
-        requestTime = now;
-        seqNo = 0;
-      }
-
-      wiz.fireRequest(data, false, sendOULFlag);
-
-    } else {
-      console.debug("Not fired due to block request - " + blockRequeust + " or clearCookie - " + clearCookie);
-    }
-
-  };
+  // wiz.saveAndFireRequest = function (url, override, sendOULFlag) ->request.js
 
 
   // profile like https://developers.google.com/+/api/latest/people
@@ -356,71 +321,20 @@ function __wizrocket() {
   // wiz.processFBUserObj = function (user) -> profile.js
 
 
-  wiz.getEmail = function (reEncoded) {
-    wiz.handleEmailSubscription('-1', reEncoded);
-  };
+  // wiz.getEmail = function (reEncoded) -> CleverTap.js
 
 
-  wiz.unSubEmail = function (reEncoded) {
-    wiz.handleEmailSubscription("0", reEncoded)
-  };
+  // wiz.unSubEmail = function (reEncoded) -> CleverTap.js
 
-  wiz.unsubEmailGroups = function (reEncoded) {
-    unsubGroups = []
-    var elements = document.getElementsByClassName(
-        "ct-unsub-group-input-item");
+  // wiz.unsubEmailGroups = function (reEncoded) -> CleverTap.js
 
-    for (var i = 0; i < elements.length; i++) {
-      var element = elements[i];
-      if(element.name) {
-        var data = {name: element.name, isUnsubscribed: element.checked}
-        unsubGroups.push(data)
-      }
-    }
+  // wiz.setSubscriptionGroups = function(value) -> CleverTap.js
 
-    wiz.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
-  };
+  // wiz.getSubscriptionGroups = function () -> CleverTap.js
 
-  wiz.setSubscriptionGroups = function(value) {
-    unsubGroups = value
-  }
+  // wiz.subEmail = function (reEncoded) -> CleverTap.js
 
-  wiz.getSubscriptionGroups = function () {
-    return unsubGroups
-  }
-
-  wiz.subEmail = function (reEncoded) {
-    wiz.handleEmailSubscription("1", reEncoded)
-  };
-
-  wiz.handleEmailSubscription = function (subscription, reEncoded) {
-
-    var url_params_as_is = wzrk_util.getURLParams(location.href);  // can't use url_params as it is in lowercase above
-    var encodedEmailId = url_params_as_is['e'];
-    var encodedProfileProps = url_params_as_is['p'];
-
-    if (typeof encodedEmailId !== STRING_CONSTANTS.UNDEFINED) {
-      var data = {};
-      data['id'] = accountId;  //accountId
-      data['unsubGroups'] = unsubGroups // unsubscribe groups
-
-      var url = emailURL;
-      if(reEncoded) {
-        url = wiz.addToURL(url, "encoded", reEncoded);
-      }
-      url = wiz.addToURL(url, "e", encodedEmailId);
-      url = wiz.addToURL(url, "d", wiz.compressData(JSON.stringify(data)));
-      if(encodedProfileProps){
-        url =  wiz.addToURL(url, "p", encodedProfileProps);
-      }
-
-      if (subscription != '-1') {
-        url = wiz.addToURL(url, "sub", subscription);
-      }
-
-      wiz.fireRequest(url);
-    }
-  };
+  // wiz.handleEmailSubscription = function (subscription, reEncoded) -> util/CleverTap.js
 
   // wiz.reportError -> logger.js
 
@@ -429,9 +343,7 @@ function __wizrocket() {
     return ((typeof sessionStorage != STRING_CONSTANTS.UNDEFINED) && sessionStorage['WZRK_D'] == '');
   };
 
-  wiz.isPingContinuous = function () {
-    return ((typeof wzrk_d != STRING_CONSTANTS.UNDEFINED) && (wzrk_d['ping'] == 'continuous'));
-  };
+  // wiz.isPingContinuous = function () -> CleverTap.js
 
 
   // wiz.compressData = -> encodeURIComponent.js
@@ -462,25 +374,9 @@ function __wizrocket() {
 
   // wiz.processBackupEvents = function () -> event.js
 
-  wiz.removeBackup = function (respNo) {
-    var backupMap = wiz.readFromLSorCookie(STRING_CONSTANTS.LCOOKIE_NAME);
-    if (typeof backupMap != 'undefined' && backupMap != null && typeof backupMap[respNo] != 'undefined') {
-      console.debug("del event: " + respNo + " data->" + backupMap[respNo]['q']);
-      delete backupMap[respNo];
-      wiz.saveToLSorCookie(STRING_CONSTANTS.LCOOKIE_NAME, backupMap);
-    }
-  };
+  // wiz.removeBackup = function (respNo) -> Storage.js
 
-  wiz.backUpEvent = function (data, reqNo) {
-    var backupArr = wiz.readFromLSorCookie(STRING_CONSTANTS.LCOOKIE_NAME);
-    if (typeof backupArr == 'undefined') {
-      backupArr = {};
-    }
-    backupArr[reqNo] = {'q': data};
-    wiz.saveToLSorCookie(STRING_CONSTANTS.LCOOKIE_NAME, backupArr);
-    console.debug("stored in " + STRING_CONSTANTS.LCOOKIE_NAME + " reqNo : " + reqNo + "-> " + data);
-
-  };
+  // wiz.backUpEvent = function (data, reqNo) -> Storage.js
 
   // wiz.createBroadCookie = function (name, value, seconds, domain) -> Storage.js
   // wiz.createCookie = function (name, value, seconds, domain)  -> Storage.js
@@ -491,11 +387,9 @@ function __wizrocket() {
 
   var MAX_TRIES = 50;
 
-  // var fireRequest = function (url, tries, skipARP, sendOULFlag) -> application.js
+  // var fireRequest = function (url, tries, skipARP, sendOULFlag) -> request.js
 
-  wiz.fireRequest = function (url, skipARP, sendOULFlag) {
-    fireRequest(url, 1, skipARP, sendOULFlag);
-  };
+  // wiz.fireRequest = function (url, skipARP, sendOULFlag) -> request.js
 
   // wiz.closeIframe = function (campaignId, divIdIgnored) -> util/CleverTap.js
 
@@ -516,86 +410,39 @@ function __wizrocket() {
   // wiz.tr = function (msg) -> notification.js
 
   //link - actual link, type could be - "ctr" or "view"
-  wiz.getWrappedLink = function (link, targetId, type) {
-
-    var data = {};
-    data['sendTo'] = link;
-    data['targetId'] = targetId;
-    data['epoch'] = wzrk_util.getNow();
-
-    if (type != null) {
-      data['type'] = type;
-    } else {
-      data['type'] = 'view';
-    }
-
-    data = wiz.addSystemDataToObject(data, undefined);
-    return wiz.addToURL(recorderURL, "d", wiz.compressData(JSON.stringify(data)));
-
-  };
+  // wiz.getWrappedLink = function (link, targetId, type) -> util/clevertap
 
 
-  wiz.getMessageTemplate = function () {
-    var body = "";
-    body = body + '<div class="notice-message">';
-    body = body + '  <a href="[RECORDER_HREF]" class="box">';
-    body = body + '    <div class="avatar"><span class="fa [ICON] fa-4x fa-fw"></span></div>';
-    body = body + '    <div class="info">';
-    body = body + '      <div class="title">[TITLE]</div>';
-    body = body + '      <div class="clearfix"></div>';
-    body = body + '      <div class="text">[TEXT]</div>';
-    body = body + '    </div>';
-    body = body + '    <div class="clearfix"></div>';
-    body = body + '  </a>';
-    body = body + '</div>';
-    body = body + '<div class="clearfix"></div>';
-    return body;
-  };
+  // wiz.getMessageTemplate = function () -> util/clevertap
 
-  wiz.getMessageHeadTemplate = function () {
-    var head = '<head>';
-    head = head + '<base target="_parent" />';
-    head = head + '<link rel="stylesheet" href="http://static.clevertap.com/fa/font-awesome.css">';
-    head = head + '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
-    head = head + '<style>';
-    head = head + '[STYLE]';
-    head = head + '</style>';
-    head = head + "</head>";
-    return head;
-
-  };
+  // wiz.getMessageHeadTemplate = function () ->util/clevertap
 
   // wiz.isChargedEventStructureValid = function (chargedObj) -> event.js
   // wiz.isEventStructureFlat = function (eventObj) -> event.js
   // wiz.isProfileValid = function (profileObj) -> event.js
   // wiz.setDate = function (dt) -> datetime.js
 
-  wiz.setEnum = function (enumVal) {
-    if (wzrk_util.isString(enumVal) || wzrk_util.isNumber(enumVal)) {
-      return "$E_" + enumVal;
-    }
-    console.error(wzrk_msg['enum-format-error']);
-  };
+  // wiz.setEnum = function (enumVal) -> util/CleverTap.js
 
   // list of functions that the closure compiler shouldn't rename
   // https://developers.google.com/closure/compiler/docs/api-tutorial3
-  wiz['s'] = wiz.s;
+  // wiz['s'] = wiz.s;
   wiz['is_onloadcalled'] = wiz.is_onloadcalled;
   wiz['setDate'] = wiz.setDate;
   wiz['enableWebPush'] = wiz.enableWebPush; // support for web push notifications
-  wiz['setEnum'] = wiz.setEnum;
-  wiz['tr'] = wiz.tr;
-  wiz['push'] = wiz.push;
+  // wiz['setEnum'] = wiz.setEnum;
+  // wiz['tr'] = wiz.tr;
+  // wiz['push'] = wiz.push;??
   wiz['closeIframe'] = wiz.closeIframe;
   wiz['getEmail'] = wiz.getEmail;
   wiz['unSubEmail'] = wiz.unSubEmail;
   wiz['unsubEmailGroups'] = wiz.unsubEmailGroups;
   wiz['getSubscriptionGroups'] = wiz.getSubscriptionGroups;
   wiz['setSubscriptionGroups'] = wiz.setSubscriptionGroups;
-  wiz['subEmail'] = wiz.subEmail;
-  wiz['logout'] = wiz.logout;
-  wiz['clear'] = wiz.clear;
-  wizrocket['getCleverTapID'] = wiz.getCleverTapID;
+  // wiz['subEmail'] = wiz.subEmail;
+  // wiz['logout'] = wiz.logout;
+  // wiz['clear'] = wiz.clear;
+  // wizrocket['getCleverTapID'] = wiz.getCleverTapID;
 
 
   // ---------- compression part ----------

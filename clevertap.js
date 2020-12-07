@@ -322,6 +322,7 @@
 
   var CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000; // 5 mins
 
+  var GROUP_SUBSCRIPTION_REQUEST_ID = '2';
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', 'Notification Viewed', 'Notification Clicked'];
 
   var isString = function isString(input) {
@@ -2120,6 +2121,38 @@
 
     logger.error(ENUM_FORMAT_ERROR);
   };
+  var handleEmailSubscription = function handleEmailSubscription(subscription, reEncoded, account, request) {
+    var urlParamsAsIs = getURLParams(location.href); // can't use url_params as it is in lowercase above
+
+    var encodedEmailId = urlParamsAsIs.e;
+    var encodedProfileProps = urlParamsAsIs.p;
+
+    if (typeof encodedEmailId !== 'undefined') {
+      var data = {};
+      data.id = account.id; // accountId
+
+      data.unsubGroups = $ct.unsubGroups; // unsubscribe groups
+
+      var url = account.emailURL;
+
+      if (reEncoded) {
+        url = addToURL(url, 'encoded', reEncoded);
+      }
+
+      url = addToURL(url, 'e', encodedEmailId);
+      url = addToURL(url, 'd', compressData(JSON.stringify(data)));
+
+      if (encodedProfileProps) {
+        url = addToURL(url, 'p', encodedProfileProps);
+      }
+
+      if (subscription !== '-1') {
+        url = addToURL(url, 'sub', subscription);
+      }
+
+      request.fireRequest(url);
+    }
+  };
 
   var _logger$3 = _classPrivateFieldLooseKey("logger");
 
@@ -2642,20 +2675,25 @@
     }
   };
 
+  var _isPersonalizationActive = _classPrivateFieldLooseKey("isPersonalizationActive");
+
   var User = /*#__PURE__*/function () {
     function User(_ref) {
       var isPersonalizationActive = _ref.isPersonalizationActive;
 
       _classCallCheck(this, User);
 
-      this.isPersonalizationActive = void 0;
-      this.isPersonalizationActive = isPersonalizationActive;
+      Object.defineProperty(this, _isPersonalizationActive, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive] = isPersonalizationActive;
     }
 
     _createClass(User, [{
       key: "getTotalVisits",
       value: function getTotalVisits() {
-        if (!this.isPersonalizationActive) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive]()) {
           return;
         }
 
@@ -2670,7 +2708,7 @@
     }, {
       key: "getLastVisit",
       value: function getLastVisit() {
-        if (!this.isPersonalizationActive) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive]()) {
           return;
         }
 
@@ -2776,7 +2814,7 @@
 
   var _sessionId = _classPrivateFieldLooseKey("sessionId");
 
-  var _isPersonalizationActive = _classPrivateFieldLooseKey("isPersonalizationActive");
+  var _isPersonalizationActive$1 = _classPrivateFieldLooseKey("isPersonalizationActive");
 
   var SessionManager = /*#__PURE__*/function () {
     // SCOOKIE_NAME
@@ -2794,7 +2832,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _isPersonalizationActive, {
+      Object.defineProperty(this, _isPersonalizationActive$1, {
         writable: true,
         value: void 0
       });
@@ -2802,7 +2840,7 @@
       this.scookieObj = void 0;
       this.sessionId = StorageManager$1.getMetaProp('cs');
       _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
-      _classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive] = isPersonalizationActive;
+      _classPrivateFieldLooseBase(this, _isPersonalizationActive$1)[_isPersonalizationActive$1] = isPersonalizationActive;
     }
 
     _createClass(SessionManager, [{
@@ -2874,7 +2912,7 @@
     }, {
       key: "getTimeElapsed",
       value: function getTimeElapsed() {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive]()) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive$1)[_isPersonalizationActive$1]()) {
           return;
         }
 
@@ -2893,7 +2931,7 @@
     }, {
       key: "getPageCount",
       value: function getPageCount() {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive)[_isPersonalizationActive]()) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalizationActive$1)[_isPersonalizationActive$1]()) {
           return;
         }
 
@@ -4183,8 +4221,6 @@
     }, {
       key: "enableWebPush",
       value: function enableWebPush(enabled, applicationServerKey) {
-        // eslint-disable-next-line
-        debugger;
         $ct.webPushEnabled = enabled;
 
         if (applicationServerKey != null) {
@@ -4697,7 +4733,7 @@
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5]
       }, clevertap.privacy);
-      this.notification = new NotificationHandler({
+      this.notifications = new NotificationHandler({
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
         session: _classPrivateFieldLooseBase(this, _session$4)[_session$4],
         device: _classPrivateFieldLooseBase(this, _device$4)[_device$4],
@@ -4734,15 +4770,15 @@
       };
 
       this.closeIframe = function (campaignId, divIdIgnored) {
-        _this.notification.closeIframe(campaignId, divIdIgnored);
+        _this.notifications.closeIframe(campaignId, divIdIgnored);
       };
 
       this.enableWebPush = function (enabled, applicationServerKey) {
-        _this.notification.enableWebPush(enabled, applicationServerKey);
+        _this.notifications.enableWebPush(enabled, applicationServerKey);
       };
 
       this.tr = function (msg) {
-        _this.notification.tr(msg);
+        _this.notifications.tr(msg);
       };
 
       this.setEnum = function (enumVal) {
@@ -4757,6 +4793,10 @@
         return _classPrivateFieldLooseBase(_this, _device$4)[_device$4].getGuid();
       };
 
+      this.handleEmailSubscription = function (subscription, reEncoded) {
+        handleEmailSubscription(subscription, reEncoded, _classPrivateFieldLooseBase(_this, _account$5)[_account$5], _classPrivateFieldLooseBase(_this, _request$6)[_request$6]);
+      };
+
       var api = _classPrivateFieldLooseBase(this, _api)[_api];
 
       api.logout = this.logout;
@@ -4766,6 +4806,46 @@
       api.tr = this.tr;
       api.setEnum = this.setEnum;
       api.is_onloadcalled = this.is_onloadcalled;
+
+      api.subEmail = function (reEncoded) {
+        _this.handleEmailSubscription('1', reEncoded);
+      };
+
+      api.getEmail = function (reEncoded) {
+        _this.handleEmailSubscription('-1', reEncoded);
+      };
+
+      api.unSubEmail = function (reEncoded) {
+        _this.handleEmailSubscription('0', reEncoded);
+      };
+
+      api.unsubEmailGroups = function (reEncoded) {
+        $ct.unsubGroups = [];
+        var elements = document.getElementsByClassName('ct-unsub-group-input-item');
+
+        for (var i = 0; i < elements.length; i++) {
+          var element = elements[i];
+
+          if (element.name) {
+            var data = {
+              name: element.name,
+              isUnsubscribed: element.checked
+            };
+            $ct.unsubGroups.push(data);
+          }
+        }
+
+        _this.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
+      };
+
+      api.setSubscriptionGroups = function (value) {
+        $ct.unsubGroups = value;
+      };
+
+      api.getSubscriptionGroups = function () {
+        return $ct.unsubGroups;
+      };
+
       window.$CLTP_WR = window.$WZRK_WR = api;
       window.clevertap = window.wizrocket = this;
 
@@ -4921,7 +5001,6 @@
   }();
 
   var _processOldValues2 = function _processOldValues2() {
-    // TODO create classes old data handlers for OUL, Privacy, notifications
     this.onUserLogin._processOldValues();
 
     this.privacy._processOldValues();
@@ -4930,7 +5009,11 @@
 
     this.profile._processOldValues();
 
-    this.notification._processOldValues();
+    this.notifications._processOldValues();
+
+    while (this.notifications.length > 0) {
+      this.notifications.pop();
+    }
   };
 
   var _pingRequest2 = function _pingRequest2() {
