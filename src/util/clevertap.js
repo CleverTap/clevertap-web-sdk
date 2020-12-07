@@ -469,7 +469,7 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
 
     let url = account.emailURL
     if (fetchGroups) {
-      url = addToURL(url, 'fetchGroups', reEncoded)
+      url = addToURL(url, 'fetchGroups', fetchGroups)
     }
     if (reEncoded) {
       url = addToURL(url, 'encoded', reEncoded)
