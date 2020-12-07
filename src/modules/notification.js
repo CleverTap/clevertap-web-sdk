@@ -97,15 +97,15 @@ export default class NotificationHandler extends Array {
   #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
     // ensure that proper arguments are passed
     if (typeof apnsWebPushId === 'undefined') {
-      console.error('Ensure that APNS Web Push ID is supplied')
+      this.#logger.error('Ensure that APNS Web Push ID is supplied')
     }
     if (typeof apnsServiceUrl === 'undefined') {
-      console.error('Ensure that APNS Web Push service path is supplied')
+      this.#logger.error('Ensure that APNS Web Push service path is supplied')
     }
     if ('safari' in window && 'pushNotification' in window.safari) {
       window.safari.pushNotification.requestPermission(
         apnsServiceUrl,
-        apnsWebPushId, {}, function (subscription) {
+        apnsWebPushId, {}, (subscription) => {
           if (subscription.permission === 'granted') {
             const subscriptionData = JSON.parse(JSON.stringify(subscription))
             subscriptionData.endpoint = subscription.deviceToken
@@ -119,12 +119,10 @@ export default class NotificationHandler extends Array {
             pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload))
             RequestDispatcher.fireRequest(pageLoadUrl)
             // set in localstorage
-            if (StorageManager._isLocalStorageSupported()) {
-              localStorage.setItem(WEBPUSH_LS_KEY, 'ok')
-            }
-            console.log('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
+            localStorage.save(WEBPUSH_LS_KEY, 'ok')
+            this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
           } else if (subscription.permission === 'denied') {
-            console.log('Error subscribing to Safari web push')
+            this.#logger.info('Error subscribing to Safari web push')
           }
         })
     }
@@ -132,9 +130,9 @@ export default class NotificationHandler extends Array {
 
   #setUpChromeFirefoxNotifications (subscriptionCallback, serviceWorkerPath) {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register(serviceWorkerPath).then(function () {
+      navigator.serviceWorker.register(serviceWorkerPath).then(() => {
         return navigator.serviceWorker.ready
-      }).then(function (serviceWorkerRegistration) {
+      }).then((serviceWorkerRegistration) => {
         const subscribeObj = { userVisibleOnly: true }
 
         if (this.#fcmPublicKey != null) {
@@ -142,8 +140,8 @@ export default class NotificationHandler extends Array {
         }
 
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj)
-          .then(function (subscription) {
-            console.log('Service Worker registered. Endpoint: ' + subscription.endpoint)
+          .then((subscription) => {
+            this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
 
             // convert the subscription keys to strings; this sets it up nicely for pushing to LC
             const subscriptionData = JSON.parse(JSON.stringify(subscription))
@@ -176,29 +174,29 @@ export default class NotificationHandler extends Array {
             if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
               subscriptionCallback()
             }
-          }).catch(function (error) {
-            console.log('Error subscribing: ' + error)
+          }).catch((error) => {
+            this.#logger.info('Error subscribing: ' + error)
             // unsubscribe from webpush if error
-            serviceWorkerRegistration.pushManager.getSubscription().then(function (subscription) {
+            serviceWorkerRegistration.pushManager.getSubscription().then((subscription) => {
               if (subscription !== null) {
-                subscription.unsubscribe().then(function (successful) {
+                subscription.unsubscribe().then((successful) => {
                 // You've successfully unsubscribed
-                  console.log('Unsubscription successful')
-                }).catch(function (e) {
+                  this.#logger.info('Unsubscription successful')
+                }).catch((e) => {
                 // Unsubscription failed
-                  console.log('Error unsubscribing: ' + e)
+                  this.#logger.info('Error unsubscribing: ' + e)
                 })
               }
             })
           })
-      }).catch(function (err) {
-        console.log('error registering service worker: ' + err)
+      }).catch((err) => {
+        this.#logger.info('error registering service worker: ' + err)
       })
     }
   }
 
   #addWizAlertJS () {
-    const scriptTag = $ct.doc.createElement('script')
+    const scriptTag = document.createElement('script')
     scriptTag.setAttribute('type', 'text/javascript')
     scriptTag.setAttribute('id', 'wzrk-alert-js')
     scriptTag.setAttribute('src', this.#wizAlertJSPath)
@@ -210,7 +208,7 @@ export default class NotificationHandler extends Array {
   }
 
   #removeWizAlertJS () {
-    const scriptTag = $ct.doc.getElementById('wzrk-alert-js')
+    const scriptTag = document.getElementById('wzrk-alert-js')
     scriptTag.parentNode.removeChild(scriptTag)
   }
 
@@ -359,7 +357,7 @@ export default class NotificationHandler extends Array {
       httpsIframe.setAttribute('style', 'display:none;')
       httpsIframe.setAttribute('src', httpsIframePath)
       document.body.appendChild(httpsIframe)
-      window.addEventListener('message', function (event) {
+      window.addEventListener('message', (event) => {
         if (event.data != null) {
           let obj = {}
           try {
@@ -370,7 +368,7 @@ export default class NotificationHandler extends Array {
           }
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
-              this.#addWizAlertJS().onload = function () {
+              this.#addWizAlertJS().onload = () => {
                 // create our wizrocket popup
                 window.wzrkPermissionPopup.wizAlert({
                   title: titleText,
@@ -379,7 +377,7 @@ export default class NotificationHandler extends Array {
                   confirmButtonColor: okButtonColor,
                   rejectButtonText: rejectButtonText,
                   hidePoweredByCT: hidePoweredByCT
-                }, function (enabled) { // callback function
+                }, (enabled) => { // callback function
                   if (enabled) {
                     // the user accepted on the dialog box
                     if (typeof okCallback === 'function') {
@@ -400,7 +398,7 @@ export default class NotificationHandler extends Array {
         }
       }, false)
     } else {
-      this.#addWizAlertJS().onload = function () {
+      this.#addWizAlertJS().onload = () => {
         // create our wizrocket popup
         window.wzrkPermissionPopup.wizAlert({
           title: titleText,
@@ -409,7 +407,7 @@ export default class NotificationHandler extends Array {
           confirmButtonColor: okButtonColor,
           rejectButtonText: rejectButtonText,
           hidePoweredByCT: hidePoweredByCT
-        }, function (enabled) { // callback function
+        }, (enabled) => { // callback function
           if (enabled) {
             // the user accepted on the dialog box
             if (typeof okCallback === 'function') {
@@ -428,11 +426,11 @@ export default class NotificationHandler extends Array {
   }
 
   tr (msg) {
-    const doCampHouseKeeping = function (targetingMsgJson) {
+    const doCampHouseKeeping = (targetingMsgJson) => {
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
       const today = getToday()
 
-      function incrCount (obj, campaignId, excludeFromFreqCaps) {
+      const incrCount = (obj, campaignId, excludeFromFreqCaps) => {
         let currentCount = 0
         let totalCount = 0
         if (obj[campaignId] != null) {
@@ -560,13 +558,13 @@ export default class NotificationHandler extends Array {
       saveCampaignObject(newCampObj)
     }
 
-    const getCookieParams = function () {
+    const getCookieParams = () => {
       const gcookie = this.#device.getGuid()
       const scookieObj = this.#session.getSessionCookieObject()
       return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s))
     }
 
-    const setupClickEvent = function (onClick, targetingMsgJson, contentDiv, divId, isLegacy) {
+    const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
       if (onClick !== '' && onClick != null) {
         let ctaElement
         let jsCTAElements
@@ -585,7 +583,7 @@ export default class NotificationHandler extends Array {
         }
 
         if (ctaElement != null) {
-          ctaElement.onclick = function () {
+          ctaElement.onclick = () => {
             // invoke js function call
             if (jsFunc != null) {
               // track notification clicked event
@@ -608,7 +606,7 @@ export default class NotificationHandler extends Array {
       }
     }
 
-    const invokeExternalJs = function (jsFunc, targetingMsgJson) {
+    const invokeExternalJs = (jsFunc, targetingMsgJson) => {
       const func = window.parent[jsFunc]
       if (typeof func === 'function') {
         if (targetingMsgJson.display.kv != null) {
@@ -619,12 +617,12 @@ export default class NotificationHandler extends Array {
       }
     }
 
-    const setupClickUrl = function (onClick, targetingMsgJson, contentDiv, divId, isLegacy) {
+    const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
       incrementImpression(targetingMsgJson)
       setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy)
     }
 
-    const incrementImpression = function (targetingMsgJson) {
+    const incrementImpression = (targetingMsgJson) => {
       const data = {}
       data.type = 'event'
       data.evtName = 'Notification Viewed'
@@ -632,7 +630,7 @@ export default class NotificationHandler extends Array {
       this.#request.processEvent(data)
     }
 
-    const renderFooterNotification = function (targetingMsgJson) {
+    const renderFooterNotification = (targetingMsgJson) => {
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
       const displayObj = targetingMsgJson.display
 
@@ -765,7 +763,7 @@ export default class NotificationHandler extends Array {
       doc.write(html)
       doc.close()
 
-      function adjustIFrameHeight () {
+      const adjustIFrameHeight = () => {
         // adjust iframe and body height of html inside correctly
         contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
         if (displayObj['custom-editor'] !== true && !isBanner) {
@@ -778,7 +776,7 @@ export default class NotificationHandler extends Array {
       const ua = navigator.userAgent.toLowerCase()
       if (ua.indexOf('safari') !== -1) {
         if (ua.indexOf('chrome') > -1) {
-          iframe.onload = function () {
+          iframe.onload = () => {
             adjustIFrameHeight()
             const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
             setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
@@ -788,7 +786,7 @@ export default class NotificationHandler extends Array {
           if (inDoc.document) inDoc = inDoc.document
           // safari iphone 7+ needs this.
           adjustIFrameHeight()
-          const _timer = setInterval(function () {
+          const _timer = setInterval(() => {
             if (inDoc.readyState === 'complete') {
               clearInterval(_timer)
               // adjust iframe and body height of html inside correctly
@@ -799,7 +797,7 @@ export default class NotificationHandler extends Array {
           }, 10)
         }
       } else {
-        iframe.onload = function () {
+        iframe.onload = () => {
           // adjust iframe and body height of html inside correctly
           adjustIFrameHeight()
           const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
@@ -810,7 +808,7 @@ export default class NotificationHandler extends Array {
 
     let _callBackCalled = false
 
-    const showFooterNotification = function (targetingMsgJson) {
+    const showFooterNotification = (targetingMsgJson) => {
       let onClick = targetingMsgJson.display.onClick
       // TODO: Needs wizrocket as a global variable
       if (this.clevertapInstance.hasOwnProperty('notificationCallback') &&
@@ -824,7 +822,7 @@ export default class NotificationHandler extends Array {
           if (targetingMsgJson.display.kv != null) {
             inaObj.kv = targetingMsgJson.display.kv
           }
-          this.clevertapInstance.raiseNotificationClicked = function () {
+          this.clevertapInstance.raiseNotificationClicked = () => {
             if (onClick !== '' && onClick != null) {
               const jsFunc = targetingMsgJson.display.jsFunc
               onClick += getCookieParams()
@@ -844,7 +842,7 @@ export default class NotificationHandler extends Array {
               }
             }
           }
-          this.clevertapInstance.raiseNotificationViewed = function () {
+          this.clevertapInstance.raiseNotificationViewed = () => {
             incrementImpression(targetingMsgJson)
           }
           notificationCallback(inaObj)
@@ -855,7 +853,7 @@ export default class NotificationHandler extends Array {
       }
     }
     let exitintentObj
-    const showExitIntent = function (event, targetObj) {
+    const showExitIntent = (event, targetObj) => {
       let targetingMsgJson
       if (event != null && event.clientY > 0) {
         return
@@ -996,7 +994,7 @@ export default class NotificationHandler extends Array {
       }
     }
 
-    const mergeEventMap = function (newEvtMap) {
+    const mergeEventMap = (newEvtMap) => {
       if ($ct.globalEventsMap == null) {
         $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE)
         if ($ct.globalEventsMap == null) {
@@ -1052,7 +1050,7 @@ export default class NotificationHandler extends Array {
           saveCampaignObject(campObj)
         }
       } catch (e) {
-        console.error('Unable to persist evrp/arp: ' + e)
+        this.#logger.error('Unable to persist evrp/arp: ' + e)
       }
     }
   }
@@ -1065,7 +1063,7 @@ export default class NotificationHandler extends Array {
     if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
       this.#handleNotificationRegistration($ct.notifApi.displayArgs)
     } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-      console.error('Ensure that web push notifications are fully enabled and integrated before requesting them')
+      this.#logger.error('Ensure that web push notifications are fully enabled and integrated before requesting them')
     }
   }
 

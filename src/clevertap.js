@@ -235,10 +235,6 @@ export default class CleverTap {
     this.event._processOldValues()
     this.profile._processOldValues()
     this.notifications._processOldValues()
-
-    while (this.notifications.length > 0) {
-      this.notifications.pop()
-    }
   }
 
   pageChanged () {

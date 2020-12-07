@@ -728,8 +728,6 @@
       notifEnabledFromApi: false
     },
     // helper variable to handle race condition and check when notifications were called
-    doc: document,
-    // iframe or main, depends
     unsubGroups: [],
     updatedCategoryLong: null // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
@@ -3578,11 +3576,13 @@
     }, {
       key: "tr",
       value: function tr(msg) {
+        var _this2 = this;
+
         var doCampHouseKeeping = function doCampHouseKeeping(targetingMsgJson) {
           var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
           var today = getToday();
 
-          function incrCount(obj, campaignId, excludeFromFreqCaps) {
+          var incrCount = function incrCount(obj, campaignId, excludeFromFreqCaps) {
             var currentCount = 0;
             var totalCount = 0;
 
@@ -3603,7 +3603,7 @@
 
             obj.tc = totalCount;
             obj[campaignId] = currentCount;
-          }
+          };
 
           if (StorageManager$1._isLocalStorageSupported()) {
             delete sessionStorage[CAMP_COOKIE_NAME];
@@ -3645,7 +3645,7 @@
             } // session level capping
 
 
-            var _sessionObj = campObj[_classPrivateFieldLooseBase(this, _session$3)[_session$3].sessionId];
+            var _sessionObj = campObj[_classPrivateFieldLooseBase(_this2, _session$3)[_session$3].sessionId];
 
             if (_sessionObj != null) {
               var campaignSessionCount = _sessionObj[campaignId];
@@ -3666,7 +3666,7 @@
               }
             } else {
               _sessionObj = {};
-              campObj[_classPrivateFieldLooseBase(this, _session$3)[_session$3].sessionId] = _sessionObj;
+              campObj[_classPrivateFieldLooseBase(_this2, _session$3)[_session$3].sessionId] = _sessionObj;
             } // daily level capping
 
 
@@ -3707,27 +3707,27 @@
           if (targetingMsgJson[DISPLAY].delay != null && targetingMsgJson[DISPLAY].delay > 0) {
             var delay = targetingMsgJson[DISPLAY].delay;
             targetingMsgJson[DISPLAY].delay = 0;
-            setTimeout(this.tr, delay * 1000, msg);
+            setTimeout(_this2.tr, delay * 1000, msg);
             return false;
           }
 
-          var sessionObj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
+          var sessionObj = _classPrivateFieldLooseBase(_this2, _session$3)[_session$3].getSessionCookieObject();
 
           incrCount(sessionObj, campaignId, excludeFromFreqCaps);
           incrCount(dailyObj, campaignId, excludeFromFreqCaps);
           incrCount(globalObj, campaignId, excludeFromFreqCaps); // get ride of stale sessions and day entries
 
           var newCampObj = {};
-          newCampObj[_classPrivateFieldLooseBase(this, _session$3)[_session$3].sessionId] = sessionObj;
+          newCampObj[_classPrivateFieldLooseBase(_this2, _session$3)[_session$3].sessionId] = sessionObj;
           newCampObj[today] = dailyObj;
           newCampObj[GLOBAL] = globalObj;
           saveCampaignObject(newCampObj);
         };
 
         var getCookieParams = function getCookieParams() {
-          var gcookie = _classPrivateFieldLooseBase(this, _device$3)[_device$3].getGuid();
+          var gcookie = _classPrivateFieldLooseBase(_this2, _device$3)[_device$3].getGuid();
 
-          var scookieObj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
+          var scookieObj = _classPrivateFieldLooseBase(_this2, _session$3)[_session$3].getSessionCookieObject();
 
           return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
         };
@@ -3806,7 +3806,7 @@
             wzrk_id: targetingMsgJson.wzrk_id
           };
 
-          _classPrivateFieldLooseBase(this, _request$5)[_request$5].processEvent(data);
+          _classPrivateFieldLooseBase(_this2, _request$5)[_request$5].processEvent(data);
         };
 
         var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
@@ -3927,7 +3927,7 @@
           doc.write(html);
           doc.close();
 
-          function adjustIFrameHeight() {
+          var adjustIFrameHeight = function adjustIFrameHeight() {
             // adjust iframe and body height of html inside correctly
             contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
 
@@ -3937,7 +3937,7 @@
 
             document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px';
             document.getElementById('wiz-iframe').style.height = contentHeight + 'px';
-          }
+          };
 
           var ua = navigator.userAgent.toLowerCase();
 
@@ -3979,8 +3979,8 @@
         var showFooterNotification = function showFooterNotification(targetingMsgJson) {
           var onClick = targetingMsgJson.display.onClick; // TODO: Needs wizrocket as a global variable
 
-          if (this.clevertapInstance.hasOwnProperty('notificationCallback') && typeof this.clevertapInstance.notificationCallback !== 'undefined' && typeof this.clevertapInstance.notificationCallback === 'function') {
-            var notificationCallback = this.clevertapInstance.notificationCallback;
+          if (_this2.clevertapInstance.hasOwnProperty('notificationCallback') && typeof _this2.clevertapInstance.notificationCallback !== 'undefined' && typeof _this2.clevertapInstance.notificationCallback === 'function') {
+            var notificationCallback = _this2.clevertapInstance.notificationCallback;
 
             if (!_callBackCalled) {
               var inaObj = {};
@@ -3991,7 +3991,7 @@
                 inaObj.kv = targetingMsgJson.display.kv;
               }
 
-              this.clevertapInstance.raiseNotificationClicked = function () {
+              _this2.clevertapInstance.raiseNotificationClicked = function () {
                 if (onClick !== '' && onClick != null) {
                   var jsFunc = targetingMsgJson.display.jsFunc;
                   onClick += getCookieParams(); // invoke js function call
@@ -4012,7 +4012,7 @@
                 }
               };
 
-              this.clevertapInstance.raiseNotificationViewed = function () {
+              _this2.clevertapInstance.raiseNotificationViewed = function () {
                 incrementImpression(targetingMsgJson);
               };
 
@@ -4224,7 +4224,7 @@
               saveCampaignObject(campObj);
             }
           } catch (e) {
-            console.error('Unable to persist evrp/arp: ' + e);
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unable to persist evrp/arp: ' + e);
           }
         }
       }
@@ -4240,7 +4240,7 @@
         if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
           _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
         } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-          console.error('Ensure that web push notifications are fully enabled and integrated before requesting them');
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
         }
       }
     }, {
@@ -4277,13 +4277,15 @@
   };
 
   var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
+    var _this3 = this;
+
     // ensure that proper arguments are passed
     if (typeof apnsWebPushId === 'undefined') {
-      console.error('Ensure that APNS Web Push ID is supplied');
+      _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Ensure that APNS Web Push ID is supplied');
     }
 
     if (typeof apnsServiceUrl === 'undefined') {
-      console.error('Ensure that APNS Web Push service path is supplied');
+      _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Ensure that APNS Web Push service path is supplied');
     }
 
     if ('safari' in window && 'pushNotification' in window.safari) {
@@ -4293,10 +4295,10 @@
           subscriptionData.endpoint = subscription.deviceToken;
           subscriptionData.browser = 'Safari';
           var payload = subscriptionData;
-          payload = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(payload, true);
+          payload = _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].addSystemDataToObject(payload, true);
           payload = JSON.stringify(payload);
 
-          var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$4)[_account$4].dataPostURL;
+          var pageLoadUrl = _classPrivateFieldLooseBase(_this3, _account$4)[_account$4].dataPostURL;
 
           pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
           pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload));
@@ -4306,15 +4308,17 @@
             localStorage.setItem(WEBPUSH_LS_KEY, 'ok');
           }
 
-          console.log('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+          _classPrivateFieldLooseBase(_this3, _logger$7)[_logger$7].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
         } else if (subscription.permission === 'denied') {
-          console.log('Error subscribing to Safari web push');
+          _classPrivateFieldLooseBase(_this3, _logger$7)[_logger$7].info('Error subscribing to Safari web push');
         }
       });
     }
   };
 
   var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
+    var _this4 = this;
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register(serviceWorkerPath).then(function () {
         return navigator.serviceWorker.ready;
@@ -4323,12 +4327,13 @@
           userVisibleOnly: true
         };
 
-        if (_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
-          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
+        if (_classPrivateFieldLooseBase(_this4, _fcmPublicKey)[_fcmPublicKey] != null) {
+          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(_this4, _fcmPublicKey)[_fcmPublicKey]);
         }
 
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(function (subscription) {
-          console.log('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+          _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+
 
           var subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
 
@@ -4342,10 +4347,10 @@
 
           {
             var payload = subscriptionData;
-            payload = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(payload, true);
+            payload = _classPrivateFieldLooseBase(_this4, _request$5)[_request$5].addSystemDataToObject(payload, true);
             payload = JSON.stringify(payload);
 
-            var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$4)[_account$4].dataPostURL;
+            var pageLoadUrl = _classPrivateFieldLooseBase(_this4, _account$4)[_account$4].dataPostURL;
 
             pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
             pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload));
@@ -4360,28 +4365,29 @@
             subscriptionCallback();
           }
         }).catch(function (error) {
-          console.log('Error subscribing: ' + error); // unsubscribe from webpush if error
+          _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].info('Error subscribing: ' + error); // unsubscribe from webpush if error
+
 
           serviceWorkerRegistration.pushManager.getSubscription().then(function (subscription) {
             if (subscription !== null) {
               subscription.unsubscribe().then(function (successful) {
                 // You've successfully unsubscribed
-                console.log('Unsubscription successful');
+                _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].info('Unsubscription successful');
               }).catch(function (e) {
                 // Unsubscription failed
-                console.log('Error unsubscribing: ' + e);
+                _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].info('Error unsubscribing: ' + e);
               });
             }
           });
         });
       }).catch(function (err) {
-        console.log('error registering service worker: ' + err);
+        _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].info('error registering service worker: ' + err);
       });
     }
   };
 
   var _addWizAlertJS2 = function _addWizAlertJS2() {
-    var scriptTag = $ct.doc.createElement('script');
+    var scriptTag = document.createElement('script');
     scriptTag.setAttribute('type', 'text/javascript');
     scriptTag.setAttribute('id', 'wzrk-alert-js');
     scriptTag.setAttribute('src', _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath]); // add the script tag to the end of the body
@@ -4391,11 +4397,13 @@
   };
 
   var _removeWizAlertJS2 = function _removeWizAlertJS2() {
-    var scriptTag = $ct.doc.getElementById('wzrk-alert-js');
+    var scriptTag = document.getElementById('wzrk-alert-js');
     scriptTag.parentNode.removeChild(scriptTag);
   };
 
   var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
+    var _this5 = this;
+
     // make sure everything is specified
     var titleText;
     var bodyText;
@@ -4566,7 +4574,7 @@
 
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
-              _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = function () {
+              _classPrivateFieldLooseBase(_this5, _addWizAlertJS)[_addWizAlertJS]().onload = function () {
                 // create our wizrocket popup
                 window.wzrkPermissionPopup.wizAlert({
                   title: titleText,
@@ -4591,7 +4599,7 @@
                     }
                   }
 
-                  _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
+                  _classPrivateFieldLooseBase(_this5, _removeWizAlertJS)[_removeWizAlertJS]();
                 });
               };
             }
@@ -4616,14 +4624,14 @@
               okCallback();
             }
 
-            _classPrivateFieldLooseBase(this, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+            _classPrivateFieldLooseBase(_this5, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
           } else {
             if (typeof rejectCallback === 'function') {
               rejectCallback();
             }
           }
 
-          _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
+          _classPrivateFieldLooseBase(_this5, _removeWizAlertJS)[_removeWizAlertJS]();
         });
       };
     }
@@ -5026,10 +5034,6 @@
     this.profile._processOldValues();
 
     this.notifications._processOldValues();
-
-    while (this.notifications.length > 0) {
-      this.notifications.pop();
-    }
   };
 
   var _pingRequest2 = function _pingRequest2() {
