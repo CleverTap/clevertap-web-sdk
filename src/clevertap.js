@@ -117,26 +117,6 @@ export default class CleverTap {
       this.onUserLogin.clear()
     }
 
-    this.closeIframe = (campaignId, divIdIgnored) => {
-      this.notifications.closeIframe(campaignId, divIdIgnored)
-    }
-
-    this.enableWebPush = (enabled, applicationServerKey) => {
-      this.notifications.enableWebPush(enabled, applicationServerKey)
-    }
-
-    this.tr = (msg) => {
-      this.notifications.tr(msg)
-    }
-
-    this.setEnum = (enumVal) => {
-      setEnum(enumVal, this.#logger)
-    }
-
-    this.is_onloadcalled = () => {
-      return (this.#onloadcalled === 1)
-    }
-
     this.getCleverTapID = () => {
       return this.#device.getGuid()
     }
@@ -148,11 +128,21 @@ export default class CleverTap {
     const api = this.#api
     api.logout = this.logout
     api.clear = this.clear
-    api.closeIframe = this.closeIframe
-    api.enableWebPush = this.enableWebPush
-    api.tr = this.tr
-    api.setEnum = this.setEnum
-    api.is_onloadcalled = this.is_onloadcalled
+    api.closeIframe = (campaignId, divIdIgnored) => {
+      this.notifications.closeIframe(campaignId, divIdIgnored)
+    }
+    api.enableWebPush = (enabled, applicationServerKey) => {
+      this.notifications.enableWebPush(enabled, applicationServerKey)
+    }
+    api.tr = (msg) => {
+      this.notifications.tr(msg)
+    }
+    api.setEnum = (enumVal) => {
+      setEnum(enumVal, this.#logger)
+    }
+    api.is_onloadcalled = () => {
+      return (this.#onloadcalled === 1)
+    }
     api.subEmail = (reEncoded) => {
       this.handleEmailSubscription('1', reEncoded)
     }

@@ -2142,7 +2142,7 @@
       var url = account.emailURL;
 
       if (fetchGroups) {
-        url = addToURL(url, 'fetchGroups', reEncoded);
+        url = addToURL(url, 'fetchGroups', fetchGroups);
       }
 
       if (reEncoded) {
@@ -4779,26 +4779,6 @@
         _this.onUserLogin.clear();
       };
 
-      this.closeIframe = function (campaignId, divIdIgnored) {
-        _this.notifications.closeIframe(campaignId, divIdIgnored);
-      };
-
-      this.enableWebPush = function (enabled, applicationServerKey) {
-        _this.notifications.enableWebPush(enabled, applicationServerKey);
-      };
-
-      this.tr = function (msg) {
-        _this.notifications.tr(msg);
-      };
-
-      this.setEnum = function (enumVal) {
-        setEnum(enumVal, _classPrivateFieldLooseBase(_this, _logger$8)[_logger$8]);
-      };
-
-      this.is_onloadcalled = function () {
-        return _classPrivateFieldLooseBase(_this, _onloadcalled)[_onloadcalled] === 1;
-      };
-
       this.getCleverTapID = function () {
         return _classPrivateFieldLooseBase(_this, _device$4)[_device$4].getGuid();
       };
@@ -4811,11 +4791,26 @@
 
       api.logout = this.logout;
       api.clear = this.clear;
-      api.closeIframe = this.closeIframe;
-      api.enableWebPush = this.enableWebPush;
-      api.tr = this.tr;
-      api.setEnum = this.setEnum;
-      api.is_onloadcalled = this.is_onloadcalled;
+
+      api.closeIframe = function (campaignId, divIdIgnored) {
+        _this.notifications.closeIframe(campaignId, divIdIgnored);
+      };
+
+      api.enableWebPush = function (enabled, applicationServerKey) {
+        _this.notifications.enableWebPush(enabled, applicationServerKey);
+      };
+
+      api.tr = function (msg) {
+        _this.notifications.tr(msg);
+      };
+
+      api.setEnum = function (enumVal) {
+        setEnum(enumVal, _classPrivateFieldLooseBase(_this, _logger$8)[_logger$8]);
+      };
+
+      api.is_onloadcalled = function () {
+        return _classPrivateFieldLooseBase(_this, _onloadcalled)[_onloadcalled] === 1;
+      };
 
       api.subEmail = function (reEncoded) {
         _this.handleEmailSubscription('1', reEncoded);
