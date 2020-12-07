@@ -4783,7 +4783,7 @@
         return _classPrivateFieldLooseBase(_this, _device$4)[_device$4].getGuid();
       };
 
-      this.handleEmailSubscription = function (subscription, reEncoded, fetchGroups) {
+      var _handleEmailSubscription = function _handleEmailSubscription(subscription, reEncoded, fetchGroups) {
         handleEmailSubscription(subscription, reEncoded, fetchGroups, _classPrivateFieldLooseBase(_this, _account$5)[_account$5], _classPrivateFieldLooseBase(_this, _request$6)[_request$6]);
       };
 
@@ -4813,15 +4813,15 @@
       };
 
       api.subEmail = function (reEncoded) {
-        _this.handleEmailSubscription('1', reEncoded);
+        _handleEmailSubscription('1', reEncoded);
       };
 
       api.getEmail = function (reEncoded, withGroups) {
-        _this.handleEmailSubscription('-1', reEncoded, withGroups);
+        _handleEmailSubscription('-1', reEncoded, withGroups);
       };
 
       api.unSubEmail = function (reEncoded) {
-        _this.handleEmailSubscription('0', reEncoded);
+        _handleEmailSubscription('0', reEncoded);
       };
 
       api.unsubEmailGroups = function (reEncoded) {
@@ -4840,7 +4840,7 @@
           }
         }
 
-        _this.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
+        _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
       };
 
       api.setSubscriptionGroups = function (value) {
@@ -4854,7 +4854,7 @@
       api.changeSubscriptionGroups = function (reEncoded, updatedGroups) {
         _this.setSubscriptionGroups(updatedGroups);
 
-        _this.handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
+        _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
       };
 
       api.setUpdatedCategoryLong = function (profile) {
