@@ -35,7 +35,6 @@ export default class NotificationHandler extends Array {
   #account
   #wizAlertJSPath
   #wizCounter
-  #clevertapInstance
   #fcmPublicKey
 
   constructor ({
@@ -43,7 +42,6 @@ export default class NotificationHandler extends Array {
     session,
     device,
     request,
-    clevertapInstance,
     account
   }, values) {
     super()
@@ -56,7 +54,6 @@ export default class NotificationHandler extends Array {
     this.#device = device
     this.#request = request
     this.#account = account
-    this.#clevertapInstance = clevertapInstance
   }
 
   push (...displayArgs) {
@@ -809,10 +806,10 @@ export default class NotificationHandler extends Array {
     const showFooterNotification = (targetingMsgJson) => {
       let onClick = targetingMsgJson.display.onClick
       // TODO: Needs wizrocket as a global variable
-      if (this.clevertapInstance.hasOwnProperty('notificationCallback') &&
-          typeof this.clevertapInstance.notificationCallback !== 'undefined' &&
-          typeof this.clevertapInstance.notificationCallback === 'function') {
-        const notificationCallback = this.clevertapInstance.notificationCallback
+      if (window.wizrocket.hasOwnProperty('notificationCallback') &&
+          typeof window.wizrocket.notificationCallback !== 'undefined' &&
+          typeof window.wizrocket.notificationCallback === 'function') {
+        const notificationCallback = window.wizrocket.notificationCallback
         if (!_callBackCalled) {
           const inaObj = {}
           inaObj.msgContent = targetingMsgJson.msgContent
@@ -820,7 +817,7 @@ export default class NotificationHandler extends Array {
           if (targetingMsgJson.display.kv != null) {
             inaObj.kv = targetingMsgJson.display.kv
           }
-          this.clevertapInstance.raiseNotificationClicked = () => {
+          window.wizrocket.raiseNotificationClicked = () => {
             if (onClick !== '' && onClick != null) {
               const jsFunc = targetingMsgJson.display.jsFunc
               onClick += getCookieParams()
@@ -840,7 +837,7 @@ export default class NotificationHandler extends Array {
               }
             }
           }
-          this.clevertapInstance.raiseNotificationViewed = () => {
+          window.wizrocket.raiseNotificationViewed = () => {
             incrementImpression(targetingMsgJson)
           }
           notificationCallback(inaObj)

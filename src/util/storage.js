@@ -244,7 +244,7 @@ export const $ct = {
   isOptInRequest: false,
   broadDomain: null,
   webPushEnabled: null,
-  campaignDivMap: null,
+  campaignDivMap: {},
   currentSessionId: null,
   wiz_counter: 0, // to keep track of number of times we load the body
   notifApi: {

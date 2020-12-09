@@ -38,6 +38,7 @@ export default class CleverTap {
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
+
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region, clevertap.targetDomain)
     this.#device = new DeviceManager({ logger: this.#logger })
@@ -84,8 +85,7 @@ export default class CleverTap {
       session: this.#session,
       device: this.#device,
       request: this.#request,
-      account: this.#account,
-      clevertapInstance: this
+      account: this.#account
     }, clevertap.notifications)
 
     this.#api = new CleverTapAPI({
