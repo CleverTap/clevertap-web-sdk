@@ -720,7 +720,7 @@
     isOptInRequest: false,
     broadDomain: null,
     webPushEnabled: null,
-    campaignDivMap: null,
+    campaignDivMap: {},
     currentSessionId: null,
     wiz_counter: 0,
     // to keep track of number of times we load the body
@@ -2078,6 +2078,20 @@
 
         sessionCampaignObj[campaignId] = 'dnd';
         saveCampaignObject(campaignObj);
+      }
+    }
+
+    if ($ct.campaignDivMap != null) {
+      var divId = $ct.campaignDivMap[campaignId];
+
+      if (divId != null) {
+        document.getElementById(divId).style.display = 'none';
+
+        if (divId === 'intentPreview') {
+          if (document.getElementById('intentOpacityDiv') != null) {
+            document.getElementById('intentOpacityDiv').style.display = 'none';
+          }
+        }
       }
     }
   };
@@ -3438,8 +3452,6 @@
 
   var _wizCounter = _classPrivateFieldLooseKey("wizCounter");
 
-  var _clevertapInstance = _classPrivateFieldLooseKey("clevertapInstance");
-
   var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
 
   var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
@@ -3470,7 +3482,6 @@
           session = _ref.session,
           device = _ref.device,
           request = _ref.request,
-          clevertapInstance = _ref.clevertapInstance,
           account = _ref.account;
 
       _classCallCheck(this, NotificationHandler);
@@ -3532,10 +3543,6 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _clevertapInstance, {
-        writable: true,
-        value: void 0
-      });
       Object.defineProperty(_assertThisInitialized(_this), _fcmPublicKey, {
         writable: true,
         value: void 0
@@ -3549,7 +3556,6 @@
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _device$3)[_device$3] = device;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$5)[_request$5] = request;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$4)[_account$4] = account;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _clevertapInstance)[_clevertapInstance] = clevertapInstance;
       return _this;
     }
 
@@ -3574,8 +3580,13 @@
         _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = null;
       }
     }, {
-      key: "tr",
-      value: function tr(msg) {
+      key: "_closeIframe",
+      value: function _closeIframe(campaignId, divIdIgnored) {
+        closeIframe(campaignId, divIdIgnored, _classPrivateFieldLooseBase(this, _session$3)[_session$3].sessionId);
+      }
+    }, {
+      key: "_tr",
+      value: function _tr(msg) {
         var _this2 = this;
 
         var doCampHouseKeeping = function doCampHouseKeeping(targetingMsgJson) {
@@ -3765,7 +3776,7 @@
 
                   invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
 
-                  closeIframe('-1');
+                  _this2._closeIframe('-1', divId);
 
                   return;
                 } // pass on the gcookie|page|scookieId for capturing the click event
@@ -3979,8 +3990,8 @@
         var showFooterNotification = function showFooterNotification(targetingMsgJson) {
           var onClick = targetingMsgJson.display.onClick; // TODO: Needs wizrocket as a global variable
 
-          if (_this2.clevertapInstance.hasOwnProperty('notificationCallback') && typeof _this2.clevertapInstance.notificationCallback !== 'undefined' && typeof _this2.clevertapInstance.notificationCallback === 'function') {
-            var notificationCallback = _this2.clevertapInstance.notificationCallback;
+          if (window.wizrocket.hasOwnProperty('notificationCallback') && typeof window.wizrocket.notificationCallback !== 'undefined' && typeof window.wizrocket.notificationCallback === 'function') {
+            var notificationCallback = window.wizrocket.notificationCallback;
 
             if (!_callBackCalled) {
               var inaObj = {};
@@ -3991,7 +4002,7 @@
                 inaObj.kv = targetingMsgJson.display.kv;
               }
 
-              _this2.clevertapInstance.raiseNotificationClicked = function () {
+              window.wizrocket.raiseNotificationClicked = function () {
                 if (onClick !== '' && onClick != null) {
                   var jsFunc = targetingMsgJson.display.jsFunc;
                   onClick += getCookieParams(); // invoke js function call
@@ -4012,7 +4023,7 @@
                 }
               };
 
-              _this2.clevertapInstance.raiseNotificationViewed = function () {
+              window.wizrocket.raiseNotificationViewed = function () {
                 incrementImpression(targetingMsgJson);
               };
 
@@ -4242,11 +4253,6 @@
         } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
           _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
         }
-      }
-    }, {
-      key: "closeIframe",
-      value: function closeIframe$1(campaignId, divIdIgnored) {
-        closeIframe(campaignId, divIdIgnored, _classPrivateFieldLooseBase(this, _session$3)[_session$3].sessionId);
       }
     }]);
 
@@ -4796,8 +4802,7 @@
         session: _classPrivateFieldLooseBase(this, _session$4)[_session$4],
         device: _classPrivateFieldLooseBase(this, _device$4)[_device$4],
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
-        account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
-        clevertapInstance: this
+        account: _classPrivateFieldLooseBase(this, _account$5)[_account$5]
       }, clevertap.notifications);
       _classPrivateFieldLooseBase(this, _api)[_api] = new CleverTapAPI({
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
@@ -4842,7 +4847,7 @@
       api.clear = this.clear;
 
       api.closeIframe = function (campaignId, divIdIgnored) {
-        _this.notifications.closeIframe(campaignId, divIdIgnored);
+        _this.notifications._closeIframe(campaignId, divIdIgnored);
       };
 
       api.enableWebPush = function (enabled, applicationServerKey) {
@@ -4850,7 +4855,7 @@
       };
 
       api.tr = function (msg) {
-        _this.notifications.tr(msg);
+        _this.notifications._tr(msg);
       };
 
       api.setEnum = function (enumVal) {

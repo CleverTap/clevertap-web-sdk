@@ -420,7 +420,11 @@ export default class NotificationHandler extends Array {
     }
   }
 
-  tr (msg) {
+  _closeIframe (campaignId, divIdIgnored) {
+    closeIframe(campaignId, divIdIgnored, this.#session.sessionId)
+  }
+
+  _tr (msg) {
     const doCampHouseKeeping = (targetingMsgJson) => {
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
       const today = getToday()
@@ -587,7 +591,7 @@ export default class NotificationHandler extends Array {
               }
               invokeExternalJs(jsFunc, targetingMsgJson)
               // close iframe. using -1 for no campaignId
-              closeIframe('-1', divId)
+              this._closeIframe('-1', divId)
               return
             }
             // pass on the gcookie|page|scookieId for capturing the click event
@@ -1060,9 +1064,5 @@ export default class NotificationHandler extends Array {
     } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
       this.#logger.error('Ensure that web push notifications are fully enabled and integrated before requesting them')
     }
-  }
-
-  closeIframe (campaignId, divIdIgnored) {
-    closeIframe(campaignId, divIdIgnored, this.#session.sessionId)
   }
 }

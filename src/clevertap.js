@@ -151,13 +151,13 @@ export default class CleverTap {
     api.logout = this.logout
     api.clear = this.clear
     api.closeIframe = (campaignId, divIdIgnored) => {
-      this.notifications.closeIframe(campaignId, divIdIgnored)
+      this.notifications._closeIframe(campaignId, divIdIgnored)
     }
     api.enableWebPush = (enabled, applicationServerKey) => {
       this.notifications._enableWebPush(enabled, applicationServerKey)
     }
     api.tr = (msg) => {
-      this.notifications.tr(msg)
+      this.notifications._tr(msg)
     }
     api.setEnum = (enumVal) => {
       setEnum(enumVal, this.#logger)
