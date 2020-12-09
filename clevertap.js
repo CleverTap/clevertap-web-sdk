@@ -4647,7 +4647,15 @@
 
   var _request$6 = _classPrivateFieldLooseKey("request");
 
+  var _isSpa = _classPrivateFieldLooseKey("isSpa");
+
+  var _previousUrl = _classPrivateFieldLooseKey("previousUrl");
+
+  var _boundCheckPageChanged = _classPrivateFieldLooseKey("boundCheckPageChanged");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
+
+  var _checkPageChanged = _classPrivateFieldLooseKey("checkPageChanged");
 
   var _pingRequest = _classPrivateFieldLooseKey("pingRequest");
 
@@ -4656,6 +4664,27 @@
   var _overrideDSyncFlag = _classPrivateFieldLooseKey("overrideDSyncFlag");
 
   var CleverTap = /*#__PURE__*/function () {
+    _createClass(CleverTap, [{
+      key: "spa",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _isSpa)[_isSpa];
+      },
+      set: function set(value) {
+        var isSpa = value === true;
+
+        if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa] !== isSpa && _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
+          // if clevertap.spa is changed after init has been called then update the click listeners
+          if (isSpa) {
+            document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+          } else {
+            document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+          }
+        }
+
+        _classPrivateFieldLooseBase(this, _isSpa)[_isSpa] = isSpa;
+      }
+    }]);
+
     function CleverTap() {
       var _clevertap$account,
           _this = this,
@@ -4673,6 +4702,9 @@
       });
       Object.defineProperty(this, _pingRequest, {
         value: _pingRequest2
+      });
+      Object.defineProperty(this, _checkPageChanged, {
+        value: _checkPageChanged2
       });
       Object.defineProperty(this, _processOldValues, {
         value: _processOldValues2
@@ -4704,6 +4736,18 @@
       Object.defineProperty(this, _request$6, {
         writable: true,
         value: void 0
+      });
+      Object.defineProperty(this, _isSpa, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _previousUrl, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _boundCheckPageChanged, {
+        writable: true,
+        value: _classPrivateFieldLooseBase(this, _checkPageChanged)[_checkPageChanged].bind(this)
       });
       this.enablePersonalization = void 0;
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
@@ -4761,6 +4805,7 @@
         device: _classPrivateFieldLooseBase(this, _device$4)[_device$4],
         session: _classPrivateFieldLooseBase(this, _session$4)[_session$4]
       });
+      this.spa = clevertap.spa;
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
@@ -4919,6 +4964,15 @@
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
         this.pageChanged();
+
+        if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa]) {
+          // listen to click on the document and check if URL has changed.
+          document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+        } else {
+          // remove existing click listeners if any
+          document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+        }
+
         _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 1;
       }
     }, {
@@ -4997,6 +5051,7 @@
 
         _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
 
+        _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation;
         setTimeout(function () {
           if (pgCount <= 3) {
             // send ping for up to 3 pages
@@ -5030,6 +5085,12 @@
     this.profile._processOldValues();
 
     this.notifications._processOldValues();
+  };
+
+  var _checkPageChanged2 = function _checkPageChanged2() {
+    if (_classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] !== location.href) {
+      this.pageChanged();
+    }
   };
 
   var _pingRequest2 = function _pingRequest2() {
