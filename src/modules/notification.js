@@ -810,10 +810,10 @@ export default class NotificationHandler extends Array {
     const showFooterNotification = (targetingMsgJson) => {
       let onClick = targetingMsgJson.display.onClick
       // TODO: Needs wizrocket as a global variable
-      if (window.wizrocket.hasOwnProperty('notificationCallback') &&
-          typeof window.wizrocket.notificationCallback !== 'undefined' &&
-          typeof window.wizrocket.notificationCallback === 'function') {
-        const notificationCallback = window.wizrocket.notificationCallback
+      if (window.clevertap.hasOwnProperty('notificationCallback') &&
+          typeof window.clevertap.notificationCallback !== 'undefined' &&
+          typeof window.clevertap.notificationCallback === 'function') {
+        const notificationCallback = window.clevertap.notificationCallback
         if (!_callBackCalled) {
           const inaObj = {}
           inaObj.msgContent = targetingMsgJson.msgContent
@@ -821,7 +821,7 @@ export default class NotificationHandler extends Array {
           if (targetingMsgJson.display.kv != null) {
             inaObj.kv = targetingMsgJson.display.kv
           }
-          window.wizrocket.raiseNotificationClicked = () => {
+          window.clevertap.raiseNotificationClicked = () => {
             if (onClick !== '' && onClick != null) {
               const jsFunc = targetingMsgJson.display.jsFunc
               onClick += getCookieParams()
@@ -841,7 +841,7 @@ export default class NotificationHandler extends Array {
               }
             }
           }
-          window.wizrocket.raiseNotificationViewed = () => {
+          window.clevertap.raiseNotificationViewed = () => {
             incrementImpression(targetingMsgJson)
           }
           notificationCallback(inaObj)

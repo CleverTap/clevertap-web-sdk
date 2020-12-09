@@ -58,7 +58,7 @@ export default class CleverTap {
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
-
+    this.raiseNotificationClicked = () => {}
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region, clevertap.targetDomain)
     this.#device = new DeviceManager({ logger: this.#logger })

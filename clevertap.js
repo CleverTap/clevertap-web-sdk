@@ -3990,8 +3990,8 @@
         var showFooterNotification = function showFooterNotification(targetingMsgJson) {
           var onClick = targetingMsgJson.display.onClick; // TODO: Needs wizrocket as a global variable
 
-          if (window.wizrocket.hasOwnProperty('notificationCallback') && typeof window.wizrocket.notificationCallback !== 'undefined' && typeof window.wizrocket.notificationCallback === 'function') {
-            var notificationCallback = window.wizrocket.notificationCallback;
+          if (window.clevertap.hasOwnProperty('notificationCallback') && typeof window.clevertap.notificationCallback !== 'undefined' && typeof window.clevertap.notificationCallback === 'function') {
+            var notificationCallback = window.clevertap.notificationCallback;
 
             if (!_callBackCalled) {
               var inaObj = {};
@@ -4002,7 +4002,7 @@
                 inaObj.kv = targetingMsgJson.display.kv;
               }
 
-              window.wizrocket.raiseNotificationClicked = function () {
+              window.clevertap.raiseNotificationClicked = function () {
                 if (onClick !== '' && onClick != null) {
                   var jsFunc = targetingMsgJson.display.jsFunc;
                   onClick += getCookieParams(); // invoke js function call
@@ -4023,7 +4023,7 @@
                 }
               };
 
-              window.wizrocket.raiseNotificationViewed = function () {
+              window.clevertap.raiseNotificationViewed = function () {
                 incrementImpression(targetingMsgJson);
               };
 
@@ -4758,6 +4758,9 @@
       this.enablePersonalization = void 0;
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
+
+      this.raiseNotificationClicked = function () {};
+
       _classPrivateFieldLooseBase(this, _logger$8)[_logger$8] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account$5)[_account$5] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
       _classPrivateFieldLooseBase(this, _device$4)[_device$4] = new DeviceManager({
