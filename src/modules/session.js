@@ -7,17 +7,17 @@ import { getHostName } from '../util/url'
 export default class SessionManager {
   #logger
   #sessionId
-  #isPersonalizationActive
+  #isPersonalisationActive
   cookieName // SCOOKIE_NAME
   scookieObj
 
   constructor ({
     logger,
-    isPersonalizationActive
+    isPersonalisationActive
   }) {
     this.sessionId = StorageManager.getMetaProp('cs')
     this.#logger = logger
-    this.#isPersonalizationActive = isPersonalizationActive
+    this.#isPersonalisationActive = isPersonalisationActive
   }
 
   get sessionId () {
@@ -86,7 +86,7 @@ export default class SessionManager {
   }
 
   getTimeElapsed () {
-    if (!this.#isPersonalizationActive()) {
+    if (!this.#isPersonalisationActive()) {
       return
     }
     if (this.scookieObj != null) { // TODO: check logic?
@@ -100,7 +100,7 @@ export default class SessionManager {
   }
 
   getPageCount () {
-    if (!this.#isPersonalizationActive()) {
+    if (!this.#isPersonalisationActive()) {
       return
     }
 

@@ -7,7 +7,10 @@ import {
 import {
   CAMP_COOKIE_NAME,
   singleQuoteRegex,
-  PR_COOKIE
+  PR_COOKIE,
+  ARP_COOKIE,
+  IS_OUL,
+  categoryLongKey
 } from './constants'
 import {
   GENDER_ERROR,
@@ -16,19 +19,25 @@ import {
   EDUCATION_ERROR,
   AGE_ERROR,
   DOB_ERROR,
-  PHONE_FORMAT_ERROR
+  PHONE_FORMAT_ERROR,
+  ENUM_FORMAT_ERROR
 } from './messages'
 import {
   getToday,
   convertToWZRKDate,
-  setDate
+  setDate,
+  getNow
 } from './datetime'
 import {
   isObject,
   isDateObject,
   isConvertibleToNumber,
-  isObjectEmpty
+  isObjectEmpty,
+  isString,
+  isNumber
 } from './datatypes'
+import { addToURL, getURLParams } from './url'
+import { compressData } from './encoder'
 
 export const getCampaignObject = () => {
   let campObj = {}
@@ -333,5 +342,148 @@ export const addToLocalProfileMap = (profileObj, override) => {
       delete $ct.globalProfileMap._custom
     }
     StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+  }
+}
+
+export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
+  if (campaignId != null && campaignId !== '-1') {
+    if (StorageManager._isLocalStorageSupported()) {
+      const campaignObj = getCampaignObject()
+
+      let sessionCampaignObj = campaignObj[currentSessionId]
+      if (sessionCampaignObj == null) {
+        sessionCampaignObj = {}
+        campaignObj[currentSessionId] = sessionCampaignObj
+      }
+      sessionCampaignObj[campaignId] = 'dnd'
+      saveCampaignObject(campaignObj)
+    }
+  }
+  if ($ct.campaignDivMap != null) {
+    const divId = $ct.campaignDivMap[campaignId]
+    if (divId != null) {
+      document.getElementById(divId).style.display = 'none'
+      if (divId === 'intentPreview') {
+        if (document.getElementById('intentOpacityDiv') != null) {
+          document.getElementById('intentOpacityDiv').style.display = 'none'
+        }
+      }
+    }
+  }
+}
+
+export const arp = (jsonMap) => {
+  // For unregister calls dont set arp in LS
+  if (jsonMap.skipResARP != null && jsonMap.skipResARP) {
+    console.debug('Update ARP Request rejected', jsonMap)
+    return null
+  }
+
+  const isOULARP = !!((jsonMap[IS_OUL] != null && jsonMap[IS_OUL] === true))
+
+  if (StorageManager._isLocalStorageSupported()) {
+    try {
+      let arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE)
+      if (arpFromStorage == null || isOULARP) {
+        arpFromStorage = {}
+      }
+
+      for (const key in jsonMap) {
+        if (jsonMap.hasOwnProperty(key)) {
+          if (jsonMap[key] === -1) {
+            delete arpFromStorage[key]
+          } else {
+            arpFromStorage[key] = jsonMap[key]
+          }
+        }
+      }
+      StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage)
+    } catch (e) {
+      console.error('Unable to parse ARP JSON: ' + e)
+    }
+  }
+}
+
+export const getWrappedLink = (link, targetId, type, request, account) => {
+  let data = {}
+  data.sendTo = link
+  data.targetId = targetId
+  data.epoch = getNow()
+
+  if (type != null) {
+    data.type = type
+  } else {
+    data.type = 'view'
+  }
+
+  data = request.addSystemDataToObject(data, undefined)
+  return addToURL(account.recorderURL, 'd', compressData(JSON.stringify(data)))
+} // TODO: check usage
+
+export const getMessageTemplate = () => {
+  return `<div class="notice-message">
+    <a href="[RECORDER_HREF]" class="box">
+      <div class="avatar"><span class="fa [ICON] fa-4x fa-fw"></span></div>
+      <div class="info">
+        <div class="title">[TITLE]</div>
+        <div class="clearfix"></div>
+        <div class="text">[TEXT]</div>
+      </div>
+      <div class="clearfix"></div>
+    </a>
+  </div>
+  <div class="clearfix"></div>`
+} // TODO: check usage
+
+export const getMessageHeadTemplate = () => {
+  return `<head>
+    <base target="_parent" />
+    <link rel="stylesheet" href="http://static.clevertap.com/fa/font-awesome.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+    [STYLE]
+    </style>
+  </head>`
+}
+
+export const setEnum = (enumVal, logger) => {
+  if (isString(enumVal) || isNumber(enumVal)) {
+    return '$E_' + enumVal
+  }
+  logger.error(ENUM_FORMAT_ERROR)
+}
+
+export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, account, request) => {
+  const urlParamsAsIs = getURLParams(location.href) // can't use url_params as it is in lowercase above
+  const encodedEmailId = urlParamsAsIs.e
+  const encodedProfileProps = urlParamsAsIs.p
+
+  if (typeof encodedEmailId !== 'undefined') {
+    const data = {}
+    data.id = account.id // accountId
+    data.unsubGroups = $ct.unsubGroups // unsubscribe groups
+
+    if ($ct.updatedCategoryLong) {
+      data[categoryLongKey] = $ct.updatedCategoryLong
+    }
+
+    let url = account.emailURL
+    if (fetchGroups) {
+      url = addToURL(url, 'fetchGroups', fetchGroups)
+    }
+    if (reEncoded) {
+      url = addToURL(url, 'encoded', reEncoded)
+    }
+    url = addToURL(url, 'e', encodedEmailId)
+    url = addToURL(url, 'd', compressData(JSON.stringify(data)))
+    if (encodedProfileProps) {
+      url = addToURL(url, 'p', encodedProfileProps)
+    }
+
+    if (subscription !== '-1') {
+      url = addToURL(url, 'sub', subscription)
+    }
+
+    request.fireRequest(url)
   }
 }

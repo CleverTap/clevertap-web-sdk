@@ -238,10 +238,20 @@ export const $ct = {
     RESP_N: 0
   },
   LRU_cache: null,
-  globalProfileMap: null,
+  globalProfileMap: undefined,
+  globalEventsMap: undefined,
   blockRequest: false,
   isOptInRequest: false,
-  broadDomain: null
+  broadDomain: null,
+  webPushEnabled: null,
+  campaignDivMap: {},
+  currentSessionId: null,
+  wiz_counter: 0, // to keep track of number of times we load the body
+  notifApi: {
+    notifEnabledFromApi: false
+  }, // helper variable to handle race condition and check when notifications were called
+  unsubGroups: [],
+  updatedCategoryLong: null
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }

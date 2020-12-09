@@ -13,14 +13,17 @@ import {
   SCOOKIE_PREFIX,
   EVT_PING,
   FIRST_PING_FREQ_IN_MILLIS,
-  CONTINUOUS_PING_FREQ_IN_MILLIS
+  CONTINUOUS_PING_FREQ_IN_MILLIS,
+  GROUP_SUBSCRIPTION_REQUEST_ID,
+  categoryLongKey
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
-import { StorageManager } from './util/storage'
+import { StorageManager, $ct } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
-import { getCampaignObjForLc } from './util/clevertap'
+import { getCampaignObjForLc, setEnum, handleEmailSubscription } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
+import NotificationHandler from './modules/notification'
 
 export default class CleverTap {
   #logger
@@ -30,17 +33,38 @@ export default class CleverTap {
   #session
   #account
   #request
+  #isSpa
+  #previousUrl
+  #boundCheckPageChanged = this.#checkPageChanged.bind(this)
   enablePersonalization
+
+  get spa () {
+    return this.#isSpa
+  }
+
+  set spa (value) {
+    const isSpa = value === true
+    if (this.#isSpa !== isSpa && this.#onloadcalled === 1) {
+      // if clevertap.spa is changed after init has been called then update the click listeners
+      if (isSpa) {
+        document.addEventListener('click', this.#boundCheckPageChanged)
+      } else {
+        document.removeEventListener('click', this.#boundCheckPageChanged)
+      }
+    }
+    this.#isSpa = isSpa
+  }
 
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
+    this.raiseNotificationClicked = () => {}
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region, clevertap.targetDomain)
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#session = new SessionManager({
       logger: this.#logger,
-      isPersonalizationActive: this._isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive
     })
     this.#request = new ReqestManager({
       logger: this.#logger,
@@ -76,12 +100,22 @@ export default class CleverTap {
       account: this.#account
     }, clevertap.privacy)
 
+    this.notifications = new NotificationHandler({
+      logger: this.#logger,
+      session: this.#session,
+      device: this.#device,
+      request: this.#request,
+      account: this.#account
+    }, clevertap.notifications)
+
     this.#api = new CleverTapAPI({
       logger: this.#logger,
       request: this.#request,
       device: this.#device,
       session: this.#session
     })
+
+    this.spa = clevertap.spa
 
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
@@ -105,15 +139,71 @@ export default class CleverTap {
       this.onUserLogin.clear()
     }
 
+    this.getCleverTapID = () => {
+      return this.#device.getGuid()
+    }
+
+    const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
+      handleEmailSubscription(subscription, reEncoded, fetchGroups, this.#account, this.#request)
+    }
+
     const api = this.#api
     api.logout = this.logout
     api.clear = this.clear
+    api.closeIframe = (campaignId, divIdIgnored) => {
+      this.notifications._closeIframe(campaignId, divIdIgnored)
+    }
+    api.enableWebPush = (enabled, applicationServerKey) => {
+      this.notifications._enableWebPush(enabled, applicationServerKey)
+    }
+    api.tr = (msg) => {
+      this.notifications._tr(msg)
+    }
+    api.setEnum = (enumVal) => {
+      setEnum(enumVal, this.#logger)
+    }
+    api.is_onloadcalled = () => {
+      return (this.#onloadcalled === 1)
+    }
+    api.subEmail = (reEncoded) => {
+      _handleEmailSubscription('1', reEncoded)
+    }
+    api.getEmail = (reEncoded, withGroups) => {
+      _handleEmailSubscription('-1', reEncoded, withGroups)
+    }
+    api.unSubEmail = (reEncoded) => {
+      _handleEmailSubscription('0', reEncoded)
+    }
+    api.unsubEmailGroups = (reEncoded) => {
+      $ct.unsubGroups = []
+      const elements = document.getElementsByClassName('ct-unsub-group-input-item')
+
+      for (let i = 0; i < elements.length; i++) {
+        const element = elements[i]
+        if (element.name) {
+          const data = { name: element.name, isUnsubscribed: element.checked }
+          $ct.unsubGroups.push(data)
+        }
+      }
+
+      _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
+    }
+    api.setSubscriptionGroups = (value) => {
+      $ct.unsubGroups = value
+    }
+    api.getSubscriptionGroups = () => {
+      return $ct.unsubGroups
+    }
+    api.changeSubscriptionGroups = (reEncoded, updatedGroups) => {
+      this.setSubscriptionGroups(updatedGroups)
+      _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
+    }
+    api.setUpdatedCategoryLong = (profile) => {
+      if (profile[categoryLongKey]) {
+        $ct.updatedCategoryLong = profile[categoryLongKey]
+      }
+    }
     window.$CLTP_WR = window.$WZRK_WR = api
-    // window.$CLTP_WR = window.$WZRK_WR = {
-    //   ...this.#api,
-    //   logout: this.logout,
-    //   clear: this.clear
-    // }
 
     if (clevertap.account?.[0].id) {
       // The accountId is present so can init with empty values.
@@ -158,16 +248,28 @@ export default class CleverTap {
 
     this.pageChanged()
 
+    if (this.#isSpa) {
+      // listen to click on the document and check if URL has changed.
+      document.addEventListener('click', this.#boundCheckPageChanged)
+    } else {
+      // remove existing click listeners if any
+      document.removeEventListener('click', this.#boundCheckPageChanged)
+    }
     this.#onloadcalled = 1
   }
 
   #processOldValues () {
-    // TODO create classes old data handlers for OUL, Privacy, notifications
     this.onUserLogin._processOldValues()
     this.privacy._processOldValues()
     this.event._processOldValues()
     this.profile._processOldValues()
-    // Notifications
+    this.notifications._processOldValues()
+  }
+
+  #checkPageChanged () {
+    if (this.#previousUrl !== location.href) {
+      this.pageChanged()
+    }
   }
 
   pageChanged () {
@@ -183,7 +285,7 @@ export default class CleverTap {
     let data = {}
     let referrerDomain = getDomain(document.referrer)
 
-    if (location.hostname !== referrerDomain) {
+    if (window.location.hostname !== referrerDomain) {
       const maxLen = 120
       if (referrerDomain !== '') {
         referrerDomain = referrerDomain.length > maxLen ? referrerDomain.substring(0, maxLen) : referrerDomain
@@ -232,6 +334,7 @@ export default class CleverTap {
 
     this.#request.saveAndFireRequest(pageLoadUrl, false)
 
+    this.#previousUrl = currLocation
     setTimeout(() => {
       if (pgCount <= 3) {
         // send ping for up to 3 pages
