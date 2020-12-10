@@ -4,6 +4,7 @@ import DeviceManager from './modules/device'
 import EventHandler from './modules/event'
 import ProfileHandler from './modules/profile'
 import UserLoginHandler from './modules/userLogin'
+import _tr from './util/tr'
 import User from './modules/user'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
@@ -20,7 +21,7 @@ import {
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
-import { getCampaignObjForLc, setEnum, handleEmailSubscription } from './util/clevertap'
+import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
@@ -103,7 +104,6 @@ export default class CleverTap {
     this.notifications = new NotificationHandler({
       logger: this.#logger,
       session: this.#session,
-      device: this.#device,
       request: this.#request,
       account: this.#account
     }, clevertap.notifications)
@@ -151,13 +151,18 @@ export default class CleverTap {
     api.logout = this.logout
     api.clear = this.clear
     api.closeIframe = (campaignId, divIdIgnored) => {
-      this.notifications._closeIframe(campaignId, divIdIgnored)
+      closeIframe(campaignId, divIdIgnored, this.#session.sessionId)
     }
     api.enableWebPush = (enabled, applicationServerKey) => {
       this.notifications._enableWebPush(enabled, applicationServerKey)
     }
     api.tr = (msg) => {
-      this.notifications._tr(msg)
+      _tr(msg, {
+        device: this.#device,
+        session: this.#session,
+        request: this.#request,
+        logger: this.#logger
+      })
     }
     api.setEnum = (enumVal) => {
       setEnum(enumVal, this.#logger)
@@ -211,6 +216,10 @@ export default class CleverTap {
       // Npm imports/require will need to call init explictly with accountId
       this.init()
     }
+  }
+
+  raiseNotificationClicked () {
+
   }
 
   init (accountId, region, targetDomain) {

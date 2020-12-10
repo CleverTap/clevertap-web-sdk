@@ -2697,6 +2697,784 @@
     }
   };
 
+  var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
+
+  var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
+
+  var _addARPToRequest = _classPrivateFieldLooseKey("addARPToRequest");
+
+  var RequestDispatcher = /*#__PURE__*/function () {
+    function RequestDispatcher() {
+      _classCallCheck(this, RequestDispatcher);
+    }
+
+    _createClass(RequestDispatcher, null, [{
+      key: "fireRequest",
+      value: function fireRequest(url, skipARP, sendOULFlag) {
+        _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
+      }
+    }]);
+
+    return RequestDispatcher;
+  }();
+
+  var _addARPToRequest2 = function _addARPToRequest2(url, skipResARP) {
+    if (skipResARP === true) {
+      var _arp = {};
+      _arp.skipResARP = true;
+      return addToURL(url, 'arp', compressData(JSON.stringify(_arp)));
+    }
+
+    if (StorageManager$1._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
+      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager$1.readFromLSorCookie(ARP_COOKIE))));
+    }
+
+    return url;
+  };
+
+  var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
+    if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
+      $ct.isOptInRequest = false;
+      return false;
+    }
+
+    return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
+  };
+
+  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag) {
+    var _this = this,
+        _window$clevertap,
+        _window$wizrocket;
+
+    if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
+      this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
+      return;
+    }
+
+    if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
+      setTimeout(function () {
+        _this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
+
+        _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
+      }, 50);
+      return;
+    }
+
+    if (!sendOULFlag) {
+      if (isValueValid(this.device.gcookie)) {
+        // add cookie to url
+        url = addToURL(url, 'gc', this.device.gcookie);
+      }
+
+      url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
+    }
+
+    url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
+    // TODO: Figure out a better way to handle plugin check
+
+    if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
+      // used to add plugin name in request parameter
+      var plugin = window.clevertap.plugin || window.wizrocket.plugin;
+      url = addToURL(url, 'ct_pl', plugin);
+    }
+
+    if (url.indexOf('chrome-extension:') !== -1) {
+      url = url.replace('chrome-extension:', 'https:');
+    } // TODO: Try using Function constructor instead of appending script.
+
+
+    var s = document.createElement('script');
+    s.setAttribute('type', 'text/javascript');
+    s.setAttribute('src', url);
+    s.setAttribute('rel', 'nofollow');
+    s.async = true;
+    document.getElementsByTagName('head')[0].appendChild(s);
+    this.logger.debug('req snt -> url: ' + url);
+  };
+
+  RequestDispatcher.logger = void 0;
+  RequestDispatcher.device = void 0;
+  Object.defineProperty(RequestDispatcher, _fireRequest, {
+    value: _fireRequest2
+  });
+  Object.defineProperty(RequestDispatcher, _dropRequestDueToOptOut, {
+    value: _dropRequestDueToOptOut2
+  });
+  Object.defineProperty(RequestDispatcher, _addARPToRequest, {
+    value: _addARPToRequest2
+  });
+
+  var _tr = function _tr(msg, _ref) {
+    var device = _ref.device,
+        session = _ref.session,
+        request = _ref.request,
+        logger = _ref.logger;
+    var _device = device;
+    var _session = session;
+    var _request = request;
+    var _logger = logger;
+    var _wizCounter = 0;
+
+    var doCampHouseKeeping = function doCampHouseKeeping(targetingMsgJson) {
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      var today = getToday();
+
+      var incrCount = function incrCount(obj, campaignId, excludeFromFreqCaps) {
+        var currentCount = 0;
+        var totalCount = 0;
+
+        if (obj[campaignId] != null) {
+          currentCount = obj[campaignId];
+        }
+
+        currentCount++;
+
+        if (obj.tc != null) {
+          totalCount = obj.tc;
+        } // if exclude from caps then dont add to total counts
+
+
+        if (excludeFromFreqCaps < 0) {
+          totalCount++;
+        }
+
+        obj.tc = totalCount;
+        obj[campaignId] = currentCount;
+      };
+
+      if (StorageManager$1._isLocalStorageSupported()) {
+        delete sessionStorage[CAMP_COOKIE_NAME];
+        var campObj = getCampaignObject(); // global session limit. default is 1
+
+        if (targetingMsgJson[DISPLAY].wmc == null) {
+          targetingMsgJson[DISPLAY].wmc = 1;
+        }
+
+        var excludeFromFreqCaps = -1;
+        var campaignSessionLimit = -1;
+        var campaignDailyLimit = -1;
+        var campaignTotalLimit = -1;
+        var totalDailyLimit = -1;
+        var totalSessionLimit = -1;
+
+        if (targetingMsgJson[DISPLAY].efc != null) {
+          excludeFromFreqCaps = parseInt(targetingMsgJson[DISPLAY].efc, 10);
+        }
+
+        if (targetingMsgJson[DISPLAY].mdc != null) {
+          campaignSessionLimit = parseInt(targetingMsgJson[DISPLAY].mdc, 10);
+        }
+
+        if (targetingMsgJson[DISPLAY].tdc != null) {
+          campaignDailyLimit = parseInt(targetingMsgJson[DISPLAY].tdc, 10);
+        }
+
+        if (targetingMsgJson[DISPLAY].tlc != null) {
+          campaignTotalLimit = parseInt(targetingMsgJson[DISPLAY].tlc, 10);
+        }
+
+        if (targetingMsgJson[DISPLAY].wmp != null) {
+          totalDailyLimit = parseInt(targetingMsgJson[DISPLAY].wmp, 10);
+        }
+
+        if (targetingMsgJson[DISPLAY].wmc != null) {
+          totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10);
+        } // session level capping
+
+
+        var _sessionObj = campObj[_session.sessionId];
+
+        if (_sessionObj != null) {
+          var campaignSessionCount = _sessionObj[campaignId];
+          var totalSessionCount = _sessionObj.tc; // dnd
+
+          if (campaignSessionCount === 'dnd') {
+            return false;
+          } // session
+
+
+          if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
+            return false;
+          } // campaign session
+
+
+          if (campaignSessionLimit > 0 && campaignSessionCount >= campaignSessionLimit) {
+            return false;
+          }
+        } else {
+          _sessionObj = {};
+          campObj[_session.sessionId] = _sessionObj;
+        } // daily level capping
+
+
+        var dailyObj = campObj[today];
+
+        if (dailyObj != null) {
+          var campaignDailyCount = dailyObj[campaignId];
+          var totalDailyCount = dailyObj.tc; // daily
+
+          if (totalDailyLimit > 0 && totalDailyCount >= totalDailyLimit && excludeFromFreqCaps < 0) {
+            return false;
+          } // campaign daily
+
+
+          if (campaignDailyLimit > 0 && campaignDailyCount >= campaignDailyLimit) {
+            return false;
+          }
+        } else {
+          dailyObj = {};
+          campObj[today] = dailyObj;
+        }
+
+        var globalObj = campObj[GLOBAL];
+
+        if (globalObj != null) {
+          var campaignTotalCount = globalObj[campaignId]; // campaign total
+
+          if (campaignTotalLimit > 0 && campaignTotalCount >= campaignTotalLimit) {
+            return false;
+          }
+        } else {
+          globalObj = {};
+          campObj[GLOBAL] = globalObj;
+        }
+      } // delay
+
+
+      if (targetingMsgJson[DISPLAY].delay != null && targetingMsgJson[DISPLAY].delay > 0) {
+        var delay = targetingMsgJson[DISPLAY].delay;
+        targetingMsgJson[DISPLAY].delay = 0;
+        setTimeout(_tr, delay * 1000, msg, {
+          device: _device,
+          session: _session,
+          request: _request,
+          logger: _logger
+        });
+        return false;
+      }
+
+      var sessionObj = _session.getSessionCookieObject();
+
+      incrCount(sessionObj, campaignId, excludeFromFreqCaps);
+      incrCount(dailyObj, campaignId, excludeFromFreqCaps);
+      incrCount(globalObj, campaignId, excludeFromFreqCaps); // get ride of stale sessions and day entries
+
+      var newCampObj = {};
+      newCampObj[_session.sessionId] = sessionObj;
+      newCampObj[today] = dailyObj;
+      newCampObj[GLOBAL] = globalObj;
+      saveCampaignObject(newCampObj);
+    };
+
+    var getCookieParams = function getCookieParams() {
+      var gcookie = _device.getGuid();
+
+      var scookieObj = _session.getSessionCookieObject();
+
+      return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
+    };
+
+    var setupClickEvent = function setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy) {
+      if (onClick !== '' && onClick != null) {
+        var ctaElement;
+        var jsCTAElements;
+
+        if (isLegacy) {
+          ctaElement = contentDiv;
+        } else {
+          jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
+
+          if (jsCTAElements != null && jsCTAElements.length === 1) {
+            ctaElement = jsCTAElements[0];
+          }
+        }
+
+        var jsFunc = targetingMsgJson.display.jsFunc;
+        var isPreview = targetingMsgJson.display.preview;
+
+        if (isPreview == null) {
+          onClick += getCookieParams();
+        }
+
+        if (ctaElement != null) {
+          ctaElement.onclick = function () {
+            // invoke js function call
+            if (jsFunc != null) {
+              // track notification clicked event
+              if (isPreview == null) {
+                RequestDispatcher.fireRequest(onClick);
+              }
+
+              invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
+
+              closeIframe('-1', divId, _session.sessionId);
+              return;
+            } // pass on the gcookie|page|scookieId for capturing the click event
+
+
+            if (targetingMsgJson.display.window === '1') {
+              window.open(onClick, '_blank');
+            } else {
+              window.location = onClick;
+            }
+          };
+        }
+      }
+    };
+
+    var invokeExternalJs = function invokeExternalJs(jsFunc, targetingMsgJson) {
+      var func = window.parent[jsFunc];
+
+      if (typeof func === 'function') {
+        if (targetingMsgJson.display.kv != null) {
+          func(targetingMsgJson.display.kv);
+        } else {
+          func();
+        }
+      }
+    };
+
+    var setupClickUrl = function setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, isLegacy) {
+      incrementImpression(targetingMsgJson);
+      setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy);
+    };
+
+    var incrementImpression = function incrementImpression(targetingMsgJson) {
+      var data = {};
+      data.type = 'event';
+      data.evtName = 'Notification Viewed';
+      data.evtData = {
+        wzrk_id: targetingMsgJson.wzrk_id
+      };
+
+      _request.processEvent(data);
+    };
+
+    var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      var displayObj = targetingMsgJson.display;
+
+      if (displayObj.layout === 1) {
+        return showExitIntent(undefined, targetingMsgJson);
+      }
+
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
+      }
+
+      var divId = 'wizParDiv' + displayObj.layout;
+
+      if (document.getElementById(divId) != null) {
+        return;
+      }
+
+      $ct.campaignDivMap[campaignId] = divId;
+      var isBanner = displayObj.layout === 2;
+      var msgDiv = document.createElement('div');
+      msgDiv.id = divId;
+      var viewHeight = window.innerHeight;
+      var viewWidth = window.innerWidth;
+      var legacy = false;
+
+      if (!isBanner) {
+        var marginBottom = viewHeight * 5 / 100;
+        var contentHeight = 10;
+        var right = viewWidth * 5 / 100;
+        var bottomPosition = contentHeight + marginBottom;
+        var width = viewWidth * 30 / 100 + 20;
+        var widthPerct = 'width:30%;'; // for small devices  - mobile phones
+
+        if ((/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent)) && /iPad/i.test(navigator.userAgent) === false) {
+          width = viewWidth * 85 / 100 + 20;
+          right = viewWidth * 5 / 100;
+          bottomPosition = viewHeight * 5 / 100;
+          widthPerct = 'width:80%;'; // medium devices - tablets
+        } else if ('ontouchstart' in window || /tablet/i.test(navigator.userAgent)) {
+          width = viewWidth * 50 / 100 + 20;
+          right = viewWidth * 5 / 100;
+          bottomPosition = viewHeight * 5 / 100;
+          widthPerct = 'width:50%;';
+        } // legacy footer notif
+
+
+        if (displayObj.proto == null) {
+          legacy = true;
+          msgDiv.setAttribute('style', 'display:block;overflow:hidden; bottom:' + bottomPosition + 'px !important;width:' + width + 'px !important;right:' + right + 'px !important;position:fixed;z-index:2147483647;');
+        } else {
+          msgDiv.setAttribute('style', widthPerct + displayObj.iFrameStyle);
+        }
+      } else {
+        msgDiv.setAttribute('style', displayObj.iFrameStyle);
+      }
+
+      document.body.appendChild(msgDiv);
+      var iframe = document.createElement('iframe');
+      var borderRadius = displayObj.br === false ? '0' : '8';
+      iframe.frameborder = '0px';
+      iframe.marginheight = '0px';
+      iframe.marginwidth = '0px';
+      iframe.scrolling = 'no';
+      iframe.id = 'wiz-iframe';
+      var onClick = targetingMsgJson.display.onClick;
+      var pointerCss = '';
+
+      if (onClick !== '' && onClick != null) {
+        pointerCss = 'cursor:pointer;';
+      }
+
+      var html; // direct html
+
+      if (targetingMsgJson.msgContent.type === 1) {
+        html = targetingMsgJson.msgContent.html;
+        html = html.replace('##campaignId##', campaignId);
+      } else {
+        var css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + 'td{vertical-align:top;}' + 'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' + '</style>';
+        var bgColor, textColor, btnBg, leftTd, btColor;
+
+        if (targetingMsgJson.display.theme === 'dark') {
+          bgColor = '#2d2d2e';
+          textColor = '#eaeaea';
+          btnBg = '#353535';
+          leftTd = '#353535';
+          btColor = '#ffffff';
+        } else {
+          bgColor = '#ffffff';
+          textColor = '#000000';
+          leftTd = '#f4f4f4';
+          btnBg = '#a5a6a6';
+          btColor = '#ffffff';
+        }
+
+        var titleText = targetingMsgJson.msgContent.title;
+        var descriptionText = targetingMsgJson.msgContent.description;
+        var imageTd = '';
+
+        if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== '') {
+          imageTd = "<td class='imgTd' style='background-color:" + leftTd + "'><img src='" + targetingMsgJson.msgContent.imageUrl + "' height='60' width='60'></td>";
+        }
+
+        var onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'" + divId + "');";
+        var title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<table cellpadding='0' cellspacing='0' border='0'>" + // "<tr><td colspan='2'></td></tr>"+
+        '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
+        var body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>';
+        html = css + title + body;
+      }
+
+      iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
+      msgDiv.appendChild(iframe);
+      var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
+      var doc = ifrm.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+
+      var adjustIFrameHeight = function adjustIFrameHeight() {
+        // adjust iframe and body height of html inside correctly
+        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
+
+        if (displayObj['custom-editor'] !== true && !isBanner) {
+          contentHeight += 25;
+        }
+
+        document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px';
+        document.getElementById('wiz-iframe').style.height = contentHeight + 'px';
+      };
+
+      var ua = navigator.userAgent.toLowerCase();
+
+      if (ua.indexOf('safari') !== -1) {
+        if (ua.indexOf('chrome') > -1) {
+          iframe.onload = function () {
+            adjustIFrameHeight();
+            var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+            setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+          };
+        } else {
+          var inDoc = iframe.contentDocument || iframe.contentWindow;
+          if (inDoc.document) inDoc = inDoc.document; // safari iphone 7+ needs this.
+
+          adjustIFrameHeight();
+
+          var _timer = setInterval(function () {
+            if (inDoc.readyState === 'complete') {
+              clearInterval(_timer); // adjust iframe and body height of html inside correctly
+
+              adjustIFrameHeight();
+              var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+              setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+            }
+          }, 10);
+        }
+      } else {
+        iframe.onload = function () {
+          // adjust iframe and body height of html inside correctly
+          adjustIFrameHeight();
+          var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+          setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+        };
+      }
+    };
+
+    var _callBackCalled = false;
+
+    var showFooterNotification = function showFooterNotification(targetingMsgJson) {
+      var onClick = targetingMsgJson.display.onClick; // TODO: Needs wizrocket as a global variable
+
+      if (window.clevertap.hasOwnProperty('notificationCallback') && typeof window.clevertap.notificationCallback !== 'undefined' && typeof window.clevertap.notificationCallback === 'function') {
+        var notificationCallback = window.clevertap.notificationCallback;
+
+        if (!_callBackCalled) {
+          var inaObj = {};
+          inaObj.msgContent = targetingMsgJson.msgContent;
+          inaObj.msgId = targetingMsgJson.wzrk_id;
+
+          if (targetingMsgJson.display.kv != null) {
+            inaObj.kv = targetingMsgJson.display.kv;
+          }
+
+          window.clevertap.raiseNotificationClicked = function () {
+            if (onClick !== '' && onClick != null) {
+              var jsFunc = targetingMsgJson.display.jsFunc;
+              onClick += getCookieParams(); // invoke js function call
+
+              if (jsFunc != null) {
+                // track notification clicked event
+                RequestDispatcher.fireRequest(onClick);
+                invokeExternalJs(jsFunc, targetingMsgJson);
+                return;
+              } // pass on the gcookie|page|scookieId for capturing the click event
+
+
+              if (targetingMsgJson.display.window === '1') {
+                window.open(onClick, '_blank');
+              } else {
+                window.location = onClick;
+              }
+            }
+          };
+
+          window.clevertap.raiseNotificationViewed = function () {
+            incrementImpression(targetingMsgJson);
+          };
+
+          notificationCallback(inaObj);
+          _callBackCalled = true;
+        }
+      } else {
+        renderFooterNotification(targetingMsgJson);
+      }
+    };
+
+    var exitintentObj;
+
+    var showExitIntent = function showExitIntent(event, targetObj) {
+      var targetingMsgJson;
+
+      if (event != null && event.clientY > 0) {
+        return;
+      }
+
+      if (targetObj == null) {
+        targetingMsgJson = exitintentObj;
+      } else {
+        targetingMsgJson = targetObj;
+      }
+
+      if (document.getElementById('intentPreview') != null) {
+        return;
+      } // dont show exit intent on tablet/mobile - only on desktop
+
+
+      if (targetingMsgJson.display.layout == null && (/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent) || /iPad/i.test(navigator.userAgent) || 'ontouchstart' in window || /tablet/i.test(navigator.userAgent))) {
+        return;
+      }
+
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
+      }
+
+      $ct.campaignDivMap[campaignId] = 'intentPreview';
+      var legacy = false;
+      var opacityDiv = document.createElement('div');
+      opacityDiv.id = 'intentOpacityDiv';
+      opacityDiv.setAttribute('style', 'position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: rgba(0,0,0,0.7);');
+      document.body.appendChild(opacityDiv);
+      var msgDiv = document.createElement('div');
+      msgDiv.id = 'intentPreview';
+
+      if (targetingMsgJson.display.proto == null) {
+        legacy = true;
+        msgDiv.setAttribute('style', 'display:block;overflow:hidden;top:55% !important;left:50% !important;position:fixed;z-index:2147483647;width:600px !important;height:600px !important;margin:-300px 0 0 -300px !important;');
+      } else {
+        msgDiv.setAttribute('style', targetingMsgJson.display.iFrameStyle);
+      }
+
+      document.body.appendChild(msgDiv);
+      var iframe = document.createElement('iframe');
+      var borderRadius = targetingMsgJson.display.br === false ? '0' : '8';
+      iframe.frameborder = '0px';
+      iframe.marginheight = '0px';
+      iframe.marginwidth = '0px';
+      iframe.scrolling = 'no';
+      iframe.id = 'wiz-iframe-intent';
+      var onClick = targetingMsgJson.display.onClick;
+      var pointerCss = '';
+
+      if (onClick !== '' && onClick != null) {
+        pointerCss = 'cursor:pointer;';
+      }
+
+      var html; // direct html
+
+      if (targetingMsgJson.msgContent.type === 1) {
+        html = targetingMsgJson.msgContent.html;
+        html = html.replace('##campaignId##', campaignId);
+      } else {
+        var css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + '#contentDiv .button{padding-top:20px;}' + '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' + '</style>';
+        var bgColor, textColor, btnBg, btColor;
+
+        if (targetingMsgJson.display.theme === 'dark') {
+          bgColor = '#2d2d2e';
+          textColor = '#eaeaea';
+          btnBg = '#353535';
+          btColor = '#ffffff';
+        } else {
+          bgColor = '#ffffff';
+          textColor = '#000000';
+          btnBg = '#a5a6a6';
+          btColor = '#ffffff';
+        }
+
+        var titleText = targetingMsgJson.msgContent.title;
+        var descriptionText = targetingMsgJson.msgContent.description;
+        var ctaText = '';
+
+        if (targetingMsgJson.msgContent.ctaText != null && targetingMsgJson.msgContent.ctaText !== '') {
+          ctaText = "<div class='button'><a href='#'>" + targetingMsgJson.msgContent.ctaText + '</a></div>';
+        }
+
+        var imageTd = '';
+
+        if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== '') {
+          imageTd = "<div style='padding-top:20px;'><img src='" + targetingMsgJson.msgContent.imageUrl + "' width='500' alt=" + titleText + ' /></div>';
+        }
+
+        var onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'intentPreview');";
+        var title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
+        var body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '</div>' + imageTd + ctaText + '</div></div>';
+        html = css + title + body;
+      }
+
+      iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
+      msgDiv.appendChild(iframe);
+      var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
+      var doc = ifrm.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+      var contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
+      setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
+    };
+
+    if (!document.body) {
+      if (_wizCounter < 6) {
+        _wizCounter++;
+        setTimeout(_tr, 1000, msg, {
+          device: _device,
+          session: _session,
+          request: _request,
+          logger: _logger
+        });
+      }
+
+      return;
+    }
+
+    if (msg.inapp_notifs != null) {
+      for (var index = 0; index < msg.inapp_notifs.length; index++) {
+        var targetNotif = msg.inapp_notifs[index];
+
+        if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
+          showFooterNotification(targetNotif);
+        } else if (targetNotif.display.wtarget_type === 1) {
+          // if display['wtarget_type']==1 then exit intent
+          exitintentObj = targetNotif;
+          window.document.body.onmouseleave = showExitIntent;
+        }
+      }
+    }
+
+    var mergeEventMap = function mergeEventMap(newEvtMap) {
+      if ($ct.globalEventsMap == null) {
+        $ct.globalEventsMap = StorageManager$1.readFromLSorCookie(EV_COOKIE);
+
+        if ($ct.globalEventsMap == null) {
+          $ct.globalEventsMap = newEvtMap;
+          return;
+        }
+      }
+
+      for (var key in newEvtMap) {
+        if (newEvtMap.hasOwnProperty(key)) {
+          var oldEvtObj = $ct.globalEventsMap[key];
+          var newEvtObj = newEvtMap[key];
+
+          if ($ct.globalEventsMap[key] != null) {
+            if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
+              $ct.globalEventsMap[key] = newEvtObj;
+            }
+          } else {
+            $ct.globalEventsMap[key] = newEvtObj;
+          }
+        }
+      }
+    };
+
+    if (StorageManager$1._isLocalStorageSupported()) {
+      try {
+        if (msg.evpr != null) {
+          var eventsMap = msg.evpr.events;
+          var profileMap = msg.evpr.profile;
+          var syncExpiry = msg.evpr.expires_in;
+          var now = getNow();
+          StorageManager$1.setMetaProp('lsTime', now);
+          StorageManager$1.setMetaProp('exTs', syncExpiry);
+          mergeEventMap(eventsMap);
+          StorageManager$1.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
+
+          if ($ct.globalProfileMap == null) {
+            addToLocalProfileMap(profileMap, true);
+          } else {
+            addToLocalProfileMap(profileMap, false);
+          }
+        }
+
+        if (msg.arp != null) {
+          arp(msg.arp);
+        }
+
+        if (msg.inapp_stale != null) {
+          var campObj = getCampaignObject();
+          var globalObj = campObj.global;
+
+          if (globalObj != null) {
+            for (var idx in msg.inapp_stale) {
+              if (msg.inapp_stale.hasOwnProperty(idx)) {
+                delete globalObj[msg.inapp_stale[idx]];
+              }
+            }
+          }
+
+          saveCampaignObject(campObj);
+        }
+      } catch (e) {
+        _logger.error('Unable to persist evrp/arp: ' + e);
+      }
+    }
+  };
+
   var _isPersonalisationActive$2 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   var User = /*#__PURE__*/function () {
@@ -2976,113 +3754,6 @@
 
     return SessionManager;
   }();
-
-  var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
-
-  var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
-
-  var _addARPToRequest = _classPrivateFieldLooseKey("addARPToRequest");
-
-  var RequestDispatcher = /*#__PURE__*/function () {
-    function RequestDispatcher() {
-      _classCallCheck(this, RequestDispatcher);
-    }
-
-    _createClass(RequestDispatcher, null, [{
-      key: "fireRequest",
-      value: function fireRequest(url, skipARP, sendOULFlag) {
-        _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
-      }
-    }]);
-
-    return RequestDispatcher;
-  }();
-
-  var _addARPToRequest2 = function _addARPToRequest2(url, skipResARP) {
-    if (skipResARP === true) {
-      var _arp = {};
-      _arp.skipResARP = true;
-      return addToURL(url, 'arp', compressData(JSON.stringify(_arp)));
-    }
-
-    if (StorageManager$1._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
-      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager$1.readFromLSorCookie(ARP_COOKIE))));
-    }
-
-    return url;
-  };
-
-  var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
-    if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
-      $ct.isOptInRequest = false;
-      return false;
-    }
-
-    return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
-  };
-
-  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag) {
-    var _this = this,
-        _window$clevertap,
-        _window$wizrocket;
-
-    if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
-      this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
-      return;
-    }
-
-    if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
-      setTimeout(function () {
-        _this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
-
-        _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
-      }, 50);
-      return;
-    }
-
-    if (!sendOULFlag) {
-      if (isValueValid(this.device.gcookie)) {
-        // add cookie to url
-        url = addToURL(url, 'gc', this.device.gcookie);
-      }
-
-      url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
-    }
-
-    url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
-    // TODO: Figure out a better way to handle plugin check
-
-    if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
-      // used to add plugin name in request parameter
-      var plugin = window.clevertap.plugin || window.wizrocket.plugin;
-      url = addToURL(url, 'ct_pl', plugin);
-    }
-
-    if (url.indexOf('chrome-extension:') !== -1) {
-      url = url.replace('chrome-extension:', 'https:');
-    } // TODO: Try using Function constructor instead of appending script.
-
-
-    var s = document.createElement('script');
-    s.setAttribute('type', 'text/javascript');
-    s.setAttribute('src', url);
-    s.setAttribute('rel', 'nofollow');
-    s.async = true;
-    document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url);
-  };
-
-  RequestDispatcher.logger = void 0;
-  RequestDispatcher.device = void 0;
-  Object.defineProperty(RequestDispatcher, _fireRequest, {
-    value: _fireRequest2
-  });
-  Object.defineProperty(RequestDispatcher, _dropRequestDueToOptOut, {
-    value: _dropRequestDueToOptOut2
-  });
-  Object.defineProperty(RequestDispatcher, _addARPToRequest, {
-    value: _addARPToRequest2
-  });
 
   var seqNo = 0;
   var requestTime = 0;
@@ -3442,15 +4113,11 @@
 
   var _session$3 = _classPrivateFieldLooseKey("session");
 
-  var _device$3 = _classPrivateFieldLooseKey("device");
-
   var _request$5 = _classPrivateFieldLooseKey("request");
 
   var _account$4 = _classPrivateFieldLooseKey("account");
 
   var _wizAlertJSPath = _classPrivateFieldLooseKey("wizAlertJSPath");
-
-  var _wizCounter = _classPrivateFieldLooseKey("wizCounter");
 
   var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
 
@@ -3480,7 +4147,6 @@
 
       var logger = _ref.logger,
           session = _ref.session,
-          device = _ref.device,
           request = _ref.request,
           account = _ref.account;
 
@@ -3523,10 +4189,6 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _device$3, {
-        writable: true,
-        value: void 0
-      });
       Object.defineProperty(_assertThisInitialized(_this), _request$5, {
         writable: true,
         value: void 0
@@ -3539,21 +4201,15 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _wizCounter, {
-        writable: true,
-        value: void 0
-      });
       Object.defineProperty(_assertThisInitialized(_this), _fcmPublicKey, {
         writable: true,
         value: void 0
       });
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _wizAlertJSPath)[_wizAlertJSPath] = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js';
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _wizCounter)[_wizCounter] = 0;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _fcmPublicKey)[_fcmPublicKey] = null;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$4)[_oldValues$4] = values;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$7)[_logger$7] = logger;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _session$3)[_session$3] = session;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _device$3)[_device$3] = device;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$5)[_request$5] = request;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$4)[_account$4] = account;
       return _this;
@@ -3578,666 +4234,6 @@
         }
 
         _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = null;
-      }
-    }, {
-      key: "_closeIframe",
-      value: function _closeIframe(campaignId, divIdIgnored) {
-        closeIframe(campaignId, divIdIgnored, _classPrivateFieldLooseBase(this, _session$3)[_session$3].sessionId);
-      }
-    }, {
-      key: "_tr",
-      value: function _tr(msg) {
-        var _this2 = this;
-
-        var doCampHouseKeeping = function doCampHouseKeeping(targetingMsgJson) {
-          var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-          var today = getToday();
-
-          var incrCount = function incrCount(obj, campaignId, excludeFromFreqCaps) {
-            var currentCount = 0;
-            var totalCount = 0;
-
-            if (obj[campaignId] != null) {
-              currentCount = obj[campaignId];
-            }
-
-            currentCount++;
-
-            if (obj.tc != null) {
-              totalCount = obj.tc;
-            } // if exclude from caps then dont add to total counts
-
-
-            if (excludeFromFreqCaps < 0) {
-              totalCount++;
-            }
-
-            obj.tc = totalCount;
-            obj[campaignId] = currentCount;
-          };
-
-          if (StorageManager$1._isLocalStorageSupported()) {
-            delete sessionStorage[CAMP_COOKIE_NAME];
-            var campObj = getCampaignObject(); // global session limit. default is 1
-
-            if (targetingMsgJson[DISPLAY].wmc == null) {
-              targetingMsgJson[DISPLAY].wmc = 1;
-            }
-
-            var excludeFromFreqCaps = -1;
-            var campaignSessionLimit = -1;
-            var campaignDailyLimit = -1;
-            var campaignTotalLimit = -1;
-            var totalDailyLimit = -1;
-            var totalSessionLimit = -1;
-
-            if (targetingMsgJson[DISPLAY].efc != null) {
-              excludeFromFreqCaps = parseInt(targetingMsgJson[DISPLAY].efc, 10);
-            }
-
-            if (targetingMsgJson[DISPLAY].mdc != null) {
-              campaignSessionLimit = parseInt(targetingMsgJson[DISPLAY].mdc, 10);
-            }
-
-            if (targetingMsgJson[DISPLAY].tdc != null) {
-              campaignDailyLimit = parseInt(targetingMsgJson[DISPLAY].tdc, 10);
-            }
-
-            if (targetingMsgJson[DISPLAY].tlc != null) {
-              campaignTotalLimit = parseInt(targetingMsgJson[DISPLAY].tlc, 10);
-            }
-
-            if (targetingMsgJson[DISPLAY].wmp != null) {
-              totalDailyLimit = parseInt(targetingMsgJson[DISPLAY].wmp, 10);
-            }
-
-            if (targetingMsgJson[DISPLAY].wmc != null) {
-              totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10);
-            } // session level capping
-
-
-            var _sessionObj = campObj[_classPrivateFieldLooseBase(_this2, _session$3)[_session$3].sessionId];
-
-            if (_sessionObj != null) {
-              var campaignSessionCount = _sessionObj[campaignId];
-              var totalSessionCount = _sessionObj.tc; // dnd
-
-              if (campaignSessionCount === 'dnd') {
-                return false;
-              } // session
-
-
-              if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
-                return false;
-              } // campaign session
-
-
-              if (campaignSessionLimit > 0 && campaignSessionCount >= campaignSessionLimit) {
-                return false;
-              }
-            } else {
-              _sessionObj = {};
-              campObj[_classPrivateFieldLooseBase(_this2, _session$3)[_session$3].sessionId] = _sessionObj;
-            } // daily level capping
-
-
-            var dailyObj = campObj[today];
-
-            if (dailyObj != null) {
-              var campaignDailyCount = dailyObj[campaignId];
-              var totalDailyCount = dailyObj.tc; // daily
-
-              if (totalDailyLimit > 0 && totalDailyCount >= totalDailyLimit && excludeFromFreqCaps < 0) {
-                return false;
-              } // campaign daily
-
-
-              if (campaignDailyLimit > 0 && campaignDailyCount >= campaignDailyLimit) {
-                return false;
-              }
-            } else {
-              dailyObj = {};
-              campObj[today] = dailyObj;
-            }
-
-            var globalObj = campObj[GLOBAL];
-
-            if (globalObj != null) {
-              var campaignTotalCount = globalObj[campaignId]; // campaign total
-
-              if (campaignTotalLimit > 0 && campaignTotalCount >= campaignTotalLimit) {
-                return false;
-              }
-            } else {
-              globalObj = {};
-              campObj[GLOBAL] = globalObj;
-            }
-          } // delay
-
-
-          if (targetingMsgJson[DISPLAY].delay != null && targetingMsgJson[DISPLAY].delay > 0) {
-            var delay = targetingMsgJson[DISPLAY].delay;
-            targetingMsgJson[DISPLAY].delay = 0;
-            setTimeout(_this2.tr, delay * 1000, msg);
-            return false;
-          }
-
-          var sessionObj = _classPrivateFieldLooseBase(_this2, _session$3)[_session$3].getSessionCookieObject();
-
-          incrCount(sessionObj, campaignId, excludeFromFreqCaps);
-          incrCount(dailyObj, campaignId, excludeFromFreqCaps);
-          incrCount(globalObj, campaignId, excludeFromFreqCaps); // get ride of stale sessions and day entries
-
-          var newCampObj = {};
-          newCampObj[_classPrivateFieldLooseBase(_this2, _session$3)[_session$3].sessionId] = sessionObj;
-          newCampObj[today] = dailyObj;
-          newCampObj[GLOBAL] = globalObj;
-          saveCampaignObject(newCampObj);
-        };
-
-        var getCookieParams = function getCookieParams() {
-          var gcookie = _classPrivateFieldLooseBase(_this2, _device$3)[_device$3].getGuid();
-
-          var scookieObj = _classPrivateFieldLooseBase(_this2, _session$3)[_session$3].getSessionCookieObject();
-
-          return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
-        };
-
-        var setupClickEvent = function setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy) {
-          if (onClick !== '' && onClick != null) {
-            var ctaElement;
-            var jsCTAElements;
-
-            if (isLegacy) {
-              ctaElement = contentDiv;
-            } else {
-              jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
-
-              if (jsCTAElements != null && jsCTAElements.length === 1) {
-                ctaElement = jsCTAElements[0];
-              }
-            }
-
-            var jsFunc = targetingMsgJson.display.jsFunc;
-            var isPreview = targetingMsgJson.display.preview;
-
-            if (isPreview == null) {
-              onClick += getCookieParams();
-            }
-
-            if (ctaElement != null) {
-              ctaElement.onclick = function () {
-                // invoke js function call
-                if (jsFunc != null) {
-                  // track notification clicked event
-                  if (isPreview == null) {
-                    RequestDispatcher.fireRequest(onClick);
-                  }
-
-                  invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
-
-                  _this2._closeIframe('-1', divId);
-
-                  return;
-                } // pass on the gcookie|page|scookieId for capturing the click event
-
-
-                if (targetingMsgJson.display.window === '1') {
-                  window.open(onClick, '_blank');
-                } else {
-                  window.location = onClick;
-                }
-              };
-            }
-          }
-        };
-
-        var invokeExternalJs = function invokeExternalJs(jsFunc, targetingMsgJson) {
-          var func = window.parent[jsFunc];
-
-          if (typeof func === 'function') {
-            if (targetingMsgJson.display.kv != null) {
-              func(targetingMsgJson.display.kv);
-            } else {
-              func();
-            }
-          }
-        };
-
-        var setupClickUrl = function setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, isLegacy) {
-          incrementImpression(targetingMsgJson);
-          setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy);
-        };
-
-        var incrementImpression = function incrementImpression(targetingMsgJson) {
-          var data = {};
-          data.type = 'event';
-          data.evtName = 'Notification Viewed';
-          data.evtData = {
-            wzrk_id: targetingMsgJson.wzrk_id
-          };
-
-          _classPrivateFieldLooseBase(_this2, _request$5)[_request$5].processEvent(data);
-        };
-
-        var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
-          var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-          var displayObj = targetingMsgJson.display;
-
-          if (displayObj.layout === 1) {
-            return showExitIntent(undefined, targetingMsgJson);
-          }
-
-          if (doCampHouseKeeping(targetingMsgJson) === false) {
-            return;
-          }
-
-          var divId = 'wizParDiv' + displayObj.layout;
-
-          if (document.getElementById(divId) != null) {
-            return;
-          }
-
-          $ct.campaignDivMap[campaignId] = divId;
-          var isBanner = displayObj.layout === 2;
-          var msgDiv = document.createElement('div');
-          msgDiv.id = divId;
-          var viewHeight = window.innerHeight;
-          var viewWidth = window.innerWidth;
-          var legacy = false;
-
-          if (!isBanner) {
-            var marginBottom = viewHeight * 5 / 100;
-            var contentHeight = 10;
-            var right = viewWidth * 5 / 100;
-            var bottomPosition = contentHeight + marginBottom;
-            var width = viewWidth * 30 / 100 + 20;
-            var widthPerct = 'width:30%;'; // for small devices  - mobile phones
-
-            if ((/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent)) && /iPad/i.test(navigator.userAgent) === false) {
-              width = viewWidth * 85 / 100 + 20;
-              right = viewWidth * 5 / 100;
-              bottomPosition = viewHeight * 5 / 100;
-              widthPerct = 'width:80%;'; // medium devices - tablets
-            } else if ('ontouchstart' in window || /tablet/i.test(navigator.userAgent)) {
-              width = viewWidth * 50 / 100 + 20;
-              right = viewWidth * 5 / 100;
-              bottomPosition = viewHeight * 5 / 100;
-              widthPerct = 'width:50%;';
-            } // legacy footer notif
-
-
-            if (displayObj.proto == null) {
-              legacy = true;
-              msgDiv.setAttribute('style', 'display:block;overflow:hidden; bottom:' + bottomPosition + 'px !important;width:' + width + 'px !important;right:' + right + 'px !important;position:fixed;z-index:2147483647;');
-            } else {
-              msgDiv.setAttribute('style', widthPerct + displayObj.iFrameStyle);
-            }
-          } else {
-            msgDiv.setAttribute('style', displayObj.iFrameStyle);
-          }
-
-          document.body.appendChild(msgDiv);
-          var iframe = document.createElement('iframe');
-          var borderRadius = displayObj.br === false ? '0' : '8';
-          iframe.frameborder = '0px';
-          iframe.marginheight = '0px';
-          iframe.marginwidth = '0px';
-          iframe.scrolling = 'no';
-          iframe.id = 'wiz-iframe';
-          var onClick = targetingMsgJson.display.onClick;
-          var pointerCss = '';
-
-          if (onClick !== '' && onClick != null) {
-            pointerCss = 'cursor:pointer;';
-          }
-
-          var html; // direct html
-
-          if (targetingMsgJson.msgContent.type === 1) {
-            html = targetingMsgJson.msgContent.html;
-            html = html.replace('##campaignId##', campaignId);
-          } else {
-            var css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + 'td{vertical-align:top;}' + 'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' + '</style>';
-            var bgColor, textColor, btnBg, leftTd, btColor;
-
-            if (targetingMsgJson.display.theme === 'dark') {
-              bgColor = '#2d2d2e';
-              textColor = '#eaeaea';
-              btnBg = '#353535';
-              leftTd = '#353535';
-              btColor = '#ffffff';
-            } else {
-              bgColor = '#ffffff';
-              textColor = '#000000';
-              leftTd = '#f4f4f4';
-              btnBg = '#a5a6a6';
-              btColor = '#ffffff';
-            }
-
-            var titleText = targetingMsgJson.msgContent.title;
-            var descriptionText = targetingMsgJson.msgContent.description;
-            var imageTd = '';
-
-            if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== '') {
-              imageTd = "<td class='imgTd' style='background-color:" + leftTd + "'><img src='" + targetingMsgJson.msgContent.imageUrl + "' height='60' width='60'></td>";
-            }
-
-            var onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'" + divId + "');";
-            var title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<table cellpadding='0' cellspacing='0' border='0'>" + // "<tr><td colspan='2'></td></tr>"+
-            '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
-            var body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>';
-            html = css + title + body;
-          }
-
-          iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
-          msgDiv.appendChild(iframe);
-          var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-          var doc = ifrm.document;
-          doc.open();
-          doc.write(html);
-          doc.close();
-
-          var adjustIFrameHeight = function adjustIFrameHeight() {
-            // adjust iframe and body height of html inside correctly
-            contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
-
-            if (displayObj['custom-editor'] !== true && !isBanner) {
-              contentHeight += 25;
-            }
-
-            document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px';
-            document.getElementById('wiz-iframe').style.height = contentHeight + 'px';
-          };
-
-          var ua = navigator.userAgent.toLowerCase();
-
-          if (ua.indexOf('safari') !== -1) {
-            if (ua.indexOf('chrome') > -1) {
-              iframe.onload = function () {
-                adjustIFrameHeight();
-                var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-                setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
-              };
-            } else {
-              var inDoc = iframe.contentDocument || iframe.contentWindow;
-              if (inDoc.document) inDoc = inDoc.document; // safari iphone 7+ needs this.
-
-              adjustIFrameHeight();
-
-              var _timer = setInterval(function () {
-                if (inDoc.readyState === 'complete') {
-                  clearInterval(_timer); // adjust iframe and body height of html inside correctly
-
-                  adjustIFrameHeight();
-                  var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-                  setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
-                }
-              }, 10);
-            }
-          } else {
-            iframe.onload = function () {
-              // adjust iframe and body height of html inside correctly
-              adjustIFrameHeight();
-              var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-              setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
-            };
-          }
-        };
-
-        var _callBackCalled = false;
-
-        var showFooterNotification = function showFooterNotification(targetingMsgJson) {
-          var onClick = targetingMsgJson.display.onClick; // TODO: Needs wizrocket as a global variable
-
-          if (window.clevertap.hasOwnProperty('notificationCallback') && typeof window.clevertap.notificationCallback !== 'undefined' && typeof window.clevertap.notificationCallback === 'function') {
-            var notificationCallback = window.clevertap.notificationCallback;
-
-            if (!_callBackCalled) {
-              var inaObj = {};
-              inaObj.msgContent = targetingMsgJson.msgContent;
-              inaObj.msgId = targetingMsgJson.wzrk_id;
-
-              if (targetingMsgJson.display.kv != null) {
-                inaObj.kv = targetingMsgJson.display.kv;
-              }
-
-              window.clevertap.raiseNotificationClicked = function () {
-                if (onClick !== '' && onClick != null) {
-                  var jsFunc = targetingMsgJson.display.jsFunc;
-                  onClick += getCookieParams(); // invoke js function call
-
-                  if (jsFunc != null) {
-                    // track notification clicked event
-                    RequestDispatcher.fireRequest(onClick);
-                    invokeExternalJs(jsFunc, targetingMsgJson);
-                    return;
-                  } // pass on the gcookie|page|scookieId for capturing the click event
-
-
-                  if (targetingMsgJson.display.window === '1') {
-                    window.open(onClick, '_blank');
-                  } else {
-                    window.location = onClick;
-                  }
-                }
-              };
-
-              window.clevertap.raiseNotificationViewed = function () {
-                incrementImpression(targetingMsgJson);
-              };
-
-              notificationCallback(inaObj);
-              _callBackCalled = true;
-            }
-          } else {
-            renderFooterNotification(targetingMsgJson);
-          }
-        };
-
-        var exitintentObj;
-
-        var showExitIntent = function showExitIntent(event, targetObj) {
-          var targetingMsgJson;
-
-          if (event != null && event.clientY > 0) {
-            return;
-          }
-
-          if (targetObj == null) {
-            targetingMsgJson = exitintentObj;
-          } else {
-            targetingMsgJson = targetObj;
-          }
-
-          if (document.getElementById('intentPreview') != null) {
-            return;
-          } // dont show exit intent on tablet/mobile - only on desktop
-
-
-          if (targetingMsgJson.display.layout == null && (/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent) || /iPad/i.test(navigator.userAgent) || 'ontouchstart' in window || /tablet/i.test(navigator.userAgent))) {
-            return;
-          }
-
-          var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-
-          if (doCampHouseKeeping(targetingMsgJson) === false) {
-            return;
-          }
-
-          $ct.campaignDivMap[campaignId] = 'intentPreview';
-          var legacy = false;
-          var opacityDiv = document.createElement('div');
-          opacityDiv.id = 'intentOpacityDiv';
-          opacityDiv.setAttribute('style', 'position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: rgba(0,0,0,0.7);');
-          document.body.appendChild(opacityDiv);
-          var msgDiv = document.createElement('div');
-          msgDiv.id = 'intentPreview';
-
-          if (targetingMsgJson.display.proto == null) {
-            legacy = true;
-            msgDiv.setAttribute('style', 'display:block;overflow:hidden;top:55% !important;left:50% !important;position:fixed;z-index:2147483647;width:600px !important;height:600px !important;margin:-300px 0 0 -300px !important;');
-          } else {
-            msgDiv.setAttribute('style', targetingMsgJson.display.iFrameStyle);
-          }
-
-          document.body.appendChild(msgDiv);
-          var iframe = document.createElement('iframe');
-          var borderRadius = targetingMsgJson.display.br === false ? '0' : '8';
-          iframe.frameborder = '0px';
-          iframe.marginheight = '0px';
-          iframe.marginwidth = '0px';
-          iframe.scrolling = 'no';
-          iframe.id = 'wiz-iframe-intent';
-          var onClick = targetingMsgJson.display.onClick;
-          var pointerCss = '';
-
-          if (onClick !== '' && onClick != null) {
-            pointerCss = 'cursor:pointer;';
-          }
-
-          var html; // direct html
-
-          if (targetingMsgJson.msgContent.type === 1) {
-            html = targetingMsgJson.msgContent.html;
-            html = html.replace('##campaignId##', campaignId);
-          } else {
-            var css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + '#contentDiv .button{padding-top:20px;}' + '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' + '</style>';
-            var bgColor, textColor, btnBg, btColor;
-
-            if (targetingMsgJson.display.theme === 'dark') {
-              bgColor = '#2d2d2e';
-              textColor = '#eaeaea';
-              btnBg = '#353535';
-              btColor = '#ffffff';
-            } else {
-              bgColor = '#ffffff';
-              textColor = '#000000';
-              btnBg = '#a5a6a6';
-              btColor = '#ffffff';
-            }
-
-            var titleText = targetingMsgJson.msgContent.title;
-            var descriptionText = targetingMsgJson.msgContent.description;
-            var ctaText = '';
-
-            if (targetingMsgJson.msgContent.ctaText != null && targetingMsgJson.msgContent.ctaText !== '') {
-              ctaText = "<div class='button'><a href='#'>" + targetingMsgJson.msgContent.ctaText + '</a></div>';
-            }
-
-            var imageTd = '';
-
-            if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== '') {
-              imageTd = "<div style='padding-top:20px;'><img src='" + targetingMsgJson.msgContent.imageUrl + "' width='500' alt=" + titleText + ' /></div>';
-            }
-
-            var onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'intentPreview');";
-            var title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
-            var body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '</div>' + imageTd + ctaText + '</div></div>';
-            html = css + title + body;
-          }
-
-          iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
-          msgDiv.appendChild(iframe);
-          var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-          var doc = ifrm.document;
-          doc.open();
-          doc.write(html);
-          doc.close();
-          var contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
-          setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
-        };
-
-        if (!document.body) {
-          if (_classPrivateFieldLooseBase(this, _wizCounter)[_wizCounter] < 6) {
-            _classPrivateFieldLooseBase(this, _wizCounter)[_wizCounter]++;
-            setTimeout(this.tr, 1000, msg);
-          }
-
-          return;
-        }
-
-        if (msg.inapp_notifs != null) {
-          for (var index = 0; index < msg.inapp_notifs.length; index++) {
-            var targetNotif = msg.inapp_notifs[index];
-
-            if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
-              showFooterNotification(targetNotif);
-            } else if (targetNotif.display.wtarget_type === 1) {
-              // if display['wtarget_type']==1 then exit intent
-              exitintentObj = targetNotif;
-              window.document.body.onmouseleave = showExitIntent;
-            }
-          }
-        }
-
-        var mergeEventMap = function mergeEventMap(newEvtMap) {
-          if ($ct.globalEventsMap == null) {
-            $ct.globalEventsMap = StorageManager$1.readFromLSorCookie(EV_COOKIE);
-
-            if ($ct.globalEventsMap == null) {
-              $ct.globalEventsMap = newEvtMap;
-              return;
-            }
-          }
-
-          for (var key in newEvtMap) {
-            if (newEvtMap.hasOwnProperty(key)) {
-              var oldEvtObj = $ct.globalEventsMap[key];
-              var newEvtObj = newEvtMap[key];
-
-              if ($ct.globalEventsMap[key] != null) {
-                if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
-                  $ct.globalEventsMap[key] = newEvtObj;
-                }
-              } else {
-                $ct.globalEventsMap[key] = newEvtObj;
-              }
-            }
-          }
-        };
-
-        if (StorageManager$1._isLocalStorageSupported()) {
-          try {
-            if (msg.evpr != null) {
-              var eventsMap = msg.evpr.events;
-              var profileMap = msg.evpr.profile;
-              var syncExpiry = msg.evpr.expires_in;
-              var now = getNow();
-              StorageManager$1.setMetaProp('lsTime', now);
-              StorageManager$1.setMetaProp('exTs', syncExpiry);
-              mergeEventMap(eventsMap);
-              StorageManager$1.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
-
-              if ($ct.globalProfileMap == null) {
-                addToLocalProfileMap(profileMap, true);
-              } else {
-                addToLocalProfileMap(profileMap, false);
-              }
-            }
-
-            if (msg.arp != null) {
-              arp(msg.arp);
-            }
-
-            if (msg.inapp_stale != null) {
-              var campObj = getCampaignObject();
-              var globalObj = campObj.global;
-
-              if (globalObj != null) {
-                for (var idx in msg.inapp_stale) {
-                  if (msg.inapp_stale.hasOwnProperty(idx)) {
-                    delete globalObj[msg.inapp_stale[idx]];
-                  }
-                }
-              }
-
-              saveCampaignObject(campObj);
-            }
-          } catch (e) {
-            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unable to persist evrp/arp: ' + e);
-          }
-        }
       }
     }, {
       key: "_enableWebPush",
@@ -4283,7 +4279,7 @@
   };
 
   var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
-    var _this3 = this;
+    var _this2 = this;
 
     // ensure that proper arguments are passed
     if (typeof apnsWebPushId === 'undefined') {
@@ -4301,10 +4297,10 @@
           subscriptionData.endpoint = subscription.deviceToken;
           subscriptionData.browser = 'Safari';
           var payload = subscriptionData;
-          payload = _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].addSystemDataToObject(payload, true);
+          payload = _classPrivateFieldLooseBase(_this2, _request$5)[_request$5].addSystemDataToObject(payload, true);
           payload = JSON.stringify(payload);
 
-          var pageLoadUrl = _classPrivateFieldLooseBase(_this3, _account$4)[_account$4].dataPostURL;
+          var pageLoadUrl = _classPrivateFieldLooseBase(_this2, _account$4)[_account$4].dataPostURL;
 
           pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
           pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload));
@@ -4312,16 +4308,16 @@
 
           StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
 
-          _classPrivateFieldLooseBase(_this3, _logger$7)[_logger$7].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+          _classPrivateFieldLooseBase(_this2, _logger$7)[_logger$7].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
         } else if (subscription.permission === 'denied') {
-          _classPrivateFieldLooseBase(_this3, _logger$7)[_logger$7].info('Error subscribing to Safari web push');
+          _classPrivateFieldLooseBase(_this2, _logger$7)[_logger$7].info('Error subscribing to Safari web push');
         }
       });
     }
   };
 
   var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
-    var _this4 = this;
+    var _this3 = this;
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register(serviceWorkerPath).then(function () {
@@ -4331,12 +4327,12 @@
           userVisibleOnly: true
         };
 
-        if (_classPrivateFieldLooseBase(_this4, _fcmPublicKey)[_fcmPublicKey] != null) {
-          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(_this4, _fcmPublicKey)[_fcmPublicKey]);
+        if (_classPrivateFieldLooseBase(_this3, _fcmPublicKey)[_fcmPublicKey] != null) {
+          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(_this3, _fcmPublicKey)[_fcmPublicKey]);
         }
 
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(function (subscription) {
-          _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+          _classPrivateFieldLooseBase(_this3, _logger$7)[_logger$7].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
 
 
           var subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
@@ -4351,10 +4347,10 @@
 
           {
             var payload = subscriptionData;
-            payload = _classPrivateFieldLooseBase(_this4, _request$5)[_request$5].addSystemDataToObject(payload, true);
+            payload = _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].addSystemDataToObject(payload, true);
             payload = JSON.stringify(payload);
 
-            var pageLoadUrl = _classPrivateFieldLooseBase(_this4, _account$4)[_account$4].dataPostURL;
+            var pageLoadUrl = _classPrivateFieldLooseBase(_this3, _account$4)[_account$4].dataPostURL;
 
             pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
             pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload));
@@ -4367,23 +4363,23 @@
             subscriptionCallback();
           }
         }).catch(function (error) {
-          _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].error('Error subscribing: ' + error); // unsubscribe from webpush if error
+          _classPrivateFieldLooseBase(_this3, _logger$7)[_logger$7].error('Error subscribing: ' + error); // unsubscribe from webpush if error
 
 
           serviceWorkerRegistration.pushManager.getSubscription().then(function (subscription) {
             if (subscription !== null) {
               subscription.unsubscribe().then(function (successful) {
                 // You've successfully unsubscribed
-                _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].info('Unsubscription successful');
+                _classPrivateFieldLooseBase(_this3, _logger$7)[_logger$7].info('Unsubscription successful');
               }).catch(function (e) {
                 // Unsubscription failed
-                _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].error('Error unsubscribing: ' + e);
+                _classPrivateFieldLooseBase(_this3, _logger$7)[_logger$7].error('Error unsubscribing: ' + e);
               });
             }
           });
         });
       }).catch(function (err) {
-        _classPrivateFieldLooseBase(_this4, _logger$7)[_logger$7].error('error registering service worker: ' + err);
+        _classPrivateFieldLooseBase(_this3, _logger$7)[_logger$7].error('error registering service worker: ' + err);
       });
     }
   };
@@ -4404,7 +4400,7 @@
   };
 
   var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
-    var _this5 = this;
+    var _this4 = this;
 
     // make sure everything is specified
     var titleText;
@@ -4576,7 +4572,7 @@
 
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
-              _classPrivateFieldLooseBase(_this5, _addWizAlertJS)[_addWizAlertJS]().onload = function () {
+              _classPrivateFieldLooseBase(_this4, _addWizAlertJS)[_addWizAlertJS]().onload = function () {
                 // create our wizrocket popup
                 window.wzrkPermissionPopup.wizAlert({
                   title: titleText,
@@ -4601,7 +4597,7 @@
                     }
                   }
 
-                  _classPrivateFieldLooseBase(_this5, _removeWizAlertJS)[_removeWizAlertJS]();
+                  _classPrivateFieldLooseBase(_this4, _removeWizAlertJS)[_removeWizAlertJS]();
                 });
               };
             }
@@ -4626,14 +4622,14 @@
               okCallback();
             }
 
-            _classPrivateFieldLooseBase(_this5, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+            _classPrivateFieldLooseBase(_this4, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
           } else {
             if (typeof rejectCallback === 'function') {
               rejectCallback();
             }
           }
 
-          _classPrivateFieldLooseBase(_this5, _removeWizAlertJS)[_removeWizAlertJS]();
+          _classPrivateFieldLooseBase(_this4, _removeWizAlertJS)[_removeWizAlertJS]();
         });
       };
     }
@@ -4645,7 +4641,7 @@
 
   var _onloadcalled = _classPrivateFieldLooseKey("onloadcalled");
 
-  var _device$4 = _classPrivateFieldLooseKey("device");
+  var _device$3 = _classPrivateFieldLooseKey("device");
 
   var _session$4 = _classPrivateFieldLooseKey("session");
 
@@ -4727,7 +4723,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device$4, {
+      Object.defineProperty(this, _device$3, {
         writable: true,
         value: void 0
       });
@@ -4763,7 +4759,7 @@
 
       _classPrivateFieldLooseBase(this, _logger$8)[_logger$8] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account$5)[_account$5] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
-      _classPrivateFieldLooseBase(this, _device$4)[_device$4] = new DeviceManager({
+      _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8]
       });
       _classPrivateFieldLooseBase(this, _session$4)[_session$4] = new SessionManager({
@@ -4773,7 +4769,7 @@
       _classPrivateFieldLooseBase(this, _request$6)[_request$6] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
-        device: _classPrivateFieldLooseBase(this, _device$4)[_device$4],
+        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
         session: _classPrivateFieldLooseBase(this, _session$4)[_session$4],
         isPersonalisationActive: this._isPersonalisationActive
       });
@@ -4794,7 +4790,7 @@
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
         session: _classPrivateFieldLooseBase(this, _session$4)[_session$4],
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
-        device: _classPrivateFieldLooseBase(this, _device$4)[_device$4]
+        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3]
       }, clevertap.onUserLogin);
       this.privacy = new Privacy({
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
@@ -4803,14 +4799,13 @@
       this.notifications = new NotificationHandler({
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
         session: _classPrivateFieldLooseBase(this, _session$4)[_session$4],
-        device: _classPrivateFieldLooseBase(this, _device$4)[_device$4],
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5]
       }, clevertap.notifications);
       _classPrivateFieldLooseBase(this, _api)[_api] = new CleverTapAPI({
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
-        device: _classPrivateFieldLooseBase(this, _device$4)[_device$4],
+        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
         session: _classPrivateFieldLooseBase(this, _session$4)[_session$4]
       });
       this.spa = clevertap.spa;
@@ -4837,7 +4832,7 @@
       };
 
       this.getCleverTapID = function () {
-        return _classPrivateFieldLooseBase(_this, _device$4)[_device$4].getGuid();
+        return _classPrivateFieldLooseBase(_this, _device$3)[_device$3].getGuid();
       };
 
       var _handleEmailSubscription = function _handleEmailSubscription(subscription, reEncoded, fetchGroups) {
@@ -4850,7 +4845,7 @@
       api.clear = this.clear;
 
       api.closeIframe = function (campaignId, divIdIgnored) {
-        _this.notifications._closeIframe(campaignId, divIdIgnored);
+        closeIframe(campaignId, divIdIgnored, _classPrivateFieldLooseBase(_this, _session$4)[_session$4].sessionId);
       };
 
       api.enableWebPush = function (enabled, applicationServerKey) {
@@ -4858,7 +4853,12 @@
       };
 
       api.tr = function (msg) {
-        _this.notifications._tr(msg);
+        _tr(msg, {
+          device: _classPrivateFieldLooseBase(_this, _device$3)[_device$3],
+          session: _classPrivateFieldLooseBase(_this, _session$4)[_session$4],
+          request: _classPrivateFieldLooseBase(_this, _request$6)[_request$6],
+          logger: _classPrivateFieldLooseBase(_this, _logger$8)[_logger$8]
+        });
       };
 
       api.setEnum = function (enumVal) {
@@ -4931,6 +4931,9 @@
     }
 
     _createClass(CleverTap, [{
+      key: "raiseNotificationClicked",
+      value: function raiseNotificationClicked() {}
+    }, {
       key: "init",
       value: function init(accountId, region, targetDomain) {
         if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
