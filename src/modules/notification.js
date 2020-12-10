@@ -14,7 +14,6 @@ import { addToURL } from '../util/url'
 export default class NotificationHandler extends Array {
   #oldValues
   #logger
-  #session
   #request
   #account
   #wizAlertJSPath
@@ -31,7 +30,6 @@ export default class NotificationHandler extends Array {
     this.#fcmPublicKey = null
     this.#oldValues = values
     this.#logger = logger
-    this.#session = session
     this.#request = request
     this.#account = account
   }

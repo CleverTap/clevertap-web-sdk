@@ -103,7 +103,6 @@ export default class CleverTap {
 
     this.notifications = new NotificationHandler({
       logger: this.#logger,
-      session: this.#session,
       request: this.#request,
       account: this.#account
     }, clevertap.notifications)

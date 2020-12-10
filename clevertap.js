@@ -4111,8 +4111,6 @@
 
   var _logger$7 = _classPrivateFieldLooseKey("logger");
 
-  var _session$3 = _classPrivateFieldLooseKey("session");
-
   var _request$5 = _classPrivateFieldLooseKey("request");
 
   var _account$4 = _classPrivateFieldLooseKey("account");
@@ -4185,10 +4183,6 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _session$3, {
-        writable: true,
-        value: void 0
-      });
       Object.defineProperty(_assertThisInitialized(_this), _request$5, {
         writable: true,
         value: void 0
@@ -4209,7 +4203,6 @@
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _fcmPublicKey)[_fcmPublicKey] = null;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$4)[_oldValues$4] = values;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$7)[_logger$7] = logger;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _session$3)[_session$3] = session;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$5)[_request$5] = request;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$4)[_account$4] = account;
       return _this;
@@ -4643,7 +4636,7 @@
 
   var _device$3 = _classPrivateFieldLooseKey("device");
 
-  var _session$4 = _classPrivateFieldLooseKey("session");
+  var _session$3 = _classPrivateFieldLooseKey("session");
 
   var _account$5 = _classPrivateFieldLooseKey("account");
 
@@ -4727,7 +4720,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _session$4, {
+      Object.defineProperty(this, _session$3, {
         writable: true,
         value: void 0
       });
@@ -4762,7 +4755,7 @@
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8]
       });
-      _classPrivateFieldLooseBase(this, _session$4)[_session$4] = new SessionManager({
+      _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
         isPersonalisationActive: this._isPersonalisationActive
       });
@@ -4770,7 +4763,7 @@
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
         device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
-        session: _classPrivateFieldLooseBase(this, _session$4)[_session$4],
+        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
         isPersonalisationActive: this._isPersonalisationActive
       });
       this.enablePersonalization = clevertap.enablePersonalization || false;
@@ -4788,7 +4781,7 @@
       this.onUserLogin = new UserLoginHandler({
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
-        session: _classPrivateFieldLooseBase(this, _session$4)[_session$4],
+        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
         device: _classPrivateFieldLooseBase(this, _device$3)[_device$3]
       }, clevertap.onUserLogin);
@@ -4798,7 +4791,6 @@
       }, clevertap.privacy);
       this.notifications = new NotificationHandler({
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
-        session: _classPrivateFieldLooseBase(this, _session$4)[_session$4],
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5]
       }, clevertap.notifications);
@@ -4806,7 +4798,7 @@
         logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
         device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
-        session: _classPrivateFieldLooseBase(this, _session$4)[_session$4]
+        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
       });
       this.spa = clevertap.spa;
       this.user = new User({
@@ -4814,10 +4806,10 @@
       });
       this.session = {
         getTimeElapsed: function getTimeElapsed() {
-          return _classPrivateFieldLooseBase(_this, _session$4)[_session$4].getTimeElapsed();
+          return _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getTimeElapsed();
         },
         getPageCount: function getPageCount() {
-          return _classPrivateFieldLooseBase(_this, _session$4)[_session$4].getPageCount();
+          return _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getPageCount();
         }
       };
 
@@ -4845,7 +4837,7 @@
       api.clear = this.clear;
 
       api.closeIframe = function (campaignId, divIdIgnored) {
-        closeIframe(campaignId, divIdIgnored, _classPrivateFieldLooseBase(_this, _session$4)[_session$4].sessionId);
+        closeIframe(campaignId, divIdIgnored, _classPrivateFieldLooseBase(_this, _session$3)[_session$3].sessionId);
       };
 
       api.enableWebPush = function (enabled, applicationServerKey) {
@@ -4855,7 +4847,7 @@
       api.tr = function (msg) {
         _tr(msg, {
           device: _classPrivateFieldLooseBase(_this, _device$3)[_device$3],
-          session: _classPrivateFieldLooseBase(_this, _session$4)[_session$4],
+          session: _classPrivateFieldLooseBase(_this, _session$3)[_session$3],
           request: _classPrivateFieldLooseBase(_this, _request$6)[_request$6],
           logger: _classPrivateFieldLooseBase(_this, _logger$8)[_logger$8]
         });
@@ -4953,7 +4945,7 @@
           _classPrivateFieldLooseBase(this, _account$5)[_account$5].id = accountId;
         }
 
-        _classPrivateFieldLooseBase(this, _session$4)[_session$4].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$5)[_account$5].id;
+        _classPrivateFieldLooseBase(this, _session$3)[_session$3].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$5)[_account$5].id;
 
         if (region) {
           _classPrivateFieldLooseBase(this, _account$5)[_account$5].region = region;
@@ -4994,12 +4986,12 @@
         var currLocation = window.location.href;
         var urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
 
-        var obj = _classPrivateFieldLooseBase(this, _session$4)[_session$4].getSessionCookieObject();
+        var obj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
 
         var pgCount = typeof obj.p === 'undefined' ? 0 : obj.p;
         obj.p = ++pgCount;
 
-        _classPrivateFieldLooseBase(this, _session$4)[_session$4].setSessionCookieObject(obj); // -- update page count
+        _classPrivateFieldLooseBase(this, _session$3)[_session$3].setSessionCookieObject(obj); // -- update page count
 
 
         var data = {};
