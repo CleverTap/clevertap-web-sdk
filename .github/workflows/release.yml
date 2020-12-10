@@ -48,5 +48,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Copy file to S3
+        # S3_bucket/clevertap.js for beta, /a.js when moving to prod for all
         run: |
-          aws s3 cp clevertap.min.js s3://${{ secrets.S3_BUCKET_PATH }}
+          aws s3 cp clevertap.min.js s3://${{ secrets.S3_BUCKET_PATH }} 
