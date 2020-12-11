@@ -2513,7 +2513,7 @@
           $ct.LRU_CACHE.set(kId, gFromCache);
           StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
           _classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie = gFromCache;
-          var lastK = $ct.LRU_CACHE.getSecondLastKEY();
+          var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
           if (lastK !== -1) {
             var lastGUID = $ct.LRU_CACHE.cache[lastK];

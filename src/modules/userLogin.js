@@ -112,7 +112,7 @@ export default class UserLoginHandler extends Array {
           StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache)
           this.#device.gcookie = gFromCache
 
-          const lastK = $ct.LRU_CACHE.getSecondLastKEY()
+          const lastK = $ct.LRU_CACHE.getSecondLastKey()
           if (lastK !== -1) {
             const lastGUID = $ct.LRU_CACHE.cache[lastK]
             this.#request.unregisterTokenForGuid(lastGUID)
