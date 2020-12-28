@@ -117,4 +117,7 @@ dist
 
 
 .DS_Store
-clevertap.min.js
+
+# Do not send test and src to npm installs.
+test
+src
