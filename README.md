@@ -24,16 +24,56 @@ or
 
 ## 🚀 Basic Initialization
 
-#### Add your CleverTap account credentials
+### Add your CleverTap account credentials
 
 ```
 import clevertap from 'clevertap-web-sdk'
-clevertap.init('YOUR_ACCOUNT_ID', '')
+clevertap.init('YOUR_ACCOUNT_ID')
 ```
 
-## 𝌡 Example Usage
-* A [react application](https://github.com/CleverTap/clevertap-web-sdk/tree/master/example-apps/react) showing the integration of our SDK in a create react app project.
-* An [angular application](https://github.com/CleverTap/clevertap-web-sdk/tree/master/example-apps/angular) showing the integration of our SDK in an Angular CLI generated project.
+### Event Push
+
+Events track what individual actions users perform in your app or website. Some examples of events include a user launching an app, viewing a product, listening to a song, sharing a photo, making a purchase, or favoriting an item.
+
+```
+// event without properties
+clevertap.event.push("Product viewed");
+
+// event with properties
+clevertap.event.push("Product viewed", {
+    "Product name": "Casio Chronograph Watch",
+    "Category": "Mens Accessories",
+    "Price": 59.99,
+    "Date": new Date()
+});
+```
+
+### Profile Push
+
+After you integrate our SDK, we will create a user profile for each person who launches your app or visits your website.
+
+```
+// each of the below mentioned fields are optional
+// if set, these populate demographic information in the Dashboard
+clevertap.profile.push({
+ "Site": {
+   "Name": "Jack Montana",                  // String
+   "Identity": 61026032,                    // String or number
+   "Email": "jack@gmail.com",               // Email address of the user
+   "Phone": "+14155551234",                 // Phone (with the country code)
+   "Gender": "M",                           // Can be either M or F
+   "DOB": new Date(), // Date of Birth. Javascript Date object
+   "Photo": 'www.foobar.com/image.jpeg',    // URL to the Image
+
+// optional fields. controls whether the user will be sent email, push etc.
+   "MSG-email": false,                      // Disable email notifications
+   "MSG-push": true,                        // Enable push notifications
+   "MSG-sms": true                          // Enable sms notifications
+   "MSG-whatsapp": true,                    // Enable whatsapp notifications
+ }
+})
+```
+
 
 ## 🆕 Change Log
 
