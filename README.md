@@ -28,7 +28,7 @@ or
 
 ### ___Manually add the script___
 
-```
+```html
 <script type="text/javascript">
      var clevertap = {event:[], profile:[], account:[], onUserLogin:[], notifications:[], privacy:[]};
  // replace with the CLEVERTAP_ACCOUNT_ID with the actual ACCOUNT ID value from your Dashboard -> Settings page
@@ -51,7 +51,7 @@ clevertap.privacy.push({useIP: false}); //set the flag to true, if the user agre
 ### Add your CleverTap account credentials
 
 Only in case you are using a package manager
-```
+```javascript
 import clevertap from 'clevertap-web-sdk'
 clevertap.init('YOUR_ACCOUNT_ID')
 ```
@@ -60,7 +60,7 @@ clevertap.init('YOUR_ACCOUNT_ID')
 
 Events track what individual actions users perform in your app or website. Some examples of events include a user launching an app, viewing a product, listening to a song, sharing a photo, making a purchase, or favoriting an item.
 
-```
+```javascript
 // event without properties
 clevertap.event.push("Product viewed");
 
@@ -77,7 +77,7 @@ clevertap.event.push("Product viewed", {
 
 After you integrate our SDK, we will create a user profile for each person who launches your app or visits your website.
 
-```
+```javascript
 // each of the below mentioned fields are optional
 // if set, these populate demographic information in the Dashboard
 clevertap.profile.push({
