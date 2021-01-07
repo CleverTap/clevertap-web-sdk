@@ -99,6 +99,10 @@ clevertap.profile.push({
 })
 ```
 
+## 𝌡 Example Usage
+* A [react application](https://github.com/CleverTap/clevertap-web-sdk/tree/master/example-apps/react) showing the integration of our SDK in a create react app project.
+* An [angular application](https://github.com/CleverTap/clevertap-web-sdk/tree/master/example-apps/angular) showing the integration of our SDK in an Angular CLI generated project.
+
 
 ## 🆕 Change Log
 
