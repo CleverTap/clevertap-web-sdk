@@ -31,6 +31,6 @@ jobs:
       - name: Install packages
         run: yarn
       - name: Run unit tests
-        run: yarn run test
+        run: yarn run test:coverage
       - name: Build package
         run: yarn run build
