@@ -234,9 +234,9 @@ describe('util/clevertap', function () {
         Married: 'N',
         Education: 'School',
         Age: '20',
-        DOB: new Date('01-01-2020'),
+        DOB: new Date('2020-01-01T00:00:00.000Z'),
         Phone: '+1234567890',
-        PurchaseDate: new Date('01-01-2020')
+        PurchaseDate: new Date('2020-01-01T00:00:00.000Z')
       }
 
       const expectedObject = {

@@ -7,22 +7,22 @@ import {
 
 describe('util/datetime', function () {
   test('getToday', () => {
-    jest.setSystemTime(new Date('01-01-2020'))
+    jest.setSystemTime(new Date('2020-01-01T00:00:00.000Z'))
     const result = getToday()
     const expectedDate = new Date()
     expect(result).toBe(`${expectedDate.getFullYear()}${expectedDate.getMonth()}${expectedDate.getDay()}`)
   })
 
   test('getNow', () => {
-    jest.setSystemTime(new Date('01-01-2020'))
+    jest.setSystemTime(new Date('2020-01-01T00:00:00.000Z'))
     const result = getNow()
-    const expectedTs = 1577817000
+    const expectedTs = 1577836800
     expect(result).toBe(expectedTs)
   })
 
   test('convertToWZRKDate', () => {
-    const result = convertToWZRKDate(new Date('01-01-2020'))
-    const expectedTs = 1577817000
+    const result = convertToWZRKDate(new Date('2020-01-01T00:00:00.000Z'))
+    const expectedTs = 1577836800
     expect(result).toBe(`$D_${expectedTs}`)
   })
 
