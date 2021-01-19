@@ -2,6 +2,26 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Integeration of CleverTap Web SDK
+
+This project comes pre installed with the web sdk. In order to install it into your own project you can install it as follows
+
+`yarn add clevertap-web-sdk`
+
+Next Import CleverTap (`import clevertap from 'clevertap-web-sdk';`) into your component and initialize it once (`clevertap.init('YOUR_ACCOUNT_ID')`). You can now import your `clevertap` instance into any component and use it. 
+
+Example: 
+``` JavaScript
+  handleEventPushClick () {
+    clevertap.event.push('Product Viewed', {
+      "Product name": "Casio Chronograph Watch",
+      "Category": "Mens Accessories",
+      "Price": 59.99,
+      "Date": new Date()
+    }); // Replace Payload as per your event schema and design
+  }
+```
+
 ## Available Scripts
 
 In the project directory, you can run:

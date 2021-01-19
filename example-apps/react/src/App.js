@@ -1,25 +1,25 @@
-import logo from './logo.svg';
 import './App.css';
+import clevertap from 'clevertap-web-sdk';
 
 function App() {
+  clevertap.init('YOUR_ACCOUNT_ID'); // Replace YOUR_ACCOUNT_ID, can be initialized just once
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <h3>CleverTap Web SDK using React</h3>
+      <div>
+        <button onClick={handleEventPushClick}>Push Event</button>
+      </div>
     </div>
   );
+}
+
+function handleEventPushClick () {
+  clevertap.event.push('Product Viewed', {
+    "Product name": "Casio Chronograph Watch",
+    "Category": "Mens Accessories",
+    "Price": 59.99,
+    "Date": new Date()
+  }); // Replace Payload as per your event schema and design
 }
 
 export default App;
