@@ -176,6 +176,96 @@
     };
   }
 
+  function _toConsumableArray(arr) {
+    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
+  }
+
+  function _arrayWithoutHoles(arr) {
+    if (Array.isArray(arr)) return _arrayLikeToArray(arr);
+  }
+
+  function _iterableToArray(iter) {
+    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
+  }
+
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+
+    return arr2;
+  }
+
+  function _nonIterableSpread() {
+    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+  }
+
+  function _createForOfIteratorHelper(o, allowArrayLike) {
+    var it;
+
+    if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) {
+      if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+        if (it) o = it;
+        var i = 0;
+
+        var F = function () {};
+
+        return {
+          s: F,
+          n: function () {
+            if (i >= o.length) return {
+              done: true
+            };
+            return {
+              done: false,
+              value: o[i++]
+            };
+          },
+          e: function (e) {
+            throw e;
+          },
+          f: F
+        };
+      }
+
+      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+    }
+
+    var normalCompletion = true,
+        didErr = false,
+        err;
+    return {
+      s: function () {
+        it = o[Symbol.iterator]();
+      },
+      n: function () {
+        var step = it.next();
+        normalCompletion = step.done;
+        return step;
+      },
+      e: function (e) {
+        didErr = true;
+        err = e;
+      },
+      f: function () {
+        try {
+          if (!normalCompletion && it.return != null) it.return();
+        } finally {
+          if (didErr) throw err;
+        }
+      }
+    };
+  }
+
   var id = 0;
 
   function _classPrivateFieldLooseKey(name) {
@@ -398,6 +488,28 @@
   var sanitize = function sanitize(input, regex) {
     return input.replace(regex, '');
   };
+  function mergeObjects() {
+    var destObj = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    var srcObj = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+    for (var key in srcObj) {
+      var value = srcObj[key];
+
+      if (isObject(value) && !Array.isArray(value)) {
+        var newDest = destObj[key];
+
+        if (newDest === null && newDest === undefined) {
+          newDest = {};
+        }
+
+        destObj[key] = mergeObjects(newDest, value);
+      } else {
+        destObj[key] = value;
+      }
+    }
+
+    return destObj;
+  }
 
   var getToday = function getToday() {
     var today = new Date();
@@ -4628,7 +4740,336 @@
     }
   };
 
+  var defaultInboxProps = {
+    background: '#ffffff',
+    tags: [],
+    position: 'bottom-right',
+    boxShadow: '0 0 8px 4px rgba(0,0,0,.16)',
+    button: {
+      color: '#000000',
+      background: '#ffffff',
+      iconUrl: 'https://eu1.dashboard.clevertap.com/images/svg/notification-bell.svg'
+    },
+    header: {
+      color: '#000000',
+      background: '#ffffff',
+      text: 'Notification Center'
+    },
+    tab: {
+      background: '#ffffff',
+      color: '#000000aa',
+      activeColor: '#000000'
+    }
+  };
+
+  var _oldValues$5 = _classPrivateFieldLooseKey("oldValues");
+
   var _logger$8 = _classPrivateFieldLooseKey("logger");
+
+  var _isInitialised = _classPrivateFieldLooseKey("isInitialised");
+
+  var _buttonElement = _classPrivateFieldLooseKey("buttonElement");
+
+  var _divElement = _classPrivateFieldLooseKey("divElement");
+
+  var _isOpen = _classPrivateFieldLooseKey("isOpen");
+
+  var _open = _classPrivateFieldLooseKey("open");
+
+  var _setupInbox = _classPrivateFieldLooseKey("setupInbox");
+
+  var _createButton = _classPrivateFieldLooseKey("createButton");
+
+  var _createInboxDiv = _classPrivateFieldLooseKey("createInboxDiv");
+
+  var _createHeader = _classPrivateFieldLooseKey("createHeader");
+
+  var _createTags = _classPrivateFieldLooseKey("createTags");
+
+  var _updateActiveTag = _classPrivateFieldLooseKey("updateActiveTag");
+
+  var InboxHandler = /*#__PURE__*/function (_Array) {
+    _inherits(InboxHandler, _Array);
+
+    var _super = _createSuper(InboxHandler);
+
+    function InboxHandler(_ref, values) {
+      var _this;
+
+      var logger = _ref.logger;
+
+      _classCallCheck(this, InboxHandler);
+
+      _this = _super.call(this);
+      Object.defineProperty(_assertThisInitialized(_this), _updateActiveTag, {
+        value: _updateActiveTag2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _createTags, {
+        value: _createTags2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _createHeader, {
+        value: _createHeader2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _createInboxDiv, {
+        value: _createInboxDiv2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _createButton, {
+        value: _createButton2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _setupInbox, {
+        value: _setupInbox2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _open, {
+        get: _get_open,
+        set: _set_open
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _oldValues$5, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _logger$8, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _isInitialised, {
+        writable: true,
+        value: false
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _buttonElement, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _divElement, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _isOpen, {
+        writable: true,
+        value: false
+      });
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$8)[_logger$8] = logger;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$5)[_oldValues$5] = values;
+      return _this;
+    }
+
+    _createClass(InboxHandler, [{
+      key: "push",
+      value: function push() {
+        for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
+          displayArgs[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _setupInbox)[_setupInbox](displayArgs);
+
+        return 0;
+      }
+    }, {
+      key: "_processOldValues",
+      value: function _processOldValues() {
+        if (_classPrivateFieldLooseBase(this, _oldValues$5)[_oldValues$5]) {
+          _classPrivateFieldLooseBase(this, _setupInbox)[_setupInbox](_classPrivateFieldLooseBase(this, _oldValues$5)[_oldValues$5]);
+        }
+
+        _classPrivateFieldLooseBase(this, _oldValues$5)[_oldValues$5] = null;
+      }
+    }]);
+
+    return InboxHandler;
+  }( /*#__PURE__*/_wrapNativeSuper(Array));
+
+  var _get_open = function _get_open() {
+    return _classPrivateFieldLooseBase(this, _isOpen)[_isOpen];
+  };
+
+  var _set_open = function _set_open(value) {
+    if (_classPrivateFieldLooseBase(this, _divElement)[_divElement]) {
+      _classPrivateFieldLooseBase(this, _divElement)[_divElement].style.display = value ? 'block' : 'none';
+    }
+
+    _classPrivateFieldLooseBase(this, _isOpen)[_isOpen] = value;
+  };
+
+  var _setupInbox2 = function _setupInbox2(displayArgs) {
+    var _this2 = this;
+
+    if (displayArgs.length > 0 && _typeof(displayArgs[0]) === 'object' && !_classPrivateFieldLooseBase(this, _isInitialised)[_isInitialised]) {
+      var inboxProps = mergeObjects(defaultInboxProps, displayArgs[0]);
+      var selectorId = inboxProps.selector;
+      _classPrivateFieldLooseBase(this, _buttonElement)[_buttonElement] = document.getElementById(selectorId);
+
+      if (!_classPrivateFieldLooseBase(this, _buttonElement)[_buttonElement]) {
+        _classPrivateFieldLooseBase(this, _buttonElement)[_buttonElement] = _classPrivateFieldLooseBase(this, _createButton)[_createButton](inboxProps);
+      }
+
+      _classPrivateFieldLooseBase(this, _divElement)[_divElement] = _classPrivateFieldLooseBase(this, _createInboxDiv)[_createInboxDiv](inboxProps);
+      _classPrivateFieldLooseBase(this, _isInitialised)[_isInitialised] = true;
+      document.body.addEventListener('click', function (e) {
+        if (_classPrivateFieldLooseBase(_this2, _divElement)[_divElement].contains(e.target)) {
+          return;
+        }
+
+        if (_classPrivateFieldLooseBase(_this2, _buttonElement)[_buttonElement].contains(e.target)) {
+          _classPrivateFieldLooseBase(_this2, _open)[_open] = !_classPrivateFieldLooseBase(_this2, _open)[_open];
+          return;
+        }
+
+        _classPrivateFieldLooseBase(_this2, _open)[_open] = false;
+      });
+    }
+  };
+
+  var _createButton2 = function _createButton2(inboxProps) {
+    var buttonProps = inboxProps.button;
+    var buttonElement = document.createElement('div');
+    var buttonCssText = 'position: fixed; width: 60px; height: 60px; border-radius: 50%; z-index: 2147483640 !important; cursor: pointer;';
+    buttonCssText += " color: ".concat(buttonProps.color, "; background-color: ").concat(buttonProps.background, "; box-shadow: ").concat(inboxProps.boxShadow, "; -webkit-box-shadow: ").concat(inboxProps.boxShadow, ";");
+
+    if (buttonProps.iconUrl) {
+      buttonCssText += " background-image: url(".concat(buttonProps.iconUrl, "); background-repeat: no-repeat; background-position: center;");
+    }
+
+    switch (inboxProps.position) {
+      case 'top-right':
+        buttonCssText += ' top: 30px; right: 30px;';
+        break;
+
+      case 'top-left':
+        buttonCssText += ' top: 30px; left: 30px;';
+        break;
+
+      case 'bottom-left':
+        buttonCssText += ' bottom: 30px; left: 30px;';
+        break;
+
+      case 'bottom-right':
+      default:
+        buttonCssText += ' bottom: 30px; right: 30px;';
+    }
+
+    buttonElement.style.cssText = buttonCssText;
+    return document.body.appendChild(buttonElement);
+  };
+
+  var _createInboxDiv2 = function _createInboxDiv2(inboxProps) {
+    var inboxDiv = document.createElement('div');
+    var hasTags = inboxProps.tags.length > 0;
+    inboxDiv.appendChild(_classPrivateFieldLooseBase(this, _createHeader)[_createHeader](inboxProps.header, hasTags));
+
+    if (hasTags) {
+      inboxDiv.appendChild(_classPrivateFieldLooseBase(this, _createTags)[_createTags](inboxProps));
+    }
+
+    var inboxDivCss = 'display: none; position: fixed; width: 375px; max-width: 80%; min-height: 300px; max-height: calc(100vh - 120px); max-height: -webkit-calc(100% - 120px); box-sizing: border-box; border-radius: 4px; z-index: 2147483647 !important;';
+    inboxDivCss += " background-color: ".concat(inboxProps.background, "; box-shadow: ").concat(inboxProps.boxShadow, "; -webkit-box-shadow: ").concat(inboxProps.boxShadow, ";");
+
+    switch (inboxProps.position) {
+      case 'top-right':
+        inboxDivCss += ' top: 100px; right: 30px;';
+        break;
+
+      case 'top-left':
+        inboxDivCss += ' top: 100px; left: 30px;';
+        break;
+
+      case 'bottom-left':
+        inboxDivCss += ' bottom: 100px; left: 30px;';
+        break;
+
+      case 'bottom-right':
+      default:
+        inboxDivCss += ' bottom: 100px; right: 30px;';
+    }
+
+    inboxDiv.style.cssText = inboxDivCss;
+    return document.body.appendChild(inboxDiv);
+  };
+
+  var _createHeader2 = function _createHeader2(headerProps, hasTags) {
+    var _this3 = this;
+
+    var header = document.createElement('div');
+    header.innerText = headerProps.text;
+    var headerCss = 'box-sizing: border-box; width: 100%; min-height: 40px; position: relative; padding: 16px 12px; font-size: 18px; border-radius: 4px 4px 0px 0px;';
+    headerCss += " color: ".concat(headerProps.color, "; background-color: ").concat(headerProps.background, ";");
+
+    if (!hasTags) {
+      headerCss += ' box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; -webkit-box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px;';
+    }
+
+    header.style.cssText = headerCss;
+    var close = document.createElement('div');
+    close.innerText = 'x';
+    close.style.cssText = 'font-size: 20px; font-family: sans-serif; position: absolute; right: 12px; top: 14px; cursor: pointer; opacity: 0.5;';
+    close.addEventListener('click', function () {
+      _classPrivateFieldLooseBase(_this3, _open)[_open] = false;
+    });
+    header.appendChild(close);
+    return header;
+  };
+
+  var _createTags2 = function _createTags2(inboxProps) {
+    var _this4 = this;
+
+    var tagContainer = document.createElement('div');
+    var tagContainerCss = 'box-sizing: border-box; width: 100%; box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; -webkit-box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; padding: 0px 12px;';
+    tagContainerCss += " background-color: ".concat(inboxProps.tab.background, "; color: ").concat(inboxProps.tab.color);
+    tagContainer.style.cssText = tagContainerCss;
+    var tags = ['All'].concat(_toConsumableArray(inboxProps.tags));
+    var tagElements = [];
+
+    var _iterator = _createForOfIteratorHelper(tags),
+        _step;
+
+    try {
+      for (_iterator.s(); !(_step = _iterator.n()).done;) {
+        var tag = _step.value;
+        var tagElement = document.createElement('div');
+        var tagCss = 'display: inline-block; position: relative; padding: 6px; border-bottom: 2px solid transparent; cursor: pointer;';
+        tagCss += "background-color: ".concat(inboxProps.tab.background, "; color: ").concat(inboxProps.tab.color);
+        tagElement.style.cssText = tagCss;
+        tagElement.innerText = tag;
+        tagElement.addEventListener('click', function (e) {
+          var activeTagName = e.target.innerText.trim();
+
+          _classPrivateFieldLooseBase(_this4, _updateActiveTag)[_updateActiveTag](tagElements, activeTagName, inboxProps.tab);
+        });
+        tagElements.push(tagElement);
+        tagContainer.appendChild(tagElement);
+      }
+    } catch (err) {
+      _iterator.e(err);
+    } finally {
+      _iterator.f();
+    }
+
+    tagElements[0].click();
+    return tagContainer;
+  };
+
+  var _updateActiveTag2 = function _updateActiveTag2(tags, activeTagName, tabProps) {
+    var _iterator2 = _createForOfIteratorHelper(tags),
+        _step2;
+
+    try {
+      for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+        var tag = _step2.value;
+
+        if (tag.innerText.trim() === activeTagName) {
+          tag.style.color = tabProps.activeColor;
+          tag.style.borderBottomColor = tabProps.activeColor;
+        } else {
+          tag.style.color = tabProps.color;
+          tag.style.borderBottomColor = 'transparent';
+        }
+      }
+    } catch (err) {
+      _iterator2.e(err);
+    } finally {
+      _iterator2.f();
+    }
+  };
+
+  var _logger$9 = _classPrivateFieldLooseKey("logger");
 
   var _api = _classPrivateFieldLooseKey("api");
 
@@ -4704,7 +5145,7 @@
       Object.defineProperty(this, _processOldValues, {
         value: _processOldValues2
       });
-      Object.defineProperty(this, _logger$8, {
+      Object.defineProperty(this, _logger$9, {
         writable: true,
         value: void 0
       });
@@ -4750,17 +5191,17 @@
 
       this.raiseNotificationClicked = function () {};
 
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8] = new Logger(logLevels.INFO);
+      _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account$5)[_account$5] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8]
+        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
       });
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
+        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         isPersonalisationActive: this._isPersonalisationActive
       });
       _classPrivateFieldLooseBase(this, _request$6)[_request$6] = new RequestManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
+        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
         device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
@@ -4768,12 +5209,12 @@
       });
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
+        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
         isPersonalisationActive: this._isPersonalisationActive
       }, clevertap.event);
       this.profile = new ProfileHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
+        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
         isPersonalisationActive: this._isPersonalisationActive
@@ -4782,7 +5223,7 @@
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
-        logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
+        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         device: _classPrivateFieldLooseBase(this, _device$3)[_device$3]
       }, clevertap.onUserLogin);
       this.privacy = new Privacy({
@@ -4790,12 +5231,15 @@
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5]
       }, clevertap.privacy);
       this.notifications = new NotificationHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
+        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5]
       }, clevertap.notifications);
+      this.inbox = new InboxHandler({
+        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
+      }, clevertap.inbox);
       _classPrivateFieldLooseBase(this, _api)[_api] = new CleverTapAPI({
-        logger: _classPrivateFieldLooseBase(this, _logger$8)[_logger$8],
+        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
         device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
@@ -4814,7 +5258,7 @@
       };
 
       this.logout = function () {
-        _classPrivateFieldLooseBase(_this, _logger$8)[_logger$8].debug('logout called');
+        _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('logout called');
 
         StorageManager$1.setInstantDeleteFlagInK();
       };
@@ -4849,12 +5293,12 @@
           device: _classPrivateFieldLooseBase(_this, _device$3)[_device$3],
           session: _classPrivateFieldLooseBase(_this, _session$3)[_session$3],
           request: _classPrivateFieldLooseBase(_this, _request$6)[_request$6],
-          logger: _classPrivateFieldLooseBase(_this, _logger$8)[_logger$8]
+          logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]
         });
       };
 
       api.setEnum = function (enumVal) {
-        setEnum(enumVal, _classPrivateFieldLooseBase(_this, _logger$8)[_logger$8]);
+        setEnum(enumVal, _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]);
       };
 
       api.is_onloadcalled = function () {
@@ -4937,7 +5381,7 @@
 
         if (!_classPrivateFieldLooseBase(this, _account$5)[_account$5].id) {
           if (!accountId) {
-            _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error(EMBED_ERROR);
+            _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].error(EMBED_ERROR);
 
             return;
           }
@@ -5088,6 +5532,8 @@
     this.profile._processOldValues();
 
     this.notifications._processOldValues();
+
+    this.inbox._processOldValues();
   };
 
   var _checkPageChanged2 = function _checkPageChanged2() {

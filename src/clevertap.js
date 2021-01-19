@@ -25,6 +25,7 @@ import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe } fr
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
+import InboxHandler from './modules/inbox'
 
 export default class CleverTap {
   #logger
@@ -106,6 +107,10 @@ export default class CleverTap {
       request: this.#request,
       account: this.#account
     }, clevertap.notifications)
+
+    this.inbox = new InboxHandler({
+      logger: this.#logger
+    }, clevertap.inbox)
 
     this.#api = new CleverTapAPI({
       logger: this.#logger,
@@ -272,6 +277,7 @@ export default class CleverTap {
     this.event._processOldValues()
     this.profile._processOldValues()
     this.notifications._processOldValues()
+    this.inbox._processOldValues()
   }
 
   #checkPageChanged () {

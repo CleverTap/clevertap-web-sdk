@@ -84,3 +84,20 @@ export const removeUnsupportedChars = (o, logger) => {
 export const sanitize = (input, regex) => {
   return input.replace(regex, '')
 }
+
+export function mergeObjects (destObj = {}, srcObj = {}) {
+  for (const key in srcObj) {
+    const value = srcObj[key]
+    if (isObject(value) && !Array.isArray(value)) {
+      let newDest = destObj[key]
+      if (newDest === null && newDest === undefined) {
+        newDest = {}
+      }
+      destObj[key] = mergeObjects(newDest, value)
+    } else {
+      destObj[key] = value
+    }
+  }
+
+  return destObj
+}
