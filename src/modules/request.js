@@ -155,6 +155,14 @@ export default class RequestManager {
     this.saveAndFireRequest(pageLoadUrl, false)
   }
 
+  incrementImpression (targetingMsgJson) {
+    const data = {}
+    data.type = 'event'
+    data.evtName = 'Notification Viewed'
+    data.evtData = { wzrk_id: targetingMsgJson.wzrk_id }
+    this.processEvent(data)
+  }
+
   #addToLocalEventMap (evtName) {
     if (StorageManager._isLocalStorageSupported()) {
       if (typeof $ct.globalEventsMap === 'undefined') {

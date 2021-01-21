@@ -2,8 +2,10 @@ import {
   GCOOKIE_NAME,
   META_COOKIE,
   KCOOKIE_NAME,
-  LCOOKIE_NAME
+  LCOOKIE_NAME,
+  INBOX_COOKIE_NAME
 } from './constants'
+import { getNow } from './datetime'
 export class StorageManager {
   static save (key, value) {
     if (!key || !value) {
@@ -228,6 +230,37 @@ export class StorageManager {
       delete backupMap[respNo]
       this.saveToLSorCookie(LCOOKIE_NAME, backupMap)
     }
+  }
+
+  static updateInboxMessagesInLS (updatedInboxMessages) {
+    let inboxMessages = this.readFromLSorCookie(INBOX_COOKIE_NAME)
+    if (!inboxMessages) {
+      inboxMessages = {}
+    }
+
+    for (const newInboxObj of updatedInboxMessages) {
+      inboxMessages[newInboxObj._id] = newInboxObj
+    }
+
+    // delete messages that have surpassed ttl.
+    const now = getNow()
+    for (const id in inboxMessages) {
+      if (inboxMessages[id].wzrk_ttl < now) {
+        delete inboxMessages[id]
+      }
+    }
+    this.saveToLSorCookie(INBOX_COOKIE_NAME, inboxMessages)
+  }
+
+  static removeInboxMessagesInLS (ids) {
+    let inboxMessages = this.readFromLSorCookie(INBOX_COOKIE_NAME)
+    if (!inboxMessages) {
+      inboxMessages = {}
+    }
+    for (const id of ids) {
+      delete inboxMessages[id]
+    }
+    this.saveToLSorCookie(INBOX_COOKIE_NAME, inboxMessages)
   }
 }
 

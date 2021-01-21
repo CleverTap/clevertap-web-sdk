@@ -8,6 +8,7 @@ export const CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID'
 export const GCOOKIE_NAME = 'WZRK_G'
 export const KCOOKIE_NAME = 'WZRK_K'
 export const CAMP_COOKIE_NAME = 'WZRK_CAMP'
+export const INBOX_COOKIE_NAME = 'WZRK_INBOX'
 export const SCOOKIE_PREFIX = 'WZRK_S'
 export const SCOOKIE_EXP_TIME_IN_SECS = 60 * 20 // 20 mins
 export const EV_COOKIE = 'WZRK_EV'

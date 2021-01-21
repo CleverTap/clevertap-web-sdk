@@ -28,3 +28,20 @@ export const isDateValid = (date) => {
   // eslint-disable-next-line eqeqeq
   return composedDate.getDate() == d && composedDate.getMonth() == m && composedDate.getFullYear() == y
 }
+
+export const relativeDateString = (ts) => {
+  const now = getNow()
+  let diff = Math.floor((now - ts) / 60)
+  if (diff < 5) {
+    return 'Just now'
+  }
+  if (diff < 60) {
+    return `${diff} minutes ago`
+  }
+  diff = Math.floor(diff / 60)
+  if (diff < 24) {
+    return `${diff} hours ago`
+  }
+  diff = Math.floor(diff / 24)
+  return `${diff} days ago`
+}

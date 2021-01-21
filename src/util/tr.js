@@ -29,12 +29,14 @@ const _tr = (msg, {
   device,
   session,
   request,
-  logger
+  logger,
+  inbox
 }) => {
   const _device = device
   const _session = session
   const _request = request
   const _logger = logger
+  const _inbox = inbox
   let _wizCounter = 0
 
   const doCampHouseKeeping = (targetingMsgJson) => {
@@ -156,7 +158,8 @@ const _tr = (msg, {
         device: _device,
         session: _session,
         request: _request,
-        logger: _logger
+        logger: _logger,
+        inbox: _inbox
       })
       return false
     }
@@ -239,11 +242,7 @@ const _tr = (msg, {
   }
 
   const incrementImpression = (targetingMsgJson) => {
-    const data = {}
-    data.type = 'event'
-    data.evtName = 'Notification Viewed'
-    data.evtData = { wzrk_id: targetingMsgJson.wzrk_id }
-    _request.processEvent(data)
+    _request.incrementImpression(targetingMsgJson)
   }
 
   const renderFooterNotification = (targetingMsgJson) => {
@@ -598,7 +597,8 @@ const _tr = (msg, {
         device: _device,
         session: _session,
         request: _request,
-        logger: _logger
+        logger: _logger,
+        inbox: _inbox
       })
     }
     return
@@ -613,6 +613,19 @@ const _tr = (msg, {
         window.document.body.onmouseleave = showExitIntent
       }
     }
+  }
+
+  if (msg.inbox_notifs != null) {
+    const inboxMessages = []
+    let unreadCount = _inbox._unreadCount
+
+    for (let index = 0; index < msg.inbox_notifs.length; index++) {
+      const targetInbox = msg.inbox_notifs[index]
+      inboxMessages.push(targetInbox)
+      unreadCount++
+    }
+    _inbox._unreadCount = unreadCount
+    StorageManager.updateInboxMessagesInLS(inboxMessages)
   }
 
   const mergeEventMap = (newEvtMap) => {

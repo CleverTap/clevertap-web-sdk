@@ -384,6 +384,7 @@
   var GCOOKIE_NAME = 'WZRK_G';
   var KCOOKIE_NAME = 'WZRK_K';
   var CAMP_COOKIE_NAME = 'WZRK_CAMP';
+  var INBOX_COOKIE_NAME = 'WZRK_INBOX';
   var SCOOKIE_PREFIX = 'WZRK_S';
   var SCOOKIE_EXP_TIME_IN_SECS = 60 * 20; // 20 mins
 
@@ -536,6 +537,27 @@
     var composedDate = new Date(y, m, d); // eslint-disable-next-line eqeqeq
 
     return composedDate.getDate() == d && composedDate.getMonth() == m && composedDate.getFullYear() == y;
+  };
+  var relativeDateString = function relativeDateString(ts) {
+    var now = getNow();
+    var diff = Math.floor((now - ts) / 60);
+
+    if (diff < 5) {
+      return 'Just now';
+    }
+
+    if (diff < 60) {
+      return "".concat(diff, " minutes ago");
+    }
+
+    diff = Math.floor(diff / 60);
+
+    if (diff < 24) {
+      return "".concat(diff, " hours ago");
+    }
+
+    diff = Math.floor(diff / 24);
+    return "".concat(diff, " days ago");
   };
 
   var StorageManager$1 = /*#__PURE__*/function () {
@@ -814,6 +836,65 @@
           delete backupMap[respNo];
           this.saveToLSorCookie(LCOOKIE_NAME, backupMap);
         }
+      }
+    }, {
+      key: "updateInboxMessagesInLS",
+      value: function updateInboxMessagesInLS(updatedInboxMessages) {
+        var inboxMessages = this.readFromLSorCookie(INBOX_COOKIE_NAME);
+
+        if (!inboxMessages) {
+          inboxMessages = {};
+        }
+
+        var _iterator = _createForOfIteratorHelper(updatedInboxMessages),
+            _step;
+
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done;) {
+            var newInboxObj = _step.value;
+            inboxMessages[newInboxObj._id] = newInboxObj;
+          } // delete messages that have surpassed ttl.
+
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
+        }
+
+        var now = getNow();
+
+        for (var id in inboxMessages) {
+          if (inboxMessages[id].wzrk_ttl < now) {
+            delete inboxMessages[id];
+          }
+        }
+
+        this.saveToLSorCookie(INBOX_COOKIE_NAME, inboxMessages);
+      }
+    }, {
+      key: "removeInboxMessagesInLS",
+      value: function removeInboxMessagesInLS(ids) {
+        var inboxMessages = this.readFromLSorCookie(INBOX_COOKIE_NAME);
+
+        if (!inboxMessages) {
+          inboxMessages = {};
+        }
+
+        var _iterator2 = _createForOfIteratorHelper(ids),
+            _step2;
+
+        try {
+          for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+            var id = _step2.value;
+            delete inboxMessages[id];
+          }
+        } catch (err) {
+          _iterator2.e(err);
+        } finally {
+          _iterator2.f();
+        }
+
+        this.saveToLSorCookie(INBOX_COOKIE_NAME, inboxMessages);
       }
     }]);
 
@@ -2920,11 +3001,13 @@
     var device = _ref.device,
         session = _ref.session,
         request = _ref.request,
-        logger = _ref.logger;
+        logger = _ref.logger,
+        inbox = _ref.inbox;
     var _device = device;
     var _session = session;
     var _request = request;
     var _logger = logger;
+    var _inbox = inbox;
     var _wizCounter = 0;
 
     var doCampHouseKeeping = function doCampHouseKeeping(targetingMsgJson) {
@@ -3060,7 +3143,8 @@
           device: _device,
           session: _session,
           request: _request,
-          logger: _logger
+          logger: _logger,
+          inbox: _inbox
         });
         return false;
       }
@@ -3152,14 +3236,7 @@
     };
 
     var incrementImpression = function incrementImpression(targetingMsgJson) {
-      var data = {};
-      data.type = 'event';
-      data.evtName = 'Notification Viewed';
-      data.evtData = {
-        wzrk_id: targetingMsgJson.wzrk_id
-      };
-
-      _request.processEvent(data);
+      _request.incrementImpression(targetingMsgJson);
     };
 
     var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
@@ -3497,7 +3574,8 @@
           device: _device,
           session: _session,
           request: _request,
-          logger: _logger
+          logger: _logger,
+          inbox: _inbox
         });
       }
 
@@ -3516,6 +3594,20 @@
           window.document.body.onmouseleave = showExitIntent;
         }
       }
+    }
+
+    if (msg.inbox_notifs != null) {
+      var inboxMessages = [];
+      var unreadCount = _inbox._unreadCount;
+
+      for (var _index = 0; _index < msg.inbox_notifs.length; _index++) {
+        var targetInbox = msg.inbox_notifs[_index];
+        inboxMessages.push(targetInbox);
+        unreadCount++;
+      }
+
+      _inbox._unreadCount = unreadCount;
+      StorageManager$1.updateInboxMessagesInLS(inboxMessages);
     }
 
     var mergeEventMap = function mergeEventMap(newEvtMap) {
@@ -4077,6 +4169,17 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
         this.saveAndFireRequest(pageLoadUrl, false);
+      }
+    }, {
+      key: "incrementImpression",
+      value: function incrementImpression(targetingMsgJson) {
+        var data = {};
+        data.type = 'event';
+        data.evtName = 'Notification Viewed';
+        data.evtData = {
+          wzrk_id: targetingMsgJson.wzrk_id
+        };
+        this.processEvent(data);
       }
     }]);
 
@@ -4759,6 +4862,10 @@
       background: '#ffffff',
       color: '#000000aa',
       activeColor: '#000000'
+    },
+    badge: {
+      color: '#ffffff',
+      background: '#ff0000'
     }
   };
 
@@ -4774,9 +4881,23 @@
 
   var _isOpen = _classPrivateFieldLooseKey("isOpen");
 
+  var _unreadCount = _classPrivateFieldLooseKey("unreadCount");
+
+  var _badgeElement = _classPrivateFieldLooseKey("badgeElement");
+
+  var _containerElement = _classPrivateFieldLooseKey("containerElement");
+
+  var _tag = _classPrivateFieldLooseKey("tag");
+
+  var _request$6 = _classPrivateFieldLooseKey("request");
+
+  var _elementDeleted = _classPrivateFieldLooseKey("elementDeleted");
+
   var _open = _classPrivateFieldLooseKey("open");
 
   var _setupInbox = _classPrivateFieldLooseKey("setupInbox");
+
+  var _fetchInboxMessages = _classPrivateFieldLooseKey("fetchInboxMessages");
 
   var _createButton = _classPrivateFieldLooseKey("createButton");
 
@@ -4788,19 +4909,50 @@
 
   var _updateActiveTag = _classPrivateFieldLooseKey("updateActiveTag");
 
+  var _displayInboxMessages = _classPrivateFieldLooseKey("displayInboxMessages");
+
+  var _createIconMessage = _classPrivateFieldLooseKey("createIconMessage");
+
+  var _createActionButton = _classPrivateFieldLooseKey("createActionButton");
+
   var InboxHandler = /*#__PURE__*/function (_Array) {
     _inherits(InboxHandler, _Array);
 
     var _super = _createSuper(InboxHandler);
 
+    _createClass(InboxHandler, [{
+      key: "_unreadCount",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _unreadCount)[_unreadCount];
+      },
+      set: function set(value) {
+        _classPrivateFieldLooseBase(this, _unreadCount)[_unreadCount] = value;
+
+        if (_classPrivateFieldLooseBase(this, _badgeElement)[_badgeElement]) {
+          _classPrivateFieldLooseBase(this, _badgeElement)[_badgeElement].style.display = value > 0 ? 'inline-block' : 'none';
+          _classPrivateFieldLooseBase(this, _badgeElement)[_badgeElement].innerText = value;
+        }
+      }
+    }]);
+
     function InboxHandler(_ref, values) {
       var _this;
 
-      var logger = _ref.logger;
+      var logger = _ref.logger,
+          request = _ref.request;
 
       _classCallCheck(this, InboxHandler);
 
       _this = _super.call(this);
+      Object.defineProperty(_assertThisInitialized(_this), _createActionButton, {
+        value: _createActionButton2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _createIconMessage, {
+        value: _createIconMessage2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _displayInboxMessages, {
+        value: _displayInboxMessages2
+      });
       Object.defineProperty(_assertThisInitialized(_this), _updateActiveTag, {
         value: _updateActiveTag2
       });
@@ -4815,6 +4967,9 @@
       });
       Object.defineProperty(_assertThisInitialized(_this), _createButton, {
         value: _createButton2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _fetchInboxMessages, {
+        value: _fetchInboxMessages2
       });
       Object.defineProperty(_assertThisInitialized(_this), _setupInbox, {
         value: _setupInbox2
@@ -4847,7 +5002,32 @@
         writable: true,
         value: false
       });
+      Object.defineProperty(_assertThisInitialized(_this), _unreadCount, {
+        writable: true,
+        value: 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _badgeElement, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _containerElement, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _tag, {
+        writable: true,
+        value: ''
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _request$6, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _elementDeleted, {
+        writable: true,
+        value: false
+      });
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$8)[_logger$8] = logger;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$6)[_request$6] = request;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$5)[_oldValues$5] = values;
       return _this;
     }
@@ -4883,6 +5063,8 @@
 
   var _set_open = function _set_open(value) {
     if (_classPrivateFieldLooseBase(this, _divElement)[_divElement]) {
+      _classPrivateFieldLooseBase(this, _displayInboxMessages)[_displayInboxMessages]();
+
       _classPrivateFieldLooseBase(this, _divElement)[_divElement].style.display = value ? 'block' : 'none';
     }
 
@@ -4893,6 +5075,8 @@
     var _this2 = this;
 
     if (displayArgs.length > 0 && _typeof(displayArgs[0]) === 'object' && !_classPrivateFieldLooseBase(this, _isInitialised)[_isInitialised]) {
+      _classPrivateFieldLooseBase(this, _fetchInboxMessages)[_fetchInboxMessages]();
+
       var inboxProps = mergeObjects(defaultInboxProps, displayArgs[0]);
       var selectorId = inboxProps.selector;
       _classPrivateFieldLooseBase(this, _buttonElement)[_buttonElement] = document.getElementById(selectorId);
@@ -4904,7 +5088,8 @@
       _classPrivateFieldLooseBase(this, _divElement)[_divElement] = _classPrivateFieldLooseBase(this, _createInboxDiv)[_createInboxDiv](inboxProps);
       _classPrivateFieldLooseBase(this, _isInitialised)[_isInitialised] = true;
       document.body.addEventListener('click', function (e) {
-        if (_classPrivateFieldLooseBase(_this2, _divElement)[_divElement].contains(e.target)) {
+        if (_classPrivateFieldLooseBase(_this2, _divElement)[_divElement].contains(e.target) || _classPrivateFieldLooseBase(_this2, _elementDeleted)[_elementDeleted]) {
+          _classPrivateFieldLooseBase(_this2, _elementDeleted)[_elementDeleted] = false;
           return;
         }
 
@@ -4918,10 +5103,33 @@
     }
   };
 
+  var _fetchInboxMessages2 = function _fetchInboxMessages2() {
+    var _this3 = this;
+
+    var inboxMessagesObj = StorageManager$1.readFromLSorCookie(INBOX_COOKIE_NAME);
+
+    if (!inboxMessagesObj) {
+      inboxMessagesObj = {};
+    }
+
+    var inboxMessages = Object.values(inboxMessagesObj);
+    this._unreadCount = inboxMessages.filter(function (msg) {
+      return !msg.read;
+    }).length;
+    inboxMessages = inboxMessages.sort(function (a, b) {
+      return b.date - a.date;
+    });
+    return inboxMessages.filter(function (inbox) {
+      return inbox.msg && inbox.msg.tags && (!_classPrivateFieldLooseBase(_this3, _tag)[_tag] || inbox.msg.tags.some(function (t) {
+        return t.toLowerCase() === _classPrivateFieldLooseBase(_this3, _tag)[_tag].toLowerCase();
+      }));
+    });
+  };
+
   var _createButton2 = function _createButton2(inboxProps) {
     var buttonProps = inboxProps.button;
     var buttonElement = document.createElement('div');
-    var buttonCssText = 'position: fixed; width: 60px; height: 60px; border-radius: 50%; z-index: 2147483640 !important; cursor: pointer;';
+    var buttonCssText = 'box-sizing: border-box; position: fixed; width: 60px; height: 60px; border-radius: 50%; z-index: 2147483640 !important; cursor: pointer;';
     buttonCssText += " color: ".concat(buttonProps.color, "; background-color: ").concat(buttonProps.background, "; box-shadow: ").concat(inboxProps.boxShadow, "; -webkit-box-shadow: ").concat(inboxProps.boxShadow, ";");
 
     if (buttonProps.iconUrl) {
@@ -4947,6 +5155,16 @@
     }
 
     buttonElement.style.cssText = buttonCssText;
+
+    if (!_classPrivateFieldLooseBase(this, _badgeElement)[_badgeElement]) {
+      _classPrivateFieldLooseBase(this, _badgeElement)[_badgeElement] = document.createElement('span');
+    }
+
+    _classPrivateFieldLooseBase(this, _badgeElement)[_badgeElement].innerText = this._unreadCount;
+    var badgeCss = 'box-sizing: border-box; position: absolute; top: 0px; right: 2px; padding: 2px; border-radius: 9px; min-width: 18px; font-size: 12px; height: 18px; text-align: center;';
+    badgeCss += " color: ".concat(inboxProps.badge.color, "; background-color: ").concat(inboxProps.badge.background, "; display: ").concat(this._unreadCount > 0 ? 'inline-block' : 'none', ";");
+    _classPrivateFieldLooseBase(this, _badgeElement)[_badgeElement].style.cssText = badgeCss;
+    buttonElement.appendChild(_classPrivateFieldLooseBase(this, _badgeElement)[_badgeElement]);
     return document.body.appendChild(buttonElement);
   };
 
@@ -4959,7 +5177,7 @@
       inboxDiv.appendChild(_classPrivateFieldLooseBase(this, _createTags)[_createTags](inboxProps));
     }
 
-    var inboxDivCss = 'display: none; position: fixed; width: 375px; max-width: 80%; min-height: 300px; max-height: calc(100vh - 120px); max-height: -webkit-calc(100% - 120px); box-sizing: border-box; border-radius: 4px; z-index: 2147483647 !important;';
+    var inboxDivCss = 'display: none; position: fixed; width: 375px; max-width: 80%; box-sizing: border-box; border-radius: 4px; z-index: 2147483647 !important;';
     inboxDivCss += " background-color: ".concat(inboxProps.background, "; box-shadow: ").concat(inboxProps.boxShadow, "; -webkit-box-shadow: ").concat(inboxProps.boxShadow, ";");
 
     switch (inboxProps.position) {
@@ -4981,15 +5199,20 @@
     }
 
     inboxDiv.style.cssText = inboxDivCss;
+    _classPrivateFieldLooseBase(this, _containerElement)[_containerElement] = document.createElement('div');
+    var containerCss = 'box-sizing: border-box; width: 100%; min-height: 200px; max-height: calc(100vh - 200px); max-height: -webkit-calc(100vh - 200px); overflow: auto; position: relative; z-indx: 0;';
+    containerCss += " background-color: ".concat(inboxProps.background);
+    _classPrivateFieldLooseBase(this, _containerElement)[_containerElement].style.cssText = containerCss;
+    inboxDiv.appendChild(_classPrivateFieldLooseBase(this, _containerElement)[_containerElement]);
     return document.body.appendChild(inboxDiv);
   };
 
   var _createHeader2 = function _createHeader2(headerProps, hasTags) {
-    var _this3 = this;
+    var _this4 = this;
 
     var header = document.createElement('div');
     header.innerText = headerProps.text;
-    var headerCss = 'box-sizing: border-box; width: 100%; min-height: 40px; position: relative; padding: 16px 12px; font-size: 18px; border-radius: 4px 4px 0px 0px;';
+    var headerCss = 'box-sizing: border-box; width: 100%; min-height: 40px; position: relative; padding: 16px 12px; font-size: 18px; border-radius: 4px 4px 0px 0px; position: relative; z-index: 1;';
     headerCss += " color: ".concat(headerProps.color, "; background-color: ").concat(headerProps.background, ";");
 
     if (!hasTags) {
@@ -5001,17 +5224,17 @@
     close.innerText = 'x';
     close.style.cssText = 'font-size: 20px; font-family: sans-serif; position: absolute; right: 12px; top: 14px; cursor: pointer; opacity: 0.5;';
     close.addEventListener('click', function () {
-      _classPrivateFieldLooseBase(_this3, _open)[_open] = false;
+      _classPrivateFieldLooseBase(_this4, _open)[_open] = false;
     });
     header.appendChild(close);
     return header;
   };
 
   var _createTags2 = function _createTags2(inboxProps) {
-    var _this4 = this;
+    var _this5 = this;
 
     var tagContainer = document.createElement('div');
-    var tagContainerCss = 'box-sizing: border-box; width: 100%; box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; -webkit-box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; padding: 0px 12px;';
+    var tagContainerCss = 'box-sizing: border-box; width: 100%; box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; -webkit-box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; padding: 0px 12px; position: relative; z-index: 1;';
     tagContainerCss += " background-color: ".concat(inboxProps.tab.background, "; color: ").concat(inboxProps.tab.color);
     tagContainer.style.cssText = tagContainerCss;
     var tags = ['All'].concat(_toConsumableArray(inboxProps.tags));
@@ -5031,7 +5254,7 @@
         tagElement.addEventListener('click', function (e) {
           var activeTagName = e.target.innerText.trim();
 
-          _classPrivateFieldLooseBase(_this4, _updateActiveTag)[_updateActiveTag](tagElements, activeTagName, inboxProps.tab);
+          _classPrivateFieldLooseBase(_this5, _updateActiveTag)[_updateActiveTag](tagElements, activeTagName, inboxProps.tab);
         });
         tagElements.push(tagElement);
         tagContainer.appendChild(tagElement);
@@ -5067,6 +5290,216 @@
     } finally {
       _iterator2.f();
     }
+
+    _classPrivateFieldLooseBase(this, _tag)[_tag] = activeTagName === 'All' ? '' : activeTagName;
+
+    _classPrivateFieldLooseBase(this, _displayInboxMessages)[_displayInboxMessages]();
+  };
+
+  var _displayInboxMessages2 = function _displayInboxMessages2() {
+    if (!_classPrivateFieldLooseBase(this, _containerElement)[_containerElement]) {
+      // inbox has not been initalised yet
+      return;
+    }
+
+    _classPrivateFieldLooseBase(this, _containerElement)[_containerElement].textContent = '';
+
+    var inboxMessages = _classPrivateFieldLooseBase(this, _fetchInboxMessages)[_fetchInboxMessages]();
+
+    if (inboxMessages.length) {
+      var unviewed = false;
+
+      var _iterator3 = _createForOfIteratorHelper(inboxMessages),
+          _step3;
+
+      try {
+        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+          var inbox = _step3.value;
+          var msgObj = inbox.msg;
+
+          if (!msgObj) {
+            continue;
+          }
+
+          var messageDiv = document.createElement('div');
+          messageDiv.id = inbox._id;
+          messageDiv.setAttribute('data-wzrk_id', inbox.wzrk_id);
+          var messageContainerCss = 'box-sizing: border-box; margin: 5px 0px; width: 100%;';
+          messageContainerCss += " background-color: ".concat(msgObj.bg, ";");
+          messageDiv.style.cssText = messageContainerCss; // In future this could be conditional based on message type
+
+          _classPrivateFieldLooseBase(this, _createIconMessage)[_createIconMessage](messageDiv, inbox);
+
+          _classPrivateFieldLooseBase(this, _containerElement)[_containerElement].appendChild(messageDiv);
+
+          if (!inbox.viewed) {
+            unviewed = true;
+            inbox.viewed = true;
+
+            _classPrivateFieldLooseBase(this, _request$6)[_request$6].incrementImpression(inbox);
+          }
+        } // updates viewed
+
+      } catch (err) {
+        _iterator3.e(err);
+      } finally {
+        _iterator3.f();
+      }
+
+      if (unviewed) {
+        StorageManager$1.updateInboxMessagesInLS(inboxMessages);
+      }
+    } else {
+      var emptyMessageDiv = document.createElement('div');
+      var emptyMessageTitle = document.createElement('div');
+      emptyMessageTitle.style.cssText = 'font-size: 18px;';
+      emptyMessageTitle.innerText = 'No notifications right now';
+      var emptyMessageContent = document.createElement('div');
+      emptyMessageContent.style.cssText = 'font-size: 14px;';
+      var tabbedMessage = _classPrivateFieldLooseBase(this, _tag)[_tag] ? "".concat(_classPrivateFieldLooseBase(this, _tag)[_tag], " notifications will appear here") : 'All your notifications will appear here';
+      emptyMessageContent.innerText = tabbedMessage;
+      emptyMessageDiv.appendChild(emptyMessageTitle);
+      emptyMessageDiv.appendChild(emptyMessageContent);
+      emptyMessageDiv.style.cssText = 'text-align: center; position: absolute; top: calc(50% - 16px); width: 100%; box-sizing: border-box;';
+
+      _classPrivateFieldLooseBase(this, _containerElement)[_containerElement].appendChild(emptyMessageDiv);
+    }
+  };
+
+  var _createIconMessage2 = function _createIconMessage2(container, inboxObj) {
+    var _this6 = this;
+
+    var msgObj = inboxObj.msg;
+    var content = msgObj.content && msgObj.content[0];
+
+    if (!content) {
+      return;
+    }
+
+    var firstDiv = document.createElement('div');
+    firstDiv.style.cssText = 'box-sizing: border-box; width: 100%; padding: 16px 16px 12px 16px; position: relative;';
+    var hasIcon = false;
+
+    if (content.icon && content.icon.url) {
+      hasIcon = true;
+      var icon = document.createElement('img');
+      icon.src = content.icon.url;
+      icon.style.cssText = 'width: 32px; height: 32px; display: inline-block; margin-right: 12px;';
+      firstDiv.appendChild(icon);
+    }
+
+    var contentDiv = document.createElement('div');
+    contentDiv.style.cssText = "box-sizing: border-box; width: calc(100% - ".concat(hasIcon ? '81px' : '37px', "); display: inline-block; vertical-align: top;");
+    var titleDiv = document.createElement('div');
+    titleDiv.innerText = content.title.text;
+    titleDiv.style.cssText = "font-size: 14px; color: ".concat(content.title.color, ";");
+    contentDiv.appendChild(titleDiv);
+    var messageDiv = document.createElement('div');
+    messageDiv.innerText = content.message.text;
+    messageDiv.style.cssText = "font-size: 12px; color: ".concat(content.message.color, ";");
+    contentDiv.appendChild(messageDiv);
+    firstDiv.appendChild(contentDiv);
+    var clear = document.createElement('div');
+    clear.innerText = 'x';
+    clear.style.cssText = 'display: inline-block; font-family: sans-serif; color: #63698F; font-size: 16px; margin-right: 8px; width: 16px; box-sizing: border-box; cursor: pointer; position: absolute; top: 16px; text-align: center;';
+    firstDiv.appendChild(clear);
+
+    clear.onclick = function () {
+      _classPrivateFieldLooseBase(_this6, _containerElement)[_containerElement].removeChild(container);
+
+      _classPrivateFieldLooseBase(_this6, _elementDeleted)[_elementDeleted] = true;
+      StorageManager$1.removeInboxMessagesInLS([inboxObj._id]);
+
+      _classPrivateFieldLooseBase(_this6, _displayInboxMessages)[_displayInboxMessages]();
+    };
+
+    var readBadge = document.createElement('div');
+    var isRead = !!inboxObj.read;
+    readBadge.style.cssText = "display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: ".concat(isRead ? '#D0D2E1' : '#126BFF', "; cursor: pointer; position: absolute; top: 20px; right: 16px;");
+    firstDiv.appendChild(readBadge);
+
+    readBadge.onclick = function () {
+      isRead = !isRead;
+      readBadge.style.backgroundColor = isRead ? '#D0D2E1' : '#126BFF';
+      inboxObj.read = isRead;
+      StorageManager$1.updateInboxMessagesInLS([inboxObj]);
+    };
+
+    container.appendChild(firstDiv);
+    var hasMedia = false;
+
+    if (content.media && content.media.url) {
+      var media = document.createElement('img');
+      media.src = content.media.url;
+      media.style.cssText = 'box-sizing: border-box; width: 100%; height: auto;';
+      container.appendChild(media);
+      hasMedia = true;
+    }
+
+    var dateContainer = document.createElement('div');
+    var relativeDate = relativeDateString(inboxObj.date);
+    dateContainer.innerText = relativeDate;
+    dateContainer.style.cssText = "box-sizing: border-box; width: 100%; text-align: right; padding: ".concat(hasMedia ? '12px' : '0px', " 16px 16px 16px; color: #63698F; font-size: 12px;");
+    container.appendChild(dateContainer);
+
+    if (content.action && content.action.links && content.action.links.length) {
+      var actionContainer = document.createElement('div');
+      actionContainer.style.cssText = 'box-sizing: border-box; width: 100%;';
+      var totalLinks = content.action.links.length;
+
+      var _iterator4 = _createForOfIteratorHelper(content.action.links),
+          _step4;
+
+      try {
+        for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+          var link = _step4.value;
+
+          _classPrivateFieldLooseBase(this, _createActionButton)[_createActionButton](link, totalLinks, actionContainer);
+        }
+      } catch (err) {
+        _iterator4.e(err);
+      } finally {
+        _iterator4.f();
+      }
+
+      container.appendChild(actionContainer);
+    }
+  };
+
+  var _createActionButton2 = function _createActionButton2(link, totalCount, container) {
+    var action = document.createElement('div');
+    var width = 100 / totalCount;
+    action.innerText = link.text;
+    action.style.cssText = "box-sizing: border-box; display: inline-block; width: ".concat(width, "%; color: ").concat(link.color, "; background-color: ").concat(link.bg, "; text-align: center; padding: 8px; font-size: 14px; cursor: pointer; position: relative;");
+
+    action.onclick = function () {
+      var _link$copyText, _link$url, _link$url$web;
+
+      if (link.type === 'copy' && ((_link$copyText = link.copyText) === null || _link$copyText === void 0 ? void 0 : _link$copyText.text)) {
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.style.cssText = 'width: 1px; height: 1px;';
+        input.value = link.copyText.text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        window.getSelection().removeAllRanges();
+        document.body.removeChild(input);
+        var copiedTextInfo = document.createElement('div');
+        copiedTextInfo.style.cssText = 'position: absolute; top: -20px; left: calc(50% - 60px); width: 120px; z-index: 2147483647; background-color: #4e5a67bd; color: #fff; font-size: 14px; padding: 8px; border-radius: 8px;';
+        copiedTextInfo.innerText = 'Copied to clipboard';
+        action.appendChild(copiedTextInfo);
+        setTimeout(function () {
+          action.removeChild(copiedTextInfo);
+        }, 3000);
+      } else if (link.type === 'url' && ((_link$url = link.url) === null || _link$url === void 0 ? void 0 : (_link$url$web = _link$url.web) === null || _link$url$web === void 0 ? void 0 : _link$url$web.text)) {
+        var url = link.web.url.text;
+        window.location = url;
+      } else if (link.type === 'kv') ; // todo click tracking
+
+    };
+
+    container.appendChild(action);
   };
 
   var _logger$9 = _classPrivateFieldLooseKey("logger");
@@ -5081,7 +5514,7 @@
 
   var _account$5 = _classPrivateFieldLooseKey("account");
 
-  var _request$6 = _classPrivateFieldLooseKey("request");
+  var _request$7 = _classPrivateFieldLooseKey("request");
 
   var _isSpa = _classPrivateFieldLooseKey("isSpa");
 
@@ -5169,7 +5602,7 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _request$6, {
+      Object.defineProperty(this, _request$7, {
         writable: true,
         value: void 0
       });
@@ -5200,7 +5633,7 @@
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         isPersonalisationActive: this._isPersonalisationActive
       });
-      _classPrivateFieldLooseBase(this, _request$6)[_request$6] = new RequestManager({
+      _classPrivateFieldLooseBase(this, _request$7)[_request$7] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
         device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
@@ -5210,37 +5643,38 @@
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
+        request: _classPrivateFieldLooseBase(this, _request$7)[_request$7],
         isPersonalisationActive: this._isPersonalisationActive
       }, clevertap.event);
       this.profile = new ProfileHandler({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
+        request: _classPrivateFieldLooseBase(this, _request$7)[_request$7],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
         isPersonalisationActive: this._isPersonalisationActive
       }, clevertap.profile);
       this.onUserLogin = new UserLoginHandler({
-        request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
+        request: _classPrivateFieldLooseBase(this, _request$7)[_request$7],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         device: _classPrivateFieldLooseBase(this, _device$3)[_device$3]
       }, clevertap.onUserLogin);
       this.privacy = new Privacy({
-        request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
+        request: _classPrivateFieldLooseBase(this, _request$7)[_request$7],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5]
       }, clevertap.privacy);
       this.notifications = new NotificationHandler({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
+        request: _classPrivateFieldLooseBase(this, _request$7)[_request$7],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5]
       }, clevertap.notifications);
       this.inbox = new InboxHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
+        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
+        request: _classPrivateFieldLooseBase(this, _request$7)[_request$7]
       }, clevertap.inbox);
       _classPrivateFieldLooseBase(this, _api)[_api] = new CleverTapAPI({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
+        request: _classPrivateFieldLooseBase(this, _request$7)[_request$7],
         device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
       });
@@ -5272,7 +5706,7 @@
       };
 
       var _handleEmailSubscription = function _handleEmailSubscription(subscription, reEncoded, fetchGroups) {
-        handleEmailSubscription(subscription, reEncoded, fetchGroups, _classPrivateFieldLooseBase(_this, _account$5)[_account$5], _classPrivateFieldLooseBase(_this, _request$6)[_request$6]);
+        handleEmailSubscription(subscription, reEncoded, fetchGroups, _classPrivateFieldLooseBase(_this, _account$5)[_account$5], _classPrivateFieldLooseBase(_this, _request$7)[_request$7]);
       };
 
       var api = _classPrivateFieldLooseBase(this, _api)[_api];
@@ -5292,8 +5726,9 @@
         _tr(msg, {
           device: _classPrivateFieldLooseBase(_this, _device$3)[_device$3],
           session: _classPrivateFieldLooseBase(_this, _session$3)[_session$3],
-          request: _classPrivateFieldLooseBase(_this, _request$6)[_request$6],
-          logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]
+          request: _classPrivateFieldLooseBase(_this, _request$7)[_request$7],
+          logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9],
+          inbox: _this.inbox
         });
       };
 
@@ -5406,7 +5841,7 @@
           return;
         }
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].processBackupEvents();
+        _classPrivateFieldLooseBase(this, _request$7)[_request$7].processBackupEvents();
 
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
@@ -5480,13 +5915,13 @@
           }
         }
 
-        data = _classPrivateFieldLooseBase(this, _request$6)[_request$6].addSystemDataToObject(data, undefined);
+        data = _classPrivateFieldLooseBase(this, _request$7)[_request$7].addSystemDataToObject(data, undefined);
         data.cpg = currLocation;
         data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
 
         var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].addFlags(data); // send dsync flag when page = 1
+        _classPrivateFieldLooseBase(this, _request$7)[_request$7].addFlags(data); // send dsync flag when page = 1
 
 
         if (parseInt(data.pg) === 1) {
@@ -5496,7 +5931,7 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data)));
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
+        _classPrivateFieldLooseBase(this, _request$7)[_request$7].saveAndFireRequest(pageLoadUrl, false);
 
         _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation;
         setTimeout(function () {
@@ -5546,11 +5981,11 @@
     var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
 
     var data = {};
-    data = _classPrivateFieldLooseBase(this, _request$6)[_request$6].addSystemDataToObject(data, undefined);
+    data = _classPrivateFieldLooseBase(this, _request$7)[_request$7].addSystemDataToObject(data, undefined);
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING);
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data)));
 
-    _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
+    _classPrivateFieldLooseBase(this, _request$7)[_request$7].saveAndFireRequest(pageLoadUrl, false);
   };
 
   var _isPingContinuous2 = function _isPingContinuous2() {

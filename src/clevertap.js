@@ -109,7 +109,8 @@ export default class CleverTap {
     }, clevertap.notifications)
 
     this.inbox = new InboxHandler({
-      logger: this.#logger
+      logger: this.#logger,
+      request: this.#request
     }, clevertap.inbox)
 
     this.#api = new CleverTapAPI({
@@ -165,7 +166,8 @@ export default class CleverTap {
         device: this.#device,
         session: this.#session,
         request: this.#request,
-        logger: this.#logger
+        logger: this.#logger,
+        inbox: this.inbox
       })
     }
     api.setEnum = (enumVal) => {
