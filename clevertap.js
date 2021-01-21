@@ -4895,6 +4895,8 @@
 
   var _open = _classPrivateFieldLooseKey("open");
 
+  var _getInboxMessageObj = _classPrivateFieldLooseKey("getInboxMessageObj");
+
   var _setupInbox = _classPrivateFieldLooseKey("setupInbox");
 
   var _fetchInboxMessages = _classPrivateFieldLooseKey("fetchInboxMessages");
@@ -4974,6 +4976,9 @@
       Object.defineProperty(_assertThisInitialized(_this), _setupInbox, {
         value: _setupInbox2
       });
+      Object.defineProperty(_assertThisInitialized(_this), _getInboxMessageObj, {
+        value: _getInboxMessageObj2
+      });
       Object.defineProperty(_assertThisInitialized(_this), _open, {
         get: _get_open,
         set: _set_open
@@ -5044,6 +5049,67 @@
         return 0;
       }
     }, {
+      key: "getAllInboxMessages",
+      value: function getAllInboxMessages() {
+        var inboxMessageObj = _classPrivateFieldLooseBase(this, _getInboxMessageObj)[_getInboxMessageObj]();
+
+        var inboxMessages = Object.values(inboxMessageObj);
+        return inboxMessages;
+      }
+    }, {
+      key: "getInboxMessageCount",
+      value: function getInboxMessageCount() {
+        return this.getAllInboxMessages().length;
+      }
+    }, {
+      key: "getUnreadInboxMessages",
+      value: function getUnreadInboxMessages() {
+        var inboxMessages = this.getAllInboxMessages();
+        return inboxMessages.filter(function (inbox) {
+          return !inbox.read;
+        });
+      }
+    }, {
+      key: "getInboxMessageUnreadCount",
+      value: function getInboxMessageUnreadCount() {
+        return this.getUnreadInboxMessages().length;
+      }
+    }, {
+      key: "getInboxMessageForId",
+      value: function getInboxMessageForId(inboxId) {
+        var inboxMessageObj = _classPrivateFieldLooseBase(this, _getInboxMessageObj)[_getInboxMessageObj]();
+
+        return inboxMessageObj[inboxId];
+      }
+    }, {
+      key: "deleteInboxMessage",
+      value: function deleteInboxMessage(inboxId) {
+        StorageManager$1.removeInboxMessagesInLS([inboxId]);
+      }
+    }, {
+      key: "markReadInboxMessage",
+      value: function markReadInboxMessage(inboxId) {
+        var inboxMessageObj = _classPrivateFieldLooseBase(this, _getInboxMessageObj)[_getInboxMessageObj]();
+
+        inboxMessageObj[inboxId].read = true;
+        StorageManager$1.updateInboxMessagesInLS(inboxMessageObj);
+      }
+    }, {
+      key: "pushInboxNotificationViewedEvent",
+      value: function pushInboxNotificationViewedEvent(inboxId) {
+        var inboxMessageObj = _classPrivateFieldLooseBase(this, _getInboxMessageObj)[_getInboxMessageObj]();
+
+        var inbox = inboxMessageObj[inboxId];
+
+        if (inbox) {
+          _classPrivateFieldLooseBase(this, _request$6)[_request$6].incrementImpression(inbox);
+        }
+      }
+    }, {
+      key: "pushInboxNotificationClickedEvent",
+      value: function pushInboxNotificationClickedEvent() {// TODO: this is yet to be finalised
+      }
+    }, {
       key: "_processOldValues",
       value: function _processOldValues() {
         if (_classPrivateFieldLooseBase(this, _oldValues$5)[_oldValues$5]) {
@@ -5069,6 +5135,16 @@
     }
 
     _classPrivateFieldLooseBase(this, _isOpen)[_isOpen] = value;
+  };
+
+  var _getInboxMessageObj2 = function _getInboxMessageObj2() {
+    var inboxMessageObj = StorageManager$1.readFromLSorCookie(INBOX_COOKIE_NAME);
+
+    if (!inboxMessageObj) {
+      inboxMessageObj = {};
+    }
+
+    return inboxMessageObj;
   };
 
   var _setupInbox2 = function _setupInbox2(displayArgs) {
@@ -5200,7 +5276,7 @@
 
     inboxDiv.style.cssText = inboxDivCss;
     _classPrivateFieldLooseBase(this, _containerElement)[_containerElement] = document.createElement('div');
-    var containerCss = 'box-sizing: border-box; width: 100%; min-height: 200px; max-height: calc(100vh - 200px); max-height: -webkit-calc(100vh - 200px); overflow: auto; position: relative; z-indx: 0;';
+    var containerCss = 'box-sizing: border-box; width: 100%; min-height: 200px; max-height: calc(100vh - 230px); max-height: -webkit-calc(100vh - 230px); overflow: auto; position: relative; z-indx: 0;';
     containerCss += " background-color: ".concat(inboxProps.background);
     _classPrivateFieldLooseBase(this, _containerElement)[_containerElement].style.cssText = containerCss;
     inboxDiv.appendChild(_classPrivateFieldLooseBase(this, _containerElement)[_containerElement]);
@@ -5297,6 +5373,8 @@
   };
 
   var _displayInboxMessages2 = function _displayInboxMessages2() {
+    var _this6 = this;
+
     if (!_classPrivateFieldLooseBase(this, _containerElement)[_containerElement]) {
       // inbox has not been initalised yet
       return;
@@ -5306,15 +5384,67 @@
 
     var inboxMessages = _classPrivateFieldLooseBase(this, _fetchInboxMessages)[_fetchInboxMessages]();
 
+    var bulkActionContainer = document.createElement('div');
+    bulkActionContainer.style.cssText = 'box-sizing: border-box; width: 100%; text-align: right; color: #63698F; font-size: 12px; padding: 16px 16px 0px;';
+    var bulkActionEnabled = !!inboxMessages.length;
+    var clearAll = document.createElement('span');
+    clearAll.innerText = 'Clear all';
+    clearAll.style.cursor = bulkActionEnabled ? 'pointer' : 'default';
+    clearAll.style.marginLeft = '12px';
+    var readAll = document.createElement('span');
+    readAll.innerText = 'Mark all as read';
+    readAll.style.cursor = bulkActionEnabled ? 'pointer' : 'default';
+
+    if (bulkActionEnabled) {
+      clearAll.onclick = function () {
+        var ids = inboxMessages.map(function (inbox) {
+          return inbox._id;
+        });
+        StorageManager$1.removeInboxMessagesInLS(ids);
+
+        _classPrivateFieldLooseBase(_this6, _displayInboxMessages)[_displayInboxMessages]();
+
+        _classPrivateFieldLooseBase(_this6, _elementDeleted)[_elementDeleted] = true;
+      };
+
+      readAll.onclick = function () {
+        var _iterator3 = _createForOfIteratorHelper(inboxMessages),
+            _step3;
+
+        try {
+          for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+            var inbox = _step3.value;
+
+            if (!inbox.read) {
+              var readBadge = document.getElementById(inbox._id).querySelector('div[data-read-badge]');
+
+              if (readBadge) {
+                readBadge.click();
+              }
+            }
+          }
+        } catch (err) {
+          _iterator3.e(err);
+        } finally {
+          _iterator3.f();
+        }
+      };
+    }
+
+    bulkActionContainer.appendChild(readAll);
+    bulkActionContainer.appendChild(clearAll);
+
+    _classPrivateFieldLooseBase(this, _containerElement)[_containerElement].appendChild(bulkActionContainer);
+
     if (inboxMessages.length) {
       var unviewed = false;
 
-      var _iterator3 = _createForOfIteratorHelper(inboxMessages),
-          _step3;
+      var _iterator4 = _createForOfIteratorHelper(inboxMessages),
+          _step4;
 
       try {
-        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-          var inbox = _step3.value;
+        for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+          var inbox = _step4.value;
           var msgObj = inbox.msg;
 
           if (!msgObj) {
@@ -5324,7 +5454,7 @@
           var messageDiv = document.createElement('div');
           messageDiv.id = inbox._id;
           messageDiv.setAttribute('data-wzrk_id', inbox.wzrk_id);
-          var messageContainerCss = 'box-sizing: border-box; margin: 5px 0px; width: 100%;';
+          var messageContainerCss = 'box-sizing: border-box; margin: 12px 0px 0px; width: 100%;';
           messageContainerCss += " background-color: ".concat(msgObj.bg, ";");
           messageDiv.style.cssText = messageContainerCss; // In future this could be conditional based on message type
 
@@ -5341,9 +5471,9 @@
         } // updates viewed
 
       } catch (err) {
-        _iterator3.e(err);
+        _iterator4.e(err);
       } finally {
-        _iterator3.f();
+        _iterator4.f();
       }
 
       if (unviewed) {
@@ -5367,7 +5497,7 @@
   };
 
   var _createIconMessage2 = function _createIconMessage2(container, inboxObj) {
-    var _this6 = this;
+    var _this7 = this;
 
     var msgObj = inboxObj.msg;
     var content = msgObj.content && msgObj.content[0];
@@ -5405,15 +5535,16 @@
     firstDiv.appendChild(clear);
 
     clear.onclick = function () {
-      _classPrivateFieldLooseBase(_this6, _containerElement)[_containerElement].removeChild(container);
+      _classPrivateFieldLooseBase(_this7, _containerElement)[_containerElement].removeChild(container);
 
-      _classPrivateFieldLooseBase(_this6, _elementDeleted)[_elementDeleted] = true;
+      _classPrivateFieldLooseBase(_this7, _elementDeleted)[_elementDeleted] = true;
       StorageManager$1.removeInboxMessagesInLS([inboxObj._id]);
 
-      _classPrivateFieldLooseBase(_this6, _displayInboxMessages)[_displayInboxMessages]();
+      _classPrivateFieldLooseBase(_this7, _displayInboxMessages)[_displayInboxMessages]();
     };
 
     var readBadge = document.createElement('div');
+    readBadge.setAttribute('data-read-badge', true);
     var isRead = !!inboxObj.read;
     readBadge.style.cssText = "display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: ".concat(isRead ? '#D0D2E1' : '#126BFF', "; cursor: pointer; position: absolute; top: 20px; right: 16px;");
     firstDiv.appendChild(readBadge);
@@ -5422,6 +5553,7 @@
       isRead = !isRead;
       readBadge.style.backgroundColor = isRead ? '#D0D2E1' : '#126BFF';
       inboxObj.read = isRead;
+      _this7._unreadCount += isRead ? -1 : 1;
       StorageManager$1.updateInboxMessagesInLS([inboxObj]);
     };
 
@@ -5447,19 +5579,19 @@
       actionContainer.style.cssText = 'box-sizing: border-box; width: 100%;';
       var totalLinks = content.action.links.length;
 
-      var _iterator4 = _createForOfIteratorHelper(content.action.links),
-          _step4;
+      var _iterator5 = _createForOfIteratorHelper(content.action.links),
+          _step5;
 
       try {
-        for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
-          var link = _step4.value;
+        for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+          var link = _step5.value;
 
           _classPrivateFieldLooseBase(this, _createActionButton)[_createActionButton](link, totalLinks, actionContainer);
         }
       } catch (err) {
-        _iterator4.e(err);
+        _iterator5.e(err);
       } finally {
-        _iterator4.f();
+        _iterator5.f();
       }
 
       container.appendChild(actionContainer);
@@ -5475,6 +5607,7 @@
     action.onclick = function () {
       var _link$copyText, _link$url, _link$url$web;
 
+      // TODO: click tracking
       if (link.type === 'copy' && ((_link$copyText = link.copyText) === null || _link$copyText === void 0 ? void 0 : _link$copyText.text)) {
         var input = document.createElement('input');
         input.type = 'text';
@@ -5493,10 +5626,14 @@
           action.removeChild(copiedTextInfo);
         }, 3000);
       } else if (link.type === 'url' && ((_link$url = link.url) === null || _link$url === void 0 ? void 0 : (_link$url$web = _link$url.web) === null || _link$url$web === void 0 ? void 0 : _link$url$web.text)) {
-        var url = link.web.url.text;
+        var url = link.url.web.text;
         window.location = url;
-      } else if (link.type === 'kv') ; // todo click tracking
-
+      } else if (link.type === 'kv' && !isObjectEmpty(link.kv)) {
+        var event = new CustomEvent('ClevertapInboxActionEvent', {
+          detail: link.kv
+        });
+        document.dispatchEvent(event);
+      }
     };
 
     container.appendChild(action);

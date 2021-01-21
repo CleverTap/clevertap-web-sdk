@@ -1,5 +1,5 @@
 import { INBOX_COOKIE_NAME } from '../util/constants'
-import { mergeObjects } from '../util/datatypes'
+import { isObjectEmpty, mergeObjects } from '../util/datatypes'
 import { StorageManager } from '../util/storage'
 import { relativeDateString } from '../util/datetime'
 
@@ -78,6 +78,60 @@ export default class InboxHandler extends Array {
   push (...displayArgs) {
     this.#setupInbox(displayArgs)
     return 0
+  }
+
+  #getInboxMessageObj () {
+    let inboxMessageObj = StorageManager.readFromLSorCookie(INBOX_COOKIE_NAME)
+    if (!inboxMessageObj) {
+      inboxMessageObj = {}
+    }
+    return inboxMessageObj
+  }
+
+  getAllInboxMessages () {
+    const inboxMessageObj = this.#getInboxMessageObj()
+    const inboxMessages = Object.values(inboxMessageObj)
+    return inboxMessages
+  }
+
+  getInboxMessageCount () {
+    return this.getAllInboxMessages().length
+  }
+
+  getUnreadInboxMessages () {
+    const inboxMessages = this.getAllInboxMessages()
+    return inboxMessages.filter(inbox => !inbox.read)
+  }
+
+  getInboxMessageUnreadCount () {
+    return this.getUnreadInboxMessages().length
+  }
+
+  getInboxMessageForId (inboxId) {
+    const inboxMessageObj = this.#getInboxMessageObj()
+    return inboxMessageObj[inboxId]
+  }
+
+  deleteInboxMessage (inboxId) {
+    StorageManager.removeInboxMessagesInLS([inboxId])
+  }
+
+  markReadInboxMessage (inboxId) {
+    const inboxMessageObj = this.#getInboxMessageObj()
+    inboxMessageObj[inboxId].read = true
+    StorageManager.updateInboxMessagesInLS(inboxMessageObj)
+  }
+
+  pushInboxNotificationViewedEvent (inboxId) {
+    const inboxMessageObj = this.#getInboxMessageObj()
+    const inbox = inboxMessageObj[inboxId]
+    if (inbox) {
+      this.#request.incrementImpression(inbox)
+    }
+  }
+
+  pushInboxNotificationClickedEvent () {
+    // TODO: this is yet to be finalised
   }
 
   _processOldValues () {
@@ -192,7 +246,7 @@ export default class InboxHandler extends Array {
     inboxDiv.style.cssText = inboxDivCss
 
     this.#containerElement = document.createElement('div')
-    let containerCss = 'box-sizing: border-box; width: 100%; min-height: 200px; max-height: calc(100vh - 200px); max-height: -webkit-calc(100vh - 200px); overflow: auto; position: relative; z-indx: 0;'
+    let containerCss = 'box-sizing: border-box; width: 100%; min-height: 200px; max-height: calc(100vh - 230px); max-height: -webkit-calc(100vh - 230px); overflow: auto; position: relative; z-indx: 0;'
     containerCss += ` background-color: ${inboxProps.background}`
     this.#containerElement.style.cssText = containerCss
 
@@ -271,6 +325,45 @@ export default class InboxHandler extends Array {
     this.#containerElement.textContent = ''
 
     const inboxMessages = this.#fetchInboxMessages()
+
+    const bulkActionContainer = document.createElement('div')
+    bulkActionContainer.style.cssText = 'box-sizing: border-box; width: 100%; text-align: right; color: #63698F; font-size: 12px; padding: 16px 16px 0px;'
+
+    const bulkActionEnabled = !!inboxMessages.length
+    const clearAll = document.createElement('span')
+    clearAll.innerText = 'Clear all'
+    clearAll.style.cursor = bulkActionEnabled ? 'pointer' : 'default'
+    clearAll.style.marginLeft = '12px'
+
+    const readAll = document.createElement('span')
+    readAll.innerText = 'Mark all as read'
+    readAll.style.cursor = bulkActionEnabled ? 'pointer' : 'default'
+
+    if (bulkActionEnabled) {
+      clearAll.onclick = () => {
+        const ids = inboxMessages.map(inbox => inbox._id)
+        StorageManager.removeInboxMessagesInLS(ids)
+        this.#displayInboxMessages()
+        this.#elementDeleted = true
+      }
+
+      readAll.onclick = () => {
+        for (const inbox of inboxMessages) {
+          if (!inbox.read) {
+            const readBadge = document.getElementById(inbox._id).querySelector('div[data-read-badge]')
+            if (readBadge) {
+              readBadge.click()
+            }
+          }
+        }
+      }
+    }
+
+    bulkActionContainer.appendChild(readAll)
+    bulkActionContainer.appendChild(clearAll)
+
+    this.#containerElement.appendChild(bulkActionContainer)
+
     if (inboxMessages.length) {
       let unviewed = false
       for (const inbox of inboxMessages) {
@@ -281,7 +374,7 @@ export default class InboxHandler extends Array {
         const messageDiv = document.createElement('div')
         messageDiv.id = inbox._id
         messageDiv.setAttribute('data-wzrk_id', inbox.wzrk_id)
-        let messageContainerCss = 'box-sizing: border-box; margin: 5px 0px; width: 100%;'
+        let messageContainerCss = 'box-sizing: border-box; margin: 12px 0px 0px; width: 100%;'
         messageContainerCss += ` background-color: ${msgObj.bg};`
         messageDiv.style.cssText = messageContainerCss
 
@@ -360,6 +453,7 @@ export default class InboxHandler extends Array {
     }
 
     const readBadge = document.createElement('div')
+    readBadge.setAttribute('data-read-badge', true)
     let isRead = !!inboxObj.read
     readBadge.style.cssText = `display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: ${isRead ? '#D0D2E1' : '#126BFF'}; cursor: pointer; position: absolute; top: 20px; right: 16px;`
     firstDiv.appendChild(readBadge)
@@ -368,6 +462,7 @@ export default class InboxHandler extends Array {
       isRead = !isRead
       readBadge.style.backgroundColor = isRead ? '#D0D2E1' : '#126BFF'
       inboxObj.read = isRead
+      this._unreadCount += isRead ? -1 : 1
       StorageManager.updateInboxMessagesInLS([inboxObj])
     }
     container.appendChild(firstDiv)
@@ -404,6 +499,7 @@ export default class InboxHandler extends Array {
     action.innerText = link.text
     action.style.cssText = `box-sizing: border-box; display: inline-block; width: ${width}%; color: ${link.color}; background-color: ${link.bg}; text-align: center; padding: 8px; font-size: 14px; cursor: pointer; position: relative;`
     action.onclick = () => {
+      // TODO: click tracking
       if (link.type === 'copy' && link.copyText?.text) {
         const input = document.createElement('input')
         input.type = 'text'
@@ -423,12 +519,14 @@ export default class InboxHandler extends Array {
           action.removeChild(copiedTextInfo)
         }, 3000)
       } else if (link.type === 'url' && link.url?.web?.text) {
-        const url = link.web.url.text
+        const url = link.url.web.text
         window.location = url
-      } else if (link.type === 'kv') {
-        // todo how to handle kv without a JS function
+      } else if (link.type === 'kv' && !isObjectEmpty(link.kv)) {
+        const event = new CustomEvent('ClevertapInboxActionEvent', {
+          detail: link.kv
+        })
+        document.dispatchEvent(event)
       }
-      // todo click tracking
     }
     container.appendChild(action)
   }
