@@ -864,7 +864,7 @@
         var now = getNow();
 
         for (var id in inboxMessages) {
-          if (inboxMessages[id].wzrk_ttl < now) {
+          if (inboxMessages[id].wzrk_ttl && inboxMessages[id].wzrk_ttl > 0 && inboxMessages[id].wzrk_ttl < now) {
             delete inboxMessages[id];
           }
         }
@@ -4866,6 +4866,12 @@
     badge: {
       color: '#ffffff',
       background: '#ff0000'
+    },
+    customPosition: {
+      top: null,
+      left: null,
+      right: null,
+      bottom: null
     }
   };
 
@@ -5288,8 +5294,28 @@
 
     var inboxDivCss = 'display: none; position: fixed; width: 375px; max-width: 80%; box-sizing: border-box; border-radius: 4px; z-index: 2147483647 !important;';
     inboxDivCss += " background-color: ".concat(inboxProps.background, "; box-shadow: ").concat(inboxProps.boxShadow, "; -webkit-box-shadow: ").concat(inboxProps.boxShadow, ";");
+    var customPosition = inboxProps.customPosition;
 
     switch (inboxProps.position) {
+      case 'custom':
+        if (customPosition.top != null) {
+          inboxDivCss += " top: ".concat(customPosition.top, "px;");
+        }
+
+        if (customPosition.bottom != null) {
+          inboxDivCss += " bottom: ".concat(customPosition.bottom, "px;");
+        }
+
+        if (customPosition.left != null) {
+          inboxDivCss += " left: ".concat(customPosition.left, "px;");
+        }
+
+        if (customPosition.right != null) {
+          inboxDivCss += " right: ".concat(customPosition.right, "px;");
+        }
+
+        break;
+
       case 'top-right':
         inboxDivCss += ' top: 100px; right: 30px;';
         break;
@@ -5321,7 +5347,7 @@
 
     var header = document.createElement('div');
     header.innerText = headerProps.text;
-    var headerCss = 'box-sizing: border-box; width: 100%; min-height: 40px; position: relative; padding: 16px 12px; font-size: 18px; border-radius: 4px 4px 0px 0px; position: relative; z-index: 1;';
+    var headerCss = 'box-sizing: border-box; width: 100%; min-height: 40px; position: relative; padding: 16px 12px; font-size: 18px; border-radius: 4px 4px 0px 0px; position: relative; z-index: 1; text-align: center;';
     headerCss += " color: ".concat(headerProps.color, "; background-color: ").concat(headerProps.background, ";");
 
     if (!hasTags) {
@@ -5346,8 +5372,9 @@
     var tagContainerCss = 'box-sizing: border-box; width: 100%; box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; -webkit-box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; padding: 0px 12px; position: relative; z-index: 1;';
     tagContainerCss += " background-color: ".concat(inboxProps.tab.background, "; color: ").concat(inboxProps.tab.color);
     tagContainer.style.cssText = tagContainerCss;
-    var tags = ['All'].concat(_toConsumableArray(inboxProps.tags));
+    var tags = ['All'].concat(_toConsumableArray(inboxProps.tags.slice(0, 2)));
     var tagElements = [];
+    var width = 100 / tags.length;
 
     var _iterator = _createForOfIteratorHelper(tags),
         _step;
@@ -5356,8 +5383,8 @@
       for (_iterator.s(); !(_step = _iterator.n()).done;) {
         var tag = _step.value;
         var tagElement = document.createElement('div');
-        var tagCss = 'display: inline-block; position: relative; padding: 6px; border-bottom: 2px solid transparent; cursor: pointer;';
-        tagCss += "background-color: ".concat(inboxProps.tab.background, "; color: ").concat(inboxProps.tab.color);
+        var tagCss = 'display: inline-block; position: relative; padding: 6px; border-bottom: 2px solid transparent; cursor: pointer; box-sizing: border-box; text-align: center;';
+        tagCss += "background-color: ".concat(inboxProps.tab.background, "; color: ").concat(inboxProps.tab.color, "; width: ").concat(width, "%;");
         tagElement.style.cssText = tagCss;
         tagElement.innerText = tag;
         tagElement.addEventListener('click', function (e) {

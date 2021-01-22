@@ -245,7 +245,7 @@ export class StorageManager {
     // delete messages that have surpassed ttl.
     const now = getNow()
     for (const id in inboxMessages) {
-      if (inboxMessages[id].wzrk_ttl < now) {
+      if (inboxMessages[id].wzrk_ttl && inboxMessages[id].wzrk_ttl > 0 && inboxMessages[id].wzrk_ttl < now) {
         delete inboxMessages[id]
       }
     }

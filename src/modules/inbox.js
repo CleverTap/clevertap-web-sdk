@@ -29,6 +29,12 @@ const defaultInboxProps = {
   badge: {
     color: '#ffffff',
     background: '#ff0000'
+  },
+  customPosition: {
+    top: null,
+    left: null,
+    right: null,
+    bottom: null
   }
 }
 
@@ -239,7 +245,22 @@ export default class InboxHandler extends Array {
     }
     let inboxDivCss = 'display: none; position: fixed; width: 375px; max-width: 80%; box-sizing: border-box; border-radius: 4px; z-index: 2147483647 !important;'
     inboxDivCss += ` background-color: ${inboxProps.background}; box-shadow: ${inboxProps.boxShadow}; -webkit-box-shadow: ${inboxProps.boxShadow};`
+    const customPosition = inboxProps.customPosition
     switch (inboxProps.position) {
+      case 'custom':
+        if (customPosition.top != null) {
+          inboxDivCss += ` top: ${customPosition.top}px;`
+        }
+        if (customPosition.bottom != null) {
+          inboxDivCss += ` bottom: ${customPosition.bottom}px;`
+        }
+        if (customPosition.left != null) {
+          inboxDivCss += ` left: ${customPosition.left}px;`
+        }
+        if (customPosition.right != null) {
+          inboxDivCss += ` right: ${customPosition.right}px;`
+        }
+        break
       case 'top-right':
         inboxDivCss += ' top: 100px; right: 30px;'
         break
@@ -268,7 +289,7 @@ export default class InboxHandler extends Array {
   #createHeader (headerProps, hasTags) {
     const header = document.createElement('div')
     header.innerText = headerProps.text
-    let headerCss = 'box-sizing: border-box; width: 100%; min-height: 40px; position: relative; padding: 16px 12px; font-size: 18px; border-radius: 4px 4px 0px 0px; position: relative; z-index: 1;'
+    let headerCss = 'box-sizing: border-box; width: 100%; min-height: 40px; position: relative; padding: 16px 12px; font-size: 18px; border-radius: 4px 4px 0px 0px; position: relative; z-index: 1; text-align: center;'
     headerCss += ` color: ${headerProps.color}; background-color: ${headerProps.background};`
     if (!hasTags) {
       headerCss += ' box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; -webkit-box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px;'
@@ -292,12 +313,13 @@ export default class InboxHandler extends Array {
     let tagContainerCss = 'box-sizing: border-box; width: 100%; box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; -webkit-box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; padding: 0px 12px; position: relative; z-index: 1;'
     tagContainerCss += ` background-color: ${inboxProps.tab.background}; color: ${inboxProps.tab.color}`
     tagContainer.style.cssText = tagContainerCss
-    const tags = ['All', ...inboxProps.tags]
+    const tags = ['All', ...inboxProps.tags.slice(0, 2)]
     const tagElements = []
+    const width = 100 / tags.length
     for (const tag of tags) {
       const tagElement = document.createElement('div')
-      let tagCss = 'display: inline-block; position: relative; padding: 6px; border-bottom: 2px solid transparent; cursor: pointer;'
-      tagCss += `background-color: ${inboxProps.tab.background}; color: ${inboxProps.tab.color}`
+      let tagCss = 'display: inline-block; position: relative; padding: 6px; border-bottom: 2px solid transparent; cursor: pointer; box-sizing: border-box; text-align: center;'
+      tagCss += `background-color: ${inboxProps.tab.background}; color: ${inboxProps.tab.color}; width: ${width}%;`
       tagElement.style.cssText = tagCss
       tagElement.innerText = tag
       tagElement.addEventListener('click', (e) => {
