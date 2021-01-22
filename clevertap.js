@@ -5235,9 +5235,16 @@
       return b.date - a.date;
     });
     return inboxMessages.filter(function (inbox) {
-      return inbox.msg && (!_classPrivateFieldLooseBase(_this3, _tag)[_tag] || inbox.msg.tags && inbox.msg.tags.some(function (t) {
+      var _inbox$msg;
+
+      if (!_classPrivateFieldLooseBase(_this3, _tag)[_tag]) {
+        return true;
+      }
+
+      var tags = (inbox === null || inbox === void 0 ? void 0 : (_inbox$msg = inbox.msg) === null || _inbox$msg === void 0 ? void 0 : _inbox$msg.tags) || (inbox === null || inbox === void 0 ? void 0 : inbox.tags);
+      return tags && tags.some(function (t) {
         return t.toLowerCase() === _classPrivateFieldLooseBase(_this3, _tag)[_tag].toLowerCase();
-      }));
+      });
     });
   };
 
@@ -5703,9 +5710,9 @@
   };
 
   var _raiseNotificationClicked2 = function _raiseNotificationClicked2(inbox) {
-    var _inbox$msg;
+    var _inbox$msg2;
 
-    if (inbox === null || inbox === void 0 ? void 0 : (_inbox$msg = inbox.msg) === null || _inbox$msg === void 0 ? void 0 : _inbox$msg.onClick) {
+    if (inbox === null || inbox === void 0 ? void 0 : (_inbox$msg2 = inbox.msg) === null || _inbox$msg2 === void 0 ? void 0 : _inbox$msg2.onClick) {
       var url = inbox.msg.onClick + _classPrivateFieldLooseBase(this, _getCookieParam)[_getCookieParam]();
 
       RequestDispatcher.fireRequest(url);
