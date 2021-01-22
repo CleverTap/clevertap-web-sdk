@@ -2,6 +2,8 @@ import { INBOX_COOKIE_NAME } from '../util/constants'
 import { isObjectEmpty, mergeObjects } from '../util/datatypes'
 import { StorageManager } from '../util/storage'
 import { relativeDateString } from '../util/datetime'
+import { compressToBase64 } from '../util/encoder'
+import RequestDispatcher from '../util/requestDispatcher'
 
 // TODO: update the default button specs.
 const defaultInboxProps = {
@@ -43,6 +45,8 @@ export default class InboxHandler extends Array {
   #tag = ''
   #request
   #elementDeleted = false
+  #device
+  #session
 
   get _unreadCount () {
     return this.#unreadCount
@@ -56,11 +60,13 @@ export default class InboxHandler extends Array {
     }
   }
 
-  constructor ({ logger, request }, values) {
+  constructor ({ logger, request, device, session }, values) {
     super()
     this.#logger = logger
     this.#request = request
     this.#oldValues = values
+    this.#device = device
+    this.#session = session
   }
 
   get #open () {
@@ -130,8 +136,12 @@ export default class InboxHandler extends Array {
     }
   }
 
-  pushInboxNotificationClickedEvent () {
-    // TODO: this is yet to be finalised
+  pushInboxNotificationClickedEvent (inboxId) {
+    const inboxMessageObj = this.#getInboxMessageObj()
+    const inbox = inboxMessageObj[inboxId]
+    if (inbox) {
+      this.#raiseNotificationClicked(inbox)
+    }
   }
 
   _processOldValues () {
@@ -487,19 +497,20 @@ export default class InboxHandler extends Array {
       actionContainer.style.cssText = 'box-sizing: border-box; width: 100%;'
       const totalLinks = content.action.links.length
       for (const link of content.action.links) {
-        this.#createActionButton(link, totalLinks, actionContainer)
+        this.#createActionButton(link, totalLinks, actionContainer, inboxObj)
       }
       container.appendChild(actionContainer)
     }
   }
 
-  #createActionButton (link, totalCount, container) {
+  #createActionButton (link, totalCount, container, inboxObj) {
     const action = document.createElement('div')
     const width = 100 / totalCount
     action.innerText = link.text
     action.style.cssText = `box-sizing: border-box; display: inline-block; width: ${width}%; color: ${link.color}; background-color: ${link.bg}; text-align: center; padding: 8px; font-size: 14px; cursor: pointer; position: relative;`
     action.onclick = () => {
-      // TODO: click tracking
+      this.#raiseNotificationClicked(inboxObj)
+
       if (link.type === 'copy' && link.copyText?.text) {
         const input = document.createElement('input')
         input.type = 'text'
@@ -529,5 +540,18 @@ export default class InboxHandler extends Array {
       }
     }
     container.appendChild(action)
+  }
+
+  #raiseNotificationClicked (inbox) {
+    if (inbox?.msg?.onClick) {
+      const url = inbox.msg.onClick + this.#getCookieParam()
+      RequestDispatcher.fireRequest(url)
+    }
+  }
+
+  #getCookieParam () {
+    const gcookie = this.#device.getGuid()
+    const scookieObj = this.#session.getSessionCookieObject()
+    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s))
   }
 }

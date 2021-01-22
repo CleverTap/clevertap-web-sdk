@@ -110,7 +110,9 @@ export default class CleverTap {
 
     this.inbox = new InboxHandler({
       logger: this.#logger,
-      request: this.#request
+      request: this.#request,
+      device: this.#device,
+      session: this.#session
     }, clevertap.inbox)
 
     this.#api = new CleverTapAPI({
