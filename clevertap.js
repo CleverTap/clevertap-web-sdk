@@ -5574,7 +5574,7 @@
     dateContainer.style.cssText = "box-sizing: border-box; width: 100%; text-align: right; padding: ".concat(hasMedia ? '12px' : '0px', " 16px 16px 16px; color: #63698F; font-size: 12px;");
     container.appendChild(dateContainer);
 
-    if (content.action && content.action.links && content.action.links.length) {
+    if (content.action && content.action.hasLinks && content.action.links && content.action.links.length) {
       var actionContainer = document.createElement('div');
       actionContainer.style.cssText = 'box-sizing: border-box; width: 100%;';
       var totalLinks = content.action.links.length;
