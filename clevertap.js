@@ -5196,7 +5196,7 @@
       return b.date - a.date;
     });
     return inboxMessages.filter(function (inbox) {
-      return inbox.msg && inbox.msg.tags && (!_classPrivateFieldLooseBase(_this3, _tag)[_tag] || inbox.msg.tags.some(function (t) {
+      return inbox.msg && (!_classPrivateFieldLooseBase(_this3, _tag)[_tag] || inbox.msg.tags && inbox.msg.tags.some(function (t) {
         return t.toLowerCase() === _classPrivateFieldLooseBase(_this3, _tag)[_tag].toLowerCase();
       }));
     });

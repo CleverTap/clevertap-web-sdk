@@ -178,7 +178,7 @@ export default class InboxHandler extends Array {
     inboxMessages = inboxMessages.sort((a, b) => b.date - a.date)
 
     return inboxMessages.filter((inbox) => {
-      return inbox.msg && inbox.msg.tags && (!this.#tag || inbox.msg.tags.some(t => t.toLowerCase() === this.#tag.toLowerCase()))
+      return inbox.msg && (!this.#tag || (inbox.msg.tags && inbox.msg.tags.some(t => t.toLowerCase() === this.#tag.toLowerCase())))
     })
   }
 
