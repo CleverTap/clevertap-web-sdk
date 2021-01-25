@@ -9,10 +9,6 @@ import clevertap from 'clevertap-web-sdk';
 export class AppComponent {
   title = 'clevertap-sdk-angular';
 
-  ngOnInit () {
-    clevertap.init('YOUR_ACCOUNT_ID'); // Replace YOUR_ACCOUNT_ID, can be initialized just once
-  }
-
   handleEventPushClick () {
     clevertap.event.push('Product Viewed', {
       "Product name": "Casio Chronograph Watch",
