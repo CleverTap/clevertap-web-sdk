@@ -2,7 +2,6 @@ import './App.css';
 import clevertap from 'clevertap-web-sdk';
 
 function App() {
-  clevertap.init('YOUR_ACCOUNT_ID'); // Replace YOUR_ACCOUNT_ID, can be initialized just once
   return (
     <div className="App">
       <h3>CleverTap Web SDK using React</h3>

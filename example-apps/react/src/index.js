@@ -1,8 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import clevertap from 'clevertap-web-sdk';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+
+clevertap.init('YOUR_ACCOUNT_ID'); // Replace YOUR_ACCOUNT_ID, can be initialized just once
 
 ReactDOM.render(
   <React.StrictMode>
