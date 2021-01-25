@@ -26,7 +26,8 @@ module.exports = {
   // An array of regexp pattern strings used to skip coverage collection
   coveragePathIgnorePatterns: [
     '/node_modules/',
-    '<rootDir>/src/util/encoder.js'
+    '<rootDir>/src/util/encoder.js',
+    '/example-apps/'
   ],
 
   // Indicates which provider should be used to instrument code for coverage

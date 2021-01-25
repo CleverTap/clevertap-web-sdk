@@ -1,8 +1,6 @@
 # CleverTap web SDK 
 
-![experimental code](https://img.shields.io/static/v1?label=status&message=beta&color=red)
-
-Experimental code, not suitable for production environments
+![beta](https://img.shields.io/static/v1?label=status&message=beta&color=red)
 
 ## 👋 Introduction
 
@@ -53,8 +51,17 @@ clevertap.privacy.push({useIP: false}); //set the flag to true, if the user agre
 Only in case you are using a package manager
 ```javascript
 import clevertap from 'clevertap-web-sdk'
+clevertap.privacy.push({optOut: false}) // set the flag to true, if the user of the device opts out of sharing their data
+clevertap.privacy.push({useIP: false})  // set the flag to true, if the user agrees to share their IP data
 clevertap.init('YOUR_ACCOUNT_ID')
 ```
+
+For SPAs you need to also set the following:
+```javascript
+clevertap.spa = true
+```
+
+### 
 
 ### Event Push
 
@@ -98,6 +105,10 @@ clevertap.profile.push({
  }
 })
 ```
+
+## 𝌡 Example Usage
+* A [react application](https://github.com/CleverTap/clevertap-web-sdk/tree/master/example-apps/react) showing the integration of our SDK in a create react app project.
+* An [angular application](https://github.com/CleverTap/clevertap-web-sdk/tree/master/example-apps/angular) showing the integration of our SDK in an Angular CLI generated project.
 
 
 ## 🆕 Change Log
