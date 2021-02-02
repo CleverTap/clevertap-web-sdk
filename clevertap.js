@@ -1722,6 +1722,113 @@
     return output;
   };
 
+  var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
+
+  var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
+
+  var _addARPToRequest = _classPrivateFieldLooseKey("addARPToRequest");
+
+  var RequestDispatcher = /*#__PURE__*/function () {
+    function RequestDispatcher() {
+      _classCallCheck(this, RequestDispatcher);
+    }
+
+    _createClass(RequestDispatcher, null, [{
+      key: "fireRequest",
+      value: function fireRequest(url, skipARP, sendOULFlag) {
+        _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
+      }
+    }]);
+
+    return RequestDispatcher;
+  }();
+
+  var _addARPToRequest2 = function _addARPToRequest2(url, skipResARP) {
+    if (skipResARP === true) {
+      var _arp = {};
+      _arp.skipResARP = true;
+      return addToURL(url, 'arp', compressData(JSON.stringify(_arp)));
+    }
+
+    if (StorageManager$1._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
+      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager$1.readFromLSorCookie(ARP_COOKIE))));
+    }
+
+    return url;
+  };
+
+  var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
+    if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
+      $ct.isOptInRequest = false;
+      return false;
+    }
+
+    return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
+  };
+
+  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag) {
+    var _this = this,
+        _window$clevertap,
+        _window$wizrocket;
+
+    if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
+      this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
+      return;
+    }
+
+    if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
+      setTimeout(function () {
+        _this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
+
+        _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
+      }, 50);
+      return;
+    }
+
+    if (!sendOULFlag) {
+      if (isValueValid(this.device.gcookie)) {
+        // add cookie to url
+        url = addToURL(url, 'gc', this.device.gcookie);
+      }
+
+      url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
+    }
+
+    url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
+    // TODO: Figure out a better way to handle plugin check
+
+    if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
+      // used to add plugin name in request parameter
+      var plugin = window.clevertap.plugin || window.wizrocket.plugin;
+      url = addToURL(url, 'ct_pl', plugin);
+    }
+
+    if (url.indexOf('chrome-extension:') !== -1) {
+      url = url.replace('chrome-extension:', 'https:');
+    } // TODO: Try using Function constructor instead of appending script.
+
+
+    var s = document.createElement('script');
+    s.setAttribute('type', 'text/javascript');
+    s.setAttribute('src', url);
+    s.setAttribute('rel', 'nofollow');
+    s.async = true;
+    document.getElementsByTagName('head')[0].appendChild(s);
+    this.logger.debug('req snt -> url: ' + url);
+  };
+
+  RequestDispatcher.logger = void 0;
+  RequestDispatcher.device = void 0;
+  Object.defineProperty(RequestDispatcher, _fireRequest, {
+    value: _fireRequest2
+  });
+  Object.defineProperty(RequestDispatcher, _dropRequestDueToOptOut, {
+    value: _dropRequestDueToOptOut2
+  });
+  Object.defineProperty(RequestDispatcher, _addARPToRequest, {
+    value: _addARPToRequest2
+  });
+
   // CleverTap specific utilities
   var getCampaignObject = function getCampaignObject() {
     var campObj = {};
@@ -2135,7 +2242,7 @@
 
     logger.error(ENUM_FORMAT_ERROR);
   };
-  var handleEmailSubscription = function handleEmailSubscription(subscription, reEncoded, fetchGroups, account, request) {
+  var handleEmailSubscription = function handleEmailSubscription(subscription, reEncoded, fetchGroups, account) {
     var urlParamsAsIs = getURLParams(location.href); // can't use url_params as it is in lowercase above
 
     var encodedEmailId = urlParamsAsIs.e;
@@ -2172,7 +2279,7 @@
         url = addToURL(url, 'sub', subscription);
       }
 
-      request.fireRequest(url);
+      RequestDispatcher.fireRequest(url);
     }
   };
 
@@ -2690,119 +2797,16 @@
       if (processProfile) {
         StorageManager$1.setInstantDeleteFlagInK();
 
-        _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
+        try {
+          _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
+        } catch (e) {
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug(e);
+        }
       } else {
         _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].error('Profile object is in incorrect format');
       }
     }
   };
-
-  var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
-
-  var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
-
-  var _addARPToRequest = _classPrivateFieldLooseKey("addARPToRequest");
-
-  var RequestDispatcher = /*#__PURE__*/function () {
-    function RequestDispatcher() {
-      _classCallCheck(this, RequestDispatcher);
-    }
-
-    _createClass(RequestDispatcher, null, [{
-      key: "fireRequest",
-      value: function fireRequest(url, skipARP, sendOULFlag) {
-        _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
-      }
-    }]);
-
-    return RequestDispatcher;
-  }();
-
-  var _addARPToRequest2 = function _addARPToRequest2(url, skipResARP) {
-    if (skipResARP === true) {
-      var _arp = {};
-      _arp.skipResARP = true;
-      return addToURL(url, 'arp', compressData(JSON.stringify(_arp)));
-    }
-
-    if (StorageManager$1._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
-      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager$1.readFromLSorCookie(ARP_COOKIE))));
-    }
-
-    return url;
-  };
-
-  var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
-    if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
-      $ct.isOptInRequest = false;
-      return false;
-    }
-
-    return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
-  };
-
-  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag) {
-    var _this = this,
-        _window$clevertap,
-        _window$wizrocket;
-
-    if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
-      this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
-      return;
-    }
-
-    if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
-      setTimeout(function () {
-        _this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
-
-        _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
-      }, 50);
-      return;
-    }
-
-    if (!sendOULFlag) {
-      if (isValueValid(this.device.gcookie)) {
-        // add cookie to url
-        url = addToURL(url, 'gc', this.device.gcookie);
-      }
-
-      url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
-    }
-
-    url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
-    // TODO: Figure out a better way to handle plugin check
-
-    if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
-      // used to add plugin name in request parameter
-      var plugin = window.clevertap.plugin || window.wizrocket.plugin;
-      url = addToURL(url, 'ct_pl', plugin);
-    }
-
-    if (url.indexOf('chrome-extension:') !== -1) {
-      url = url.replace('chrome-extension:', 'https:');
-    } // TODO: Try using Function constructor instead of appending script.
-
-
-    var s = document.createElement('script');
-    s.setAttribute('type', 'text/javascript');
-    s.setAttribute('src', url);
-    s.setAttribute('rel', 'nofollow');
-    s.async = true;
-    document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url);
-  };
-
-  RequestDispatcher.logger = void 0;
-  RequestDispatcher.device = void 0;
-  Object.defineProperty(RequestDispatcher, _fireRequest, {
-    value: _fireRequest2
-  });
-  Object.defineProperty(RequestDispatcher, _dropRequestDueToOptOut, {
-    value: _dropRequestDueToOptOut2
-  });
-  Object.defineProperty(RequestDispatcher, _addARPToRequest, {
-    value: _addARPToRequest2
-  });
 
   var _tr = function _tr(msg, _ref) {
     var device = _ref.device,
@@ -4828,7 +4832,7 @@
       };
 
       var _handleEmailSubscription = function _handleEmailSubscription(subscription, reEncoded, fetchGroups) {
-        handleEmailSubscription(subscription, reEncoded, fetchGroups, _classPrivateFieldLooseBase(_this, _account$5)[_account$5], _classPrivateFieldLooseBase(_this, _request$6)[_request$6]);
+        handleEmailSubscription(subscription, reEncoded, fetchGroups, _classPrivateFieldLooseBase(_this, _account$5)[_account$5]);
       };
 
       var api = _classPrivateFieldLooseBase(this, _api)[_api];

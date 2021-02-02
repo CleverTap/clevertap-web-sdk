@@ -38,6 +38,7 @@ import {
 } from './datatypes'
 import { addToURL, getURLParams } from './url'
 import { compressData } from './encoder'
+import RequestDispatcher from './requestDispatcher'
 
 export const getCampaignObject = () => {
   let campObj = {}
@@ -453,7 +454,7 @@ export const setEnum = (enumVal, logger) => {
   logger.error(ENUM_FORMAT_ERROR)
 }
 
-export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, account, request) => {
+export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, account) => {
   const urlParamsAsIs = getURLParams(location.href) // can't use url_params as it is in lowercase above
   const encodedEmailId = urlParamsAsIs.e
   const encodedProfileProps = urlParamsAsIs.p
@@ -484,7 +485,7 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
       url = addToURL(url, 'sub', subscription)
     }
 
-    request.fireRequest(url)
+    RequestDispatcher.fireRequest(url)
   }
 }
 
