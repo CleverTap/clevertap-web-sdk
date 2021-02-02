@@ -418,7 +418,7 @@ export const getWrappedLink = (link, targetId, type, request, account) => {
 
   data = request.addSystemDataToObject(data, undefined)
   return addToURL(account.recorderURL, 'd', compressData(JSON.stringify(data)))
-} // TODO: check usage
+}
 
 export const getMessageTemplate = () => {
   return `<div class="notice-message">
@@ -433,7 +433,7 @@ export const getMessageTemplate = () => {
     </a>
   </div>
   <div class="clearfix"></div>`
-} // TODO: check usage
+}
 
 export const getMessageHeadTemplate = () => {
   return `<head>
@@ -485,5 +485,13 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
     }
 
     request.fireRequest(url)
+  }
+}
+
+export const tcWrapper = function (f) {
+  return function () {
+    try {
+      return f.apply(this, arguments)
+    } catch (e) {}
   }
 }
