@@ -1,10 +1,15 @@
-# CleverTap web SDK 
+# CleverTap Web SDK 
 
 ![beta](https://img.shields.io/static/v1?label=status&message=beta&color=red)
 
+
+## 🚀 Release Plan
+
+This is a "Feature complete" release and we now have a freeze on any new code, aside from fixing issues raised during the beta testing phase. Post evaluating all the feedback, if no critical issues arise we will release to production in March 2021.
+
 ## 👋 Introduction
 
-The CleverTap web SDK for Customer Engagement and Analytics
+The CleverTap Web SDK for Customer Engagement and Analytics
 
 CleverTap brings together real-time user insights, an advanced segmentation engine, and easy-to-use marketing tools in one mobile marketing platform — giving your team the power to create amazing experiences that deepen customer relationships. Our intelligent mobile marketing platform provides the insights you need to keep users engaged and drive long-term retention and growth.
 
@@ -14,7 +19,7 @@ To get started, sign up [here](https://clevertap.com/live-product-demo/)
 
 ## 🎉 Installation
 
-CleverTap web SDK is available as an npm package or as a script to manually add to your website
+CleverTap Web SDK is available as an npm package or as a script to manually add to your website.
 
 ### ___Use a package manager___
 
@@ -113,9 +118,9 @@ clevertap.profile.push({
 
 ## 🆕 Change Log
 
-Refer to the [CleverTap web SDK Change Log](https://github.com/CleverTap/clevertap-web-sdk/blob/master/CHANGELOG.md).
+Refer to the [CleverTap Web SDK Change Log](https://github.com/CleverTap/clevertap-web-sdk/blob/master/CHANGELOG.md).
 
 ## 📄 License
 
-CleverTap web SDK is released under the MIT license. See [LICENSE](https://github.com/CleverTap/clevertap-web-sdk/blob/master/LICENSE) for details.
+CleverTap Web SDK is released under the MIT license. See [LICENSE](https://github.com/CleverTap/clevertap-web-sdk/blob/master/LICENSE) for details.
 
