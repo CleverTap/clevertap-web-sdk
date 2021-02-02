@@ -268,7 +268,11 @@ export default class UserLoginHandler extends Array {
               (profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0))
       if (processProfile) {
         StorageManager.setInstantDeleteFlagInK()
-        this.#processOUL([profileObj])
+        try {
+          this.#processOUL([profileObj])
+        } catch (e) {
+          this.#logger.debug(e)
+        }
       } else {
         this.#logger.error('Profile object is in incorrect format')
       }
