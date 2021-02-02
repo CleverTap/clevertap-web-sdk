@@ -488,11 +488,3 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
     RequestDispatcher.fireRequest(url)
   }
 }
-
-export const tcWrapper = function (f) {
-  return function () {
-    try {
-      return f.apply(this, arguments)
-    } catch (e) {}
-  }
-}
