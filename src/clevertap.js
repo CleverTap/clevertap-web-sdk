@@ -199,7 +199,7 @@ export default class CleverTap {
       return $ct.unsubGroups
     }
     api.changeSubscriptionGroups = (reEncoded, updatedGroups) => {
-      this.setSubscriptionGroups(updatedGroups)
+      api.setSubscriptionGroups(updatedGroups)
       _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
     }
     api.setUpdatedCategoryLong = (profile) => {
