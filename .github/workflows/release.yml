@@ -31,8 +31,9 @@ jobs:
         uses: actions/setup-node@v2.1.2
         with:
           node-version: '10.x'
+          registry-url: 'https://registry.npmjs.org'
       - name: Publish package to npm
-        run: npm publish --access public
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   #     - name: Configure AWS credentials

@@ -4905,7 +4905,7 @@
       };
 
       api.changeSubscriptionGroups = function (reEncoded, updatedGroups) {
-        _this.setSubscriptionGroups(updatedGroups);
+        api.setSubscriptionGroups(updatedGroups);
 
         _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
       };
