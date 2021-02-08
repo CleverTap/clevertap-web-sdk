@@ -56,10 +56,14 @@ clevertap.privacy.push({useIP: false}); //set the flag to true, if the user agre
 Only in case you are using a package manager
 ```javascript
 import clevertap from 'clevertap-web-sdk'
-clevertap.privacy.push({optOut: false}) // set the flag to true, if the user of the device opts out of sharing their data
-clevertap.privacy.push({useIP: false})  // set the flag to true, if the user agrees to share their IP data
-clevertap.init('YOUR_ACCOUNT_ID')
+clevertap.privacy.push({optOut: false}) // Set the flag to true, if the user of the device opts out of sharing their data
+clevertap.privacy.push({useIP: false})  // Set the flag to true, if the user agrees to share their IP data
+clevertap.init('ACCOUNT_ID', 'REGION', 'TARGET_DOMAIN') // Replace with values applicable to you. Refer below
 ```
+Here: \
+```ACCOUNT_ID``` (mandatory): This value can be got from Projects page on the CleverTap Dashboard.\
+```REGION``` (optional): This will be same as the region of the CleverTap Dashboard. Possible values: (in1/us1/sg1).\
+```TARGET_DOMAIN``` (optional): domain of the proxy server.
 
 For SPAs you need to also set the following:
 ```javascript
