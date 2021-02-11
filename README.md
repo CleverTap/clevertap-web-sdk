@@ -115,6 +115,24 @@ clevertap.profile.push({
 })
 ```
 
+### Debugging
+
+This section is applicable for all browsers such as, Chrome, Firefox, and Safari. Error messages and warnings are logged to the JS console of the browser.
+
+For verbose logging, enable verbose logging of all communication with the CleverTap servers by setting the ```WZRK_D``` variable in sessionStorage. In the developer console of your browser type, ```sessionStorage['WZRK_D'] = '';```
+
+Alternatively, you can also set the log levels after calling ```clevertap.init()``` in the following way:
+
+```javascript
+clevertap.setLogLevel(LOG_LEVEL)
+// Here Log Levels is an integer that can be any of the folowing: 
+//  0: disable all logs
+//  1: display only errors
+//  2: display errors and info
+//  3: display all logs
+```
+
+
 ## 𝌡 Example Usage
 * A [react application](https://github.com/CleverTap/clevertap-web-sdk/tree/master/example-apps/react) showing the integration of our SDK in a create react app project.
 * An [angular application](https://github.com/CleverTap/clevertap-web-sdk/tree/master/example-apps/angular) showing the integration of our SDK in an Angular CLI generated project.

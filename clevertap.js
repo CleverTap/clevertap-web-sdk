@@ -4831,6 +4831,10 @@
         return _classPrivateFieldLooseBase(_this, _device$3)[_device$3].getGuid();
       };
 
+      this.setLogLevel = function (l) {
+        _classPrivateFieldLooseBase(_this, _logger$8)[_logger$8].logLevel = Number(l);
+      };
+
       var _handleEmailSubscription = function _handleEmailSubscription(subscription, reEncoded, fetchGroups) {
         handleEmailSubscription(subscription, reEncoded, fetchGroups, _classPrivateFieldLooseBase(_this, _account$5)[_account$5]);
       };
