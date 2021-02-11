@@ -10,7 +10,11 @@ export class StorageManager {
       return false
     }
     if (this._isLocalStorageSupported()) {
-      localStorage.setItem(key, JSON.stringify(value))
+      if (key === GCOOKIE_NAME) {
+        localStorage.setItem(key, value)
+      } else {
+        localStorage.setItem(key, JSON.stringify(value))
+      }
       return true
     }
   }
