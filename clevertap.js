@@ -439,12 +439,7 @@
         }
 
         if (this._isLocalStorageSupported()) {
-          if (key === GCOOKIE_NAME) {
-            localStorage.setItem(key, value);
-          } else {
-            localStorage.setItem(key, JSON.stringify(value));
-          }
-
+          localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
           return true;
         }
       }
@@ -579,7 +574,11 @@
           if (property === GCOOKIE_NAME) {
             value = decodeURIComponent(data);
           } else {
-            value = JSON.parse(decodeURIComponent(data));
+            try {
+              value = JSON.parse(decodeURIComponent(data));
+            } catch (err) {
+              value = decodeURIComponent(data);
+            }
           }
 
           $ct.globalCache[property] = value;
