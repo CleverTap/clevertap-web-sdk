@@ -439,7 +439,7 @@
         }
 
         if (this._isLocalStorageSupported()) {
-          localStorage.setItem(key, JSON.stringify(value));
+          localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
           return true;
         }
       }
@@ -574,7 +574,11 @@
           if (property === GCOOKIE_NAME) {
             value = decodeURIComponent(data);
           } else {
-            value = JSON.parse(decodeURIComponent(data));
+            try {
+              value = JSON.parse(decodeURIComponent(data));
+            } catch (err) {
+              value = decodeURIComponent(data);
+            }
           }
 
           $ct.globalCache[property] = value;
@@ -4829,6 +4833,10 @@
 
       this.getCleverTapID = function () {
         return _classPrivateFieldLooseBase(_this, _device$3)[_device$3].getGuid();
+      };
+
+      this.setLogLevel = function (l) {
+        _classPrivateFieldLooseBase(_this, _logger$8)[_logger$8].logLevel = Number(l);
       };
 
       var _handleEmailSubscription = function _handleEmailSubscription(subscription, reEncoded, fetchGroups) {

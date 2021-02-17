@@ -142,6 +142,10 @@ export default class CleverTap {
       return this.#device.getGuid()
     }
 
+    this.setLogLevel = (l) => {
+      this.#logger.logLevel = Number(l)
+    }
+
     const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
       handleEmailSubscription(subscription, reEncoded, fetchGroups, this.#account)
     }
