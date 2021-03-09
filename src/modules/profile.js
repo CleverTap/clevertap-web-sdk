@@ -102,7 +102,7 @@ export default class ProfileHandler extends Array {
             data = this.#request.addSystemDataToObject(data, undefined)
 
             this.#request.addFlags(data)
-            const compressedData = compressData(JSON.stringify(data))
+            const compressedData = compressData(JSON.stringify(data), this.#logger)
 
             let pageLoadUrl = this.#account.dataPostURL
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)

@@ -133,7 +133,7 @@ export default class RequestManager {
     const obj = this.#session.getSessionCookieObject()
 
     data.s = obj.s // session cookie
-    const compressedData = compressData(JSON.stringify(data))
+    const compressedData = compressData(JSON.stringify(data), this.#logger)
 
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
@@ -147,7 +147,7 @@ export default class RequestManager {
     data = this.addSystemDataToObject(data, undefined)
     this.addFlags(data)
     data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
-    const compressedData = compressData(JSON.stringify(data))
+    const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)

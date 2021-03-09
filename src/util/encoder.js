@@ -13,8 +13,8 @@ export const urlBase64ToUint8Array = (base64String) => {
   return new Uint8Array(processedData)
 }
 
-export const compressData = (dataObject) => {
-  // console.debug('dobj:' + dataObject);
+export const compressData = (dataObject, logger) => {
+  logger && typeof logger.debug === 'function' && logger.debug('dobj:' + dataObject)
   return compressToBase64(dataObject)
 }
 

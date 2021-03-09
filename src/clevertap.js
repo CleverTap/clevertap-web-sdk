@@ -98,7 +98,8 @@ export default class CleverTap {
 
     this.privacy = new Privacy({
       request: this.#request,
-      account: this.#account
+      account: this.#account,
+      logger: this.#logger
     }, clevertap.privacy)
 
     this.notifications = new NotificationHandler({
@@ -147,7 +148,7 @@ export default class CleverTap {
     }
 
     const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
-      handleEmailSubscription(subscription, reEncoded, fetchGroups, this.#account)
+      handleEmailSubscription(subscription, reEncoded, fetchGroups, this.#account, this.#logger)
     }
 
     const api = this.#api
@@ -342,7 +343,7 @@ export default class CleverTap {
       this.#overrideDSyncFlag(data)
     }
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data)))
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
     this.#request.saveAndFireRequest(pageLoadUrl, false)
 
@@ -366,7 +367,7 @@ export default class CleverTap {
     let data = {}
     data = this.#request.addSystemDataToObject(data, undefined)
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING)
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data)))
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
     this.#request.saveAndFireRequest(pageLoadUrl, false)
   }

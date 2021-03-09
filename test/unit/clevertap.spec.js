@@ -113,7 +113,7 @@ describe('clevertap.js', function () {
         getURLParams.mockReturnValue({})
         getDomain.mockReturnValue('')
         this.clevertap.init(accountId, region, targetDomain)
-        const data = JSON.parse(compressData.mock.calls[0])
+        const data = JSON.parse(compressData.mock.calls[0][0])
         expect(data.referrer).toBeUndefined()
       })
 
@@ -123,7 +123,7 @@ describe('clevertap.js', function () {
           const referrer = 'fooBar'
           getDomain.mockReturnValue(referrer)
           this.clevertap.init(accountId, region, targetDomain)
-          const data = JSON.parse(compressData.mock.calls[0])
+          const data = JSON.parse(compressData.mock.calls[0][0])
           expect(data.referrer).toBe(referrer)
         })
 
@@ -132,7 +132,7 @@ describe('clevertap.js', function () {
           const referrer = string121Char
           getDomain.mockReturnValue(referrer)
           this.clevertap.init(accountId, region, targetDomain)
-          const data = JSON.parse(compressData.mock.calls[0])
+          const data = JSON.parse(compressData.mock.calls[0][0])
           expect(data.referrer).not.toBe(referrer)
           expect(data.referrer.length).toBe(maxLen)
         })
@@ -148,7 +148,7 @@ describe('clevertap.js', function () {
               utm_source: 'mock_utm_source'
             })
             this.clevertap.init(accountId, region, targetDomain)
-            const data = JSON.parse(compressData.mock.calls[0])
+            const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.us).toBe('mock_utm_source')
           })
 
@@ -157,7 +157,7 @@ describe('clevertap.js', function () {
               wzrk_source: string121Char
             })
             this.clevertap.init(accountId, region, targetDomain)
-            const data = JSON.parse(compressData.mock.calls[0])
+            const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.us.length).toBe(maxLen)
           })
         })
@@ -173,7 +173,7 @@ describe('clevertap.js', function () {
               utm_medium: 'mock_utm_medium'
             })
             this.clevertap.init(accountId, region, targetDomain)
-            const data = JSON.parse(compressData.mock.calls[0])
+            const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.um).toBe('mock_utm_medium')
           })
 
@@ -182,7 +182,7 @@ describe('clevertap.js', function () {
               wzrk_medium: string121Char
             })
             this.clevertap.init(accountId, region, targetDomain)
-            const data = JSON.parse(compressData.mock.calls[0])
+            const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.um.length).toBe(maxLen)
           })
 
@@ -191,7 +191,7 @@ describe('clevertap.js', function () {
               wzrk_medium: 'email'
             })
             this.clevertap.init(accountId, region, targetDomain)
-            const data = JSON.parse(compressData.mock.calls[0])
+            const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.wm).toBe('email')
           })
         })
@@ -207,7 +207,7 @@ describe('clevertap.js', function () {
               utm_campaign: 'mock_utm_campaign'
             })
             this.clevertap.init(accountId, region, targetDomain)
-            const data = JSON.parse(compressData.mock.calls[0])
+            const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.uc).toBe('mock_utm_campaign')
           })
 
@@ -216,7 +216,7 @@ describe('clevertap.js', function () {
               wzrk_campaign: string121Char
             })
             this.clevertap.init(accountId, region, targetDomain)
-            const data = JSON.parse(compressData.mock.calls[0])
+            const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.uc.length).toBe(maxLen)
           })
         })
@@ -229,7 +229,7 @@ describe('clevertap.js', function () {
       mockRequestObject.addSystemDataToObject.mockImplementation(data => ({ ...data, pg: 1 }))
       this.clevertap.enablePersonalization = true
       this.clevertap.init(accountId)
-      const data = JSON.parse(compressData.mock.calls[0])
+      const data = JSON.parse(compressData.mock.calls[0][0])
       expect(data.dsync).toBeTruthy()
     })
 
@@ -239,7 +239,7 @@ describe('clevertap.js', function () {
       mockRequestObject.addSystemDataToObject.mockImplementation(data => ({ ...data, pg: 1 }))
       this.clevertap.enablePersonalization = false
       this.clevertap.init(accountId)
-      const data = JSON.parse(compressData.mock.calls[0])
+      const data = JSON.parse(compressData.mock.calls[0][0])
       expect(data.dsync).not.toBeTruthy()
     })
 
