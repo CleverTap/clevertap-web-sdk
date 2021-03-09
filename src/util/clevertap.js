@@ -405,7 +405,7 @@ export const arp = (jsonMap) => {
   }
 }
 
-export const getWrappedLink = (link, targetId, type, request, account) => {
+export const getWrappedLink = (link, targetId, type, request, account, logger) => {
   let data = {}
   data.sendTo = link
   data.targetId = targetId
@@ -418,7 +418,7 @@ export const getWrappedLink = (link, targetId, type, request, account) => {
   }
 
   data = request.addSystemDataToObject(data, undefined)
-  return addToURL(account.recorderURL, 'd', compressData(JSON.stringify(data)))
+  return addToURL(account.recorderURL, 'd', compressData(JSON.stringify(data), logger))
 }
 
 export const getMessageTemplate = () => {
@@ -454,7 +454,7 @@ export const setEnum = (enumVal, logger) => {
   logger.error(ENUM_FORMAT_ERROR)
 }
 
-export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, account) => {
+export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, account, logger) => {
   const urlParamsAsIs = getURLParams(location.href) // can't use url_params as it is in lowercase above
   const encodedEmailId = urlParamsAsIs.e
   const encodedProfileProps = urlParamsAsIs.p
@@ -476,7 +476,7 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
       url = addToURL(url, 'encoded', reEncoded)
     }
     url = addToURL(url, 'e', encodedEmailId)
-    url = addToURL(url, 'd', compressData(JSON.stringify(data)))
+    url = addToURL(url, 'd', compressData(JSON.stringify(data), logger))
     if (encodedProfileProps) {
       url = addToURL(url, 'p', encodedProfileProps)
     }

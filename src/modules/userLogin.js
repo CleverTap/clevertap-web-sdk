@@ -197,7 +197,7 @@ export default class UserLoginHandler extends Array {
               data[IS_OUL] = true
             }
 
-            const compressedData = compressData(JSON.stringify(data))
+            const compressedData = compressData(JSON.stringify(data), this.#logger)
 
             let pageLoadUrl = this.#account.dataPostURL
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)

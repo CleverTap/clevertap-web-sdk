@@ -22,13 +22,16 @@ export default class Privacy extends Array {
   #request
   #account
   #oldValues
+  #logger
 
   constructor ({
     request,
-    account
+    account,
+    logger
   },
   values) {
     super()
+    this.#logger = logger
     this.#request = request
     this.#account = account
     this.#oldValues = values
@@ -69,7 +72,7 @@ export default class Privacy extends Array {
         data.type = 'profile'
         data.profile = profileObj
         data = this.#request.addSystemDataToObject(data, undefined)
-        const compressedData = compressData(JSON.stringify(data))
+        const compressedData = compressData(JSON.stringify(data), this.#logger)
         let pageLoadUrl = this.#account.dataPostURL
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)

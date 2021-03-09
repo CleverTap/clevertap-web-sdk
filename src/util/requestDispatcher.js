@@ -70,10 +70,10 @@ export default class RequestDispatcher {
     if (skipResARP === true) {
       const _arp = {}
       _arp.skipResARP = true
-      return addToURL(url, 'arp', compressData(JSON.stringify(_arp)))
+      return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger))
     }
     if (StorageManager._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
-      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE))))
+      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE)), this.logger))
     }
     return url
   }

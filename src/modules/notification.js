@@ -91,7 +91,7 @@ export default class NotificationHandler extends Array {
             payload = JSON.stringify(payload)
             let pageLoadUrl = this.#account.dataPostURL
             pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload))
+            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
             RequestDispatcher.fireRequest(pageLoadUrl)
             // set in localstorage
             StorageManager.save(WEBPUSH_LS_KEY, 'ok')
@@ -138,7 +138,7 @@ export default class NotificationHandler extends Array {
               payload = JSON.stringify(payload)
               let pageLoadUrl = this.#account.dataPostURL
               pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-              pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload))
+              pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
               RequestDispatcher.fireRequest(pageLoadUrl)
               // set in localstorage
               StorageManager.save(WEBPUSH_LS_KEY, 'ok')
