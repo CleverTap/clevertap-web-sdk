@@ -33,7 +33,7 @@ export default class EventHandler extends Array {
   #processEventArray (eventsArr) {
     if (Array.isArray(eventsArr)) {
       while (eventsArr.length > 0) {
-        var eventName = eventsArr.shift()
+        let eventName = eventsArr.shift()
         if (!isString(eventName)) {
           this.#logger.error(EVENT_ERROR)
           continue

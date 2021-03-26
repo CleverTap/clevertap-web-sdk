@@ -20,7 +20,8 @@ module.exports = {
   rules: {
     'no-prototype-builtins': 'off',
     'no-useless-escape': 'off', // should probably remove this?,
-    'eqeqeq': [2, 'smart']
+    eqeqeq: [2, 'smart'],
+    'no-dupe-class-members': 'off'
   },
   parser: '@babel/eslint-parser'
 }
