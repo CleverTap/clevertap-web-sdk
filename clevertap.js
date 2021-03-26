@@ -79,7 +79,7 @@
     if (typeof Proxy === "function") return true;
 
     try {
-      Date.prototype.toString.call(Reflect.construct(Date, [], function () {}));
+      Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {}));
       return true;
     } catch (e) {
       return false;
@@ -876,7 +876,7 @@
     return LRUCache;
   }();
 
-  var _deleteFromObject2 = function _deleteFromObject2(key, obj) {
+  function _deleteFromObject2(key, obj) {
     var allKeys = JSON.parse(JSON.stringify(_classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder]));
     var newCache = {};
     var indexToDelete;
@@ -894,15 +894,15 @@
     allKeys.splice(indexToDelete, 1);
     _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder] = JSON.parse(JSON.stringify(allKeys));
     return newCache;
-  };
+  }
 
-  var _logger = _classPrivateFieldLooseKey("logger");
+  var _logger$9 = _classPrivateFieldLooseKey("logger");
 
-  var _request = _classPrivateFieldLooseKey("request");
+  var _request$6 = _classPrivateFieldLooseKey("request");
 
-  var _device = _classPrivateFieldLooseKey("device");
+  var _device$3 = _classPrivateFieldLooseKey("device");
 
-  var _session = _classPrivateFieldLooseKey("session");
+  var _session$3 = _classPrivateFieldLooseKey("session");
 
   var CleverTapAPI = /*#__PURE__*/function () {
     function CleverTapAPI(_ref) {
@@ -913,26 +913,26 @@
 
       _classCallCheck(this, CleverTapAPI);
 
-      Object.defineProperty(this, _logger, {
+      Object.defineProperty(this, _logger$9, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _request, {
+      Object.defineProperty(this, _request$6, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device, {
+      Object.defineProperty(this, _device$3, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _session, {
+      Object.defineProperty(this, _session$3, {
         writable: true,
         value: void 0
       });
-      _classPrivateFieldLooseBase(this, _logger)[_logger] = logger;
-      _classPrivateFieldLooseBase(this, _request)[_request] = request;
-      _classPrivateFieldLooseBase(this, _device)[_device] = device;
-      _classPrivateFieldLooseBase(this, _session)[_session] = session;
+      _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
+      _classPrivateFieldLooseBase(this, _request$6)[_request$6] = request;
+      _classPrivateFieldLooseBase(this, _device$3)[_device$3] = device;
+      _classPrivateFieldLooseBase(this, _session$3)[_session$3] = session;
     }
 
     _createClass(CleverTapAPI, [{
@@ -943,22 +943,22 @@
           respNumber = 0;
         }
 
-        StorageManager$1.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger)[_logger]);
+        StorageManager$1.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]);
 
         if (respNumber > $ct.globalCache.REQ_N) {
           // request for some other user so ignore
           return;
         }
 
-        if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
-          if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
+        if (!isValueValid(_classPrivateFieldLooseBase(this, _device$3)[_device$3].gcookie) || resume || typeof optOutResponse === 'boolean') {
+          if (!isValueValid(_classPrivateFieldLooseBase(this, _device$3)[_device$3].gcookie)) {
             // clear useIP meta prop
             StorageManager$1.getAndClearMetaProp(USEIP_KEY);
           }
 
-          _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
+          _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device$3)[_device$3].gcookie, " set to ").concat(global));
 
-          _classPrivateFieldLooseBase(this, _device)[_device].gcookie = global;
+          _classPrivateFieldLooseBase(this, _device$3)[_device$3].gcookie = global;
 
           if (global && StorageManager$1._isLocalStorageSupported()) {
             if ($ct.LRU_CACHE == null) {
@@ -981,7 +981,7 @@
             if (lastK !== -1) {
               var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
-              _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
+              _classPrivateFieldLooseBase(this, _request$6)[_request$6].unregisterTokenForGuid(lastGUID);
             }
           }
 
@@ -992,26 +992,26 @@
         if (resume) {
           $ct.blockRequest = false;
 
-          _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Resumed requests');
+          _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].debug('Resumed requests');
         }
 
         if (StorageManager$1._isLocalStorageSupported()) {
-          _classPrivateFieldLooseBase(this, _session)[_session].manageSession(session);
+          _classPrivateFieldLooseBase(this, _session$3)[_session$3].manageSession(session);
         } // session cookie
 
 
-        var obj = _classPrivateFieldLooseBase(this, _session)[_session].getSessionCookieObject(); // for the race-condition where two responses come back with different session ids. don't write the older session id.
+        var obj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject(); // for the race-condition where two responses come back with different session ids. don't write the older session id.
 
 
         if (typeof obj.s === 'undefined' || obj.s <= session) {
           obj.s = session;
           obj.t = getNow(); // time of last response from server
 
-          _classPrivateFieldLooseBase(this, _session)[_session].setSessionCookieObject(obj);
+          _classPrivateFieldLooseBase(this, _session$3)[_session$3].setSessionCookieObject(obj);
         }
 
-        if (resume && !_classPrivateFieldLooseBase(this, _request)[_request].processingBackup) {
-          _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
+        if (resume && !_classPrivateFieldLooseBase(this, _request$6)[_request$6].processingBackup) {
+          _classPrivateFieldLooseBase(this, _request$6)[_request$6].processBackupEvents();
         }
 
         $ct.globalCache.RESP_N = respNumber;
@@ -1021,7 +1021,7 @@
     return CleverTapAPI;
   }();
 
-  var _logger$1 = _classPrivateFieldLooseKey("logger");
+  var _logger$8 = _classPrivateFieldLooseKey("logger");
 
   var DeviceManager = /*#__PURE__*/function () {
     function DeviceManager(_ref) {
@@ -1029,12 +1029,12 @@
 
       _classCallCheck(this, DeviceManager);
 
-      Object.defineProperty(this, _logger$1, {
+      Object.defineProperty(this, _logger$8, {
         writable: true,
         value: void 0
       });
       this.gcookie = void 0;
-      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1] = logger;
+      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8] = logger;
       this.gcookie = this.getGuid();
     }
 
@@ -1054,7 +1054,7 @@
             try {
               guid = JSON.parse(decodeURIComponent(value));
             } catch (e) {
-              _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug('Cannot parse Gcookie from localstorage - must be encoded ' + value); // assumming guids are of size 32. supporting both formats.
+              _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].debug('Cannot parse Gcookie from localstorage - must be encoded ' + value); // assumming guids are of size 32. supporting both formats.
               // guid can have encodedURIComponent or be without it.
               // 1.56e4078ed15749928c042479ec2b4d47 - breaks on JSON.parse(decodeURIComponent())
               // 2.%2256e4078ed15749928c042479ec2b4d47%22
@@ -1064,7 +1064,7 @@
                 guid = value;
                 StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, value);
               } else {
-                _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error('Illegal guid ' + value);
+                _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Illegal guid ' + value);
               }
             } // Persist to cookie storage if not present there.
 
@@ -1184,13 +1184,13 @@
     return false;
   };
 
-  var _logger$2 = _classPrivateFieldLooseKey("logger");
+  var _logger$7 = _classPrivateFieldLooseKey("logger");
 
-  var _oldValues = _classPrivateFieldLooseKey("oldValues");
+  var _oldValues$4 = _classPrivateFieldLooseKey("oldValues");
 
-  var _request$1 = _classPrivateFieldLooseKey("request");
+  var _request$5 = _classPrivateFieldLooseKey("request");
 
-  var _isPersonalisationActive = _classPrivateFieldLooseKey("isPersonalisationActive");
+  var _isPersonalisationActive$4 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   var _processEventArray = _classPrivateFieldLooseKey("processEventArray");
 
@@ -1212,26 +1212,26 @@
       Object.defineProperty(_assertThisInitialized(_this), _processEventArray, {
         value: _processEventArray2
       });
-      Object.defineProperty(_assertThisInitialized(_this), _logger$2, {
+      Object.defineProperty(_assertThisInitialized(_this), _logger$7, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _oldValues, {
+      Object.defineProperty(_assertThisInitialized(_this), _oldValues$4, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _request$1, {
+      Object.defineProperty(_assertThisInitialized(_this), _request$5, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _isPersonalisationActive, {
+      Object.defineProperty(_assertThisInitialized(_this), _isPersonalisationActive$4, {
         writable: true,
         value: void 0
       });
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$2)[_logger$2] = logger;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues)[_oldValues] = values;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$1)[_request$1] = request;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _isPersonalisationActive)[_isPersonalisationActive] = isPersonalisationActive;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$7)[_logger$7] = logger;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$4)[_oldValues$4] = values;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$5)[_request$5] = request;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _isPersonalisationActive$4)[_isPersonalisationActive$4] = isPersonalisationActive;
       return _this;
     }
 
@@ -1249,16 +1249,16 @@
     }, {
       key: "_processOldValues",
       value: function _processOldValues() {
-        if (_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]) {
-          _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]);
+        if (_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]) {
+          _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]);
         }
 
-        _classPrivateFieldLooseBase(this, _oldValues)[_oldValues] = null;
+        _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = null;
       }
     }, {
       key: "getDetails",
       value: function getDetails(evtName) {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive]()) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4]()) {
           return;
         }
 
@@ -1285,13 +1285,13 @@
     return EventHandler;
   }( /*#__PURE__*/_wrapNativeSuper(Array));
 
-  var _processEventArray2 = function _processEventArray2(eventsArr) {
+  function _processEventArray2(eventsArr) {
     if (Array.isArray(eventsArr)) {
       while (eventsArr.length > 0) {
         var eventName = eventsArr.shift();
 
         if (!isString(eventName)) {
-          _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].error(EVENT_ERROR);
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error(EVENT_ERROR);
 
           continue;
         }
@@ -1299,11 +1299,11 @@
         if (eventName.length > 1024) {
           eventName = eventName.substring(0, 1024);
 
-          _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].reportError(510, eventName + '... length exceeded 1024 chars. Trimmed.');
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].reportError(510, eventName + '... length exceeded 1024 chars. Trimmed.');
         }
 
         if (SYSTEM_EVENTS.includes(eventName)) {
-          _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].reportError(513, eventName + ' is a restricted system event. It cannot be used as an event name.');
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].reportError(513, eventName + ' is a restricted system event. It cannot be used as an event name.');
 
           continue;
         }
@@ -1321,14 +1321,14 @@
           } else {
             // check Charged Event vs. other events.
             if (eventName === 'Charged') {
-              if (!isChargedEventStructureValid(eventObj, _classPrivateFieldLooseBase(this, _logger$2)[_logger$2])) {
-                _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].reportError(511, 'Charged event structure invalid. Not sent.');
+              if (!isChargedEventStructureValid(eventObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7])) {
+                _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].reportError(511, 'Charged event structure invalid. Not sent.');
 
                 continue;
               }
             } else {
               if (!isEventStructureFlat(eventObj)) {
-                _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].reportError(512, eventName + ' event structure invalid. Not sent.');
+                _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].reportError(512, eventName + ' event structure invalid. Not sent.');
 
                 continue;
               }
@@ -1338,10 +1338,10 @@
           }
         }
 
-        _classPrivateFieldLooseBase(this, _request$1)[_request$1].processEvent(data);
+        _classPrivateFieldLooseBase(this, _request$5)[_request$5].processEvent(data);
       }
     }
-  };
+  }
 
   var getURLParams = function getURLParams(url) {
     var urlParams = {};
@@ -1747,30 +1747,7 @@
     return RequestDispatcher;
   }();
 
-  var _addARPToRequest2 = function _addARPToRequest2(url, skipResARP) {
-    if (skipResARP === true) {
-      var _arp = {};
-      _arp.skipResARP = true;
-      return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger));
-    }
-
-    if (StorageManager$1._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
-      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager$1.readFromLSorCookie(ARP_COOKIE)), this.logger));
-    }
-
-    return url;
-  };
-
-  var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
-    if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
-      $ct.isOptInRequest = false;
-      return false;
-    }
-
-    return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
-  };
-
-  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag) {
+  function _fireRequest2(url, tries, skipARP, sendOULFlag) {
     var _this = this,
         _window$clevertap,
         _window$wizrocket;
@@ -1801,7 +1778,7 @@
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
     // TODO: Figure out a better way to handle plugin check
 
-    if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
+    if ((_window$clevertap = window.clevertap) !== null && _window$clevertap !== void 0 && _window$clevertap.hasOwnProperty('plugin') || (_window$wizrocket = window.wizrocket) !== null && _window$wizrocket !== void 0 && _window$wizrocket.hasOwnProperty('plugin')) {
       // used to add plugin name in request parameter
       var plugin = window.clevertap.plugin || window.wizrocket.plugin;
       url = addToURL(url, 'ct_pl', plugin);
@@ -1819,19 +1796,42 @@
     s.async = true;
     document.getElementsByTagName('head')[0].appendChild(s);
     this.logger.debug('req snt -> url: ' + url);
-  };
+  }
 
-  RequestDispatcher.logger = void 0;
-  RequestDispatcher.device = void 0;
-  Object.defineProperty(RequestDispatcher, _fireRequest, {
-    value: _fireRequest2
+  function _dropRequestDueToOptOut2() {
+    if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
+      $ct.isOptInRequest = false;
+      return false;
+    }
+
+    return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
+  }
+
+  function _addARPToRequest2(url, skipResARP) {
+    if (skipResARP === true) {
+      var _arp = {};
+      _arp.skipResARP = true;
+      return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger));
+    }
+
+    if (StorageManager$1._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
+      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager$1.readFromLSorCookie(ARP_COOKIE)), this.logger));
+    }
+
+    return url;
+  }
+
+  Object.defineProperty(RequestDispatcher, _addARPToRequest, {
+    value: _addARPToRequest2
   });
   Object.defineProperty(RequestDispatcher, _dropRequestDueToOptOut, {
     value: _dropRequestDueToOptOut2
   });
-  Object.defineProperty(RequestDispatcher, _addARPToRequest, {
-    value: _addARPToRequest2
+  Object.defineProperty(RequestDispatcher, _fireRequest, {
+    value: _fireRequest2
   });
+  RequestDispatcher.logger = void 0;
+  RequestDispatcher.device = void 0;
 
   // CleverTap specific utilities
   var getCampaignObject = function getCampaignObject() {
@@ -2287,15 +2287,15 @@
     }
   };
 
-  var _logger$3 = _classPrivateFieldLooseKey("logger");
+  var _logger$6 = _classPrivateFieldLooseKey("logger");
 
-  var _request$2 = _classPrivateFieldLooseKey("request");
+  var _request$4 = _classPrivateFieldLooseKey("request");
 
-  var _account = _classPrivateFieldLooseKey("account");
+  var _account$5 = _classPrivateFieldLooseKey("account");
 
-  var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
+  var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
 
-  var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
+  var _isPersonalisationActive$3 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   var _processProfileArray = _classPrivateFieldLooseKey("processProfileArray");
 
@@ -2318,31 +2318,31 @@
       Object.defineProperty(_assertThisInitialized(_this), _processProfileArray, {
         value: _processProfileArray2
       });
-      Object.defineProperty(_assertThisInitialized(_this), _logger$3, {
+      Object.defineProperty(_assertThisInitialized(_this), _logger$6, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _request$2, {
+      Object.defineProperty(_assertThisInitialized(_this), _request$4, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _account, {
+      Object.defineProperty(_assertThisInitialized(_this), _account$5, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _oldValues$1, {
+      Object.defineProperty(_assertThisInitialized(_this), _oldValues$3, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _isPersonalisationActive$1, {
+      Object.defineProperty(_assertThisInitialized(_this), _isPersonalisationActive$3, {
         writable: true,
         value: void 0
       });
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$3)[_logger$3] = logger;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$2)[_request$2] = request;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account)[_account] = account;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$1)[_oldValues$1] = values;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$6)[_logger$6] = logger;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$4)[_request$4] = request;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$5)[_account$5] = account;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$3)[_oldValues$3] = values;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _isPersonalisationActive$3)[_isPersonalisationActive$3] = isPersonalisationActive;
       return _this;
     }
 
@@ -2360,16 +2360,16 @@
     }, {
       key: "_processOldValues",
       value: function _processOldValues() {
-        if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
-          _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
+        if (_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]) {
+          _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
         }
 
-        _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = null;
+        _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = null;
       }
     }, {
       key: "getAttribute",
       value: function getAttribute(propName) {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3]()) {
           return;
         }
 
@@ -2386,7 +2386,7 @@
     return ProfileHandler;
   }( /*#__PURE__*/_wrapNativeSuper(Array));
 
-  var _processProfileArray2 = function _processProfileArray2(profileArr) {
+  function _processProfileArray2(profileArr) {
     if (Array.isArray(profileArr) && profileArr.length > 0) {
       for (var index in profileArr) {
         if (profileArr.hasOwnProperty(index)) {
@@ -2399,7 +2399,7 @@
             profileObj = outerObj.Site;
 
             if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
-              logger: _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]
+              logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
             })) {
               return;
             }
@@ -2415,7 +2415,7 @@
 
             if (!isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
               profileObj = processGPlusUserObj(GPlusProfileObj, {
-                logger: _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]
+                logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
               });
             }
           }
@@ -2431,35 +2431,35 @@
 
             data.profile = profileObj;
             addToLocalProfileMap(profileObj, true);
-            data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
+            data = _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
 
-            _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data);
+            _classPrivateFieldLooseBase(this, _request$4)[_request$4].addFlags(data);
 
-            var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
+            var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
 
-            var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+            var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
 
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
             pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
 
-            _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust);
+            _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust);
           }
         }
       }
     }
-  };
+  }
 
   var _request$3 = _classPrivateFieldLooseKey("request");
 
-  var _logger$4 = _classPrivateFieldLooseKey("logger");
+  var _logger$5 = _classPrivateFieldLooseKey("logger");
 
-  var _account$1 = _classPrivateFieldLooseKey("account");
+  var _account$4 = _classPrivateFieldLooseKey("account");
 
-  var _session$1 = _classPrivateFieldLooseKey("session");
+  var _session$2 = _classPrivateFieldLooseKey("session");
 
   var _oldValues$2 = _classPrivateFieldLooseKey("oldValues");
 
-  var _device$1 = _classPrivateFieldLooseKey("device");
+  var _device$2 = _classPrivateFieldLooseKey("device");
 
   var _processOUL = _classPrivateFieldLooseKey("processOUL");
 
@@ -2502,15 +2502,15 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _logger$4, {
+      Object.defineProperty(_assertThisInitialized(_this), _logger$5, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _account$1, {
+      Object.defineProperty(_assertThisInitialized(_this), _account$4, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _session$1, {
+      Object.defineProperty(_assertThisInitialized(_this), _session$2, {
         writable: true,
         value: void 0
       });
@@ -2518,23 +2518,23 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _device$1, {
+      Object.defineProperty(_assertThisInitialized(_this), _device$2, {
         writable: true,
         value: void 0
       });
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$3)[_request$3] = request;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$1)[_account$1] = account;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _session$1)[_session$1] = session;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$4)[_logger$4] = logger;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$4)[_account$4] = account;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _session$2)[_session$2] = session;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$5)[_logger$5] = logger;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$2)[_oldValues$2] = values;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _device$1)[_device$1] = device;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _device$2)[_device$2] = device;
       return _this;
     }
 
     _createClass(UserLoginHandler, [{
       key: "clear",
       value: function clear() {
-        _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('clear called. Reset flag has been set.');
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('clear called. Reset flag has been set.');
 
         _classPrivateFieldLooseBase(this, _deleteUser)[_deleteUser]();
 
@@ -2565,7 +2565,7 @@
     return UserLoginHandler;
   }( /*#__PURE__*/_wrapNativeSuper(Array));
 
-  var _processOUL2 = function _processOUL2(profileArr) {
+  function _processOUL2(profileArr) {
     var _this2 = this;
 
     var sendOULFlag = true;
@@ -2623,7 +2623,7 @@
           var gFromCache = $ct.LRU_CACHE.get(kId);
           $ct.LRU_CACHE.set(kId, gFromCache);
           StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
-          _classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie = gFromCache;
+          _classPrivateFieldLooseBase(_this2, _device$2)[_device$2].gcookie = gFromCache;
           var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
           if (lastK !== -1) {
@@ -2636,7 +2636,7 @@
             _this2.clear();
           } else {
             if (g != null) {
-              _classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie = g;
+              _classPrivateFieldLooseBase(_this2, _device$2)[_device$2].gcookie = g;
               StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, g);
               sendOULFlag = false;
             }
@@ -2662,7 +2662,7 @@
             profileObj = outerObj.Site;
 
             if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
-              logger: _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]
+              logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
             })) {
               return;
             }
@@ -2678,7 +2678,7 @@
 
             if (isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
               profileObj = processGPlusUserObj(GPlusProfileObj, {
-                logger: _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]
+                logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
               });
             }
           }
@@ -2729,9 +2729,9 @@
               data[IS_OUL] = true;
             }
 
-            var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]);
+            var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]);
 
-            var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostURL;
+            var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$4)[_account$4].dataPostURL;
 
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
             pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData); // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
@@ -2743,9 +2743,9 @@
         }
       }
     }
-  };
+  }
 
-  var _handleCookieFromCache2 = function _handleCookieFromCache2() {
+  function _handleCookieFromCache2() {
     $ct.blockRequeust = false;
     console.debug('Block request is false');
 
@@ -2759,16 +2759,16 @@
     }
 
     StorageManager$1.removeCookie(CAMP_COOKIE_NAME, getHostName());
-    StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
+    StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
     StorageManager$1.removeCookie(ARP_COOKIE, $ct.broadDomain);
 
-    _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
-  };
+    _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
+  }
 
-  var _deleteUser2 = function _deleteUser2() {
+  function _deleteUser2() {
     $ct.blockRequeust = true;
 
-    _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Block request is true');
+    _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Block request is true');
 
     $ct.globalCache = {};
 
@@ -2786,14 +2786,14 @@
     StorageManager$1.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
     StorageManager$1.removeCookie(CAMP_COOKIE_NAME, getHostName());
     StorageManager$1.removeCookie(KCOOKIE_NAME, getHostName());
-    StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
+    StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
     StorageManager$1.removeCookie(ARP_COOKIE, $ct.broadDomain);
-    _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie = null;
+    _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = null;
 
-    _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
-  };
+    _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
+  }
 
-  var _processLoginArray2 = function _processLoginArray2(loginArr) {
+  function _processLoginArray2(loginArr) {
     if (Array.isArray(loginArr) && loginArr.length > 0) {
       var profileObj = loginArr.pop();
       var processProfile = profileObj != null && isObject(profileObj) && (profileObj.Site != null && Object.keys(profileObj.Site).length > 0 || profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0 || profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0);
@@ -2804,13 +2804,13 @@
         try {
           _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
         } catch (e) {
-          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug(e);
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug(e);
         }
       } else {
-        _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].error('Profile object is in incorrect format');
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Profile object is in incorrect format');
       }
     }
-  };
+  }
 
   var _tr = function _tr(msg, _ref) {
     var device = _ref.device,
@@ -3565,6 +3565,14 @@
     }
 
     _createClass(Logger, [{
+      key: "logLevel",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
+      },
+      set: function set(logLevel) {
+        _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
+      }
+    }, {
       key: "error",
       value: function error(message) {
         if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
@@ -3592,37 +3600,29 @@
         this.wzrkError.d = description;
         this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
       }
-    }, {
-      key: "logLevel",
-      get: function get() {
-        return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
-      },
-      set: function set(logLevel) {
-        _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
-      }
     }]);
 
     return Logger;
   }();
 
-  var _log2 = function _log2(level, message) {
+  function _log2(level, message) {
     if (window.console) {
       try {
         var ts = new Date().getTime();
         console[level]("CleverTap [".concat(ts, "]: ").concat(message));
       } catch (e) {}
     }
-  };
+  }
 
-  var _get_isLegacyDebug = function _get_isLegacyDebug() {
+  function _get_isLegacyDebug() {
     return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
-  };
+  }
 
-  var _logger$5 = _classPrivateFieldLooseKey("logger");
+  var _logger$4 = _classPrivateFieldLooseKey("logger");
 
   var _sessionId = _classPrivateFieldLooseKey("sessionId");
 
-  var _isPersonalisationActive$3 = _classPrivateFieldLooseKey("isPersonalisationActive");
+  var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   var SessionManager = /*#__PURE__*/function () {
     // SCOOKIE_NAME
@@ -3632,7 +3632,7 @@
 
       _classCallCheck(this, SessionManager);
 
-      Object.defineProperty(this, _logger$5, {
+      Object.defineProperty(this, _logger$4, {
         writable: true,
         value: void 0
       });
@@ -3640,18 +3640,26 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _isPersonalisationActive$3, {
+      Object.defineProperty(this, _isPersonalisationActive$1, {
         writable: true,
         value: void 0
       });
       this.cookieName = void 0;
       this.scookieObj = void 0;
       this.sessionId = StorageManager$1.getMetaProp('cs');
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
-      _classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3] = isPersonalisationActive;
+      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
+      _classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
     }
 
     _createClass(SessionManager, [{
+      key: "sessionId",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _sessionId)[_sessionId];
+      },
+      set: function set(sessionId) {
+        _classPrivateFieldLooseBase(this, _sessionId)[_sessionId] = sessionId;
+      }
+    }, {
       key: "getSessionCookieObject",
       value: function getSessionCookieObject() {
         var scookieStr = StorageManager$1.readCookie(this.cookieName);
@@ -3720,7 +3728,7 @@
     }, {
       key: "getTimeElapsed",
       value: function getTimeElapsed() {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3]()) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
           return;
         }
 
@@ -3739,7 +3747,7 @@
     }, {
       key: "getPageCount",
       value: function getPageCount() {
-        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3]()) {
+        if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
           return;
         }
 
@@ -3750,14 +3758,6 @@
 
         return this.scookieObj.p;
       }
-    }, {
-      key: "sessionId",
-      get: function get() {
-        return _classPrivateFieldLooseBase(this, _sessionId)[_sessionId];
-      },
-      set: function set(sessionId) {
-        _classPrivateFieldLooseBase(this, _sessionId)[_sessionId] = sessionId;
-      }
     }]);
 
     return SessionManager;
@@ -3766,15 +3766,15 @@
   var seqNo = 0;
   var requestTime = 0;
 
-  var _logger$6 = _classPrivateFieldLooseKey("logger");
+  var _logger$3 = _classPrivateFieldLooseKey("logger");
 
-  var _account$2 = _classPrivateFieldLooseKey("account");
+  var _account$3 = _classPrivateFieldLooseKey("account");
 
-  var _device$2 = _classPrivateFieldLooseKey("device");
+  var _device$1 = _classPrivateFieldLooseKey("device");
 
-  var _session$2 = _classPrivateFieldLooseKey("session");
+  var _session$1 = _classPrivateFieldLooseKey("session");
 
-  var _isPersonalisationActive$4 = _classPrivateFieldLooseKey("isPersonalisationActive");
+  var _isPersonalisationActive = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   var _clearCookie = _classPrivateFieldLooseKey("clearCookie");
 
@@ -3793,23 +3793,23 @@
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
       });
-      Object.defineProperty(this, _logger$6, {
+      Object.defineProperty(this, _logger$3, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _account$2, {
+      Object.defineProperty(this, _account$3, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device$2, {
+      Object.defineProperty(this, _device$1, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _session$2, {
+      Object.defineProperty(this, _session$1, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _isPersonalisationActive$4, {
+      Object.defineProperty(this, _isPersonalisationActive, {
         writable: true,
         value: void 0
       });
@@ -3818,11 +3818,11 @@
         value: false
       });
       this.processingBackup = false;
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
-      _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
-      _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
-      _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
-      _classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4] = isPersonalisationActive;
+      _classPrivateFieldLooseBase(this, _logger$3)[_logger$3] = logger;
+      _classPrivateFieldLooseBase(this, _account$3)[_account$3] = account;
+      _classPrivateFieldLooseBase(this, _device$1)[_device$1] = device;
+      _classPrivateFieldLooseBase(this, _session$1)[_session$1] = session;
+      _classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive] = isPersonalisationActive;
       RequestDispatcher.logger = logger;
       RequestDispatcher.device = device;
     }
@@ -3843,7 +3843,7 @@
             var backupEvent = backupMap[idx];
 
             if (typeof backupEvent.fired === 'undefined') {
-              _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Processing backup event : ' + backupEvent.q);
+              _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Processing backup event : ' + backupEvent.q);
 
               if (typeof backupEvent.q !== 'undefined') {
                 RequestDispatcher.fireRequest(backupEvent.q);
@@ -3862,21 +3862,21 @@
       value: function addSystemDataToObject(dataObject, ignoreTrim) {
         // ignore trim for chrome notifications; undefined everywhere else
         if (typeof ignoreTrim === 'undefined') {
-          dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+          dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
         }
 
-        if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError)) {
-          dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError;
-          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError = {};
+        if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$3)[_logger$3].wzrkError)) {
+          dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].wzrkError;
+          _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].wzrkError = {};
         }
 
-        dataObject.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+        dataObject.id = _classPrivateFieldLooseBase(this, _account$3)[_account$3].id;
 
-        if (isValueValid(_classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie)) {
-          dataObject.g = _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie;
+        if (isValueValid(_classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie)) {
+          dataObject.g = _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie;
         }
 
-        var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
+        var obj = _classPrivateFieldLooseBase(this, _session$1)[_session$1].getSessionCookieObject();
 
         dataObject.s = obj.s; // session cookie
 
@@ -3893,10 +3893,10 @@
         if (_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           data.rc = true;
 
-          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('reset cookie sent in request and cleared from meta for future requests.');
+          _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('reset cookie sent in request and cleared from meta for future requests.');
         }
 
-        if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4]()) {
+        if (_classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive]()) {
           var lastSyncTime = StorageManager$1.getMetaProp('lsTime');
           var expirySeconds = StorageManager$1.getMetaProp('exTs'); // dsync not found in local storage - get data from server
 
@@ -3918,7 +3918,7 @@
         var now = getNow();
         url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
         var data = url + '&i=' + now + '&sn=' + seqNo;
-        StorageManager$1.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+        StorageManager$1.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
 
         if (!$ct.blockRequest || override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           if (now === requestTime) {
@@ -3930,7 +3930,7 @@
 
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
-          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to block request - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
+          _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Not fired due to block request - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
         }
       }
     }, {
@@ -3944,15 +3944,15 @@
         }
 
         data.action = 'unregister';
-        data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+        data.id = _classPrivateFieldLooseBase(this, _account$3)[_account$3].id;
 
-        var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
+        var obj = _classPrivateFieldLooseBase(this, _session$1)[_session$1].getSessionCookieObject();
 
         data.s = obj.s; // session cookie
 
-        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -3966,9 +3966,9 @@
         data = this.addSystemDataToObject(data, undefined);
         this.addFlags(data);
         data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
-        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -3979,7 +3979,7 @@
     return RequestManager;
   }();
 
-  var _addToLocalEventMap2 = function _addToLocalEventMap2(evtName) {
+  function _addToLocalEventMap2(evtName) {
     if (StorageManager$1._isLocalStorageSupported()) {
       if (typeof $ct.globalEventsMap === 'undefined') {
         $ct.globalEventsMap = StorageManager$1.readFromLSorCookie(EV_COOKIE);
@@ -4005,15 +4005,15 @@
       $ct.globalEventsMap[evtName] = evtDetail;
       StorageManager$1.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
     }
-  };
+  }
 
-  var _request$4 = _classPrivateFieldLooseKey("request");
+  var _request$2 = _classPrivateFieldLooseKey("request");
 
-  var _account$3 = _classPrivateFieldLooseKey("account");
+  var _account$2 = _classPrivateFieldLooseKey("account");
 
-  var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
+  var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
 
-  var _logger$7 = _classPrivateFieldLooseKey("logger");
+  var _logger$2 = _classPrivateFieldLooseKey("logger");
 
   var _processPrivacyArray = _classPrivateFieldLooseKey("processPrivacyArray");
 
@@ -4035,26 +4035,26 @@
       Object.defineProperty(_assertThisInitialized(_this), _processPrivacyArray, {
         value: _processPrivacyArray2
       });
-      Object.defineProperty(_assertThisInitialized(_this), _request$4, {
+      Object.defineProperty(_assertThisInitialized(_this), _request$2, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _account$3, {
+      Object.defineProperty(_assertThisInitialized(_this), _account$2, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _oldValues$3, {
+      Object.defineProperty(_assertThisInitialized(_this), _oldValues$1, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _logger$7, {
+      Object.defineProperty(_assertThisInitialized(_this), _logger$2, {
         writable: true,
         value: void 0
       });
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$7)[_logger$7] = logger;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$4)[_request$4] = request;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$3)[_account$3] = account;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$3)[_oldValues$3] = values;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$2)[_logger$2] = logger;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$2)[_request$2] = request;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$2)[_account$2] = account;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$1)[_oldValues$1] = values;
       return _this;
     }
 
@@ -4072,18 +4072,18 @@
     }, {
       key: "_processOldValues",
       value: function _processOldValues() {
-        if (_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]) {
-          _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
+        if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
+          _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
         }
 
-        _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = null;
+        _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = null;
       }
     }]);
 
     return Privacy;
   }( /*#__PURE__*/_wrapNativeSuper(Array));
 
-  var _processPrivacyArray2 = function _processPrivacyArray2(privacyArr) {
+  function _processPrivacyArray2(privacyArr) {
     if (Array.isArray(privacyArr) && privacyArr.length > 0) {
       var privacyObj = privacyArr[0];
       var data = {};
@@ -4109,27 +4109,27 @@
       if (!isObjectEmpty(profileObj)) {
         data.type = 'profile';
         data.profile = profileObj;
-        data = _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
-        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
+        data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$2)[_logger$2]);
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false');
 
-        _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust);
+        _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust);
       }
     }
-  };
+  }
 
-  var _oldValues$4 = _classPrivateFieldLooseKey("oldValues");
+  var _oldValues = _classPrivateFieldLooseKey("oldValues");
 
-  var _logger$8 = _classPrivateFieldLooseKey("logger");
+  var _logger$1 = _classPrivateFieldLooseKey("logger");
 
-  var _request$5 = _classPrivateFieldLooseKey("request");
+  var _request$1 = _classPrivateFieldLooseKey("request");
 
-  var _account$4 = _classPrivateFieldLooseKey("account");
+  var _account$1 = _classPrivateFieldLooseKey("account");
 
   var _wizAlertJSPath = _classPrivateFieldLooseKey("wizAlertJSPath");
 
@@ -4159,9 +4159,9 @@
     function NotificationHandler(_ref, values) {
       var _this;
 
-      var logger = _ref.logger,
-          session = _ref.session,
-          request = _ref.request,
+      var logger = _ref.logger;
+          _ref.session;
+          var request = _ref.request,
           account = _ref.account;
 
       _classCallCheck(this, NotificationHandler);
@@ -4191,19 +4191,19 @@
       Object.defineProperty(_assertThisInitialized(_this), _setUpWebPush, {
         value: _setUpWebPush2
       });
-      Object.defineProperty(_assertThisInitialized(_this), _oldValues$4, {
+      Object.defineProperty(_assertThisInitialized(_this), _oldValues, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _logger$8, {
+      Object.defineProperty(_assertThisInitialized(_this), _logger$1, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _request$5, {
+      Object.defineProperty(_assertThisInitialized(_this), _request$1, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _account$4, {
+      Object.defineProperty(_assertThisInitialized(_this), _account$1, {
         writable: true,
         value: void 0
       });
@@ -4217,10 +4217,10 @@
       });
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _wizAlertJSPath)[_wizAlertJSPath] = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js';
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _fcmPublicKey)[_fcmPublicKey] = null;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$4)[_oldValues$4] = values;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$8)[_logger$8] = logger;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$5)[_request$5] = request;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$4)[_account$4] = account;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues)[_oldValues] = values;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$1)[_logger$1] = logger;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$1)[_request$1] = request;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$1)[_account$1] = account;
       return _this;
     }
 
@@ -4238,11 +4238,11 @@
     }, {
       key: "_processOldValues",
       value: function _processOldValues() {
-        if (_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]) {
-          _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]);
+        if (_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]) {
+          _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]);
         }
 
-        _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = null;
+        _classPrivateFieldLooseBase(this, _oldValues)[_oldValues] = null;
       }
     }, {
       key: "_enableWebPush",
@@ -4256,7 +4256,7 @@
         if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
           _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
         } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
+          _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
         }
       }
     }]);
@@ -4264,39 +4264,39 @@
     return NotificationHandler;
   }( /*#__PURE__*/_wrapNativeSuper(Array));
 
-  var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
+  function _setUpWebPush2(displayArgs) {
     if ($ct.webPushEnabled && displayArgs.length > 0) {
       _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
     } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
       $ct.notifApi.notifEnabledFromApi = true;
       $ct.notifApi.displayArgs = displayArgs.slice();
     } else if ($ct.webPushEnabled === false && displayArgs.length > 0) {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Make sure push notifications are fully enabled and integrated');
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error('Make sure push notifications are fully enabled and integrated');
     }
-  };
+  }
 
-  var _setUpWebPushNotifications2 = function _setUpWebPushNotifications2(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
+  function _setUpWebPushNotifications2(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
     if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
       _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
     } else if (navigator.userAgent.indexOf('Safari') !== -1) {
       _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl);
     }
-  };
+  }
 
-  var _setApplicationServerKey2 = function _setApplicationServerKey2(applicationServerKey) {
+  function _setApplicationServerKey2(applicationServerKey) {
     _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
-  };
+  }
 
-  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
+  function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
     var _this2 = this;
 
     // ensure that proper arguments are passed
     if (typeof apnsWebPushId === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Ensure that APNS Web Push ID is supplied');
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error('Ensure that APNS Web Push ID is supplied');
     }
 
     if (typeof apnsServiceUrl === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Ensure that APNS Web Push service path is supplied');
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error('Ensure that APNS Web Push service path is supplied');
     }
 
     if ('safari' in window && 'pushNotification' in window.safari) {
@@ -4306,26 +4306,26 @@
           subscriptionData.endpoint = subscription.deviceToken;
           subscriptionData.browser = 'Safari';
           var payload = subscriptionData;
-          payload = _classPrivateFieldLooseBase(_this2, _request$5)[_request$5].addSystemDataToObject(payload, true);
+          payload = _classPrivateFieldLooseBase(_this2, _request$1)[_request$1].addSystemDataToObject(payload, true);
           payload = JSON.stringify(payload);
 
-          var pageLoadUrl = _classPrivateFieldLooseBase(_this2, _account$4)[_account$4].dataPostURL;
+          var pageLoadUrl = _classPrivateFieldLooseBase(_this2, _account$1)[_account$1].dataPostURL;
 
           pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(_this2, _logger$8)[_logger$8]));
+          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(_this2, _logger$1)[_logger$1]));
           RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
 
           StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
 
-          _classPrivateFieldLooseBase(_this2, _logger$8)[_logger$8].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+          _classPrivateFieldLooseBase(_this2, _logger$1)[_logger$1].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
         } else if (subscription.permission === 'denied') {
-          _classPrivateFieldLooseBase(_this2, _logger$8)[_logger$8].info('Error subscribing to Safari web push');
+          _classPrivateFieldLooseBase(_this2, _logger$1)[_logger$1].info('Error subscribing to Safari web push');
         }
       });
     }
-  };
+  }
 
-  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
+  function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
     var _this3 = this;
 
     if ('serviceWorker' in navigator) {
@@ -4341,7 +4341,7 @@
         }
 
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(function (subscription) {
-          _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+          _classPrivateFieldLooseBase(_this3, _logger$1)[_logger$1].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
 
 
           var subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
@@ -4356,13 +4356,13 @@
 
           {
             var payload = subscriptionData;
-            payload = _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].addSystemDataToObject(payload, true);
+            payload = _classPrivateFieldLooseBase(_this3, _request$1)[_request$1].addSystemDataToObject(payload, true);
             payload = JSON.stringify(payload);
 
-            var pageLoadUrl = _classPrivateFieldLooseBase(_this3, _account$4)[_account$4].dataPostURL;
+            var pageLoadUrl = _classPrivateFieldLooseBase(_this3, _account$1)[_account$1].dataPostURL;
 
             pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8]));
+            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(_this3, _logger$1)[_logger$1]));
             RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
 
             StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
@@ -4372,28 +4372,28 @@
             subscriptionCallback();
           }
         }).catch(function (error) {
-          _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8].error('Error subscribing: ' + error); // unsubscribe from webpush if error
+          _classPrivateFieldLooseBase(_this3, _logger$1)[_logger$1].error('Error subscribing: ' + error); // unsubscribe from webpush if error
 
 
           serviceWorkerRegistration.pushManager.getSubscription().then(function (subscription) {
             if (subscription !== null) {
               subscription.unsubscribe().then(function (successful) {
                 // You've successfully unsubscribed
-                _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8].info('Unsubscription successful');
+                _classPrivateFieldLooseBase(_this3, _logger$1)[_logger$1].info('Unsubscription successful');
               }).catch(function (e) {
                 // Unsubscription failed
-                _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8].error('Error unsubscribing: ' + e);
+                _classPrivateFieldLooseBase(_this3, _logger$1)[_logger$1].error('Error unsubscribing: ' + e);
               });
             }
           });
         });
       }).catch(function (err) {
-        _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8].error('error registering service worker: ' + err);
+        _classPrivateFieldLooseBase(_this3, _logger$1)[_logger$1].error('error registering service worker: ' + err);
       });
     }
-  };
+  }
 
-  var _addWizAlertJS2 = function _addWizAlertJS2() {
+  function _addWizAlertJS2() {
     var scriptTag = document.createElement('script');
     scriptTag.setAttribute('type', 'text/javascript');
     scriptTag.setAttribute('id', 'wzrk-alert-js');
@@ -4401,14 +4401,14 @@
 
     document.getElementsByTagName('body')[0].appendChild(scriptTag);
     return scriptTag;
-  };
+  }
 
-  var _removeWizAlertJS2 = function _removeWizAlertJS2() {
+  function _removeWizAlertJS2() {
     var scriptTag = document.getElementById('wzrk-alert-js');
     scriptTag.parentNode.removeChild(scriptTag);
-  };
+  }
 
-  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
+  function _handleNotificationRegistration2(displayArgs) {
     var _this4 = this;
 
     // make sure everything is specified
@@ -4479,7 +4479,7 @@
     var isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
 
     if (window.location.protocol !== 'https:' && document.location.hostname !== 'localhost' && !isHTTP) {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Make sure you are https or localhost to register for notifications');
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error('Make sure you are https or localhost to register for notifications');
 
       return;
     } // right now, we only support Chrome V50 & higher & Firefox
@@ -4533,7 +4533,7 @@
 
 
     if (!titleText || !bodyText || !okButtonText || !rejectButtonText) {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Missing input parameters; please specify title, body, ok button and cancel button text');
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error('Missing input parameters; please specify title, body, ok button and cancel button text');
 
       return;
     } // make sure okButtonColor is formatted properly
@@ -4642,21 +4642,21 @@
         });
       };
     }
-  };
+  }
 
-  var _logger$9 = _classPrivateFieldLooseKey("logger");
+  var _logger = _classPrivateFieldLooseKey("logger");
 
   var _api = _classPrivateFieldLooseKey("api");
 
   var _onloadcalled = _classPrivateFieldLooseKey("onloadcalled");
 
-  var _device$3 = _classPrivateFieldLooseKey("device");
+  var _device = _classPrivateFieldLooseKey("device");
 
-  var _session$3 = _classPrivateFieldLooseKey("session");
+  var _session = _classPrivateFieldLooseKey("session");
 
-  var _account$5 = _classPrivateFieldLooseKey("account");
+  var _account = _classPrivateFieldLooseKey("account");
 
-  var _request$6 = _classPrivateFieldLooseKey("request");
+  var _request = _classPrivateFieldLooseKey("request");
 
   var _isSpa = _classPrivateFieldLooseKey("isSpa");
 
@@ -4675,27 +4675,6 @@
   var _overrideDSyncFlag = _classPrivateFieldLooseKey("overrideDSyncFlag");
 
   var CleverTap = /*#__PURE__*/function () {
-    _createClass(CleverTap, [{
-      key: "spa",
-      get: function get() {
-        return _classPrivateFieldLooseBase(this, _isSpa)[_isSpa];
-      },
-      set: function set(value) {
-        var isSpa = value === true;
-
-        if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa] !== isSpa && _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
-          // if clevertap.spa is changed after init has been called then update the click listeners
-          if (isSpa) {
-            document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
-          } else {
-            document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
-          }
-        }
-
-        _classPrivateFieldLooseBase(this, _isSpa)[_isSpa] = isSpa;
-      }
-    }]);
-
     function CleverTap() {
       var _clevertap$account,
           _this = this,
@@ -4720,7 +4699,7 @@
       Object.defineProperty(this, _processOldValues, {
         value: _processOldValues2
       });
-      Object.defineProperty(this, _logger$9, {
+      Object.defineProperty(this, _logger, {
         writable: true,
         value: void 0
       });
@@ -4732,19 +4711,19 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device$3, {
+      Object.defineProperty(this, _device, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _session$3, {
+      Object.defineProperty(this, _session, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _account$5, {
+      Object.defineProperty(this, _account, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _request$6, {
+      Object.defineProperty(this, _request, {
         writable: true,
         value: void 0
       });
@@ -4766,56 +4745,56 @@
 
       this.raiseNotificationClicked = function () {};
 
-      _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = new Logger(logLevels.INFO);
-      _classPrivateFieldLooseBase(this, _account$5)[_account$5] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
-      _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
+      _classPrivateFieldLooseBase(this, _logger)[_logger] = new Logger(logLevels.INFO);
+      _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
+      _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger]
       });
-      _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
+      _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         isPersonalisationActive: this._isPersonalisationActive
       });
-      _classPrivateFieldLooseBase(this, _request$6)[_request$6] = new RequestManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
-        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
-        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
+      _classPrivateFieldLooseBase(this, _request)[_request] = new RequestManager({
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        account: _classPrivateFieldLooseBase(this, _account)[_account],
+        device: _classPrivateFieldLooseBase(this, _device)[_device],
+        session: _classPrivateFieldLooseBase(this, _session)[_session],
         isPersonalisationActive: this._isPersonalisationActive
       });
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        request: _classPrivateFieldLooseBase(this, _request)[_request],
         isPersonalisationActive: this._isPersonalisationActive
       }, clevertap.event);
       this.profile = new ProfileHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
-        account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        request: _classPrivateFieldLooseBase(this, _request)[_request],
+        account: _classPrivateFieldLooseBase(this, _account)[_account],
         isPersonalisationActive: this._isPersonalisationActive
       }, clevertap.profile);
       this.onUserLogin = new UserLoginHandler({
-        request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
-        account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
-        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
-        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3]
+        request: _classPrivateFieldLooseBase(this, _request)[_request],
+        account: _classPrivateFieldLooseBase(this, _account)[_account],
+        session: _classPrivateFieldLooseBase(this, _session)[_session],
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        device: _classPrivateFieldLooseBase(this, _device)[_device]
       }, clevertap.onUserLogin);
       this.privacy = new Privacy({
-        request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
-        account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
-        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
+        request: _classPrivateFieldLooseBase(this, _request)[_request],
+        account: _classPrivateFieldLooseBase(this, _account)[_account],
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger]
       }, clevertap.privacy);
       this.notifications = new NotificationHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
-        account: _classPrivateFieldLooseBase(this, _account$5)[_account$5]
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        request: _classPrivateFieldLooseBase(this, _request)[_request],
+        account: _classPrivateFieldLooseBase(this, _account)[_account]
       }, clevertap.notifications);
       _classPrivateFieldLooseBase(this, _api)[_api] = new CleverTapAPI({
-        logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
-        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
-        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        request: _classPrivateFieldLooseBase(this, _request)[_request],
+        device: _classPrivateFieldLooseBase(this, _device)[_device],
+        session: _classPrivateFieldLooseBase(this, _session)[_session]
       });
       this.spa = clevertap.spa;
       this.user = new User({
@@ -4823,15 +4802,15 @@
       });
       this.session = {
         getTimeElapsed: function getTimeElapsed() {
-          return _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getTimeElapsed();
+          return _classPrivateFieldLooseBase(_this, _session)[_session].getTimeElapsed();
         },
         getPageCount: function getPageCount() {
-          return _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getPageCount();
+          return _classPrivateFieldLooseBase(_this, _session)[_session].getPageCount();
         }
       };
 
       this.logout = function () {
-        _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('logout called');
+        _classPrivateFieldLooseBase(_this, _logger)[_logger].debug('logout called');
 
         StorageManager$1.setInstantDeleteFlagInK();
       };
@@ -4841,15 +4820,15 @@
       };
 
       this.getCleverTapID = function () {
-        return _classPrivateFieldLooseBase(_this, _device$3)[_device$3].getGuid();
+        return _classPrivateFieldLooseBase(_this, _device)[_device].getGuid();
       };
 
       this.setLogLevel = function (l) {
-        _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].logLevel = Number(l);
+        _classPrivateFieldLooseBase(_this, _logger)[_logger].logLevel = Number(l);
       };
 
       var _handleEmailSubscription = function _handleEmailSubscription(subscription, reEncoded, fetchGroups) {
-        handleEmailSubscription(subscription, reEncoded, fetchGroups, _classPrivateFieldLooseBase(_this, _account$5)[_account$5], _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]);
+        handleEmailSubscription(subscription, reEncoded, fetchGroups, _classPrivateFieldLooseBase(_this, _account)[_account], _classPrivateFieldLooseBase(_this, _logger)[_logger]);
       };
 
       var api = _classPrivateFieldLooseBase(this, _api)[_api];
@@ -4858,7 +4837,7 @@
       api.clear = this.clear;
 
       api.closeIframe = function (campaignId, divIdIgnored) {
-        closeIframe(campaignId, divIdIgnored, _classPrivateFieldLooseBase(_this, _session$3)[_session$3].sessionId);
+        closeIframe(campaignId, divIdIgnored, _classPrivateFieldLooseBase(_this, _session)[_session].sessionId);
       };
 
       api.enableWebPush = function (enabled, applicationServerKey) {
@@ -4867,15 +4846,15 @@
 
       api.tr = function (msg) {
         _tr(msg, {
-          device: _classPrivateFieldLooseBase(_this, _device$3)[_device$3],
-          session: _classPrivateFieldLooseBase(_this, _session$3)[_session$3],
-          request: _classPrivateFieldLooseBase(_this, _request$6)[_request$6],
-          logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]
+          device: _classPrivateFieldLooseBase(_this, _device)[_device],
+          session: _classPrivateFieldLooseBase(_this, _session)[_session],
+          request: _classPrivateFieldLooseBase(_this, _request)[_request],
+          logger: _classPrivateFieldLooseBase(_this, _logger)[_logger]
         });
       };
 
       api.setEnum = function (enumVal) {
-        setEnum(enumVal, _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]);
+        setEnum(enumVal, _classPrivateFieldLooseBase(_this, _logger)[_logger]);
       };
 
       api.is_onloadcalled = function () {
@@ -4935,7 +4914,7 @@
 
       window.$CLTP_WR = window.$WZRK_WR = api;
 
-      if ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id) {
+      if ((_clevertap$account2 = clevertap.account) !== null && _clevertap$account2 !== void 0 && _clevertap$account2[0].id) {
         // The accountId is present so can init with empty values.
         // Needed to maintain backward compatability with legacy implementations.
         // Npm imports/require will need to call init explictly with accountId
@@ -4944,6 +4923,25 @@
     }
 
     _createClass(CleverTap, [{
+      key: "spa",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _isSpa)[_isSpa];
+      },
+      set: function set(value) {
+        var isSpa = value === true;
+
+        if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa] !== isSpa && _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
+          // if clevertap.spa is changed after init has been called then update the click listeners
+          if (isSpa) {
+            document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+          } else {
+            document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+          }
+        }
+
+        _classPrivateFieldLooseBase(this, _isSpa)[_isSpa] = isSpa;
+      }
+    }, {
       key: "raiseNotificationClicked",
       value: function raiseNotificationClicked() {}
     }, {
@@ -4956,24 +4954,24 @@
 
         StorageManager$1.removeCookie('WZRK_P', window.location.hostname);
 
-        if (!_classPrivateFieldLooseBase(this, _account$5)[_account$5].id) {
+        if (!_classPrivateFieldLooseBase(this, _account)[_account].id) {
           if (!accountId) {
-            _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].error(EMBED_ERROR);
+            _classPrivateFieldLooseBase(this, _logger)[_logger].error(EMBED_ERROR);
 
             return;
           }
 
-          _classPrivateFieldLooseBase(this, _account$5)[_account$5].id = accountId;
+          _classPrivateFieldLooseBase(this, _account)[_account].id = accountId;
         }
 
-        _classPrivateFieldLooseBase(this, _session$3)[_session$3].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$5)[_account$5].id;
+        _classPrivateFieldLooseBase(this, _session)[_session].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account)[_account].id;
 
         if (region) {
-          _classPrivateFieldLooseBase(this, _account$5)[_account$5].region = region;
+          _classPrivateFieldLooseBase(this, _account)[_account].region = region;
         }
 
         if (targetDomain) {
-          _classPrivateFieldLooseBase(this, _account$5)[_account$5].targetDomain = targetDomain;
+          _classPrivateFieldLooseBase(this, _account)[_account].targetDomain = targetDomain;
         }
 
         var currLocation = location.href;
@@ -4983,7 +4981,7 @@
           return;
         }
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].processBackupEvents();
+        _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
 
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
@@ -5007,12 +5005,12 @@
         var currLocation = window.location.href;
         var urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
 
-        var obj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
+        var obj = _classPrivateFieldLooseBase(this, _session)[_session].getSessionCookieObject();
 
         var pgCount = typeof obj.p === 'undefined' ? 0 : obj.p;
         obj.p = ++pgCount;
 
-        _classPrivateFieldLooseBase(this, _session$3)[_session$3].setSessionCookieObject(obj); // -- update page count
+        _classPrivateFieldLooseBase(this, _session)[_session].setSessionCookieObject(obj); // -- update page count
 
 
         var data = {};
@@ -5057,13 +5055,13 @@
           }
         }
 
-        data = _classPrivateFieldLooseBase(this, _request$6)[_request$6].addSystemDataToObject(data, undefined);
+        data = _classPrivateFieldLooseBase(this, _request)[_request].addSystemDataToObject(data, undefined);
         data.cpg = currLocation;
         data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].addFlags(data); // send dsync flag when page = 1
+        _classPrivateFieldLooseBase(this, _request)[_request].addFlags(data); // send dsync flag when page = 1
 
 
         if (parseInt(data.pg) === 1) {
@@ -5071,9 +5069,9 @@
         }
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger)[_logger]));
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
+        _classPrivateFieldLooseBase(this, _request)[_request].saveAndFireRequest(pageLoadUrl, false);
 
         _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation;
         setTimeout(function () {
@@ -5099,7 +5097,7 @@
     return CleverTap;
   }();
 
-  var _processOldValues2 = function _processOldValues2() {
+  function _processOldValues2() {
     this.onUserLogin._processOldValues();
 
     this.privacy._processOldValues();
@@ -5109,34 +5107,34 @@
     this.profile._processOldValues();
 
     this.notifications._processOldValues();
-  };
+  }
 
-  var _checkPageChanged2 = function _checkPageChanged2() {
+  function _checkPageChanged2() {
     if (_classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] !== location.href) {
       this.pageChanged();
     }
-  };
+  }
 
-  var _pingRequest2 = function _pingRequest2() {
-    var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
+  function _pingRequest2() {
+    var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
 
     var data = {};
-    data = _classPrivateFieldLooseBase(this, _request$6)[_request$6].addSystemDataToObject(data, undefined);
+    data = _classPrivateFieldLooseBase(this, _request)[_request].addSystemDataToObject(data, undefined);
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING);
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger)[_logger]));
 
-    _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
-  };
+    _classPrivateFieldLooseBase(this, _request)[_request].saveAndFireRequest(pageLoadUrl, false);
+  }
 
-  var _isPingContinuous2 = function _isPingContinuous2() {
+  function _isPingContinuous2() {
     return typeof window.wzrk_d !== 'undefined' && window.wzrk_d.ping === 'continuous';
-  };
+  }
 
-  var _overrideDSyncFlag2 = function _overrideDSyncFlag2(data) {
+  function _overrideDSyncFlag2(data) {
     if (this._isPersonalisationActive()) {
       data.dsync = true;
     }
-  };
+  }
 
   var clevertap = new CleverTap(window.clevertap);
   window.clevertap = window.wizrocket = clevertap;
