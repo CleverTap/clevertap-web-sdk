@@ -60,6 +60,8 @@ const _tr = (msg, {
       obj[campaignId] = currentCount
     }
 
+    let excludeFromFreqCaps = -1
+    let dailyObj, globalObj
     if (StorageManager._isLocalStorageSupported()) {
       delete sessionStorage[CAMP_COOKIE_NAME]
       const campObj = getCampaignObject()
@@ -69,7 +71,7 @@ const _tr = (msg, {
         targetingMsgJson[DISPLAY].wmc = 1
       }
 
-      var excludeFromFreqCaps = -1
+      excludeFromFreqCaps = -1
       let campaignSessionLimit = -1
       let campaignDailyLimit = -1
       let campaignTotalLimit = -1
@@ -119,7 +121,7 @@ const _tr = (msg, {
       }
 
       // daily level capping
-      var dailyObj = campObj[today]
+      dailyObj = campObj[today]
       if (dailyObj != null) {
         const campaignDailyCount = dailyObj[campaignId]
         const totalDailyCount = dailyObj.tc
@@ -136,7 +138,7 @@ const _tr = (msg, {
         campObj[today] = dailyObj
       }
 
-      var globalObj = campObj[GLOBAL]
+      globalObj = campObj[GLOBAL]
       if (globalObj != null) {
         const campaignTotalCount = globalObj[campaignId]
         // campaign total
@@ -269,10 +271,10 @@ const _tr = (msg, {
     const viewHeight = window.innerHeight
     const viewWidth = window.innerWidth
     let legacy = false
-
+    let contentHeight
     if (!isBanner) {
       const marginBottom = viewHeight * 5 / 100
-      var contentHeight = 10
+      contentHeight = 10
       let right = viewWidth * 5 / 100
       let bottomPosition = contentHeight + marginBottom
       let width = viewWidth * 30 / 100 + 20

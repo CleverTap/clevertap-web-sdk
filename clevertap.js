@@ -285,6 +285,7 @@
     return Account;
   }();
 
+  /* eslint prefer-regex-literals: "off" */
   var unsupportedKeyCharRegex = new RegExp('^\\s+|\\\.|\:|\\\$|\'|\"|\\\\|\\s+$', 'g');
   var unsupportedValueCharRegex = new RegExp("^\\s+|\'|\"|\\\\|\\s+$", 'g');
   var singleQuoteRegex = new RegExp('\'', 'g');
@@ -2850,6 +2851,9 @@
         obj[campaignId] = currentCount;
       };
 
+      var excludeFromFreqCaps = -1;
+      var dailyObj, globalObj;
+
       if (StorageManager$1._isLocalStorageSupported()) {
         delete sessionStorage[CAMP_COOKIE_NAME];
         var campObj = getCampaignObject(); // global session limit. default is 1
@@ -2858,7 +2862,7 @@
           targetingMsgJson[DISPLAY].wmc = 1;
         }
 
-        var excludeFromFreqCaps = -1;
+        excludeFromFreqCaps = -1;
         var campaignSessionLimit = -1;
         var campaignDailyLimit = -1;
         var campaignTotalLimit = -1;
@@ -2915,7 +2919,7 @@
         } // daily level capping
 
 
-        var dailyObj = campObj[today];
+        dailyObj = campObj[today];
 
         if (dailyObj != null) {
           var campaignDailyCount = dailyObj[campaignId];
@@ -2934,7 +2938,7 @@
           campObj[today] = dailyObj;
         }
 
-        var globalObj = campObj[GLOBAL];
+        globalObj = campObj[GLOBAL];
 
         if (globalObj != null) {
           var campaignTotalCount = globalObj[campaignId]; // campaign total
@@ -3083,10 +3087,11 @@
       var viewHeight = window.innerHeight;
       var viewWidth = window.innerWidth;
       var legacy = false;
+      var contentHeight;
 
       if (!isBanner) {
         var marginBottom = viewHeight * 5 / 100;
-        var contentHeight = 10;
+        contentHeight = 10;
         var right = viewWidth * 5 / 100;
         var bottomPosition = contentHeight + marginBottom;
         var width = viewWidth * 30 / 100 + 20;

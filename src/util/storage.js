@@ -152,7 +152,7 @@ export class StorageManager {
           // only needed if the cookie already exists and needs to be updated. See note above.
           if (this.readCookie(name)) {
             // no guarantee that browser will delete cookie, hence create short lived cookies
-            var testCookieName = 'test_' + name + idx
+            const testCookieName = 'test_' + name + idx
             this.createCookie(testCookieName, value, 10, testBroadDomain) // self-destruct after 10 seconds
             if (!this.readCookie(testCookieName)) { // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
               continue

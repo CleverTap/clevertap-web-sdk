@@ -1,3 +1,4 @@
+/* eslint prefer-regex-literals: "off" */
 export const unsupportedKeyCharRegex = new RegExp('^\\s+|\\\.|\:|\\\$|\'|\"|\\\\|\\s+$', 'g')
 export const unsupportedValueCharRegex = new RegExp("^\\s+|\'|\"|\\\\|\\s+$", 'g')
 export const doubleQuoteRegex = new RegExp('\"', 'g')

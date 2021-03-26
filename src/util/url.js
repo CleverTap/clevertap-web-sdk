@@ -27,7 +27,7 @@ export const getURLParams = (url) => {
 
 export const getDomain = (url) => {
   if (url === '') return ''
-  var a = document.createElement('a')
+  const a = document.createElement('a')
   a.href = url
   return a.hostname
 }

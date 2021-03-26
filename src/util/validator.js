@@ -8,7 +8,7 @@ let _globalChargedId
 export const isEventStructureFlat = (eventObj) => {
   // Events cannot have nested structure or Arrays
   if (isObject(eventObj)) {
-    for (var key in eventObj) {
+    for (const key in eventObj) {
       if (eventObj.hasOwnProperty(key)) {
         if (isObject(eventObj[key]) || Array.isArray(eventObj[key])) {
           return false
@@ -24,7 +24,7 @@ export const isEventStructureFlat = (eventObj) => {
 
 export const isChargedEventStructureValid = (chargedObj, logger) => {
   if (isObject(chargedObj)) {
-    for (var key in chargedObj) {
+    for (const key in chargedObj) {
       if (chargedObj.hasOwnProperty(key)) {
         if (key === 'Items') {
           if (!Array.isArray(chargedObj[key])) {
@@ -35,7 +35,7 @@ export const isChargedEventStructureValid = (chargedObj, logger) => {
             logger.reportError(522, 'Charged Items exceed 16 limit. Actual count: ' + chargedObj[key].length + '. Additional items will be dropped.')
           }
 
-          for (var itemKey in chargedObj[key]) {
+          for (const itemKey in chargedObj[key]) {
             if (chargedObj[key].hasOwnProperty(itemKey)) { // since default array implementation could be overridden - e.g. Teabox site
               if (!isObject(chargedObj[key][itemKey]) || !isEventStructureFlat(chargedObj[key][itemKey])) {
                 return false

@@ -39,7 +39,7 @@ export const isValueValid = (value) => {
 }
 
 export const arrayContains = (arr, obj) => {
-  var i = arr.length
+  let i = arr.length
   while (i--) {
     if (arr[i] === obj) {
       return true
