@@ -571,14 +571,10 @@
         if (data != null && data.trim() !== '') {
           var value;
 
-          if (property === GCOOKIE_NAME) {
+          try {
+            value = JSON.parse(decodeURIComponent(data));
+          } catch (err) {
             value = decodeURIComponent(data);
-          } else {
-            try {
-              value = JSON.parse(decodeURIComponent(data));
-            } catch (err) {
-              value = decodeURIComponent(data);
-            }
           }
 
           $ct.globalCache[property] = value;
@@ -5070,6 +5066,9 @@
           _classPrivateFieldLooseBase(this, _overrideDSyncFlag)[_overrideDSyncFlag](data);
         }
 
+        data.af = {
+          lib: 'web-sdk-v1.0.0-beta.7'
+        };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 
