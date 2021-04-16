@@ -571,14 +571,10 @@
         if (data != null && data.trim() !== '') {
           var value;
 
-          if (property === GCOOKIE_NAME) {
+          try {
+            value = JSON.parse(decodeURIComponent(data));
+          } catch (err) {
             value = decodeURIComponent(data);
-          } else {
-            try {
-              value = JSON.parse(decodeURIComponent(data));
-            } catch (err) {
-              value = decodeURIComponent(data);
-            }
           }
 
           $ct.globalCache[property] = value;
