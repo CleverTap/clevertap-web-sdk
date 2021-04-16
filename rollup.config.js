@@ -1,7 +1,9 @@
 import resolve from '@rollup/plugin-node-resolve'
 import babel from '@rollup/plugin-babel'
+import replace from '@rollup/plugin-replace'
 import { eslint } from 'rollup-plugin-eslint'
 import { terser } from 'rollup-plugin-terser'
+import { version } from './package.json'
 
 export default {
   input: 'src/main.js',
@@ -23,6 +25,11 @@ export default {
     eslint({
       fix: true,
       throwOnError: true
+    }),
+    replace({
+      preventAssignment: true,
+      delimiters: ['', ''],
+      $$PACKAGE_VERSION$$: version
     }),
     babel({
       babelHelpers: 'bundled'
