@@ -110,9 +110,9 @@ clevertap.profile.push({
 })
 ```
 
-### On User Login
+### Maintaining Multiple User Profiles on the Same Device using OnUserLogin
 
-Enrich the user profile with information, such as the user’s name or email, by calling `clevertap.onUserLogin`.
+If multiple users on the same device use your app, you can use the `clevertap.onUserLogin` method to assign them each a unique profile to track them separately.
 
 Here is an example showing how to add a name and an email to a user’s profile:
 
