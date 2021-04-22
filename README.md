@@ -110,6 +110,39 @@ clevertap.profile.push({
 })
 ```
 
+### On User Login
+
+Enrich the user profile with information, such as the user’s name or email, by calling `clevertap.onUserLogin`.
+
+Here is an example showing how to add a name and an email to a user’s profile:
+
+```javascript
+// with the exception of one of Identity, Email, or FBID
+// each of the following fields is optional
+
+clevertap.onUserLogin.push({
+ "Site": {
+   "Name": "Jack Montana",            // String
+   "Identity": 61026032,              // String or number
+   "Email": "jack@gmail.com",         // Email address of the user
+   "Phone": "+14155551234",           // Phone (with the country code)
+   "Gender": "M",                     // Can be either M or F
+   "DOB": new Date(),                 // Date of Birth. Date object
+// optional fields. controls whether the user will be sent email, push etc.
+   "MSG-email": false,                // Disable email notifications
+   "MSG-push": true,                  // Enable push notifications
+   "MSG-sms": true,                   // Enable sms notifications
+   "MSG-whatsapp": true,              // Enable WhatsApp notifications
+ }
+})
+```
+
+### Web Push
+
+Web push notifications provide the ability to communicate brief, yet important alerts to your users while CleverTap’s rich segmentation and powerful infrastructure can help send time-sensitive, relevant, and personalized push messages at scale.
+
+To know more on how to configure web push notifications for Chrome, Firefox and Safari, checkout [CleverTap Web Push guide](https://developer.clevertap.com/docs/web#section-web-push).
+
 ### Debugging
 
 This section is applicable for all browsers such as, Chrome, Firefox, and Safari. Error messages and warnings are logged to the JS console of the browser.
