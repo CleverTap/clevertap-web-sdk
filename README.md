@@ -1,11 +1,6 @@
 # CleverTap Web SDK 
 
-![beta](https://img.shields.io/static/v1?label=status&message=beta&color=red)
-
-
-## 🚀 Release Plan
-
-This is a "Feature complete" release and we now have a freeze on any new code, aside from fixing issues raised during the beta testing phase. Post evaluating all the feedback, if no critical issues arise we will release to production in March 2021.
+![npm version](https://img.shields.io/npm/v/clevertap-web-sdk)
 
 ## 👋 Introduction
 
@@ -42,7 +37,7 @@ clevertap.privacy.push({useIP: false}); //set the flag to true, if the user agre
 		 var wzrk = document.createElement('script');
 		 wzrk.type = 'text/javascript';
 		 wzrk.async = true;
-		 wzrk.src = ('https:' == document.location.protocol ? 'https://d2r1yp2w7bby2u.cloudfront.net' : 'http://static.clevertap.com') + '/js/a.js';
+		 wzrk.src = 'https://cdn.jsdelivr.net/npm/clevertap-web-sdk/clevertap.min.js';
 		 var s = document.getElementsByTagName('script')[0];
 		 s.parentNode.insertBefore(wzrk, s);
   })();
