@@ -1,11 +1,6 @@
 # CleverTap Web SDK 
 
-![beta](https://img.shields.io/static/v1?label=status&message=beta&color=red)
-
-
-## 🚀 Release Plan
-
-This is a "Feature complete" release and we now have a freeze on any new code, aside from fixing issues raised during the beta testing phase. Post evaluating all the feedback, if no critical issues arise we will release to production in March 2021.
+![npm version](https://img.shields.io/npm/v/clevertap-web-sdk)
 
 ## 👋 Introduction
 
@@ -42,7 +37,7 @@ clevertap.privacy.push({useIP: false}); //set the flag to true, if the user agre
 		 var wzrk = document.createElement('script');
 		 wzrk.type = 'text/javascript';
 		 wzrk.async = true;
-		 wzrk.src = ('https:' == document.location.protocol ? 'https://d2r1yp2w7bby2u.cloudfront.net' : 'http://static.clevertap.com') + '/js/a.js';
+		 wzrk.src = 'https://cdn.jsdelivr.net/npm/clevertap-web-sdk/clevertap.min.js';
 		 var s = document.getElementsByTagName('script')[0];
 		 s.parentNode.insertBefore(wzrk, s);
   })();
@@ -114,6 +109,39 @@ clevertap.profile.push({
  }
 })
 ```
+
+### Maintaining Multiple User Profiles on the Same Device using OnUserLogin
+
+If multiple users on the same device use your app, you can use the `clevertap.onUserLogin` method to assign them each a unique profile to track them separately.
+
+Here is an example showing how to add a name and an email to a user’s profile:
+
+```javascript
+// with the exception of one of Identity, Email, or FBID
+// each of the following fields is optional
+
+clevertap.onUserLogin.push({
+ "Site": {
+   "Name": "Jack Montana",            // String
+   "Identity": 61026032,              // String or number
+   "Email": "jack@gmail.com",         // Email address of the user
+   "Phone": "+14155551234",           // Phone (with the country code)
+   "Gender": "M",                     // Can be either M or F
+   "DOB": new Date(),                 // Date of Birth. Date object
+// optional fields. controls whether the user will be sent email, push etc.
+   "MSG-email": false,                // Disable email notifications
+   "MSG-push": true,                  // Enable push notifications
+   "MSG-sms": true,                   // Enable sms notifications
+   "MSG-whatsapp": true,              // Enable WhatsApp notifications
+ }
+})
+```
+
+### Web Push
+
+Web push notifications provide the ability to communicate brief, yet important alerts to your users while CleverTap’s rich segmentation and powerful infrastructure can help send time-sensitive, relevant, and personalized push messages at scale.
+
+To know more on how to configure web push notifications for Chrome, Firefox and Safari, checkout [CleverTap Web Push guide](https://developer.clevertap.com/docs/web#section-web-push).
 
 ### Debugging
 
