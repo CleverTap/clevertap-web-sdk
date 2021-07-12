@@ -3016,7 +3016,7 @@
             } // pass on the gcookie|page|scookieId for capturing the click event
 
 
-            if (targetingMsgJson.display.window === '1') {
+            if (targetingMsgJson.display.window === 1) {
               window.open(onClick, '_blank');
             } else {
               window.location = onClick;
@@ -3249,7 +3249,7 @@
               } // pass on the gcookie|page|scookieId for capturing the click event
 
 
-              if (targetingMsgJson.display.window === '1') {
+              if (targetingMsgJson.display.window === 1) {
                 window.open(onClick, '_blank');
               } else {
                 window.location = onClick;
@@ -5143,3 +5143,4 @@
   return clevertap;
 
 })));
+//# sourceMappingURL=clevertap.js.map
