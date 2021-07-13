@@ -97,7 +97,7 @@ const _tr = (msg, {
 
       // session level capping
       let sessionObj = campObj[_session.sessionId]
-      if (sessionObj != null) {
+      if (sessionObj) {
         const campaignSessionCount = sessionObj[campaignId]
         const totalSessionCount = sessionObj.tc
         // dnd
