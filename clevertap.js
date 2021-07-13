@@ -2888,7 +2888,7 @@
 
         var _sessionObj = campObj[_session.sessionId];
 
-        if (_sessionObj != null) {
+        if (_sessionObj) {
           var campaignSessionCount = _sessionObj[campaignId];
           var totalSessionCount = _sessionObj.tc; // dnd
 
