@@ -598,7 +598,12 @@
             var testBroadDomain = '';
 
             for (var idx = domainParts.length - 1; idx >= 0; idx--) {
-              testBroadDomain = '.' + domainParts[idx] + testBroadDomain; // only needed if the cookie already exists and needs to be updated. See note above.
+              if (idx === 0) {
+                testBroadDomain = domainParts[idx] + testBroadDomain;
+              } else {
+                testBroadDomain = '.' + domainParts[idx] + testBroadDomain;
+              } // only needed if the cookie already exists and needs to be updated. See note above.
+
 
               if (this.readCookie(name)) {
                 // no guarantee that browser will delete cookie, hence create short lived cookies

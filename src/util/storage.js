@@ -143,7 +143,11 @@ export class StorageManager {
         const domainParts = domain.split('.')
         let testBroadDomain = ''
         for (let idx = domainParts.length - 1; idx >= 0; idx--) {
-          testBroadDomain = '.' + domainParts[idx] + testBroadDomain
+          if (idx === 0) {
+            testBroadDomain = domainParts[idx] + testBroadDomain
+          } else {
+            testBroadDomain = '.' + domainParts[idx] + testBroadDomain
+          }
 
           // only needed if the cookie already exists and needs to be updated. See note above.
           if (this.readCookie(name)) {
