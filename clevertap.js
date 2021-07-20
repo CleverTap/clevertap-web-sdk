@@ -4846,7 +4846,7 @@
       };
 
       this.setLogLevel = function (l) {
-        _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].logLevel = Number(l);
+        _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].logLevel = Number(3);
       };
 
       var _handleEmailSubscription = function _handleEmailSubscription(subscription, reEncoded, fetchGroups) {
