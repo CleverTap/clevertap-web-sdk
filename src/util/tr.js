@@ -466,6 +466,31 @@ const _tr = (msg, {
       }
     } else {
       renderFooterNotification(targetingMsgJson)
+
+      if (window.clevertap.hasOwnProperty('notificationDataCallback') &&
+      typeof window.clevertap.notificationDataCallback !== 'undefined' &&
+      typeof window.clevertap.notificationDataCallback === 'function') {
+        const notificationDataCallback = window.clevertap.notificationDataCallback
+        const inaObj = {}
+        inaObj.msgContent = targetingMsgJson.msgContent
+        inaObj.msgId = targetingMsgJson.wzrk_id
+        if (targetingMsgJson.display.kv != null) {
+          inaObj.kv = targetingMsgJson.display.kv
+        }
+
+        // PUBLIC API TO RECORD CLICKED EVENT
+        window.clevertap.recordNotificationClickedEvent = (notificationData) => {
+          if (!notificationData || !notificationData.msgId) { return }
+
+          const eventData = {}
+          eventData.type = 'event'
+          eventData.evtName = 'Notification Clicked'
+          eventData.evtData = { wzrk_id: notificationData.msgId }
+
+          _request.processEvent(eventData)
+        }
+        notificationDataCallback(inaObj)
+      }
     }
   }
   let exitintentObj
