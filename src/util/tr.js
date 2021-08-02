@@ -468,13 +468,13 @@ const _tr = (msg, {
     } else {
       renderFooterNotification(targetingMsgJson)
 
-      if (window.clevertap.hasOwnProperty('notificationDataCallback') &&
-      typeof window.clevertap.notificationDataCallback !== 'undefined' &&
-      typeof window.clevertap.notificationDataCallback === 'function') {
-        const notificationDataCallback = window.clevertap.notificationDataCallback
+      if (window.clevertap.hasOwnProperty('popupCallback') &&
+      typeof window.clevertap.popupCallback !== 'undefined' &&
+      typeof window.clevertap.popupCallback === 'function') {
+        const popupCallback = window.clevertap.popupCallback
 
         // PUBLIC API TO RECORD CLICKED EVENT
-        window.clevertap.recordNotificationClickedEvent = (notificationData) => {
+        window.clevertap.raisePopupNotificationClicked = (notificationData) => {
           if (!notificationData || !notificationData.msgId) { return }
 
           const eventData = {}
@@ -484,7 +484,7 @@ const _tr = (msg, {
 
           _request.processEvent(eventData)
         }
-        notificationDataCallback(inaObj)
+        popupCallback(inaObj)
       }
     }
   }

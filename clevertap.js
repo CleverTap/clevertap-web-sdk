@@ -3272,10 +3272,10 @@
       } else {
         renderFooterNotification(targetingMsgJson);
 
-        if (window.clevertap.hasOwnProperty('notificationDataCallback') && typeof window.clevertap.notificationDataCallback !== 'undefined' && typeof window.clevertap.notificationDataCallback === 'function') {
-          var notificationDataCallback = window.clevertap.notificationDataCallback; // PUBLIC API TO RECORD CLICKED EVENT
+        if (window.clevertap.hasOwnProperty('popupCallback') && typeof window.clevertap.popupCallback !== 'undefined' && typeof window.clevertap.popupCallback === 'function') {
+          var popupCallback = window.clevertap.popupCallback; // PUBLIC API TO RECORD CLICKED EVENT
 
-          window.clevertap.recordNotificationClickedEvent = function (notificationData) {
+          window.clevertap.raisePopupNotificationClicked = function (notificationData) {
             if (!notificationData || !notificationData.msgId) {
               return;
             }
@@ -3290,7 +3290,7 @@
             _request.processEvent(eventData);
           };
 
-          notificationDataCallback(inaObj);
+          popupCallback(inaObj);
         }
       }
     };
