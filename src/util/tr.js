@@ -426,18 +426,19 @@ const _tr = (msg, {
 
   const showFooterNotification = (targetingMsgJson) => {
     let onClick = targetingMsgJson.display.onClick
+    const inaObj = {}
+    inaObj.msgContent = targetingMsgJson.msgContent
+    inaObj.msgId = targetingMsgJson.wzrk_id
+    if (targetingMsgJson.display.kv != null) {
+      inaObj.kv = targetingMsgJson.display.kv
+    }
+
     // TODO: Needs wizrocket as a global variable
     if (window.clevertap.hasOwnProperty('notificationCallback') &&
         typeof window.clevertap.notificationCallback !== 'undefined' &&
         typeof window.clevertap.notificationCallback === 'function') {
       const notificationCallback = window.clevertap.notificationCallback
       if (!_callBackCalled) {
-        const inaObj = {}
-        inaObj.msgContent = targetingMsgJson.msgContent
-        inaObj.msgId = targetingMsgJson.wzrk_id
-        if (targetingMsgJson.display.kv != null) {
-          inaObj.kv = targetingMsgJson.display.kv
-        }
         window.clevertap.raiseNotificationClicked = () => {
           if (onClick !== '' && onClick != null) {
             const jsFunc = targetingMsgJson.display.jsFunc
@@ -471,12 +472,6 @@ const _tr = (msg, {
       typeof window.clevertap.notificationDataCallback !== 'undefined' &&
       typeof window.clevertap.notificationDataCallback === 'function') {
         const notificationDataCallback = window.clevertap.notificationDataCallback
-        const inaObj = {}
-        inaObj.msgContent = targetingMsgJson.msgContent
-        inaObj.msgId = targetingMsgJson.wzrk_id
-        if (targetingMsgJson.display.kv != null) {
-          inaObj.kv = targetingMsgJson.display.kv
-        }
 
         // PUBLIC API TO RECORD CLICKED EVENT
         window.clevertap.recordNotificationClickedEvent = (notificationData) => {

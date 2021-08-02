@@ -3227,20 +3227,20 @@
     var _callBackCalled = false;
 
     var showFooterNotification = function showFooterNotification(targetingMsgJson) {
-      var onClick = targetingMsgJson.display.onClick; // TODO: Needs wizrocket as a global variable
+      var onClick = targetingMsgJson.display.onClick;
+      var inaObj = {};
+      inaObj.msgContent = targetingMsgJson.msgContent;
+      inaObj.msgId = targetingMsgJson.wzrk_id;
+
+      if (targetingMsgJson.display.kv != null) {
+        inaObj.kv = targetingMsgJson.display.kv;
+      } // TODO: Needs wizrocket as a global variable
+
 
       if (window.clevertap.hasOwnProperty('notificationCallback') && typeof window.clevertap.notificationCallback !== 'undefined' && typeof window.clevertap.notificationCallback === 'function') {
         var notificationCallback = window.clevertap.notificationCallback;
 
         if (!_callBackCalled) {
-          var inaObj = {};
-          inaObj.msgContent = targetingMsgJson.msgContent;
-          inaObj.msgId = targetingMsgJson.wzrk_id;
-
-          if (targetingMsgJson.display.kv != null) {
-            inaObj.kv = targetingMsgJson.display.kv;
-          }
-
           window.clevertap.raiseNotificationClicked = function () {
             if (onClick !== '' && onClick != null) {
               var jsFunc = targetingMsgJson.display.jsFunc;
@@ -3273,15 +3273,7 @@
         renderFooterNotification(targetingMsgJson);
 
         if (window.clevertap.hasOwnProperty('notificationDataCallback') && typeof window.clevertap.notificationDataCallback !== 'undefined' && typeof window.clevertap.notificationDataCallback === 'function') {
-          var notificationDataCallback = window.clevertap.notificationDataCallback;
-          var _inaObj = {};
-          _inaObj.msgContent = targetingMsgJson.msgContent;
-          _inaObj.msgId = targetingMsgJson.wzrk_id;
-
-          if (targetingMsgJson.display.kv != null) {
-            _inaObj.kv = targetingMsgJson.display.kv;
-          } // PUBLIC API TO RECORD CLICKED EVENT
-
+          var notificationDataCallback = window.clevertap.notificationDataCallback; // PUBLIC API TO RECORD CLICKED EVENT
 
           window.clevertap.recordNotificationClickedEvent = function (notificationData) {
             if (!notificationData || !notificationData.msgId) {
@@ -3298,7 +3290,7 @@
             _request.processEvent(eventData);
           };
 
-          notificationDataCallback(_inaObj);
+          notificationDataCallback(inaObj);
         }
       }
     };
