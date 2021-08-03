@@ -323,20 +323,20 @@ const _tr = (msg, {
       html = html.replace('##campaignId##', campaignId)
     } else {
       const css = '' +
-          '<style type="text/css">' +
-          'body{margin:0;padding:0;}' +
-          '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' +
-          '#contentDiv.wzrk td{padding:15px 10px;}' +
-          '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' +
-          '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' +
-          '.PL15{padding-left:15px;}' +
-          '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' +
-          'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' +
-          'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' +
-          'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' +
-          'td{vertical-align:top;}' +
-          'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' +
-          '</style>'
+        '<style type="text/css">' +
+        'body{margin:0;padding:0;}' +
+        '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' +
+        '#contentDiv.wzrk td{padding:15px 10px;}' +
+        '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' +
+        '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' +
+        '.PL15{padding-left:15px;}' +
+        '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' +
+        'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' +
+        'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' +
+        'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' +
+        'td{vertical-align:top;}' +
+        'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' +
+        '</style>'
 
       let bgColor, textColor, btnBg, leftTd, btColor
       if (targetingMsgJson.display.theme === 'dark') {
@@ -360,12 +360,12 @@ const _tr = (msg, {
       }
       const onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'" + divId + "');"
       const title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" +
-          "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" +
-          "<div id='contentDiv' class='wzrk'>" +
-          "<table cellpadding='0' cellspacing='0' border='0'>" +
-          // "<tr><td colspan='2'></td></tr>"+
-          '<tr>' + imageTd + "<td style='vertical-align:top;'>" +
-          "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>'
+        "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" +
+        "<div id='contentDiv' class='wzrk'>" +
+        "<table cellpadding='0' cellspacing='0' border='0'>" +
+        // "<tr><td colspan='2'></td></tr>"+
+        '<tr>' + imageTd + "<td style='vertical-align:top;'>" +
+        "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>'
       const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>'
       html = css + title + body
     }
@@ -426,19 +426,21 @@ const _tr = (msg, {
 
   const showFooterNotification = (targetingMsgJson) => {
     let onClick = targetingMsgJson.display.onClick
-    const inaObj = {}
-    inaObj.msgContent = targetingMsgJson.msgContent
-    inaObj.msgId = targetingMsgJson.wzrk_id
-    if (targetingMsgJson.display.kv != null) {
-      inaObj.kv = targetingMsgJson.display.kv
-    }
 
     // TODO: Needs wizrocket as a global variable
     if (window.clevertap.hasOwnProperty('notificationCallback') &&
-        typeof window.clevertap.notificationCallback !== 'undefined' &&
-        typeof window.clevertap.notificationCallback === 'function') {
+      typeof window.clevertap.notificationCallback !== 'undefined' &&
+      typeof window.clevertap.notificationCallback === 'function') {
       const notificationCallback = window.clevertap.notificationCallback
+
       if (!_callBackCalled) {
+        const inaObj = {}
+        inaObj.msgContent = targetingMsgJson.msgContent
+        inaObj.msgId = targetingMsgJson.wzrk_id
+        if (targetingMsgJson.display.kv != null) {
+          inaObj.kv = targetingMsgJson.display.kv
+        }
+
         window.clevertap.raiseNotificationClicked = () => {
           if (onClick !== '' && onClick != null) {
             const jsFunc = targetingMsgJson.display.jsFunc
@@ -469,9 +471,29 @@ const _tr = (msg, {
       renderFooterNotification(targetingMsgJson)
 
       if (window.clevertap.hasOwnProperty('popupCallback') &&
-      typeof window.clevertap.popupCallback !== 'undefined' &&
-      typeof window.clevertap.popupCallback === 'function') {
+        typeof window.clevertap.popupCallback !== 'undefined' &&
+        typeof window.clevertap.popupCallback === 'function') {
         const popupCallback = window.clevertap.popupCallback
+
+        const inaObj = {}
+        inaObj.msgContent = targetingMsgJson.msgContent
+        inaObj.msgId = targetingMsgJson.wzrk_id
+
+        var msgCTkv = []
+        for (var wzrkPrefixKey in targetingMsgJson) {
+          // ADD WZRK PREFIX KEY VALUE PAIRS
+          if (wzrkPrefixKey.startsWith('wzrk') && wzrkPrefixKey !== 'wzrk_id') {
+            const wzrkJson = { [wzrkPrefixKey]: targetingMsgJson[wzrkPrefixKey] }
+            msgCTkv.push(wzrkJson)
+          }
+        }
+
+        if (msgCTkv.length > 0) {
+          inaObj.msgCTkv = msgCTkv
+        }
+        if (targetingMsgJson.display.kv != null) {
+          inaObj.kv = targetingMsgJson.display.kv
+        }
 
         // PUBLIC API TO RECORD CLICKED EVENT
         window.clevertap.raisePopupNotificationClicked = (notificationData) => {
@@ -481,6 +503,13 @@ const _tr = (msg, {
           eventData.type = 'event'
           eventData.evtName = 'Notification Clicked'
           eventData.evtData = { wzrk_id: notificationData.msgId }
+
+          // WZRK PREFIX KEY VALUE PAIRS
+          if (notificationData.msgCTkv) {
+            for (var wzrkPrefixObj of notificationData.msgCTkv) {
+              eventData.evtData = { ...eventData.evtData, ...wzrkPrefixObj }
+            }
+          }
 
           _request.processEvent(eventData)
         }
@@ -505,8 +534,8 @@ const _tr = (msg, {
     }
     // dont show exit intent on tablet/mobile - only on desktop
     if (targetingMsgJson.display.layout == null &&
-        ((/mobile/i.test(navigator.userAgent)) || (/mini/i.test(navigator.userAgent)) || (/iPad/i.test(navigator.userAgent)) ||
-            ('ontouchstart' in window) || (/tablet/i.test(navigator.userAgent)))) {
+      ((/mobile/i.test(navigator.userAgent)) || (/mini/i.test(navigator.userAgent)) || (/iPad/i.test(navigator.userAgent)) ||
+        ('ontouchstart' in window) || (/tablet/i.test(navigator.userAgent)))) {
       return
     }
 
@@ -551,20 +580,20 @@ const _tr = (msg, {
       html = html.replace('##campaignId##', campaignId)
     } else {
       const css = '' +
-          '<style type="text/css">' +
-          'body{margin:0;padding:0;}' +
-          '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' +
-          '#contentDiv.wzrk td{padding:15px 10px;}' +
-          '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' +
-          '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' +
-          '.PL15{padding-left:15px;}' +
-          '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' +
-          'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' +
-          'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' +
-          'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' +
-          '#contentDiv .button{padding-top:20px;}' +
-          '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' +
-          '</style>'
+        '<style type="text/css">' +
+        'body{margin:0;padding:0;}' +
+        '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' +
+        '#contentDiv.wzrk td{padding:15px 10px;}' +
+        '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' +
+        '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' +
+        '.PL15{padding-left:15px;}' +
+        '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' +
+        'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' +
+        'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' +
+        'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' +
+        '#contentDiv .button{padding-top:20px;}' +
+        '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' +
+        '</style>'
 
       let bgColor, textColor, btnBg, btColor
       if (targetingMsgJson.display.theme === 'dark') {
@@ -591,11 +620,11 @@ const _tr = (msg, {
       }
       const onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'intentPreview');"
       const title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" +
-          "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" +
-          "<div id='contentDiv' class='wzrk'>" +
-          "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>'
+        "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" +
+        "<div id='contentDiv' class='wzrk'>" +
+        "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>'
       const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '</div>' + imageTd + ctaText +
-          '</div></div>'
+        '</div></div>'
       html = css + title + body
     }
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;')
