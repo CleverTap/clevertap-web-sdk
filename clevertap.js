@@ -447,7 +447,10 @@
 
   var GROUP_SUBSCRIPTION_REQUEST_ID = '2';
   var categoryLongKey = 'cUsY';
-  var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', 'Notification Viewed', 'Notification Clicked'];
+  var WZRK_PREFIX = 'wzrk_';
+  var NOTIFICATION_VIEWED = 'Notification Viewed';
+  var NOTIFICATION_CLICKED = 'Notification Clicked';
+  var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
     return typeof input === 'string' || input instanceof String;
@@ -3174,7 +3177,7 @@
     var incrementImpression = function incrementImpression(targetingMsgJson) {
       var data = {};
       data.type = 'event';
-      data.evtName = 'Notification Viewed';
+      data.evtName = NOTIFICATION_VIEWED;
       data.evtData = {
         wzrk_id: targetingMsgJson.wzrk_id
       };
@@ -3404,7 +3407,7 @@
 
           for (var wzrkPrefixKey in targetingMsgJson) {
             // ADD WZRK PREFIX KEY VALUE PAIRS
-            if (wzrkPrefixKey.startsWith('wzrk') && wzrkPrefixKey !== 'wzrk_id') {
+            if (wzrkPrefixKey.startsWith(WZRK_PREFIX) && wzrkPrefixKey !== 'wzrk_id') {
               var wzrkJson = _defineProperty({}, wzrkPrefixKey, targetingMsgJson[wzrkPrefixKey]);
 
               msgCTkv.push(wzrkJson);
@@ -3427,7 +3430,7 @@
 
             var eventData = {};
             eventData.type = 'event';
-            eventData.evtName = 'Notification Clicked';
+            eventData.evtName = NOTIFICATION_CLICKED;
             eventData.evtData = {
               wzrk_id: notificationData.msgId
             }; // WZRK PREFIX KEY VALUE PAIRS

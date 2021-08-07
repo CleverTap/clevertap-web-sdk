@@ -10,7 +10,10 @@ import {
   CAMP_COOKIE_NAME,
   DISPLAY,
   GLOBAL,
-  EV_COOKIE
+  EV_COOKIE,
+  NOTIFICATION_VIEWED,
+  NOTIFICATION_CLICKED,
+  WZRK_PREFIX
 } from './constants'
 
 import {
@@ -241,7 +244,7 @@ const _tr = (msg, {
   const incrementImpression = (targetingMsgJson) => {
     const data = {}
     data.type = 'event'
-    data.evtName = 'Notification Viewed'
+    data.evtName = NOTIFICATION_VIEWED
     data.evtData = { wzrk_id: targetingMsgJson.wzrk_id }
     _request.processEvent(data)
   }
@@ -482,7 +485,7 @@ const _tr = (msg, {
         var msgCTkv = []
         for (var wzrkPrefixKey in targetingMsgJson) {
           // ADD WZRK PREFIX KEY VALUE PAIRS
-          if (wzrkPrefixKey.startsWith('wzrk') && wzrkPrefixKey !== 'wzrk_id') {
+          if (wzrkPrefixKey.startsWith(WZRK_PREFIX) && wzrkPrefixKey !== 'wzrk_id') {
             const wzrkJson = { [wzrkPrefixKey]: targetingMsgJson[wzrkPrefixKey] }
             msgCTkv.push(wzrkJson)
           }
@@ -501,7 +504,7 @@ const _tr = (msg, {
 
           const eventData = {}
           eventData.type = 'event'
-          eventData.evtName = 'Notification Clicked'
+          eventData.evtName = NOTIFICATION_CLICKED
           eventData.evtData = { wzrk_id: notificationData.msgId }
 
           // WZRK PREFIX KEY VALUE PAIRS
