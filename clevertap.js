@@ -448,6 +448,7 @@
   var GROUP_SUBSCRIPTION_REQUEST_ID = '2';
   var categoryLongKey = 'cUsY';
   var WZRK_PREFIX = 'wzrk_';
+  var WZRK_ID = 'wzrk_id';
   var NOTIFICATION_VIEWED = 'Notification Viewed';
   var NOTIFICATION_CLICKED = 'Notification Clicked';
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
@@ -3178,9 +3179,7 @@
       var data = {};
       data.type = 'event';
       data.evtName = NOTIFICATION_VIEWED;
-      data.evtData = {
-        wzrk_id: targetingMsgJson.wzrk_id
-      };
+      data.evtData = _defineProperty({}, WZRK_ID, targetingMsgJson.wzrk_id);
 
       _request.processEvent(data);
     };
@@ -3407,7 +3406,7 @@
 
           for (var wzrkPrefixKey in targetingMsgJson) {
             // ADD WZRK PREFIX KEY VALUE PAIRS
-            if (wzrkPrefixKey.startsWith(WZRK_PREFIX) && wzrkPrefixKey !== 'wzrk_id') {
+            if (wzrkPrefixKey.startsWith(WZRK_PREFIX) && wzrkPrefixKey !== WZRK_ID) {
               var wzrkJson = _defineProperty({}, wzrkPrefixKey, targetingMsgJson[wzrkPrefixKey]);
 
               msgCTkv.push(wzrkJson);
@@ -3431,9 +3430,7 @@
             var eventData = {};
             eventData.type = 'event';
             eventData.evtName = NOTIFICATION_CLICKED;
-            eventData.evtData = {
-              wzrk_id: notificationData.msgId
-            }; // WZRK PREFIX KEY VALUE PAIRS
+            eventData.evtData = _defineProperty({}, WZRK_ID, notificationData.msgId); // WZRK PREFIX KEY VALUE PAIRS
 
             if (notificationData.msgCTkv) {
               var _iterator = _createForOfIteratorHelper(notificationData.msgCTkv),
