@@ -42,6 +42,55 @@
     return Constructor;
   }
 
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
+  }
+
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -173,6 +222,80 @@
       }
 
       return _possibleConstructorReturn(this, result);
+    };
+  }
+
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+
+    return arr2;
+  }
+
+  function _createForOfIteratorHelper(o, allowArrayLike) {
+    var it;
+
+    if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) {
+      if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+        if (it) o = it;
+        var i = 0;
+
+        var F = function () {};
+
+        return {
+          s: F,
+          n: function () {
+            if (i >= o.length) return {
+              done: true
+            };
+            return {
+              done: false,
+              value: o[i++]
+            };
+          },
+          e: function (e) {
+            throw e;
+          },
+          f: F
+        };
+      }
+
+      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+    }
+
+    var normalCompletion = true,
+        didErr = false,
+        err;
+    return {
+      s: function () {
+        it = o[Symbol.iterator]();
+      },
+      n: function () {
+        var step = it.next();
+        normalCompletion = step.done;
+        return step;
+      },
+      e: function (e) {
+        didErr = true;
+        err = e;
+      },
+      f: function () {
+        try {
+          if (!normalCompletion && it.return != null) it.return();
+        } finally {
+          if (didErr) throw err;
+        }
+      }
     };
   }
 
@@ -324,7 +447,11 @@
 
   var GROUP_SUBSCRIPTION_REQUEST_ID = '2';
   var categoryLongKey = 'cUsY';
-  var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', 'Notification Viewed', 'Notification Clicked'];
+  var WZRK_PREFIX = 'wzrk_';
+  var WZRK_ID = 'wzrk_id';
+  var NOTIFICATION_VIEWED = 'Notification Viewed';
+  var NOTIFICATION_CLICKED = 'Notification Clicked';
+  var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
     return typeof input === 'string' || input instanceof String;
@@ -598,7 +725,12 @@
             var testBroadDomain = '';
 
             for (var idx = domainParts.length - 1; idx >= 0; idx--) {
-              testBroadDomain = '.' + domainParts[idx] + testBroadDomain; // only needed if the cookie already exists and needs to be updated. See note above.
+              if (idx === 0) {
+                testBroadDomain = domainParts[idx] + testBroadDomain;
+              } else {
+                testBroadDomain = '.' + domainParts[idx] + testBroadDomain;
+              } // only needed if the cookie already exists and needs to be updated. See note above.
+
 
               if (this.readCookie(name)) {
                 // no guarantee that browser will delete cookie, hence create short lived cookies
@@ -2888,7 +3020,7 @@
 
         var _sessionObj = campObj[_session.sessionId];
 
-        if (_sessionObj != null) {
+        if (_sessionObj) {
           var campaignSessionCount = _sessionObj[campaignId];
           var totalSessionCount = _sessionObj.tc; // dnd
 
@@ -3016,7 +3148,7 @@
             } // pass on the gcookie|page|scookieId for capturing the click event
 
 
-            if (targetingMsgJson.display.window === '1') {
+            if (targetingMsgJson.display.window === 1) {
               window.open(onClick, '_blank');
             } else {
               window.location = onClick;
@@ -3046,10 +3178,8 @@
     var incrementImpression = function incrementImpression(targetingMsgJson) {
       var data = {};
       data.type = 'event';
-      data.evtName = 'Notification Viewed';
-      data.evtData = {
-        wzrk_id: targetingMsgJson.wzrk_id
-      };
+      data.evtName = NOTIFICATION_VIEWED;
+      data.evtData = _defineProperty({}, WZRK_ID, targetingMsgJson.wzrk_id);
 
       _request.processEvent(data);
     };
@@ -3249,7 +3379,7 @@
               } // pass on the gcookie|page|scookieId for capturing the click event
 
 
-              if (targetingMsgJson.display.window === '1') {
+              if (targetingMsgJson.display.window === 1) {
                 window.open(onClick, '_blank');
               } else {
                 window.location = onClick;
@@ -3266,6 +3396,63 @@
         }
       } else {
         renderFooterNotification(targetingMsgJson);
+
+        if (window.clevertap.hasOwnProperty('popupCallback') && typeof window.clevertap.popupCallback !== 'undefined' && typeof window.clevertap.popupCallback === 'function') {
+          var popupCallback = window.clevertap.popupCallback;
+          var _inaObj = {};
+          _inaObj.msgContent = targetingMsgJson.msgContent;
+          _inaObj.msgId = targetingMsgJson.wzrk_id;
+          var msgCTkv = [];
+
+          for (var wzrkPrefixKey in targetingMsgJson) {
+            // ADD WZRK PREFIX KEY VALUE PAIRS
+            if (wzrkPrefixKey.startsWith(WZRK_PREFIX) && wzrkPrefixKey !== WZRK_ID) {
+              var wzrkJson = _defineProperty({}, wzrkPrefixKey, targetingMsgJson[wzrkPrefixKey]);
+
+              msgCTkv.push(wzrkJson);
+            }
+          }
+
+          if (msgCTkv.length > 0) {
+            _inaObj.msgCTkv = msgCTkv;
+          }
+
+          if (targetingMsgJson.display.kv != null) {
+            _inaObj.kv = targetingMsgJson.display.kv;
+          } // PUBLIC API TO RECORD CLICKED EVENT
+
+
+          window.clevertap.raisePopupNotificationClicked = function (notificationData) {
+            if (!notificationData || !notificationData.msgId) {
+              return;
+            }
+
+            var eventData = {};
+            eventData.type = 'event';
+            eventData.evtName = NOTIFICATION_CLICKED;
+            eventData.evtData = _defineProperty({}, WZRK_ID, notificationData.msgId); // WZRK PREFIX KEY VALUE PAIRS
+
+            if (notificationData.msgCTkv) {
+              var _iterator = _createForOfIteratorHelper(notificationData.msgCTkv),
+                  _step;
+
+              try {
+                for (_iterator.s(); !(_step = _iterator.n()).done;) {
+                  var wzrkPrefixObj = _step.value;
+                  eventData.evtData = _objectSpread2(_objectSpread2({}, eventData.evtData), wzrkPrefixObj);
+                }
+              } catch (err) {
+                _iterator.e(err);
+              } finally {
+                _iterator.f();
+              }
+            }
+
+            _request.processEvent(eventData);
+          };
+
+          popupCallback(_inaObj);
+        }
       }
     };
 
@@ -5143,3 +5330,4 @@
   return clevertap;
 
 })));
+//# sourceMappingURL=clevertap.js.map

@@ -4,6 +4,7 @@ import replace from '@rollup/plugin-replace'
 import { eslint } from 'rollup-plugin-eslint'
 import { terser } from 'rollup-plugin-terser'
 import { version } from './package.json'
+import sourcemaps from 'rollup-plugin-sourcemaps'
 
 export default {
   input: 'src/main.js',
@@ -11,7 +12,8 @@ export default {
     {
       name: 'clevertap',
       file: 'clevertap.js',
-      format: 'umd'
+      format: 'umd',
+      sourcemap: true
     },
     {
       name: 'clevertap',
@@ -22,6 +24,7 @@ export default {
   ],
   plugins: [
     resolve(),
+    sourcemaps(),
     eslint({
       fix: true,
       throwOnError: true
