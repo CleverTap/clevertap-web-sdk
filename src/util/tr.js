@@ -324,7 +324,7 @@ const _tr = (msg, {
     // direct html
     if (targetingMsgJson.msgContent.type === 1) {
       html = targetingMsgJson.msgContent.html
-      html = html.replace('##campaignId##', campaignId)
+      html = html.replace(/##campaignId##/g, campaignId)
     } else {
       const css = '' +
         '<style type="text/css">' +
@@ -581,7 +581,7 @@ const _tr = (msg, {
     // direct html
     if (targetingMsgJson.msgContent.type === 1) {
       html = targetingMsgJson.msgContent.html
-      html = html.replace('##campaignId##', campaignId)
+      html = html.replace(/##campaignId##/g, campaignId)
     } else {
       const css = '' +
         '<style type="text/css">' +
