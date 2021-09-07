@@ -43,7 +43,7 @@ export default class Account {
     if (this.region) {
       return `${this.region}.${this.targetDomain}`
     }
-    return this.targetDomain
+    return `eu1.${this.targetDomain}`
   }
 
   get dataPostURL () {
