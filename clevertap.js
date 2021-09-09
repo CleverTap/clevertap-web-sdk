@@ -315,6 +315,7 @@
 
   var TARGET_DOMAIN = 'clevertap-prod.com';
   var TARGET_PROTOCOL = 'https:';
+  var TARGET_PREFIX = 'eu1';
 
   var _accountId = _classPrivateFieldLooseKey("accountId");
 
@@ -386,7 +387,7 @@
           return "".concat(this.region, ".").concat(this.targetDomain);
         }
 
-        return "eu1.".concat(this.targetDomain);
+        return "".concat(TARGET_PREFIX, ".").concat(this.targetDomain);
       }
     }, {
       key: "dataPostURL",
