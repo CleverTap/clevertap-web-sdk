@@ -1,3 +1,3 @@
 export const TARGET_DOMAIN = 'clevertap-prod.com'
 export const TARGET_PROTOCOL = 'https:'
-export const TARGET_PREFIX = 'eu1'
+export const DEFAULT_REGION = 'eu1'
