@@ -313,8 +313,9 @@
     return receiver;
   }
 
-  var TARGET_DOMAIN = 'wzrkt.com';
+  var TARGET_DOMAIN = 'clevertap-prod.com';
   var TARGET_PROTOCOL = 'https:';
+  var DEFAULT_REGION = 'eu1';
 
   var _accountId = _classPrivateFieldLooseKey("accountId");
 
@@ -386,7 +387,7 @@
           return "".concat(this.region, ".").concat(this.targetDomain);
         }
 
-        return this.targetDomain;
+        return "".concat(DEFAULT_REGION, ".").concat(this.targetDomain);
       }
     }, {
       key: "dataPostURL",
