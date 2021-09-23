@@ -1941,9 +1941,17 @@
     } // TODO: Try using Function constructor instead of appending script.
 
 
+    var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
+
+    while (ctCbScripts[0]) {
+      console.log("removing script with src: ".concat(ctCbScripts[0].getAttribute('src')));
+      ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
+    }
+
     var s = document.createElement('script');
     s.setAttribute('type', 'text/javascript');
     s.setAttribute('src', url);
+    s.setAttribute('class', 'ct-jp-cb');
     s.setAttribute('rel', 'nofollow');
     s.async = true;
     document.getElementsByTagName('head')[0].appendChild(s);
@@ -5255,7 +5263,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.0.0'
+          lib: 'web-sdk-v1.1.0'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

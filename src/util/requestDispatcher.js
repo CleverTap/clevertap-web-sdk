@@ -44,9 +44,15 @@ export default class RequestDispatcher {
     }
 
     // TODO: Try using Function constructor instead of appending script.
+    var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
+    while (ctCbScripts[0]) {
+      console.log(`removing script with src: ${ctCbScripts[0].getAttribute('src')}`)
+      ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
+    }
     const s = document.createElement('script')
     s.setAttribute('type', 'text/javascript')
     s.setAttribute('src', url)
+    s.setAttribute('class', 'ct-jp-cb')
     s.setAttribute('rel', 'nofollow')
     s.async = true
 
