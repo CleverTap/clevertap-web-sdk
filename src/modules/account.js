@@ -1,4 +1,4 @@
-import { TARGET_DOMAIN, TARGET_PROTOCOL } from '../options'
+import { TARGET_DOMAIN, DEFAULT_REGION, TARGET_PROTOCOL } from '../options'
 
 export default class Account {
   #accountId
@@ -43,7 +43,7 @@ export default class Account {
     if (this.region) {
       return `${this.region}.${this.targetDomain}`
     }
-    return this.targetDomain
+    return `${DEFAULT_REGION}.${this.targetDomain}`
   }
 
   get dataPostURL () {
