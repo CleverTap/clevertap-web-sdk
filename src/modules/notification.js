@@ -103,9 +103,17 @@ export default class NotificationHandler extends Array {
     }
   }
 
+  /**
+   * Sets up a service worker for WebPush(chrome/Firefox) push notifications and sends the data to LC
+   */
   #setUpChromeFirefoxNotifications (subscriptionCallback, serviceWorkerPath) {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register(serviceWorkerPath).then(() => {
+      navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
+        if (typeof __wzrk_account_id !== 'undefined') { // eslint-disable-line
+          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
+          // hence add a timeout and hope serviceWroker is ready within that time.
+          return new Promise(resolve => setTimeout(() => resolve(registration), 5000))
+        }
         return navigator.serviceWorker.ready
       }).then((serviceWorkerRegistration) => {
         const subscribeObj = { userVisibleOnly: true }
