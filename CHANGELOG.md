@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 - Bug Fixes and Improvements
 - Adds new Public API to record Notification Clicked Event for Custom Web Popups
 - Handle Shopify websites for serviceworker registration ready state
+- Use `clevertap-prod.com` instead of `wzrkt.com` as endpoint
 
 ## [1.0.0] - 22 Apr, 2021
 We are super excited to announce the launch of `CleverTap Web SDK`.
