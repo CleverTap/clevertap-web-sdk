@@ -36,13 +36,13 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v1
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         aws-region: ${{ secrets.AWS_REGION }}
-  #     - name: Copy file to S3
-  #       # S3_bucket/clevertap.js for beta, /a.js when moving to prod for all
-  #       run: |
-  #         aws s3 cp clevertap.min.js s3://${{ secrets.S3_BUCKET_PATH }} 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Copy file to S3
+        # S3_bucket/clevertap.js for beta, /a.js when moving to prod for all
+        run: |
+          aws s3 cp clevertap.min.js s3://${{ secrets.S3_BUCKET_PATH }} 
