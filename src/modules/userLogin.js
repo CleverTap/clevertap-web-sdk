@@ -14,7 +14,8 @@ import {
   EV_COOKIE,
   ARP_COOKIE,
   CLEAR,
-  META_COOKIE
+  META_COOKIE,
+  FIRE_PUSH_UNREGISTERED
 } from '../util/constants'
 import {
   StorageManager,
@@ -62,6 +63,7 @@ export default class UserLoginHandler extends Array {
 
   #processOUL (profileArr) {
     let sendOULFlag = true
+    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
     const addToK = (ids) => {
       let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME)
       const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME)
@@ -102,10 +104,11 @@ export default class UserLoginHandler extends Array {
 
         if (foundInCache) {
           if (kId !== $ct.LRU_CACHE.getLastKey()) {
-            // Same User
+            // New User found
             this.#handleCookieFromCache()
           } else {
             sendOULFlag = false
+            StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
           }
           const gFromCache = $ct.LRU_CACHE.get(kId)
           $ct.LRU_CACHE.set(kId, gFromCache)
@@ -113,7 +116,7 @@ export default class UserLoginHandler extends Array {
           this.#device.gcookie = gFromCache
 
           const lastK = $ct.LRU_CACHE.getSecondLastKey()
-          if (lastK !== -1) {
+          if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
             const lastGUID = $ct.LRU_CACHE.cache[lastK]
             this.#request.unregisterTokenForGuid(lastGUID)
           }
@@ -127,6 +130,7 @@ export default class UserLoginHandler extends Array {
               sendOULFlag = false
             }
           }
+          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
           kId = ids[0]
         }
       }

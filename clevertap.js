@@ -452,6 +452,7 @@
   var WZRK_ID = 'wzrk_id';
   var NOTIFICATION_VIEWED = 'Notification Viewed';
   var NOTIFICATION_CLICKED = 'Notification Clicked';
+  var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
@@ -1100,6 +1101,7 @@
               var guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
 
               if (!guidFromLRUCache) {
+                StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true);
                 $ct.LRU_CACHE.set(kIdFromLS.id, global);
               }
             }
@@ -1107,7 +1109,7 @@
             StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, global);
             var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
-            if (lastK !== -1) {
+            if (StorageManager$1.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
               var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
               _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
@@ -2705,6 +2707,7 @@
     var _this2 = this;
 
     var sendOULFlag = true;
+    StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
 
     var addToK = function addToK(ids) {
       var k = StorageManager$1.readFromLSorCookie(KCOOKIE_NAME);
@@ -2750,10 +2753,11 @@
 
         if (foundInCache) {
           if (kId !== $ct.LRU_CACHE.getLastKey()) {
-            // Same User
+            // New User found
             _classPrivateFieldLooseBase(_this2, _handleCookieFromCache)[_handleCookieFromCache]();
           } else {
             sendOULFlag = false;
+            StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
           }
 
           var gFromCache = $ct.LRU_CACHE.get(kId);
@@ -2762,7 +2766,7 @@
           _classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie = gFromCache;
           var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
-          if (lastK !== -1) {
+          if (StorageManager$1.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
             var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
             _classPrivateFieldLooseBase(_this2, _request$3)[_request$3].unregisterTokenForGuid(lastGUID);
@@ -2778,6 +2782,7 @@
             }
           }
 
+          StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
           kId = ids[0];
         }
       }
@@ -4147,6 +4152,7 @@
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+        StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
         RequestDispatcher.fireRequest(pageLoadUrl, true);
       }
     }, {
@@ -5272,8 +5278,11 @@
           _classPrivateFieldLooseBase(this, _overrideDSyncFlag)[_overrideDSyncFlag](data);
         }
 
+        var ver = '1.1.0';
+        ver = ver.replaceAll('.', '0');
         data.af = {
-          lib: 'web-sdk-v1.1.0'
+          lib: 'web-sdk-v1.1.0',
+          'SDK Version': ver
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

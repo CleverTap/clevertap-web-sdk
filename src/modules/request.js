@@ -1,4 +1,4 @@
-import { CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, LCOOKIE_NAME } from '../util/constants'
+import { CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME } from '../util/constants'
 import { isObjectEmpty, isValueValid, removeUnsupportedChars } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
@@ -139,6 +139,7 @@ export default class RequestManager {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
+    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
     RequestDispatcher.fireRequest(pageLoadUrl, true)
   }
 
