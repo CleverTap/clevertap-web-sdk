@@ -5278,11 +5278,8 @@
           _classPrivateFieldLooseBase(this, _overrideDSyncFlag)[_overrideDSyncFlag](data);
         }
 
-        var ver = '1.1.0';
-        ver = ver.replaceAll('.', '0');
         data.af = {
-          lib: 'web-sdk-v1.1.0',
-          'SDK Version': ver
+          lib: 'web-sdk-v1.1.0'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
