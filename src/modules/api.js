@@ -1,4 +1,4 @@
-import { COOKIE_EXPIRY, GCOOKIE_NAME, KCOOKIE_NAME, LRU_CACHE_SIZE, USEIP_KEY } from '../util/constants'
+import { COOKIE_EXPIRY, FIRE_PUSH_UNREGISTERED, GCOOKIE_NAME, KCOOKIE_NAME, LRU_CACHE_SIZE, USEIP_KEY } from '../util/constants'
 import { isValueValid } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import LRUCache from '../util/lruCache'
@@ -47,13 +47,14 @@ export default class CleverTapAPI {
         if (kIdFromLS != null && kIdFromLS.id && resume) {
           const guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id]
           if (!guidFromLRUCache) {
+            StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true)
             $ct.LRU_CACHE.set(kIdFromLS.id, global)
           }
         }
 
         StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
         const lastK = $ct.LRU_CACHE.getSecondLastKey()
-        if (lastK !== -1) {
+        if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
           const lastGUID = $ct.LRU_CACHE.cache[lastK]
           this.#request.unregisterTokenForGuid(lastGUID)
         }
