@@ -162,15 +162,15 @@ clevertap.setLogLevel(LOG_LEVEL)
 
 
 ## 𝌡 Example Usage
-* A [react application](https://github.com/CleverTap/clevertap-web-sdk/tree/master/example-apps/react) showing the integration of our SDK in a create react app project.
-* An [angular application](https://github.com/CleverTap/clevertap-web-sdk/tree/master/example-apps/angular) showing the integration of our SDK in an Angular CLI generated project.
+* A [React Application](/example-apps/react) showing the integration of our SDK in a create react app project.
+* An [Angular Application](/example-apps/angular) showing the integration of our SDK in an Angular CLI generated project.
 
 
 ## 🆕 Change Log
 
-Refer to the [CleverTap Web SDK Change Log](https://github.com/CleverTap/clevertap-web-sdk/blob/master/CHANGELOG.md).
+Refer to the [CleverTap Web SDK Change Log](/CHANGELOG.md).
 
 ## 📄 License
 
-CleverTap Web SDK is released under the MIT license. See [LICENSE](https://github.com/CleverTap/clevertap-web-sdk/blob/master/LICENSE) for details.
+CleverTap Web SDK is released under the MIT license. See [LICENSE](/LICENSE) for details.
 
