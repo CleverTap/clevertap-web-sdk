@@ -1861,6 +1861,8 @@
 
   var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
 
+  var _addUseIPToRequest = _classPrivateFieldLooseKey("addUseIPToRequest");
+
   var _addARPToRequest = _classPrivateFieldLooseKey("addARPToRequest");
 
   var RequestDispatcher = /*#__PURE__*/function () {
@@ -1890,6 +1892,16 @@
     }
 
     return url;
+  };
+
+  var _addUseIPToRequest2 = function _addUseIPToRequest2(pageLoadUrl) {
+    var useIP = StorageManager$1.getMetaProp(USEIP_KEY);
+
+    if (typeof useIP !== 'boolean') {
+      useIP = false;
+    }
+
+    return addToURL(pageLoadUrl, USEIP_KEY, useIP ? 'true' : 'false');
   };
 
   var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
@@ -1929,6 +1941,7 @@
       url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
     }
 
+    url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
     // TODO: Figure out a better way to handle plugin check
 
@@ -1966,6 +1979,9 @@
   });
   Object.defineProperty(RequestDispatcher, _dropRequestDueToOptOut, {
     value: _dropRequestDueToOptOut2
+  });
+  Object.defineProperty(RequestDispatcher, _addUseIPToRequest, {
+    value: _addUseIPToRequest2
   });
   Object.defineProperty(RequestDispatcher, _addARPToRequest, {
     value: _addARPToRequest2
@@ -4285,9 +4301,11 @@
       var privacyObj = privacyArr[0];
       var data = {};
       var profileObj = {};
-      var optOut = privacyObj[OPTOUT_KEY];
+      var optOut = false;
 
       if (privacyObj.hasOwnProperty(OPTOUT_KEY)) {
+        optOut = privacyObj[OPTOUT_KEY];
+
         if (typeof optOut === 'boolean') {
           profileObj[CT_OPTOUT_KEY] = optOut; // should be true when user wants to opt in
 
@@ -4297,10 +4315,8 @@
 
       if (privacyObj.hasOwnProperty(USEIP_KEY)) {
         var useIP = privacyObj[USEIP_KEY];
-
-        if (typeof useIP === 'boolean') {
-          StorageManager$1.setMetaProp(USEIP_KEY, useIP);
-        }
+        var shouldUseIP = typeof useIP === 'boolean' ? useIP : false;
+        StorageManager$1.setMetaProp(USEIP_KEY, shouldUseIP);
       }
 
       if (!isObjectEmpty(profileObj)) {
