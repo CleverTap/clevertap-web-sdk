@@ -453,6 +453,7 @@
   var NOTIFICATION_VIEWED = 'Notification Viewed';
   var NOTIFICATION_CLICKED = 'Notification Clicked';
   var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
+  var PUSH_SUBSCRIPTION_DATA = 'PUSH_SUBSCRIPTION_DATA';
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
@@ -1112,7 +1113,12 @@
             if (StorageManager$1.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
               var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
-              _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
+              _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID); // REGISTER TOKEN
+
+
+              var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA);
+
+              _classPrivateFieldLooseBase(this, _request)[_request].registerToken(payload);
             }
           }
 
@@ -4172,6 +4178,21 @@
         RequestDispatcher.fireRequest(pageLoadUrl, true);
       }
     }, {
+      key: "registerToken",
+      value: function registerToken(payload) {
+        if (!payload) return;
+        payload = this.addSystemDataToObject(payload, true);
+        payload = JSON.stringify(payload);
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]));
+        RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
+
+        StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
+      }
+    }, {
       key: "processEvent",
       value: function processEvent(data) {
         _classPrivateFieldLooseBase(this, _addToLocalEventMap)[_addToLocalEventMap](data.evtName);
@@ -4576,20 +4597,12 @@
           } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
             subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
             subscriptionData.browser = 'Firefox';
-          } // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
+          }
+
+          StorageManager$1.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData); // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
 
           {
-            var payload = subscriptionData;
-            payload = _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].addSystemDataToObject(payload, true);
-            payload = JSON.stringify(payload);
-
-            var pageLoadUrl = _classPrivateFieldLooseBase(_this3, _account$4)[_account$4].dataPostURL;
-
-            pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8]));
-            RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
-
-            StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
+            _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].registerToken(subscriptionData);
           }
 
           if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {

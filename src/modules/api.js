@@ -1,4 +1,4 @@
-import { COOKIE_EXPIRY, FIRE_PUSH_UNREGISTERED, GCOOKIE_NAME, KCOOKIE_NAME, LRU_CACHE_SIZE, USEIP_KEY } from '../util/constants'
+import { COOKIE_EXPIRY, FIRE_PUSH_UNREGISTERED, GCOOKIE_NAME, KCOOKIE_NAME, LRU_CACHE_SIZE, PUSH_SUBSCRIPTION_DATA, USEIP_KEY } from '../util/constants'
 import { isValueValid } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import LRUCache from '../util/lruCache'
@@ -57,6 +57,10 @@ export default class CleverTapAPI {
         if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
           const lastGUID = $ct.LRU_CACHE.cache[lastK]
           this.#request.unregisterTokenForGuid(lastGUID)
+
+          // REGISTER TOKEN
+          const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
+          this.#request.registerToken(payload)
         }
       }
 

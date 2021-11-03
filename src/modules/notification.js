@@ -2,6 +2,7 @@ import { StorageManager, $ct } from '../util/storage'
 import { isObject } from '../util/datatypes'
 import RequestDispatcher from '../util/requestDispatcher'
 import {
+  PUSH_SUBSCRIPTION_DATA,
   WEBPUSH_LS_KEY
 } from '../util/constants'
 import {
@@ -137,19 +138,13 @@ export default class NotificationHandler extends Array {
               subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
               subscriptionData.browser = 'Firefox'
             }
+            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+
             // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
             //     || sessionObj['p'] === 2 || sessionObj['p'] === 3 || sessionObj['p'] === 4 || sessionObj['p'] === 5;
             const shouldSendToken = true
             if (shouldSendToken) {
-              let payload = subscriptionData
-              payload = this.#request.addSystemDataToObject(payload, true)
-              payload = JSON.stringify(payload)
-              let pageLoadUrl = this.#account.dataPostURL
-              pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-              pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
-              RequestDispatcher.fireRequest(pageLoadUrl)
-              // set in localstorage
-              StorageManager.save(WEBPUSH_LS_KEY, 'ok')
+              this.#request.registerToken(subscriptionData)
             }
 
             if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
