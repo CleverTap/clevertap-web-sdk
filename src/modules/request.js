@@ -1,4 +1,4 @@
-import { CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, WEBPUSH_LS_KEY } from '../util/constants'
+import { CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY } from '../util/constants'
 import { isObjectEmpty, isValueValid, removeUnsupportedChars } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
@@ -141,6 +141,10 @@ export default class RequestManager {
 
     StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
     RequestDispatcher.fireRequest(pageLoadUrl, true)
+
+    // REGISTER TOKEN
+    const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
+    this.registerToken(payload)
   }
 
   registerToken (payload) {

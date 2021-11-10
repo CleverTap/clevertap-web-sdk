@@ -1,16 +1,11 @@
 import { StorageManager, $ct } from '../util/storage'
 import { isObject } from '../util/datatypes'
-import RequestDispatcher from '../util/requestDispatcher'
 import {
-  PUSH_SUBSCRIPTION_DATA,
-  WEBPUSH_LS_KEY
+  PUSH_SUBSCRIPTION_DATA
 } from '../util/constants'
 import {
-  compressData,
   urlBase64ToUint8Array
 } from '../util/encoder'
-
-import { addToURL } from '../util/url'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -86,16 +81,9 @@ export default class NotificationHandler extends Array {
             const subscriptionData = JSON.parse(JSON.stringify(subscription))
             subscriptionData.endpoint = subscription.deviceToken
             subscriptionData.browser = 'Safari'
+            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
 
-            let payload = subscriptionData
-            payload = this.#request.addSystemDataToObject(payload, true)
-            payload = JSON.stringify(payload)
-            let pageLoadUrl = this.#account.dataPostURL
-            pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
-            RequestDispatcher.fireRequest(pageLoadUrl)
-            // set in localstorage
-            StorageManager.save(WEBPUSH_LS_KEY, 'ok')
+            this.#request.registerToken(subscriptionData)
             this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
           } else if (subscription.permission === 'denied') {
             this.#logger.info('Error subscribing to Safari web push')

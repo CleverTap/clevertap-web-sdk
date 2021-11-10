@@ -41,7 +41,7 @@ export const WZRK_ID = 'wzrk_id'
 export const NOTIFICATION_VIEWED = 'Notification Viewed'
 export const NOTIFICATION_CLICKED = 'Notification Clicked'
 export const FIRE_PUSH_UNREGISTERED = 'WZRK_FPU'
-export const PUSH_SUBSCRIPTION_DATA = 'PUSH_SUBSCRIPTION_DATA'
+export const PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD' // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
 
 export const SYSTEM_EVENTS = [
   'Stayed',

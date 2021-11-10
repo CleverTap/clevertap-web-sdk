@@ -117,6 +117,7 @@ export default class UserLoginHandler extends Array {
 
           const lastK = $ct.LRU_CACHE.getSecondLastKey()
           if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+            // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
             const lastGUID = $ct.LRU_CACHE.cache[lastK]
             this.#request.unregisterTokenForGuid(lastGUID)
           }

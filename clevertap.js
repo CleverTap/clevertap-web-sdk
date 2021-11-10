@@ -453,7 +453,8 @@
   var NOTIFICATION_VIEWED = 'Notification Viewed';
   var NOTIFICATION_CLICKED = 'Notification Clicked';
   var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
-  var PUSH_SUBSCRIPTION_DATA = 'PUSH_SUBSCRIPTION_DATA';
+  var PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD'; // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
+
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
@@ -1113,12 +1114,7 @@
             if (StorageManager$1.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
               var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
-              _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID); // REGISTER TOKEN
-
-
-              var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA);
-
-              _classPrivateFieldLooseBase(this, _request)[_request].registerToken(payload);
+              _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
             }
           }
 
@@ -2789,6 +2785,7 @@
           var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
           if (StorageManager$1.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+            // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
             var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
             _classPrivateFieldLooseBase(_this2, _request$3)[_request$3].unregisterTokenForGuid(lastGUID);
@@ -4175,7 +4172,10 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
         StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
-        RequestDispatcher.fireRequest(pageLoadUrl, true);
+        RequestDispatcher.fireRequest(pageLoadUrl, true); // REGISTER TOKEN
+
+        var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA);
+        this.registerToken(payload);
       }
     }, {
       key: "registerToken",
@@ -4539,17 +4539,9 @@
           var subscriptionData = JSON.parse(JSON.stringify(subscription));
           subscriptionData.endpoint = subscription.deviceToken;
           subscriptionData.browser = 'Safari';
-          var payload = subscriptionData;
-          payload = _classPrivateFieldLooseBase(_this2, _request$5)[_request$5].addSystemDataToObject(payload, true);
-          payload = JSON.stringify(payload);
+          StorageManager$1.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
-          var pageLoadUrl = _classPrivateFieldLooseBase(_this2, _account$4)[_account$4].dataPostURL;
-
-          pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(_this2, _logger$8)[_logger$8]));
-          RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
-
-          StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
+          _classPrivateFieldLooseBase(_this2, _request$5)[_request$5].registerToken(subscriptionData);
 
           _classPrivateFieldLooseBase(_this2, _logger$8)[_logger$8].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
         } else if (subscription.permission === 'denied') {
