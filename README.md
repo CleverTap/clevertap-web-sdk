@@ -5,6 +5,10 @@
 # CleverTap Web SDK 
 
 ![npm version](https://img.shields.io/npm/v/clevertap-web-sdk)
+<a href="https://github.com/CleverTap/clevertap-web-sdk/releases">
+    <img src="https://img.shields.io/github/release/CleverTap/clevertap-web-sdk.svg" />
+</a>
+[![npm downloads](https://img.shields.io/npm/dm/clevertap-web-sdk.svg)](https://www.npmjs.com/package/clevertap-web-sdk)
 
 ## 👋 Introduction
 
