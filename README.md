@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/CleverTap/clevertap-ios-sdk/blob/master/docs/images/clevertap-logo.png" width = "50%"/>
+</p>
+
 # CleverTap Web SDK 
 
 ![npm version](https://img.shields.io/npm/v/clevertap-web-sdk)
@@ -16,7 +20,7 @@ To get started, sign up [here](https://clevertap.com/live-product-demo/)
 
 CleverTap Web SDK is available as an npm package or as a script to manually add to your website.
 
-### ___Use a package manager___
+### Use a package manager
 
 ```npm install clevertap-web-sdk --save```
 
@@ -24,7 +28,7 @@ or
 
 ```yarn add clevertap-web-sdk```
 
-### ___Manually add the script___
+### Manually add the script
 
 ```html
 <script type="text/javascript">
