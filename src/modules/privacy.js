@@ -54,8 +54,10 @@ export default class Privacy extends Array {
       const privacyObj = privacyArr[0]
       let data = {}
       const profileObj = {}
-      const optOut = privacyObj[OPTOUT_KEY]
+      var optOut = false
+
       if (privacyObj.hasOwnProperty(OPTOUT_KEY)) {
+        optOut = privacyObj[OPTOUT_KEY]
         if (typeof optOut === 'boolean') {
           profileObj[CT_OPTOUT_KEY] = optOut
           // should be true when user wants to opt in
@@ -64,9 +66,8 @@ export default class Privacy extends Array {
       }
       if (privacyObj.hasOwnProperty(USEIP_KEY)) {
         const useIP = privacyObj[USEIP_KEY]
-        if (typeof useIP === 'boolean') {
-          StorageManager.setMetaProp(USEIP_KEY, useIP)
-        }
+        const shouldUseIP = (typeof useIP === 'boolean') ? useIP : false
+        StorageManager.setMetaProp(USEIP_KEY, shouldUseIP)
       }
       if (!isObjectEmpty(profileObj)) {
         data.type = 'profile'

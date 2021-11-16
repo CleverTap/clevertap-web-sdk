@@ -1,4 +1,4 @@
-import { CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME } from '../util/constants'
+import { CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY } from '../util/constants'
 import { isObjectEmpty, isValueValid, removeUnsupportedChars } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
@@ -141,6 +141,23 @@ export default class RequestManager {
 
     StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
     RequestDispatcher.fireRequest(pageLoadUrl, true)
+
+    // REGISTER TOKEN
+    const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
+    this.registerToken(payload)
+  }
+
+  registerToken (payload) {
+    if (!payload) return
+
+    payload = this.addSystemDataToObject(payload, true)
+    payload = JSON.stringify(payload)
+    let pageLoadUrl = this.#account.dataPostURL
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
+    RequestDispatcher.fireRequest(pageLoadUrl)
+    // set in localstorage
+    StorageManager.save(WEBPUSH_LS_KEY, 'ok')
   }
 
   processEvent (data) {

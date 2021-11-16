@@ -453,6 +453,8 @@
   var NOTIFICATION_VIEWED = 'Notification Viewed';
   var NOTIFICATION_CLICKED = 'Notification Clicked';
   var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
+  var PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD'; // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
+
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
@@ -1861,6 +1863,8 @@
 
   var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
 
+  var _addUseIPToRequest = _classPrivateFieldLooseKey("addUseIPToRequest");
+
   var _addARPToRequest = _classPrivateFieldLooseKey("addARPToRequest");
 
   var RequestDispatcher = /*#__PURE__*/function () {
@@ -1890,6 +1894,16 @@
     }
 
     return url;
+  };
+
+  var _addUseIPToRequest2 = function _addUseIPToRequest2(pageLoadUrl) {
+    var useIP = StorageManager$1.getMetaProp(USEIP_KEY);
+
+    if (typeof useIP !== 'boolean') {
+      useIP = false;
+    }
+
+    return addToURL(pageLoadUrl, USEIP_KEY, useIP ? 'true' : 'false');
   };
 
   var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
@@ -1929,6 +1943,7 @@
       url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
     }
 
+    url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
     // TODO: Figure out a better way to handle plugin check
 
@@ -1966,6 +1981,9 @@
   });
   Object.defineProperty(RequestDispatcher, _dropRequestDueToOptOut, {
     value: _dropRequestDueToOptOut2
+  });
+  Object.defineProperty(RequestDispatcher, _addUseIPToRequest, {
+    value: _addUseIPToRequest2
   });
   Object.defineProperty(RequestDispatcher, _addARPToRequest, {
     value: _addARPToRequest2
@@ -2767,6 +2785,7 @@
           var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
           if (StorageManager$1.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+            // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
             var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
             _classPrivateFieldLooseBase(_this2, _request$3)[_request$3].unregisterTokenForGuid(lastGUID);
@@ -4153,7 +4172,25 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
         StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
-        RequestDispatcher.fireRequest(pageLoadUrl, true);
+        RequestDispatcher.fireRequest(pageLoadUrl, true); // REGISTER TOKEN
+
+        var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA);
+        this.registerToken(payload);
+      }
+    }, {
+      key: "registerToken",
+      value: function registerToken(payload) {
+        if (!payload) return;
+        payload = this.addSystemDataToObject(payload, true);
+        payload = JSON.stringify(payload);
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]));
+        RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
+
+        StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
       }
     }, {
       key: "processEvent",
@@ -4285,9 +4322,11 @@
       var privacyObj = privacyArr[0];
       var data = {};
       var profileObj = {};
-      var optOut = privacyObj[OPTOUT_KEY];
+      var optOut = false;
 
       if (privacyObj.hasOwnProperty(OPTOUT_KEY)) {
+        optOut = privacyObj[OPTOUT_KEY];
+
         if (typeof optOut === 'boolean') {
           profileObj[CT_OPTOUT_KEY] = optOut; // should be true when user wants to opt in
 
@@ -4297,10 +4336,8 @@
 
       if (privacyObj.hasOwnProperty(USEIP_KEY)) {
         var useIP = privacyObj[USEIP_KEY];
-
-        if (typeof useIP === 'boolean') {
-          StorageManager$1.setMetaProp(USEIP_KEY, useIP);
-        }
+        var shouldUseIP = typeof useIP === 'boolean' ? useIP : false;
+        StorageManager$1.setMetaProp(USEIP_KEY, shouldUseIP);
       }
 
       if (!isObjectEmpty(profileObj)) {
@@ -4502,17 +4539,9 @@
           var subscriptionData = JSON.parse(JSON.stringify(subscription));
           subscriptionData.endpoint = subscription.deviceToken;
           subscriptionData.browser = 'Safari';
-          var payload = subscriptionData;
-          payload = _classPrivateFieldLooseBase(_this2, _request$5)[_request$5].addSystemDataToObject(payload, true);
-          payload = JSON.stringify(payload);
+          StorageManager$1.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
-          var pageLoadUrl = _classPrivateFieldLooseBase(_this2, _account$4)[_account$4].dataPostURL;
-
-          pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(_this2, _logger$8)[_logger$8]));
-          RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
-
-          StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
+          _classPrivateFieldLooseBase(_this2, _request$5)[_request$5].registerToken(subscriptionData);
 
           _classPrivateFieldLooseBase(_this2, _logger$8)[_logger$8].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
         } else if (subscription.permission === 'denied') {
@@ -4560,20 +4589,12 @@
           } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
             subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
             subscriptionData.browser = 'Firefox';
-          } // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
+          }
+
+          StorageManager$1.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData); // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
 
           {
-            var payload = subscriptionData;
-            payload = _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].addSystemDataToObject(payload, true);
-            payload = JSON.stringify(payload);
-
-            var pageLoadUrl = _classPrivateFieldLooseBase(_this3, _account$4)[_account$4].dataPostURL;
-
-            pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8]));
-            RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
-
-            StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
+            _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].registerToken(subscriptionData);
           }
 
           if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
