@@ -4554,6 +4554,8 @@
   var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
     var _this3 = this;
 
+    var registrationScope = '';
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register(serviceWorkerPath).then(function (registration) {
         if (typeof __wzrk_account_id !== 'undefined') {
@@ -4567,8 +4569,34 @@
           });
         }
 
-        return navigator.serviceWorker.ready;
+        registrationScope = registration.scope; // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
+        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
+        // OR getRegistrations PROMISE IF ITS FIREFOX
+
+        var rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
+        var isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
+
+        if (isServiceWorkerAtRoot) {
+          return navigator.serviceWorker.ready;
+        } else {
+          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+            return new Promise(function (resolve) {
+              return setTimeout(function () {
+                return resolve(registration);
+              }, 5000);
+            });
+          } else {
+            return navigator.serviceWorker.getRegistrations();
+          }
+        }
       }).then(function (serviceWorkerRegistration) {
+        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
+        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
+          serviceWorkerRegistration = serviceWorkerRegistration.filter(function (i) {
+            return i.scope === registrationScope;
+          })[0];
+        }
+
         var subscribeObj = {
           userVisibleOnly: true
         };
