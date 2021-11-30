@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.1.0] - 2 Dec, 2021
+## [1.1.0] - 1 Dec, 2021
 - Adds new Public API to record Notification Clicked Event for Custom Web Popups
 - Handle Shopify websites for serviceworker registration ready state
 - Use `clevertap-prod.com` instead of `wzrkt.com` as endpoint
