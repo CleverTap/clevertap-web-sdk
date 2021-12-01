@@ -1,4 +1,4 @@
-import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH } from './constants'
+import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY } from './constants'
 import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
 import { StorageManager, $ct } from './storage'
@@ -32,6 +32,7 @@ export default class RequestDispatcher {
       url = this.#addARPToRequest(url, skipARP)
     }
 
+    url = this.#addUseIPToRequest(url)
     url = addToURL(url, 'r', new Date().getTime()) // add epoch to beat caching of the URL
     // TODO: Figure out a better way to handle plugin check
     if (window.clevertap?.hasOwnProperty('plugin') || window.wizrocket?.hasOwnProperty('plugin')) {
@@ -44,9 +45,14 @@ export default class RequestDispatcher {
     }
 
     // TODO: Try using Function constructor instead of appending script.
+    var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
+    while (ctCbScripts[0]) {
+      ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
+    }
     const s = document.createElement('script')
     s.setAttribute('type', 'text/javascript')
     s.setAttribute('src', url)
+    s.setAttribute('class', 'ct-jp-cb')
     s.setAttribute('rel', 'nofollow')
     s.async = true
 
@@ -65,6 +71,14 @@ export default class RequestDispatcher {
     }
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH
   }
+
+  static #addUseIPToRequest (pageLoadUrl) {
+    var useIP = StorageManager.getMetaProp(USEIP_KEY)
+    if (typeof useIP !== 'boolean') {
+      useIP = false
+    }
+    return addToURL(pageLoadUrl, USEIP_KEY, useIP ? 'true' : 'false')
+  };
 
   static #addARPToRequest (url, skipResARP) {
     if (skipResARP === true) {

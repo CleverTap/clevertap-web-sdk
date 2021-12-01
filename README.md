@@ -1,6 +1,14 @@
+<p align="center">
+  <img src="https://github.com/CleverTap/clevertap-ios-sdk/blob/master/docs/images/clevertap-logo.png" width = "50%"/>
+</p>
+
 # CleverTap Web SDK 
 
 ![npm version](https://img.shields.io/npm/v/clevertap-web-sdk)
+<a href="https://github.com/CleverTap/clevertap-web-sdk/releases">
+    <img src="https://img.shields.io/github/release/CleverTap/clevertap-web-sdk.svg" />
+</a>
+[![npm downloads](https://img.shields.io/npm/dm/clevertap-web-sdk.svg)](https://www.npmjs.com/package/clevertap-web-sdk)
 
 ## 👋 Introduction
 
@@ -16,7 +24,7 @@ To get started, sign up [here](https://clevertap.com/live-product-demo/)
 
 CleverTap Web SDK is available as an npm package or as a script to manually add to your website.
 
-### ___Use a package manager___
+### Use a package manager
 
 ```npm install clevertap-web-sdk --save```
 
@@ -24,7 +32,7 @@ or
 
 ```yarn add clevertap-web-sdk```
 
-### ___Manually add the script___
+### Manually add the script
 
 ```html
 <script type="text/javascript">
@@ -162,15 +170,15 @@ clevertap.setLogLevel(LOG_LEVEL)
 
 
 ## 𝌡 Example Usage
-* A [react application](https://github.com/CleverTap/clevertap-web-sdk/tree/master/example-apps/react) showing the integration of our SDK in a create react app project.
-* An [angular application](https://github.com/CleverTap/clevertap-web-sdk/tree/master/example-apps/angular) showing the integration of our SDK in an Angular CLI generated project.
+* A [React Application](/example-apps/react) showing the integration of our SDK in a create react app project.
+* An [Angular Application](/example-apps/angular) showing the integration of our SDK in an Angular CLI generated project.
 
 
 ## 🆕 Change Log
 
-Refer to the [CleverTap Web SDK Change Log](https://github.com/CleverTap/clevertap-web-sdk/blob/master/CHANGELOG.md).
+Refer to the [CleverTap Web SDK Change Log](/CHANGELOG.md).
 
 ## 📄 License
 
-CleverTap Web SDK is released under the MIT license. See [LICENSE](https://github.com/CleverTap/clevertap-web-sdk/blob/master/LICENSE) for details.
+CleverTap Web SDK is released under the MIT license. See [LICENSE](/LICENSE) for details.
 

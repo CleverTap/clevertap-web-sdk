@@ -36,12 +36,18 @@ export const FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000 // 2 mins
 export const CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000 // 5 mins
 export const GROUP_SUBSCRIPTION_REQUEST_ID = '2'
 export const categoryLongKey = 'cUsY'
+export const WZRK_PREFIX = 'wzrk_'
+export const WZRK_ID = 'wzrk_id'
+export const NOTIFICATION_VIEWED = 'Notification Viewed'
+export const NOTIFICATION_CLICKED = 'Notification Clicked'
+export const FIRE_PUSH_UNREGISTERED = 'WZRK_FPU'
+export const PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD' // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
 
 export const SYSTEM_EVENTS = [
   'Stayed',
   'UTM Visited',
   'App Launched',
   'Notification Sent',
-  'Notification Viewed',
-  'Notification Clicked'
+  NOTIFICATION_VIEWED,
+  NOTIFICATION_CLICKED
 ]

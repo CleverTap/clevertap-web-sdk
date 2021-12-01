@@ -42,6 +42,55 @@
     return Constructor;
   }
 
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
+  }
+
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -176,6 +225,80 @@
     };
   }
 
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+
+    return arr2;
+  }
+
+  function _createForOfIteratorHelper(o, allowArrayLike) {
+    var it;
+
+    if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) {
+      if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+        if (it) o = it;
+        var i = 0;
+
+        var F = function () {};
+
+        return {
+          s: F,
+          n: function () {
+            if (i >= o.length) return {
+              done: true
+            };
+            return {
+              done: false,
+              value: o[i++]
+            };
+          },
+          e: function (e) {
+            throw e;
+          },
+          f: F
+        };
+      }
+
+      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+    }
+
+    var normalCompletion = true,
+        didErr = false,
+        err;
+    return {
+      s: function () {
+        it = o[Symbol.iterator]();
+      },
+      n: function () {
+        var step = it.next();
+        normalCompletion = step.done;
+        return step;
+      },
+      e: function (e) {
+        didErr = true;
+        err = e;
+      },
+      f: function () {
+        try {
+          if (!normalCompletion && it.return != null) it.return();
+        } finally {
+          if (didErr) throw err;
+        }
+      }
+    };
+  }
+
   var id = 0;
 
   function _classPrivateFieldLooseKey(name) {
@@ -190,8 +313,9 @@
     return receiver;
   }
 
-  var TARGET_DOMAIN = 'wzrkt.com';
+  var TARGET_DOMAIN = 'clevertap-prod.com';
   var TARGET_PROTOCOL = 'https:';
+  var DEFAULT_REGION = 'eu1';
 
   var _accountId = _classPrivateFieldLooseKey("accountId");
 
@@ -263,7 +387,7 @@
           return "".concat(this.region, ".").concat(this.targetDomain);
         }
 
-        return this.targetDomain;
+        return "".concat(DEFAULT_REGION, ".").concat(this.targetDomain);
       }
     }, {
       key: "dataPostURL",
@@ -324,7 +448,14 @@
 
   var GROUP_SUBSCRIPTION_REQUEST_ID = '2';
   var categoryLongKey = 'cUsY';
-  var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', 'Notification Viewed', 'Notification Clicked'];
+  var WZRK_PREFIX = 'wzrk_';
+  var WZRK_ID = 'wzrk_id';
+  var NOTIFICATION_VIEWED = 'Notification Viewed';
+  var NOTIFICATION_CLICKED = 'Notification Clicked';
+  var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
+  var PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD'; // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
+
+  var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
     return typeof input === 'string' || input instanceof String;
@@ -598,7 +729,12 @@
             var testBroadDomain = '';
 
             for (var idx = domainParts.length - 1; idx >= 0; idx--) {
-              testBroadDomain = '.' + domainParts[idx] + testBroadDomain; // only needed if the cookie already exists and needs to be updated. See note above.
+              if (idx === 0) {
+                testBroadDomain = domainParts[idx] + testBroadDomain;
+              } else {
+                testBroadDomain = '.' + domainParts[idx] + testBroadDomain;
+              } // only needed if the cookie already exists and needs to be updated. See note above.
+
 
               if (this.readCookie(name)) {
                 // no guarantee that browser will delete cookie, hence create short lived cookies
@@ -967,6 +1103,7 @@
               var guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
 
               if (!guidFromLRUCache) {
+                StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true);
                 $ct.LRU_CACHE.set(kIdFromLS.id, global);
               }
             }
@@ -974,7 +1111,7 @@
             StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, global);
             var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
-            if (lastK !== -1) {
+            if (StorageManager$1.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
               var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
               _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
@@ -1726,6 +1863,8 @@
 
   var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
 
+  var _addUseIPToRequest = _classPrivateFieldLooseKey("addUseIPToRequest");
+
   var _addARPToRequest = _classPrivateFieldLooseKey("addARPToRequest");
 
   var RequestDispatcher = /*#__PURE__*/function () {
@@ -1755,6 +1894,16 @@
     }
 
     return url;
+  };
+
+  var _addUseIPToRequest2 = function _addUseIPToRequest2(pageLoadUrl) {
+    var useIP = StorageManager$1.getMetaProp(USEIP_KEY);
+
+    if (typeof useIP !== 'boolean') {
+      useIP = false;
+    }
+
+    return addToURL(pageLoadUrl, USEIP_KEY, useIP ? 'true' : 'false');
   };
 
   var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
@@ -1794,6 +1943,7 @@
       url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
     }
 
+    url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
     // TODO: Figure out a better way to handle plugin check
 
@@ -1808,9 +1958,16 @@
     } // TODO: Try using Function constructor instead of appending script.
 
 
+    var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
+
+    while (ctCbScripts[0]) {
+      ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
+    }
+
     var s = document.createElement('script');
     s.setAttribute('type', 'text/javascript');
     s.setAttribute('src', url);
+    s.setAttribute('class', 'ct-jp-cb');
     s.setAttribute('rel', 'nofollow');
     s.async = true;
     document.getElementsByTagName('head')[0].appendChild(s);
@@ -1824,6 +1981,9 @@
   });
   Object.defineProperty(RequestDispatcher, _dropRequestDueToOptOut, {
     value: _dropRequestDueToOptOut2
+  });
+  Object.defineProperty(RequestDispatcher, _addUseIPToRequest, {
+    value: _addUseIPToRequest2
   });
   Object.defineProperty(RequestDispatcher, _addARPToRequest, {
     value: _addARPToRequest2
@@ -2565,6 +2725,7 @@
     var _this2 = this;
 
     var sendOULFlag = true;
+    StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
 
     var addToK = function addToK(ids) {
       var k = StorageManager$1.readFromLSorCookie(KCOOKIE_NAME);
@@ -2610,10 +2771,11 @@
 
         if (foundInCache) {
           if (kId !== $ct.LRU_CACHE.getLastKey()) {
-            // Same User
+            // New User found
             _classPrivateFieldLooseBase(_this2, _handleCookieFromCache)[_handleCookieFromCache]();
           } else {
             sendOULFlag = false;
+            StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
           }
 
           var gFromCache = $ct.LRU_CACHE.get(kId);
@@ -2622,7 +2784,8 @@
           _classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie = gFromCache;
           var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
-          if (lastK !== -1) {
+          if (StorageManager$1.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+            // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
             var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
             _classPrivateFieldLooseBase(_this2, _request$3)[_request$3].unregisterTokenForGuid(lastGUID);
@@ -2638,6 +2801,7 @@
             }
           }
 
+          StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
           kId = ids[0];
         }
       }
@@ -2888,7 +3052,7 @@
 
         var _sessionObj = campObj[_session.sessionId];
 
-        if (_sessionObj != null) {
+        if (_sessionObj) {
           var campaignSessionCount = _sessionObj[campaignId];
           var totalSessionCount = _sessionObj.tc; // dnd
 
@@ -3016,7 +3180,7 @@
             } // pass on the gcookie|page|scookieId for capturing the click event
 
 
-            if (targetingMsgJson.display.window === '1') {
+            if (targetingMsgJson.display.window === 1) {
               window.open(onClick, '_blank');
             } else {
               window.location = onClick;
@@ -3046,10 +3210,8 @@
     var incrementImpression = function incrementImpression(targetingMsgJson) {
       var data = {};
       data.type = 'event';
-      data.evtName = 'Notification Viewed';
-      data.evtData = {
-        wzrk_id: targetingMsgJson.wzrk_id
-      };
+      data.evtName = NOTIFICATION_VIEWED;
+      data.evtData = _defineProperty({}, WZRK_ID, targetingMsgJson.wzrk_id);
 
       _request.processEvent(data);
     };
@@ -3130,7 +3292,7 @@
 
       if (targetingMsgJson.msgContent.type === 1) {
         html = targetingMsgJson.msgContent.html;
-        html = html.replace('##campaignId##', campaignId);
+        html = html.replace(/##campaignId##/g, campaignId);
       } else {
         var css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + 'td{vertical-align:top;}' + 'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' + '</style>';
         var bgColor, textColor, btnBg, leftTd, btColor;
@@ -3249,7 +3411,7 @@
               } // pass on the gcookie|page|scookieId for capturing the click event
 
 
-              if (targetingMsgJson.display.window === '1') {
+              if (targetingMsgJson.display.window === 1) {
                 window.open(onClick, '_blank');
               } else {
                 window.location = onClick;
@@ -3266,6 +3428,63 @@
         }
       } else {
         renderFooterNotification(targetingMsgJson);
+
+        if (window.clevertap.hasOwnProperty('popupCallback') && typeof window.clevertap.popupCallback !== 'undefined' && typeof window.clevertap.popupCallback === 'function') {
+          var popupCallback = window.clevertap.popupCallback;
+          var _inaObj = {};
+          _inaObj.msgContent = targetingMsgJson.msgContent;
+          _inaObj.msgId = targetingMsgJson.wzrk_id;
+          var msgCTkv = [];
+
+          for (var wzrkPrefixKey in targetingMsgJson) {
+            // ADD WZRK PREFIX KEY VALUE PAIRS
+            if (wzrkPrefixKey.startsWith(WZRK_PREFIX) && wzrkPrefixKey !== WZRK_ID) {
+              var wzrkJson = _defineProperty({}, wzrkPrefixKey, targetingMsgJson[wzrkPrefixKey]);
+
+              msgCTkv.push(wzrkJson);
+            }
+          }
+
+          if (msgCTkv.length > 0) {
+            _inaObj.msgCTkv = msgCTkv;
+          }
+
+          if (targetingMsgJson.display.kv != null) {
+            _inaObj.kv = targetingMsgJson.display.kv;
+          } // PUBLIC API TO RECORD CLICKED EVENT
+
+
+          window.clevertap.raisePopupNotificationClicked = function (notificationData) {
+            if (!notificationData || !notificationData.msgId) {
+              return;
+            }
+
+            var eventData = {};
+            eventData.type = 'event';
+            eventData.evtName = NOTIFICATION_CLICKED;
+            eventData.evtData = _defineProperty({}, WZRK_ID, notificationData.msgId); // WZRK PREFIX KEY VALUE PAIRS
+
+            if (notificationData.msgCTkv) {
+              var _iterator = _createForOfIteratorHelper(notificationData.msgCTkv),
+                  _step;
+
+              try {
+                for (_iterator.s(); !(_step = _iterator.n()).done;) {
+                  var wzrkPrefixObj = _step.value;
+                  eventData.evtData = _objectSpread2(_objectSpread2({}, eventData.evtData), wzrkPrefixObj);
+                }
+              } catch (err) {
+                _iterator.e(err);
+              } finally {
+                _iterator.f();
+              }
+            }
+
+            _request.processEvent(eventData);
+          };
+
+          popupCallback(_inaObj);
+        }
       }
     };
 
@@ -3334,7 +3553,7 @@
 
       if (targetingMsgJson.msgContent.type === 1) {
         html = targetingMsgJson.msgContent.html;
-        html = html.replace('##campaignId##', campaignId);
+        html = html.replace(/##campaignId##/g, campaignId);
       } else {
         var css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + '#contentDiv .button{padding-top:20px;}' + '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' + '</style>';
         var bgColor, textColor, btnBg, btColor;
@@ -3952,7 +4171,26 @@
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-        RequestDispatcher.fireRequest(pageLoadUrl, true);
+        StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
+        RequestDispatcher.fireRequest(pageLoadUrl, true); // REGISTER TOKEN
+
+        var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA);
+        this.registerToken(payload);
+      }
+    }, {
+      key: "registerToken",
+      value: function registerToken(payload) {
+        if (!payload) return;
+        payload = this.addSystemDataToObject(payload, true);
+        payload = JSON.stringify(payload);
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]));
+        RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
+
+        StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
       }
     }, {
       key: "processEvent",
@@ -4084,9 +4322,11 @@
       var privacyObj = privacyArr[0];
       var data = {};
       var profileObj = {};
-      var optOut = privacyObj[OPTOUT_KEY];
+      var optOut = false;
 
       if (privacyObj.hasOwnProperty(OPTOUT_KEY)) {
+        optOut = privacyObj[OPTOUT_KEY];
+
         if (typeof optOut === 'boolean') {
           profileObj[CT_OPTOUT_KEY] = optOut; // should be true when user wants to opt in
 
@@ -4096,10 +4336,8 @@
 
       if (privacyObj.hasOwnProperty(USEIP_KEY)) {
         var useIP = privacyObj[USEIP_KEY];
-
-        if (typeof useIP === 'boolean') {
-          StorageManager$1.setMetaProp(USEIP_KEY, useIP);
-        }
+        var shouldUseIP = typeof useIP === 'boolean' ? useIP : false;
+        StorageManager$1.setMetaProp(USEIP_KEY, shouldUseIP);
       }
 
       if (!isObjectEmpty(profileObj)) {
@@ -4301,17 +4539,9 @@
           var subscriptionData = JSON.parse(JSON.stringify(subscription));
           subscriptionData.endpoint = subscription.deviceToken;
           subscriptionData.browser = 'Safari';
-          var payload = subscriptionData;
-          payload = _classPrivateFieldLooseBase(_this2, _request$5)[_request$5].addSystemDataToObject(payload, true);
-          payload = JSON.stringify(payload);
+          StorageManager$1.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
-          var pageLoadUrl = _classPrivateFieldLooseBase(_this2, _account$4)[_account$4].dataPostURL;
-
-          pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(_this2, _logger$8)[_logger$8]));
-          RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
-
-          StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
+          _classPrivateFieldLooseBase(_this2, _request$5)[_request$5].registerToken(subscriptionData);
 
           _classPrivateFieldLooseBase(_this2, _logger$8)[_logger$8].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
         } else if (subscription.permission === 'denied') {
@@ -4324,10 +4554,49 @@
   var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
     var _this3 = this;
 
+    var registrationScope = '';
+
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register(serviceWorkerPath).then(function () {
-        return navigator.serviceWorker.ready;
+      navigator.serviceWorker.register(serviceWorkerPath).then(function (registration) {
+        if (typeof __wzrk_account_id !== 'undefined') {
+          // eslint-disable-line
+          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
+          // hence add a timeout and hope serviceWroker is ready within that time.
+          return new Promise(function (resolve) {
+            return setTimeout(function () {
+              return resolve(registration);
+            }, 5000);
+          });
+        }
+
+        registrationScope = registration.scope; // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
+        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
+        // OR getRegistrations PROMISE IF ITS FIREFOX
+
+        var rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
+        var isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
+
+        if (isServiceWorkerAtRoot) {
+          return navigator.serviceWorker.ready;
+        } else {
+          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+            return new Promise(function (resolve) {
+              return setTimeout(function () {
+                return resolve(registration);
+              }, 5000);
+            });
+          } else {
+            return navigator.serviceWorker.getRegistrations();
+          }
+        }
       }).then(function (serviceWorkerRegistration) {
+        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
+        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
+          serviceWorkerRegistration = serviceWorkerRegistration.filter(function (i) {
+            return i.scope === registrationScope;
+          })[0];
+        }
+
         var subscribeObj = {
           userVisibleOnly: true
         };
@@ -4348,20 +4617,12 @@
           } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
             subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
             subscriptionData.browser = 'Firefox';
-          } // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
+          }
+
+          StorageManager$1.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData); // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
 
           {
-            var payload = subscriptionData;
-            payload = _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].addSystemDataToObject(payload, true);
-            payload = JSON.stringify(payload);
-
-            var pageLoadUrl = _classPrivateFieldLooseBase(_this3, _account$4)[_account$4].dataPostURL;
-
-            pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8]));
-            RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
-
-            StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
+            _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].registerToken(subscriptionData);
           }
 
           if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
@@ -5067,7 +5328,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.0.0'
+          lib: 'web-sdk-v1.1.0'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
@@ -5143,3 +5404,4 @@
   return clevertap;
 
 })));
+//# sourceMappingURL=clevertap.js.map

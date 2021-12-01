@@ -1,15 +1,11 @@
 import { StorageManager, $ct } from '../util/storage'
 import { isObject } from '../util/datatypes'
-import RequestDispatcher from '../util/requestDispatcher'
 import {
-  WEBPUSH_LS_KEY
+  PUSH_SUBSCRIPTION_DATA
 } from '../util/constants'
 import {
-  compressData,
   urlBase64ToUint8Array
 } from '../util/encoder'
-
-import { addToURL } from '../util/url'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -85,16 +81,9 @@ export default class NotificationHandler extends Array {
             const subscriptionData = JSON.parse(JSON.stringify(subscription))
             subscriptionData.endpoint = subscription.deviceToken
             subscriptionData.browser = 'Safari'
+            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
 
-            let payload = subscriptionData
-            payload = this.#request.addSystemDataToObject(payload, true)
-            payload = JSON.stringify(payload)
-            let pageLoadUrl = this.#account.dataPostURL
-            pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
-            RequestDispatcher.fireRequest(pageLoadUrl)
-            // set in localstorage
-            StorageManager.save(WEBPUSH_LS_KEY, 'ok')
+            this.#request.registerToken(subscriptionData)
             this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
           } else if (subscription.permission === 'denied') {
             this.#logger.info('Error subscribing to Safari web push')
@@ -103,11 +92,40 @@ export default class NotificationHandler extends Array {
     }
   }
 
+  /**
+   * Sets up a service worker for WebPush(chrome/Firefox) push notifications and sends the data to LC
+   */
   #setUpChromeFirefoxNotifications (subscriptionCallback, serviceWorkerPath) {
+    let registrationScope = ''
+
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register(serviceWorkerPath).then(() => {
-        return navigator.serviceWorker.ready
+      navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
+        if (typeof __wzrk_account_id !== 'undefined') { // eslint-disable-line
+          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
+          // hence add a timeout and hope serviceWroker is ready within that time.
+          return new Promise(resolve => setTimeout(() => resolve(registration), 5000))
+        }
+        registrationScope = registration.scope
+
+        // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
+        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
+        // OR getRegistrations PROMISE IF ITS FIREFOX
+        const rootDirRegex = /^(\.?)(\/?)([^/]*).js$/
+        const isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath)
+        if (isServiceWorkerAtRoot) {
+          return navigator.serviceWorker.ready
+        } else {
+          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+            return new Promise(resolve => setTimeout(() => resolve(registration), 5000))
+          } else {
+            return navigator.serviceWorker.getRegistrations()
+          }
+        }
       }).then((serviceWorkerRegistration) => {
+        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
+        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
+          serviceWorkerRegistration = serviceWorkerRegistration.filter((i) => i.scope === registrationScope)[0]
+        }
         const subscribeObj = { userVisibleOnly: true }
 
         if (this.#fcmPublicKey != null) {
@@ -129,19 +147,13 @@ export default class NotificationHandler extends Array {
               subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
               subscriptionData.browser = 'Firefox'
             }
+            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+
             // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
             //     || sessionObj['p'] === 2 || sessionObj['p'] === 3 || sessionObj['p'] === 4 || sessionObj['p'] === 5;
             const shouldSendToken = true
             if (shouldSendToken) {
-              let payload = subscriptionData
-              payload = this.#request.addSystemDataToObject(payload, true)
-              payload = JSON.stringify(payload)
-              let pageLoadUrl = this.#account.dataPostURL
-              pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-              pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
-              RequestDispatcher.fireRequest(pageLoadUrl)
-              // set in localstorage
-              StorageManager.save(WEBPUSH_LS_KEY, 'ok')
+              this.#request.registerToken(subscriptionData)
             }
 
             if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
@@ -153,10 +165,10 @@ export default class NotificationHandler extends Array {
             serviceWorkerRegistration.pushManager.getSubscription().then((subscription) => {
               if (subscription !== null) {
                 subscription.unsubscribe().then((successful) => {
-                // You've successfully unsubscribed
+                  // You've successfully unsubscribed
                   this.#logger.info('Unsubscription successful')
                 }).catch((e) => {
-                // Unsubscription failed
+                  // Unsubscription failed
                   this.#logger.error('Error unsubscribing: ' + e)
                 })
               }
