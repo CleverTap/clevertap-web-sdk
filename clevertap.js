@@ -385,9 +385,13 @@
       get: function get() {
         if (this.region) {
           return "".concat(this.region, ".").concat(this.targetDomain);
-        }
+        } else {
+          if (this.targetDomain === TARGET_DOMAIN) {
+            return "".concat(DEFAULT_REGION, ".").concat(this.targetDomain);
+          }
 
-        return "".concat(DEFAULT_REGION, ".").concat(this.targetDomain);
+          return this.targetDomain;
+        }
       }
     }, {
       key: "dataPostURL",
