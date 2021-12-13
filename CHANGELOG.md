@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 13 Dec, 2021
+- Fixed a bug where default region was prefixed for custom domain.
+
 ## [1.1.0] - 1 Dec, 2021
 - Adds new Public API to record Notification Clicked Event for Custom Web Popups
 - Handle Shopify websites for serviceworker registration ready state

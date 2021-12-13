@@ -1,5 +1,4 @@
 import Account from '../../../src/modules/account'
-import { DEFAULT_REGION } from '../../../src/options'
 
 describe('modules/account', function () {
   describe('constructor', () => {
@@ -16,13 +15,13 @@ describe('modules/account', function () {
       expect(this.account.emailURL).toBe('https://test.clevertap-prod.com/e?r=1')
     })
 
-    test('should initalise accountId with default region and custom target', () => {
+    test('should initalise accountId with custom target', () => {
       this.account = new Account({ id: '123' }, '', 'example.com')
       expect(this.account.id).toBe('123')
       console.log('this.account.dataPostURL', this.account.dataPostURL)
-      expect(this.account.dataPostURL).toBe(`https://${DEFAULT_REGION}.example.com/a?t=96`)
-      expect(this.account.recorderURL).toBe(`https://${DEFAULT_REGION}.example.com/r?r=1`)
-      expect(this.account.emailURL).toBe(`https://${DEFAULT_REGION}.example.com/e?r=1`)
+      expect(this.account.dataPostURL).toBe('https://example.com/a?t=96')
+      expect(this.account.recorderURL).toBe('https://example.com/r?r=1')
+      expect(this.account.emailURL).toBe('https://example.com/e?r=1')
     })
   })
 })
