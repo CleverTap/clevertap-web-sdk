@@ -118,16 +118,20 @@ export class StorageManager {
     } else {
       data = this.readCookie(property)
     }
-    if (data != null && data.trim() !== '') {
-      let value
-      try {
-        value = JSON.parse(decodeURIComponent(data))
-      } catch (err) {
-        value = decodeURIComponent(data)
+    let value
+    if (data != null) {
+      if (typeof data.trim === 'function' && data.trim() !== '') {
+        try {
+          value = JSON.parse(decodeURIComponent(data))
+        } catch (err) {
+          value = decodeURIComponent(data)
+        }
+      } else {
+        value = data
       }
-      $ct.globalCache[property] = value
-      return value
     }
+    $ct.globalCache[property] = value
+    return value
   }
 
   static createBroadCookie (name, value, seconds, domain) {
