@@ -703,18 +703,22 @@
           data = this.readCookie(property);
         }
 
-        if (data != null && data.trim() !== '') {
-          var value;
+        var value;
 
-          try {
-            value = JSON.parse(decodeURIComponent(data));
-          } catch (err) {
-            value = decodeURIComponent(data);
+        if (data != null) {
+          if (typeof data.trim === 'function' && data.trim() !== '') {
+            try {
+              value = JSON.parse(decodeURIComponent(data));
+            } catch (err) {
+              value = decodeURIComponent(data);
+            }
+          } else {
+            value = data;
           }
-
-          $ct.globalCache[property] = value;
-          return value;
         }
+
+        $ct.globalCache[property] = value;
+        return value;
       }
     }, {
       key: "createBroadCookie",
@@ -5332,7 +5336,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.1.0'
+          lib: 'web-sdk-v1.1.1'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
