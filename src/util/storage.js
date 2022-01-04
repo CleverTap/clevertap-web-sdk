@@ -118,7 +118,8 @@ export class StorageManager {
     } else {
       data = this.readCookie(property)
     }
-    if (data != null && data.trim() !== '') {
+
+    if (data !== null && data !== undefined && !(typeof data.trim === 'function' && data.trim() === '')) {
       let value
       try {
         value = JSON.parse(decodeURIComponent(data))
