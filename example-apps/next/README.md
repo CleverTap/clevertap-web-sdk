@@ -34,14 +34,14 @@ Aside from a [workaround](https://github.com/CleverTap/clevertap-web-sdk/issues/
 
 ```js
 async function initializeClevertap(): Promise<CleverTap> {
-  const clevertapModule = await import('clevertap-web-sdk')
+  const clevertap = await import('clevertap-web-sdk')
 
-  // clevertapAPI.default.init(ACCOUNT_ID, TARGET_DOMAIN)
-  // clevertapAPI.privacy.push({ optOut: false })
-  // clevertapAPI.privacy.push({ useIP: false })
-  clevertapModule.default.setLogLevel(3)
+  // clevertap.default.init(ACCOUNT_ID, TARGET_DOMAIN)
+  // clevertap.privacy.push({ optOut: false })
+  // clevertap.privacy.push({ useIP: false })
+  clevertap.default.setLogLevel(3)
 
-  return clevertapModule.default
+  return clevertap.default
 }
 ```
 
