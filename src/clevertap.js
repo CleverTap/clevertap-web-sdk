@@ -143,6 +143,10 @@ export default class CleverTap {
       return this.#device.getGuid()
     }
 
+    this.getAccountID = () => {
+      return clevertap.account?.[0].id
+    }
+
     this.setLogLevel = (l) => {
       this.#logger.logLevel = Number(l)
     }
