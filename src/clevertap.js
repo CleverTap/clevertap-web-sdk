@@ -61,7 +61,7 @@ export default class CleverTap {
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.raiseNotificationClicked = () => {}
     this.#logger = new Logger(logLevels.INFO)
-    this.#account = new Account(clevertap.account?.[0], clevertap.region, clevertap.targetDomain)
+    this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2])
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#session = new SessionManager({
       logger: this.#logger,
@@ -226,7 +226,6 @@ export default class CleverTap {
       // The accountId is present so can init with empty values.
       // Needed to maintain backward compatability with legacy implementations.
       // Npm imports/require will need to call init explictly with accountId
-      console.log('Clevertap Account Id ', clevertap.account?.[0].id)
       this.init()
     }
   }
