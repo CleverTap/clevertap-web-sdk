@@ -144,7 +144,11 @@ export default class CleverTap {
     }
 
     this.getAccountID = () => {
-      return clevertap.account?.[0].id
+      return this.#account.id
+    }
+
+    this.getRegion = () => {
+      return this.#account.region
     }
 
     this.setLogLevel = (l) => {
@@ -222,6 +226,7 @@ export default class CleverTap {
       // The accountId is present so can init with empty values.
       // Needed to maintain backward compatability with legacy implementations.
       // Npm imports/require will need to call init explictly with accountId
+      console.log('Clevertap Account Id ', clevertap.account?.[0].id)
       this.init()
     }
   }

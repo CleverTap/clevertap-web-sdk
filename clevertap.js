@@ -4960,7 +4960,7 @@
     function CleverTap() {
       var _clevertap$account,
           _this = this,
-          _clevertap$account3;
+          _clevertap$account2;
 
       var clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -5106,9 +5106,12 @@
       };
 
       this.getAccountID = function () {
-        var _clevertap$account2;
+        return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].id;
+      };
 
-        return (_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id;
+      this.getRegion = function () {
+        console.log('Region Value is ', _classPrivateFieldLooseBase(_this, _account$5)[_account$5].region);
+        return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].region;
       };
 
       this.setLogLevel = function (l) {
@@ -5202,10 +5205,13 @@
 
       window.$CLTP_WR = window.$WZRK_WR = api;
 
-      if ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[0].id) {
+      if ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id) {
+        var _clevertap$account3;
+
         // The accountId is present so can init with empty values.
         // Needed to maintain backward compatability with legacy implementations.
         // Npm imports/require will need to call init explictly with accountId
+        console.log('Clevertap Account Id ', (_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[0].id);
         this.init();
       }
     }
