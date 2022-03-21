@@ -151,6 +151,17 @@ export default class CleverTap {
       return this.#account.region
     }
 
+    // Get the Direct Call sdk version
+    this.setDCSDKVersion = (ver) => {
+      this.#account.dcSDKVersion = ver
+      const data = {}
+      data.af = { dcv: 'dc-sdk-v' + this.#account.dcSDKVersion }
+      let pageLoadUrl = this.#account.dataPostURL
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
+      this.#request.saveAndFireRequest(pageLoadUrl, false)
+    }
+
     this.setLogLevel = (l) => {
       this.#logger.logLevel = Number(l)
     }

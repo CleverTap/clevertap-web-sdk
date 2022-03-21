@@ -323,6 +323,8 @@
 
   var _targetDomain = _classPrivateFieldLooseKey("targetDomain");
 
+  var _dcSdkversion = _classPrivateFieldLooseKey("dcSdkversion");
+
   var Account = /*#__PURE__*/function () {
     function Account() {
       var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
@@ -345,10 +347,16 @@
         writable: true,
         value: TARGET_DOMAIN
       });
+      Object.defineProperty(this, _dcSdkversion, {
+        writable: true,
+        value: ''
+      });
       this.id = id;
 
       if (region) {
         this.region = region;
+      } else {
+        this.region = DEFAULT_REGION;
       }
 
       if (targetDomain) {
@@ -371,6 +379,14 @@
       },
       set: function set(region) {
         _classPrivateFieldLooseBase(this, _region)[_region] = region;
+      }
+    }, {
+      key: "dcSDKVersion",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _dcSdkversion)[_dcSdkversion];
+      },
+      set: function set(dcSDKVersion) {
+        _classPrivateFieldLooseBase(this, _dcSdkversion)[_dcSdkversion] = dcSDKVersion;
       }
     }, {
       key: "targetDomain",
@@ -1975,6 +1991,7 @@
     s.setAttribute('rel', 'nofollow');
     s.async = true;
     document.getElementsByTagName('head')[0].appendChild(s);
+    console.log('req snt -> url: ', url);
     this.logger.debug('req snt -> url: ' + url);
   };
 
@@ -5113,6 +5130,23 @@
 
       this.getRegion = function () {
         return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].region;
+      }; // Get the Direct Call sdk version
+
+
+      this.setDCSDKVersion = function (ver) {
+        _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion = ver;
+        var data = {};
+        data.af = {
+          dcv: 'dc-sdk-v' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion
+        };
+
+        var pageLoadUrlDC = _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dataPostURL;
+
+        pageLoadUrlDC = addToURL(pageLoadUrlDC, 'type', 'page');
+        pageLoadUrlDC = addToURL(pageLoadUrlDC, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
+        console.log('pageLoadUrlDC ', pageLoadUrlDC);
+
+        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrlDC, false);
       };
 
       this.setLogLevel = function (l) {
