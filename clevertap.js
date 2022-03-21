@@ -1991,7 +1991,6 @@
     s.setAttribute('rel', 'nofollow');
     s.async = true;
     document.getElementsByTagName('head')[0].appendChild(s);
-    console.log('req snt -> url: ', url);
     this.logger.debug('req snt -> url: ' + url);
   };
 
@@ -5140,13 +5139,12 @@
           dcv: 'dc-sdk-v' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion
         };
 
-        var pageLoadUrlDC = _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dataPostURL;
 
-        pageLoadUrlDC = addToURL(pageLoadUrlDC, 'type', 'page');
-        pageLoadUrlDC = addToURL(pageLoadUrlDC, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
-        console.log('pageLoadUrlDC ', pageLoadUrlDC);
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
 
-        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrlDC, false);
+        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
       };
 
       this.setLogLevel = function (l) {
