@@ -355,8 +355,6 @@
 
       if (region) {
         this.region = region;
-      } else {
-        this.region = DEFAULT_REGION;
       }
 
       if (targetDomain) {
@@ -5127,8 +5125,8 @@
         return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].id;
       };
 
-      this.getRegion = function () {
-        return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].region;
+      this.getDCDomain = function () {
+        return 'dc-' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
       }; // Get the Direct Call sdk version
 
 
@@ -5142,6 +5140,7 @@
         var pageLoadUrl = _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
 
         _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);

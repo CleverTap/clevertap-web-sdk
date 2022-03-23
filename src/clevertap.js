@@ -147,8 +147,8 @@ export default class CleverTap {
       return this.#account.id
     }
 
-    this.getRegion = () => {
-      return this.#account.region
+    this.getDCDomain = () => {
+      return 'dc-' + this.#account.finalTargetDomain
     }
 
     // Get the Direct Call sdk version
@@ -159,6 +159,8 @@ export default class CleverTap {
       let pageLoadUrl = this.#account.dataPostURL
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
+
       this.#request.saveAndFireRequest(pageLoadUrl, false)
     }
 

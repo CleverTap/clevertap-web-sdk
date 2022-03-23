@@ -10,8 +10,6 @@ export default class Account {
     this.id = id
     if (region) {
       this.region = region
-    } else {
-      this.region = DEFAULT_REGION
     }
     if (targetDomain) {
       this.targetDomain = targetDomain
