@@ -12,10 +12,13 @@ import ReqestManager from './modules/request'
 import {
   CAMP_COOKIE_NAME,
   SCOOKIE_PREFIX,
+  NOTIFICATION_VIEWED,
+  NOTIFICATION_CLICKED,
   EVT_PING,
   FIRST_PING_FREQ_IN_MILLIS,
   CONTINUOUS_PING_FREQ_IN_MILLIS,
   GROUP_SUBSCRIPTION_REQUEST_ID,
+  WZRK_ID,
   categoryLongKey
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
@@ -141,6 +144,36 @@ export default class CleverTap {
 
     this.getCleverTapID = () => {
       return this.#device.getGuid()
+    }
+
+    // method for notification viewed
+    this.renderNotifViewed = (detail) => {
+      if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
+        const data = {}
+        data.type = 'event'
+        data.evtName = NOTIFICATION_VIEWED
+        data.evtData = { [WZRK_ID]: detail.msgId }
+        this.#request.processEvent(data)
+      }
+    }
+
+    // method for notification clicked
+    this.renderNotifiClicked = (detail) => {
+      if (!detail || !detail.msgId) { return }
+      const eventData = {}
+      eventData.type = 'event'
+      eventData.evtName = NOTIFICATION_CLICKED
+      eventData.evtData = { [WZRK_ID]: detail.msgId }
+
+      console.log('Detail is dc', detail)
+      if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
+        for (const key in detail.kv) {
+          if (key.startsWith('wzrk_')) {
+            eventData.evtData = { ...eventData.evtData, [key]: detail.kv[key] }
+          }
+        }
+      }
+      this.#request.processEvent(eventData)
     }
 
     this.setLogLevel = (l) => {

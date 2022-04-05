@@ -2985,7 +2985,7 @@
     var _session = session;
     var _request = request;
     var _logger = logger;
-    var _wizCounter = 0;
+    var _wizCounter = 0; // Campaign House keeping
 
     var doCampHouseKeeping = function doCampHouseKeeping(targetingMsgJson) {
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
@@ -3220,9 +3220,63 @@
       _request.processEvent(data);
     };
 
+    var renderPersonalisationBanner = function renderPersonalisationBanner(targetingMsgJson) {
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
+      }
+
+      var divId = 'wizParDiv' + targetingMsgJson.msgContent.type;
+      var onClick = targetingMsgJson.display.onClick;
+      var legacy = false;
+      $ct.campaignDivMap[campaignId] = divId;
+      var bannerDiv = document.createElement('div');
+      bannerDiv.id = divId;
+      document.body.appendChild(bannerDiv);
+      var iframe = document.createElement('iframe');
+      iframe.frameborder = '0px';
+      iframe.marginheight = '0px';
+      iframe.marginwidth = '0px';
+      iframe.id = 'wiz-iframe';
+      var html = targetingMsgJson.msgContent.html;
+      iframe.setAttribute('style', 'z-index: 2147483647;position:fixed;display:block;overflow:hidden;width: 100%;height: 100%;left:0;top:0');
+      bannerDiv.appendChild(iframe);
+      var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
+      var doc = ifrm.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+      var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+      setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+    };
+
     var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       var displayObj = targetingMsgJson.display;
+
+      if (displayObj.wtarget_type === 2) {
+        // Logic for kv pair data
+        if (targetingMsgJson.msgContent.type === 1) {
+          var inaObj = {};
+          inaObj.msgId = targetingMsgJson.wzrk_id;
+
+          if (targetingMsgJson.msgContent.kv != null) {
+            inaObj.kv = targetingMsgJson.msgContent.kv;
+          }
+
+          var kvPairsEvent = new CustomEvent(targetingMsgJson.display.eventName, {
+            detail: inaObj
+          });
+          document.dispatchEvent(kvPairsEvent);
+          return;
+        } // Logic for personalisation banner / carousel
+
+
+        if (targetingMsgJson.msgContent.type === 2 || targetingMsgJson.msgContent.type === 3) {
+          return renderPersonalisationBanner(targetingMsgJson);
+        }
+      }
 
       if (displayObj.layout === 1) {
         return showExitIntent(undefined, targetingMsgJson);
@@ -3623,7 +3677,7 @@
       for (var index = 0; index < msg.inapp_notifs.length; index++) {
         var targetNotif = msg.inapp_notifs[index];
 
-        if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
+        if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0 || targetNotif.display.wtarget_type === 2) {
           showFooterNotification(targetNotif);
         } else if (targetNotif.display.wtarget_type === 1) {
           // if display['wtarget_type']==1 then exit intent
@@ -3699,7 +3753,18 @@
       } catch (e) {
         _logger.error('Unable to persist evrp/arp: ' + e);
       }
-    }
+    } // const onNotificationClicked = () => {
+    //   const data = {}
+    //   data.type = 'event'
+    //   data.evtName = NOTIFICATION_VIEWED
+    //   data.evtData = { [WZRK_ID]: targetingMsgJson.wzrk_id }
+    //   _request.processEvent(data)
+    // }
+
+
+    return {
+      WZRK_ID: msg.inapp_notifs
+    };
   };
 
   var _isPersonalisationActive$2 = _classPrivateFieldLooseKey("isPersonalisationActive");
@@ -5103,6 +5168,42 @@
 
       this.getCleverTapID = function () {
         return _classPrivateFieldLooseBase(_this, _device$3)[_device$3].getGuid();
+      }; // method for notification viewed
+
+
+      this.renderNotifViewed = function (detail) {
+        if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
+          var data = {};
+          data.type = 'event';
+          data.evtName = NOTIFICATION_VIEWED;
+          data.evtData = _defineProperty({}, WZRK_ID, detail.msgId);
+          console.log('Data is ', data);
+
+          _classPrivateFieldLooseBase(_this, _request$6)[_request$6].processEvent(data);
+        }
+      }; // method for notification clicked
+
+
+      this.renderNotifiClicked = function (detail) {
+        if (!detail || !detail.msgId) {
+          return;
+        }
+
+        var eventData = {};
+        eventData.type = 'event';
+        eventData.evtName = NOTIFICATION_CLICKED;
+        eventData.evtData = _defineProperty({}, WZRK_ID, detail.msgId);
+        console.log('Detail is dc', detail);
+
+        if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
+          for (var key in detail.kv) {
+            if (key.startsWith('wzrk_')) {
+              eventData.evtData = _objectSpread2(_objectSpread2({}, eventData.evtData), {}, _defineProperty({}, key, detail.kv[key]));
+            }
+          }
+        }
+
+        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].processEvent(eventData);
       };
 
       this.setLogLevel = function (l) {

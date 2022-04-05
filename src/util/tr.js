@@ -41,6 +41,7 @@ const _tr = (msg, {
   const _logger = logger
   let _wizCounter = 0
 
+  // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     const today = getToday()
@@ -250,10 +251,60 @@ const _tr = (msg, {
     _request.processEvent(data)
   }
 
+  const renderPersonalisationBanner = (targetingMsgJson) => {
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
+      return
+    }
+    const divId = 'wizParDiv' + targetingMsgJson.msgContent.type
+    const onClick = targetingMsgJson.display.onClick
+    const legacy = false
+    $ct.campaignDivMap[campaignId] = divId
+    const bannerDiv = document.createElement('div')
+    bannerDiv.id = divId
+
+    document.body.appendChild(bannerDiv)
+    const iframe = document.createElement('iframe')
+    iframe.frameborder = '0px'
+    iframe.marginheight = '0px'
+    iframe.marginwidth = '0px'
+    iframe.id = 'wiz-iframe'
+    const html = targetingMsgJson.msgContent.html
+    iframe.setAttribute('style', 'z-index: 2147483647;position:fixed;display:block;overflow:hidden;width: 100%;height: 100%;left:0;top:0')
+    bannerDiv.appendChild(iframe)
+    const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
+    const doc = ifrm.document
+
+    doc.open()
+    doc.write(html)
+    doc.close()
+
+    const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+    setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
+  }
+
   const renderFooterNotification = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     const displayObj = targetingMsgJson.display
 
+    if (displayObj.wtarget_type === 2) {
+      // Logic for kv pair data
+      if (targetingMsgJson.msgContent.type === 1) {
+        const inaObj = {}
+
+        inaObj.msgId = targetingMsgJson.wzrk_id
+        if (targetingMsgJson.msgContent.kv != null) {
+          inaObj.kv = targetingMsgJson.msgContent.kv
+        }
+        const kvPairsEvent = new CustomEvent(targetingMsgJson.display.eventName, { detail: inaObj })
+        document.dispatchEvent(kvPairsEvent)
+        return
+      }
+      // Logic for personalisation banner / carousel
+      if (targetingMsgJson.msgContent.type === 2 || targetingMsgJson.msgContent.type === 3) {
+        return renderPersonalisationBanner(targetingMsgJson)
+      }
+    }
     if (displayObj.layout === 1) {
       return showExitIntent(undefined, targetingMsgJson)
     }
@@ -521,6 +572,7 @@ const _tr = (msg, {
       }
     }
   }
+
   let exitintentObj
   const showExitIntent = (event, targetObj) => {
     let targetingMsgJson
@@ -659,7 +711,7 @@ const _tr = (msg, {
   if (msg.inapp_notifs != null) {
     for (let index = 0; index < msg.inapp_notifs.length; index++) {
       const targetNotif = msg.inapp_notifs[index]
-      if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
+      if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0 || targetNotif.display.wtarget_type === 2) {
         showFooterNotification(targetNotif)
       } else if (targetNotif.display.wtarget_type === 1) { // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif
@@ -726,6 +778,17 @@ const _tr = (msg, {
     } catch (e) {
       _logger.error('Unable to persist evrp/arp: ' + e)
     }
+  }
+
+  // const onNotificationClicked = () => {
+  //   const data = {}
+  //   data.type = 'event'
+  //   data.evtName = NOTIFICATION_VIEWED
+  //   data.evtData = { [WZRK_ID]: targetingMsgJson.wzrk_id }
+  //   _request.processEvent(data)
+  // }
+  return {
+    WZRK_ID: msg.inapp_notifs
   }
 }
 
