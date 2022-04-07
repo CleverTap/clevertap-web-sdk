@@ -5171,38 +5171,13 @@
       }; // method for notification viewed
 
 
-      this.renderNotifViewed = function (detail) {
-        processNotifEvent(NOTIFICATION_VIEWED, detail); // if (!detail || !detail.msgId) { return }
-        // const data = {}
-        // data.type = 'event'
-        // data.evtName = NOTIFICATION_VIEWED
-        // data.evtData = { [WZRK_ID]: detail.msgId }
-        // if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
-        //   for (const key in detail.kv) {
-        //     if (key.startsWith(WZRK_PREFIX)) {
-        //       data.evtData = { ...data.evtData, [key]: detail.kv[key] }
-        //     }
-        //   }
-        // }
-        // this.#request.processEvent(data)
+      this.renderNotificationViewed = function (detail) {
+        processNotifEvent(NOTIFICATION_VIEWED, detail);
       }; // method for notification clicked
 
 
-      this.renderNotifiClicked = function (detail) {
-        processNotifEvent(NOTIFICATION_CLICKED, detail); // if (!detail || !detail.msgId) { return }
-        // const eventData = {}
-        // eventData.type = 'event'
-        // eventData.evtName = NOTIFICATION_CLICKED
-        // eventData.evtData = { [WZRK_ID]: detail.msgId }
-        // console.log('Detail is dc', detail)
-        // if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
-        //   for (const key in detail.kv) {
-        //     if (key.startsWith(WZRK_PREFIX)) {
-        //       eventData.evtData = { ...eventData.evtData, [key]: detail.kv[key] }
-        //     }
-        //   }
-        // }
-        // this.#request.processEvent(eventData)
+      this.renderNotificationClicked = function (detail) {
+        processNotifEvent(NOTIFICATION_CLICKED, detail);
       };
 
       var processNotifEvent = function processNotifEvent(eventName, detail) {
