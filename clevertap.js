@@ -5172,38 +5172,54 @@
 
 
       this.renderNotifViewed = function (detail) {
-        if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
-          var data = {};
-          data.type = 'event';
-          data.evtName = NOTIFICATION_VIEWED;
-          data.evtData = _defineProperty({}, WZRK_ID, detail.msgId);
-          console.log('Data is ', data);
-
-          _classPrivateFieldLooseBase(_this, _request$6)[_request$6].processEvent(data);
-        }
+        processNotifEvent(NOTIFICATION_VIEWED, detail); // if (!detail || !detail.msgId) { return }
+        // const data = {}
+        // data.type = 'event'
+        // data.evtName = NOTIFICATION_VIEWED
+        // data.evtData = { [WZRK_ID]: detail.msgId }
+        // if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
+        //   for (const key in detail.kv) {
+        //     if (key.startsWith(WZRK_PREFIX)) {
+        //       data.evtData = { ...data.evtData, [key]: detail.kv[key] }
+        //     }
+        //   }
+        // }
+        // this.#request.processEvent(data)
       }; // method for notification clicked
 
 
       this.renderNotifiClicked = function (detail) {
-        if (!detail || !detail.msgId) {
-          return;
-        }
+        processNotifEvent(NOTIFICATION_CLICKED, detail); // if (!detail || !detail.msgId) { return }
+        // const eventData = {}
+        // eventData.type = 'event'
+        // eventData.evtName = NOTIFICATION_CLICKED
+        // eventData.evtData = { [WZRK_ID]: detail.msgId }
+        // console.log('Detail is dc', detail)
+        // if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
+        //   for (const key in detail.kv) {
+        //     if (key.startsWith(WZRK_PREFIX)) {
+        //       eventData.evtData = { ...eventData.evtData, [key]: detail.kv[key] }
+        //     }
+        //   }
+        // }
+        // this.#request.processEvent(eventData)
+      };
 
-        var eventData = {};
-        eventData.type = 'event';
-        eventData.evtName = NOTIFICATION_CLICKED;
-        eventData.evtData = _defineProperty({}, WZRK_ID, detail.msgId);
-        console.log('Detail is dc', detail);
+      var processNotifEvent = function processNotifEvent(eventName, detail) {
+        var data = {};
+        data.type = 'event';
+        data.evtName = eventName;
+        data.evtData = _defineProperty({}, WZRK_ID, detail.msgId);
 
         if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
           for (var key in detail.kv) {
-            if (key.startsWith('wzrk_')) {
-              eventData.evtData = _objectSpread2(_objectSpread2({}, eventData.evtData), {}, _defineProperty({}, key, detail.kv[key]));
+            if (key.startsWith(WZRK_PREFIX)) {
+              data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, _defineProperty({}, key, detail.kv[key]));
             }
           }
         }
 
-        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].processEvent(eventData);
+        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].processEvent(data);
       };
 
       this.setLogLevel = function (l) {
