@@ -293,6 +293,9 @@ const _tr = (msg, {
         const inaObj = {}
 
         inaObj.msgId = targetingMsgJson.wzrk_id
+        if (targetingMsgJson.wzrk_pivot) {
+          inaObj.pivotId = targetingMsgJson.wzrk_pivot
+        }
         if (targetingMsgJson.msgContent.kv != null) {
           inaObj.kv = targetingMsgJson.msgContent.kv
         }
@@ -492,6 +495,9 @@ const _tr = (msg, {
         const inaObj = {}
         inaObj.msgContent = targetingMsgJson.msgContent
         inaObj.msgId = targetingMsgJson.wzrk_id
+        if (targetingMsgJson.wzrk_pivot) {
+          inaObj.pivotId = targetingMsgJson.wzrk_pivot
+        }
         if (targetingMsgJson.display.kv != null) {
           inaObj.kv = targetingMsgJson.display.kv
         }
@@ -534,6 +540,10 @@ const _tr = (msg, {
         inaObj.msgContent = targetingMsgJson.msgContent
         inaObj.msgId = targetingMsgJson.wzrk_id
 
+        if (targetingMsgJson.wzrk_pivot) {
+          inaObj.pivotId = targetingMsgJson.wzrk_pivot
+        }
+
         var msgCTkv = []
         for (var wzrkPrefixKey in targetingMsgJson) {
           // ADD WZRK PREFIX KEY VALUE PAIRS
@@ -558,6 +568,9 @@ const _tr = (msg, {
           eventData.type = 'event'
           eventData.evtName = NOTIFICATION_CLICKED
           eventData.evtData = { [WZRK_ID]: notificationData.msgId }
+          if (targetingMsgJson.wzrk_pivot) {
+            eventData.evtData = { ...eventData.evtData, [WZRK_ID]: notificationData.pivotId }
+          }
 
           // WZRK PREFIX KEY VALUE PAIRS
           if (notificationData.msgCTkv) {

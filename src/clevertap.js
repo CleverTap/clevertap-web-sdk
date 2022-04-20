@@ -149,19 +149,24 @@ export default class CleverTap {
 
     // method for notification viewed
     this.renderNotificationViewed = (detail) => {
-      processNotifEvent(NOTIFICATION_VIEWED, detail)
+      processNotificationEvent(NOTIFICATION_VIEWED, detail)
     }
 
     // method for notification clicked
     this.renderNotificationClicked = (detail) => {
-      processNotifEvent(NOTIFICATION_CLICKED, detail)
+      processNotificationEvent(NOTIFICATION_CLICKED, detail)
     }
 
-    const processNotifEvent = (eventName, detail) => {
+    const processNotificationEvent = (eventName, detail) => {
+      if (!detail || !detail.msgId) { return }
       const data = {}
       data.type = 'event'
       data.evtName = eventName
       data.evtData = { [WZRK_ID]: detail.msgId }
+
+      if (detail.pivotId) {
+        data.evtData = { ...data.evtData, wzrk_pivot: detail.pivotId }
+      }
 
       if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
         for (const key in detail.kv) {
@@ -250,10 +255,6 @@ export default class CleverTap {
       // Npm imports/require will need to call init explictly with accountId
       this.init()
     }
-  }
-
-  raiseNotificationClicked () {
-
   }
 
   init (accountId, region, targetDomain) {

@@ -3261,6 +3261,10 @@
           var inaObj = {};
           inaObj.msgId = targetingMsgJson.wzrk_id;
 
+          if (targetingMsgJson.wzrk_pivot) {
+            inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+          }
+
           if (targetingMsgJson.msgContent.kv != null) {
             inaObj.kv = targetingMsgJson.msgContent.kv;
           }
@@ -3452,6 +3456,10 @@
           inaObj.msgContent = targetingMsgJson.msgContent;
           inaObj.msgId = targetingMsgJson.wzrk_id;
 
+          if (targetingMsgJson.wzrk_pivot) {
+            inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+          }
+
           if (targetingMsgJson.display.kv != null) {
             inaObj.kv = targetingMsgJson.display.kv;
           }
@@ -3492,6 +3500,11 @@
           var _inaObj = {};
           _inaObj.msgContent = targetingMsgJson.msgContent;
           _inaObj.msgId = targetingMsgJson.wzrk_id;
+
+          if (targetingMsgJson.wzrk_pivot) {
+            _inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+          }
+
           var msgCTkv = [];
 
           for (var wzrkPrefixKey in targetingMsgJson) {
@@ -3520,7 +3533,12 @@
             var eventData = {};
             eventData.type = 'event';
             eventData.evtName = NOTIFICATION_CLICKED;
-            eventData.evtData = _defineProperty({}, WZRK_ID, notificationData.msgId); // WZRK PREFIX KEY VALUE PAIRS
+            eventData.evtData = _defineProperty({}, WZRK_ID, notificationData.msgId);
+
+            if (targetingMsgJson.wzrk_pivot) {
+              eventData.evtData = _objectSpread2(_objectSpread2({}, eventData.evtData), {}, _defineProperty({}, WZRK_ID, notificationData.pivotId));
+            } // WZRK PREFIX KEY VALUE PAIRS
+
 
             if (notificationData.msgCTkv) {
               var _iterator = _createForOfIteratorHelper(notificationData.msgCTkv),
@@ -5172,19 +5190,29 @@
 
 
       this.renderNotificationViewed = function (detail) {
-        processNotifEvent(NOTIFICATION_VIEWED, detail);
+        processNotificationEvent(NOTIFICATION_VIEWED, detail);
       }; // method for notification clicked
 
 
       this.renderNotificationClicked = function (detail) {
-        processNotifEvent(NOTIFICATION_CLICKED, detail);
+        processNotificationEvent(NOTIFICATION_CLICKED, detail);
       };
 
-      var processNotifEvent = function processNotifEvent(eventName, detail) {
+      var processNotificationEvent = function processNotificationEvent(eventName, detail) {
+        if (!detail || !detail.msgId) {
+          return;
+        }
+
         var data = {};
         data.type = 'event';
         data.evtName = eventName;
         data.evtData = _defineProperty({}, WZRK_ID, detail.msgId);
+
+        if (detail.pivotId) {
+          data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
+            wzrk_pivot: detail.pivotId
+          });
+        }
 
         if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
           for (var key in detail.kv) {
@@ -5297,9 +5325,6 @@
     }
 
     _createClass(CleverTap, [{
-      key: "raiseNotificationClicked",
-      value: function raiseNotificationClicked() {}
-    }, {
       key: "init",
       value: function init(accountId, region, targetDomain) {
         if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
