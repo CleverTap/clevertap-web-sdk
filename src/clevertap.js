@@ -157,21 +157,21 @@ export default class CleverTap {
       processNotificationEvent(NOTIFICATION_CLICKED, detail)
     }
 
-    const processNotificationEvent = (eventName, detail) => {
-      if (!detail || !detail.msgId) { return }
+    const processNotificationEvent = (eventName, eventDetail) => {
+      if (!eventDetail || !eventDetail.msgId) { return }
       const data = {}
       data.type = 'event'
       data.evtName = eventName
-      data.evtData = { [WZRK_ID]: detail.msgId }
+      data.evtData = { [WZRK_ID]: eventDetail.msgId }
 
-      if (detail.pivotId) {
-        data.evtData = { ...data.evtData, wzrk_pivot: detail.pivotId }
+      if (eventDetail.pivotId) {
+        data.evtData = { ...data.evtData, wzrk_pivot: eventDetail.pivotId }
       }
 
-      if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
-        for (const key in detail.kv) {
+      if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
+        for (const key in eventDetail.kv) {
           if (key.startsWith(WZRK_PREFIX)) {
-            data.evtData = { ...data.evtData, [key]: detail.kv[key] }
+            data.evtData = { ...data.evtData, [key]: eventDetail.kv[key] }
           }
         }
       }
@@ -416,5 +416,13 @@ export default class CleverTap {
     if (this._isPersonalisationActive()) {
       data.dsync = true
     }
+  }
+
+  popupCallbacks = {};
+  popupCurrentWzrkId = '';
+
+  // eslint-disable-next-line accessor-pairs
+  set popupCallback (callback) {
+    this.popupCallbacks[this.popupCurrentWzrkId] = callback
   }
 }

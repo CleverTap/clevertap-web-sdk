@@ -3227,7 +3227,7 @@
         return;
       }
 
-      var divId = 'wizParDiv' + targetingMsgJson.msgContent.type;
+      var divId = 'wizParDivBanner' + targetingMsgJson.msgContent.type;
       var onClick = targetingMsgJson.display.onClick;
       var legacy = false;
       $ct.campaignDivMap[campaignId] = divId;
@@ -3493,10 +3493,11 @@
           _callBackCalled = true;
         }
       } else {
+        window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id;
         renderFooterNotification(targetingMsgJson);
 
-        if (window.clevertap.hasOwnProperty('popupCallback') && typeof window.clevertap.popupCallback !== 'undefined' && typeof window.clevertap.popupCallback === 'function') {
-          var popupCallback = window.clevertap.popupCallback;
+        if (window.clevertap.hasOwnProperty('popupCallbacks') && typeof window.clevertap.popupCallbacks !== 'undefined' && typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === 'function') {
+          var popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id];
           var _inaObj = {};
           _inaObj.msgContent = targetingMsgJson.msgContent;
           _inaObj.msgId = targetingMsgJson.wzrk_id;
@@ -3536,7 +3537,9 @@
             eventData.evtData = _defineProperty({}, WZRK_ID, notificationData.msgId);
 
             if (targetingMsgJson.wzrk_pivot) {
-              eventData.evtData = _objectSpread2(_objectSpread2({}, eventData.evtData), {}, _defineProperty({}, WZRK_ID, notificationData.pivotId));
+              eventData.evtData = _objectSpread2(_objectSpread2({}, eventData.evtData), {}, {
+                wzrk_pivot: notificationData.pivotId
+              });
             } // WZRK PREFIX KEY VALUE PAIRS
 
 
@@ -3771,18 +3774,7 @@
       } catch (e) {
         _logger.error('Unable to persist evrp/arp: ' + e);
       }
-    } // const onNotificationClicked = () => {
-    //   const data = {}
-    //   data.type = 'event'
-    //   data.evtName = NOTIFICATION_VIEWED
-    //   data.evtData = { [WZRK_ID]: targetingMsgJson.wzrk_id }
-    //   _request.processEvent(data)
-    // }
-
-
-    return {
-      WZRK_ID: msg.inapp_notifs
-    };
+    }
   };
 
   var _isPersonalisationActive$2 = _classPrivateFieldLooseKey("isPersonalisationActive");
@@ -5105,6 +5097,8 @@
         value: _classPrivateFieldLooseBase(this, _checkPageChanged)[_checkPageChanged].bind(this)
       });
       this.enablePersonalization = void 0;
+      this.popupCallbacks = {};
+      this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
 
@@ -5198,26 +5192,26 @@
         processNotificationEvent(NOTIFICATION_CLICKED, detail);
       };
 
-      var processNotificationEvent = function processNotificationEvent(eventName, detail) {
-        if (!detail || !detail.msgId) {
+      var processNotificationEvent = function processNotificationEvent(eventName, eventDetail) {
+        if (!eventDetail || !eventDetail.msgId) {
           return;
         }
 
         var data = {};
         data.type = 'event';
         data.evtName = eventName;
-        data.evtData = _defineProperty({}, WZRK_ID, detail.msgId);
+        data.evtData = _defineProperty({}, WZRK_ID, eventDetail.msgId);
 
-        if (detail.pivotId) {
+        if (eventDetail.pivotId) {
           data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
-            wzrk_pivot: detail.pivotId
+            wzrk_pivot: eventDetail.pivotId
           });
         }
 
-        if (detail.kv && detail.kv !== null && detail.kv !== undefined) {
-          for (var key in detail.kv) {
+        if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
+          for (var key in eventDetail.kv) {
             if (key.startsWith(WZRK_PREFIX)) {
-              data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, _defineProperty({}, key, detail.kv[key]));
+              data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, _defineProperty({}, key, eventDetail.kv[key]));
             }
           }
         }
@@ -5474,6 +5468,12 @@
       key: "_isPersonalisationActive",
       value: function _isPersonalisationActive() {
         return StorageManager$1._isLocalStorageSupported() && this.enablePersonalization;
+      }
+    }, {
+      key: "popupCallback",
+      // eslint-disable-next-line accessor-pairs
+      set: function set(callback) {
+        this.popupCallbacks[this.popupCurrentWzrkId] = callback;
       }
     }]);
 

@@ -256,7 +256,7 @@ const _tr = (msg, {
     if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
-    const divId = 'wizParDiv' + targetingMsgJson.msgContent.type
+    const divId = 'wizParDivBanner' + targetingMsgJson.msgContent.type
     const onClick = targetingMsgJson.display.onClick
     const legacy = false
     $ct.campaignDivMap[campaignId] = divId
@@ -529,12 +529,13 @@ const _tr = (msg, {
         _callBackCalled = true
       }
     } else {
+      window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id
       renderFooterNotification(targetingMsgJson)
 
-      if (window.clevertap.hasOwnProperty('popupCallback') &&
-        typeof window.clevertap.popupCallback !== 'undefined' &&
-        typeof window.clevertap.popupCallback === 'function') {
-        const popupCallback = window.clevertap.popupCallback
+      if (window.clevertap.hasOwnProperty('popupCallbacks') &&
+        typeof window.clevertap.popupCallbacks !== 'undefined' &&
+        typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === 'function') {
+        const popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id]
 
         const inaObj = {}
         inaObj.msgContent = targetingMsgJson.msgContent
@@ -569,7 +570,7 @@ const _tr = (msg, {
           eventData.evtName = NOTIFICATION_CLICKED
           eventData.evtData = { [WZRK_ID]: notificationData.msgId }
           if (targetingMsgJson.wzrk_pivot) {
-            eventData.evtData = { ...eventData.evtData, [WZRK_ID]: notificationData.pivotId }
+            eventData.evtData = { ...eventData.evtData, wzrk_pivot: notificationData.pivotId }
           }
 
           // WZRK PREFIX KEY VALUE PAIRS
@@ -791,17 +792,6 @@ const _tr = (msg, {
     } catch (e) {
       _logger.error('Unable to persist evrp/arp: ' + e)
     }
-  }
-
-  // const onNotificationClicked = () => {
-  //   const data = {}
-  //   data.type = 'event'
-  //   data.evtName = NOTIFICATION_VIEWED
-  //   data.evtData = { [WZRK_ID]: targetingMsgJson.wzrk_id }
-  //   _request.processEvent(data)
-  // }
-  return {
-    WZRK_ID: msg.inapp_notifs
   }
 }
 
