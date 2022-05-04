@@ -252,26 +252,21 @@ const _tr = (msg, {
   }
 
   const renderPersonalisationBanner = (targetingMsgJson) => {
-    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
-    if (doCampHouseKeeping(targetingMsgJson) === false) {
+    const divId = targetingMsgJson.display.divId
+
+    if (document.getElementById(divId) == null) {
       return
     }
-    const divId = 'wizParDivBanner' + targetingMsgJson.msgContent.type
     const onClick = targetingMsgJson.display.onClick
-    const legacy = false
-    $ct.campaignDivMap[campaignId] = divId
-    const bannerDiv = document.createElement('div')
-    bannerDiv.id = divId
 
-    document.body.appendChild(bannerDiv)
     const iframe = document.createElement('iframe')
     iframe.frameborder = '0px'
     iframe.marginheight = '0px'
     iframe.marginwidth = '0px'
     iframe.id = 'wiz-iframe'
     const html = targetingMsgJson.msgContent.html
-    iframe.setAttribute('style', 'z-index: 2147483647;position:fixed;display:block;overflow:hidden;width: 100%;height: 100%;left:0;top:0')
-    bannerDiv.appendChild(iframe)
+    iframe.setAttribute('style', 'z-index: 2147483647;display:block;overflow:hidden;width: 100%;height: 100%;left:0;top:0')
+    document.getElementById(divId).appendChild(iframe)
     const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
     const doc = ifrm.document
 
@@ -280,7 +275,7 @@ const _tr = (msg, {
     doc.close()
 
     const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
-    setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
+    setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, false)
   }
 
   const renderFooterNotification = (targetingMsgJson) => {

@@ -3221,34 +3221,28 @@
     };
 
     var renderPersonalisationBanner = function renderPersonalisationBanner(targetingMsgJson) {
-      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      var divId = targetingMsgJson.display.divId;
 
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
+      if (document.getElementById(divId) == null) {
         return;
       }
 
-      var divId = 'wizParDivBanner' + targetingMsgJson.msgContent.type;
       var onClick = targetingMsgJson.display.onClick;
-      var legacy = false;
-      $ct.campaignDivMap[campaignId] = divId;
-      var bannerDiv = document.createElement('div');
-      bannerDiv.id = divId;
-      document.body.appendChild(bannerDiv);
       var iframe = document.createElement('iframe');
       iframe.frameborder = '0px';
       iframe.marginheight = '0px';
       iframe.marginwidth = '0px';
       iframe.id = 'wiz-iframe';
       var html = targetingMsgJson.msgContent.html;
-      iframe.setAttribute('style', 'z-index: 2147483647;position:fixed;display:block;overflow:hidden;width: 100%;height: 100%;left:0;top:0');
-      bannerDiv.appendChild(iframe);
+      iframe.setAttribute('style', 'z-index: 2147483647;display:block;overflow:hidden;width: 100%;height: 100%;left:0;top:0');
+      document.getElementById(divId).appendChild(iframe);
       var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
       var doc = ifrm.document;
       doc.open();
       doc.write(html);
       doc.close();
       var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-      setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+      setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, false);
     };
 
     var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
