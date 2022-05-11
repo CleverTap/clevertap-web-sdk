@@ -191,7 +191,7 @@ const _tr = (msg, {
       let jsCTAElements
       if (isLegacy) {
         ctaElement = contentDiv
-      } else {
+      } else if (contentDiv !== null) {
         jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA')
         if (jsCTAElements != null && jsCTAElements.length === 1) {
           ctaElement = jsCTAElements[0]
@@ -265,7 +265,7 @@ const _tr = (msg, {
     iframe.marginwidth = '0px'
     iframe.id = 'wiz-iframe'
     const html = targetingMsgJson.msgContent.html
-    iframe.setAttribute('style', 'z-index: 2147483647;display:block;overflow:hidden;width: 100%;height: 100%;left:0;top:0')
+    iframe.setAttribute('style', targetingMsgJson.display.iFrameStyle)
     document.getElementById(divId).appendChild(iframe)
     const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
     const doc = ifrm.document
@@ -294,7 +294,7 @@ const _tr = (msg, {
         if (targetingMsgJson.msgContent.kv != null) {
           inaObj.kv = targetingMsgJson.msgContent.kv
         }
-        const kvPairsEvent = new CustomEvent(targetingMsgJson.display.eventName, { detail: inaObj })
+        const kvPairsEvent = new CustomEvent('CT_web_personalization', { detail: inaObj })
         document.dispatchEvent(kvPairsEvent)
         return
       }

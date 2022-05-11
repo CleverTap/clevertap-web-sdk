@@ -3153,7 +3153,7 @@
 
         if (isLegacy) {
           ctaElement = contentDiv;
-        } else {
+        } else if (contentDiv !== null) {
           jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
 
           if (jsCTAElements != null && jsCTAElements.length === 1) {
@@ -3234,7 +3234,7 @@
       iframe.marginwidth = '0px';
       iframe.id = 'wiz-iframe';
       var html = targetingMsgJson.msgContent.html;
-      iframe.setAttribute('style', 'z-index: 2147483647;display:block;overflow:hidden;width: 100%;height: 100%;left:0;top:0');
+      iframe.setAttribute('style', targetingMsgJson.display.iFrameStyle);
       document.getElementById(divId).appendChild(iframe);
       var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
       var doc = ifrm.document;
@@ -3263,7 +3263,7 @@
             inaObj.kv = targetingMsgJson.msgContent.kv;
           }
 
-          var kvPairsEvent = new CustomEvent(targetingMsgJson.display.eventName, {
+          var kvPairsEvent = new CustomEvent('CT_web_personalization', {
             detail: inaObj
           });
           document.dispatchEvent(kvPairsEvent);
