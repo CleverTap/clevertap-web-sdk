@@ -41,6 +41,7 @@ const _tr = (msg, {
   const _logger = logger
   let _wizCounter = 0
 
+  // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     const today = getToday()
@@ -190,7 +191,7 @@ const _tr = (msg, {
       let jsCTAElements
       if (isLegacy) {
         ctaElement = contentDiv
-      } else {
+      } else if (contentDiv !== null) {
         jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA')
         if (jsCTAElements != null && jsCTAElements.length === 1) {
           ctaElement = jsCTAElements[0]
@@ -250,10 +251,58 @@ const _tr = (msg, {
     _request.processEvent(data)
   }
 
+  const renderPersonalisationBanner = (targetingMsgJson) => {
+    const divId = targetingMsgJson.display.divId
+
+    if (document.getElementById(divId) == null) {
+      return
+    }
+    const onClick = targetingMsgJson.display.onClick
+
+    const iframe = document.createElement('iframe')
+    iframe.frameborder = '0px'
+    iframe.marginheight = '0px'
+    iframe.marginwidth = '0px'
+    iframe.id = 'wiz-iframe'
+    const html = targetingMsgJson.msgContent.html
+    iframe.setAttribute('style', targetingMsgJson.display.iFrameStyle)
+    document.getElementById(divId).appendChild(iframe)
+    const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
+    const doc = ifrm.document
+
+    doc.open()
+    doc.write(html)
+    doc.close()
+
+    const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+    setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, false)
+  }
+
   const renderFooterNotification = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     const displayObj = targetingMsgJson.display
 
+    if (displayObj.wtarget_type === 2) {
+      // Logic for kv pair data
+      if (targetingMsgJson.msgContent.type === 1) {
+        const inaObj = {}
+
+        inaObj.msgId = targetingMsgJson.wzrk_id
+        if (targetingMsgJson.wzrk_pivot) {
+          inaObj.pivotId = targetingMsgJson.wzrk_pivot
+        }
+        if (targetingMsgJson.msgContent.kv != null) {
+          inaObj.kv = targetingMsgJson.msgContent.kv
+        }
+        const kvPairsEvent = new CustomEvent('CT_web_personalization', { detail: inaObj })
+        document.dispatchEvent(kvPairsEvent)
+        return
+      }
+      // Logic for personalisation banner / carousel
+      if (targetingMsgJson.msgContent.type === 2 || targetingMsgJson.msgContent.type === 3) {
+        return renderPersonalisationBanner(targetingMsgJson)
+      }
+    }
     if (displayObj.layout === 1) {
       return showExitIntent(undefined, targetingMsgJson)
     }
@@ -441,6 +490,9 @@ const _tr = (msg, {
         const inaObj = {}
         inaObj.msgContent = targetingMsgJson.msgContent
         inaObj.msgId = targetingMsgJson.wzrk_id
+        if (targetingMsgJson.wzrk_pivot) {
+          inaObj.pivotId = targetingMsgJson.wzrk_pivot
+        }
         if (targetingMsgJson.display.kv != null) {
           inaObj.kv = targetingMsgJson.display.kv
         }
@@ -472,16 +524,21 @@ const _tr = (msg, {
         _callBackCalled = true
       }
     } else {
+      window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id
       renderFooterNotification(targetingMsgJson)
 
-      if (window.clevertap.hasOwnProperty('popupCallback') &&
-        typeof window.clevertap.popupCallback !== 'undefined' &&
-        typeof window.clevertap.popupCallback === 'function') {
-        const popupCallback = window.clevertap.popupCallback
+      if (window.clevertap.hasOwnProperty('popupCallbacks') &&
+        typeof window.clevertap.popupCallbacks !== 'undefined' &&
+        typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === 'function') {
+        const popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id]
 
         const inaObj = {}
         inaObj.msgContent = targetingMsgJson.msgContent
         inaObj.msgId = targetingMsgJson.wzrk_id
+
+        if (targetingMsgJson.wzrk_pivot) {
+          inaObj.pivotId = targetingMsgJson.wzrk_pivot
+        }
 
         var msgCTkv = []
         for (var wzrkPrefixKey in targetingMsgJson) {
@@ -507,6 +564,9 @@ const _tr = (msg, {
           eventData.type = 'event'
           eventData.evtName = NOTIFICATION_CLICKED
           eventData.evtData = { [WZRK_ID]: notificationData.msgId }
+          if (targetingMsgJson.wzrk_pivot) {
+            eventData.evtData = { ...eventData.evtData, wzrk_pivot: notificationData.pivotId }
+          }
 
           // WZRK PREFIX KEY VALUE PAIRS
           if (notificationData.msgCTkv) {
@@ -521,6 +581,7 @@ const _tr = (msg, {
       }
     }
   }
+
   let exitintentObj
   const showExitIntent = (event, targetObj) => {
     let targetingMsgJson
@@ -659,7 +720,7 @@ const _tr = (msg, {
   if (msg.inapp_notifs != null) {
     for (let index = 0; index < msg.inapp_notifs.length; index++) {
       const targetNotif = msg.inapp_notifs[index]
-      if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
+      if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0 || targetNotif.display.wtarget_type === 2) {
         showFooterNotification(targetNotif)
       } else if (targetNotif.display.wtarget_type === 1) { // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif

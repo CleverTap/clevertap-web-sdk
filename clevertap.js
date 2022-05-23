@@ -2985,7 +2985,7 @@
     var _session = session;
     var _request = request;
     var _logger = logger;
-    var _wizCounter = 0;
+    var _wizCounter = 0; // Campaign House keeping
 
     var doCampHouseKeeping = function doCampHouseKeeping(targetingMsgJson) {
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
@@ -3153,7 +3153,7 @@
 
         if (isLegacy) {
           ctaElement = contentDiv;
-        } else {
+        } else if (contentDiv !== null) {
           jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
 
           if (jsCTAElements != null && jsCTAElements.length === 1) {
@@ -3220,9 +3220,61 @@
       _request.processEvent(data);
     };
 
+    var renderPersonalisationBanner = function renderPersonalisationBanner(targetingMsgJson) {
+      var divId = targetingMsgJson.display.divId;
+
+      if (document.getElementById(divId) == null) {
+        return;
+      }
+
+      var onClick = targetingMsgJson.display.onClick;
+      var iframe = document.createElement('iframe');
+      iframe.frameborder = '0px';
+      iframe.marginheight = '0px';
+      iframe.marginwidth = '0px';
+      iframe.id = 'wiz-iframe';
+      var html = targetingMsgJson.msgContent.html;
+      iframe.setAttribute('style', targetingMsgJson.display.iFrameStyle);
+      document.getElementById(divId).appendChild(iframe);
+      var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
+      var doc = ifrm.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+      var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+      setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, false);
+    };
+
     var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       var displayObj = targetingMsgJson.display;
+
+      if (displayObj.wtarget_type === 2) {
+        // Logic for kv pair data
+        if (targetingMsgJson.msgContent.type === 1) {
+          var inaObj = {};
+          inaObj.msgId = targetingMsgJson.wzrk_id;
+
+          if (targetingMsgJson.wzrk_pivot) {
+            inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+          }
+
+          if (targetingMsgJson.msgContent.kv != null) {
+            inaObj.kv = targetingMsgJson.msgContent.kv;
+          }
+
+          var kvPairsEvent = new CustomEvent('CT_web_personalization', {
+            detail: inaObj
+          });
+          document.dispatchEvent(kvPairsEvent);
+          return;
+        } // Logic for personalisation banner / carousel
+
+
+        if (targetingMsgJson.msgContent.type === 2 || targetingMsgJson.msgContent.type === 3) {
+          return renderPersonalisationBanner(targetingMsgJson);
+        }
+      }
 
       if (displayObj.layout === 1) {
         return showExitIntent(undefined, targetingMsgJson);
@@ -3398,6 +3450,10 @@
           inaObj.msgContent = targetingMsgJson.msgContent;
           inaObj.msgId = targetingMsgJson.wzrk_id;
 
+          if (targetingMsgJson.wzrk_pivot) {
+            inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+          }
+
           if (targetingMsgJson.display.kv != null) {
             inaObj.kv = targetingMsgJson.display.kv;
           }
@@ -3431,13 +3487,19 @@
           _callBackCalled = true;
         }
       } else {
+        window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id;
         renderFooterNotification(targetingMsgJson);
 
-        if (window.clevertap.hasOwnProperty('popupCallback') && typeof window.clevertap.popupCallback !== 'undefined' && typeof window.clevertap.popupCallback === 'function') {
-          var popupCallback = window.clevertap.popupCallback;
+        if (window.clevertap.hasOwnProperty('popupCallbacks') && typeof window.clevertap.popupCallbacks !== 'undefined' && typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === 'function') {
+          var popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id];
           var _inaObj = {};
           _inaObj.msgContent = targetingMsgJson.msgContent;
           _inaObj.msgId = targetingMsgJson.wzrk_id;
+
+          if (targetingMsgJson.wzrk_pivot) {
+            _inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+          }
+
           var msgCTkv = [];
 
           for (var wzrkPrefixKey in targetingMsgJson) {
@@ -3466,7 +3528,14 @@
             var eventData = {};
             eventData.type = 'event';
             eventData.evtName = NOTIFICATION_CLICKED;
-            eventData.evtData = _defineProperty({}, WZRK_ID, notificationData.msgId); // WZRK PREFIX KEY VALUE PAIRS
+            eventData.evtData = _defineProperty({}, WZRK_ID, notificationData.msgId);
+
+            if (targetingMsgJson.wzrk_pivot) {
+              eventData.evtData = _objectSpread2(_objectSpread2({}, eventData.evtData), {}, {
+                wzrk_pivot: notificationData.pivotId
+              });
+            } // WZRK PREFIX KEY VALUE PAIRS
+
 
             if (notificationData.msgCTkv) {
               var _iterator = _createForOfIteratorHelper(notificationData.msgCTkv),
@@ -3623,7 +3692,7 @@
       for (var index = 0; index < msg.inapp_notifs.length; index++) {
         var targetNotif = msg.inapp_notifs[index];
 
-        if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
+        if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0 || targetNotif.display.wtarget_type === 2) {
           showFooterNotification(targetNotif);
         } else if (targetNotif.display.wtarget_type === 1) {
           // if display['wtarget_type']==1 then exit intent
@@ -5022,6 +5091,8 @@
         value: _classPrivateFieldLooseBase(this, _checkPageChanged)[_checkPageChanged].bind(this)
       });
       this.enablePersonalization = void 0;
+      this.popupCallbacks = {};
+      this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
 
@@ -5103,6 +5174,43 @@
 
       this.getCleverTapID = function () {
         return _classPrivateFieldLooseBase(_this, _device$3)[_device$3].getGuid();
+      }; // method for notification viewed
+
+
+      this.renderNotificationViewed = function (detail) {
+        processNotificationEvent(NOTIFICATION_VIEWED, detail);
+      }; // method for notification clicked
+
+
+      this.renderNotificationClicked = function (detail) {
+        processNotificationEvent(NOTIFICATION_CLICKED, detail);
+      };
+
+      var processNotificationEvent = function processNotificationEvent(eventName, eventDetail) {
+        if (!eventDetail || !eventDetail.msgId) {
+          return;
+        }
+
+        var data = {};
+        data.type = 'event';
+        data.evtName = eventName;
+        data.evtData = _defineProperty({}, WZRK_ID, eventDetail.msgId);
+
+        if (eventDetail.pivotId) {
+          data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
+            wzrk_pivot: eventDetail.pivotId
+          });
+        }
+
+        if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
+          for (var key in eventDetail.kv) {
+            if (key.startsWith(WZRK_PREFIX)) {
+              data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, _defineProperty({}, key, eventDetail.kv[key]));
+            }
+          }
+        }
+
+        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].processEvent(data);
       };
 
       this.setLogLevel = function (l) {
@@ -5205,9 +5313,6 @@
     }
 
     _createClass(CleverTap, [{
-      key: "raiseNotificationClicked",
-      value: function raiseNotificationClicked() {}
-    }, {
       key: "init",
       value: function init(accountId, region, targetDomain) {
         if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
@@ -5357,6 +5462,12 @@
       key: "_isPersonalisationActive",
       value: function _isPersonalisationActive() {
         return StorageManager$1._isLocalStorageSupported() && this.enablePersonalization;
+      }
+    }, {
+      key: "popupCallback",
+      // eslint-disable-next-line accessor-pairs
+      set: function set(callback) {
+        this.popupCallbacks[this.popupCurrentWzrkId] = callback;
       }
     }]);
 
