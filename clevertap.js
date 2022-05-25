@@ -3388,6 +3388,11 @@
       var doc = ifrm.document;
       doc.open();
       doc.write(html);
+
+      if (displayObj['custom-editor']) {
+        appendScriptForCustomEvent(targetingMsgJson, doc);
+      }
+
       doc.close();
 
       var adjustIFrameHeight = function adjustIFrameHeight() {
@@ -3435,6 +3440,12 @@
           setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
         };
       }
+    };
+
+    var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, doc) {
+      var script = doc.createElement('script');
+      script.innerHTML = "\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc.push({[c]: formattedVal}));\n                return acc;\n            }, []);\n            onclickURL && msgCTkv.push({url: onclickURL});\n            href && msgCTkv.push({c2a: href});\n            const notifData = { msgId: ct__camapignId, msgCTkv };\n            console.log('Button Clicked Event', notifData);\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n    ");
+      doc.body.appendChild(script);
     };
 
     var _callBackCalled = false;
@@ -3669,6 +3680,11 @@
       var doc = ifrm.document;
       doc.open();
       doc.write(html);
+
+      if (targetingMsgJson.display['custom-editor']) {
+        appendScriptForCustomEvent(targetingMsgJson, doc);
+      }
+
       doc.close();
       var contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
@@ -5437,7 +5453,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.1.2'
+          lib: 'web-sdk-v1.2.0'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

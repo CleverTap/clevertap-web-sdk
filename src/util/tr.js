@@ -430,6 +430,10 @@ const _tr = (msg, {
 
     doc.open()
     doc.write(html)
+
+    if (displayObj['custom-editor']) {
+      appendScriptForCustomEvent(targetingMsgJson, doc)
+    }
     doc.close()
 
     const adjustIFrameHeight = () => {
@@ -473,6 +477,37 @@ const _tr = (msg, {
         setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
       }
     }
+  }
+
+  const appendScriptForCustomEvent = (targetingMsgJson, doc) => {
+    const script = doc.createElement('script')
+    script.innerHTML = `
+      const ct__camapignId = '${targetingMsgJson.wzrk_id}';
+      const ct__formatVal = (v) => {
+          return v && v.trim().substring(0, 20);
+      }
+      const ct__parentOrigin =  window.parent.origin;
+      document.body.addEventListener('click', (event) => {
+        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');
+        if (elem) {
+            const {innerText, id, name, value, href} = elem;
+            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');
+            const onclickURL = clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];
+            const props = {innerText, id, name, value};
+            let msgCTkv = Object.keys(props).reduce((acc, c) => {
+                const formattedVal = ct__formatVal(props[c]);
+                formattedVal && (acc.push({[c]: formattedVal}));
+                return acc;
+            }, []);
+            onclickURL && msgCTkv.push({url: onclickURL});
+            href && msgCTkv.push({c2a: href});
+            const notifData = { msgId: ct__camapignId, msgCTkv };
+            console.log('Button Clicked Event', notifData);
+            window.parent.clevertap.renderNotificationClicked(notifData);
+        }
+      });
+    `
+    doc.body.appendChild(script)
   }
 
   let _callBackCalled = false
@@ -699,6 +734,9 @@ const _tr = (msg, {
 
     doc.open()
     doc.write(html)
+    if (targetingMsgJson.display['custom-editor']) {
+      appendScriptForCustomEvent(targetingMsgJson, doc)
+    }
     doc.close()
 
     const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
