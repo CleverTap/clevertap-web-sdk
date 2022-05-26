@@ -5127,7 +5127,7 @@
 
       this.getDCDomain = function () {
         return 'dc-' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
-      }; // Get the Direct Call sdk version
+      }; // Set the Direct Call sdk version and fire request
 
 
       this.setDCSDKVersion = function (ver) {
