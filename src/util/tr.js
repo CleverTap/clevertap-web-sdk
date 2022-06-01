@@ -496,9 +496,9 @@ const _tr = (msg, {
             const props = {innerText, id, name, value};
             let msgCTkv = Object.keys(props).reduce((acc, c) => {
                 const formattedVal = ct__formatVal(props[c]);
-                formattedVal && (acc.push({[c]: formattedVal}));
+                formattedVal && (acc['wzrk_' + c] = formattedVal);
                 return acc;
-            }, []);
+            }, {});
             onclickURL && msgCTkv.push({url: onclickURL});
             href && msgCTkv.push({c2a: href});
             const notifData = { msgId: ct__camapignId, msgCTkv };
