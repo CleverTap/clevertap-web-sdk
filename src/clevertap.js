@@ -148,7 +148,7 @@ export default class CleverTap {
     }
 
     this.getDCDomain = () => {
-      return 'dc-' + this.#account.finalTargetDomain
+      return this.#account.finalTargetDomain
     }
 
     // Set the Direct Call sdk version and fire request

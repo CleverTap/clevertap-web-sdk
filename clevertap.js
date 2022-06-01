@@ -5126,7 +5126,7 @@
       };
 
       this.getDCDomain = function () {
-        return 'dc-' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
+        return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
       }; // Set the Direct Call sdk version and fire request
 
 
