@@ -180,7 +180,6 @@ export default class CleverTap {
       // Adding msgCTkv to event data
       if (eventDetail.msgCTkv && eventDetail.msgCTkv !== null && eventDetail.msgCTkv !== undefined) {
         for (const key in eventDetail.msgCTkv) {
-          console.log('Key is ', key)
           if (key.startsWith(WZRK_PREFIX)) {
             data.evtData = { ...data.evtData, [key]: eventDetail.msgCTkv[key] }
           }

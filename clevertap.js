@@ -5230,8 +5230,6 @@
 
         if (eventDetail.msgCTkv && eventDetail.msgCTkv !== null && eventDetail.msgCTkv !== undefined) {
           for (var _key in eventDetail.msgCTkv) {
-            console.log('Key is ', _key);
-
             if (_key.startsWith(WZRK_PREFIX)) {
               data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, _defineProperty({}, _key, eventDetail.msgCTkv[_key]));
             }
