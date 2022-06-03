@@ -5437,7 +5437,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.1.2'
+          lib: parseInt('1.2.0'.replaceAll('.', '0'))
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
