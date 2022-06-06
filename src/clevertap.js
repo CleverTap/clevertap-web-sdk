@@ -373,7 +373,7 @@ export default class CleverTap {
     if (parseInt(data.pg) === 1) {
       this.#overrideDSyncFlag(data)
     }
-    data.af = { lib: parseInt('$$PACKAGE_VERSION$$'.replaceAll('.', '0')) }
+    data.af = { lib: parseInt('$$PACKAGE_VERSION$$'.toString().replaceAll('.', '0')) }
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
