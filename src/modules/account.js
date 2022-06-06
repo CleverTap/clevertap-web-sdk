@@ -4,6 +4,7 @@ export default class Account {
   #accountId
   #region = ''
   #targetDomain = TARGET_DOMAIN
+  #dcSdkversion = ''
 
   constructor ({ id } = {}, region = '', targetDomain = TARGET_DOMAIN) {
     this.id = id
@@ -29,6 +30,14 @@ export default class Account {
 
   set region (region) {
     this.#region = region
+  }
+
+  get dcSDKVersion () {
+    return this.#dcSdkversion
+  }
+
+  set dcSDKVersion (dcSDKVersion) {
+    this.#dcSdkversion = dcSDKVersion
   }
 
   get targetDomain () {

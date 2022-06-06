@@ -323,6 +323,8 @@
 
   var _targetDomain = _classPrivateFieldLooseKey("targetDomain");
 
+  var _dcSdkversion = _classPrivateFieldLooseKey("dcSdkversion");
+
   var Account = /*#__PURE__*/function () {
     function Account() {
       var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
@@ -344,6 +346,10 @@
       Object.defineProperty(this, _targetDomain, {
         writable: true,
         value: TARGET_DOMAIN
+      });
+      Object.defineProperty(this, _dcSdkversion, {
+        writable: true,
+        value: ''
       });
       this.id = id;
 
@@ -371,6 +377,14 @@
       },
       set: function set(region) {
         _classPrivateFieldLooseBase(this, _region)[_region] = region;
+      }
+    }, {
+      key: "dcSDKVersion",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _dcSdkversion)[_dcSdkversion];
+      },
+      set: function set(dcSDKVersion) {
+        _classPrivateFieldLooseBase(this, _dcSdkversion)[_dcSdkversion] = dcSDKVersion;
       }
     }, {
       key: "targetDomain",
@@ -5028,8 +5042,10 @@
 
     function CleverTap() {
       var _clevertap$account,
+          _clevertap$account2,
+          _clevertap$account3,
           _this = this,
-          _clevertap$account2;
+          _clevertap$account4;
 
       var clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -5099,7 +5115,7 @@
       this.raiseNotificationClicked = function () {};
 
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = new Logger(logLevels.INFO);
-      _classPrivateFieldLooseBase(this, _account$5)[_account$5] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
+      _classPrivateFieldLooseBase(this, _account$5)[_account$5] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]));
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
       });
@@ -5174,6 +5190,31 @@
 
       this.getCleverTapID = function () {
         return _classPrivateFieldLooseBase(_this, _device$3)[_device$3].getGuid();
+      };
+
+      this.getAccountID = function () {
+        return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].id;
+      };
+
+      this.getDCDomain = function () {
+        return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
+      }; // Set the Direct Call sdk version and fire request
+
+
+      this.setDCSDKVersion = function (ver) {
+        _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion = ver;
+        var data = {};
+        data.af = {
+          dcv: 'dc-sdk-v' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion
+        };
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dataPostURL;
+
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
+
+        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
       }; // method for notification viewed
 
 
@@ -5304,7 +5345,7 @@
 
       window.$CLTP_WR = window.$WZRK_WR = api;
 
-      if ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id) {
+      if ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[0].id) {
         // The accountId is present so can init with empty values.
         // Needed to maintain backward compatability with legacy implementations.
         // Npm imports/require will need to call init explictly with accountId
