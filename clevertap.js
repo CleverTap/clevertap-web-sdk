@@ -5190,6 +5190,31 @@
 
       this.getCleverTapID = function () {
         return _classPrivateFieldLooseBase(_this, _device$3)[_device$3].getGuid();
+      };
+
+      this.getAccountID = function () {
+        return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].id;
+      };
+
+      this.getDCDomain = function () {
+        return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
+      }; // Set the Direct Call sdk version and fire request
+
+
+      this.setDCSDKVersion = function (ver) {
+        _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion = ver;
+        var data = {};
+        data.af = {
+          dcv: 'dc-sdk-v' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion
+        };
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dataPostURL;
+
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
+
+        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
       }; // method for notification viewed
 
 
@@ -5227,31 +5252,6 @@
         }
 
         _classPrivateFieldLooseBase(_this, _request$6)[_request$6].processEvent(data);
-      };
-
-      this.getAccountID = function () {
-        return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].id;
-      };
-
-      this.getDCDomain = function () {
-        return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
-      }; // Set the Direct Call sdk version and fire request
-
-
-      this.setDCSDKVersion = function (ver) {
-        _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion = ver;
-        var data = {};
-        data.af = {
-          dcv: 'dc-sdk-v' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion
-        };
-
-        var pageLoadUrl = _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dataPostURL;
-
-        pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
-
-        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
       };
 
       this.setLogLevel = function (l) {
@@ -5478,7 +5478,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.1.2'
+          lib: parseInt('1.2.0'.replace(/\./g, '0'))
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
