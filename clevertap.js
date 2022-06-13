@@ -853,7 +853,7 @@
       REQ_N: 0,
       RESP_N: 0
     },
-    LRU_cache: null,
+    LRU_CACHE: null,
     globalProfileMap: undefined,
     globalEventsMap: undefined,
     blockRequest: false,
@@ -2602,7 +2602,7 @@
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
             pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
 
-            _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust);
+            _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
           }
         }
       }
@@ -2757,7 +2757,7 @@
         if (anonymousUser) {
           if (g != null) {
             $ct.LRU_CACHE.set(kId, g);
-            $ct.blockRequeust = false;
+            $ct.blockRequest = false;
           }
         } else {
           for (var idx in ids) {
@@ -2902,7 +2902,7 @@
             // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
             // stored in the cache and replace it with the response arp.
 
-            _classPrivateFieldLooseBase(this, _request$3)[_request$3].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust, sendOULFlag);
+            _classPrivateFieldLooseBase(this, _request$3)[_request$3].saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag);
           }
         }
       }
@@ -2910,7 +2910,7 @@
   };
 
   var _handleCookieFromCache2 = function _handleCookieFromCache2() {
-    $ct.blockRequeust = false;
+    $ct.blockRequest = false;
     console.debug('Block request is false');
 
     if (StorageManager$1._isLocalStorageSupported()) {
@@ -2930,11 +2930,15 @@
   };
 
   var _deleteUser2 = function _deleteUser2() {
-    $ct.blockRequeust = true;
+    $ct.blockRequest = true;
 
     _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Block request is true');
 
-    $ct.globalCache = {};
+    $ct.globalCache = {
+      gcookie: null,
+      REQ_N: 0,
+      RESP_N: 0
+    };
 
     if (StorageManager$1._isLocalStorageSupported()) {
       delete localStorage[GCOOKIE_NAME];
@@ -4356,7 +4360,7 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false');
 
-        _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust);
+        _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       }
     }
   };
@@ -5332,7 +5336,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.1.2'
+          lib: 'web-sdk-v1.1.3'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

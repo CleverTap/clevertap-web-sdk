@@ -242,7 +242,7 @@ export const $ct = {
     REQ_N: 0,
     RESP_N: 0
   },
-  LRU_cache: null,
+  LRU_CACHE: null,
   globalProfileMap: undefined,
   globalEventsMap: undefined,
   blockRequest: false,
