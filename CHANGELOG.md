@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 14 Jun, 2022
+- Fixed a bug where multiple CleverTap IDs were generated due to a variable name mismatch.
+
 ## [1.1.2] - 27 Dec, 2021
 - Fixed a bug where trim method was used for non string values.
 
