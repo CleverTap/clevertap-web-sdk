@@ -78,7 +78,7 @@ export default class Privacy extends Array {
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false')
-        this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequeust)
+        this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
       }
     }
   }

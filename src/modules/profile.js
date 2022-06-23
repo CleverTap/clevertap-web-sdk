@@ -108,7 +108,7 @@ export default class ProfileHandler extends Array {
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
             pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-            this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequeust)
+            this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
           }
         }
       }
