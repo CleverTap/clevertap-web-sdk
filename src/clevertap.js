@@ -12,10 +12,14 @@ import ReqestManager from './modules/request'
 import {
   CAMP_COOKIE_NAME,
   SCOOKIE_PREFIX,
+  NOTIFICATION_VIEWED,
+  NOTIFICATION_CLICKED,
   EVT_PING,
   FIRST_PING_FREQ_IN_MILLIS,
   CONTINUOUS_PING_FREQ_IN_MILLIS,
   GROUP_SUBSCRIPTION_REQUEST_ID,
+  WZRK_ID,
+  WZRK_PREFIX,
   categoryLongKey
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
@@ -61,7 +65,7 @@ export default class CleverTap {
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.raiseNotificationClicked = () => {}
     this.#logger = new Logger(logLevels.INFO)
-    this.#account = new Account(clevertap.account?.[0], clevertap.region, clevertap.targetDomain)
+    this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2])
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#session = new SessionManager({
       logger: this.#logger,
@@ -143,6 +147,56 @@ export default class CleverTap {
       return this.#device.getGuid()
     }
 
+    this.getAccountID = () => {
+      return this.#account.id
+    }
+
+    this.getDCDomain = () => {
+      return this.#account.finalTargetDomain
+    }
+
+    // Set the Direct Call sdk version and fire request
+    this.setDCSDKVersion = (ver) => {
+      this.#account.dcSDKVersion = ver
+      const data = {}
+      data.af = { dcv: 'dc-sdk-v' + this.#account.dcSDKVersion }
+      let pageLoadUrl = this.#account.dataPostURL
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
+
+      this.#request.saveAndFireRequest(pageLoadUrl, false)
+    }
+    // method for notification viewed
+    this.renderNotificationViewed = (detail) => {
+      processNotificationEvent(NOTIFICATION_VIEWED, detail)
+    }
+
+    // method for notification clicked
+    this.renderNotificationClicked = (detail) => {
+      processNotificationEvent(NOTIFICATION_CLICKED, detail)
+    }
+
+    const processNotificationEvent = (eventName, eventDetail) => {
+      if (!eventDetail || !eventDetail.msgId) { return }
+      const data = {}
+      data.type = 'event'
+      data.evtName = eventName
+      data.evtData = { [WZRK_ID]: eventDetail.msgId }
+
+      if (eventDetail.pivotId) {
+        data.evtData = { ...data.evtData, wzrk_pivot: eventDetail.pivotId }
+      }
+
+      if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
+        for (const key in eventDetail.kv) {
+          if (key.startsWith(WZRK_PREFIX)) {
+            data.evtData = { ...data.evtData, [key]: eventDetail.kv[key] }
+          }
+        }
+      }
+      this.#request.processEvent(data)
+    }
+
     this.setLogLevel = (l) => {
       this.#logger.logLevel = Number(l)
     }
@@ -220,10 +274,6 @@ export default class CleverTap {
       // Npm imports/require will need to call init explictly with accountId
       this.init()
     }
-  }
-
-  raiseNotificationClicked () {
-
   }
 
   init (accountId, region, targetDomain) {
@@ -385,5 +435,13 @@ export default class CleverTap {
     if (this._isPersonalisationActive()) {
       data.dsync = true
     }
+  }
+
+  popupCallbacks = {};
+  popupCurrentWzrkId = '';
+
+  // eslint-disable-next-line accessor-pairs
+  set popupCallback (callback) {
+    this.popupCallbacks[this.popupCurrentWzrkId] = callback
   }
 }

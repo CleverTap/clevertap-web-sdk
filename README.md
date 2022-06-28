@@ -45,7 +45,7 @@ clevertap.privacy.push({useIP: false}); //set the flag to true, if the user agre
 		 var wzrk = document.createElement('script');
 		 wzrk.type = 'text/javascript';
 		 wzrk.async = true;
-		 wzrk.src = 'https://cdn.jsdelivr.net/npm/clevertap-web-sdk/clevertap.min.js';
+		 wzrk.src = 'https://d2r1yp2w7bby2u.cloudfront.net/js/clevertap.min.js';
 		 var s = document.getElementsByTagName('script')[0];
 		 s.parentNode.insertBefore(wzrk, s);
   })();
