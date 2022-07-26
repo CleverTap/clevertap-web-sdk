@@ -77,6 +77,25 @@ export default class RequestManager {
     return dataObject
   }
 
+  addSystemDataToProfileObject (dataObject, ignoreTrim) {
+    if (!isObjectEmpty(this.#logger.wzrkError)) {
+      dataObject.wzrk_error = this.#logger.wzrkError
+      this.#logger.wzrkError = {}
+    }
+
+    dataObject.id = this.#account.id
+
+    if (isValueValid(this.#device.gcookie)) {
+      dataObject.g = this.#device.gcookie
+    }
+
+    const obj = this.#session.getSessionCookieObject()
+    dataObject.s = obj.s // session cookie
+    dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
+
+    return dataObject
+  }
+
   addFlags (data) {
     // check if cookie should be cleared.
     this.#clearCookie = StorageManager.getAndClearMetaProp(CLEAR)

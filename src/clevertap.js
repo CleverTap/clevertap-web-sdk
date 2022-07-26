@@ -20,7 +20,13 @@ import {
   GROUP_SUBSCRIPTION_REQUEST_ID,
   WZRK_ID,
   WZRK_PREFIX,
-  categoryLongKey
+  categoryLongKey,
+  COMMAND_INCREMENT,
+  COMMAND_DECREMENT,
+  COMMAND_SET,
+  COMMAND_ADD,
+  COMMAND_REMOVE,
+  COMMAND_DELETE
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -41,6 +47,8 @@ export default class CleverTap {
   #isSpa
   #previousUrl
   #boundCheckPageChanged = this.#checkPageChanged.bind(this)
+  #isDisableWebPopUpSpamControl
+  #isOffline
   enablePersonalization
 
   get spa () {
@@ -58,6 +66,25 @@ export default class CleverTap {
       }
     }
     this.#isSpa = isSpa
+  }
+
+  get disableWebPopUpSpamControl () {
+    return this.#isDisableWebPopUpSpamControl
+  }
+
+  set disableWebPopUpSpamControl (value) {
+    const isDisableWebPopUpSpamControl = value === true
+    this.#isDisableWebPopUpSpamControl = isDisableWebPopUpSpamControl
+  }
+
+  get offlineMode () {
+    return this.#isOffline
+  }
+
+  set offlineMode (value) {
+    const isOffline = value
+    this.#api.offlineMode = isOffline
+    this.#isOffline = isOffline
   }
 
   constructor (clevertap = {}) {
@@ -120,6 +147,8 @@ export default class CleverTap {
     })
 
     this.spa = clevertap.spa
+    this.disableWebPopUpSpamControl = clevertap.disableWebPopUpSpamControl
+    this.isOffline = clevertap.isOffline
 
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
@@ -177,6 +206,37 @@ export default class CleverTap {
       processNotificationEvent(NOTIFICATION_CLICKED, detail)
     }
 
+    // Method to get location - lat, lng
+    this.getLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition, showError)
+      } else {
+        console.log('Geolocation is not supported by this browser.')
+      }
+    }
+
+    function showPosition (position) {
+      var lat = position.coords.latitude
+      var lng = position.coords.longitude
+      console.log('Location is ', lat, lng)
+    }
+
+    function showError (error) {
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          console.log('User denied the request for Geolocation.')
+          break
+        case error.POSITION_UNAVAILABLE:
+          console.log('Location information is unavailable.')
+          break
+        case error.TIMEOUT:
+          console.log('The request to get user location timed out.')
+          break
+        case error.UNKNOWN_ERROR:
+          console.log('An unknown error occurred.')
+          break
+      }
+    }
     const processNotificationEvent = (eventName, eventDetail) => {
       if (!eventDetail || !eventDetail.msgId) { return }
       const data = {}
@@ -202,6 +262,58 @@ export default class CleverTap {
       this.#logger.logLevel = Number(l)
     }
 
+    this.handleIncrementValue = (key, value) => {
+      this.profile._handleIncrementDecrementValue(key, value, COMMAND_INCREMENT)
+    }
+
+    this.handleDecrementValue = (key, value) => {
+      this.profile._handleIncrementDecrementValue(key, value, COMMAND_DECREMENT)
+    }
+
+    this.setMultiValuesForKey = (key, value) => {
+      if (Array.isArray(value)) {
+        this.profile._handleMultiValueSet(key, value, COMMAND_SET)
+      } else {
+        console.log('Value should be of type array.')
+      }
+    }
+
+    this.addMultiValueForKey = (key, value) => {
+      if (typeof value === 'string' || typeof value === 'number') {
+        this.profile._handleMultiValueAdd(key, value, COMMAND_ADD)
+      } else {
+        console.log('Value should be of type string.')
+      }
+    }
+
+    this.addMultiValuesForKey = (key, value) => {
+      if (Array.isArray(value)) {
+        this.profile._handleMultiValueAdd(key, value, COMMAND_ADD)
+      } else {
+        console.log('Value should be of type array.')
+      }
+    }
+
+    this.removeMultiValueForKey = (key, value) => {
+      if (typeof value === 'string' || typeof value === 'number') {
+        this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE)
+      } else {
+        console.log('Value should be of type string.')
+      }
+    }
+
+    this.removeMultiValuesForKey = (key, value) => {
+      if (Array.isArray(value)) {
+        this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE)
+      } else {
+        console.log('Value should be of type array.')
+      }
+    }
+
+    this.removeValueForKey = (key) => {
+      this.profile._handleMultiValueDelete(key, COMMAND_DELETE)
+    }
+
     const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
       handleEmailSubscription(subscription, reEncoded, fetchGroups, this.#account, this.#logger)
     }
@@ -220,7 +332,8 @@ export default class CleverTap {
         device: this.#device,
         session: this.#session,
         request: this.#request,
-        logger: this.#logger
+        logger: this.#logger,
+        isDisableWebPopUpSpamControl: this.#isDisableWebPopUpSpamControl
       })
     }
     api.setEnum = (enumVal) => {
