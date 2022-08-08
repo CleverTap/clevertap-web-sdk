@@ -22,9 +22,9 @@ export class CTWebPersonalisationBanner extends HTMLElement {
     this.shadow.innerHTML = this.getBannerContent()
     if (this.trackClick !== false) {
       this.addEventListener('click', () => {
-        const onClickUrl = this.details.onClickUrl
+        const onClickUrl = this.details.onClick
         if (onClickUrl) {
-          this.target.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl
+          this.details.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl
         }
         window.clevertap.renderNotificationClicked({ msgId: this.msgId, pivotId: this.pivotId })
       })

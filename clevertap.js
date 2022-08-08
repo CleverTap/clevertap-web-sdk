@@ -3022,10 +3022,10 @@
 
         if (this.trackClick !== false) {
           this.addEventListener('click', function () {
-            var onClickUrl = _this2.details.onClickUrl;
+            var onClickUrl = _this2.details.onClick;
 
             if (onClickUrl) {
-              _this2.target.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl;
+              _this2.details.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl;
             }
 
             window.clevertap.renderNotificationClicked({
