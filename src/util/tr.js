@@ -294,7 +294,7 @@ const _tr = (msg, {
         if (targetingMsgJson.msgContent.kv != null) {
           inaObj.kv = targetingMsgJson.msgContent.kv
         }
-        const kvPairsEvent = new CustomEvent('CT_web_personalization', { detail: inaObj })
+        const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
         document.dispatchEvent(kvPairsEvent)
         return
       }
