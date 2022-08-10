@@ -1,5 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
+## [1.2.1] - 11 Aug, 2022
+- Fixed a bug where useIP value was not getting updated.
+- Event name updated to "CT_web_native_display" for key-value templates.
+
 ## [1.2.0] - 28 Jun, 2022
 - Introduces the new "Web Personalization" channel with support for key-value templates.
 - Adds new method renderNotificationViewed to capture Notification Viewed events.
