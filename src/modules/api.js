@@ -31,12 +31,13 @@ export default class CleverTapAPI {
     }
 
     if (!isValueValid(this.#device.gcookie) || resume || typeof optOutResponse === 'boolean') {
+      this.#logger.debug(`Cookie was ${this.#device.gcookie} set to ${global}`)
+      this.#device.gcookie = global
+
       if (!isValueValid(this.#device.gcookie)) {
         // clear useIP meta prop
         StorageManager.getAndClearMetaProp(USEIP_KEY)
       }
-      this.#logger.debug(`Cookie was ${this.#device.gcookie} set to ${global}`)
-      this.#device.gcookie = global
 
       if (global && StorageManager._isLocalStorageSupported()) {
         if ($ct.LRU_CACHE == null) {

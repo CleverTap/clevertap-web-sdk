@@ -1101,14 +1101,14 @@
         }
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
+          _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
+
+          _classPrivateFieldLooseBase(this, _device)[_device].gcookie = global;
+
           if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
             // clear useIP meta prop
             StorageManager$1.getAndClearMetaProp(USEIP_KEY);
           }
-
-          _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
-
-          _classPrivateFieldLooseBase(this, _device)[_device].gcookie = global;
 
           if (global && StorageManager$1._isLocalStorageSupported()) {
             if ($ct.LRU_CACHE == null) {
@@ -3281,7 +3281,7 @@
             inaObj.kv = targetingMsgJson.msgContent.kv;
           }
 
-          var kvPairsEvent = new CustomEvent('CT_web_personalization', {
+          var kvPairsEvent = new CustomEvent('CT_web_native_display', {
             detail: inaObj
           });
           document.dispatchEvent(kvPairsEvent);
@@ -4410,7 +4410,9 @@
 
   var _processPrivacyArray2 = function _processPrivacyArray2(privacyArr) {
     if (Array.isArray(privacyArr) && privacyArr.length > 0) {
-      var privacyObj = privacyArr[0];
+      var privacyObj = privacyArr.reduce(function (prev, curr) {
+        return _objectSpread2(_objectSpread2({}, prev), curr);
+      }, {});
       var data = {};
       var profileObj = {};
       var optOut = false;
@@ -5481,7 +5483,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.2.0'
+          lib: 'web-sdk-v1.2.1'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
