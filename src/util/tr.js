@@ -492,15 +492,15 @@ const _tr = (msg, {
         if (elem) {
             const {innerText, id, name, value, href} = elem;
             const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');
-            const onclickURL = clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];
+            const onclickURL = clickAttr?.match(/(window.open)[(\](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];
             const props = {innerText, id, name, value};
             let msgCTkv = Object.keys(props).reduce((acc, c) => {
                 const formattedVal = ct__formatVal(props[c]);
                 formattedVal && (acc['wzrk_' + c] = formattedVal);
                 return acc;
             }, {});
-            onclickURL && msgCTkv.push({url: onclickURL});
-            href && msgCTkv.push({c2a: href});
+            if(onclickURL) { msgCTkv['wzrk_' + 'url'] = onclickURL; }
+            if(href) { msgCTkv['wzrk_' + 'c2a'] = href; }
             const notifData = { msgId: ct__camapignId, msgCTkv };
             console.log('Button Clicked Event', notifData);
             window.parent.clevertap.renderNotificationClicked(notifData);
