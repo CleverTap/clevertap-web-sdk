@@ -4242,30 +4242,34 @@
     }, {
       key: "unregisterTokenForGuid",
       value: function unregisterTokenForGuid(givenGUID) {
-        var data = {};
-        data.type = 'data';
-
-        if (isValueValid(givenGUID)) {
-          data.g = givenGUID;
-        }
-
-        data.action = 'unregister';
-        data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
-
-        var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
-
-        data.s = obj.s; // session cookie
-
-        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
-
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
-
-        pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-        StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
-        RequestDispatcher.fireRequest(pageLoadUrl, true); // REGISTER TOKEN
-
         var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA);
+
+        if (payload) {
+          var data = {};
+          data.type = 'data';
+
+          if (isValueValid(givenGUID)) {
+            data.g = givenGUID;
+          }
+
+          data.action = 'unregister';
+          data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+
+          var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
+
+          data.s = obj.s; // session cookie
+
+          var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+
+          var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+
+          pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
+          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+          RequestDispatcher.fireRequest(pageLoadUrl, true);
+          StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
+        } // REGISTER TOKEN
+
+
         this.registerToken(payload);
       }
     }, {

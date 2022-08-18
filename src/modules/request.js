@@ -122,28 +122,28 @@ export default class RequestManager {
   }
 
   unregisterTokenForGuid (givenGUID) {
-    const data = {}
-    data.type = 'data'
-    if (isValueValid(givenGUID)) {
-      data.g = givenGUID
-    }
-    data.action = 'unregister'
-    data.id = this.#account.id
-
-    const obj = this.#session.getSessionCookieObject()
-
-    data.s = obj.s // session cookie
-    const compressedData = compressData(JSON.stringify(data), this.#logger)
-
-    let pageLoadUrl = this.#account.dataPostURL
-    pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
-
-    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
-    RequestDispatcher.fireRequest(pageLoadUrl, true)
-
-    // REGISTER TOKEN
     const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
+    if (payload) {
+      const data = {}
+      data.type = 'data'
+      if (isValueValid(givenGUID)) {
+        data.g = givenGUID
+      }
+      data.action = 'unregister'
+      data.id = this.#account.id
+
+      const obj = this.#session.getSessionCookieObject()
+
+      data.s = obj.s // session cookie
+      const compressedData = compressData(JSON.stringify(data), this.#logger)
+
+      let pageLoadUrl = this.#account.dataPostURL
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+      RequestDispatcher.fireRequest(pageLoadUrl, true)
+      StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
+    }
+    // REGISTER TOKEN
     this.registerToken(payload)
   }
 
