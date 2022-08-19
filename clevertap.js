@@ -3043,7 +3043,7 @@
     }, {
       key: "getBannerContent",
       value: function getBannerContent() {
-        return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n        }\n        img {\n          height: auto;\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ".concat(this.details.css, "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:600px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\">\n        </picture>\n        ").concat(this.details.html, "\n      </div>\n    ");
+        return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n        }\n        img {\n          height: auto;\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ".concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:600px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
       }
     }, {
       key: "details",
@@ -3506,6 +3506,12 @@
       data.type = 'event';
       data.evtName = NOTIFICATION_VIEWED;
       data.evtData = _defineProperty({}, WZRK_ID, targetingMsgJson.wzrk_id);
+
+      if (targetingMsgJson.wzrk_pivot) {
+        data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
+          wzrk_pivot: targetingMsgJson.wzrk_pivot
+        });
+      }
 
       _request.processEvent(data);
     };

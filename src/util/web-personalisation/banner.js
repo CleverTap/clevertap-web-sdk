@@ -53,7 +53,7 @@ export class CTWebPersonalisationBanner extends HTMLElement {
           overflow: auto;
           top: 0;
         }
-        ${this.details.css}
+        ${this.details.css ? this.details.css : ''}
       </style>
       <div class="banner">
         <picture>
@@ -61,7 +61,7 @@ export class CTWebPersonalisationBanner extends HTMLElement {
           <source srcset="${this.details.mobileImageURL}">
           <img src="${this.details.desktopImageURL}" alt="Please upload a picture" style="width:100%;">
         </picture>
-        ${this.details.html}
+        ${this.details.html ? this.details.html : ''}
       </div>
     `
   }

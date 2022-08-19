@@ -250,6 +250,9 @@ const _tr = (msg, {
     data.type = 'event'
     data.evtName = NOTIFICATION_VIEWED
     data.evtData = { [WZRK_ID]: targetingMsgJson.wzrk_id }
+    if (targetingMsgJson.wzrk_pivot) {
+      data.evtData = { ...data.evtData, wzrk_pivot: targetingMsgJson.wzrk_pivot }
+    }
     _request.processEvent(data)
   }
 
