@@ -323,6 +323,8 @@
 
   var _targetDomain = _classPrivateFieldLooseKey("targetDomain");
 
+  var _dcSdkversion = _classPrivateFieldLooseKey("dcSdkversion");
+
   var Account = /*#__PURE__*/function () {
     function Account() {
       var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
@@ -344,6 +346,10 @@
       Object.defineProperty(this, _targetDomain, {
         writable: true,
         value: TARGET_DOMAIN
+      });
+      Object.defineProperty(this, _dcSdkversion, {
+        writable: true,
+        value: ''
       });
       this.id = id;
 
@@ -371,6 +377,14 @@
       },
       set: function set(region) {
         _classPrivateFieldLooseBase(this, _region)[_region] = region;
+      }
+    }, {
+      key: "dcSDKVersion",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _dcSdkversion)[_dcSdkversion];
+      },
+      set: function set(dcSDKVersion) {
+        _classPrivateFieldLooseBase(this, _dcSdkversion)[_dcSdkversion] = dcSDKVersion;
       }
     }, {
       key: "targetDomain",
@@ -853,7 +867,7 @@
       REQ_N: 0,
       RESP_N: 0
     },
-    LRU_cache: null,
+    LRU_CACHE: null,
     globalProfileMap: undefined,
     globalEventsMap: undefined,
     blockRequest: false,
@@ -1087,14 +1101,14 @@
         }
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
+          _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
+
+          _classPrivateFieldLooseBase(this, _device)[_device].gcookie = global;
+
           if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
             // clear useIP meta prop
             StorageManager$1.getAndClearMetaProp(USEIP_KEY);
           }
-
-          _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
-
-          _classPrivateFieldLooseBase(this, _device)[_device].gcookie = global;
 
           if (global && StorageManager$1._isLocalStorageSupported()) {
             if ($ct.LRU_CACHE == null) {
@@ -2602,7 +2616,7 @@
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
             pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
 
-            _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust);
+            _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
           }
         }
       }
@@ -2757,7 +2771,7 @@
         if (anonymousUser) {
           if (g != null) {
             $ct.LRU_CACHE.set(kId, g);
-            $ct.blockRequeust = false;
+            $ct.blockRequest = false;
           }
         } else {
           for (var idx in ids) {
@@ -2902,7 +2916,7 @@
             // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
             // stored in the cache and replace it with the response arp.
 
-            _classPrivateFieldLooseBase(this, _request$3)[_request$3].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust, sendOULFlag);
+            _classPrivateFieldLooseBase(this, _request$3)[_request$3].saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag);
           }
         }
       }
@@ -2910,7 +2924,7 @@
   };
 
   var _handleCookieFromCache2 = function _handleCookieFromCache2() {
-    $ct.blockRequeust = false;
+    $ct.blockRequest = false;
     console.debug('Block request is false');
 
     if (StorageManager$1._isLocalStorageSupported()) {
@@ -2930,11 +2944,15 @@
   };
 
   var _deleteUser2 = function _deleteUser2() {
-    $ct.blockRequeust = true;
+    $ct.blockRequest = true;
 
     _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Block request is true');
 
-    $ct.globalCache = {};
+    $ct.globalCache = {
+      gcookie: null,
+      REQ_N: 0,
+      RESP_N: 0
+    };
 
     if (StorageManager$1._isLocalStorageSupported()) {
       delete localStorage[GCOOKIE_NAME];
@@ -3263,7 +3281,7 @@
             inaObj.kv = targetingMsgJson.msgContent.kv;
           }
 
-          var kvPairsEvent = new CustomEvent('CT_web_personalization', {
+          var kvPairsEvent = new CustomEvent('CT_web_native_display', {
             detail: inaObj
           });
           document.dispatchEvent(kvPairsEvent);
@@ -4408,7 +4426,9 @@
 
   var _processPrivacyArray2 = function _processPrivacyArray2(privacyArr) {
     if (Array.isArray(privacyArr) && privacyArr.length > 0) {
-      var privacyObj = privacyArr[0];
+      var privacyObj = privacyArr.reduce(function (prev, curr) {
+        return _objectSpread2(_objectSpread2({}, prev), curr);
+      }, {});
       var data = {};
       var profileObj = {};
       var optOut = false;
@@ -4441,7 +4461,7 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false');
 
-        _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequeust);
+        _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       }
     }
   };
@@ -5044,8 +5064,10 @@
 
     function CleverTap() {
       var _clevertap$account,
+          _clevertap$account2,
+          _clevertap$account3,
           _this = this,
-          _clevertap$account2;
+          _clevertap$account4;
 
       var clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -5115,7 +5137,7 @@
       this.raiseNotificationClicked = function () {};
 
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = new Logger(logLevels.INFO);
-      _classPrivateFieldLooseBase(this, _account$5)[_account$5] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
+      _classPrivateFieldLooseBase(this, _account$5)[_account$5] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]));
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
       });
@@ -5190,6 +5212,30 @@
 
       this.getCleverTapID = function () {
         return _classPrivateFieldLooseBase(_this, _device$3)[_device$3].getGuid();
+      };
+
+      this.getAccountID = function () {
+        return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].id;
+      };
+
+      this.getDCDomain = function () {
+        return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
+      }; // Set the Direct Call sdk version and fire request
+
+
+      this.setDCSDKVersion = function (ver) {
+        _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion = ver;
+        var data = {};
+        data.af = {
+          dcv: 'dc-sdk-v' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion
+        };
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dataPostURL;
+
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
+
+        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
       }; // method for notification viewed
 
 
@@ -5330,7 +5376,7 @@
 
       window.$CLTP_WR = window.$WZRK_WR = api;
 
-      if ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[0].id) {
+      if ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[0].id) {
         // The accountId is present so can init with empty values.
         // Needed to maintain backward compatability with legacy implementations.
         // Npm imports/require will need to call init explictly with accountId
@@ -5463,7 +5509,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.2.0'
+          lib: 'web-sdk-v1.2.1'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
