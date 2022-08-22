@@ -4258,30 +4258,34 @@
     }, {
       key: "unregisterTokenForGuid",
       value: function unregisterTokenForGuid(givenGUID) {
-        var data = {};
-        data.type = 'data';
+        var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA); // Send unregister event only when token is available
 
-        if (isValueValid(givenGUID)) {
-          data.g = givenGUID;
-        }
+        if (payload) {
+          var data = {};
+          data.type = 'data';
 
-        data.action = 'unregister';
-        data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+          if (isValueValid(givenGUID)) {
+            data.g = givenGUID;
+          }
 
-        var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
+          data.action = 'unregister';
+          data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
 
-        data.s = obj.s; // session cookie
+          var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
 
-        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+          data.s = obj.s; // session cookie
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+          var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
 
-        pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-        StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
-        RequestDispatcher.fireRequest(pageLoadUrl, true); // REGISTER TOKEN
+          var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
 
-        var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA);
+          pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
+          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+          RequestDispatcher.fireRequest(pageLoadUrl, true);
+          StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
+        } // REGISTER TOKEN
+
+
         this.registerToken(payload);
       }
     }, {
