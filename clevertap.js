@@ -3406,6 +3406,11 @@
       var doc = ifrm.document;
       doc.open();
       doc.write(html);
+
+      if (displayObj['custom-editor']) {
+        appendScriptForCustomEvent(targetingMsgJson, doc);
+      }
+
       doc.close();
 
       var adjustIFrameHeight = function adjustIFrameHeight() {
@@ -3453,6 +3458,12 @@
           setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
         };
       }
+    };
+
+    var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, doc) {
+      var script = doc.createElement('script');
+      script.innerHTML = "\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv };\n            console.log('Button Clicked Event', notifData);\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n    ");
+      doc.body.appendChild(script);
     };
 
     var _callBackCalled = false;
@@ -3687,6 +3698,11 @@
       var doc = ifrm.document;
       doc.open();
       doc.write(html);
+
+      if (targetingMsgJson.display['custom-editor']) {
+        appendScriptForCustomEvent(targetingMsgJson, doc);
+      }
+
       doc.close();
       var contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
@@ -5246,12 +5262,22 @@
           data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
             wzrk_pivot: eventDetail.pivotId
           });
-        }
+        } // Adding kv pair to event data
+
 
         if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
           for (var key in eventDetail.kv) {
             if (key.startsWith(WZRK_PREFIX)) {
               data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, _defineProperty({}, key, eventDetail.kv[key]));
+            }
+          }
+        } // Adding msgCTkv to event data
+
+
+        if (eventDetail.msgCTkv && eventDetail.msgCTkv !== null && eventDetail.msgCTkv !== undefined) {
+          for (var _key in eventDetail.msgCTkv) {
+            if (_key.startsWith(WZRK_PREFIX)) {
+              data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, _defineProperty({}, _key, eventDetail.msgCTkv[_key]));
             }
           }
         }

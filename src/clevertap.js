@@ -187,10 +187,20 @@ export default class CleverTap {
         data.evtData = { ...data.evtData, wzrk_pivot: eventDetail.pivotId }
       }
 
+      // Adding kv pair to event data
       if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
         for (const key in eventDetail.kv) {
           if (key.startsWith(WZRK_PREFIX)) {
             data.evtData = { ...data.evtData, [key]: eventDetail.kv[key] }
+          }
+        }
+      }
+
+      // Adding msgCTkv to event data
+      if (eventDetail.msgCTkv && eventDetail.msgCTkv !== null && eventDetail.msgCTkv !== undefined) {
+        for (const key in eventDetail.msgCTkv) {
+          if (key.startsWith(WZRK_PREFIX)) {
+            data.evtData = { ...data.evtData, [key]: eventDetail.msgCTkv[key] }
           }
         }
       }
