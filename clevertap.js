@@ -4242,7 +4242,7 @@
     }, {
       key: "unregisterTokenForGuid",
       value: function unregisterTokenForGuid(givenGUID) {
-        var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA);
+        var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA); // Send unregister event only when token is available
 
         if (payload) {
           var data = {};

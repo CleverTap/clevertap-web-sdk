@@ -123,6 +123,7 @@ export default class RequestManager {
 
   unregisterTokenForGuid (givenGUID) {
     const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
+    // Send unregister event only when token is available
     if (payload) {
       const data = {}
       data.type = 'data'
