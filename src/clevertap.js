@@ -26,7 +26,8 @@ import {
   COMMAND_SET,
   COMMAND_ADD,
   COMMAND_REMOVE,
-  COMMAND_DELETE
+  COMMAND_DELETE,
+  EVT_PUSH
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -51,11 +52,11 @@ export default class CleverTap {
   #isOffline
   enablePersonalization
 
-  get spa () {
+  get spa() {
     return this.#isSpa
   }
 
-  set spa (value) {
+  set spa(value) {
     const isSpa = value === true
     if (this.#isSpa !== isSpa && this.#onloadcalled === 1) {
       // if clevertap.spa is changed after init has been called then update the click listeners
@@ -68,29 +69,29 @@ export default class CleverTap {
     this.#isSpa = isSpa
   }
 
-  get disableWebPopUpSpamControl () {
+  get dismissSpamControl() {
     return this.#isDisableWebPopUpSpamControl
   }
 
-  set disableWebPopUpSpamControl (value) {
+  set dismissSpamControl(value) {
     const isDisableWebPopUpSpamControl = value === true
     this.#isDisableWebPopUpSpamControl = isDisableWebPopUpSpamControl
   }
 
-  get offlineMode () {
+  get offlineMode() {
     return this.#isOffline
   }
 
-  set offlineMode (value) {
+  set offlineMode(value) {
     const isOffline = value
     this.#api.offlineMode = isOffline
     this.#isOffline = isOffline
   }
 
-  constructor (clevertap = {}) {
+  constructor(clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
-    this.raiseNotificationClicked = () => {}
+    this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2])
     this.#device = new DeviceManager({ logger: this.#logger })
@@ -147,7 +148,7 @@ export default class CleverTap {
     })
 
     this.spa = clevertap.spa
-    this.disableWebPopUpSpamControl = clevertap.disableWebPopUpSpamControl
+    this.dismissSpamControl = clevertap.dismissSpamControl
     this.isOffline = clevertap.isOffline
 
     this.user = new User({
@@ -206,37 +207,66 @@ export default class CleverTap {
       processNotificationEvent(NOTIFICATION_CLICKED, detail)
     }
 
-    // Method to get location - lat, lng
-    this.getLocation = () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(showPosition, showError)
-      } else {
-        console.log('Geolocation is not supported by this browser.')
-      }
-    }
+    // Method to get location - lat, long
+    /**
+     *
+     * @param {number} lat
+     * @param {number} lng
+     * @param {callback function} handleCoordinates
+     * @returns
+     */
+    // this.getLocation = function (lat, lng) {
+    //   if (lat && lng) {
+    //     // latitude and longitude should be number type
+    //     if (isNaN(lat) || isNaN(lng)) {
+    //       console.log('Latitude and longitude should be of number type')
+    //       return
+    //     }
+    //     // valid latitude ranges bw +-90
+    //     if (lat <= -90 || lat > 90) {
+    //       console.log('A vaid latitude must range between -90 and 90')
+    //       return
+    //     }
+    //     // valid longitude ranges bw +-180
+    //     if (lng <= -180 || lng > 180) {
+    //       console.log('A valid longitude must range between -180 and 180')
+    //       return
+    //     }
+    //   } else {
+    //     if (navigator.geolocation) {
+    //       navigator.geolocation.getCurrentPosition(handleCoordinates, showError)
+    //     } else {
+    //       console.log('Geolocation is not supported by this browser.')
+    //     }
+    //   }
+    // }
 
-    function showPosition (position) {
-      var lat = position.coords.latitude
-      var lng = position.coords.longitude
-      console.log('Location is ', lat, lng)
-    }
+    //   this.sendMultiValueData({ Latitude: lat, Longitude: lng })
+    // }
 
-    function showError (error) {
-      switch (error.code) {
-        case error.PERMISSION_DENIED:
-          console.log('User denied the request for Geolocation.')
-          break
-        case error.POSITION_UNAVAILABLE:
-          console.log('Location information is unavailable.')
-          break
-        case error.TIMEOUT:
-          console.log('The request to get user location timed out.')
-          break
-        case error.UNKNOWN_ERROR:
-          console.log('An unknown error occurred.')
-          break
-      }
-    }
+    // function showPosition (position) {
+    //   var lat = position.coords.latitude
+    //   var lng = position.coords.longitude
+    //   console.log('Location is ', lat, lng)
+    // }
+
+    // function showError(error) {
+    //   switch (error.code) {
+    //     case error.PERMISSION_DENIED:
+    //       console.log('User denied the request for Geolocation.')
+    //       break
+    //     case error.POSITION_UNAVAILABLE:
+    //       console.log('Location information is unavailable.')
+    //       break
+    //     case error.TIMEOUT:
+    //       console.log('The request to get user location timed out.')
+    //       break
+    //     case error.UNKNOWN_ERROR:
+    //       console.log('An unknown error occurred.')
+    //       break
+    //   }
+    // }
+
     const processNotificationEvent = (eventName, eventDetail) => {
       if (!eventDetail || !eventDetail.msgId) { return }
       const data = {}
@@ -261,7 +291,11 @@ export default class CleverTap {
     this.setLogLevel = (l) => {
       this.#logger.logLevel = Number(l)
     }
-
+/**
+ * NOTE - Test here
+ * @param {} key 
+ * @param {*} value 
+ */
     this.handleIncrementValue = (key, value) => {
       this.profile._handleIncrementDecrementValue(key, value, COMMAND_INCREMENT)
     }
@@ -282,6 +316,7 @@ export default class CleverTap {
       if (typeof value === 'string' || typeof value === 'number') {
         this.profile._handleMultiValueAdd(key, value, COMMAND_ADD)
       } else {
+        // NOTE - we have a check that allows both number and string above.
         console.log('Value should be of type string.')
       }
     }
@@ -390,7 +425,7 @@ export default class CleverTap {
     }
   }
 
-  init (accountId, region, targetDomain) {
+  init(accountId, region, targetDomain) {
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
@@ -435,7 +470,7 @@ export default class CleverTap {
     this.#onloadcalled = 1
   }
 
-  #processOldValues () {
+  #processOldValues() {
     this.onUserLogin._processOldValues()
     this.privacy._processOldValues()
     this.event._processOldValues()
@@ -443,13 +478,13 @@ export default class CleverTap {
     this.notifications._processOldValues()
   }
 
-  #checkPageChanged () {
+  #checkPageChanged() {
     if (this.#previousUrl !== location.href) {
       this.pageChanged()
     }
   }
 
-  pageChanged () {
+  pageChanged() {
     const currLocation = window.location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
     // -- update page count
@@ -527,7 +562,7 @@ export default class CleverTap {
     }, FIRST_PING_FREQ_IN_MILLIS)
   }
 
-  #pingRequest () {
+  #pingRequest() {
     let pageLoadUrl = this.#account.dataPostURL
     let data = {}
     data = this.#request.addSystemDataToObject(data, undefined)
@@ -537,15 +572,15 @@ export default class CleverTap {
     this.#request.saveAndFireRequest(pageLoadUrl, false)
   }
 
-  #isPingContinuous () {
+  #isPingContinuous() {
     return (typeof window.wzrk_d !== 'undefined' && window.wzrk_d.ping === 'continuous')
   }
 
-  _isPersonalisationActive () {
+  _isPersonalisationActive() {
     return StorageManager._isLocalStorageSupported() && this.enablePersonalization
   }
 
-  #overrideDSyncFlag (data) {
+  #overrideDSyncFlag(data) {
     if (this._isPersonalisationActive()) {
       data.dsync = true
     }
@@ -555,7 +590,38 @@ export default class CleverTap {
   popupCurrentWzrkId = '';
 
   // eslint-disable-next-line accessor-pairs
-  set popupCallback (callback) {
+  set popupCallback(callback) {
     this.popupCallbacks[this.popupCurrentWzrkId] = callback
+  }
+
+  /**
+   *
+   * @param {object} payload
+   */
+  sendMultiValueData(payload) {
+    // Send the updated value to LC
+    let data = {}
+    data.af = {}
+    const profileObj = {}
+    data.type = 'profile'
+    if (profileObj.tz == null) {
+      profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
+    }
+    data.profile = profileObj
+    if (payload) {
+      const keys = Object.keys(payload)
+      keys.forEach(key => {
+        data.af[key] = payload[key]
+      })
+    }
+    console.log({ data })
+    data = this.#request.addSystemDataToProfileObject(data, undefined)
+    this.#request.addFlags(data)
+    const compressedData = compressData(JSON.stringify(data), this.#logger)
+    let pageLoadUrl = this.#account.dataPostURL
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+
+    this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
   }
 }

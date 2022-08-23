@@ -5466,22 +5466,56 @@
 
       this.renderNotificationClicked = function (detail) {
         processNotificationEvent(NOTIFICATION_CLICKED, detail);
-      }; // Method to get location - lat, lng
+      }; // Method to get location - lat, long
+
+      /**
+       *
+       * @param {number} lat
+       * @param {number} lng
+       * @param {callback function} handleCoordinates
+       * @returns
+       */
 
 
-      this.getLocation = function () {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(showPosition, showError);
+      this.getLocation = function (lat, lng, handleCoordinates) {
+        if (lat && lng) {
+          // latitude and longitude should be number type
+          if (isNaN(lat) || isNaN(lng)) {
+            console.log('Latitude and longitude should be of number type');
+            return;
+          } // valid latitude ranges bw +-90
+
+
+          if (lat <= -90 || lat > 90) {
+            console.log('A vaid latitude must range between -90 and 90');
+            return;
+          } // valid longitude ranges bw +-180
+
+
+          if (lng <= -180 || lng > 180) {
+            console.log('A valid longitude must range between -180 and 180');
+            return;
+          }
+
+          this.sendMultiValueData({
+            Latitude: lat,
+            Longitude: lng
+          });
+        } else if (handleCoordinates && handleCoordinates instanceof Function) {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(handleCoordinates, showError);
+          } else {
+            console.log('Geolocation is not supported by this browser.');
+          }
         } else {
-          console.log('Geolocation is not supported by this browser.');
+          console.log('missing or invalid params. Please refer to documentation');
         }
-      };
+      }; // function showPosition (position) {
+      //   var lat = position.coords.latitude
+      //   var lng = position.coords.longitude
+      //   console.log('Location is ', lat, lng)
+      // }
 
-      function showPosition(position) {
-        var lat = position.coords.latitude;
-        var lng = position.coords.longitude;
-        console.log('Location is ', lat, lng);
-      }
 
       function showError(error) {
         switch (error.code) {
@@ -5832,6 +5866,49 @@
       key: "_isPersonalisationActive",
       value: function _isPersonalisationActive() {
         return StorageManager._isLocalStorageSupported() && this.enablePersonalization;
+      }
+    }, {
+      key: "sendMultiValueData",
+
+      /**
+       *
+       * @param {object} payload
+       */
+      value: function sendMultiValueData(payload) {
+        // Send the updated value to LC
+        var data = {};
+        data.af = {};
+        var profileObj = {};
+        data.type = 'profile';
+
+        if (profileObj.tz == null) {
+          profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+        }
+
+        data.profile = profileObj;
+
+        if (payload) {
+          var keys = Object.keys(payload);
+          keys.forEach(function (key) {
+            data.af[key] = payload[key];
+          });
+        }
+
+        console.log({
+          data: data
+        });
+        data = _classPrivateFieldLooseBase(this, _request$6)[_request$6].addSystemDataToProfileObject(data, undefined);
+
+        _classPrivateFieldLooseBase(this, _request$6)[_request$6].addFlags(data);
+
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]);
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
+
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+
+        _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       }
     }, {
       key: "popupCallback",
