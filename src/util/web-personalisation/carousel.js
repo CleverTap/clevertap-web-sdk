@@ -54,6 +54,7 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
     // TODO: enable conditionally
     this.startAutoSlide()
     this.setupOnHover()
+    window.clevertap.renderNotificationViewed({ msgId: this.target.wzrk_id, pivotId: this.target.wzrk_pivot })
   }
 
   setupClick () {
@@ -74,7 +75,8 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
         const item = +eventID.split('-')[1]
         const index = item - 1
         if (window.parent.clevertap) {
-          console.log('Raise notification clicked event for ', item)
+          // console.log('Raise notification clicked event for ', item)
+          window.clevertap.renderNotificationClicked({ msgId: this.target.wzrk_id, pivotId: this.target.wzrk_pivot, wzrk_slideNo: item })
         }
         const url = this.details[index].onClick
         if (url !== '') {
@@ -162,7 +164,7 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
     clearInterval(this.autoSlide)
     this.autoSlide = setInterval(() => {
       this.goToNext()
-    }, 3000)
+    }, this.display.sliderTime ? this.display.sliderTime * 1000 : 3000)
   }
 
   goToNext () {

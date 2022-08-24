@@ -3114,6 +3114,10 @@
 
         this.startAutoSlide();
         this.setupOnHover();
+        window.clevertap.renderNotificationViewed({
+          msgId: this.target.wzrk_id,
+          pivotId: this.target.wzrk_pivot
+        });
       }
     }, {
       key: "setupClick",
@@ -3143,7 +3147,12 @@
             var index = item - 1;
 
             if (window.parent.clevertap) {
-              console.log('Raise notification clicked event for ', item);
+              // console.log('Raise notification clicked event for ', item)
+              window.clevertap.renderNotificationClicked({
+                msgId: _this2.target.wzrk_id,
+                pivotId: _this2.target.wzrk_pivot,
+                wzrk_slideNo: item
+              });
             }
 
             var url = _this2.details[index].onClick;
@@ -3216,7 +3225,7 @@
         clearInterval(this.autoSlide);
         this.autoSlide = setInterval(function () {
           _this4.goToNext();
-        }, 3000);
+        }, this.display.sliderTime ? this.display.sliderTime * 1000 : 3000);
       }
     }, {
       key: "goToNext",
@@ -5541,6 +5550,12 @@
         if (eventDetail.pivotId) {
           data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
             wzrk_pivot: eventDetail.pivotId
+          });
+        }
+
+        if (eventDetail.wzrk_slideNo) {
+          data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
+            wzrk_slideNo: eventDetail.wzrk_slideNo
           });
         }
 
