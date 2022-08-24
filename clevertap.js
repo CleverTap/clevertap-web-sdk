@@ -2567,16 +2567,24 @@
       }
     }, {
       key: "_handleIncrementDecrementValue",
-      value: function _handleIncrementDecrementValue(key, value, commad) {
-        if (value <= 0) {
-          // Check if the value is greater than 0
-          console.log('Value should be greater than 0');
+
+      /**
+       *
+       * @param {any} key
+       * @param {number} value
+       * @param {string} command
+       * increases or decreases value of the number type properties in profile object
+       */
+      value: function _handleIncrementDecrementValue(key, value, command) {
+        // Check if the value is greater than 0
+        if (!value || typeof value !== 'number' || value <= 0) {
+          console.log('Value should be a number greater than 0');
         } else if (!$ct.globalProfileMap.hasOwnProperty(key)) {
           // Check if the profile map already has the propery defined
           console.log('Property doesnt exist');
         } else {
           // Update the profile property in local storage
-          if (commad === COMMAND_INCREMENT) {
+          if (command === COMMAND_INCREMENT) {
             $ct.globalProfileMap[key] = $ct.globalProfileMap[key] + value;
           } else {
             $ct.globalProfileMap[key] = $ct.globalProfileMap[key] - value;
@@ -2587,7 +2595,7 @@
           var data = {};
           var profileObj = {};
           data.type = 'profile';
-          profileObj[key] = _defineProperty({}, commad, value);
+          profileObj[key] = _defineProperty({}, command, value);
 
           if (profileObj.tz == null) {
             // try to auto capture user timezone if not present
@@ -2610,14 +2618,22 @@
           _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
         }
       }
+      /**
+       *
+       * @param {any} key
+       * @param {array} arrayVal
+       * @param {string} command
+       * overwrites/sets new value(s) against a key/property in profile object
+       */
+
     }, {
       key: "_handleMultiValueSet",
-      value: function _handleMultiValueSet(arrayName, arrayVal, command) {
+      value: function _handleMultiValueSet(key, arrayVal, command) {
         var array = [];
 
         for (var i = 0; i < arrayVal.length; i++) {
           if (typeof arrayVal[i] === 'number' && !array.includes(arrayVal[i]) || !array.includes(arrayVal[i].toLowerCase())) {
-            array.push(arrayVal[i]);
+            array.push(arrayVal[i].toLowerCase());
           }
         }
 
@@ -2625,10 +2641,18 @@
           $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
         }
 
-        $ct.globalProfileMap[arrayName] = array;
+        $ct.globalProfileMap[key] = array;
         StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-        this.sendMultiValueData(arrayName, arrayVal, command);
+        this.sendMultiValueData(key, arrayVal, command);
       }
+      /**
+       *
+       * @param {any} propKey - the property name to be added in the profile object
+       * @param {string, number, array} propVal - the property value to be added against the @propkey key
+       * @param {string} command
+       * Adds array or single value against a key/property in profile object
+       */
+
     }, {
       key: "_handleMultiValueAdd",
       value: function _handleMultiValueAdd(propKey, propVal, command) {
@@ -2636,23 +2660,29 @@
 
         if ($ct.globalProfileMap == null) {
           $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
-        }
+        } // if the value to be set is either string or number
+
 
         if (typeof propVal === 'string' || typeof propVal === 'number') {
           if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
             array = $ct.globalProfileMap[propKey];
-            array.push(propVal);
+            array.push(propVal.toLowerCase());
           } else {
             $ct.globalProfileMap[propKey] = propVal;
-          }
+          } // if propVal is an array
+
         } else {
           if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
             array = $ct.globalProfileMap[propKey];
           }
+          /**
+           * checks for case sensitive inputs and filters the same ones
+           */
+
 
           for (var i = 0; i < propVal.length; i++) {
             if (typeof propVal[i] === 'number' && !array.includes(propVal[i]) || typeof propVal[i] === 'string' && !array.includes(propVal[i].toLowerCase())) {
-              array.push(propVal[i]);
+              array.push(propVal[i].toLowerCase());
             }
           }
 
@@ -2662,6 +2692,14 @@
         StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
         this.sendMultiValueData(propKey, propVal, command);
       }
+      /**
+       *
+       * @param {any} propKey
+       * @param {string, number, array} propVal
+       * @param {string} command
+       * removes value(s) against a key/property in profile object
+       */
+
     }, {
       key: "_handleMultiValueRemove",
       value: function _handleMultiValueRemove(propKey, propVal, command) {
@@ -2670,7 +2708,7 @@
         }
 
         if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
-          console.log('Property with this name does not exist. Set the property first');
+          console.log("The property ".concat(propKey, " does not exist."));
         } else {
           if (typeof propVal === 'string' || typeof propVal === 'number') {
             var index = $ct.globalProfileMap[propKey].indexOf(propVal);
@@ -2692,6 +2730,13 @@
         StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
         this.sendMultiValueData(propKey, propVal, command);
       }
+      /**
+       *
+       * @param {any} propKey
+       * @param {string} command
+       * deletes a key value pair from the profile object
+       */
+
     }, {
       key: "_handleMultiValueDelete",
       value: function _handleMultiValueDelete(propKey, command) {
@@ -2700,7 +2745,7 @@
         }
 
         if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
-          console.log('Property with this name does not exist. Set the property first');
+          console.log("The property ".concat(propKey, " does not exist."));
         } else {
           delete $ct.globalProfileMap[propKey];
         }
@@ -2714,7 +2759,8 @@
         // Send the updated value to LC
         var data = {};
         var profileObj = {};
-        data.type = 'profile';
+        data.type = 'profile'; // this removes the property at backend
+
         profileObj[propKey] = _defineProperty({}, command, command === COMMAND_DELETE ? true : propVal);
 
         if (profileObj.tz == null) {
@@ -5251,7 +5297,7 @@
         _classPrivateFieldLooseBase(this, _isSpa)[_isSpa] = isSpa;
       }
     }, {
-      key: "disableWebPopUpSpamControl",
+      key: "dismissSpamControl",
       get: function get() {
         return _classPrivateFieldLooseBase(this, _isDisableWebPopUpSpamControl)[_isDisableWebPopUpSpamControl];
       },
@@ -5405,7 +5451,7 @@
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
       });
       this.spa = clevertap.spa;
-      this.disableWebPopUpSpamControl = clevertap.disableWebPopUpSpamControl;
+      this.dismissSpamControl = clevertap.dismissSpamControl;
       this.isOffline = clevertap.isOffline;
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
@@ -5475,67 +5521,55 @@
        * @param {callback function} handleCoordinates
        * @returns
        */
-
-
-      this.getLocation = function (lat, lng, handleCoordinates) {
-        if (lat && lng) {
-          // latitude and longitude should be number type
-          if (isNaN(lat) || isNaN(lng)) {
-            console.log('Latitude and longitude should be of number type');
-            return;
-          } // valid latitude ranges bw +-90
-
-
-          if (lat <= -90 || lat > 90) {
-            console.log('A vaid latitude must range between -90 and 90');
-            return;
-          } // valid longitude ranges bw +-180
-
-
-          if (lng <= -180 || lng > 180) {
-            console.log('A valid longitude must range between -180 and 180');
-            return;
-          }
-
-          this.sendMultiValueData({
-            Latitude: lat,
-            Longitude: lng
-          });
-        } else if (handleCoordinates && handleCoordinates instanceof Function) {
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(handleCoordinates, showError);
-          } else {
-            console.log('Geolocation is not supported by this browser.');
-          }
-        } else {
-          console.log('missing or invalid params. Please refer to documentation');
-        }
-      }; // function showPosition (position) {
+      // this.getLocation = function (lat, lng) {
+      //   if (lat && lng) {
+      //     // latitude and longitude should be number type
+      //     if (isNaN(lat) || isNaN(lng)) {
+      //       console.log('Latitude and longitude should be of number type')
+      //       return
+      //     }
+      //     // valid latitude ranges bw +-90
+      //     if (lat <= -90 || lat > 90) {
+      //       console.log('A vaid latitude must range between -90 and 90')
+      //       return
+      //     }
+      //     // valid longitude ranges bw +-180
+      //     if (lng <= -180 || lng > 180) {
+      //       console.log('A valid longitude must range between -180 and 180')
+      //       return
+      //     }
+      //   } else {
+      //     if (navigator.geolocation) {
+      //       navigator.geolocation.getCurrentPosition(handleCoordinates, showError)
+      //     } else {
+      //       console.log('Geolocation is not supported by this browser.')
+      //     }
+      //   }
+      // }
+      //   this.sendMultiValueData({ Latitude: lat, Longitude: lng })
+      // }
+      // function showPosition (position) {
       //   var lat = position.coords.latitude
       //   var lng = position.coords.longitude
       //   console.log('Location is ', lat, lng)
       // }
+      // function showError(error) {
+      //   switch (error.code) {
+      //     case error.PERMISSION_DENIED:
+      //       console.log('User denied the request for Geolocation.')
+      //       break
+      //     case error.POSITION_UNAVAILABLE:
+      //       console.log('Location information is unavailable.')
+      //       break
+      //     case error.TIMEOUT:
+      //       console.log('The request to get user location timed out.')
+      //       break
+      //     case error.UNKNOWN_ERROR:
+      //       console.log('An unknown error occurred.')
+      //       break
+      //   }
+      // }
 
-
-      function showError(error) {
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            console.log('User denied the request for Geolocation.');
-            break;
-
-          case error.POSITION_UNAVAILABLE:
-            console.log('Location information is unavailable.');
-            break;
-
-          case error.TIMEOUT:
-            console.log('The request to get user location timed out.');
-            break;
-
-          case error.UNKNOWN_ERROR:
-            console.log('An unknown error occurred.');
-            break;
-        }
-      }
 
       var processNotificationEvent = function processNotificationEvent(eventName, eventDetail) {
         if (!eventDetail || !eventDetail.msgId) {
@@ -5567,6 +5601,11 @@
       this.setLogLevel = function (l) {
         _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].logLevel = Number(l);
       };
+      /**
+      * @param {} key
+      * @param {*} value
+      */
+
 
       this.handleIncrementValue = function (key, value) {
         _this.profile._handleIncrementDecrementValue(key, value, COMMAND_INCREMENT);
@@ -5588,7 +5627,7 @@
         if (typeof value === 'string' || typeof value === 'number') {
           _this.profile._handleMultiValueAdd(key, value, COMMAND_ADD);
         } else {
-          console.log('Value should be of type string.');
+          console.log('Value should be of type string or number.');
         }
       };
 

@@ -174,7 +174,7 @@ export default class ProfileHandler extends Array {
     const array = []
     for (let i = 0; i < arrayVal.length; i++) {
       if ((typeof arrayVal[i] === 'number' && !array.includes(arrayVal[i])) || !array.includes(arrayVal[i].toLowerCase())) {
-        array.push(arrayVal[i]).toLowerCase()
+        array.push(arrayVal[i].toLowerCase())
       }
     }
     if ($ct.globalProfileMap == null) {
@@ -201,7 +201,7 @@ export default class ProfileHandler extends Array {
     if (typeof propVal === 'string' || typeof propVal === 'number') {
       if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
         array = $ct.globalProfileMap[propKey]
-        array.push(propVal)
+        array.push(propVal.toLowerCase())
       } else {
         $ct.globalProfileMap[propKey] = propVal
       }
@@ -215,7 +215,7 @@ export default class ProfileHandler extends Array {
        */
       for (var i = 0; i < propVal.length; i++) {
         if ((typeof propVal[i] === 'number' && !array.includes(propVal[i])) || (typeof propVal[i] === 'string' && !array.includes(propVal[i].toLowerCase()))) {
-          array.push(propVal[i]).toLowerCase()
+          array.push(propVal[i].toLowerCase())
         }
       }
       $ct.globalProfileMap[propKey] = array
