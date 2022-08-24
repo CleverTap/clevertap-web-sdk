@@ -499,8 +499,8 @@ const _tr = (msg, {
                 formattedVal && (acc['wzrk_' + 'click_' + c] = formattedVal);
                 return acc;
             }, {});
-            if(onclickURL) { msgCTkv['wzrk_' + 'url'] = onclickURL; }
-            if(href) { msgCTkv['wzrk_' + 'c2a'] = href; }
+            if(onclickURL) { msgCTkv['wzrk_' + 'click_' + 'url'] = onclickURL; }
+            if(href) { msgCTkv['wzrk_' + 'click_' + 'c2a'] = href; }
             const notifData = { msgId: ct__camapignId, msgCTkv };
             console.log('Button Clicked Event', notifData);
             window.parent.clevertap.renderNotificationClicked(notifData);
