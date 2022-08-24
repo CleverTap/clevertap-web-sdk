@@ -134,6 +134,7 @@ export default class ProfileHandler extends Array {
       console.log('Property doesnt exist')
     }
     // Update the profile property in local storage
+      
     else {
       if (command === COMMAND_INCREMENT) {
         $ct.globalProfileMap[key] = $ct.globalProfileMap[key] + value
@@ -268,7 +269,7 @@ export default class ProfileHandler extends Array {
       $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
     }
     if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
-      console.log('Property with this name does not exist. Set the property first')
+      console.log(`The property ${propKey} does not exist.`)
     } else {
       delete $ct.globalProfileMap[propKey]
     }
