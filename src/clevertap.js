@@ -52,11 +52,11 @@ export default class CleverTap {
   #isOffline
   enablePersonalization
 
-  get spa() {
+  get spa () {
     return this.#isSpa
   }
 
-  set spa(value) {
+  set spa (value) {
     const isSpa = value === true
     if (this.#isSpa !== isSpa && this.#onloadcalled === 1) {
       // if clevertap.spa is changed after init has been called then update the click listeners
@@ -69,26 +69,26 @@ export default class CleverTap {
     this.#isSpa = isSpa
   }
 
-  get dismissSpamControl() {
+  get dismissSpamControl () {
     return this.#isDisableWebPopUpSpamControl
   }
 
-  set dismissSpamControl(value) {
+  set dismissSpamControl (value) {
     const isDisableWebPopUpSpamControl = value === true
     this.#isDisableWebPopUpSpamControl = isDisableWebPopUpSpamControl
   }
 
-  get offlineMode() {
+  get offlineMode () {
     return this.#isOffline
   }
 
-  set offlineMode(value) {
+  set offlineMode (value) {
     const isOffline = value
     this.#api.offlineMode = isOffline
     this.#isOffline = isOffline
   }
 
-  constructor(clevertap = {}) {
+  constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.raiseNotificationClicked = () => { }
@@ -291,10 +291,9 @@ export default class CleverTap {
     this.setLogLevel = (l) => {
       this.#logger.logLevel = Number(l)
     }
-/**
- * NOTE - Test here
- * @param {} key 
- * @param {*} value 
+    /**
+ * @param {} key
+ * @param {*} value
  */
     this.handleIncrementValue = (key, value) => {
       this.profile._handleIncrementDecrementValue(key, value, COMMAND_INCREMENT)
@@ -316,8 +315,7 @@ export default class CleverTap {
       if (typeof value === 'string' || typeof value === 'number') {
         this.profile._handleMultiValueAdd(key, value, COMMAND_ADD)
       } else {
-        // NOTE - we have a check that allows both number and string above.
-        console.log('Value should be of type string.')
+        console.log('Value should be of type string or number.')
       }
     }
 
@@ -425,7 +423,7 @@ export default class CleverTap {
     }
   }
 
-  init(accountId, region, targetDomain) {
+  init (accountId, region, targetDomain) {
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
@@ -470,7 +468,7 @@ export default class CleverTap {
     this.#onloadcalled = 1
   }
 
-  #processOldValues() {
+  #processOldValues () {
     this.onUserLogin._processOldValues()
     this.privacy._processOldValues()
     this.event._processOldValues()
@@ -478,13 +476,13 @@ export default class CleverTap {
     this.notifications._processOldValues()
   }
 
-  #checkPageChanged() {
+  #checkPageChanged () {
     if (this.#previousUrl !== location.href) {
       this.pageChanged()
     }
   }
 
-  pageChanged() {
+  pageChanged () {
     const currLocation = window.location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
     // -- update page count
@@ -562,7 +560,7 @@ export default class CleverTap {
     }, FIRST_PING_FREQ_IN_MILLIS)
   }
 
-  #pingRequest() {
+  #pingRequest () {
     let pageLoadUrl = this.#account.dataPostURL
     let data = {}
     data = this.#request.addSystemDataToObject(data, undefined)
@@ -572,15 +570,15 @@ export default class CleverTap {
     this.#request.saveAndFireRequest(pageLoadUrl, false)
   }
 
-  #isPingContinuous() {
+  #isPingContinuous () {
     return (typeof window.wzrk_d !== 'undefined' && window.wzrk_d.ping === 'continuous')
   }
 
-  _isPersonalisationActive() {
+  _isPersonalisationActive () {
     return StorageManager._isLocalStorageSupported() && this.enablePersonalization
   }
 
-  #overrideDSyncFlag(data) {
+  #overrideDSyncFlag (data) {
     if (this._isPersonalisationActive()) {
       data.dsync = true
     }
@@ -590,7 +588,7 @@ export default class CleverTap {
   popupCurrentWzrkId = '';
 
   // eslint-disable-next-line accessor-pairs
-  set popupCallback(callback) {
+  set popupCallback (callback) {
     this.popupCallbacks[this.popupCurrentWzrkId] = callback
   }
 
@@ -598,7 +596,7 @@ export default class CleverTap {
    *
    * @param {object} payload
    */
-  sendMultiValueData(payload) {
+  sendMultiValueData (payload) {
     // Send the updated value to LC
     let data = {}
     data.af = {}
