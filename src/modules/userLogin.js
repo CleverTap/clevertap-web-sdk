@@ -87,7 +87,7 @@ export default class UserLoginHandler extends Array {
         if (anonymousUser) {
           if ((g) != null) {
             $ct.LRU_CACHE.set(kId, g)
-            $ct.blockRequeust = false
+            $ct.blockRequest = false
           }
         } else {
           for (const idx in ids) {
@@ -211,7 +211,7 @@ export default class UserLoginHandler extends Array {
             // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
             // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
             // stored in the cache and replace it with the response arp.
-            this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequeust, sendOULFlag)
+            this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag)
           }
         }
       }
@@ -225,7 +225,7 @@ export default class UserLoginHandler extends Array {
   }
 
   #handleCookieFromCache () {
-    $ct.blockRequeust = false
+    $ct.blockRequest = false
     console.debug('Block request is false')
     if (StorageManager._isLocalStorageSupported()) {
       delete localStorage[PR_COOKIE]
@@ -242,9 +242,13 @@ export default class UserLoginHandler extends Array {
   }
 
   #deleteUser () {
-    $ct.blockRequeust = true
+    $ct.blockRequest = true
     this.#logger.debug('Block request is true')
-    $ct.globalCache = {}
+    $ct.globalCache = {
+      gcookie: null,
+      REQ_N: 0,
+      RESP_N: 0
+    }
     if (StorageManager._isLocalStorageSupported()) {
       delete localStorage[GCOOKIE_NAME]
       delete localStorage[KCOOKIE_NAME]

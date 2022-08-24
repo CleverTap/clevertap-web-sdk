@@ -51,7 +51,7 @@ export default class Privacy extends Array {
 
   #processPrivacyArray (privacyArr) {
     if (Array.isArray(privacyArr) && privacyArr.length > 0) {
-      const privacyObj = privacyArr[0]
+      const privacyObj = privacyArr.reduce((prev, curr) => ({ ...prev, ...curr }), {})
       let data = {}
       const profileObj = {}
       var optOut = false
@@ -78,7 +78,7 @@ export default class Privacy extends Array {
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false')
-        this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequeust)
+        this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
       }
     }
   }
