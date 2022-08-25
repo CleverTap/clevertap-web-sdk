@@ -77,6 +77,25 @@ export default class RequestManager {
     return dataObject
   }
 
+  addSystemDataToProfileObject (dataObject, ignoreTrim) {
+    if (!isObjectEmpty(this.#logger.wzrkError)) {
+      dataObject.wzrk_error = this.#logger.wzrkError
+      this.#logger.wzrkError = {}
+    }
+
+    dataObject.id = this.#account.id
+
+    if (isValueValid(this.#device.gcookie)) {
+      dataObject.g = this.#device.gcookie
+    }
+
+    const obj = this.#session.getSessionCookieObject()
+    dataObject.s = obj.s // session cookie
+    dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
+
+    return dataObject
+  }
+
   addFlags (data) {
     // check if cookie should be cleared.
     this.#clearCookie = StorageManager.getAndClearMetaProp(CLEAR)
@@ -122,28 +141,29 @@ export default class RequestManager {
   }
 
   unregisterTokenForGuid (givenGUID) {
-    const data = {}
-    data.type = 'data'
-    if (isValueValid(givenGUID)) {
-      data.g = givenGUID
-    }
-    data.action = 'unregister'
-    data.id = this.#account.id
-
-    const obj = this.#session.getSessionCookieObject()
-
-    data.s = obj.s // session cookie
-    const compressedData = compressData(JSON.stringify(data), this.#logger)
-
-    let pageLoadUrl = this.#account.dataPostURL
-    pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
-
-    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
-    RequestDispatcher.fireRequest(pageLoadUrl, true)
-
-    // REGISTER TOKEN
     const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
+    // Send unregister event only when token is available
+    if (payload) {
+      const data = {}
+      data.type = 'data'
+      if (isValueValid(givenGUID)) {
+        data.g = givenGUID
+      }
+      data.action = 'unregister'
+      data.id = this.#account.id
+
+      const obj = this.#session.getSessionCookieObject()
+
+      data.s = obj.s // session cookie
+      const compressedData = compressData(JSON.stringify(data), this.#logger)
+
+      let pageLoadUrl = this.#account.dataPostURL
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+      RequestDispatcher.fireRequest(pageLoadUrl, true)
+      StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
+    }
+    // REGISTER TOKEN
     this.registerToken(payload)
   }
 

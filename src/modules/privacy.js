@@ -51,7 +51,7 @@ export default class Privacy extends Array {
 
   #processPrivacyArray (privacyArr) {
     if (Array.isArray(privacyArr) && privacyArr.length > 0) {
-      const privacyObj = privacyArr[0]
+      const privacyObj = privacyArr.reduce((prev, curr) => ({ ...prev, ...curr }), {})
       let data = {}
       const profileObj = {}
       var optOut = false

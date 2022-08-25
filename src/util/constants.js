@@ -42,6 +42,12 @@ export const NOTIFICATION_VIEWED = 'Notification Viewed'
 export const NOTIFICATION_CLICKED = 'Notification Clicked'
 export const FIRE_PUSH_UNREGISTERED = 'WZRK_FPU'
 export const PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD' // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
+export const COMMAND_INCREMENT = '$incr'
+export const COMMAND_DECREMENT = '$decr'
+export const COMMAND_SET = '$set'
+export const COMMAND_ADD = '$add'
+export const COMMAND_REMOVE = '$remove'
+export const COMMAND_DELETE = '$delete'
 
 export const SYSTEM_EVENTS = [
   'Stayed',
