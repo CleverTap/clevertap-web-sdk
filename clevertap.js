@@ -473,6 +473,12 @@
   var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
   var PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD'; // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
 
+  var COMMAND_INCREMENT = '$incr';
+  var COMMAND_DECREMENT = '$decr';
+  var COMMAND_SET = '$set';
+  var COMMAND_ADD = '$add';
+  var COMMAND_REMOVE = '$remove';
+  var COMMAND_DELETE = '$delete';
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
@@ -575,7 +581,7 @@
     return composedDate.getDate() == d && composedDate.getMonth() == m && composedDate.getFullYear() == y;
   };
 
-  var StorageManager$1 = /*#__PURE__*/function () {
+  var StorageManager = /*#__PURE__*/function () {
     function StorageManager() {
       _classCallCheck(this, StorageManager);
     }
@@ -904,7 +910,7 @@
         value: void 0
       });
       this.max = max;
-      var lruCache = StorageManager$1.readFromLSorCookie(LRU_CACHE);
+      var lruCache = StorageManager.readFromLSorCookie(LRU_CACHE);
 
       if (lruCache) {
         var tempLruCache = {};
@@ -978,7 +984,7 @@
           }
         }
 
-        StorageManager$1.saveToLSorCookie(LRU_CACHE, {
+        StorageManager.saveToLSorCookie(LRU_CACHE, {
           cache: objToArray
         });
       }
@@ -1093,7 +1099,7 @@
           respNumber = 0;
         }
 
-        StorageManager$1.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger)[_logger]);
+        StorageManager.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger)[_logger]);
 
         if (respNumber > $ct.globalCache.REQ_N) {
           // request for some other user so ignore
@@ -1107,37 +1113,37 @@
 
           if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
             // clear useIP meta prop
-            StorageManager$1.getAndClearMetaProp(USEIP_KEY);
+            StorageManager.getAndClearMetaProp(USEIP_KEY);
           }
 
-          if (global && StorageManager$1._isLocalStorageSupported()) {
+          if (global && StorageManager._isLocalStorageSupported()) {
             if ($ct.LRU_CACHE == null) {
               $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
             }
 
-            var kIdFromLS = StorageManager$1.readFromLSorCookie(KCOOKIE_NAME);
+            var kIdFromLS = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
 
             if (kIdFromLS != null && kIdFromLS.id && resume) {
               var guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
 
               if (!guidFromLRUCache) {
-                StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true);
+                StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true);
                 $ct.LRU_CACHE.set(kIdFromLS.id, global);
               }
             }
 
-            StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, global);
+            StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
             var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
-            if (StorageManager$1.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+            if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
               var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
               _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
             }
           }
 
-          StorageManager$1.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
-          StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, global);
+          StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
+          StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
         }
 
         if (resume) {
@@ -1146,7 +1152,7 @@
           _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Resumed requests');
         }
 
-        if (StorageManager$1._isLocalStorageSupported()) {
+        if (StorageManager._isLocalStorageSupported()) {
           _classPrivateFieldLooseBase(this, _session)[_session].manageSession(session);
         } // session cookie
 
@@ -1198,8 +1204,8 @@
           return this.gcookie;
         }
 
-        if (StorageManager$1._isLocalStorageSupported()) {
-          var value = StorageManager$1.read(GCOOKIE_NAME);
+        if (StorageManager._isLocalStorageSupported()) {
+          var value = StorageManager.read(GCOOKIE_NAME);
 
           if (isValueValid(value)) {
             try {
@@ -1213,7 +1219,7 @@
 
               if (value.length === 32) {
                 guid = value;
-                StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, value);
+                StorageManager.saveToLSorCookie(GCOOKIE_NAME, value);
               } else {
                 _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error('Illegal guid ' + value);
               }
@@ -1221,20 +1227,20 @@
 
 
             if (isValueValid(guid)) {
-              StorageManager$1.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname);
+              StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname);
             }
           }
         }
 
         if (!isValueValid(guid)) {
-          guid = StorageManager$1.readCookie(GCOOKIE_NAME);
+          guid = StorageManager.readCookie(GCOOKIE_NAME);
 
           if (isValueValid(guid) && (guid.indexOf('%') === 0 || guid.indexOf('\'') === 0 || guid.indexOf('"') === 0)) {
             guid = null;
           }
 
           if (isValueValid(guid)) {
-            StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, guid);
+            StorageManager.saveToLSorCookie(GCOOKIE_NAME, guid);
           }
         }
 
@@ -1315,7 +1321,7 @@
         var chargedId = chargedObj[CHARGED_ID] + ''; // casting chargedId to string
 
         if (typeof _globalChargedId === 'undefined') {
-          _globalChargedId = StorageManager$1.readFromLSorCookie(CHARGEDID_COOKIE_NAME);
+          _globalChargedId = StorageManager.readFromLSorCookie(CHARGEDID_COOKIE_NAME);
         }
 
         if (typeof _globalChargedId !== 'undefined' && _globalChargedId.trim() === chargedId.trim()) {
@@ -1325,7 +1331,7 @@
         }
 
         _globalChargedId = chargedId;
-        StorageManager$1.saveToLSorCookie(CHARGEDID_COOKIE_NAME, chargedId);
+        StorageManager.saveToLSorCookie(CHARGEDID_COOKIE_NAME, chargedId);
       }
 
       return true;
@@ -1414,7 +1420,7 @@
         }
 
         if (typeof $ct.globalEventsMap === 'undefined') {
-          $ct.globalEventsMap = StorageManager$1.readFromLSorCookie(EV_COOKIE);
+          $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
         }
 
         if (typeof $ct.globalEventsMap === 'undefined') {
@@ -1907,15 +1913,15 @@
       return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger));
     }
 
-    if (StorageManager$1._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
-      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager$1.readFromLSorCookie(ARP_COOKIE)), this.logger));
+    if (StorageManager._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
+      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE)), this.logger));
     }
 
     return url;
   };
 
   var _addUseIPToRequest2 = function _addUseIPToRequest2(pageLoadUrl) {
-    var useIP = StorageManager$1.getMetaProp(USEIP_KEY);
+    var useIP = StorageManager.getMetaProp(USEIP_KEY);
 
     if (typeof useIP !== 'boolean') {
       useIP = false;
@@ -2011,8 +2017,8 @@
   var getCampaignObject = function getCampaignObject() {
     var campObj = {};
 
-    if (StorageManager$1._isLocalStorageSupported()) {
-      campObj = StorageManager$1.read(CAMP_COOKIE_NAME);
+    if (StorageManager._isLocalStorageSupported()) {
+      campObj = StorageManager.read(CAMP_COOKIE_NAME);
 
       if (campObj != null) {
         campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
@@ -2024,15 +2030,15 @@
     return campObj;
   };
   var saveCampaignObject = function saveCampaignObject(campaignObj) {
-    if (StorageManager$1._isLocalStorageSupported()) {
+    if (StorageManager._isLocalStorageSupported()) {
       var campObj = JSON.stringify(campaignObj);
-      StorageManager$1.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj));
+      StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj));
     }
   };
   var getCampaignObjForLc = function getCampaignObjForLc() {
     var campObj = {};
 
-    if (StorageManager$1._isLocalStorageSupported()) {
+    if (StorageManager._isLocalStorageSupported()) {
       campObj = getCampaignObject();
       var resultObj = [];
       var globalObj = campObj.global;
@@ -2311,9 +2317,9 @@
     return profileData;
   };
   var addToLocalProfileMap = function addToLocalProfileMap(profileObj, override) {
-    if (StorageManager$1._isLocalStorageSupported()) {
+    if (StorageManager._isLocalStorageSupported()) {
       if ($ct.globalProfileMap == null) {
-        $ct.globalProfileMap = StorageManager$1.readFromLSorCookie(PR_COOKIE);
+        $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
 
         if ($ct.globalProfileMap == null) {
           $ct.globalProfileMap = {};
@@ -2347,12 +2353,12 @@
         delete $ct.globalProfileMap._custom;
       }
 
-      StorageManager$1.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
     }
   };
   var closeIframe = function closeIframe(campaignId, divIdIgnored, currentSessionId) {
     if (campaignId != null && campaignId !== '-1') {
-      if (StorageManager$1._isLocalStorageSupported()) {
+      if (StorageManager._isLocalStorageSupported()) {
         var campaignObj = getCampaignObject();
         var sessionCampaignObj = campaignObj[currentSessionId];
 
@@ -2389,9 +2395,9 @@
 
     var isOULARP = !!(jsonMap[IS_OUL] != null && jsonMap[IS_OUL] === true);
 
-    if (StorageManager$1._isLocalStorageSupported()) {
+    if (StorageManager._isLocalStorageSupported()) {
       try {
-        var arpFromStorage = StorageManager$1.readFromLSorCookie(ARP_COOKIE);
+        var arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE);
 
         if (arpFromStorage == null || isOULARP) {
           arpFromStorage = {};
@@ -2407,7 +2413,7 @@
           }
         }
 
-        StorageManager$1.saveToLSorCookie(ARP_COOKIE, arpFromStorage);
+        StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage);
       } catch (e) {
         console.error('Unable to parse ARP JSON: ' + e);
       }
@@ -2554,6 +2560,233 @@
         if ($ct.globalProfileMap != null) {
           return $ct.globalProfileMap[propName];
         }
+      }
+    }, {
+      key: "_handleIncrementDecrementValue",
+
+      /**
+       *
+       * @param {any} key
+       * @param {number} value
+       * @param {string} command
+       * increases or decreases value of the number type properties in profile object
+       */
+      value: function _handleIncrementDecrementValue(key, value, command) {
+        var _$ct$globalProfileMap;
+
+        // Check if the value is greater than 0
+        if (!value || typeof value !== 'number' || value <= 0) {
+          console.error('Value should be a number greater than 0');
+        } else if ($ct.globalProfileMap === undefined && !((_$ct$globalProfileMap = $ct.globalProfileMap) === null || _$ct$globalProfileMap === void 0 ? void 0 : _$ct$globalProfileMap.hasOwnProperty(key))) {
+          // Check if the profile map already has the propery defined
+          console.error('Property doesnt exist');
+        } else {
+          // Update the profile property in local storage
+          if (command === COMMAND_INCREMENT) {
+            $ct.globalProfileMap[key] = $ct.globalProfileMap[key] + value;
+          } else {
+            $ct.globalProfileMap[key] = $ct.globalProfileMap[key] - value;
+          }
+
+          StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Send the updated value to LC
+
+          var data = {};
+          var profileObj = {};
+          data.type = 'profile';
+          profileObj[key] = _defineProperty({}, command, value);
+
+          if (profileObj.tz == null) {
+            // try to auto capture user timezone if not present
+            profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+          }
+
+          data.profile = profileObj;
+          data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToProfileObject(data, undefined);
+
+          _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data);
+
+          var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
+
+          var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+
+          pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+
+          _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+        }
+      }
+      /**
+       *
+       * @param {any} key
+       * @param {array} arrayVal
+       * @param {string} command
+       * overwrites/sets new value(s) against a key/property in profile object
+       */
+
+    }, {
+      key: "_handleMultiValueSet",
+      value: function _handleMultiValueSet(key, arrayVal, command) {
+        var array = [];
+
+        for (var i = 0; i < arrayVal.length; i++) {
+          if (typeof arrayVal[i] === 'number' && !array.includes(arrayVal[i])) {
+            array.push(arrayVal[i]);
+          } else if (typeof arrayVal[i] === 'string' && !array.includes(arrayVal[i].toLowerCase())) {
+            array.push(arrayVal[i].toLowerCase());
+          } else {
+            console.error('array supports only string or number type values');
+          }
+        }
+
+        if ($ct.globalProfileMap == null) {
+          $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
+        }
+
+        $ct.globalProfileMap[key] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(key, arrayVal, command);
+      }
+      /**
+       *
+       * @param {any} propKey - the property name to be added in the profile object
+       * @param {string, number, array} propVal - the property value to be added against the @propkey key
+       * @param {string} command
+       * Adds array or single value against a key/property in profile object
+       */
+
+    }, {
+      key: "_handleMultiValueAdd",
+      value: function _handleMultiValueAdd(propKey, propVal, command) {
+        var array = [];
+
+        if ($ct.globalProfileMap == null) {
+          $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
+        } // if the value to be set is either string or number
+
+
+        if (typeof propVal === 'string' || typeof propVal === 'number') {
+          if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
+            array = $ct.globalProfileMap[propKey];
+            typeof propVal === 'number' ? array.push(propVal) : array.push(propVal.toLowerCase());
+          } else {
+            $ct.globalProfileMap[propKey] = propVal;
+          } // if propVal is an array
+
+        } else {
+          if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
+            array = $ct.globalProfileMap[propKey];
+          }
+          /**
+           * checks for case sensitive inputs and filters the same ones
+           */
+
+
+          for (var i = 0; i < propVal.length; i++) {
+            if (typeof propVal[i] === 'number' && !array.includes(propVal[i])) {
+              array.push(propVal[i]);
+            } else if (typeof propVal[i] === 'string' && !array.includes(propVal[i].toLowerCase())) {
+              array.push(propVal[i].toLowerCase());
+            } else if (typeof propVal[i] === 'number' && array.includes(propVal[i]) || typeof propVal[i] === 'string' && array.includes(propVal[i].toLowerCase())) {
+              console.error('Values already included');
+            } else {
+              console.error('array supports only string or number type values');
+            }
+          }
+
+          $ct.globalProfileMap[propKey] = array;
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command);
+      }
+      /**
+       *
+       * @param {any} propKey
+       * @param {string, number, array} propVal
+       * @param {string} command
+       * removes value(s) against a key/property in profile object
+       */
+
+    }, {
+      key: "_handleMultiValueRemove",
+      value: function _handleMultiValueRemove(propKey, propVal, command) {
+        if ($ct.globalProfileMap == null) {
+          $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
+        }
+
+        if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+          console.error("The property ".concat(propKey, " does not exist."));
+        } else {
+          if (typeof propVal === 'string' || typeof propVal === 'number') {
+            var index = $ct.globalProfileMap[propKey].indexOf(propVal);
+
+            if (index !== -1) {
+              $ct.globalProfileMap[propKey].splice(index, 1);
+            }
+          } else {
+            for (var k = 0; k < propVal.length; k++) {
+              var idx = $ct.globalProfileMap[propKey].indexOf(propVal[k]);
+
+              if (idx !== -1) {
+                $ct.globalProfileMap[propKey].splice(idx, 1);
+              }
+            }
+          }
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command);
+      }
+      /**
+       *
+       * @param {any} propKey
+       * @param {string} command
+       * deletes a key value pair from the profile object
+       */
+
+    }, {
+      key: "_handleMultiValueDelete",
+      value: function _handleMultiValueDelete(propKey, command) {
+        if ($ct.globalProfileMap == null) {
+          $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
+        }
+
+        if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+          console.error("The property ".concat(propKey, " does not exist."));
+        } else {
+          delete $ct.globalProfileMap[propKey];
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, null, command);
+      }
+    }, {
+      key: "sendMultiValueData",
+      value: function sendMultiValueData(propKey, propVal, command) {
+        // Send the updated value to LC
+        var data = {};
+        var profileObj = {};
+        data.type = 'profile'; // this removes the property at backend
+
+        profileObj[propKey] = _defineProperty({}, command, command === COMMAND_DELETE ? true : propVal);
+
+        if (profileObj.tz == null) {
+          profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+        }
+
+        data.profile = profileObj;
+        data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToProfileObject(data, undefined);
+
+        _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data);
+
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+
+        _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       }
     }]);
 
@@ -2712,7 +2945,7 @@
 
         _classPrivateFieldLooseBase(this, _deleteUser)[_deleteUser]();
 
-        StorageManager$1.setMetaProp(CLEAR, true);
+        StorageManager.setMetaProp(CLEAR, true);
       }
     }, {
       key: "push",
@@ -2743,11 +2976,11 @@
     var _this2 = this;
 
     var sendOULFlag = true;
-    StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
+    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
 
     var addToK = function addToK(ids) {
-      var k = StorageManager$1.readFromLSorCookie(KCOOKIE_NAME);
-      var g = StorageManager$1.readFromLSorCookie(GCOOKIE_NAME);
+      var k = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
+      var g = StorageManager.readFromLSorCookie(GCOOKIE_NAME);
       var kId;
 
       if (k == null) {
@@ -2764,7 +2997,7 @@
           anonymousUser = true;
         }
 
-        if ($ct.LRU_CACHE == null && StorageManager$1._isLocalStorageSupported()) {
+        if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
           $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
         }
 
@@ -2793,16 +3026,16 @@
             _classPrivateFieldLooseBase(_this2, _handleCookieFromCache)[_handleCookieFromCache]();
           } else {
             sendOULFlag = false;
-            StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
+            StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
           }
 
           var gFromCache = $ct.LRU_CACHE.get(kId);
           $ct.LRU_CACHE.set(kId, gFromCache);
-          StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
+          StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
           _classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie = gFromCache;
           var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
-          if (StorageManager$1.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+          if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
             // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
             var lastGUID = $ct.LRU_CACHE.cache[lastK];
 
@@ -2814,18 +3047,18 @@
           } else {
             if (g != null) {
               _classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie = g;
-              StorageManager$1.saveToLSorCookie(GCOOKIE_NAME, g);
+              StorageManager.saveToLSorCookie(GCOOKIE_NAME, g);
               sendOULFlag = false;
             }
           }
 
-          StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
+          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
           kId = ids[0];
         }
       }
 
       k.id = kId;
-      StorageManager$1.saveToLSorCookie(KCOOKIE_NAME, k);
+      StorageManager.saveToLSorCookie(KCOOKIE_NAME, k);
     };
 
     if (Array.isArray(profileArr) && profileArr.length > 0) {
@@ -2873,7 +3106,7 @@
             data.profile = profileObj;
             var ids = [];
 
-            if (StorageManager$1._isLocalStorageSupported()) {
+            if (StorageManager._isLocalStorageSupported()) {
               if (profileObj.Identity != null) {
                 ids.push(profileObj.Identity);
               }
@@ -2927,7 +3160,7 @@
     $ct.blockRequest = false;
     console.debug('Block request is false');
 
-    if (StorageManager$1._isLocalStorageSupported()) {
+    if (StorageManager._isLocalStorageSupported()) {
       delete localStorage[PR_COOKIE];
       delete localStorage[EV_COOKIE];
       delete localStorage[META_COOKIE];
@@ -2936,9 +3169,9 @@
       delete localStorage[CHARGEDID_COOKIE_NAME];
     }
 
-    StorageManager$1.removeCookie(CAMP_COOKIE_NAME, getHostName());
-    StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
-    StorageManager$1.removeCookie(ARP_COOKIE, $ct.broadDomain);
+    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
+    StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
+    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
 
     _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
   };
@@ -2954,7 +3187,7 @@
       RESP_N: 0
     };
 
-    if (StorageManager$1._isLocalStorageSupported()) {
+    if (StorageManager._isLocalStorageSupported()) {
       delete localStorage[GCOOKIE_NAME];
       delete localStorage[KCOOKIE_NAME];
       delete localStorage[PR_COOKIE];
@@ -2965,11 +3198,11 @@
       delete localStorage[CHARGEDID_COOKIE_NAME];
     }
 
-    StorageManager$1.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
-    StorageManager$1.removeCookie(CAMP_COOKIE_NAME, getHostName());
-    StorageManager$1.removeCookie(KCOOKIE_NAME, getHostName());
-    StorageManager$1.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
-    StorageManager$1.removeCookie(ARP_COOKIE, $ct.broadDomain);
+    StorageManager.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
+    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
+    StorageManager.removeCookie(KCOOKIE_NAME, getHostName());
+    StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
+    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
     _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie = null;
 
     _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
@@ -2981,7 +3214,7 @@
       var processProfile = profileObj != null && isObject(profileObj) && (profileObj.Site != null && Object.keys(profileObj.Site).length > 0 || profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0 || profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0);
 
       if (processProfile) {
-        StorageManager$1.setInstantDeleteFlagInK();
+        StorageManager.setInstantDeleteFlagInK();
 
         try {
           _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
@@ -2994,11 +3227,297 @@
     }
   };
 
+  var CTWebPersonalisationBanner = /*#__PURE__*/function (_HTMLElement) {
+    _inherits(CTWebPersonalisationBanner, _HTMLElement);
+
+    var _super = _createSuper(CTWebPersonalisationBanner);
+
+    function CTWebPersonalisationBanner() {
+      var _this;
+
+      _classCallCheck(this, CTWebPersonalisationBanner);
+
+      _this = _super.call(this);
+      _this._details = null;
+      _this.shadow = null;
+      _this.shadow = _this.attachShadow({
+        mode: 'open'
+      });
+      return _this;
+    }
+
+    _createClass(CTWebPersonalisationBanner, [{
+      key: "renderBanner",
+      value: function renderBanner() {
+        var _this2 = this;
+
+        this.shadow.innerHTML = this.getBannerContent();
+
+        if (this.trackClick !== false) {
+          this.addEventListener('click', function () {
+            var onClickUrl = _this2.details.onClick;
+
+            if (onClickUrl) {
+              _this2.details.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl;
+            }
+
+            window.clevertap.renderNotificationClicked({
+              msgId: _this2.msgId,
+              pivotId: _this2.pivotId
+            });
+          });
+        }
+
+        window.clevertap.renderNotificationViewed({
+          msgId: this.msgId,
+          pivotId: this.pivotId
+        });
+      }
+    }, {
+      key: "getBannerContent",
+      value: function getBannerContent() {
+        return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n        }\n        img {\n          height: auto;\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ".concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:600px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
+      }
+    }, {
+      key: "details",
+      get: function get() {
+        return this._details || '';
+      },
+      set: function set(val) {
+        if (this._details === null) {
+          this._details = val;
+          this.renderBanner();
+        }
+      }
+    }]);
+
+    return CTWebPersonalisationBanner;
+  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
+
+  var CTWebPersonalisationCarousel = /*#__PURE__*/function (_HTMLElement) {
+    _inherits(CTWebPersonalisationCarousel, _HTMLElement);
+
+    var _super = _createSuper(CTWebPersonalisationCarousel);
+
+    function CTWebPersonalisationCarousel() {
+      var _this;
+
+      _classCallCheck(this, CTWebPersonalisationCarousel);
+
+      _this = _super.call(this);
+      _this._target = null;
+      _this._carousel = null;
+      _this.shadow = null;
+      _this.slides = 0;
+      _this.previouslySelectedItem = -1;
+      _this.selectedItem = 1;
+      _this.autoSlide = null;
+      _this.stopAutoSlideTimeout = null;
+      _this.shadow = _this.attachShadow({
+        mode: 'open'
+      });
+
+      if (customElements.get('ct-web-personalisation-banner') === undefined) {
+        customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
+      }
+
+      return _this;
+    }
+
+    _createClass(CTWebPersonalisationCarousel, [{
+      key: "renderCarousel",
+      value: function renderCarousel() {
+        this.slides = this.details.length;
+        this.shadow.innerHTML = this.getStyles();
+        var carousel = this.getCarouselContent();
+
+        if (this.display.showNavBtns) {
+          carousel.insertAdjacentHTML('beforeend', this.display.navBtnsHtml);
+        }
+
+        if (this.display.showNavArrows) {
+          carousel.insertAdjacentHTML('beforeend', this.display.leftNavArrowHtml);
+          carousel.insertAdjacentHTML('beforeend', this.display.rightNavArrowHtml);
+        }
+
+        this._carousel = carousel;
+        this.shadow.appendChild(carousel);
+        this.setupClick();
+        this.updateSelectedItem(); // TODO: enable conditionally
+
+        this.startAutoSlide();
+        this.setupOnHover();
+        window.clevertap.renderNotificationViewed({
+          msgId: this.target.wzrk_id,
+          pivotId: this.target.wzrk_pivot
+        });
+      }
+    }, {
+      key: "setupClick",
+      value: function setupClick() {
+        var _this2 = this;
+
+        this._carousel.addEventListener('click', function (event) {
+          var eventID = event.target.id;
+
+          if (eventID.startsWith('carousel__button')) {
+            var selected = +eventID.split('-')[1];
+
+            if (selected !== _this2.selectedItem) {
+              _this2.previouslySelectedItem = _this2.selectedItem;
+              _this2.selectedItem = selected;
+
+              _this2.updateSelectedItem();
+
+              _this2.startAutoSlide();
+            }
+          } else if (eventID.startsWith('carousel__arrow')) {
+            eventID.endsWith('right') ? _this2.goToNext() : _this2.goToPrev();
+
+            _this2.startAutoSlide();
+          } else if (eventID.indexOf('-') > -1) {
+            var item = +eventID.split('-')[1];
+            var index = item - 1;
+
+            if (window.parent.clevertap) {
+              // console.log('Raise notification clicked event for ', item)
+              window.clevertap.renderNotificationClicked({
+                msgId: _this2.target.wzrk_id,
+                pivotId: _this2.target.wzrk_pivot,
+                wzrk_slideNo: item
+              });
+            }
+
+            var url = _this2.details[index].onClick;
+
+            if (url !== '') {
+              _this2.details[index].window ? window.open(url, '_blank') : window.location.href = url;
+            }
+          }
+        });
+      }
+    }, {
+      key: "setupOnHover",
+      value: function setupOnHover() {
+        var _this3 = this;
+
+        this._carousel.addEventListener('mouseenter', function (event) {
+          _this3.stopAutoSlideTimeout = setTimeout(function () {
+            _this3.autoSlide = clearInterval(_this3.autoSlide);
+          }, 500);
+        });
+
+        this._carousel.addEventListener('mouseleave', function (event) {
+          clearTimeout(_this3.stopAutoSlideTimeout);
+
+          if (_this3.autoSlide === undefined) {
+            _this3.startAutoSlide();
+          }
+        });
+      }
+    }, {
+      key: "getCarouselContent",
+      value: function getCarouselContent() {
+        var carousel = document.createElement('div');
+        carousel.setAttribute('class', 'carousel');
+        this.details.forEach(function (detail, i) {
+          var banner = document.createElement('ct-web-personalisation-banner');
+          banner.classList.add('carousel__item');
+          banner.trackClick = false;
+          banner.setAttribute('id', "carousel__item-".concat(i + 1));
+          banner.details = detail;
+          carousel.appendChild(banner);
+        });
+        return carousel;
+      }
+    }, {
+      key: "getStyles",
+      value: function getStyles() {
+        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        background-color: grey;\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      .carousel__item img {\n        height: auto;\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ".concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
+      }
+    }, {
+      key: "updateSelectedItem",
+      value: function updateSelectedItem() {
+        var _ref2;
+
+        if (this.previouslySelectedItem !== -1) {
+          var _ref;
+
+          var prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
+          var prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
+          prevItem.classList.remove('carousel__item--selected');
+          (_ref = prevButton !== null) !== null && _ref !== void 0 ? _ref : prevButton.classList.remove('carousel__button--selected');
+        }
+
+        var item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
+        var button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
+        item.classList.add('carousel__item--selected');
+        (_ref2 = button !== null) !== null && _ref2 !== void 0 ? _ref2 : button.classList.add('carousel__button--selected');
+      }
+    }, {
+      key: "startAutoSlide",
+      value: function startAutoSlide() {
+        var _this4 = this;
+
+        clearInterval(this.autoSlide);
+        this.autoSlide = setInterval(function () {
+          _this4.goToNext();
+        }, this.display.sliderTime ? this.display.sliderTime * 1000 : 3000);
+      }
+    }, {
+      key: "goToNext",
+      value: function goToNext() {
+        this.goTo(this.selectedItem, (this.selectedItem + 1) % this.slides);
+      }
+    }, {
+      key: "goToPrev",
+      value: function goToPrev() {
+        this.goTo(this.selectedItem, this.selectedItem - 1);
+      }
+    }, {
+      key: "goTo",
+      value: function goTo(prev, cur) {
+        this.previouslySelectedItem = prev;
+        this.selectedItem = cur;
+
+        if (cur === 0) {
+          this.selectedItem = this.slides;
+        }
+
+        this.updateSelectedItem();
+      }
+    }, {
+      key: "target",
+      get: function get() {
+        return this._target || '';
+      },
+      set: function set(val) {
+        if (this._target === null) {
+          this._target = val;
+          this.renderCarousel();
+        }
+      }
+    }, {
+      key: "details",
+      get: function get() {
+        return this.target.display.details;
+      }
+    }, {
+      key: "display",
+      get: function get() {
+        return this.target.display;
+      }
+    }]);
+
+    return CTWebPersonalisationCarousel;
+  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
+
   var _tr = function _tr(msg, _ref) {
     var device = _ref.device,
         session = _ref.session,
         request = _ref.request,
-        logger = _ref.logger;
+        logger = _ref.logger,
+        isWebPopUpSpamControlDisabled = _ref.isWebPopUpSpamControlDisabled;
     var _device = device;
     var _session = session;
     var _request = request;
@@ -3032,7 +3551,7 @@
         obj[campaignId] = currentCount;
       };
 
-      if (StorageManager$1._isLocalStorageSupported()) {
+      if (StorageManager._isLocalStorageSupported()) {
         delete sessionStorage[CAMP_COOKIE_NAME];
         var campObj = getCampaignObject(); // global session limit. default is 1
 
@@ -3235,32 +3754,33 @@
       data.evtName = NOTIFICATION_VIEWED;
       data.evtData = _defineProperty({}, WZRK_ID, targetingMsgJson.wzrk_id);
 
+      if (targetingMsgJson.wzrk_pivot) {
+        data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
+          wzrk_pivot: targetingMsgJson.wzrk_pivot
+        });
+      }
+
       _request.processEvent(data);
     };
 
     var renderPersonalisationBanner = function renderPersonalisationBanner(targetingMsgJson) {
       var divId = targetingMsgJson.display.divId;
+      var bannerEl = document.createElement('ct-web-personalisation-banner');
+      bannerEl.msgId = targetingMsgJson.wzrk_id;
+      bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
+      bannerEl.details = targetingMsgJson.display.details[0];
+      var containerEl = document.getElementById(divId);
+      containerEl.innerHTML = '';
+      containerEl.appendChild(bannerEl);
+    };
 
-      if (document.getElementById(divId) == null) {
-        return;
-      }
-
-      var onClick = targetingMsgJson.display.onClick;
-      var iframe = document.createElement('iframe');
-      iframe.frameborder = '0px';
-      iframe.marginheight = '0px';
-      iframe.marginwidth = '0px';
-      iframe.id = 'wiz-iframe';
-      var html = targetingMsgJson.msgContent.html;
-      iframe.setAttribute('style', targetingMsgJson.display.iFrameStyle);
-      document.getElementById(divId).appendChild(iframe);
-      var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      var doc = ifrm.document;
-      doc.open();
-      doc.write(html);
-      doc.close();
-      var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-      setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, false);
+    var renderPersonalisationCarousel = function renderPersonalisationCarousel(targetingMsgJson) {
+      var divId = targetingMsgJson.display.divId;
+      var carousel = document.createElement('ct-web-personalisation-carousel');
+      carousel.target = targetingMsgJson;
+      var container = document.getElementById(divId);
+      container.innerHTML = '';
+      container.appendChild(carousel);
     };
 
     var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
@@ -3286,11 +3806,36 @@
           });
           document.dispatchEvent(kvPairsEvent);
           return;
-        } // Logic for personalisation banner / carousel
+        } // Logic for personalisation banner
 
 
-        if (targetingMsgJson.msgContent.type === 2 || targetingMsgJson.msgContent.type === 3) {
+        if (targetingMsgJson.msgContent.type === 2) {
+          var _divId = targetingMsgJson.display.divId;
+
+          if (document.getElementById(_divId) == null) {
+            return;
+          }
+
+          if (customElements.get('ct-web-personalisation-banner') === undefined) {
+            customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
+          }
+
           return renderPersonalisationBanner(targetingMsgJson);
+        } // Logic for personalisation carousel
+
+
+        if (targetingMsgJson.msgContent.type === 3) {
+          var _divId2 = targetingMsgJson.display.divId;
+
+          if (document.getElementById(_divId2) == null) {
+            return;
+          }
+
+          if (customElements.get('ct-web-personalisation-carousel') === undefined) {
+            customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
+          }
+
+          return renderPersonalisationCarousel(targetingMsgJson);
         }
       }
 
@@ -3298,11 +3843,16 @@
         return showExitIntent(undefined, targetingMsgJson);
       }
 
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
+      if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       }
 
       var divId = 'wizParDiv' + displayObj.layout;
+
+      if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
+        var element = document.getElementById(divId);
+        element.remove();
+      }
 
       if (document.getElementById(divId) != null) {
         return;
@@ -3616,7 +4166,7 @@
 
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
 
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
+      if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       }
 
@@ -3738,7 +4288,7 @@
 
     var mergeEventMap = function mergeEventMap(newEvtMap) {
       if ($ct.globalEventsMap == null) {
-        $ct.globalEventsMap = StorageManager$1.readFromLSorCookie(EV_COOKIE);
+        $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
 
         if ($ct.globalEventsMap == null) {
           $ct.globalEventsMap = newEvtMap;
@@ -3762,17 +4312,17 @@
       }
     };
 
-    if (StorageManager$1._isLocalStorageSupported()) {
+    if (StorageManager._isLocalStorageSupported()) {
       try {
         if (msg.evpr != null) {
           var eventsMap = msg.evpr.events;
           var profileMap = msg.evpr.profile;
           var syncExpiry = msg.evpr.expires_in;
           var now = getNow();
-          StorageManager$1.setMetaProp('lsTime', now);
-          StorageManager$1.setMetaProp('exTs', syncExpiry);
+          StorageManager.setMetaProp('lsTime', now);
+          StorageManager.setMetaProp('exTs', syncExpiry);
           mergeEventMap(eventsMap);
-          StorageManager$1.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
+          StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
 
           if ($ct.globalProfileMap == null) {
             addToLocalProfileMap(profileMap, true);
@@ -3827,7 +4377,7 @@
           return;
         }
 
-        var visitCount = StorageManager$1.getMetaProp('sc');
+        var visitCount = StorageManager.getMetaProp('sc');
 
         if (visitCount == null) {
           visitCount = 1;
@@ -3842,7 +4392,7 @@
           return;
         }
 
-        var prevSession = StorageManager$1.getMetaProp('ps');
+        var prevSession = StorageManager.getMetaProp('ps');
 
         if (prevSession != null) {
           return new Date(prevSession * 1000);
@@ -3968,7 +4518,7 @@
       });
       this.cookieName = void 0;
       this.scookieObj = void 0;
-      this.sessionId = StorageManager$1.getMetaProp('cs');
+      this.sessionId = StorageManager.getMetaProp('cs');
       _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3] = isPersonalisationActive;
     }
@@ -3976,7 +4526,7 @@
     _createClass(SessionManager, [{
       key: "getSessionCookieObject",
       value: function getSessionCookieObject() {
-        var scookieStr = StorageManager$1.readCookie(this.cookieName);
+        var scookieStr = StorageManager.readCookie(this.cookieName);
         var obj = {};
 
         if (scookieStr != null) {
@@ -4009,7 +4559,7 @@
       key: "setSessionCookieObject",
       value: function setSessionCookieObject(obj) {
         var objStr = JSON.stringify(obj);
-        StorageManager$1.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
+        StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
       }
     }, {
       key: "manageSession",
@@ -4017,23 +4567,23 @@
         // first time. check if current session id in localstorage is same
         // if not same then prev = current and current = this new session
         if (typeof this.sessionId === 'undefined' || this.sessionId !== session) {
-          var currentSessionInLS = StorageManager$1.getMetaProp('cs'); // if sessionId in meta is undefined - set current to both
+          var currentSessionInLS = StorageManager.getMetaProp('cs'); // if sessionId in meta is undefined - set current to both
 
           if (typeof currentSessionInLS === 'undefined') {
-            StorageManager$1.setMetaProp('ps', session);
-            StorageManager$1.setMetaProp('cs', session);
-            StorageManager$1.setMetaProp('sc', 1);
+            StorageManager.setMetaProp('ps', session);
+            StorageManager.setMetaProp('cs', session);
+            StorageManager.setMetaProp('sc', 1);
           } else if (currentSessionInLS !== session) {
             // not same as session in local storage. new session
-            StorageManager$1.setMetaProp('ps', currentSessionInLS);
-            StorageManager$1.setMetaProp('cs', session);
-            var sessionCount = StorageManager$1.getMetaProp('sc');
+            StorageManager.setMetaProp('ps', currentSessionInLS);
+            StorageManager.setMetaProp('cs', session);
+            var sessionCount = StorageManager.getMetaProp('sc');
 
             if (typeof sessionCount === 'undefined') {
               sessionCount = 0;
             }
 
-            StorageManager$1.setMetaProp('sc', sessionCount + 1);
+            StorageManager.setMetaProp('sc', sessionCount + 1);
           }
 
           this.sessionId = session;
@@ -4152,7 +4702,7 @@
     _createClass(RequestManager, [{
       key: "processBackupEvents",
       value: function processBackupEvents() {
-        var backupMap = StorageManager$1.readFromLSorCookie(LCOOKIE_NAME);
+        var backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
 
         if (typeof backupMap === 'undefined' || backupMap === null) {
           return;
@@ -4176,7 +4726,7 @@
           }
         }
 
-        StorageManager$1.saveToLSorCookie(LCOOKIE_NAME, backupMap);
+        StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap);
         this.processingBackup = false;
       }
     }, {
@@ -4207,10 +4757,32 @@
         return dataObject;
       }
     }, {
+      key: "addSystemDataToProfileObject",
+      value: function addSystemDataToProfileObject(dataObject, ignoreTrim) {
+        if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError)) {
+          dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError;
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError = {};
+        }
+
+        dataObject.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+
+        if (isValueValid(_classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie)) {
+          dataObject.g = _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie;
+        }
+
+        var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
+
+        dataObject.s = obj.s; // session cookie
+
+        dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
+
+        return dataObject;
+      }
+    }, {
       key: "addFlags",
       value: function addFlags(data) {
         // check if cookie should be cleared.
-        _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] = StorageManager$1.getAndClearMetaProp(CLEAR);
+        _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] = StorageManager.getAndClearMetaProp(CLEAR);
 
         if (_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           data.rc = true;
@@ -4219,8 +4791,8 @@
         }
 
         if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4]()) {
-          var lastSyncTime = StorageManager$1.getMetaProp('lsTime');
-          var expirySeconds = StorageManager$1.getMetaProp('exTs'); // dsync not found in local storage - get data from server
+          var lastSyncTime = StorageManager.getMetaProp('lsTime');
+          var expirySeconds = StorageManager.getMetaProp('exTs'); // dsync not found in local storage - get data from server
 
           if (typeof lastSyncTime === 'undefined' || typeof expirySeconds === 'undefined') {
             data.dsync = true;
@@ -4240,7 +4812,7 @@
         var now = getNow();
         url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
         var data = url + '&i=' + now + '&sn=' + seqNo;
-        StorageManager$1.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
 
         if (!$ct.blockRequest || override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           if (now === requestTime) {
@@ -4258,30 +4830,34 @@
     }, {
       key: "unregisterTokenForGuid",
       value: function unregisterTokenForGuid(givenGUID) {
-        var data = {};
-        data.type = 'data';
+        var payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA); // Send unregister event only when token is available
 
-        if (isValueValid(givenGUID)) {
-          data.g = givenGUID;
-        }
+        if (payload) {
+          var data = {};
+          data.type = 'data';
 
-        data.action = 'unregister';
-        data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+          if (isValueValid(givenGUID)) {
+            data.g = givenGUID;
+          }
 
-        var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
+          data.action = 'unregister';
+          data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
 
-        data.s = obj.s; // session cookie
+          var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
 
-        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+          data.s = obj.s; // session cookie
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+          var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
 
-        pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-        StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
-        RequestDispatcher.fireRequest(pageLoadUrl, true); // REGISTER TOKEN
+          var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
 
-        var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA);
+          pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
+          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+          RequestDispatcher.fireRequest(pageLoadUrl, true);
+          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
+        } // REGISTER TOKEN
+
+
         this.registerToken(payload);
       }
     }, {
@@ -4297,7 +4873,7 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]));
         RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
 
-        StorageManager$1.save(WEBPUSH_LS_KEY, 'ok');
+        StorageManager.save(WEBPUSH_LS_KEY, 'ok');
       }
     }, {
       key: "processEvent",
@@ -4321,9 +4897,9 @@
   }();
 
   var _addToLocalEventMap2 = function _addToLocalEventMap2(evtName) {
-    if (StorageManager$1._isLocalStorageSupported()) {
+    if (StorageManager._isLocalStorageSupported()) {
       if (typeof $ct.globalEventsMap === 'undefined') {
-        $ct.globalEventsMap = StorageManager$1.readFromLSorCookie(EV_COOKIE);
+        $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
 
         if (typeof $ct.globalEventsMap === 'undefined') {
           $ct.globalEventsMap = {};
@@ -4344,7 +4920,7 @@
       }
 
       $ct.globalEventsMap[evtName] = evtDetail;
-      StorageManager$1.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
+      StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
     }
   };
 
@@ -4446,7 +5022,7 @@
       if (privacyObj.hasOwnProperty(USEIP_KEY)) {
         var useIP = privacyObj[USEIP_KEY];
         var shouldUseIP = typeof useIP === 'boolean' ? useIP : false;
-        StorageManager$1.setMetaProp(USEIP_KEY, shouldUseIP);
+        StorageManager.setMetaProp(USEIP_KEY, shouldUseIP);
       }
 
       if (!isObjectEmpty(profileObj)) {
@@ -4648,7 +5224,7 @@
           var subscriptionData = JSON.parse(JSON.stringify(subscription));
           subscriptionData.endpoint = subscription.deviceToken;
           subscriptionData.browser = 'Safari';
-          StorageManager$1.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
           _classPrivateFieldLooseBase(_this2, _request$5)[_request$5].registerToken(subscriptionData);
 
@@ -4728,7 +5304,7 @@
             subscriptionData.browser = 'Firefox';
           }
 
-          StorageManager$1.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData); // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData); // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
 
           {
             _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].registerToken(subscriptionData);
@@ -4912,19 +5488,19 @@
 
     var now = new Date().getTime() / 1000;
 
-    if (StorageManager$1.getMetaProp('notif_last_time') == null) {
-      StorageManager$1.setMetaProp('notif_last_time', now);
+    if (StorageManager.getMetaProp('notif_last_time') == null) {
+      StorageManager.setMetaProp('notif_last_time', now);
     } else {
       if (askAgainTimeInSeconds == null) {
         // 7 days by default
         askAgainTimeInSeconds = 7 * 24 * 60 * 60;
       }
 
-      if (now - StorageManager$1.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
+      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
         return;
       } else {
         // continue asking
-        StorageManager$1.setMetaProp('notif_last_time', now);
+        StorageManager.setMetaProp('notif_last_time', now);
       }
     }
 
@@ -5030,6 +5606,8 @@
 
   var _boundCheckPageChanged = _classPrivateFieldLooseKey("boundCheckPageChanged");
 
+  var _isWebPopUpSpamControlDisabled = _classPrivateFieldLooseKey("isWebPopUpSpamControlDisabled");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _checkPageChanged = _classPrivateFieldLooseKey("checkPageChanged");
@@ -5059,6 +5637,15 @@
         }
 
         _classPrivateFieldLooseBase(this, _isSpa)[_isSpa] = isSpa;
+      }
+    }, {
+      key: "dismissSpamControl",
+      get: function get() {
+        return _classPrivateFieldLooseBase(this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled];
+      },
+      set: function set(value) {
+        var isWebPopUpSpamControlDisabled = value === true;
+        _classPrivateFieldLooseBase(this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled] = isWebPopUpSpamControlDisabled;
       }
     }]);
 
@@ -5128,6 +5715,10 @@
         writable: true,
         value: _classPrivateFieldLooseBase(this, _checkPageChanged)[_checkPageChanged].bind(this)
       });
+      Object.defineProperty(this, _isWebPopUpSpamControlDisabled, {
+        writable: true,
+        value: void 0
+      });
       this.enablePersonalization = void 0;
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
@@ -5188,6 +5779,7 @@
         session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
       });
       this.spa = clevertap.spa;
+      this.dismissSpamControl = clevertap.dismissSpamControl;
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
@@ -5203,7 +5795,7 @@
       this.logout = function () {
         _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('logout called');
 
-        StorageManager$1.setInstantDeleteFlagInK();
+        StorageManager.setInstantDeleteFlagInK();
       };
 
       this.clear = function () {
@@ -5265,6 +5857,12 @@
         } // Adding kv pair to event data
 
 
+        if (eventDetail.wzrk_slideNo) {
+          data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
+            wzrk_slideNo: eventDetail.wzrk_slideNo
+          });
+        }
+
         if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
           for (var key in eventDetail.kv) {
             if (key.startsWith(WZRK_PREFIX)) {
@@ -5287,6 +5885,69 @@
 
       this.setLogLevel = function (l) {
         _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].logLevel = Number(l);
+
+        if (l === 3) {
+          sessionStorage.WZRK_D = '';
+        } else {
+          delete sessionStorage.WZRK_D;
+        }
+      };
+      /**
+      * @param {} key
+      * @param {*} value
+      */
+
+
+      this.handleIncrementValue = function (key, value) {
+        _this.profile._handleIncrementDecrementValue(key, value, COMMAND_INCREMENT);
+      };
+
+      this.handleDecrementValue = function (key, value) {
+        _this.profile._handleIncrementDecrementValue(key, value, COMMAND_DECREMENT);
+      };
+
+      this.setMultiValuesForKey = function (key, value) {
+        if (Array.isArray(value)) {
+          _this.profile._handleMultiValueSet(key, value, COMMAND_SET);
+        } else {
+          console.error('setMultiValuesForKey should be called with a value of type array');
+        }
+      };
+
+      this.addMultiValueForKey = function (key, value) {
+        if (typeof value === 'string' || typeof value === 'number') {
+          _this.profile._handleMultiValueAdd(key, value, COMMAND_ADD);
+        } else {
+          console.error('addMultiValueForKey should be called with a value of type string or number.');
+        }
+      };
+
+      this.addMultiValuesForKey = function (key, value) {
+        if (Array.isArray(value)) {
+          _this.profile._handleMultiValueAdd(key, value, COMMAND_ADD);
+        } else {
+          console.error('addMultiValuesForKey should be called with a value of type array.');
+        }
+      };
+
+      this.removeMultiValueForKey = function (key, value) {
+        if (typeof value === 'string' || typeof value === 'number') {
+          _this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE);
+        } else {
+          console.error('removeMultiValueForKey should be called with a value of type string or number.');
+        }
+      };
+
+      this.removeMultiValuesForKey = function (key, value) {
+        if (Array.isArray(value)) {
+          _this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE);
+        } else {
+          console.error('removeMultiValuesForKey should be called with a value of type array.');
+        }
+      };
+
+      this.removeValueForKey = function (key) {
+        _this.profile._handleMultiValueDelete(key, COMMAND_DELETE);
       };
 
       var _handleEmailSubscription = function _handleEmailSubscription(subscription, reEncoded, fetchGroups) {
@@ -5311,7 +5972,8 @@
           device: _classPrivateFieldLooseBase(_this, _device$3)[_device$3],
           session: _classPrivateFieldLooseBase(_this, _session$3)[_session$3],
           request: _classPrivateFieldLooseBase(_this, _request$6)[_request$6],
-          logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]
+          logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9],
+          isWebPopUpSpamControlDisabled: _classPrivateFieldLooseBase(_this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled]
         });
       };
 
@@ -5392,7 +6054,7 @@
           return;
         }
 
-        StorageManager$1.removeCookie('WZRK_P', window.location.hostname);
+        StorageManager.removeCookie('WZRK_P', window.location.hostname);
 
         if (!_classPrivateFieldLooseBase(this, _account$5)[_account$5].id) {
           if (!accountId) {
@@ -5509,7 +6171,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.2.1'
+          lib: 'web-sdk-v1.3.0'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
@@ -5533,7 +6195,50 @@
     }, {
       key: "_isPersonalisationActive",
       value: function _isPersonalisationActive() {
-        return StorageManager$1._isLocalStorageSupported() && this.enablePersonalization;
+        return StorageManager._isLocalStorageSupported() && this.enablePersonalization;
+      }
+    }, {
+      key: "sendMultiValueData",
+
+      /**
+       *
+       * @param {object} payload
+       */
+      value: function sendMultiValueData(payload) {
+        // Send the updated value to LC
+        var data = {};
+        data.af = {};
+        var profileObj = {};
+        data.type = 'profile';
+
+        if (profileObj.tz == null) {
+          profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+        }
+
+        data.profile = profileObj;
+
+        if (payload) {
+          var keys = Object.keys(payload);
+          keys.forEach(function (key) {
+            data.af[key] = payload[key];
+          });
+        }
+
+        console.log({
+          data: data
+        });
+        data = _classPrivateFieldLooseBase(this, _request$6)[_request$6].addSystemDataToProfileObject(data, undefined);
+
+        _classPrivateFieldLooseBase(this, _request$6)[_request$6].addFlags(data);
+
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]);
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
+
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+
+        _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       }
     }, {
       key: "popupCallback",

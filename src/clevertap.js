@@ -20,7 +20,14 @@ import {
   GROUP_SUBSCRIPTION_REQUEST_ID,
   WZRK_ID,
   WZRK_PREFIX,
-  categoryLongKey
+  categoryLongKey,
+  COMMAND_INCREMENT,
+  COMMAND_DECREMENT,
+  COMMAND_SET,
+  COMMAND_ADD,
+  COMMAND_REMOVE,
+  COMMAND_DELETE,
+  EVT_PUSH
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -41,6 +48,7 @@ export default class CleverTap {
   #isSpa
   #previousUrl
   #boundCheckPageChanged = this.#checkPageChanged.bind(this)
+  #isWebPopUpSpamControlDisabled
   enablePersonalization
 
   get spa () {
@@ -60,10 +68,19 @@ export default class CleverTap {
     this.#isSpa = isSpa
   }
 
+  get dismissSpamControl () {
+    return this.#isWebPopUpSpamControlDisabled
+  }
+
+  set dismissSpamControl (value) {
+    const isWebPopUpSpamControlDisabled = value === true
+    this.#isWebPopUpSpamControlDisabled = isWebPopUpSpamControlDisabled
+  }
+
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
-    this.raiseNotificationClicked = () => {}
+    this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2])
     this.#device = new DeviceManager({ logger: this.#logger })
@@ -120,6 +137,7 @@ export default class CleverTap {
     })
 
     this.spa = clevertap.spa
+    this.dismissSpamControl = clevertap.dismissSpamControl
 
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
@@ -187,6 +205,10 @@ export default class CleverTap {
         data.evtData = { ...data.evtData, wzrk_pivot: eventDetail.pivotId }
       }
 
+      if (eventDetail.wzrk_slideNo) {
+        data.evtData = { ...data.evtData, wzrk_slideNo: eventDetail.wzrk_slideNo }
+      }
+
       // Adding kv pair to event data
       if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
         for (const key in eventDetail.kv) {
@@ -209,6 +231,66 @@ export default class CleverTap {
 
     this.setLogLevel = (l) => {
       this.#logger.logLevel = Number(l)
+      if (l === 3) {
+        sessionStorage.WZRK_D = ''
+      } else {
+        delete sessionStorage.WZRK_D
+      }
+    }
+    /**
+ * @param {} key
+ * @param {*} value
+ */
+    this.handleIncrementValue = (key, value) => {
+      this.profile._handleIncrementDecrementValue(key, value, COMMAND_INCREMENT)
+    }
+
+    this.handleDecrementValue = (key, value) => {
+      this.profile._handleIncrementDecrementValue(key, value, COMMAND_DECREMENT)
+    }
+
+    this.setMultiValuesForKey = (key, value) => {
+      if (Array.isArray(value)) {
+        this.profile._handleMultiValueSet(key, value, COMMAND_SET)
+      } else {
+        console.error('setMultiValuesForKey should be called with a value of type array')
+      }
+    }
+
+    this.addMultiValueForKey = (key, value) => {
+      if (typeof value === 'string' || typeof value === 'number') {
+        this.profile._handleMultiValueAdd(key, value, COMMAND_ADD)
+      } else {
+        console.error('addMultiValueForKey should be called with a value of type string or number.')
+      }
+    }
+
+    this.addMultiValuesForKey = (key, value) => {
+      if (Array.isArray(value)) {
+        this.profile._handleMultiValueAdd(key, value, COMMAND_ADD)
+      } else {
+        console.error('addMultiValuesForKey should be called with a value of type array.')
+      }
+    }
+
+    this.removeMultiValueForKey = (key, value) => {
+      if (typeof value === 'string' || typeof value === 'number') {
+        this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE)
+      } else {
+        console.error('removeMultiValueForKey should be called with a value of type string or number.')
+      }
+    }
+
+    this.removeMultiValuesForKey = (key, value) => {
+      if (Array.isArray(value)) {
+        this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE)
+      } else {
+        console.error('removeMultiValuesForKey should be called with a value of type array.')
+      }
+    }
+
+    this.removeValueForKey = (key) => {
+      this.profile._handleMultiValueDelete(key, COMMAND_DELETE)
     }
 
     const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
@@ -229,7 +311,8 @@ export default class CleverTap {
         device: this.#device,
         session: this.#session,
         request: this.#request,
-        logger: this.#logger
+        logger: this.#logger,
+        isWebPopUpSpamControlDisabled: this.#isWebPopUpSpamControlDisabled
       })
     }
     api.setEnum = (enumVal) => {
@@ -453,5 +536,36 @@ export default class CleverTap {
   // eslint-disable-next-line accessor-pairs
   set popupCallback (callback) {
     this.popupCallbacks[this.popupCurrentWzrkId] = callback
+  }
+
+  /**
+   *
+   * @param {object} payload
+   */
+  sendMultiValueData (payload) {
+    // Send the updated value to LC
+    let data = {}
+    data.af = {}
+    const profileObj = {}
+    data.type = 'profile'
+    if (profileObj.tz == null) {
+      profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
+    }
+    data.profile = profileObj
+    if (payload) {
+      const keys = Object.keys(payload)
+      keys.forEach(key => {
+        data.af[key] = payload[key]
+      })
+    }
+    console.log({ data })
+    data = this.#request.addSystemDataToProfileObject(data, undefined)
+    this.#request.addFlags(data)
+    const compressedData = compressData(JSON.stringify(data), this.#logger)
+    let pageLoadUrl = this.#account.dataPostURL
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+
+    this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
   }
 }
