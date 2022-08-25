@@ -2572,10 +2572,12 @@
        * increases or decreases value of the number type properties in profile object
        */
       value: function _handleIncrementDecrementValue(key, value, command) {
+        var _$ct$globalProfileMap;
+
         // Check if the value is greater than 0
         if (!value || typeof value !== 'number' || value <= 0) {
           console.error('Value should be a number greater than 0');
-        } else if (!$ct.globalProfileMap.hasOwnProperty(key)) {
+        } else if ($ct.globalProfileMap === undefined && !((_$ct$globalProfileMap = $ct.globalProfileMap) === null || _$ct$globalProfileMap === void 0 ? void 0 : _$ct$globalProfileMap.hasOwnProperty(key))) {
           // Check if the profile map already has the propery defined
           console.error('Property doesnt exist');
         } else {
@@ -2684,6 +2686,8 @@
               array.push(propVal[i]);
             } else if (typeof propVal[i] === 'string' && !array.includes(propVal[i].toLowerCase())) {
               array.push(propVal[i].toLowerCase());
+            } else if (typeof propVal[i] === 'number' && array.includes(propVal[i]) || typeof propVal[i] === 'string' && array.includes(propVal[i].toLowerCase())) {
+              console.error('Values already included');
             } else {
               console.error('array supports only string or number type values');
             }
