@@ -9,7 +9,6 @@ export default class CleverTapAPI {
   #request
   #device
   #session
-  offlineMode
 
   constructor ({ logger, request, device, session }) {
     this.#logger = logger
@@ -24,11 +23,6 @@ export default class CleverTapAPI {
       respNumber = 0
     }
     StorageManager.removeBackup(respNumber, this.#logger)
-
-    // console.log('Api offline Mode ', this.offlineMode, 'resp Number ', respNumber)
-    // if (!this.offlineMode || this.offlineMode === undefined) {
-    //   StorageManager.removeBackup(respNumber, this.#logger)
-    // }
 
     if (respNumber > $ct.globalCache.REQ_N) {
       // request for some other user so ignore

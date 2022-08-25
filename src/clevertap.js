@@ -49,7 +49,6 @@ export default class CleverTap {
   #previousUrl
   #boundCheckPageChanged = this.#checkPageChanged.bind(this)
   #isDisableWebPopUpSpamControl
-  #isOffline
   enablePersonalization
 
   get spa () {
@@ -76,16 +75,6 @@ export default class CleverTap {
   set dismissSpamControl (value) {
     const isDisableWebPopUpSpamControl = value === true
     this.#isDisableWebPopUpSpamControl = isDisableWebPopUpSpamControl
-  }
-
-  get offlineMode () {
-    return this.#isOffline
-  }
-
-  set offlineMode (value) {
-    const isOffline = value
-    this.#api.offlineMode = isOffline
-    this.#isOffline = isOffline
   }
 
   constructor (clevertap = {}) {
@@ -149,7 +138,6 @@ export default class CleverTap {
 
     this.spa = clevertap.spa
     this.dismissSpamControl = clevertap.dismissSpamControl
-    this.isOffline = clevertap.isOffline
 
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive

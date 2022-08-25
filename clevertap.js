@@ -1085,7 +1085,6 @@
         writable: true,
         value: void 0
       });
-      this.offlineMode = void 0;
       _classPrivateFieldLooseBase(this, _logger)[_logger] = logger;
       _classPrivateFieldLooseBase(this, _request)[_request] = request;
       _classPrivateFieldLooseBase(this, _device)[_device] = device;
@@ -1100,10 +1099,7 @@
           respNumber = 0;
         }
 
-        StorageManager.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger)[_logger]); // console.log('Api offline Mode ', this.offlineMode, 'resp Number ', respNumber)
-        // if (!this.offlineMode || this.offlineMode === undefined) {
-        //   StorageManager.removeBackup(respNumber, this.#logger)
-        // }
+        StorageManager.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger)[_logger]);
 
         if (respNumber > $ct.globalCache.REQ_N) {
           // request for some other user so ignore
@@ -5264,8 +5260,6 @@
 
   var _isDisableWebPopUpSpamControl = _classPrivateFieldLooseKey("isDisableWebPopUpSpamControl");
 
-  var _isOffline = _classPrivateFieldLooseKey("isOffline");
-
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _checkPageChanged = _classPrivateFieldLooseKey("checkPageChanged");
@@ -5304,16 +5298,6 @@
       set: function set(value) {
         var isDisableWebPopUpSpamControl = value === true;
         _classPrivateFieldLooseBase(this, _isDisableWebPopUpSpamControl)[_isDisableWebPopUpSpamControl] = isDisableWebPopUpSpamControl;
-      }
-    }, {
-      key: "offlineMode",
-      get: function get() {
-        return _classPrivateFieldLooseBase(this, _isOffline)[_isOffline];
-      },
-      set: function set(value) {
-        var isOffline = value;
-        _classPrivateFieldLooseBase(this, _api)[_api].offlineMode = isOffline;
-        _classPrivateFieldLooseBase(this, _isOffline)[_isOffline] = isOffline;
       }
     }]);
 
@@ -5387,10 +5371,6 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _isOffline, {
-        writable: true,
-        value: void 0
-      });
       this.enablePersonalization = void 0;
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
@@ -5452,7 +5432,6 @@
       });
       this.spa = clevertap.spa;
       this.dismissSpamControl = clevertap.dismissSpamControl;
-      this.isOffline = clevertap.isOffline;
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
