@@ -290,6 +290,11 @@ export default class CleverTap {
 
     this.setLogLevel = (l) => {
       this.#logger.logLevel = Number(l)
+      if (l === 3) {
+        sessionStorage.WZRK_D = ''
+      } else {
+        delete sessionStorage.WZRK_D
+      }
     }
     /**
  * @param {} key

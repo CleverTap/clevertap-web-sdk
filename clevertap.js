@@ -5600,6 +5600,12 @@
 
       this.setLogLevel = function (l) {
         _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].logLevel = Number(l);
+
+        if (l === 3) {
+          sessionStorage.WZRK_D = '';
+        } else {
+          delete sessionStorage.WZRK_D;
+        }
       };
       /**
       * @param {} key
