@@ -1,5 +1,14 @@
 # Change Log
 All notable changes to this project will be documented in this file.
+
+## [1.3.0] - 25 Aug, 2022
+- Introduces custom HTML click tracking in Web pop up and Web exit intent
+- Adds public methods to increment/decrement values set via User profile properties
+- Adds public methods to handle multi values set via User profile properties
+- Adds flag to dismiss spam control for web pop up and Web exit intent
+- Introduces the new templates for banner and carousel in “Web Native Display”
+- Fixed a bug where Push Unregistered event was getting triggered even when token was not available
+
 ## [1.2.0] - 28 Jun, 2022
 - Introduces the new "Web Personalization" channel with support for key-value templates.
 - Adds new method renderNotifcationViewed to capture Notification Viewed events.
