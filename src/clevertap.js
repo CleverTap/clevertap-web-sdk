@@ -48,7 +48,7 @@ export default class CleverTap {
   #isSpa
   #previousUrl
   #boundCheckPageChanged = this.#checkPageChanged.bind(this)
-  #isDisableWebPopUpSpamControl
+  #isWebPopUpSpamControlDisabled
   enablePersonalization
 
   get spa () {
@@ -69,12 +69,12 @@ export default class CleverTap {
   }
 
   get dismissSpamControl () {
-    return this.#isDisableWebPopUpSpamControl
+    return this.#isWebPopUpSpamControlDisabled
   }
 
   set dismissSpamControl (value) {
-    const isDisableWebPopUpSpamControl = value === true
-    this.#isDisableWebPopUpSpamControl = isDisableWebPopUpSpamControl
+    const isWebPopUpSpamControlDisabled = value === true
+    this.#isWebPopUpSpamControlDisabled = isWebPopUpSpamControlDisabled
   }
 
   constructor (clevertap = {}) {
@@ -203,57 +203,6 @@ export default class CleverTap {
      * @param {callback function} handleCoordinates
      * @returns
      */
-    // this.getLocation = function (lat, lng) {
-    //   if (lat && lng) {
-    //     // latitude and longitude should be number type
-    //     if (isNaN(lat) || isNaN(lng)) {
-    //       console.log('Latitude and longitude should be of number type')
-    //       return
-    //     }
-    //     // valid latitude ranges bw +-90
-    //     if (lat <= -90 || lat > 90) {
-    //       console.log('A vaid latitude must range between -90 and 90')
-    //       return
-    //     }
-    //     // valid longitude ranges bw +-180
-    //     if (lng <= -180 || lng > 180) {
-    //       console.log('A valid longitude must range between -180 and 180')
-    //       return
-    //     }
-    //   } else {
-    //     if (navigator.geolocation) {
-    //       navigator.geolocation.getCurrentPosition(handleCoordinates, showError)
-    //     } else {
-    //       console.log('Geolocation is not supported by this browser.')
-    //     }
-    //   }
-    // }
-
-    //   this.sendMultiValueData({ Latitude: lat, Longitude: lng })
-    // }
-
-    // function showPosition (position) {
-    //   var lat = position.coords.latitude
-    //   var lng = position.coords.longitude
-    //   console.log('Location is ', lat, lng)
-    // }
-
-    // function showError(error) {
-    //   switch (error.code) {
-    //     case error.PERMISSION_DENIED:
-    //       console.log('User denied the request for Geolocation.')
-    //       break
-    //     case error.POSITION_UNAVAILABLE:
-    //       console.log('Location information is unavailable.')
-    //       break
-    //     case error.TIMEOUT:
-    //       console.log('The request to get user location timed out.')
-    //       break
-    //     case error.UNKNOWN_ERROR:
-    //       console.log('An unknown error occurred.')
-    //       break
-    //   }
-    // }
 
     const processNotificationEvent = (eventName, eventDetail) => {
       if (!eventDetail || !eventDetail.msgId) { return }
@@ -359,7 +308,7 @@ export default class CleverTap {
         session: this.#session,
         request: this.#request,
         logger: this.#logger,
-        isDisableWebPopUpSpamControl: this.#isDisableWebPopUpSpamControl
+        isWebPopUpSpamControlDisabled: this.#isWebPopUpSpamControlDisabled
       })
     }
     api.setEnum = (enumVal) => {

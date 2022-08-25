@@ -3217,7 +3217,7 @@
         session = _ref.session,
         request = _ref.request,
         logger = _ref.logger,
-        isDisableWebPopUpSpamControl = _ref.isDisableWebPopUpSpamControl;
+        isWebPopUpSpamControlDisabled = _ref.isWebPopUpSpamControlDisabled;
     var _device = device;
     var _session = session;
     var _request = request;
@@ -3517,13 +3517,13 @@
         return showExitIntent(undefined, targetingMsgJson);
       }
 
-      if (!isDisableWebPopUpSpamControl && doCampHouseKeeping(targetingMsgJson) === false) {
+      if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       }
 
       var divId = 'wizParDiv' + displayObj.layout;
 
-      if (isDisableWebPopUpSpamControl && document.getElementById(divId) != null) {
+      if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
         var element = document.getElementById(divId);
         element.remove();
       }
@@ -3829,7 +3829,7 @@
 
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
 
-      if (!isDisableWebPopUpSpamControl && doCampHouseKeeping(targetingMsgJson) === false) {
+      if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       }
 
@@ -5258,7 +5258,7 @@
 
   var _boundCheckPageChanged = _classPrivateFieldLooseKey("boundCheckPageChanged");
 
-  var _isDisableWebPopUpSpamControl = _classPrivateFieldLooseKey("isDisableWebPopUpSpamControl");
+  var _isWebPopUpSpamControlDisabled = _classPrivateFieldLooseKey("isWebPopUpSpamControlDisabled");
 
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
@@ -5293,11 +5293,11 @@
     }, {
       key: "dismissSpamControl",
       get: function get() {
-        return _classPrivateFieldLooseBase(this, _isDisableWebPopUpSpamControl)[_isDisableWebPopUpSpamControl];
+        return _classPrivateFieldLooseBase(this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled];
       },
       set: function set(value) {
-        var isDisableWebPopUpSpamControl = value === true;
-        _classPrivateFieldLooseBase(this, _isDisableWebPopUpSpamControl)[_isDisableWebPopUpSpamControl] = isDisableWebPopUpSpamControl;
+        var isWebPopUpSpamControlDisabled = value === true;
+        _classPrivateFieldLooseBase(this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled] = isWebPopUpSpamControlDisabled;
       }
     }]);
 
@@ -5367,7 +5367,7 @@
         writable: true,
         value: _classPrivateFieldLooseBase(this, _checkPageChanged)[_checkPageChanged].bind(this)
       });
-      Object.defineProperty(this, _isDisableWebPopUpSpamControl, {
+      Object.defineProperty(this, _isWebPopUpSpamControlDisabled, {
         writable: true,
         value: void 0
       });
@@ -5500,54 +5500,6 @@
        * @param {callback function} handleCoordinates
        * @returns
        */
-      // this.getLocation = function (lat, lng) {
-      //   if (lat && lng) {
-      //     // latitude and longitude should be number type
-      //     if (isNaN(lat) || isNaN(lng)) {
-      //       console.log('Latitude and longitude should be of number type')
-      //       return
-      //     }
-      //     // valid latitude ranges bw +-90
-      //     if (lat <= -90 || lat > 90) {
-      //       console.log('A vaid latitude must range between -90 and 90')
-      //       return
-      //     }
-      //     // valid longitude ranges bw +-180
-      //     if (lng <= -180 || lng > 180) {
-      //       console.log('A valid longitude must range between -180 and 180')
-      //       return
-      //     }
-      //   } else {
-      //     if (navigator.geolocation) {
-      //       navigator.geolocation.getCurrentPosition(handleCoordinates, showError)
-      //     } else {
-      //       console.log('Geolocation is not supported by this browser.')
-      //     }
-      //   }
-      // }
-      //   this.sendMultiValueData({ Latitude: lat, Longitude: lng })
-      // }
-      // function showPosition (position) {
-      //   var lat = position.coords.latitude
-      //   var lng = position.coords.longitude
-      //   console.log('Location is ', lat, lng)
-      // }
-      // function showError(error) {
-      //   switch (error.code) {
-      //     case error.PERMISSION_DENIED:
-      //       console.log('User denied the request for Geolocation.')
-      //       break
-      //     case error.POSITION_UNAVAILABLE:
-      //       console.log('Location information is unavailable.')
-      //       break
-      //     case error.TIMEOUT:
-      //       console.log('The request to get user location timed out.')
-      //       break
-      //     case error.UNKNOWN_ERROR:
-      //       console.log('An unknown error occurred.')
-      //       break
-      //   }
-      // }
 
 
       var processNotificationEvent = function processNotificationEvent(eventName, eventDetail) {
@@ -5667,7 +5619,7 @@
           session: _classPrivateFieldLooseBase(_this, _session$3)[_session$3],
           request: _classPrivateFieldLooseBase(_this, _request$6)[_request$6],
           logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9],
-          isDisableWebPopUpSpamControl: _classPrivateFieldLooseBase(_this, _isDisableWebPopUpSpamControl)[_isDisableWebPopUpSpamControl]
+          isWebPopUpSpamControlDisabled: _classPrivateFieldLooseBase(_this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled]
         });
       };
 

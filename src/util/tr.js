@@ -34,7 +34,7 @@ const _tr = (msg, {
   session,
   request,
   logger,
-  isDisableWebPopUpSpamControl
+  isWebPopUpSpamControlDisabled
 }) => {
   const _device = device
   const _session = session
@@ -308,13 +308,13 @@ const _tr = (msg, {
       return showExitIntent(undefined, targetingMsgJson)
     }
 
-    if (!isDisableWebPopUpSpamControl && doCampHouseKeeping(targetingMsgJson) === false) {
+    if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
 
     const divId = 'wizParDiv' + displayObj.layout
 
-    if (isDisableWebPopUpSpamControl && document.getElementById(divId) != null) {
+    if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
       const element = document.getElementById(divId)
       element.remove()
     }
@@ -611,7 +611,7 @@ const _tr = (msg, {
     }
 
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
-    if (!isDisableWebPopUpSpamControl && doCampHouseKeeping(targetingMsgJson) === false) {
+    if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
 
