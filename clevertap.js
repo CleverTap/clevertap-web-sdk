@@ -5582,7 +5582,7 @@
         if (Array.isArray(value)) {
           _this.profile._handleMultiValueSet(key, value, COMMAND_SET);
         } else {
-          console.log('Value should be of type array.');
+          console.error('setMultiValuesForKey should be called with a value of type array');
         }
       };
 
@@ -5590,7 +5590,7 @@
         if (typeof value === 'string' || typeof value === 'number') {
           _this.profile._handleMultiValueAdd(key, value, COMMAND_ADD);
         } else {
-          console.log('Value should be of type string or number.');
+          console.error('addMultiValueForKey should be called with a value of type string or number.');
         }
       };
 
@@ -5598,7 +5598,7 @@
         if (Array.isArray(value)) {
           _this.profile._handleMultiValueAdd(key, value, COMMAND_ADD);
         } else {
-          console.log('Value should be of type array.');
+          console.error('addMultiValuesForKey should be called with a value of type array.');
         }
       };
 
@@ -5606,7 +5606,7 @@
         if (typeof value === 'string' || typeof value === 'number') {
           _this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE);
         } else {
-          console.log('Value should be of type string.');
+          console.error('removeMultiValueForKey should be called with a value of type string or number.');
         }
       };
 
@@ -5614,7 +5614,7 @@
         if (Array.isArray(value)) {
           _this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE);
         } else {
-          console.log('Value should be of type array.');
+          console.error('removeMultiValuesForKey should be called with a value of type array.');
         }
       };
 
