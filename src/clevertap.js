@@ -205,6 +205,10 @@ export default class CleverTap {
         data.evtData = { ...data.evtData, wzrk_pivot: eventDetail.pivotId }
       }
 
+      if (eventDetail.wzrk_slideNo) {
+        data.evtData = { ...data.evtData, wzrk_slideNo: eventDetail.wzrk_slideNo }
+      }
+
       // Adding kv pair to event data
       if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
         for (const key in eventDetail.kv) {
