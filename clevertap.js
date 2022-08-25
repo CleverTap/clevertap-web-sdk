@@ -1107,16 +1107,15 @@
         }
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
-          if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
-            // clear useIP meta prop
-            StorageManager.getAndClearMetaProp(USEIP_KEY);
-          }
-
           _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
 
           _classPrivateFieldLooseBase(this, _device)[_device].gcookie = global;
 
-          if (global && StorageManager._isLocalStorageSupported()) {
+          if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
+            // clear useIP meta prop
+            StorageManager.getAndClearMetaProp(USEIP_KEY);
+          }
+          if (global && StorageManager$1._isLocalStorageSupported()) {
             if ($ct.LRU_CACHE == null) {
               $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
             }
@@ -3170,7 +3169,11 @@
 
     _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Block request is true');
 
-    $ct.globalCache = {};
+    $ct.globalCache = {
+      gcookie: null,
+      REQ_N: 0,
+      RESP_N: 0
+    };
 
     if (StorageManager._isLocalStorageSupported()) {
       delete localStorage[GCOOKIE_NAME];
@@ -3500,7 +3503,7 @@
             inaObj.kv = targetingMsgJson.msgContent.kv;
           }
 
-          var kvPairsEvent = new CustomEvent('CT_web_personalization', {
+          var kvPairsEvent = new CustomEvent('CT_web_native_display', {
             detail: inaObj
           });
           document.dispatchEvent(kvPairsEvent);
@@ -3630,6 +3633,11 @@
       var doc = ifrm.document;
       doc.open();
       doc.write(html);
+
+      if (displayObj['custom-editor']) {
+        appendScriptForCustomEvent(targetingMsgJson, doc);
+      }
+
       doc.close();
 
       var adjustIFrameHeight = function adjustIFrameHeight() {
@@ -3677,6 +3685,12 @@
           setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
         };
       }
+    };
+
+    var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, doc) {
+      var script = doc.createElement('script');
+      script.innerHTML = "\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv };\n            console.log('Button Clicked Event', notifData);\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n    ");
+      doc.body.appendChild(script);
     };
 
     var _callBackCalled = false;
@@ -3911,6 +3925,11 @@
       var doc = ifrm.document;
       doc.open();
       doc.write(html);
+
+      if (targetingMsgJson.display['custom-editor']) {
+        appendScriptForCustomEvent(targetingMsgJson, doc);
+      }
+
       doc.close();
       var contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
@@ -4488,30 +4507,32 @@
     }, {
       key: "unregisterTokenForGuid",
       value: function unregisterTokenForGuid(givenGUID) {
-        var data = {};
-        data.type = 'data';
+        var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA); // Send unregister event only when token is available
 
-        if (isValueValid(givenGUID)) {
-          data.g = givenGUID;
-        }
+        if (payload) {
+          var data = {};
+          data.type = 'data';
 
-        data.action = 'unregister';
-        data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+          if (isValueValid(givenGUID)) {
+            data.g = givenGUID;
+          }
 
-        var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
+          data.action = 'unregister';
+          data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
 
-        data.s = obj.s; // session cookie
+          var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
 
-        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+          data.s = obj.s; // session cookie
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+          var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
 
-        pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-        StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
-        RequestDispatcher.fireRequest(pageLoadUrl, true); // REGISTER TOKEN
+          var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
 
-        var payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA);
+          pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
+          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+          RequestDispatcher.fireRequest(pageLoadUrl, true);
+          StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
+        } // REGISTER TOKEN
         this.registerToken(payload);
       }
     }, {
@@ -4656,7 +4677,9 @@
 
   var _processPrivacyArray2 = function _processPrivacyArray2(privacyArr) {
     if (Array.isArray(privacyArr) && privacyArr.length > 0) {
-      var privacyObj = privacyArr[0];
+      var privacyObj = privacyArr.reduce(function (prev, curr) {
+        return _objectSpread2(_objectSpread2({}, prev), curr);
+      }, {});
       var data = {};
       var profileObj = {};
       var optOut = false;
@@ -5478,7 +5501,6 @@
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
 
         _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
       }; // method for notification viewed
@@ -5516,12 +5538,22 @@
           data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
             wzrk_pivot: eventDetail.pivotId
           });
-        }
+        } // Adding kv pair to event data
+
 
         if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
           for (var key in eventDetail.kv) {
             if (key.startsWith(WZRK_PREFIX)) {
               data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, _defineProperty({}, key, eventDetail.kv[key]));
+            }
+          }
+        } // Adding msgCTkv to event data
+
+
+        if (eventDetail.msgCTkv && eventDetail.msgCTkv !== null && eventDetail.msgCTkv !== undefined) {
+          for (var _key in eventDetail.msgCTkv) {
+            if (_key.startsWith(WZRK_PREFIX)) {
+              data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, _defineProperty({}, _key, eventDetail.msgCTkv[_key]));
             }
           }
         }
@@ -5817,7 +5849,7 @@
         }
 
         data.af = {
-          lib: parseInt('1.2.0'.replace(/\./g, '0'))
+          lib: 'web-sdk-v1.2.1'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
