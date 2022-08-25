@@ -518,11 +518,11 @@ const _tr = (msg, {
             const props = {innerText, id, name, value};
             let msgCTkv = Object.keys(props).reduce((acc, c) => {
                 const formattedVal = ct__formatVal(props[c]);
-                formattedVal && (acc['wzrk_' + c] = formattedVal);
+                formattedVal && (acc['wzrk_click_' + c] = formattedVal);
                 return acc;
             }, {});
-            if(onclickURL) { msgCTkv['wzrk_' + 'url'] = onclickURL; }
-            if(href) { msgCTkv['wzrk_' + 'c2a'] = href; }
+            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }
+            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }
             const notifData = { msgId: ct__camapignId, msgCTkv };
             console.log('Button Clicked Event', notifData);
             window.parent.clevertap.renderNotificationClicked(notifData);
