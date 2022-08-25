@@ -2574,10 +2574,10 @@
       value: function _handleIncrementDecrementValue(key, value, command) {
         // Check if the value is greater than 0
         if (!value || typeof value !== 'number' || value <= 0) {
-          console.log('Value should be a number greater than 0');
+          console.error('Value should be a number greater than 0');
         } else if (!$ct.globalProfileMap.hasOwnProperty(key)) {
           // Check if the profile map already has the propery defined
-          console.log('Property doesnt exist');
+          console.error('Property doesnt exist');
         } else {
           // Update the profile property in local storage
           if (command === COMMAND_INCREMENT) {
@@ -2609,7 +2609,6 @@
 
           pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
           pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-          console.log('page load url ', pageLoadUrl);
 
           _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
         }
@@ -2628,8 +2627,12 @@
         var array = [];
 
         for (var i = 0; i < arrayVal.length; i++) {
-          if (typeof arrayVal[i] === 'number' && !array.includes(arrayVal[i]) || !array.includes(arrayVal[i].toLowerCase())) {
+          if (typeof arrayVal[i] === 'number' && !array.includes(arrayVal[i])) {
+            array.push(arrayVal[i]);
+          } else if (typeof arrayVal[i] === 'string' && !array.includes(arrayVal[i].toLowerCase())) {
             array.push(arrayVal[i].toLowerCase());
+          } else {
+            console.error('array supports only string or number type values');
           }
         }
 
@@ -2662,7 +2665,7 @@
         if (typeof propVal === 'string' || typeof propVal === 'number') {
           if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
             array = $ct.globalProfileMap[propKey];
-            array.push(propVal.toLowerCase());
+            typeof propVal === 'number' ? array.push(propVal) : array.push(propVal.toLowerCase());
           } else {
             $ct.globalProfileMap[propKey] = propVal;
           } // if propVal is an array
@@ -2677,8 +2680,12 @@
 
 
           for (var i = 0; i < propVal.length; i++) {
-            if (typeof propVal[i] === 'number' && !array.includes(propVal[i]) || typeof propVal[i] === 'string' && !array.includes(propVal[i].toLowerCase())) {
+            if (typeof propVal[i] === 'number' && !array.includes(propVal[i])) {
+              array.push(propVal[i]);
+            } else if (typeof propVal[i] === 'string' && !array.includes(propVal[i].toLowerCase())) {
               array.push(propVal[i].toLowerCase());
+            } else {
+              console.error('array supports only string or number type values');
             }
           }
 
@@ -2704,7 +2711,7 @@
         }
 
         if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
-          console.log("The property ".concat(propKey, " does not exist."));
+          console.error("The property ".concat(propKey, " does not exist."));
         } else {
           if (typeof propVal === 'string' || typeof propVal === 'number') {
             var index = $ct.globalProfileMap[propKey].indexOf(propVal);
@@ -2741,7 +2748,7 @@
         }
 
         if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
-          console.log("The property ".concat(propKey, " does not exist."));
+          console.error("The property ".concat(propKey, " does not exist."));
         } else {
           delete $ct.globalProfileMap[propKey];
         }
