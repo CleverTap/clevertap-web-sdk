@@ -194,15 +194,6 @@ export default class CleverTap {
       processNotificationEvent(NOTIFICATION_CLICKED, detail)
     }
 
-    // Method to get location - lat, long
-    /**
-     *
-     * @param {number} lat
-     * @param {number} lng
-     * @param {callback function} handleCoordinates
-     * @returns
-     */
-
     const processNotificationEvent = (eventName, eventDetail) => {
       if (!eventDetail || !eventDetail.msgId) { return }
       const data = {}

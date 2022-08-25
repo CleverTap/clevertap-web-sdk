@@ -1115,7 +1115,8 @@
             // clear useIP meta prop
             StorageManager.getAndClearMetaProp(USEIP_KEY);
           }
-          if (global && StorageManager$1._isLocalStorageSupported()) {
+
+          if (global && StorageManager._isLocalStorageSupported()) {
             if ($ct.LRU_CACHE == null) {
               $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
             }
@@ -4507,7 +4508,7 @@
     }, {
       key: "unregisterTokenForGuid",
       value: function unregisterTokenForGuid(givenGUID) {
-        var payload = StorageManager$1.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA); // Send unregister event only when token is available
+        var payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA); // Send unregister event only when token is available
 
         if (payload) {
           var data = {};
@@ -4531,8 +4532,10 @@
           pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
           pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
           RequestDispatcher.fireRequest(pageLoadUrl, true);
-          StorageManager$1.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
+          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
         } // REGISTER TOKEN
+
+
         this.registerToken(payload);
       }
     }, {
@@ -5513,16 +5516,7 @@
 
       this.renderNotificationClicked = function (detail) {
         processNotificationEvent(NOTIFICATION_CLICKED, detail);
-      }; // Method to get location - lat, long
-
-      /**
-       *
-       * @param {number} lat
-       * @param {number} lng
-       * @param {callback function} handleCoordinates
-       * @returns
-       */
-
+      };
 
       var processNotificationEvent = function processNotificationEvent(eventName, eventDetail) {
         if (!eventDetail || !eventDetail.msgId) {
