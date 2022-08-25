@@ -151,13 +151,13 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
       const prevItem = this.shadow.getElementById(`carousel__item-${this.previouslySelectedItem}`)
       const prevButton = this.shadow.getElementById(`carousel__button-${this.previouslySelectedItem}`)
       prevItem.classList.remove('carousel__item--selected')
-      prevButton.classList.remove('carousel__button--selected')
+      prevButton !== null ?? prevButton.classList.remove('carousel__button--selected')
     }
 
     const item = this.shadow.getElementById(`carousel__item-${this.selectedItem}`)
     const button = this.shadow.getElementById(`carousel__button-${this.selectedItem}`)
     item.classList.add('carousel__item--selected')
-    button.classList.add('carousel__button--selected')
+    button !== null ?? button.classList.add('carousel__button--selected')
   }
 
   startAutoSlide () {
