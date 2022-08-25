@@ -244,7 +244,11 @@ export default class UserLoginHandler extends Array {
   #deleteUser () {
     $ct.blockRequest = true
     this.#logger.debug('Block request is true')
-    $ct.globalCache = {}
+    $ct.globalCache = {
+      gcookie: null,
+      REQ_N: 0,
+      RESP_N: 0
+    }
     if (StorageManager._isLocalStorageSupported()) {
       delete localStorage[GCOOKIE_NAME]
       delete localStorage[KCOOKIE_NAME]

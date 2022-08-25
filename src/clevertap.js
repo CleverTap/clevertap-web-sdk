@@ -181,7 +181,6 @@ export default class CleverTap {
       let pageLoadUrl = this.#account.dataPostURL
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
-      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
       this.#request.saveAndFireRequest(pageLoadUrl, false)
     }
@@ -266,10 +265,20 @@ export default class CleverTap {
         data.evtData = { ...data.evtData, wzrk_pivot: eventDetail.pivotId }
       }
 
+      // Adding kv pair to event data
       if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
         for (const key in eventDetail.kv) {
           if (key.startsWith(WZRK_PREFIX)) {
             data.evtData = { ...data.evtData, [key]: eventDetail.kv[key] }
+          }
+        }
+      }
+
+      // Adding msgCTkv to event data
+      if (eventDetail.msgCTkv && eventDetail.msgCTkv !== null && eventDetail.msgCTkv !== undefined) {
+        for (const key in eventDetail.msgCTkv) {
+          if (key.startsWith(WZRK_PREFIX)) {
+            data.evtData = { ...data.evtData, [key]: eventDetail.msgCTkv[key] }
           }
         }
       }
@@ -532,7 +541,7 @@ export default class CleverTap {
     if (parseInt(data.pg) === 1) {
       this.#overrideDSyncFlag(data)
     }
-    data.af = { lib: parseInt('$$PACKAGE_VERSION$$'.replace(/\./g, '0')) }
+    data.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$' }
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
