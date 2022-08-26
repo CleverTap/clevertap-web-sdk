@@ -5,8 +5,8 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
-clevertap.init('YOUR_ACCOUNT_ID'); // Replace YOUR_ACCOUNT_ID, can be initialized just once
-
+clevertap.init('your account id'); // Replace YOUR_ACCOUNT_ID, can be initialized just once
+// clevertap.setLogLevel(3)
 ReactDOM.render(
   <React.StrictMode>
     <App />

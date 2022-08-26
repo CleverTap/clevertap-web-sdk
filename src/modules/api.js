@@ -22,7 +22,6 @@ export default class CleverTapAPI {
     if (typeof respNumber === 'undefined') {
       respNumber = 0
     }
-
     StorageManager.removeBackup(respNumber, this.#logger)
 
     if (respNumber > $ct.globalCache.REQ_N) {

@@ -28,12 +28,15 @@ import {
 
 import { StorageManager, $ct } from './storage'
 import RequestDispatcher from './requestDispatcher'
+import { CTWebPersonalisationBanner } from './web-personalisation/banner'
+import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
 
 const _tr = (msg, {
   device,
   session,
   request,
-  logger
+  logger,
+  isWebPopUpSpamControlDisabled
 }) => {
   const _device = device
   const _session = session
@@ -248,34 +251,30 @@ const _tr = (msg, {
     data.type = 'event'
     data.evtName = NOTIFICATION_VIEWED
     data.evtData = { [WZRK_ID]: targetingMsgJson.wzrk_id }
+    if (targetingMsgJson.wzrk_pivot) {
+      data.evtData = { ...data.evtData, wzrk_pivot: targetingMsgJson.wzrk_pivot }
+    }
     _request.processEvent(data)
   }
 
   const renderPersonalisationBanner = (targetingMsgJson) => {
     const divId = targetingMsgJson.display.divId
+    const bannerEl = document.createElement('ct-web-personalisation-banner')
+    bannerEl.msgId = targetingMsgJson.wzrk_id
+    bannerEl.pivotId = targetingMsgJson.wzrk_pivot
+    bannerEl.details = targetingMsgJson.display.details[0]
+    const containerEl = document.getElementById(divId)
+    containerEl.innerHTML = ''
+    containerEl.appendChild(bannerEl)
+  }
 
-    if (document.getElementById(divId) == null) {
-      return
-    }
-    const onClick = targetingMsgJson.display.onClick
-
-    const iframe = document.createElement('iframe')
-    iframe.frameborder = '0px'
-    iframe.marginheight = '0px'
-    iframe.marginwidth = '0px'
-    iframe.id = 'wiz-iframe'
-    const html = targetingMsgJson.msgContent.html
-    iframe.setAttribute('style', targetingMsgJson.display.iFrameStyle)
-    document.getElementById(divId).appendChild(iframe)
-    const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
-    const doc = ifrm.document
-
-    doc.open()
-    doc.write(html)
-    doc.close()
-
-    const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
-    setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, false)
+  const renderPersonalisationCarousel = (targetingMsgJson) => {
+    const divId = targetingMsgJson.display.divId
+    const carousel = document.createElement('ct-web-personalisation-carousel')
+    carousel.target = targetingMsgJson
+    const container = document.getElementById(divId)
+    container.innerHTML = ''
+    container.appendChild(carousel)
   }
 
   const renderFooterNotification = (targetingMsgJson) => {
@@ -298,20 +297,43 @@ const _tr = (msg, {
         document.dispatchEvent(kvPairsEvent)
         return
       }
-      // Logic for personalisation banner / carousel
-      if (targetingMsgJson.msgContent.type === 2 || targetingMsgJson.msgContent.type === 3) {
+      // Logic for personalisation banner
+      if (targetingMsgJson.msgContent.type === 2) {
+        const divId = targetingMsgJson.display.divId
+        if (document.getElementById(divId) == null) {
+          return
+        }
+        if (customElements.get('ct-web-personalisation-banner') === undefined) {
+          customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner)
+        }
         return renderPersonalisationBanner(targetingMsgJson)
+      }
+      // Logic for personalisation carousel
+      if (targetingMsgJson.msgContent.type === 3) {
+        const divId = targetingMsgJson.display.divId
+        if (document.getElementById(divId) == null) {
+          return
+        }
+        if (customElements.get('ct-web-personalisation-carousel') === undefined) {
+          customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel)
+        }
+        return renderPersonalisationCarousel(targetingMsgJson)
       }
     }
     if (displayObj.layout === 1) {
       return showExitIntent(undefined, targetingMsgJson)
     }
-    if (doCampHouseKeeping(targetingMsgJson) === false) {
+
+    if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
 
     const divId = 'wizParDiv' + displayObj.layout
 
+    if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
+      const element = document.getElementById(divId)
+      element.remove()
+    }
     if (document.getElementById(divId) != null) {
       return
     }
@@ -430,6 +452,10 @@ const _tr = (msg, {
 
     doc.open()
     doc.write(html)
+
+    if (displayObj['custom-editor']) {
+      appendScriptForCustomEvent(targetingMsgJson, doc)
+    }
     doc.close()
 
     const adjustIFrameHeight = () => {
@@ -473,6 +499,37 @@ const _tr = (msg, {
         setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
       }
     }
+  }
+
+  const appendScriptForCustomEvent = (targetingMsgJson, doc) => {
+    const script = doc.createElement('script')
+    script.innerHTML = `
+      const ct__camapignId = '${targetingMsgJson.wzrk_id}';
+      const ct__formatVal = (v) => {
+          return v && v.trim().substring(0, 20);
+      }
+      const ct__parentOrigin =  window.parent.origin;
+      document.body.addEventListener('click', (event) => {
+        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');
+        if (elem) {
+            const {innerText, id, name, value, href} = elem;
+            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');
+            const onclickURL = clickAttr?.match(/(window.open)[(\](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];
+            const props = {innerText, id, name, value};
+            let msgCTkv = Object.keys(props).reduce((acc, c) => {
+                const formattedVal = ct__formatVal(props[c]);
+                formattedVal && (acc['wzrk_click_' + c] = formattedVal);
+                return acc;
+            }, {});
+            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }
+            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }
+            const notifData = { msgId: ct__camapignId, msgCTkv };
+            console.log('Button Clicked Event', notifData);
+            window.parent.clevertap.renderNotificationClicked(notifData);
+        }
+      });
+    `
+    doc.body.appendChild(script)
   }
 
   let _callBackCalled = false
@@ -605,7 +662,7 @@ const _tr = (msg, {
     }
 
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
-    if (doCampHouseKeeping(targetingMsgJson) === false) {
+    if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
 
@@ -699,6 +756,9 @@ const _tr = (msg, {
 
     doc.open()
     doc.write(html)
+    if (targetingMsgJson.display['custom-editor']) {
+      appendScriptForCustomEvent(targetingMsgJson, doc)
+    }
     doc.close()
 
     const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')

@@ -1,5 +1,14 @@
 # Change Log
 All notable changes to this project will be documented in this file.
+
+## [1.3.0] - 26 Aug, 2022
+- Introduces custom HTML click tracking in Web pop up and Web exit intent.
+- Adds public methods to increment/decrement values set via User profile properties.
+- Adds public methods to handle multi values set via User profile properties.
+- Adds flag to dismiss spam control for Web pop up and Web exit intent.
+- Introduces the new templates for banner and carousel in "Web Native Display”.
+- Fixed a bug where Push Unregistered event was getting triggered even when token was not available.
+
 ## [1.2.1] - 11 Aug, 2022
 - Fixed a bug where useIP value was not getting updated.
 - Event name updated to "CT_web_native_display" for key-value templates.
