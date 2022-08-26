@@ -5858,14 +5858,14 @@
           data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
             wzrk_pivot: eventDetail.pivotId
           });
-        } // Adding kv pair to event data
-
+        }
 
         if (eventDetail.wzrk_slideNo) {
           data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
             wzrk_slideNo: eventDetail.wzrk_slideNo
           });
-        }
+        } // Adding kv pair to event data
+
 
         if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
           for (var key in eventDetail.kv) {
