@@ -29,6 +29,8 @@ import {
   COMMAND_DELETE,
   EVT_PUSH
 } from './util/constants'
+import { Inbox } from './modules/web-inbox/WebInbox'
+import { Message } from './modules/web-inbox/Message'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
@@ -184,6 +186,29 @@ export default class CleverTap {
 
       this.#request.saveAndFireRequest(pageLoadUrl, false)
     }
+
+    if (customElements.get('inbox-message') === undefined) {
+      customElements.define('inbox-message', Message)
+    }
+
+    if (customElements.get('web-inbox') === undefined) {
+      customElements.define('web-inbox', Inbox)
+      window.addEventListener('load', () => {
+        $ct.inbox = new Inbox({ logger: this.#logger })
+        document.body.appendChild($ct.inbox)
+      })
+    }
+
+    // PM to define functionalities that we will need to expose to clients
+    this.inbox = {
+      addNewMessages: (msgs = []) => {
+        $ct.inbox.incomingMessages = msgs
+      },
+      getBadgeCount: () => {
+        return $ct.inbox.unviewedCounter
+      }
+    }
+
     // method for notification viewed
     this.renderNotificationViewed = (detail) => {
       processNotificationEvent(NOTIFICATION_VIEWED, detail)

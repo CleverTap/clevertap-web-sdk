@@ -14,7 +14,8 @@ import {
   NOTIFICATION_VIEWED,
   NOTIFICATION_CLICKED,
   WZRK_PREFIX,
-  WZRK_ID
+  WZRK_ID,
+  WEBINBOX_CONFIG
 } from './constants'
 
 import {
@@ -43,6 +44,44 @@ const _tr = (msg, {
   const _request = request
   const _logger = logger
   let _wizCounter = 0
+
+  // msg = {
+  //   arp: {
+  //     j_n: 'Zw==',
+  //     i_n: 'Y2NmewICAw==',
+  //     d_ts: 0,
+  //     dh: 0,
+  //     v: 1,
+  //     j_s: '{ }',
+  //     id: 'WWW-WWW-WWRZ',
+  //     e_ts: 0,
+  //     r_ts: 1649748826,
+  //     rc_w: 60,
+  //     rc_n: 5
+  //   },
+  //   inbox_notifs: [{
+  //     templateType: 'text-with-icon-and-image',
+  //     tags: ['Promotions 🎉'],
+  //     enableTags: true,
+  //     msg: [{
+  //       title: 'Hey Amee  🙌',
+  //       description: 'Use code AUG50 and get upto 50% off on the purchase of your items !!',
+  //       onClickUrl: '',
+  //       openUrlInNewTab: false,
+  //       buttons: [{
+  //         text: 'Check out similar items',
+  //         action: 'url',
+  //         url: 'https://fashionsuggest.in/wp-content/uploads/2018/07/crop-tops-banner-compressed.jpg',
+  //         openUrlInNewTab: false
+  //       }],
+  //       iconUrl: '',
+  //       imageUrl: 'https://img.freepik.com/free-photo/young-woman-with-smile-dressed-white-casual-t-shirt-yellow-background-banner_164357-5237.jpg?w=2000'
+  //     }],
+  //     wzrk_ttl: 1664517120,
+  //     wzrk_id: '1659988199_20220809',
+  //     wzrk_pivot: 'wzrk_default'
+  //   }]
+  // }
 
   // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
@@ -810,6 +849,49 @@ const _tr = (msg, {
         }
       }
     }
+  }
+
+  // msg.webInboxSetting = {
+  //   title: 'Notifications ✨',
+  //   categories: ['Promotions 🎉', 'Updates '],
+  //   inboxSelector: 'bell-selector',
+  //   styles: {
+  //     header: {
+  //       titleColor: '#4B1072',
+  //       backgroundColor: '#FFFFFF',
+  //       closeIconColor: '#414453'
+  //     },
+  //     categories: {
+  //       tabColor: '#F8B653',
+  //       titleColor: '#110606'
+  //     },
+  //     cards: {
+  //       backgroundColor: '#ffffff',
+  //       titleColor: '#434761',
+  //       descriptionColor: '#434761',
+  //       borderColor: '#F1F2F5',
+  //       unreadMarkerColor: '#FFBA00',
+  //       buttonColor: '#F8B653',
+  //       buttonTextColor: '#ffffff'
+  //     }
+  //   }
+  // }
+
+  // TODO - call init method only if there's some change in the configuration
+  if (msg.webInboxSetting) {
+    if (StorageManager._isLocalStorageSupported()) {
+      try {
+        // what if the inbox is already open ?
+        StorageManager.saveToLSorCookie(WEBINBOX_CONFIG, msg.webInboxSetting)
+        setTimeout(() => { $ct.inbox && $ct.inbox.init() }, 0)
+      } catch (e) {
+        _logger.error('Unable to persist web inbox settings: ' + e)
+      }
+    }
+  }
+
+  if (msg.inbox_notifs != null && $ct.inbox) {
+    $ct.inbox.incomingMessages = msg.inbox_notifs
   }
 
   if (StorageManager._isLocalStorageSupported()) {
