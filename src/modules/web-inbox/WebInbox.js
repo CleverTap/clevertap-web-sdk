@@ -183,6 +183,12 @@ export class Inbox extends HTMLElement {
   }
 
   createCategories () {
+    const categories = this.createEl('section', 'categories')
+
+    const leftBtn = this.createEl('div', 'leftBtn')
+    leftBtn.innerText = '<'
+    categories.appendChild(leftBtn)
+
     const categoriesWrapper = this.createEl('div', 'categoriesWrapper')
     const _categories = ['All', ...this.config.categories]
     _categories.forEach((c, i) => {
@@ -194,7 +200,22 @@ export class Inbox extends HTMLElement {
       this.categories.push(category)
       categoriesWrapper.appendChild(category)
     })
-    return categoriesWrapper
+
+    categories.appendChild(categoriesWrapper)
+
+    const rightBtn = this.createEl('div', 'rightBtn')
+    rightBtn.innerText = '>'
+    categories.appendChild(rightBtn)
+
+    leftBtn.addEventListener('click', () => {
+      this.shadowRoot.getElementById('categoriesWrapper').scrollBy(-70, 0)
+    })
+
+    rightBtn.addEventListener('click', () => {
+      this.shadowRoot.getElementById('categoriesWrapper').scrollBy(70, 0)
+    })
+
+    return categories
   }
 
   updateActiveCategory (activeCategory) {

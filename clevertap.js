@@ -4215,6 +4215,12 @@
         targetingMsgJson = targetObj;
       }
 
+      if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
+        var element = document.getElementById('intentPreview');
+        element.remove();
+        document.getElementById('intentOpacityDiv').remove();
+      }
+
       if (document.getElementById('intentPreview') != null) {
         return;
       } // dont show exit intent on tablet/mobile - only on desktop
@@ -4372,7 +4378,7 @@
       }
     }; // msg.webInboxSetting = {
     //   title: 'Notifications ✨',
-    //   categories: ['Promotions 🎉', 'Updates '],
+    //   categories: ['Promotions 🎉', 'Updates', 'Social', 'Primary', 'Secondary'],
     //   inboxSelector: 'bell-selector',
     //   styles: {
     //     header: {
@@ -5032,7 +5038,7 @@
     return "\n    <style>\n      #messageWrapper {\n        margin-bottom: 16px; \n      }\n      #message {\n        background-color: ".concat(backgroundColor, "; \n        border: 1px solid ").concat(borderColor, ";\n        border-radius: 4px; \n        overflow: hidden;\n      }\n      #iconTitleDescWrapper {\n        display: flex; \n        padding: 16px;\n      }\n      #titleDescWrapper {\n        display: flex; \n        flex-direction: column;\n      }\n      #iconImgContainer {\n        display: flex; \n        margin-right: 16px;\n      }\n      #mainImg {\n        width: 100%; \n        background: #b2b1ae;\n      }\n      #iconImg {\n        height: 40px; \n        width: 40px;\n      }\n      #title {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 600; \n        color: ").concat(titleColor, "\n      }\n      #description {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 400; \n        color: ").concat(descriptionColor, "\n      }\n      [id^=\"button-\"] {\n        background-color: ").concat(buttonColor, "; \n        color: ").concat(buttonTextColor, "; \n        padding: 8px 16px; \n        font-size: 12px; \n        line-height: 16px; \n        font-weight: 600; \n        flex: 1; \n        border-radius: 0px; \n        text-transform: capitalize; \n        cursor: pointer; \n        border: none;\n      }\n      #buttonsContainer {\n        display: flex;\n      }\n      #timeStamp {\n        display: flex; \n        justify-content: end; \n        align-items: center; \n        margin-top: 4px; \n        font-size: 12px !important; \n        line-height: 16px; \n        color: black;\n      }\n      #unreadMarker {\n        height: 8px; \n        width: 8px; \n        border-radius: 50%; \n        background-color: #FFBA00; \n        margin-left: 8px;\n      }\n      @media only screen and (min-width: 420px) {\n        #mainImg {\n          height: 180px;\n        }\n      }\n    </style>\n  ");
   };
   var inboxContainerStyles = function inboxContainerStyles(backgroundColor, headerTitleColor, closeIconColor, tabColor, categoriesTitleColor) {
-    return "\n      <style id=\"webInboxStyles\">\n        #unviewedBadge {\n          height: 16px; width: 26px; position: absolute;\n        }\n        #inbox {\n          width: 100%;\n          position: absolute; \n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n        }\n  \n        #emptyInboxMsg {\n          display: none;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #panel {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ".concat(backgroundColor, "; \n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #panelTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n        }\n  \n        #categoriesWrapper {\n          margin: 16px; \n          height: 32px; \n          border-radius: 4px; \n          overflow: hidden; \n          display: flex;\n        }\n  \n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(tabColor, "4d; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n        }\n  \n        #inboxCard {\n          padding: 8px 8px 0 8px;\n          overflow-y: auto;\n        }\n  \n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: 392px;\n            height: 546px;\n          }\n  \n          #inboxCard {\n            height: 446px; \n            padding: 0 16px;\n          }\n  \n        }\n      </style>\n      ");
+    return "\n      <style id=\"webInboxStyles\">\n        #unviewedBadge {\n          height: 16px; width: 26px; position: absolute;\n        }\n        #inbox {\n          width: 100%;\n          position: absolute; \n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n        }\n  \n        #emptyInboxMsg {\n          display: none;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #panel {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ".concat(backgroundColor, "; \n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #panelTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n        }\n  \n        #categories {\n          margin: 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          width: -webkit-fill-available;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftBtn, #rightBtn {\n          justify-content: center; \n          align-items: center; \n          display: flex;\n          cursor: pointer;\n        }\n\n        #leftBtn {\n          left: 0px;\n          \n        }\n\n        #rightBtn {\n          right: 0px;\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(tabColor, "4d; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 10px;\n          border-radius: 15px;\n          margin-right: 5px;\n        }\n  \n        #inboxCard {\n          padding: 8px 8px 0 8px;\n          overflow-y: auto;\n        }\n  \n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: 392px;\n            height: 546px;\n          }\n  \n          #inboxCard {\n            height: 446px; \n            padding: 0 16px;\n          }\n  \n        }\n      </style>\n      ");
   };
 
   var getInboxPosition = function getInboxPosition(x, y, cardWidth) {
@@ -5543,6 +5549,10 @@
       value: function createCategories() {
         var _this6 = this;
 
+        var categories = this.createEl('section', 'categories');
+        var leftBtn = this.createEl('div', 'leftBtn');
+        leftBtn.innerText = '<';
+        categories.appendChild(leftBtn);
         var categoriesWrapper = this.createEl('div', 'categoriesWrapper');
 
         var _categories = ['All'].concat(_toConsumableArray(this.config.categories));
@@ -5560,7 +5570,17 @@
           categoriesWrapper.appendChild(category);
         });
 
-        return categoriesWrapper;
+        categories.appendChild(categoriesWrapper);
+        var rightBtn = this.createEl('div', 'rightBtn');
+        rightBtn.innerText = '>';
+        categories.appendChild(rightBtn);
+        leftBtn.addEventListener('click', function () {
+          _this6.shadowRoot.getElementById('categoriesWrapper').scrollBy(-70, 0);
+        });
+        rightBtn.addEventListener('click', function () {
+          _this6.shadowRoot.getElementById('categoriesWrapper').scrollBy(70, 0);
+        });
+        return categories;
       }
     }, {
       key: "updateActiveCategory",

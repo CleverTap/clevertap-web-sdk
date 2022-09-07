@@ -689,6 +689,11 @@ const _tr = (msg, {
     } else {
       targetingMsgJson = targetObj
     }
+    if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
+      const element = document.getElementById('intentPreview')
+      element.remove()
+      document.getElementById('intentOpacityDiv').remove()
+    }
 
     if (document.getElementById('intentPreview') != null) {
       return
@@ -853,7 +858,7 @@ const _tr = (msg, {
 
   // msg.webInboxSetting = {
   //   title: 'Notifications ✨',
-  //   categories: ['Promotions 🎉', 'Updates '],
+  //   categories: ['Promotions 🎉', 'Updates', 'Social', 'Primary', 'Secondary'],
   //   inboxSelector: 'bell-selector',
   //   styles: {
   //     header: {

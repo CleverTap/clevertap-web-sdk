@@ -129,14 +129,41 @@ export const inboxContainerStyles = (backgroundColor, headerTitleColor, closeIco
           text-align: center;
         }
   
-        #categoriesWrapper {
+        #categories {
           margin: 16px; 
           height: 32px; 
-          border-radius: 4px; 
-          overflow: hidden; 
           display: flex;
+          scroll-behavior: smooth;
+        }
+
+        #categoriesWrapper {
+          height: 32px; 
+          overflow-x: scroll;
+          display: flex;
+          white-space: nowrap;
+          width: -webkit-fill-available;
+        }
+
+        #categoriesWrapper::-webkit-scrollbar {
+          display: none;
         }
   
+        #leftBtn, #rightBtn {
+          justify-content: center; 
+          align-items: center; 
+          display: flex;
+          cursor: pointer;
+        }
+
+        #leftBtn {
+          left: 0px;
+          
+        }
+
+        #rightBtn {
+          right: 0px;
+        }
+
         [id^="category-"] {
           display: flex; 
           flex: 1 1 0; 
@@ -147,6 +174,9 @@ export const inboxContainerStyles = (backgroundColor, headerTitleColor, closeIco
           background-color: ${tabColor}4d; 
           color: ${categoriesTitleColor}; 
           cursor: pointer;
+          padding: 10px;
+          border-radius: 15px;
+          margin-right: 5px;
         }
   
         #inboxCard {
