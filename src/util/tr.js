@@ -523,8 +523,7 @@ const _tr = (msg, {
             }, {});
             if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }
             if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }
-            const notifData = { msgId: ct__camapignId, msgCTkv };
-            console.log('Button Clicked Event', notifData);
+            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '${targetingMsgJson.wzrk_pivot}' };
             window.parent.clevertap.renderNotificationClicked(notifData);
         }
       });
