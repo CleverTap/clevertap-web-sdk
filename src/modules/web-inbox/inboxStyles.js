@@ -129,11 +129,13 @@ export const inboxContainerStyles = (backgroundColor, headerTitleColor, closeIco
           text-align: center;
         }
   
-        #categories {
+        #categoriesContainer {
           margin: 16px; 
           height: 32px; 
           display: flex;
           scroll-behavior: smooth;
+          justify-content: center; 
+          align-items: center; 
         }
 
         #categoriesWrapper {
@@ -149,19 +151,21 @@ export const inboxContainerStyles = (backgroundColor, headerTitleColor, closeIco
         }
   
         #leftBtn, #rightBtn {
-          justify-content: center; 
-          align-items: center; 
-          display: flex;
           cursor: pointer;
+          position: absolute;
+          font-weight: bold;
+          height: 32px;
+          width: 40px;
+          align-items: center; 
         }
 
         #leftBtn {
-          left: 0px;
-          
+          left: 15px;
         }
 
         #rightBtn {
-          right: 0px;
+          right: 15px;
+          justify-content: end; 
         }
 
         [id^="category-"] {

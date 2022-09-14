@@ -183,16 +183,25 @@ export class Inbox extends HTMLElement {
   }
 
   createCategories () {
-    const categories = this.createEl('section', 'categories')
+    const categoriesContainer = this.createEl('div', 'categoriesContainer')
 
     const leftBtn = this.createEl('div', 'leftBtn')
-    leftBtn.innerText = '<'
-    categories.appendChild(leftBtn)
+    categoriesContainer.appendChild(leftBtn)
+
+    let firstListItem = null
+    let lastListItem = null
 
     const categoriesWrapper = this.createEl('div', 'categoriesWrapper')
     const _categories = ['All', ...this.config.categories]
+    const len = _categories.length - 1
     _categories.forEach((c, i) => {
       const category = this.createEl('div', `category-${i}`)
+      if (i === 0) {
+        firstListItem = category
+      }
+      if (i === len) {
+        lastListItem = category
+      }
       category.innerText = c
       category.addEventListener('click', () => {
         this.updateActiveCategory(c)
@@ -201,11 +210,10 @@ export class Inbox extends HTMLElement {
       categoriesWrapper.appendChild(category)
     })
 
-    categories.appendChild(categoriesWrapper)
+    categoriesContainer.appendChild(categoriesWrapper)
 
     const rightBtn = this.createEl('div', 'rightBtn')
-    rightBtn.innerText = '>'
-    categories.appendChild(rightBtn)
+    categoriesContainer.appendChild(rightBtn)
 
     leftBtn.addEventListener('click', () => {
       this.shadowRoot.getElementById('categoriesWrapper').scrollBy(-70, 0)
@@ -215,7 +223,34 @@ export class Inbox extends HTMLElement {
       this.shadowRoot.getElementById('categoriesWrapper').scrollBy(70, 0)
     })
 
-    return categories
+    const leftObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.intersectionRatio > 0.10) {
+          leftBtn.innerText = ''
+          leftBtn.style = 'display: block; background: transparent; pointer-events: none'
+        } else {
+          leftBtn.innerText = '<'
+          leftBtn.style = 'display: flex; background: linear-gradient(to right, white, transparent); pointer-events: auto'
+        }
+      })
+    }, { threshold: 0.10 })
+
+    const rightObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.intersectionRatio > 0.90) {
+          rightBtn.innerText = ''
+          rightBtn.style = 'display: block; background: transparent; pointer-events: none'
+        } else {
+          rightBtn.innerText = '>'
+          rightBtn.style = 'display: flex; background: linear-gradient(to left, white, transparent); pointer-events: auto'
+        }
+      })
+    }, { threshold: 0.90 })
+
+    leftObserver.observe(firstListItem)
+    rightObserver.observe(lastListItem)
+
+    return categoriesContainer
   }
 
   updateActiveCategory (activeCategory) {
