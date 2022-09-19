@@ -458,7 +458,7 @@
   var EVT_PING = 'ping';
   var COOKIE_EXPIRY = 86400 * 365 * 10; // 10 Years in seconds
 
-  var MAX_TRIES = 50; // API tries
+  var MAX_TRIES = 200; // API tries
 
   var FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000; // 2 mins
 
