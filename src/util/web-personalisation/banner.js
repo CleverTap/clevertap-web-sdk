@@ -37,6 +37,7 @@ export class CTWebPersonalisationBanner extends HTMLElement {
       <style type="text/css">
         .banner {
           position: relative;
+          cursor: pointer;
         }
         img {
           height: auto;
