@@ -889,7 +889,9 @@
     },
     // helper variable to handle race condition and check when notifications were called
     unsubGroups: [],
-    updatedCategoryLong: null // domain: window.location.hostname, url -> getHostName()
+    updatedCategoryLong: null,
+    isPrivacyArrPushed: false,
+    privacyArray: [] // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -4986,7 +4988,13 @@
           privacyArr[_key] = arguments[_key];
         }
 
-        _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](privacyArr);
+        if ($ct.isPrivacyArrPushed) {
+          _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray]($ct.privacyArray.length > 0 ? $ct.privacyArray : privacyArr);
+        } else {
+          var _$ct$privacyArray;
+
+          (_$ct$privacyArray = $ct.privacyArray).push.apply(_$ct$privacyArray, privacyArr);
+        }
 
         return 0;
       }
@@ -5042,6 +5050,8 @@
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false');
 
         _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+
+        privacyArr.splice(0, privacyArr.length);
       }
     }
   };
@@ -6089,6 +6099,12 @@
 
         _classPrivateFieldLooseBase(this, _request$6)[_request$6].processBackupEvents();
 
+        $ct.isPrivacyArrPushed = true;
+
+        if ($ct.privacyArray.length > 0) {
+          this.privacy.push($ct.privacyArray);
+        }
+
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
         this.pageChanged();
@@ -6228,9 +6244,6 @@
           });
         }
 
-        console.log({
-          data: data
-        });
         data = _classPrivateFieldLooseBase(this, _request$6)[_request$6].addSystemDataToProfileObject(data, undefined);
 
         _classPrivateFieldLooseBase(this, _request$6)[_request$6].addFlags(data);

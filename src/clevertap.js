@@ -400,6 +400,12 @@ export default class CleverTap {
     }
 
     this.#request.processBackupEvents()
+
+    $ct.isPrivacyArrPushed = true
+    if ($ct.privacyArray.length > 0) {
+      this.privacy.push($ct.privacyArray)
+    }
+
     this.#processOldValues()
 
     this.pageChanged()
@@ -558,7 +564,6 @@ export default class CleverTap {
         data.af[key] = payload[key]
       })
     }
-    console.log({ data })
     data = this.#request.addSystemDataToProfileObject(data, undefined)
     this.#request.addFlags(data)
     const compressedData = compressData(JSON.stringify(data), this.#logger)
