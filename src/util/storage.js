@@ -256,7 +256,9 @@ export const $ct = {
     notifEnabledFromApi: false
   }, // helper variable to handle race condition and check when notifications were called
   unsubGroups: [],
-  updatedCategoryLong: null
+  updatedCategoryLong: null,
+  isPrivacyArrPushed: false,
+  privacyArray: []
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }
