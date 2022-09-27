@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 27 Sept, 2022
+- Fixed a bug where request were sent though optOut was true.
+- Fixed a bug where multiple GUID were generated in slow network.
+
 ## [1.3.0] - 26 Aug, 2022
 - Introduces custom HTML click tracking in Web pop up and Web exit intent.
 - Adds public methods to increment/decrement values set via User profile properties.
