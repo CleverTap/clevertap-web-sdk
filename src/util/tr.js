@@ -263,6 +263,7 @@ const _tr = (msg, {
     bannerEl.msgId = targetingMsgJson.wzrk_id
     bannerEl.pivotId = targetingMsgJson.wzrk_pivot
     bannerEl.details = targetingMsgJson.display.details[0]
+    bannerEl.divHeight = targetingMsgJson.display.divHeight
     const containerEl = document.getElementById(divId)
     containerEl.innerHTML = ''
     containerEl.appendChild(bannerEl)
