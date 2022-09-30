@@ -139,10 +139,13 @@ export class Message extends HTMLElement {
       const id = path[0].id.split('-')[1]
       const button = msg.buttons[id]
       payload.wzrk_c2a = button.text
+      const btn = this.shadow.getElementById('button-' + id)
       if (button.action === 'url') {
         button.openUrlInNewTab ? window.open(button.url, '_blank') : (window.location = button.url)
       } else if (button.action === 'copy') {
-        // copy to clipboard logic here
+        navigator.clipboard.writeText(button.clipboardText)
+        btn.style.backgroundColor = '#4CAF50'
+        btn.innerText = 'Code Copied!!'
       }
     } else if (path[0].tagName === 'INBOX-MESSAGE' && msg.onClickUrl) {
       msg.openUrlInNewTab ? window.open(msg.onClickUrl, '_blank') : (window.location = msg.onClickUrl)

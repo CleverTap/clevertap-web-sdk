@@ -309,7 +309,7 @@ export class Inbox extends HTMLElement {
         if (path.length) {
           const el = path[path.length - 1]
           this.updateMessageInLS(el.message.id, { ...el.message, read: 1 })
-          el.shadow.getElementById('unreadMarker').style.display = 'none'
+          if (el.shadow.getElementById('unreadMarker')) { el.shadow.getElementById('unreadMarker').style.display = 'none' }
           el.raiseClickedEvent(path)
         }
         return

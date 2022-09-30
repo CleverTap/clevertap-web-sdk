@@ -70,9 +70,8 @@ const _tr = (msg, {
   //       openUrlInNewTab: false,
   //       buttons: [{
   //         text: 'Check out similar items',
-  //         action: 'url',
-  //         url: 'https://fashionsuggest.in/wp-content/uploads/2018/07/crop-tops-banner-compressed.jpg',
-  //         openUrlInNewTab: false
+  //         action: 'copy',
+  //         clipboardText: 'SEP400'
   //       }],
   //       iconUrl: '',
   //       imageUrl: 'https://img.freepik.com/free-photo/young-woman-with-smile-dressed-white-casual-t-shirt-yellow-background-banner_164357-5237.jpg?w=2000'
