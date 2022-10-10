@@ -1969,6 +1969,8 @@
       url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
     }
 
+    url = addToURL(url, 'tries', tries); // Add tries to URL
+
     url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
     // TODO: Figure out a better way to handle plugin check
@@ -4159,6 +4161,12 @@
         targetingMsgJson = exitintentObj;
       } else {
         targetingMsgJson = targetObj;
+      }
+
+      if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
+        var element = document.getElementById('intentPreview');
+        element.remove();
+        document.getElementById('intentOpacityDiv').remove();
       }
 
       if (document.getElementById('intentPreview') != null) {

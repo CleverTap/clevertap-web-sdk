@@ -650,6 +650,12 @@ const _tr = (msg, {
       targetingMsgJson = targetObj
     }
 
+    if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
+      const element = document.getElementById('intentPreview')
+      element.remove()
+      document.getElementById('intentOpacityDiv').remove()
+    }
+
     if (document.getElementById('intentPreview') != null) {
       return
     }
