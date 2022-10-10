@@ -5832,16 +5832,16 @@
         return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].id;
       };
 
-      this.getDCDomain = function () {
+      this.getSCDomain = function () {
         return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
-      }; // Set the Direct Call sdk version and fire request
+      }; // Set the Signed Call sdk version and fire request
 
 
-      this.setDCSDKVersion = function (ver) {
-        _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion = ver;
+      this.setSCSDKVersion = function (ver) {
+        _classPrivateFieldLooseBase(_this, _account$5)[_account$5].scSDKVersion = ver;
         var data = {};
         data.af = {
-          dcv: 'dc-sdk-v' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion
+          scv: 'sc-sdk-v' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].scSDKVersion
         };
 
         var pageLoadUrl = _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dataPostURL;
