@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.3.2] - 10 Oct, 2022
-- Addded 'tries' to url params for logging purpose.
+- Adds 'tries' to url params for logging purpose.
 - Fixed a bug where dismiss spam control was not working for web pop up interstitial campaign.
 - Renamed methods for DC from 'Direct Call' to 'Signed Call'.
 
