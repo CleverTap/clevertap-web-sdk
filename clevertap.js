@@ -1969,6 +1969,8 @@
       url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
     }
 
+    url = addToURL(url, 'tries', tries); // Add tries to URL
+
     url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
     // TODO: Figure out a better way to handle plugin check
@@ -4161,6 +4163,12 @@
         targetingMsgJson = targetObj;
       }
 
+      if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
+        var element = document.getElementById('intentPreview');
+        element.remove();
+        document.getElementById('intentOpacityDiv').remove();
+      }
+
       if (document.getElementById('intentPreview') != null) {
         return;
       } // dont show exit intent on tablet/mobile - only on desktop
@@ -5824,16 +5832,16 @@
         return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].id;
       };
 
-      this.getDCDomain = function () {
+      this.getSCDomain = function () {
         return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
-      }; // Set the Direct Call sdk version and fire request
+      }; // Set the Signed Call sdk version and fire request
 
 
-      this.setDCSDKVersion = function (ver) {
-        _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion = ver;
+      this.setSCSDKVersion = function (ver) {
+        _classPrivateFieldLooseBase(_this, _account$5)[_account$5].scSDKVersion = ver;
         var data = {};
         data.af = {
-          dcv: 'dc-sdk-v' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion
+          scv: 'sc-sdk-v' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].scSDKVersion
         };
 
         var pageLoadUrl = _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dataPostURL;

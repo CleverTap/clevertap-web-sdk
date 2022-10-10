@@ -169,15 +169,15 @@ export default class CleverTap {
       return this.#account.id
     }
 
-    this.getDCDomain = () => {
+    this.getSCDomain = () => {
       return this.#account.finalTargetDomain
     }
 
-    // Set the Direct Call sdk version and fire request
-    this.setDCSDKVersion = (ver) => {
-      this.#account.dcSDKVersion = ver
+    // Set the Signed Call sdk version and fire request
+    this.setSCSDKVersion = (ver) => {
+      this.#account.scSDKVersion = ver
       const data = {}
-      data.af = { dcv: 'dc-sdk-v' + this.#account.dcSDKVersion }
+      data.af = { scv: 'sc-sdk-v' + this.#account.scSDKVersion }
       let pageLoadUrl = this.#account.dataPostURL
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
