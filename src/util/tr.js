@@ -856,27 +856,41 @@ const _tr = (msg, {
   }
 
   // msg.webInboxSetting = {
-  //   title: 'Notifications ✨',
-  //   categories: ['Promotions 🎉', 'Updates', 'Social', 'Primary', 'Secondary'],
+  //   title: 'Notifications Amee',
+  //   categories: ['Updates A', 'Promotions B'],
   //   inboxSelector: 'bell-selector',
   //   styles: {
-  //     header: {
-  //       titleColor: '#4B1072',
-  //       backgroundColor: '#FFFFFF',
-  //       closeIconColor: '#414453'
-  //     },
+  //     panelBackgroundColor: '#FAA1A1',
+  //     closeIconColor: '#2E2929',
+  //     addPanelBorder: true,
+  //     panelBorderColor: '#44BE12',
+  //     header: { titleColor: '#442D2D', backgroundColor: '#F6F758' },
   //     categories: {
-  //       tabColor: '#F8B653',
-  //       titleColor: '#110606'
+  //       tabColor: '#5DC72A',
+  //       titleColor: '#FFFFFF',
+  //       addBorder: {},
+  //       borderColor: '#E2DF2F',
+  //       selectedTab: {
+  //         tabColor: '#5BFFFA',
+  //         titleColor: '#1C24C7',
+  //         addBorder: true,
+  //         borderColor: '#492F61'
+  //       }
   //     },
   //     cards: {
-  //       backgroundColor: '#ffffff',
-  //       titleColor: '#434761',
-  //       descriptionColor: '#434761',
-  //       borderColor: '#F1F2F5',
-  //       unreadMarkerColor: '#FFBA00',
-  //       buttonColor: '#F8B653',
-  //       buttonTextColor: '#ffffff'
+  //       backgroundColor: '#E7B7F0',
+  //       titleColor: '#490A2F',
+  //       descriptionColor: '#1519C9',
+  //       unreadMarkerColor: '#0A0106',
+  //       roundedCorners: true,
+  //       addBorder: true,
+  //       borderColor: '#30071F',
+  //       buttonColor: '#22171C',
+  //       buttonTextColor: '#9E1EDF'
+  //     },
+  //     notificationsBadge: {
+  //       backgroundColor: '#F5378C',
+  //       textColor: '#161314'
   //     }
   //   }
   // }

@@ -3576,7 +3576,7 @@
     //       iconUrl: '',
     //       imageUrl: 'https://img.freepik.com/free-photo/young-woman-with-smile-dressed-white-casual-t-shirt-yellow-background-banner_164357-5237.jpg?w=2000'
     //     }],
-    //     wzrk_ttl: 1664517120,
+    //     wzrk_ttl: 1672468523,
     //     wzrk_id: '1659988199_20220809',
     //     wzrk_pivot: 'wzrk_default'
     //   }]
@@ -4376,27 +4376,41 @@
         }
       }
     }; // msg.webInboxSetting = {
-    //   title: 'Notifications ✨',
-    //   categories: ['Promotions 🎉', 'Updates', 'Social', 'Primary', 'Secondary'],
+    //   title: 'Notifications Amee',
+    //   categories: ['Updates A', 'Promotions B'],
     //   inboxSelector: 'bell-selector',
     //   styles: {
-    //     header: {
-    //       titleColor: '#4B1072',
-    //       backgroundColor: '#FFFFFF',
-    //       closeIconColor: '#414453'
-    //     },
+    //     panelBackgroundColor: '#FAA1A1',
+    //     closeIconColor: '#2E2929',
+    //     addPanelBorder: true,
+    //     panelBorderColor: '#44BE12',
+    //     header: { titleColor: '#442D2D', backgroundColor: '#F6F758' },
     //     categories: {
-    //       tabColor: '#F8B653',
-    //       titleColor: '#110606'
+    //       tabColor: '#5DC72A',
+    //       titleColor: '#FFFFFF',
+    //       addBorder: {},
+    //       borderColor: '#E2DF2F',
+    //       selectedTab: {
+    //         tabColor: '#5BFFFA',
+    //         titleColor: '#1C24C7',
+    //         addBorder: true,
+    //         borderColor: '#492F61'
+    //       }
     //     },
     //     cards: {
-    //       backgroundColor: '#ffffff',
-    //       titleColor: '#434761',
-    //       descriptionColor: '#434761',
-    //       borderColor: '#F1F2F5',
-    //       unreadMarkerColor: '#FFBA00',
-    //       buttonColor: '#F8B653',
-    //       buttonTextColor: '#ffffff'
+    //       backgroundColor: '#E7B7F0',
+    //       titleColor: '#490A2F',
+    //       descriptionColor: '#1519C9',
+    //       unreadMarkerColor: '#0A0106',
+    //       roundedCorners: true,
+    //       addBorder: true,
+    //       borderColor: '#30071F',
+    //       buttonColor: '#22171C',
+    //       buttonTextColor: '#9E1EDF'
+    //     },
+    //     notificationsBadge: {
+    //       backgroundColor: '#F5378C',
+    //       textColor: '#161314'
     //     }
     //   }
     // }
@@ -5034,7 +5048,7 @@
   };
 
   var messageStyles = function messageStyles(backgroundColor, borderColor, titleColor, descriptionColor, buttonColor, buttonTextColor) {
-    return "\n    <style>\n      #messageWrapper {\n        margin-bottom: 16px; \n      }\n      #message {\n        background-color: ".concat(backgroundColor, "; \n        border: 1px solid ").concat(borderColor, ";\n        border-radius: 4px; \n        overflow: hidden;\n      }\n      #iconTitleDescWrapper {\n        display: flex; \n        padding: 16px;\n      }\n      #titleDescWrapper {\n        display: flex; \n        flex-direction: column;\n      }\n      #iconImgContainer {\n        display: flex; \n        margin-right: 16px;\n      }\n      #mainImg {\n        width: 100%; \n        background: #b2b1ae;\n      }\n      #iconImg {\n        height: 40px; \n        width: 40px;\n      }\n      #title {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 600; \n        color: ").concat(titleColor, "\n      }\n      #description {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 400; \n        color: ").concat(descriptionColor, "\n      }\n      [id^=\"button-\"] {\n        background-color: ").concat(buttonColor, "; \n        color: ").concat(buttonTextColor, "; \n        padding: 8px 16px; \n        font-size: 12px; \n        line-height: 16px; \n        font-weight: 600; \n        flex: 1; \n        border-radius: 0px; \n        text-transform: capitalize; \n        cursor: pointer; \n        border: none;\n      }\n      #buttonsContainer {\n        display: flex;\n      }\n      #timeStamp {\n        display: flex; \n        justify-content: end; \n        align-items: center; \n        margin-top: 4px; \n        font-size: 12px !important; \n        line-height: 16px; \n        color: black;\n      }\n      #unreadMarker {\n        height: 8px; \n        width: 8px; \n        border-radius: 50%; \n        background-color: #FFBA00; \n        margin-left: 8px;\n      }\n      @media only screen and (min-width: 420px) {\n        #mainImg {\n          height: 180px;\n        }\n      }\n    </style>\n  ");
+    return "\n    <style>\n      #messageWrapper {\n        margin-bottom: 16px; \n      }\n      #message {\n        background-color: ".concat(backgroundColor, "; \n        border: 1px solid ").concat(borderColor, ";\n        border-radius: 4px; \n        overflow: hidden;\n      }\n      #iconTitleDescWrapper {\n        display: flex; \n        padding: 16px;\n      }\n      #titleDescWrapper {\n        display: flex; \n        flex-direction: column;\n      }\n      #iconImgContainer {\n        display: flex; \n        margin-right: 16px;\n      }\n      #mainImg {\n        width: 100%; \n        background: #b2b1ae;\n      }\n      #iconImg {\n        height: 40px; \n        width: 40px;\n      }\n      #title {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 600; \n        color: ").concat(titleColor, "\n      }\n      #description {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 400; \n        color: ").concat(descriptionColor, "\n      }\n      [id^=\"button-\"] {\n        background-color: ").concat(buttonColor, "; \n        color: ").concat(buttonTextColor, "; \n        padding: 8px 16px; \n        font-size: 12px; \n        line-height: 16px; \n        font-weight: 600; \n        flex: 1; \n        border-radius: 0px; \n        text-transform: capitalize; \n        cursor: pointer; \n        border: none;\n      }\n      #buttonsContainer {\n        display: flex;\n      }\n      #timeStamp {\n        display: flex; \n        justify-content: end; \n        align-items: center; \n        margin-top: 4px; \n        font-size: 12px !important; \n        line-height: 16px; \n        color: black;\n      }\n      #unreadMarker {\n        height: 8px; \n        width: 8px; \n        border-radius: 50%; \n        background-color: #FFBA00; \n        margin-left: 8px;\n      }\n      @media only screen and (min-width: 420px) {\n        #mainImg {\n          height: 180px;\n        }\n      }\n\n      #snackbar {\n        visibility: hidden;\n        min-width: 120px;\n        margin-left: -125px;\n        background-color: #535561;\n        color: #fff;\n        text-align: center;\n        border-radius: 4px;\n        padding: 8px;\n        position: absolute;\n        z-index: 1;\n        right:3px;\n        top: -35px;\n        font-size: 12px;\n        font-family: arial\n      }\n      \n      #snackbar.show {\n        visibility: visible;\n        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;\n        animation: fadein 0.5s, fadeout 0.5s 2.5s;\n      }\n      \n      @-webkit-keyframes fadeout {\n          from {bottom: 30px; opacity: 1;} \n          to {bottom: 0; opacity: 0;}\n      }\n      \n      @keyframes fadeout {\n          from {bottom: 30px; opacity: 1;}\n          to {bottom: 0; opacity: 0;}\n      }\n    </style>\n  ");
   };
   var inboxContainerStyles = function inboxContainerStyles(backgroundColor, headerTitleColor, closeIconColor, tabColor, categoriesTitleColor) {
     return "\n      <style id=\"webInboxStyles\">\n        #unviewedBadge {\n          height: 16px; width: 26px; position: absolute;\n        }\n        #inbox {\n          width: 100%;\n          position: absolute; \n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n        }\n  \n        #emptyInboxMsg {\n          display: none;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #panel {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ".concat(backgroundColor, "; \n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #panelTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          margin: 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          justify-content: center; \n          align-items: center; \n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          width: -webkit-fill-available;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftBtn, #rightBtn {\n          cursor: pointer;\n          position: absolute;\n          font-weight: bold;\n          height: 32px;\n          width: 40px;\n          align-items: center; \n        }\n\n        #leftBtn {\n          left: 15px;\n        }\n\n        #rightBtn {\n          right: 15px;\n          justify-content: end; \n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(tabColor, "4d; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 10px;\n          border-radius: 15px;\n          margin-right: 5px;\n        }\n  \n        #inboxCard {\n          padding: 8px 8px 0 8px;\n          overflow-y: auto;\n        }\n  \n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: 392px;\n            height: 546px;\n          }\n  \n          #inboxCard {\n            height: 446px; \n            padding: 0 16px;\n          }\n  \n        }\n      </style>\n      ");
@@ -5253,16 +5267,30 @@
 
         if (path[0].tagName === 'BUTTON') {
           var id = path[0].id.split('-')[1];
+          var btn = this.shadow.getElementById('button-' + id);
+          btn.style.position = 'relative';
           var button = msg.buttons[id];
           payload.wzrk_c2a = button.text;
-          var btn = this.shadow.getElementById('button-' + id);
 
           if (button.action === 'url') {
             button.openUrlInNewTab ? window.open(button.url, '_blank') : window.location = button.url;
           } else if (button.action === 'copy') {
             navigator.clipboard.writeText(button.clipboardText);
-            btn.style.backgroundColor = '#4CAF50';
-            btn.innerText = 'Code Copied!!';
+            var snackbarOld = this.shadow.getElementById('snackbar');
+            var snackBar;
+
+            if (snackbarOld) {
+              snackBar = snackbarOld;
+            } else {
+              snackBar = this.createEl('div', 'snackbar');
+              snackBar.innerText = 'Copied to clipboard';
+              btn.appendChild(snackBar);
+            }
+
+            snackBar.className = 'show';
+            setTimeout(function () {
+              snackBar.className = '';
+            }, 2000);
           }
         } else if (path[0].tagName === 'INBOX-MESSAGE' && msg.onClickUrl) {
           msg.openUrlInNewTab ? window.open(msg.onClickUrl, '_blank') : window.location = msg.onClickUrl;

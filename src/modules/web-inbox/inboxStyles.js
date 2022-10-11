@@ -79,6 +79,39 @@ export const messageStyles = (backgroundColor, borderColor, titleColor, descript
           height: 180px;
         }
       }
+
+      #snackbar {
+        visibility: hidden;
+        min-width: 120px;
+        margin-left: -125px;
+        background-color: #535561;
+        color: #fff;
+        text-align: center;
+        border-radius: 4px;
+        padding: 8px;
+        position: absolute;
+        z-index: 1;
+        right:3px;
+        top: -35px;
+        font-size: 12px;
+        font-family: arial
+      }
+      
+      #snackbar.show {
+        visibility: visible;
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+      }
+      
+      @-webkit-keyframes fadeout {
+          from {bottom: 30px; opacity: 1;} 
+          to {bottom: 0; opacity: 0;}
+      }
+      
+      @keyframes fadeout {
+          from {bottom: 30px; opacity: 1;}
+          to {bottom: 0; opacity: 0;}
+      }
     </style>
   `
 }

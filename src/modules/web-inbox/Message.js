@@ -137,15 +137,27 @@ export class Message extends HTMLElement {
     const payload = { msgId: this.campaignId, pivotId: this.pivotId }
     if (path[0].tagName === 'BUTTON') {
       const id = path[0].id.split('-')[1]
+      const btn = this.shadow.getElementById('button-' + id)
+      btn.style.position = 'relative'
       const button = msg.buttons[id]
       payload.wzrk_c2a = button.text
-      const btn = this.shadow.getElementById('button-' + id)
       if (button.action === 'url') {
         button.openUrlInNewTab ? window.open(button.url, '_blank') : (window.location = button.url)
       } else if (button.action === 'copy') {
         navigator.clipboard.writeText(button.clipboardText)
-        btn.style.backgroundColor = '#4CAF50'
-        btn.innerText = 'Code Copied!!'
+        const snackbarOld = this.shadow.getElementById('snackbar')
+        let snackBar
+        if (snackbarOld) {
+          snackBar = snackbarOld
+        } else {
+          snackBar = this.createEl('div', 'snackbar')
+          snackBar.innerText = 'Copied to clipboard'
+          btn.appendChild(snackBar)
+        }
+        snackBar.className = 'show'
+        setTimeout(() => {
+          snackBar.className = ''
+        }, 2000)
       }
     } else if (path[0].tagName === 'INBOX-MESSAGE' && msg.onClickUrl) {
       msg.openUrlInNewTab ? window.open(msg.onClickUrl, '_blank') : (window.location = msg.onClickUrl)

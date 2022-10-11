@@ -378,7 +378,9 @@ export class Inbox extends HTMLElement {
       this.config.styles.header.titleColor,
       this.config.styles.header.closeIconColor,
       this.config.styles.categories.tabColor,
-      this.config.styles.categories.titleColor
+      this.config.styles.categories.titleColor,
+      this.config.styles.panelBackgroundColor,
+      this.config.styles.panelBorderColor
     )
   }
 }
