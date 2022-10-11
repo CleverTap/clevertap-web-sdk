@@ -3772,8 +3772,8 @@
       var bannerEl = document.createElement('ct-web-personalisation-banner');
       bannerEl.msgId = targetingMsgJson.wzrk_id;
       bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
-      bannerEl.details = targetingMsgJson.display.details[0];
       bannerEl.divHeight = targetingMsgJson.display.divHeight;
+      bannerEl.details = targetingMsgJson.display.details[0];
       var containerEl = document.getElementById(divId);
       containerEl.innerHTML = '';
       containerEl.appendChild(bannerEl);
