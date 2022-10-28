@@ -1,3 +1,4 @@
+
 import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY } from './constants'
 import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
@@ -8,16 +9,34 @@ export default class RequestDispatcher {
   static logger
   static device
 
+  // ANCHOR - Requests get fired from here
   static #fireRequest (url, tries, skipARP, sendOULFlag) {
+    // retry the subsequent request if the first request is in progress
+    // and there's no valid gcookie
+    if (window.isGCRequestInProgress) {
+      setTimeout(() => {
+        console.count('this is the request from timeout', { url }, { tries })
+        this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
+      }, 1000)
+      return
+    }
     if (this.#dropRequestDueToOptOut()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
     }
 
+    /**
+     * if the gcookie is null
+     * and the request is not the first request
+     * and the tries are less than max tries
+     * keep retrying untill there's a valid gcookie
+     */
     if (!isValueValid(this.device.gcookie) &&
-    ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
-    tries < MAX_TRIES) {
+      ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
+      tries < MAX_TRIES) {
+      // if ongoing First Request is in progress, initiate retry
       setTimeout(() => {
+        console.log(`retrying fire request for url: ${url}, tries: ${tries}`)
         this.logger.debug(`retrying fire request for url: ${url}, tries: ${tries}`)
         this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
       }, 50)
@@ -26,7 +45,7 @@ export default class RequestDispatcher {
 
     if (!sendOULFlag) {
       if (isValueValid(this.device.gcookie)) {
-        // add cookie to url
+        // add gcookie to url
         url = addToURL(url, 'gc', this.device.gcookie)
       }
       url = this.#addARPToRequest(url, skipARP)
@@ -46,18 +65,29 @@ export default class RequestDispatcher {
       url = url.replace('chrome-extension:', 'https:')
     }
 
+    // set a request in progress
+    // so that if gcookie is not present, no other request can be made asynchronusly
+    if (!isValueValid(this.device.gcookie)) {
+      window.isGCRequestInProgress = true
+    }
+
     // TODO: Try using Function constructor instead of appending script.
+    // REVIEW - What if ctCBScripts is undefined or an empty HTMLCollection Documentlist?
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
     while (ctCbScripts[0]) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
     }
+    console.log('these are the values', {
+      url,
+      canRequestGo: window.isGCRequestInProgress,
+      gcookie: this.device.gcookie
+    })
     const s = document.createElement('script')
     s.setAttribute('type', 'text/javascript')
     s.setAttribute('src', url)
     s.setAttribute('class', 'ct-jp-cb')
     s.setAttribute('rel', 'nofollow')
     s.async = true
-
     document.getElementsByTagName('head')[0].appendChild(s)
     this.logger.debug('req snt -> url: ' + url)
   }

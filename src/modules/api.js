@@ -62,6 +62,7 @@ export default class CleverTapAPI {
 
       StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
       StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
+      window.isGCRequestInProgress = false
     }
 
     if (resume) {

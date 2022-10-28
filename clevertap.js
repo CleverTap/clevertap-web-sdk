@@ -1146,6 +1146,7 @@
 
           StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
           StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
+          window.isGCRequestInProgress = false;
         }
 
         if (resume) {
@@ -1946,13 +1947,38 @@
         _window$clevertap,
         _window$wizrocket;
 
+    // retry the subsequent request if the first request is in progress
+    // and there's no valid gcookie
+    if (window.isGCRequestInProgress) {
+      setTimeout(function () {
+        console.count('this is the request from timeout', {
+          url: url
+        }, {
+          tries: tries
+        });
+
+        _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
+      }, 1000);
+      return;
+    }
+
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
       return;
     }
+    /** SECTION
+     * if the gcookie is null
+     * and the request is not the first request
+     * and the tries are less than max tries
+     * keep retrying untill there's a valid gcookie
+     */
+
 
     if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
+      // if ongoing First Request is in progress, initiate retry
       setTimeout(function () {
+        console.log("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
+
         _this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
 
         _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
@@ -1962,7 +1988,7 @@
 
     if (!sendOULFlag) {
       if (isValueValid(this.device.gcookie)) {
-        // add cookie to url
+        // add gcookie to url
         url = addToURL(url, 'gc', this.device.gcookie);
       }
 
@@ -1983,7 +2009,14 @@
 
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:');
+    } // set a request in progress
+    // so that if gcookie is not present, no other request can be made asynchronusly
+
+
+    if (!isValueValid(this.device.gcookie)) {
+      window.isGCRequestInProgress = true;
     } // TODO: Try using Function constructor instead of appending script.
+    // REVIEW - What if ctCBScripts is undefined or an empty HTMLCollection Documentlist?
 
 
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
@@ -1992,6 +2025,11 @@
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
     }
 
+    console.log('these are the values', {
+      url: url,
+      canRequestGo: window.isGCRequestInProgress,
+      gcookie: this.device.gcookie
+    });
     var s = document.createElement('script');
     s.setAttribute('type', 'text/javascript');
     s.setAttribute('src', url);
@@ -6206,7 +6244,9 @@
 
         _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
 
-        _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation;
+        _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation; // NOTE - why do we use ping request
+        // NOTE - DO we need to clear the timeout?
+
         setTimeout(function () {
           if (pgCount <= 3) {
             // send ping for up to 3 pages

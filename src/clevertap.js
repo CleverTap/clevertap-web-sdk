@@ -498,6 +498,8 @@ export default class CleverTap {
     this.#request.saveAndFireRequest(pageLoadUrl, false)
 
     this.#previousUrl = currLocation
+    // NOTE - why do we use ping request
+    // NOTE - DO we need to clear the timeout?
     setTimeout(() => {
       if (pgCount <= 3) {
         // send ping for up to 3 pages
