@@ -20,45 +20,8 @@ export default class RequestDispatcher {
     // so that if gcookie is not present, no other request can be made asynchronusly
     if (!isValueValid(this.device.gcookie)) {
       window.isFrcSuccess = false
+      $ct.blockRequest = true
     }
-
-    // // SECTION - Approach 1
-    // // retry the subsequent request if the first request is in progress
-    // if (window.isGCRequestInProgress) {
-    //   setTimeout(() => {
-    //     console.count('this is the request from timeout', { url }, { tries })
-    //     this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
-    //   }, 1000)
-    //   return
-    // }
-
-    // SECTION - Approach 2
-    // add the request url to session storage
-    // if (window.isGCRequestInProgress) {
-    //   let arr
-    //   // if session storage has offline request array
-    //   // else create an empty array and push the request in it
-    //   if (window.sessionStorage.getItem('or')) {
-    //     try {
-    //       arr = JSON.parse(window.sessionStorage.getItem('or'))
-    //     } catch (err) {
-    //       console.log(err)
-    //       this.logger.debug('error in parsing', err)
-    //       arr = []
-    //     }
-    //   } else {
-    //     arr = []
-    //   }
-    //   if (!Array.isArray(arr)) {
-    //     arr = []
-    //   }
-    //   arr.push({
-    //     url, tries, skipARP, sendOULFlag
-    //   })
-    //   window.sessionStorage.setItem('or', JSON.stringify(arr))
-    //   return
-    // }
-
     /**
      * if the gcookie is null
      * and the request is not the first request
@@ -97,9 +60,6 @@ export default class RequestDispatcher {
     }
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:')
-    }
-    if (!isValueValid(this.device.gcookie)) {
-      $ct.blockRequest = true
     }
     // TODO: Try using Function constructor instead of appending script.
     // REVIEW - What if ctCBScripts is undefined or an empty HTMLCollection Documentlist?
