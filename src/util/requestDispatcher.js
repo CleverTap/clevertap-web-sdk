@@ -11,25 +11,59 @@ export default class RequestDispatcher {
 
   // ANCHOR - Requests get fired from here
   static #fireRequest (url, tries, skipARP, sendOULFlag) {
-    // retry the subsequent request if the first request is in progress
-    // and there's no valid gcookie
-    if (window.isGCRequestInProgress) {
-      setTimeout(() => {
-        console.count('this is the request from timeout', { url }, { tries })
-        this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
-      }, 1000)
-      return
-    }
     if (this.#dropRequestDueToOptOut()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
     }
 
+    // set a request in progress
+    // so that if gcookie is not present, no other request can be made asynchronusly
+    if (!isValueValid(this.device.gcookie)) {
+      window.isFrcSuccess = false
+    }
+
+    // // SECTION - Approach 1
+    // // retry the subsequent request if the first request is in progress
+    // if (window.isGCRequestInProgress) {
+    //   setTimeout(() => {
+    //     console.count('this is the request from timeout', { url }, { tries })
+    //     this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
+    //   }, 1000)
+    //   return
+    // }
+
+    // SECTION - Approach 2
+    // add the request url to session storage
+    // if (window.isGCRequestInProgress) {
+    //   let arr
+    //   // if session storage has offline request array
+    //   // else create an empty array and push the request in it
+    //   if (window.sessionStorage.getItem('or')) {
+    //     try {
+    //       arr = JSON.parse(window.sessionStorage.getItem('or'))
+    //     } catch (err) {
+    //       console.log(err)
+    //       this.logger.debug('error in parsing', err)
+    //       arr = []
+    //     }
+    //   } else {
+    //     arr = []
+    //   }
+    //   if (!Array.isArray(arr)) {
+    //     arr = []
+    //   }
+    //   arr.push({
+    //     url, tries, skipARP, sendOULFlag
+    //   })
+    //   window.sessionStorage.setItem('or', JSON.stringify(arr))
+    //   return
+    // }
+
     /**
      * if the gcookie is null
      * and the request is not the first request
      * and the tries are less than max tries
-     * keep retrying untill there's a valid gcookie
+     * keep retrying
      */
     if (!isValueValid(this.device.gcookie) &&
       ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
@@ -64,24 +98,15 @@ export default class RequestDispatcher {
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:')
     }
-
-    // set a request in progress
-    // so that if gcookie is not present, no other request can be made asynchronusly
     if (!isValueValid(this.device.gcookie)) {
-      window.isGCRequestInProgress = true
+      $ct.blockRequest = true
     }
-
     // TODO: Try using Function constructor instead of appending script.
     // REVIEW - What if ctCBScripts is undefined or an empty HTMLCollection Documentlist?
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
     while (ctCbScripts[0]) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
     }
-    console.log('these are the values', {
-      url,
-      canRequestGo: window.isGCRequestInProgress,
-      gcookie: this.device.gcookie
-    })
     const s = document.createElement('script')
     s.setAttribute('type', 'text/javascript')
     s.setAttribute('src', url)
@@ -90,6 +115,35 @@ export default class RequestDispatcher {
     s.async = true
     document.getElementsByTagName('head')[0].appendChild(s)
     this.logger.debug('req snt -> url: ' + url)
+  }
+
+  // fires off all the requests
+  // made untill a valid gcookie isn't received
+  static fireOfflineRequests () {
+    if (this.device.gcookie) {
+      let arr
+      try {
+        arr = JSON.parse(window.sessionStorage.getItem('or'))
+      } catch (err) {
+        this.logger.debug('error in parsing from session storage', err)
+      }
+      if (Array.isArray(arr) && arr.length > 0) {
+        arr.forEach(({ url, tries, skipArp, sendOULFlag }, index) => {
+          this.#fireRequest(url, tries, skipArp, sendOULFlag)
+          arr.splice(index, 1)
+          // update session storage after every request
+          if (arr.length > 0) {
+            window.sessionStorage.setItem('or', arr)
+          } else {
+            window.sessionStorage.removeItem('or')
+          }
+        })
+      } else {
+        this.logger.debug('offline request not available')
+      }
+    } else {
+      this.logger.debug('cannot find a valid gcookie')
+    }
   }
 
   static fireRequest (url, skipARP, sendOULFlag) {

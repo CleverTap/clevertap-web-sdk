@@ -1146,10 +1146,14 @@
 
           StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
           StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
-          window.isGCRequestInProgress = false;
+
+          if (isValueValid(global)) {
+            window.isFrcSuccess = true;
+          } // RequestDispatcher.fireOfflineRequests()
+
         }
 
-        if (resume) {
+        if (resume || window.isFrcSuccess) {
           $ct.blockRequest = false;
 
           _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Resumed requests');
@@ -1168,9 +1172,11 @@
           obj.t = getNow(); // time of last response from server
 
           _classPrivateFieldLooseBase(this, _session)[_session].setSessionCookieObject(obj);
-        }
+        } // if request are not blocked and other network request(s) are not being processed
+        // process request(s) from backup from local storage or cookie
 
-        if (resume && !_classPrivateFieldLooseBase(this, _request)[_request].processingBackup) {
+
+        if (!$ct.blockRequest && !_classPrivateFieldLooseBase(this, _request)[_request].processingBackup) {
           _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
         }
 
@@ -1900,6 +1906,47 @@
     }
 
     _createClass(RequestDispatcher, null, [{
+      key: "fireOfflineRequests",
+      // ANCHOR - Requests get fired from here
+      // fires off all the requests
+      // made untill a valid gcookie isn't received
+      value: function fireOfflineRequests() {
+        var _this = this;
+
+        if (this.device.gcookie) {
+          var arr;
+
+          try {
+            arr = JSON.parse(window.sessionStorage.getItem('or'));
+          } catch (err) {
+            this.logger.debug('error in parsing from session storage', err);
+          }
+
+          if (Array.isArray(arr) && arr.length > 0) {
+            arr.forEach(function (_ref, index) {
+              var url = _ref.url,
+                  tries = _ref.tries,
+                  skipArp = _ref.skipArp,
+                  sendOULFlag = _ref.sendOULFlag;
+
+              _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries, skipArp, sendOULFlag);
+
+              arr.splice(index, 1); // update session storage after every request
+
+              if (arr.length > 0) {
+                window.sessionStorage.setItem('or', arr);
+              } else {
+                window.sessionStorage.removeItem('or');
+              }
+            });
+          } else {
+            this.logger.debug('offline request not available');
+          }
+        } else {
+          this.logger.debug('cannot find a valid gcookie');
+        }
+      }
+    }, {
       key: "fireRequest",
       value: function fireRequest(url, skipARP, sendOULFlag) {
         _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
@@ -1943,34 +1990,60 @@
   };
 
   var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag) {
-    var _this = this,
+    var _this2 = this,
         _window$clevertap,
         _window$wizrocket;
-
-    // retry the subsequent request if the first request is in progress
-    // and there's no valid gcookie
-    if (window.isGCRequestInProgress) {
-      setTimeout(function () {
-        console.count('this is the request from timeout', {
-          url: url
-        }, {
-          tries: tries
-        });
-
-        _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
-      }, 1000);
-      return;
-    }
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
       return;
-    }
-    /** SECTION
+    } // set a request in progress
+    // so that if gcookie is not present, no other request can be made asynchronusly
+
+
+    if (!isValueValid(this.device.gcookie)) {
+      window.isFrcSuccess = false;
+    } // // SECTION - Approach 1
+    // // retry the subsequent request if the first request is in progress
+    // if (window.isGCRequestInProgress) {
+    //   setTimeout(() => {
+    //     console.count('this is the request from timeout', { url }, { tries })
+    //     this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
+    //   }, 1000)
+    //   return
+    // }
+    // SECTION - Approach 2
+    // add the request url to session storage
+    // if (window.isGCRequestInProgress) {
+    //   let arr
+    //   // if session storage has offline request array
+    //   // else create an empty array and push the request in it
+    //   if (window.sessionStorage.getItem('or')) {
+    //     try {
+    //       arr = JSON.parse(window.sessionStorage.getItem('or'))
+    //     } catch (err) {
+    //       console.log(err)
+    //       this.logger.debug('error in parsing', err)
+    //       arr = []
+    //     }
+    //   } else {
+    //     arr = []
+    //   }
+    //   if (!Array.isArray(arr)) {
+    //     arr = []
+    //   }
+    //   arr.push({
+    //     url, tries, skipARP, sendOULFlag
+    //   })
+    //   window.sessionStorage.setItem('or', JSON.stringify(arr))
+    //   return
+    // }
+
+    /**
      * if the gcookie is null
      * and the request is not the first request
      * and the tries are less than max tries
-     * keep retrying untill there's a valid gcookie
+     * keep retrying
      */
 
 
@@ -1979,9 +2052,9 @@
       setTimeout(function () {
         console.log("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
 
-        _this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
+        _this2.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
 
-        _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
+        _classPrivateFieldLooseBase(_this2, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
       }, 50);
       return;
     }
@@ -2009,12 +2082,10 @@
 
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:');
-    } // set a request in progress
-    // so that if gcookie is not present, no other request can be made asynchronusly
-
+    }
 
     if (!isValueValid(this.device.gcookie)) {
-      window.isGCRequestInProgress = true;
+      $ct.blockRequest = true;
     } // TODO: Try using Function constructor instead of appending script.
     // REVIEW - What if ctCBScripts is undefined or an empty HTMLCollection Documentlist?
 
@@ -2025,11 +2096,6 @@
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
     }
 
-    console.log('these are the values', {
-      url: url,
-      canRequestGo: window.isGCRequestInProgress,
-      gcookie: this.device.gcookie
-    });
     var s = document.createElement('script');
     s.setAttribute('type', 'text/javascript');
     s.setAttribute('src', url);
@@ -4866,7 +4932,7 @@
         var data = url + '&i=' + now + '&sn=' + seqNo;
         StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
 
-        if (!$ct.blockRequest || override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
+        if (!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           if (now === requestTime) {
             seqNo++;
           } else {

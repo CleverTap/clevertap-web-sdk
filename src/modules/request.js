@@ -126,7 +126,7 @@ export default class RequestManager {
     const data = url + '&i=' + now + '&sn=' + seqNo
     StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.#logger)
 
-    if (!$ct.blockRequest || override || (this.#clearCookie !== undefined && this.#clearCookie)) {
+    if (!override || (this.#clearCookie !== undefined && this.#clearCookie)) {
       if (now === requestTime) {
         seqNo++
       } else {

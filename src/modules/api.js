@@ -3,6 +3,7 @@ import { isValueValid } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import LRUCache from '../util/lruCache'
 import { StorageManager, $ct } from '../util/storage'
+// import RequestDispatcher from '../util/requestDispatcher'
 
 export default class CleverTapAPI {
   #logger
@@ -62,10 +63,13 @@ export default class CleverTapAPI {
 
       StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
       StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
-      window.isGCRequestInProgress = false
+      if (isValueValid(global)) {
+        window.isFrcSuccess = true
+      }
+      // RequestDispatcher.fireOfflineRequests()
     }
 
-    if (resume) {
+    if (resume || window.isFrcSuccess) {
       $ct.blockRequest = false
       this.#logger.debug('Resumed requests')
     }
@@ -84,7 +88,9 @@ export default class CleverTapAPI {
       this.#session.setSessionCookieObject(obj)
     }
 
-    if (resume && !this.#request.processingBackup) {
+    // if request are not blocked and other network request(s) are not being processed
+    // process request(s) from backup from local storage or cookie
+    if ((!$ct.blockRequest && !this.#request.processingBackup)) {
       this.#request.processBackupEvents()
     }
 
