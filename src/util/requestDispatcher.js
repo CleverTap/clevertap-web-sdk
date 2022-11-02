@@ -32,6 +32,8 @@ export default class RequestDispatcher {
       url = this.#addARPToRequest(url, skipARP)
     }
 
+    url = addToURL(url, 'tries', tries) // Add tries to URL
+
     url = this.#addUseIPToRequest(url)
     url = addToURL(url, 'r', new Date().getTime()) // add epoch to beat caching of the URL
     // TODO: Figure out a better way to handle plugin check

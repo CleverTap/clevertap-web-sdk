@@ -38,7 +38,11 @@ export default class Privacy extends Array {
   }
 
   push (...privacyArr) {
-    this.#processPrivacyArray(privacyArr)
+    if ($ct.isPrivacyArrPushed) {
+      this.#processPrivacyArray($ct.privacyArray.length > 0 ? $ct.privacyArray : privacyArr)
+    } else {
+      $ct.privacyArray.push(...privacyArr)
+    }
     return 0
   }
 
@@ -79,6 +83,7 @@ export default class Privacy extends Array {
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false')
         this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+        privacyArr.splice(0, privacyArr.length)
       }
     }
   }

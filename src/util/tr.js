@@ -561,8 +561,7 @@ const _tr = (msg, {
             }, {});
             if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }
             if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }
-            const notifData = { msgId: ct__camapignId, msgCTkv };
-            console.log('Button Clicked Event', notifData);
+            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '${targetingMsgJson.wzrk_pivot}' };
             window.parent.clevertap.renderNotificationClicked(notifData);
         }
       });
@@ -688,6 +687,12 @@ const _tr = (msg, {
     } else {
       targetingMsgJson = targetObj
     }
+    if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
+      const element = document.getElementById('intentPreview')
+      element.remove()
+      document.getElementById('intentOpacityDiv').remove()
+    }
+
     if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
       const element = document.getElementById('intentPreview')
       element.remove()
