@@ -920,6 +920,10 @@
         lruCache = lruCache.cache;
 
         for (var entry in lruCache) {
+          // NOTE - what is the use case for having
+          // hasOwnProperty check, when iterator
+          // gives out only those properties that are
+          // present in the object
           if (lruCache.hasOwnProperty(entry)) {
             tempLruCache[lruCache[entry][0]] = lruCache[entry][1];
 
@@ -1092,6 +1096,17 @@
       _classPrivateFieldLooseBase(this, _device)[_device] = device;
       _classPrivateFieldLooseBase(this, _session)[_session] = session;
     }
+    /**
+     *
+     * @param {string} global gcookie
+     * @param {string} session
+     * @param {boolean} resume true in case of OUL (on user login), false in all other cases
+     * true signifies that the response in OUL response
+     * @param {number} respNumber the index of the request in backupmanager
+     * @param {boolean} optOutResponse
+     * @returns
+     */
+
 
     _createClass(CleverTapAPI, [{
       key: "s",
@@ -1099,13 +1114,31 @@
         // call back function used to store global and session ids for the user
         if (typeof respNumber === 'undefined') {
           respNumber = 0;
-        }
+        } // If an OUL is in progress
+        // and the response is not an OUL response
+        // ignore
+
 
         StorageManager.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger)[_logger]);
 
         if (respNumber > $ct.globalCache.REQ_N) {
           // request for some other user so ignore
           return;
+        } // for a race condition when a request's response is received
+        // while an OUL request is already in progress
+        // remove the reuqest from backup and return
+
+
+        if (window.isOULInProgress && !resume) {
+          return;
+        }
+
+        if (isValueValid(global)) {
+          $ct.blockRequest = false;
+        }
+
+        if (resume) {
+          window.isOULInProgress = false;
         }
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
@@ -1129,7 +1162,9 @@
               var guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
 
               if (!guidFromLRUCache) {
-                StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true);
+                StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true); // replace login identity in OUL request
+                // with the gcookie returned in exchange
+
                 $ct.LRU_CACHE.set(kIdFromLS.id, global);
               }
             }
@@ -1143,21 +1178,15 @@
               _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
             }
           }
+        }
 
+        if (!window.isOULInProgress) {
           StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
           StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
+        } // if the OUL response is received
+        // or first request is complete and sdk has a valid gcookie
+        // set the blockRequest to false
 
-          if (isValueValid(global)) {
-            window.isFrcSuccess = true;
-          } // RequestDispatcher.fireOfflineRequests()
-
-        }
-
-        if (resume || window.isFrcSuccess) {
-          $ct.blockRequest = false;
-
-          _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Resumed requests');
-        }
 
         if (StorageManager._isLocalStorageSupported()) {
           _classPrivateFieldLooseBase(this, _session)[_session].manageSession(session);
@@ -1906,48 +1935,8 @@
     }
 
     _createClass(RequestDispatcher, null, [{
-      key: "fireOfflineRequests",
-      // ANCHOR - Requests get fired from here
-      // fires off all the requests
-      // made untill a valid gcookie isn't received
-      value: function fireOfflineRequests() {
-        var _this = this;
-
-        if (this.device.gcookie) {
-          var arr;
-
-          try {
-            arr = JSON.parse(window.sessionStorage.getItem('or'));
-          } catch (err) {
-            this.logger.debug('error in parsing from session storage', err);
-          }
-
-          if (Array.isArray(arr) && arr.length > 0) {
-            arr.forEach(function (_ref, index) {
-              var url = _ref.url,
-                  tries = _ref.tries,
-                  skipArp = _ref.skipArp,
-                  sendOULFlag = _ref.sendOULFlag;
-
-              _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries, skipArp, sendOULFlag);
-
-              arr.splice(index, 1); // update session storage after every request
-
-              if (arr.length > 0) {
-                window.sessionStorage.setItem('or', arr);
-              } else {
-                window.sessionStorage.removeItem('or');
-              }
-            });
-          } else {
-            this.logger.debug('offline request not available');
-          }
-        } else {
-          this.logger.debug('cannot find a valid gcookie');
-        }
-      }
-    }, {
       key: "fireRequest",
+      // ANCHOR - Requests get fired from here
       value: function fireRequest(url, skipARP, sendOULFlag) {
         _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
       }
@@ -1990,7 +1979,7 @@
   };
 
   var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag) {
-    var _this2 = this,
+    var _this = this,
         _window$clevertap,
         _window$wizrocket;
 
@@ -2002,43 +1991,8 @@
 
 
     if (!isValueValid(this.device.gcookie)) {
-      window.isFrcSuccess = false;
-    } // // SECTION - Approach 1
-    // // retry the subsequent request if the first request is in progress
-    // if (window.isGCRequestInProgress) {
-    //   setTimeout(() => {
-    //     console.count('this is the request from timeout', { url }, { tries })
-    //     this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
-    //   }, 1000)
-    //   return
-    // }
-    // SECTION - Approach 2
-    // add the request url to session storage
-    // if (window.isGCRequestInProgress) {
-    //   let arr
-    //   // if session storage has offline request array
-    //   // else create an empty array and push the request in it
-    //   if (window.sessionStorage.getItem('or')) {
-    //     try {
-    //       arr = JSON.parse(window.sessionStorage.getItem('or'))
-    //     } catch (err) {
-    //       console.log(err)
-    //       this.logger.debug('error in parsing', err)
-    //       arr = []
-    //     }
-    //   } else {
-    //     arr = []
-    //   }
-    //   if (!Array.isArray(arr)) {
-    //     arr = []
-    //   }
-    //   arr.push({
-    //     url, tries, skipARP, sendOULFlag
-    //   })
-    //   window.sessionStorage.setItem('or', JSON.stringify(arr))
-    //   return
-    // }
-
+      $ct.blockRequest = true;
+    }
     /**
      * if the gcookie is null
      * and the request is not the first request
@@ -2052,9 +2006,9 @@
       setTimeout(function () {
         console.log("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
 
-        _this2.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
+        _this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
 
-        _classPrivateFieldLooseBase(_this2, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
+        _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
       }, 50);
       return;
     }
@@ -2066,6 +2020,8 @@
       }
 
       url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
+    } else {
+      window.isOULInProgress = true;
     }
 
     url = addToURL(url, 'tries', tries); // Add tries to URL
@@ -2082,10 +2038,6 @@
 
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:');
-    }
-
-    if (!isValueValid(this.device.gcookie)) {
-      $ct.blockRequest = true;
     } // TODO: Try using Function constructor instead of appending script.
     // REVIEW - What if ctCBScripts is undefined or an empty HTMLCollection Documentlist?
 
@@ -3048,7 +3000,8 @@
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$2)[_oldValues$2] = values;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _device$1)[_device$1] = device;
       return _this;
-    }
+    } // On User Login
+
 
     _createClass(UserLoginHandler, [{
       key: "clear",
@@ -3100,14 +3053,18 @@
         kId = ids;
       } else {
         /* check if already exists */
+        // NOTE - when do we save  id to k cookie
+        // afaik we store flag true in kcookie object
         kId = k.id;
         var anonymousUser = false;
         var foundInCache = false;
 
         if (kId == null) {
+          // the user here is anonymous user
           kId = ids[0];
           anonymousUser = true;
-        }
+        } // NOTE - what is LRU_CACHE
+
 
         if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
           $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
@@ -3115,11 +3072,17 @@
 
         if (anonymousUser) {
           if (g != null) {
+            // if have gcookie
+            // ANCHOR - set kid as gcookie in LRU_CACHE
             $ct.LRU_CACHE.set(kId, g);
             $ct.blockRequest = false;
           }
         } else {
+          // check if the id is present in the cache
+          // set foundInCache to true
           for (var idx in ids) {
+            // NOTE - why are we checking for hasOwnProperty if
+            // the iterator is bound to be there in the object
             if (ids.hasOwnProperty(idx)) {
               var id = ids[idx];
 
@@ -3133,8 +3096,10 @@
         }
 
         if (foundInCache) {
+          // what does ct.LRU_CACHE.getLastKey() do?
           if (kId !== $ct.LRU_CACHE.getLastKey()) {
             // New User found
+            // remove the entire cache
             _classPrivateFieldLooseBase(_this2, _handleCookieFromCache)[_handleCookieFromCache]();
           } else {
             sendOULFlag = false;
@@ -4923,14 +4888,17 @@
             data.dsync = true;
           }
         }
-      }
+      } // saves url to backup cache and fires the request
+
     }, {
       key: "saveAndFireRequest",
       value: function saveAndFireRequest(url, override, sendOULFlag) {
         var now = getNow();
         url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
         var data = url + '&i=' + now + '&sn=' + seqNo;
-        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]); // if there is no override
+        // then process the request as it is
+        // else block the request
 
         if (!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           if (now === requestTime) {
@@ -4942,7 +4910,7 @@
 
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
-          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to block request - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
         }
       }
     }, {
@@ -5007,7 +4975,7 @@
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-        this.saveAndFireRequest(pageLoadUrl, false);
+        this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       }
     }]);
 
@@ -6170,7 +6138,8 @@
         // Npm imports/require will need to call init explictly with accountId
         this.init();
       }
-    }
+    } // starts here
+
 
     _createClass(CleverTap, [{
       key: "init",
@@ -6230,7 +6199,9 @@
         }
 
         _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 1;
-      }
+      } // process the option array provided to the clevertap object
+      // after its been initialized
+
     }, {
       key: "pageChanged",
       value: function pageChanged() {

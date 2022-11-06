@@ -181,7 +181,6 @@ export default class CleverTap {
       let pageLoadUrl = this.#account.dataPostURL
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
-
       this.#request.saveAndFireRequest(pageLoadUrl, false)
     }
     // method for notification viewed
@@ -369,6 +368,7 @@ export default class CleverTap {
     }
   }
 
+  // starts here
   init (accountId, region, targetDomain) {
     if (this.#onloadcalled === 1) {
       // already initailsed
@@ -420,6 +420,8 @@ export default class CleverTap {
     this.#onloadcalled = 1
   }
 
+  // process the option array provided to the clevertap object
+  // after its been initialized
   #processOldValues () {
     this.onUserLogin._processOldValues()
     this.privacy._processOldValues()
