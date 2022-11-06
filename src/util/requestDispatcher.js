@@ -32,7 +32,6 @@ export default class RequestDispatcher {
       tries < MAX_TRIES) {
       // if ongoing First Request is in progress, initiate retry
       setTimeout(() => {
-        console.log(`retrying fire request for url: ${url}, tries: ${tries}`)
         this.logger.debug(`retrying fire request for url: ${url}, tries: ${tries}`)
         this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
       }, 50)

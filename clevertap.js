@@ -920,10 +920,6 @@
         lruCache = lruCache.cache;
 
         for (var entry in lruCache) {
-          // NOTE - what is the use case for having
-          // hasOwnProperty check, when iterator
-          // gives out only those properties that are
-          // present in the object
           if (lruCache.hasOwnProperty(entry)) {
             tempLruCache[lruCache[entry][0]] = lruCache[entry][1];
 
@@ -1114,28 +1110,22 @@
         // call back function used to store global and session ids for the user
         if (typeof respNumber === 'undefined') {
           respNumber = 0;
-        } // If an OUL is in progress
-        // and the response is not an OUL response
-        // ignore
-
+        }
 
         StorageManager.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger)[_logger]);
 
         if (respNumber > $ct.globalCache.REQ_N) {
           // request for some other user so ignore
           return;
-        } // for a race condition when a request's response is received
+        } // for a condition when a request's response is received
         // while an OUL request is already in progress
-        // remove the reuqest from backup and return
+        // remove the request from backup cache and return
 
 
         if (window.isOULInProgress && !resume) {
           return;
-        }
+        } // set isOULInProgress to false, if resume is true
 
-        if (isValueValid(global)) {
-          $ct.blockRequest = false;
-        }
 
         if (resume) {
           window.isOULInProgress = false;
@@ -1183,10 +1173,7 @@
         if (!window.isOULInProgress) {
           StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
           StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
-        } // if the OUL response is received
-        // or first request is complete and sdk has a valid gcookie
-        // set the blockRequest to false
-
+        }
 
         if (StorageManager._isLocalStorageSupported()) {
           _classPrivateFieldLooseBase(this, _session)[_session].manageSession(session);
@@ -1201,6 +1188,11 @@
           obj.t = getNow(); // time of last response from server
 
           _classPrivateFieldLooseBase(this, _session)[_session].setSessionCookieObject(obj);
+        } // set blockRequest to false only if the device has a valid gcookie
+
+
+        if (isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
+          $ct.blockRequest = false;
         } // if request are not blocked and other network request(s) are not being processed
         // process request(s) from backup from local storage or cookie
 
@@ -2004,14 +1996,14 @@
     if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
       // if ongoing First Request is in progress, initiate retry
       setTimeout(function () {
-        console.log("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
-
         _this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
 
         _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
       }, 50);
       return;
-    }
+    } // set isOULInProgress to true
+    // when sendOULFlag is set to true
+
 
     if (!sendOULFlag) {
       if (isValueValid(this.device.gcookie)) {
@@ -2039,7 +2031,6 @@
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:');
     } // TODO: Try using Function constructor instead of appending script.
-    // REVIEW - What if ctCBScripts is undefined or an empty HTMLCollection Documentlist?
 
 
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
@@ -3053,18 +3044,14 @@
         kId = ids;
       } else {
         /* check if already exists */
-        // NOTE - when do we save  id to k cookie
-        // afaik we store flag true in kcookie object
         kId = k.id;
         var anonymousUser = false;
         var foundInCache = false;
 
         if (kId == null) {
-          // the user here is anonymous user
           kId = ids[0];
           anonymousUser = true;
-        } // NOTE - what is LRU_CACHE
-
+        }
 
         if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
           $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
@@ -3073,7 +3060,6 @@
         if (anonymousUser) {
           if (g != null) {
             // if have gcookie
-            // ANCHOR - set kid as gcookie in LRU_CACHE
             $ct.LRU_CACHE.set(kId, g);
             $ct.blockRequest = false;
           }
@@ -3081,8 +3067,6 @@
           // check if the id is present in the cache
           // set foundInCache to true
           for (var idx in ids) {
-            // NOTE - why are we checking for hasOwnProperty if
-            // the iterator is bound to be there in the object
             if (ids.hasOwnProperty(idx)) {
               var id = ids[idx];
 
@@ -3096,7 +3080,6 @@
         }
 
         if (foundInCache) {
-          // what does ct.LRU_CACHE.getLastKey() do?
           if (kId !== $ct.LRU_CACHE.getLastKey()) {
             // New User found
             // remove the entire cache
@@ -3227,6 +3210,10 @@
             // stored in the cache and replace it with the response arp.
 
             _classPrivateFieldLooseBase(this, _request$3)[_request$3].saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag);
+
+            console.log('this is blockRequest', {
+              blockRequest: $ct.blockRequest
+            });
           }
         }
       }
@@ -4901,12 +4888,19 @@
         // else block the request
 
         if (!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
+          console.log('this is clearcoookie', _typeof(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]), _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], {
+            override: override
+          });
+
           if (now === requestTime) {
             seqNo++;
           } else {
             requestTime = now;
             seqNo = 0;
-          }
+          } // second argument explicitly set to false only here
+          // as the above override parameter is $ct.blockRequest
+          // which should control if the request should be fired or not
+
 
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
