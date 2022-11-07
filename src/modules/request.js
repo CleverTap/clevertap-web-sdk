@@ -128,9 +128,10 @@ export default class RequestManager {
     StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.#logger)
 
     // if there is no override
+    // and an OUL request is not in progress
     // then process the request as it is
     // else block the request
-    if (!override || (this.#clearCookie !== undefined && this.#clearCookie)) {
+    if ((!override || (this.#clearCookie !== undefined && this.#clearCookie)) && !window.isOULInProgress) {
       if (now === requestTime) {
         seqNo++
       } else {
@@ -142,7 +143,7 @@ export default class RequestManager {
       // which should control if the request should be fired or not
       RequestDispatcher.fireRequest(data, false, sendOULFlag)
     } else {
-      this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie}`)
+      this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)
     }
   }
 
