@@ -40,7 +40,7 @@ export class CTWebPersonalisationBanner extends HTMLElement {
           cursor: pointer;
         }
         img {
-          height: ${this.divHeight !== '' ? this.divHeight : 'auto'};
+          height: ${this.divHeight ? this.divHeight : 'auto'};
           width: 100%;
         }
         .wrapper:is(.left, .right, .center) {
