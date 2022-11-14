@@ -1129,7 +1129,8 @@
 
         if (resume) {
           window.isOULInProgress = false;
-        }
+        } // optout
+
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
           _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
@@ -1170,10 +1171,8 @@
           }
         }
 
-        if (!window.isOULInProgress) {
-          StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
-          StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
-        }
+        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
+        StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
 
         if (StorageManager._isLocalStorageSupported()) {
           _classPrivateFieldLooseBase(this, _session)[_session].manageSession(session);
@@ -6262,7 +6261,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.3.2'
+          lib: 'web-sdk-v1.3.3'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
