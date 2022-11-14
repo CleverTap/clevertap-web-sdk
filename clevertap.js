@@ -458,7 +458,7 @@
   var EVT_PING = 'ping';
   var COOKIE_EXPIRY = 86400 * 365 * 10; // 10 Years in seconds
 
-  var MAX_TRIES = 50; // API tries
+  var MAX_TRIES = 200; // API tries
 
   var FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000; // 2 mins
 
@@ -889,7 +889,9 @@
     },
     // helper variable to handle race condition and check when notifications were called
     unsubGroups: [],
-    updatedCategoryLong: null // domain: window.location.hostname, url -> getHostName()
+    updatedCategoryLong: null,
+    isPrivacyArrPushed: false,
+    privacyArray: [] // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -1966,6 +1968,8 @@
 
       url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
     }
+
+    url = addToURL(url, 'tries', tries); // Add tries to URL
 
     url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
@@ -4017,7 +4021,7 @@
 
     var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, doc) {
       var script = doc.createElement('script');
-      script.innerHTML = "\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv };\n            console.log('Button Clicked Event', notifData);\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n    ");
+      script.innerHTML = "\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n    ");
       doc.body.appendChild(script);
     };
 
@@ -4158,6 +4162,12 @@
         targetingMsgJson = exitintentObj;
       } else {
         targetingMsgJson = targetObj;
+      }
+
+      if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
+        var element = document.getElementById('intentPreview');
+        element.remove();
+        document.getElementById('intentOpacityDiv').remove();
       }
 
       if (document.getElementById('intentPreview') != null) {
@@ -4987,7 +4997,13 @@
           privacyArr[_key] = arguments[_key];
         }
 
-        _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](privacyArr);
+        if ($ct.isPrivacyArrPushed) {
+          _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray]($ct.privacyArray.length > 0 ? $ct.privacyArray : privacyArr);
+        } else {
+          var _$ct$privacyArray;
+
+          (_$ct$privacyArray = $ct.privacyArray).push.apply(_$ct$privacyArray, privacyArr);
+        }
 
         return 0;
       }
@@ -5043,6 +5059,8 @@
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false');
 
         _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+
+        privacyArr.splice(0, privacyArr.length);
       }
     }
   };
@@ -5815,16 +5833,16 @@
         return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].id;
       };
 
-      this.getDCDomain = function () {
+      this.getSCDomain = function () {
         return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
-      }; // Set the Direct Call sdk version and fire request
+      }; // Set the Signed Call sdk version and fire request
 
 
-      this.setDCSDKVersion = function (ver) {
-        _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion = ver;
+      this.setSCSDKVersion = function (ver) {
+        _classPrivateFieldLooseBase(_this, _account$5)[_account$5].scSDKVersion = ver;
         var data = {};
         data.af = {
-          dcv: 'dc-sdk-v' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dcSDKVersion
+          scv: 'sc-sdk-v' + _classPrivateFieldLooseBase(_this, _account$5)[_account$5].scSDKVersion
         };
 
         var pageLoadUrl = _classPrivateFieldLooseBase(_this, _account$5)[_account$5].dataPostURL;
@@ -6090,6 +6108,12 @@
 
         _classPrivateFieldLooseBase(this, _request$6)[_request$6].processBackupEvents();
 
+        $ct.isPrivacyArrPushed = true;
+
+        if ($ct.privacyArray.length > 0) {
+          this.privacy.push($ct.privacyArray);
+        }
+
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
         this.pageChanged();
@@ -6176,7 +6200,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.3.0'
+          lib: 'web-sdk-v1.3.2'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
@@ -6229,9 +6253,6 @@
           });
         }
 
-        console.log({
-          data: data
-        });
         data = _classPrivateFieldLooseBase(this, _request$6)[_request$6].addSystemDataToProfileObject(data, undefined);
 
         _classPrivateFieldLooseBase(this, _request$6)[_request$6].addFlags(data);
