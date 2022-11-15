@@ -120,23 +120,30 @@ export default class RequestManager {
     }
   }
 
+  // saves url to backup cache and fires the request
   saveAndFireRequest (url, override, sendOULFlag) {
     const now = getNow()
     url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N)
     const data = url + '&i=' + now + '&sn=' + seqNo
     StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.#logger)
 
-    if (!$ct.blockRequest || override || (this.#clearCookie !== undefined && this.#clearCookie)) {
+    // if there is no override
+    // and an OUL request is not in progress
+    // then process the request as it is
+    // else block the request
+    if ((!override || (this.#clearCookie !== undefined && this.#clearCookie)) && !window.isOULInProgress) {
       if (now === requestTime) {
         seqNo++
       } else {
         requestTime = now
         seqNo = 0
       }
-
+      // second argument explicitly set to false only here
+      // as the above override parameter is $ct.blockRequest
+      // which should control if the request should be fired or not
       RequestDispatcher.fireRequest(data, false, sendOULFlag)
     } else {
-      this.#logger.debug(`Not fired due to block request - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie}`)
+      this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)
     }
   }
 
@@ -190,7 +197,7 @@ export default class RequestManager {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-    this.saveAndFireRequest(pageLoadUrl, false)
+    this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
   }
 
   #addToLocalEventMap (evtName) {

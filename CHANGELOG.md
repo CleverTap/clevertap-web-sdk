@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.3.3] - 15 Nov, 2022
+- Adds mouse cursor as pointer in the banner html
+- Adds dynamic height for banner campaigns.
+- Adds a minimum width of 480px for the source element in mobile devices.
+- Fixes a bug where multiple profiles were created on a slow network due to multiple requests being fired without a gcookie.
+
 ## [1.3.2] - 10 Oct, 2022
 - Adds 'tries' to url params for logging purpose.
 - Fixed a bug where dismiss spam control was not working for web pop up interstitial campaign.

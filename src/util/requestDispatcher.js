@@ -1,3 +1,4 @@
+
 import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY } from './constants'
 import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
@@ -8,15 +9,28 @@ export default class RequestDispatcher {
   static logger
   static device
 
+  // ANCHOR - Requests get fired from here
   static #fireRequest (url, tries, skipARP, sendOULFlag) {
     if (this.#dropRequestDueToOptOut()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
     }
 
+    // set a request in progress
+    // so that if gcookie is not present, no other request can be made asynchronusly
+    if (!isValueValid(this.device.gcookie)) {
+      $ct.blockRequest = true
+    }
+    /**
+     * if the gcookie is null
+     * and the request is not the first request
+     * and the tries are less than max tries
+     * keep retrying
+     */
     if (!isValueValid(this.device.gcookie) &&
-    ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
-    tries < MAX_TRIES) {
+      ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
+      tries < MAX_TRIES) {
+      // if ongoing First Request is in progress, initiate retry
       setTimeout(() => {
         this.logger.debug(`retrying fire request for url: ${url}, tries: ${tries}`)
         this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
@@ -24,12 +38,16 @@ export default class RequestDispatcher {
       return
     }
 
+    // set isOULInProgress to true
+    // when sendOULFlag is set to true
     if (!sendOULFlag) {
       if (isValueValid(this.device.gcookie)) {
-        // add cookie to url
+        // add gcookie to url
         url = addToURL(url, 'gc', this.device.gcookie)
       }
       url = this.#addARPToRequest(url, skipARP)
+    } else {
+      window.isOULInProgress = true
     }
 
     url = addToURL(url, 'tries', tries) // Add tries to URL
@@ -45,7 +63,6 @@ export default class RequestDispatcher {
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:')
     }
-
     // TODO: Try using Function constructor instead of appending script.
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
     while (ctCbScripts[0]) {
@@ -57,7 +74,6 @@ export default class RequestDispatcher {
     s.setAttribute('class', 'ct-jp-cb')
     s.setAttribute('rel', 'nofollow')
     s.async = true
-
     document.getElementsByTagName('head')[0].appendChild(s)
     this.logger.debug('req snt -> url: ' + url)
   }
