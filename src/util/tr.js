@@ -262,6 +262,7 @@ const _tr = (msg, {
     const bannerEl = document.createElement('ct-web-personalisation-banner')
     bannerEl.msgId = targetingMsgJson.wzrk_id
     bannerEl.pivotId = targetingMsgJson.wzrk_pivot
+    bannerEl.divHeight = targetingMsgJson.display.divHeight
     bannerEl.details = targetingMsgJson.display.details[0]
     const containerEl = document.getElementById(divId)
     containerEl.innerHTML = ''
