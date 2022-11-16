@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.3.3] - 15 Nov, 2022
+## [1.3.3] - 16 Nov, 2022
 - Adds mouse cursor as pointer in the banner html
 - Adds dynamic height for banner campaigns.
 - Adds a minimum width of 480px for the source element in mobile devices.
