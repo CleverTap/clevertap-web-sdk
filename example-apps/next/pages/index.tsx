@@ -37,7 +37,7 @@ async function initializeClevertap(): Promise<CleverTap> {
   // clevertap.default.init(ACCOUNT_ID, TARGET_DOMAIN)
   // clevertap.privacy.push({ optOut: false })
   // clevertap.privacy.push({ useIP: false })
-  clevertap.default.setLogLevel(3)
+  // clevertap.default.setLogLevel(3)
 
   return clevertap.default
 }
