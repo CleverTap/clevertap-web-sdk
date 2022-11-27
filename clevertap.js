@@ -1161,7 +1161,8 @@
             }
 
             StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
-            var lastK = $ct.LRU_CACHE.getSecondLastKey();
+            var lastK = $ct.LRU_CACHE.getSecondLastKey(); // fire the request directly to unregister the token
+            // then other requests with the updated guid should follow
 
             if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
               var lastGUID = $ct.LRU_CACHE.cache[lastK];
@@ -2511,7 +2512,10 @@
 
       if (subscription !== '-1') {
         url = addToURL(url, 'sub', subscription);
-      }
+      } // not fixing the issue as not sure of the usecase
+      // ideally the sdk should not fire any request without a gcookie
+      // except for OUL and first time user
+
 
       RequestDispatcher.fireRequest(url);
     }
@@ -4883,6 +4887,7 @@
         // and an OUL request is not in progress
         // then process the request as it is
         // else block the request
+        // note - $ct.blockRequest should idelly be used for override
 
         if ((!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) && !window.isOULInProgress) {
           if (now === requestTime) {
@@ -4891,8 +4896,7 @@
             requestTime = now;
             seqNo = 0;
           } // second argument explicitly set to false only here
-          // as the above override parameter is $ct.blockRequest
-          // which should control if the request should be fired or not
+          // as this will be the place that fires request
 
 
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
@@ -4936,7 +4940,8 @@
     }, {
       key: "registerToken",
       value: function registerToken(payload) {
-        if (!payload) return;
+        if (!payload) return; // add gcookie etc to the payload
+
         payload = this.addSystemDataToObject(payload, true);
         payload = JSON.stringify(payload);
 
@@ -5233,6 +5238,7 @@
 
         _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
 
+        console.log(_objectSpread2({}, displayArgs));
         return 0;
       }
     }, {
@@ -5276,6 +5282,13 @@
   };
 
   var _setUpWebPushNotifications2 = function _setUpWebPushNotifications2(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
+    console.log({
+      subscriptionCallback: subscriptionCallback,
+      serviceWorkerPath: serviceWorkerPath,
+      apnsWebPushId: apnsWebPushId,
+      apnsServiceUrl: apnsServiceUrl
+    });
+
     if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
       _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
     } else if (navigator.userAgent.indexOf('Safari') !== -1) {
@@ -5375,7 +5388,10 @@
           _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
 
 
-          var subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
+          var subscriptionData = JSON.parse(JSON.stringify(subscription));
+          console.log({
+            subscriptionData: subscriptionData
+          }, 'this is subscription data'); // remove the common chrome/firefox endpoint at the beginning of the token
 
           if (navigator.userAgent.indexOf('Chrome') !== -1) {
             subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
@@ -5386,10 +5402,9 @@
           }
 
           StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData); // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
+          //     || sessionObj['p'] === 2 || sessionObj['p'] === 3 || sessionObj['p'] === 4 || sessionObj['p'] === 5;
 
-          {
-            _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].registerToken(subscriptionData);
-          }
+          _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].registerToken(subscriptionData);
 
           if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
             subscriptionCallback();
@@ -5612,7 +5627,8 @@
                   confirmButtonText: okButtonText,
                   confirmButtonColor: okButtonColor,
                   rejectButtonText: rejectButtonText,
-                  hidePoweredByCT: hidePoweredByCT
+                  hidePoweredByCT: hidePoweredByCT // NOTE - here, to check if enabled is true
+
                 }, function (enabled) {
                   // callback function
                   if (enabled) {
@@ -5908,7 +5924,7 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
 
-        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
+        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       }; // method for notification viewed
 
 
@@ -6266,7 +6282,7 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
+        _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
 
         _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation; // NOTE - why do we use ping request
         // NOTE - DO we need to clear the timeout?
@@ -6366,7 +6382,7 @@
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING);
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 
-    _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
+    _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
   };
 
   var _isPingContinuous2 = function _isPingContinuous2() {

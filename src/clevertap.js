@@ -181,7 +181,7 @@ export default class CleverTap {
       let pageLoadUrl = this.#account.dataPostURL
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
-      this.#request.saveAndFireRequest(pageLoadUrl, false)
+      this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
     }
     // method for notification viewed
     this.renderNotificationViewed = (detail) => {
@@ -497,11 +497,9 @@ export default class CleverTap {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
-    this.#request.saveAndFireRequest(pageLoadUrl, false)
+    this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
 
     this.#previousUrl = currLocation
-    // NOTE - why do we use ping request
-    // NOTE - DO we need to clear the timeout?
     setTimeout(() => {
       if (pgCount <= 3) {
         // send ping for up to 3 pages
@@ -523,7 +521,7 @@ export default class CleverTap {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING)
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
-    this.#request.saveAndFireRequest(pageLoadUrl, false)
+    this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
   }
 
   #isPingContinuous () {

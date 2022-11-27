@@ -453,7 +453,6 @@ export const setEnum = (enumVal, logger) => {
   }
   logger.error(ENUM_FORMAT_ERROR)
 }
-
 export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, account, logger) => {
   const urlParamsAsIs = getURLParams(location.href) // can't use url_params as it is in lowercase above
   const encodedEmailId = urlParamsAsIs.e
@@ -484,7 +483,9 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
     if (subscription !== '-1') {
       url = addToURL(url, 'sub', subscription)
     }
-
+    // not fixing the issue as not sure of the usecase
+    // ideally the sdk should not fire any request without a gcookie
+    // except for OUL and first time user
     RequestDispatcher.fireRequest(url)
   }
 }
