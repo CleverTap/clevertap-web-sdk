@@ -1160,12 +1160,13 @@
               }
             }
 
-            StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
-            var lastK = $ct.LRU_CACHE.getSecondLastKey(); // fire the request directly to unregister the token
-            // then other requests with the updated guid should follow
+            StorageManager.saveToLSorCookie(GCOOKIE_NAME, global); // lastk provides the guid
+
+            var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
             if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
-              var lastGUID = $ct.LRU_CACHE.cache[lastK];
+              var lastGUID = $ct.LRU_CACHE.cache[lastK]; // fire the request directly via fireRequest to unregister the token
+              // then other requests with the updated guid should follow
 
               _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
             }
@@ -1929,6 +1930,13 @@
     _createClass(RequestDispatcher, null, [{
       key: "fireRequest",
       // ANCHOR - Requests get fired from here
+
+      /**
+       *
+       * @param {string} url
+       * @param {*} skipARP
+       * @param {boolean} sendOULFlag
+       */
       value: function fireRequest(url, skipARP, sendOULFlag) {
         _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
       }
@@ -2512,10 +2520,7 @@
 
       if (subscription !== '-1') {
         url = addToURL(url, 'sub', subscription);
-      } // not fixing the issue as not sure of the usecase
-      // ideally the sdk should not fire any request without a gcookie
-      // except for OUL and first time user
-
+      }
 
       RequestDispatcher.fireRequest(url);
     }
@@ -4877,6 +4882,13 @@
         }
       } // saves url to backup cache and fires the request
 
+      /**
+       *
+       * @param {string} url
+       * @param {boolean} override whether the request can go through or not
+       * @param {Boolean} sendOULFlag - true in case of a On User Login request
+       */
+
     }, {
       key: "saveAndFireRequest",
       value: function saveAndFireRequest(url, override, sendOULFlag) {
@@ -4887,7 +4899,7 @@
         // and an OUL request is not in progress
         // then process the request as it is
         // else block the request
-        // note - $ct.blockRequest should idelly be used for override
+        // note - $ct.blockRequest should ideally be used for override
 
         if ((!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) && !window.isOULInProgress) {
           if (now === requestTime) {
@@ -4895,9 +4907,7 @@
           } else {
             requestTime = now;
             seqNo = 0;
-          } // second argument explicitly set to false only here
-          // as this will be the place that fires request
-
+          }
 
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
@@ -5238,7 +5248,6 @@
 
         _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
 
-        console.log(_objectSpread2({}, displayArgs));
         return 0;
       }
     }, {
@@ -5282,13 +5291,6 @@
   };
 
   var _setUpWebPushNotifications2 = function _setUpWebPushNotifications2(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-    console.log({
-      subscriptionCallback: subscriptionCallback,
-      serviceWorkerPath: serviceWorkerPath,
-      apnsWebPushId: apnsWebPushId,
-      apnsServiceUrl: apnsServiceUrl
-    });
-
     if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
       _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
     } else if (navigator.userAgent.indexOf('Safari') !== -1) {
@@ -5388,10 +5390,7 @@
           _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
 
 
-          var subscriptionData = JSON.parse(JSON.stringify(subscription));
-          console.log({
-            subscriptionData: subscriptionData
-          }, 'this is subscription data'); // remove the common chrome/firefox endpoint at the beginning of the token
+          var subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
 
           if (navigator.userAgent.indexOf('Chrome') !== -1) {
             subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
@@ -5401,8 +5400,7 @@
             subscriptionData.browser = 'Firefox';
           }
 
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData); // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
-          //     || sessionObj['p'] === 2 || sessionObj['p'] === 3 || sessionObj['p'] === 4 || sessionObj['p'] === 5;
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
           _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].registerToken(subscriptionData);
 
@@ -5627,8 +5625,7 @@
                   confirmButtonText: okButtonText,
                   confirmButtonColor: okButtonColor,
                   rejectButtonText: rejectButtonText,
-                  hidePoweredByCT: hidePoweredByCT // NOTE - here, to check if enabled is true
-
+                  hidePoweredByCT: hidePoweredByCT
                 }, function (enabled) {
                   // callback function
                   if (enabled) {
@@ -6284,9 +6281,7 @@
 
         _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
 
-        _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation; // NOTE - why do we use ping request
-        // NOTE - DO we need to clear the timeout?
-
+        _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation;
         setTimeout(function () {
           if (pgCount <= 3) {
             // send ping for up to 3 pages
