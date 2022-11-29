@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.3.4]
-- Fixes all the places where multiple request can be fired without a gcookie.
+- Fixes cases where multiple request can be fired without a gcookie.
 
 ## [1.3.3] - 16 Nov, 2022
 - Adds mouse cursor as pointer in the banner html
