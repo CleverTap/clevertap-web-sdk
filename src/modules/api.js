@@ -79,11 +79,12 @@ export default class CleverTapAPI {
         }
 
         StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
+        // lastk provides the guid
         const lastK = $ct.LRU_CACHE.getSecondLastKey()
-        // fire the request directly to unregister the token
-        // then other requests with the updated guid should follow
         if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
           const lastGUID = $ct.LRU_CACHE.cache[lastK]
+          // fire the request directly via fireRequest to unregister the token
+          // then other requests with the updated guid should follow
           this.#request.unregisterTokenForGuid(lastGUID)
         }
       }

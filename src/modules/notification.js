@@ -54,7 +54,6 @@ export default class NotificationHandler extends Array {
   }
 
   #setUpWebPushNotifications (subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-    console.log({ subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl })
     if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
       this.#setUpChromeFirefoxNotifications(subscriptionCallback, serviceWorkerPath)
     } else if (navigator.userAgent.indexOf('Safari') !== -1) {
@@ -139,7 +138,6 @@ export default class NotificationHandler extends Array {
 
             // convert the subscription keys to strings; this sets it up nicely for pushing to LC
             const subscriptionData = JSON.parse(JSON.stringify(subscription))
-            console.log({ subscriptionData }, 'this is subscription data')
 
             // remove the common chrome/firefox endpoint at the beginning of the token
             if (navigator.userAgent.indexOf('Chrome') !== -1) {
@@ -150,9 +148,6 @@ export default class NotificationHandler extends Array {
               subscriptionData.browser = 'Firefox'
             }
             StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
-
-            // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
-            //     || sessionObj['p'] === 2 || sessionObj['p'] === 3 || sessionObj['p'] === 4 || sessionObj['p'] === 5;
             this.#request.registerToken(subscriptionData)
 
             if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
@@ -361,8 +356,6 @@ export default class NotificationHandler extends Array {
                   confirmButtonColor: okButtonColor,
                   rejectButtonText: rejectButtonText,
                   hidePoweredByCT: hidePoweredByCT
-                  // NOTE - here, to check if enabled is true
-
                 }, (enabled) => { // callback function
                   if (enabled) {
                     // the user accepted on the dialog box
