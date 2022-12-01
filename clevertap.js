@@ -1160,11 +1160,13 @@
               }
             }
 
-            StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
+            StorageManager.saveToLSorCookie(GCOOKIE_NAME, global); // lastk provides the guid
+
             var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
             if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
-              var lastGUID = $ct.LRU_CACHE.cache[lastK];
+              var lastGUID = $ct.LRU_CACHE.cache[lastK]; // fire the request directly via fireRequest to unregister the token
+              // then other requests with the updated guid should follow
 
               _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
             }
@@ -1928,6 +1930,13 @@
     _createClass(RequestDispatcher, null, [{
       key: "fireRequest",
       // ANCHOR - Requests get fired from here
+
+      /**
+       *
+       * @param {string} url
+       * @param {*} skipARP
+       * @param {boolean} sendOULFlag
+       */
       value: function fireRequest(url, skipARP, sendOULFlag) {
         _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
       }
@@ -4873,6 +4882,13 @@
         }
       } // saves url to backup cache and fires the request
 
+      /**
+       *
+       * @param {string} url
+       * @param {boolean} override whether the request can go through or not
+       * @param {Boolean} sendOULFlag - true in case of a On User Login request
+       */
+
     }, {
       key: "saveAndFireRequest",
       value: function saveAndFireRequest(url, override, sendOULFlag) {
@@ -4883,6 +4899,7 @@
         // and an OUL request is not in progress
         // then process the request as it is
         // else block the request
+        // note - $ct.blockRequest should ideally be used for override
 
         if ((!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) && !window.isOULInProgress) {
           if (now === requestTime) {
@@ -4890,10 +4907,7 @@
           } else {
             requestTime = now;
             seqNo = 0;
-          } // second argument explicitly set to false only here
-          // as the above override parameter is $ct.blockRequest
-          // which should control if the request should be fired or not
-
+          }
 
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
@@ -4936,7 +4950,8 @@
     }, {
       key: "registerToken",
       value: function registerToken(payload) {
-        if (!payload) return;
+        if (!payload) return; // add gcookie etc to the payload
+
         payload = this.addSystemDataToObject(payload, true);
         payload = JSON.stringify(payload);
 
@@ -5385,11 +5400,9 @@
             subscriptionData.browser = 'Firefox';
           }
 
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData); // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
-          {
-            _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].registerToken(subscriptionData);
-          }
+          _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].registerToken(subscriptionData);
 
           if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
             subscriptionCallback();
@@ -5908,7 +5921,7 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
 
-        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
+        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       }; // method for notification viewed
 
 
@@ -6266,11 +6279,9 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
+        _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
 
-        _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation; // NOTE - why do we use ping request
-        // NOTE - DO we need to clear the timeout?
-
+        _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation;
         setTimeout(function () {
           if (pgCount <= 3) {
             // send ping for up to 3 pages
@@ -6366,7 +6377,7 @@
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING);
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 
-    _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
+    _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
   };
 
   var _isPingContinuous2 = function _isPingContinuous2() {

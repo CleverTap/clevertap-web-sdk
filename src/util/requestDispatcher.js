@@ -78,6 +78,12 @@ export default class RequestDispatcher {
     this.logger.debug('req snt -> url: ' + url)
   }
 
+  /**
+   *
+   * @param {string} url
+   * @param {*} skipARP
+   * @param {boolean} sendOULFlag
+   */
   static fireRequest (url, skipARP, sendOULFlag) {
     this.#fireRequest(url, 1, skipARP, sendOULFlag)
   }
