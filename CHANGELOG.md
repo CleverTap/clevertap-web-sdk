@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.3.4]
+## [1.3.4] - 1 Dec, 2022
 - Fixes cases where multiple request can be fired without a gcookie.
 
 ## [1.3.3] - 16 Nov, 2022
