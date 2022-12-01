@@ -121,6 +121,12 @@ export default class RequestManager {
   }
 
   // saves url to backup cache and fires the request
+  /**
+   *
+   * @param {string} url
+   * @param {boolean} override whether the request can go through or not
+   * @param {Boolean} sendOULFlag - true in case of a On User Login request
+   */
   saveAndFireRequest (url, override, sendOULFlag) {
     const now = getNow()
     url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N)
@@ -131,6 +137,7 @@ export default class RequestManager {
     // and an OUL request is not in progress
     // then process the request as it is
     // else block the request
+    // note - $ct.blockRequest should ideally be used for override
     if ((!override || (this.#clearCookie !== undefined && this.#clearCookie)) && !window.isOULInProgress) {
       if (now === requestTime) {
         seqNo++
@@ -138,9 +145,6 @@ export default class RequestManager {
         requestTime = now
         seqNo = 0
       }
-      // second argument explicitly set to false only here
-      // as the above override parameter is $ct.blockRequest
-      // which should control if the request should be fired or not
       RequestDispatcher.fireRequest(data, false, sendOULFlag)
     } else {
       this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)
@@ -176,7 +180,7 @@ export default class RequestManager {
 
   registerToken (payload) {
     if (!payload) return
-
+    // add gcookie etc to the payload
     payload = this.addSystemDataToObject(payload, true)
     payload = JSON.stringify(payload)
     let pageLoadUrl = this.#account.dataPostURL
