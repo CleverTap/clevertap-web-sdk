@@ -273,6 +273,7 @@ const _tr = (msg, {
     const divId = targetingMsgJson.display.divId
     const carousel = document.createElement('ct-web-personalisation-carousel')
     carousel.target = targetingMsgJson
+    carousel.divHeight = targetingMsgJson.display.divHeight
     const container = document.getElementById(divId)
     container.innerHTML = ''
     container.appendChild(carousel)
