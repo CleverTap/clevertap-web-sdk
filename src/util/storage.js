@@ -258,7 +258,8 @@ export const $ct = {
   unsubGroups: [],
   updatedCategoryLong: null,
   isPrivacyArrPushed: false,
-  privacyArray: []
+  privacyArray: [],
+  offline: false
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }
