@@ -1,6 +1,7 @@
 
-import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY } from './constants'
+import { ARP_COOKIE, LCOOKIE_NAME, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY } from './constants'
 import { isString, isValueValid } from './datatypes'
+import { getNow } from './datetime'
 import { compressData } from './encoder'
 import { StorageManager, $ct } from './storage'
 import { addToURL } from './url'
@@ -85,6 +86,22 @@ export default class RequestDispatcher {
    * @param {boolean} sendOULFlag
    */
   static fireRequest (url, skipARP, sendOULFlag) {
+    // if sdk is offline
+    // in case the request is fired directly from here without saveAndFireRequest()
+    // save the request in backup and return
+    if ($ct.offline) {
+      // read the backup array
+      const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
+      let backupLength = 1
+      if (backupMap) {
+        backupLength = Object.keys(backupMap).length
+      }
+      const now = getNow()
+      url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N)
+      const data = url + '&i=' + now + '&sn=' + backupLength
+      StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.logger)
+      return
+    }
     this.#fireRequest(url, 1, skipARP, sendOULFlag)
   }
 

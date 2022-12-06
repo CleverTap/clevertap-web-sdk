@@ -2,9 +2,12 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.3.5]
+<<<<<<< HEAD
 - Fixes cases where a requests were processed twice from cache
 - Multiple On User Login requests can be fired consequtively.
 - Dynamic image dimensions for web carousel
+=======
+>>>>>>> adds offline support to the sdk, where events can be sent at a later desired time
 - Adds offline mode, where events can be queued and sent at a desired time later
 ## [1.3.4] - 1 Dec, 2022
 - Fixes cases where multiple request can be fired without a gcookie.

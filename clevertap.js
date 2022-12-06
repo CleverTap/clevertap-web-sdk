@@ -6303,7 +6303,11 @@
 
         data.af = {
 <<<<<<< HEAD
+<<<<<<< HEAD
           lib: 'web-sdk-v1.3.5'
+=======
+          lib: 'web-sdk-v1.3.4'
+>>>>>>> adds offline support to the sdk, where events can be sent at a later desired time
 =======
           lib: 'web-sdk-v1.3.4'
 >>>>>>> adds offline support to the sdk, where events can be sent at a later desired time
