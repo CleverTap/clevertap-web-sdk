@@ -132,6 +132,8 @@ export default class RequestManager {
     const data = url + '&i=' + now + '&sn=' + seqNo
     StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.#logger)
 
+    // if offline is set to true, save the request in backup and return
+    if ($ct.offline) return
     // if there is no override
     // and an OUL request is not in progress
     // then process the request as it is

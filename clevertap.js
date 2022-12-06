@@ -891,7 +891,8 @@
     unsubGroups: [],
     updatedCategoryLong: null,
     isPrivacyArrPushed: false,
-    privacyArray: [] // domain: window.location.hostname, url -> getHostName()
+    privacyArray: [],
+    offline: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -1945,6 +1946,25 @@
        * @param {boolean} sendOULFlag
        */
       value: function fireRequest(url, skipARP, sendOULFlag) {
+        // if sdk is offline
+        // in case the request is fired directly from here without saveAndFireRequest()
+        // save the request in backup and return
+        if ($ct.offline) {
+          // read the backup array
+          var backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
+          var backupLength = 1;
+
+          if (backupMap) {
+            backupLength = Object.keys(backupMap).length;
+          }
+
+          var now = getNow();
+          url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
+          var data = url + '&i=' + now + '&sn=' + backupLength;
+          StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.logger);
+          return;
+        }
+
         _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
       }
     }]);
@@ -4900,7 +4920,9 @@
         var now = getNow();
         url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
         var data = url + '&i=' + now + '&sn=' + seqNo;
-        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]); // if there is no override
+        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]); // if offline is set to true, save the request in backup and return
+
+        if ($ct.offline) return; // if there is no override
         // and an OUL request is not in progress
         // then process the request as it is
         // else block the request
@@ -6280,7 +6302,11 @@
         }
 
         data.af = {
+<<<<<<< HEAD
           lib: 'web-sdk-v1.3.5'
+=======
+          lib: 'web-sdk-v1.3.4'
+>>>>>>> adds offline support to the sdk, where events can be sent at a later desired time
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
@@ -6345,6 +6371,23 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
 
         _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+      } // offline mode
+
+      /**
+       * events will be recorded and queued locally when passed with true
+       * but will not be sent to the server until offline is disabled by passing false
+       * @param {boolean} arg
+       */
+
+    }, {
+      key: "setOffline",
+      value: function setOffline(arg) {
+        $ct.offline = arg; // if offline is disabled
+        // process events from cache
+
+        if (!arg) {
+          _classPrivateFieldLooseBase(this, _request$6)[_request$6].processBackupEvents();
+        }
       }
     }, {
       key: "popupCallback",
