@@ -3508,26 +3508,22 @@
     }, {
       key: "getStyles",
       value: function getStyles() {
-        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        background-color: grey;\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      .carousel__item img {\n        height: ".concat(this.divHeight ? this.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      @media (max-width: 480px) {\n        .left, .right {\n          display: none\n        }\n      }\n      </style>\n  ");
+        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        background-color: grey;\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      .carousel__item img {\n        height: ".concat(this.divHeight ? this.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
       }
     }, {
       key: "updateSelectedItem",
       value: function updateSelectedItem() {
-        var _ref2;
-
         if (this.previouslySelectedItem !== -1) {
-          var _ref;
-
           var prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
           var prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
           prevItem.classList.remove('carousel__item--selected');
-          (_ref = prevButton !== null) !== null && _ref !== void 0 ? _ref : prevButton.classList.remove('carousel__button--selected');
+          prevButton.classList.remove('carousel__button--selected');
         }
 
         var item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
         var button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
         item.classList.add('carousel__item--selected');
-        (_ref2 = button !== null) !== null && _ref2 !== void 0 ? _ref2 : button.classList.add('carousel__button--selected');
+        button.classList.add('carousel__button--selected');
       }
     }, {
       key: "startAutoSlide",
