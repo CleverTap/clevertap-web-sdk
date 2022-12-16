@@ -1,5 +1,5 @@
 import { messageStyles } from './inboxStyles'
-import { determineTimeStampText } from './helper'
+import { determineTimeStampText, greenTickSvg } from './helper'
 export class Message extends HTMLElement {
   constructor (config, message) {
     super()
@@ -10,6 +10,7 @@ export class Message extends HTMLElement {
   }
 
   wrapper = null
+  snackBar = null
 
   get pivotId () {
     return this.message.wzrk_pivot
@@ -19,9 +20,10 @@ export class Message extends HTMLElement {
     return this.message.wzrk_id
   }
 
-  createEl (type, id) {
+  createEl (type, id, part) {
     const _el = document.createElement(type)
     _el.setAttribute('id', id)
+    _el.setAttribute('part', part || id)
     return _el
   }
 
@@ -45,12 +47,9 @@ export class Message extends HTMLElement {
     }
 
     this.wrapper.appendChild(timeStamp)
-
-    this.shadow.innerHTML = this.getMessageStyles()
     this.shadow.appendChild(this.wrapper)
   }
 
-  // make it generic to handle carousel too in the future
   prepareBasicMessage (msg) {
     const message = this.createEl('div', 'message')
 
@@ -90,21 +89,38 @@ export class Message extends HTMLElement {
 
   addButtons (buttons = []) {
     const buttonsContainer = this.createEl('div', 'buttonsContainer')
+    let hasCopyAction = false
     buttons.forEach((b, i) => {
-      const button = this.createEl('button', `button-${i}`)
+      const button = this.createEl('button', `button-${i}`, 'button')
       button.innerText = b.text
-      if (i === 1) {
+      if (i > 0) {
         button.style.cssText += 'margin-left: 2px;'
+      }
+      if (b.action === 'copy') {
+        hasCopyAction = true
       }
       buttonsContainer.appendChild(button)
     })
+    if (hasCopyAction) {
+      this.addSnackbar(buttonsContainer)
+    }
     return buttonsContainer
+  }
+
+  addSnackbar (buttonsContainer) {
+    this.snackBar = this.createEl('div', `snackbar-${this.campaignId}`, 'snackbar')
+    this.snackBar.innerHTML = greenTickSvg
+    const clipboardMsg = this.createEl('span', `snackbar-msg-${this.campaignId}`, 'snackbar-msg')
+    clipboardMsg.innerText = 'Copied to clipboard'
+    this.snackBar.appendChild(clipboardMsg)
+    buttonsContainer.appendChild(this.snackBar)
   }
 
   addImage (url, type) {
     const imageContainer = this.createEl('div', `${type}Container`)
     const image = this.createEl('img', type)
     image.setAttribute('src', url)
+    // images will be fetched as and when the element comes into the viewport
     image.setAttribute('loading', 'lazy')
     imageContainer.appendChild(image)
     return imageContainer
@@ -121,7 +137,6 @@ export class Message extends HTMLElement {
     )
   }
 
-  // can be formatted
   raiseClickedEvent (path) {
     switch (this.message.templateType) {
       case 'text-only':
@@ -135,31 +150,23 @@ export class Message extends HTMLElement {
   raiseClickedForBasicTemplates (path) {
     const msg = this.message.msg[0]
     const payload = { msgId: this.campaignId, pivotId: this.pivotId }
-    if (path[0].tagName === 'BUTTON') {
-      const id = path[0].id.split('-')[1]
-      const btn = this.shadow.getElementById('button-' + id)
-      btn.style.position = 'relative'
+    if (path.tagName === 'BUTTON') {
+      const id = path.id.split('-')[1]
       const button = msg.buttons[id]
-      payload.wzrk_c2a = button.text
+      payload.kv = {
+        wzrk_c2a: button.text
+      }
       if (button.action === 'url') {
         button.openUrlInNewTab ? window.open(button.url, '_blank') : (window.location = button.url)
       } else if (button.action === 'copy') {
+        window.focus()
         navigator.clipboard.writeText(button.clipboardText)
-        const snackbarOld = this.shadow.getElementById('snackbar')
-        let snackBar
-        if (snackbarOld) {
-          snackBar = snackbarOld
-        } else {
-          snackBar = this.createEl('div', 'snackbar')
-          snackBar.innerText = 'Copied to clipboard'
-          btn.appendChild(snackBar)
-        }
-        snackBar.className = 'show'
+        this.snackBar.style.setProperty('display', 'flex', 'important')
         setTimeout(() => {
-          snackBar.className = ''
+          this.snackBar.style.setProperty('display', 'none', 'important')
         }, 2000)
       }
-    } else if (path[0].tagName === 'INBOX-MESSAGE' && msg.onClickUrl) {
+    } else if (path.tagName === 'INBOX-MESSAGE' && msg.onClickUrl) {
       msg.openUrlInNewTab ? window.open(msg.onClickUrl, '_blank') : (window.location = msg.onClickUrl)
     }
     window.clevertap.renderNotificationClicked(payload)

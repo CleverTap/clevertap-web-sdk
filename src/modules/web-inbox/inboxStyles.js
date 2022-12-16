@@ -1,48 +1,48 @@
-export const messageStyles = (backgroundColor, borderColor, titleColor, descriptionColor, buttonColor, buttonTextColor) => {
+export const messageStyles = ({ backgroundColor, borderColor, titleColor, descriptionColor, buttonColor, buttonTextColor }) => {
   return `
-    <style>
-      #messageWrapper {
+    <style id="messageStyles">
+      inbox-message::part(messageWrapper) {
         margin-bottom: 16px; 
       }
-      #message {
+      inbox-message::part(message) {
         background-color: ${backgroundColor}; 
         border: 1px solid ${borderColor};
         border-radius: 4px; 
         overflow: hidden;
       }
-      #iconTitleDescWrapper {
+      inbox-message::part(iconTitleDescWrapper) {
         display: flex; 
         padding: 16px;
       }
-      #titleDescWrapper {
+      inbox-message::part(titleDescWrapper) {
         display: flex; 
         flex-direction: column;
       }
-      #iconImgContainer {
+      inbox-message::part(iconImgContainer) {
         display: flex; 
         margin-right: 16px;
       }
-      #mainImg {
+      inbox-message::part(mainImg) {
         width: 100%; 
         background: #b2b1ae;
       }
-      #iconImg {
+      inbox-message::part(iconImg) {
         height: 40px; 
         width: 40px;
       }
-      #title {
+      inbox-message::part(title) {
         font-size: 14px !important; 
         line-height: 20px; 
         font-weight: 600; 
         color: ${titleColor}
       }
-      #description {
+      inbox-message::part(description) {
         font-size: 14px !important; 
         line-height: 20px; 
         font-weight: 400; 
         color: ${descriptionColor}
       }
-      [id^="button-"] {
+      inbox-message::part(button) {
         background-color: ${buttonColor}; 
         color: ${buttonTextColor}; 
         padding: 8px 16px; 
@@ -55,10 +55,35 @@ export const messageStyles = (backgroundColor, borderColor, titleColor, descript
         cursor: pointer; 
         border: none;
       }
-      #buttonsContainer {
+      inbox-message::part(buttonsContainer) {
         display: flex;
+        position: relative;
       }
-      #timeStamp {
+      inbox-message::part(snackbar) {
+        position: absolute;
+        top: calc(-100% - 12px);
+        left: 50%;
+        transform: translate(-50%, 0px);
+        font-size: 14px;
+        font-weight: 400;
+        background: #FFFFFF;
+        border: 1px solid #ECEDF2;
+        box-shadow: 0px 4px 8px rgb(0 0 0 / 6%), 0px 0px 2px rgb(0 0 0 / 4%);
+        border-radius: 4px;
+        z-index: 2;
+        display: none;
+        width: max-content;
+        align-items: center;
+        padding: 8px 16px;
+        justify-content: center;
+      }
+
+      inbox-message::part(snackbar-msg) {
+        color: black;
+        margin-left: 8px;
+      }
+
+      inbox-message::part(timeStamp) {
         display: flex; 
         justify-content: end; 
         align-items: center; 
@@ -67,7 +92,7 @@ export const messageStyles = (backgroundColor, borderColor, titleColor, descript
         line-height: 16px; 
         color: black;
       }
-      #unreadMarker {
+      inbox-message::part(unreadMarker) {
         height: 8px; 
         width: 8px; 
         border-radius: 50%; 
@@ -75,59 +100,43 @@ export const messageStyles = (backgroundColor, borderColor, titleColor, descript
         margin-left: 8px;
       }
       @media only screen and (min-width: 420px) {
-        #mainImg {
+        inbox-message::part(mainImg) {
           height: 180px;
         }
-      }
-
-      #snackbar {
-        visibility: hidden;
-        min-width: 120px;
-        margin-left: -125px;
-        background-color: #535561;
-        color: #fff;
-        text-align: center;
-        border-radius: 4px;
-        padding: 8px;
-        position: absolute;
-        z-index: 1;
-        right:3px;
-        top: -35px;
-        font-size: 12px;
-        font-family: arial
-      }
-      
-      #snackbar.show {
-        visibility: visible;
-        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
-        animation: fadein 0.5s, fadeout 0.5s 2.5s;
-      }
-      
-      @-webkit-keyframes fadeout {
-          from {bottom: 30px; opacity: 1;} 
-          to {bottom: 0; opacity: 0;}
-      }
-      
-      @keyframes fadeout {
-          from {bottom: 30px; opacity: 1;}
-          to {bottom: 0; opacity: 0;}
       }
     </style>
   `
 }
 
-export const inboxContainerStyles = (backgroundColor, headerTitleColor, closeIconColor, tabColor, categoriesTitleColor) => {
+export const inboxContainerStyles = ({
+  panelBackgroundColor,
+  panelBorderColor,
+  headerBackgroundColor,
+  headerTitleColor,
+  closeIconColor,
+  categoriesTabColor,
+  categoriesTitleColor,
+  categoriesBorderColor,
+  selectedCategoryTabColor,
+  selectedCategoryTitleColor,
+  selectedCategoryBorderColor
+}) => {
   return `
       <style id="webInboxStyles">
-        #unviewedBadge {
-          height: 16px; width: 26px; position: absolute;
-        }
         #inbox {
           width: 100%;
-          position: absolute; 
+          position: fixed;
           background-color: #fff; 
           display: none; 
           box-shadow: 0px 2px 10px 0px #d7d7d791;
+          background-color: ${panelBackgroundColor}; 
+          border: 1px solid ${panelBorderColor};
+          box-sizing: border-box;
+          top: 0;
+          left: 0;
+          height: 100%;
+          overflow: auto;
+          z-index: 1;
         }
   
         #emptyInboxMsg {
@@ -137,13 +146,14 @@ export const inboxContainerStyles = (backgroundColor, headerTitleColor, closeIco
           color: black;
         }
   
-        #panel {
+        #header {
           height: 36px; 
           width: 100%; 
           display: flex; 
           justify-content: center; 
           align-items: center; 
-          background-color: ${backgroundColor}; 
+          background-color: ${headerBackgroundColor}; 
+          background-color: var(--card-bg, ${headerBackgroundColor});
           color: ${headerTitleColor}
         }
   
@@ -154,11 +164,13 @@ export const inboxContainerStyles = (backgroundColor, headerTitleColor, closeIco
           cursor: pointer;
         }
   
-        #panelTitle {
+        #headerTitle {
           font-size: 14px; 
           line-height: 20px; 
           flex-grow: 1; 
           font-weight: 700; 
+          text-align: center;
+          flex-grow: 1;
           text-align: center;
         }
   
@@ -168,7 +180,8 @@ export const inboxContainerStyles = (backgroundColor, headerTitleColor, closeIco
           display: flex;
           scroll-behavior: smooth;
           justify-content: center; 
-          align-items: center; 
+          align-items: center;
+          position: relative;
         }
 
         #categoriesWrapper {
@@ -183,22 +196,29 @@ export const inboxContainerStyles = (backgroundColor, headerTitleColor, closeIco
           display: none;
         }
   
-        #leftBtn, #rightBtn {
-          cursor: pointer;
-          position: absolute;
-          font-weight: bold;
+        #leftArrow, #rightArrow {
           height: 32px;
-          width: 40px;
-          align-items: center; 
+          align-items: center;
+          font-weight: 700;
+          position: absolute;
+          z-index: 2;
+          pointer-events: auto;
+          cursor: pointer;
+          display: none;
         }
 
-        #leftBtn {
-          left: 15px;
+        #leftArrow {
+          left: 0;
+          padding-left: 4px;
+          padding-right: 16px;
+          background: linear-gradient(90deg, ${panelBackgroundColor} 0%, ${panelBackgroundColor}99 80%, ${panelBackgroundColor}0d 100%);
         }
 
-        #rightBtn {
-          right: 15px;
-          justify-content: end; 
+        #rightArrow {
+          right: 0;
+          padding-right: 4px;
+          padding-left: 16px;
+          background: linear-gradient(-90deg, ${panelBackgroundColor} 0%, ${panelBackgroundColor}99 80%, ${panelBackgroundColor}0d 100%);
         }
 
         [id^="category-"] {
@@ -208,12 +228,19 @@ export const inboxContainerStyles = (backgroundColor, headerTitleColor, closeIco
           align-items: center; 
           font-size: 14px; 
           line-height: 20px; 
-          background-color: ${tabColor}4d; 
+          background-color: ${categoriesTabColor}; 
           color: ${categoriesTitleColor}; 
           cursor: pointer;
-          padding: 10px;
-          border-radius: 15px;
-          margin-right: 5px;
+          padding: 6px 24px;
+          margin: 0 3px;
+          border-radius: 16px;
+          border: ${categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none'};
+        }
+
+        [id^="category-"][selected="true"] {
+          background-color: ${selectedCategoryTabColor}; 
+          color: ${selectedCategoryTitleColor}; 
+          border: ${selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none'}
         }
   
         #inboxCard {
@@ -223,12 +250,17 @@ export const inboxContainerStyles = (backgroundColor, headerTitleColor, closeIco
   
         @media only screen and (min-width: 420px) {
           #inbox {
-            width: 392px;
-            height: 546px;
+            width: var(--inbox-width, 392px);
+            height: var(--inbox-height, 546px);
+            position: var(--inbox-position, fixed);
+            right: var(--inbox-right, unset);
+            bottom: var(--inbox-bottom, unset);
+            top: var(--inbox-top, unset);
+            left: var(--inbox-left, unset);
           }
   
           #inboxCard {
-            height: 446px; 
+            height: calc(var(--inbox-height, 546px) - 100px); 
             padding: 0 16px;
           }
   

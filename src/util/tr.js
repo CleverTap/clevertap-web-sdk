@@ -14,8 +14,7 @@ import {
   NOTIFICATION_VIEWED,
   NOTIFICATION_CLICKED,
   WZRK_PREFIX,
-  WZRK_ID,
-  WEBINBOX_CONFIG
+  WZRK_ID
 } from './constants'
 
 import {
@@ -31,6 +30,7 @@ import { StorageManager, $ct } from './storage'
 import RequestDispatcher from './requestDispatcher'
 import { CTWebPersonalisationBanner } from './web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
+import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxResponse, processWebInboxSettings } from '../modules/web-inbox/helper'
 
 const _tr = (msg, {
   device,
@@ -44,43 +44,6 @@ const _tr = (msg, {
   const _request = request
   const _logger = logger
   let _wizCounter = 0
-
-  // msg = {
-  //   arp: {
-  //     j_n: 'Zw==',
-  //     i_n: 'Y2NmewICAw==',
-  //     d_ts: 0,
-  //     dh: 0,
-  //     v: 1,
-  //     j_s: '{ }',
-  //     id: 'WWW-WWW-WWRZ',
-  //     e_ts: 0,
-  //     r_ts: 1649748826,
-  //     rc_w: 60,
-  //     rc_n: 5
-  //   },
-  //   inbox_notifs: [{
-  //     templateType: 'text-with-icon-and-image',
-  //     tags: ['Promotions 🎉'],
-  //     enableTags: true,
-  //     msg: [{
-  //       title: 'Hey Amee  🙌',
-  //       description: 'Use code AUG50 and get upto 50% off on the purchase of your items !!',
-  //       onClickUrl: '',
-  //       openUrlInNewTab: false,
-  //       buttons: [{
-  //         text: 'Check out similar items',
-  //         action: 'copy',
-  //         clipboardText: 'SEP400'
-  //       }],
-  //       iconUrl: '',
-  //       imageUrl: 'https://img.freepik.com/free-photo/young-woman-with-smile-dressed-white-casual-t-shirt-yellow-background-banner_164357-5237.jpg?w=2000'
-  //     }],
-  //     wzrk_ttl: 1664517120,
-  //     wzrk_id: '1659988199_20220809',
-  //     wzrk_pivot: 'wzrk_default'
-  //   }]
-  // }
 
   // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
@@ -687,11 +650,6 @@ const _tr = (msg, {
     } else {
       targetingMsgJson = targetObj
     }
-    if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
-      const element = document.getElementById('intentPreview')
-      element.remove()
-      document.getElementById('intentOpacityDiv').remove()
-    }
 
     if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
       const element = document.getElementById('intentPreview')
@@ -860,61 +818,22 @@ const _tr = (msg, {
     }
   }
 
-  // msg.webInboxSetting = {
-  //   title: 'Notifications Amee',
-  //   categories: ['Updates A', 'Promotions B'],
-  //   inboxSelector: 'bell-selector',
-  //   styles: {
-  //     panelBackgroundColor: '#FAA1A1',
-  //     closeIconColor: '#2E2929',
-  //     addPanelBorder: true,
-  //     panelBorderColor: '#44BE12',
-  //     header: { titleColor: '#442D2D', backgroundColor: '#F6F758' },
-  //     categories: {
-  //       tabColor: '#5DC72A',
-  //       titleColor: '#FFFFFF',
-  //       addBorder: {},
-  //       borderColor: '#E2DF2F',
-  //       selectedTab: {
-  //         tabColor: '#5BFFFA',
-  //         titleColor: '#1C24C7',
-  //         addBorder: true,
-  //         borderColor: '#492F61'
-  //       }
-  //     },
-  //     cards: {
-  //       backgroundColor: '#E7B7F0',
-  //       titleColor: '#490A2F',
-  //       descriptionColor: '#1519C9',
-  //       unreadMarkerColor: '#0A0106',
-  //       roundedCorners: true,
-  //       addBorder: true,
-  //       borderColor: '#30071F',
-  //       buttonColor: '#22171C',
-  //       buttonTextColor: '#9E1EDF'
-  //     },
-  //     notificationsBadge: {
-  //       backgroundColor: '#F5378C',
-  //       textColor: '#161314'
-  //     }
-  //   }
-  // }
+  if (msg.webInboxSetting || msg.inbox_notifs != null) {
+    /**
+     * When the user visits a website for the 1st time after web inbox channel is setup,
+     * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
+     * as we would not have any entry related to webInboxSettings in the LS
+     */
 
-  // TODO - call init method only if there's some change in the configuration
-  if (msg.webInboxSetting) {
-    if (StorageManager._isLocalStorageSupported()) {
-      try {
-        // what if the inbox is already open ?
-        StorageManager.saveToLSorCookie(WEBINBOX_CONFIG, msg.webInboxSetting)
-        setTimeout(() => { $ct.inbox && $ct.inbox.init() }, 0)
-      } catch (e) {
-        _logger.error('Unable to persist web inbox settings: ' + e)
-      }
+    checkAndRegisterWebInboxElements()
+    if ($ct.inbox === null) {
+      msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
+      initializeWebInbox(_logger).then(() => {
+        processWebInboxResponse(msg)
+      })
+    } else {
+      processWebInboxResponse(msg)
     }
-  }
-
-  if (msg.inbox_notifs != null && $ct.inbox) {
-    $ct.inbox.incomingMessages = msg.inbox_notifs
   }
 
   if (StorageManager._isLocalStorageSupported()) {

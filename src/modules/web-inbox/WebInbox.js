@@ -1,8 +1,8 @@
+import { StorageManager, $ct } from '../../util/storage'
 import { Message } from './Message'
-
-import { inboxContainerStyles } from './inboxStyles'
-import { getInboxMessagesFromLS, saveInboxMessagesToLS, getConfigurationFromLS } from './storeUtilities'
-import { getInboxPosition, determineTimeStampText } from './helper'
+import { inboxContainerStyles, messageStyles } from './inboxStyles'
+import { getInboxPosition, determineTimeStampText, arrowSvg } from './helper'
+import { WEBINBOX, WEBINBOX_CONFIG } from '../../util/constants'
 
 export class Inbox extends HTMLElement {
   constructor (logger) {
@@ -11,14 +11,11 @@ export class Inbox extends HTMLElement {
     this.shadow = this.attachShadow({ mode: 'open' })
   }
 
-  noConfigFound = false
-
   isInboxOpen = false
-  categories = []
   selectedCategory = null
-  messagesToBeAdded = []
   unviewedMessages = {}
   unviewedCounter = 0
+  isPreview = false
 
   // dom references
   inboxSelector = null
@@ -27,14 +24,33 @@ export class Inbox extends HTMLElement {
   inboxCard = null
   unviewedBadge = null
   observer = null
+  selectedCategoryRef = null
 
   get incomingMessages () {
     return []
   }
 
   set incomingMessages (msgs = []) {
-    if (msgs.length > 0 && this.inbox !== null) {
-      this.updateInboxMessagesInLS(msgs)
+    if (msgs.length > 0) {
+      this.updateInboxMessages(msgs)
+    }
+  }
+
+  get incomingMessagesForPreview () {
+    return []
+  }
+
+  set incomingMessagesForPreview (msgs = []) {
+    if (msgs.length > 0) {
+      this.isPreview = true
+      this.unviewedCounter = 0
+      msgs.forEach((m) => {
+        m.id = `${m.wzrk_id.split('_')[0]}_${Date.now()}`
+        this.unviewedMessages[m.id] = m
+        this.unviewedCounter++
+      })
+      this.buildUIForMessages(msgs)
+      this.updateUnviewedBadgeCounter()
     }
   }
 
@@ -43,96 +59,131 @@ export class Inbox extends HTMLElement {
   }
 
   init () {
-    this.config = getConfigurationFromLS()
+    this.config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+    if (Object.keys(this.config).length === 0) {
+      return
+    }
     this.inboxSelector = document.getElementById(this.config.inboxSelector)
-    if (this.inboxSelector === null || Object.keys(this.config).length === 0) {
+    if (this.inboxSelector === null) {
       return
     }
 
-    this.addUnviewedBadge()
+    if (this.config.styles.notificationsBadge) {
+      this.addUnviewedBadge()
+    } else if (this.unviewedBadge) {
+      // TODO - verify this
+      this.unviewedBadge.remove()
+    }
+
     this.createinbox()
 
+    /**
+     * We need to remove the listener as there could be a scenario where init would be called when
+     * we get updated web inbox settings from LC after the inbox has been initialised.
+     * It can so happen that the inbox-selector would have changed.
+     */
     document.removeEventListener('click', this.addClickListenerOnDocument)
-    // check if this works when the selector changes
     document.addEventListener('click', this.addClickListenerOnDocument)
+    this.config.categories.length && this.updateActiveCategory(this.selectedCategoryRef.innerText)
 
     this.shadow.innerHTML = this.getInboxStyles()
     this.shadow.appendChild(this.inbox)
   }
 
   addMsgsToInboxFromLS () {
-    const messages = this.fetchUnexpiredInboxMessages()
-    this.messagesToBeAdded = []
-    Object.keys(messages).forEach((m) => {
-      this.messagesToBeAdded.push(m)
+    const messages = this.deleteExpiredAndGetUnexpiredMsgs(false)
+    const msgIds = Object.keys(messages)
+    if (msgIds.length === 0) {
+      return
+    }
+    msgIds.forEach((m) => {
       if (!messages[m].viewed) {
         this.unviewedMessages[m] = messages[m]
         this.unviewedCounter++
       }
     })
     this.buildUIForMessages(messages)
-    this.updateUnviewedBadgeCounter(this.unviewedCounter)
+    this.updateUnviewedBadgeCounter()
   }
 
-  fetchUnexpiredInboxMessages () {
-    let messages = getInboxMessagesFromLS(this.WEB_INBOX)
+  /**
+   * @param {*} deleteMsgsFromUI - If this param is true, then we'll have to check the UI and delete expired messages from the DOM
+   * It'll be false when you are building the inbox layout for the very first time.
+   *
+   * This method reads the inbox messages from LS,
+   * based on the deleteMsgsFromUI flag deletes the expired messages from UI and decrements the unviewed counter if the message was not viewed,
+   * sorts the messages based on the date,
+   * saves the unexpired messages to LS
+   * and returns the sorted unexpired messages
+   *
+   * Scenarios when we encounter expired messages -
+   * 1. building ui for the 1st time, no need to decrement the unviewed counter as the correct count will be set at the time of rendering
+   * 2. UI is already built (deleteMsgsFromUI = true) and you open the inbox
+   *    a. You'll find the expired msg in inbox
+   *    b. You'll not find the expired msg in inbox.
+   *       This happens when we receive new messages from LC, increment unviewed counter, save it in LS. (We build the UI only when the user opens inbox.)
+   *  In both the above scenarios, we'll still have to decrement the unviewed counter if the message was not viewed.
+   */
+  deleteExpiredAndGetUnexpiredMsgs (deleteMsgsFromUI = true) {
+    let messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
     const now = Math.floor(Date.now() / 1000)
     for (const msg in messages) {
       if (messages[msg].wzrk_ttl && messages[msg].wzrk_ttl > 0 && messages[msg].wzrk_ttl < now) {
-        const el = this.shadowRoot.getElementById(messages[msg].id)
-        el && el.remove()
+        if (deleteMsgsFromUI) {
+          const el = this.shadowRoot.getElementById(messages[msg].id)
+          el && el.remove()
+          if (!messages[msg].viewed) {
+            this.unviewedCounter--
+            this.updateUnviewedBadgeCounter()
+          }
+        }
         delete messages[msg]
-        // TODO: if the deleted message was unread, decrement the unread count
       }
     }
 
     messages = Object.values(messages).sort((a, b) => b.date - a.date).reduce((acc, m) => { acc[m.id] = m; return acc }, {})
-    saveInboxMessagesToLS(messages)
+    StorageManager.saveToLSorCookie(WEBINBOX, messages)
     return messages
   }
 
-  updateInboxMessagesInLS (msgs = []) {
-    let inboxMsgs = this.fetchUnexpiredInboxMessages()
-    if (!inboxMsgs) {
-      inboxMsgs = {}
-    }
+  updateInboxMessages (msgs = []) {
+    const inboxMsgs = this.deleteExpiredAndGetUnexpiredMsgs()
     const date = Date.now()
-    const incomingMsgs = []
+    const incomingMsgs = {}
     msgs.forEach((m, i) => {
       const key = `${m.wzrk_id.split('_')[0]}_${Date.now()}`
       m.id = key
-      // doing this to preserve the order of the messages
+      // We are doing this to preserve the order of the messages
       m.date = date - i
       m.read = 0
       m.viewed = 0
       inboxMsgs[key] = m
-      incomingMsgs.push(key)
+      incomingMsgs[key] = m
       this.unviewedMessages[key] = m
       this.unviewedCounter++
     })
-    this.messagesToBeAdded = [...incomingMsgs, ...this.messagesToBeAdded]
-    saveInboxMessagesToLS(inboxMsgs)
-
-    this.updateUnviewedBadgeCounter(this.unviewedCounter)
-
-    if (this.isInboxOpen) {
-      this.buildUIForMessages(inboxMsgs)
-    }
+    StorageManager.saveToLSorCookie(WEBINBOX, inboxMsgs)
+    this.updateUnviewedBadgeCounter()
+    this.buildUIForMessages(incomingMsgs)
   }
 
-  createEl (type, id) {
+  createEl (type, id, part) {
     const _el = document.createElement(type)
     _el.setAttribute('id', id)
+    _el.setAttribute('part', part || id)
     return _el
   }
 
   addUnviewedBadge () {
-    this.unviewedBadge = this.createEl('div', 'unviewedBadge')
-    this.unviewedBadge.style.cssText = 'display: none; position: absolute; height: 16px; width: 26px; border-radius: 8px; background-color: #e357a9; font-size: 12px; color: #fffcff; font-weight: bold; align-items: center; justify-content: center;'
-    document.body.appendChild(this.unviewedBadge)
+    if (!this.unviewedBadge) {
+      this.unviewedBadge = this.createEl('div', 'unviewedBadge')
+      // As this unviewedBadge element will be directly added to the DOM, we are defining inline styles
+      this.unviewedBadge.style.cssText = `display: none; position: absolute; height: 16px; width: 26px; border-radius: 8px; background-color: ${this.config.styles.notificationsBadge.backgroundColor}; font-size: 12px; color: ${this.config.styles.notificationsBadge.textColor}; font-weight: bold; align-items: center; justify-content: center;`
+      document.body.appendChild(this.unviewedBadge)
+    }
     this.updateUnviewedBadgePosition()
 
-    // called when user switches b/w portrait and landscape mode
+    // called when user switches b/w portrait and landscape mode.
     window.addEventListener('resize', () => {
       this.updateUnviewedBadgePosition()
     })
@@ -145,20 +196,18 @@ export class Inbox extends HTMLElement {
   }
 
   createinbox () {
-    // does not show up when we do hard refresh
     this.inbox = this.createEl('div', 'inbox')
-    const panel = this.createEl('div', 'panel')
+    const header = this.createEl('div', 'header')
 
-    const panelTitle = this.createEl('div', 'panelTitle')
-    panelTitle.innerText = this.config.title
+    const headerTitle = this.createEl('div', 'headerTitle')
+    headerTitle.innerText = this.config.title
 
     const closeIcon = this.createEl('div', 'closeInbox')
     closeIcon.innerHTML = '&times'
-    closeIcon.addEventListener('click', () => { this.toggleInbox() })
 
-    panel.appendChild(panelTitle)
-    panel.appendChild(closeIcon)
-    this.inbox.appendChild(panel)
+    header.appendChild(headerTitle)
+    header.appendChild(closeIcon)
+    this.inbox.appendChild(header)
     if (this.config.categories.length) {
       const categories = this.createCategories()
       this.inbox.appendChild(categories)
@@ -169,15 +218,13 @@ export class Inbox extends HTMLElement {
     this.emptyInboxMsg = this.createEl('div', 'emptyInboxMsg')
     this.inboxCard.appendChild(this.emptyInboxMsg)
 
-    this.categories.length && this.categories[0].click()
-
-    // For notification viewed
+    // Intersection observer for notification viewed
     const options = {
       root: this.inboxCard,
       rootMargin: '0px',
       threshold: 0.5
     }
-    this.observer = new IntersectionObserver((entries, observer) => { this.raiseViewedEvent(entries, observer) }, options)
+    this.observer = new IntersectionObserver((entries, observer) => { this.handleMessageViewed(entries) }, options)
 
     this.addMsgsToInboxFromLS()
   }
@@ -185,82 +232,66 @@ export class Inbox extends HTMLElement {
   createCategories () {
     const categoriesContainer = this.createEl('div', 'categoriesContainer')
 
-    const leftBtn = this.createEl('div', 'leftBtn')
-    categoriesContainer.appendChild(leftBtn)
-
-    let firstListItem = null
-    let lastListItem = null
+    const leftArrow = this.createEl('div', 'leftArrow')
+    leftArrow.innerHTML = arrowSvg
+    leftArrow.children[0].style = 'transform: rotate(180deg)'
+    leftArrow.addEventListener('click', () => {
+      this.shadowRoot.getElementById('categoriesWrapper').scrollBy(-70, 0)
+    })
+    categoriesContainer.appendChild(leftArrow)
 
     const categoriesWrapper = this.createEl('div', 'categoriesWrapper')
     const _categories = ['All', ...this.config.categories]
-    const len = _categories.length - 1
     _categories.forEach((c, i) => {
-      const category = this.createEl('div', `category-${i}`)
-      if (i === 0) {
-        firstListItem = category
-      }
-      if (i === len) {
-        lastListItem = category
-      }
+      const category = this.createEl('div', `category-${i}`, 'category')
       category.innerText = c
-      category.addEventListener('click', () => {
-        this.updateActiveCategory(c)
-      })
-      this.categories.push(category)
+      if (i === 0) {
+        this.selectedCategoryRef = category
+      }
       categoriesWrapper.appendChild(category)
     })
-
     categoriesContainer.appendChild(categoriesWrapper)
 
-    const rightBtn = this.createEl('div', 'rightBtn')
-    categoriesContainer.appendChild(rightBtn)
-
-    leftBtn.addEventListener('click', () => {
-      this.shadowRoot.getElementById('categoriesWrapper').scrollBy(-70, 0)
-    })
-
-    rightBtn.addEventListener('click', () => {
+    const rightArrow = this.createEl('div', 'rightArrow')
+    rightArrow.innerHTML = arrowSvg
+    rightArrow.addEventListener('click', () => {
       this.shadowRoot.getElementById('categoriesWrapper').scrollBy(70, 0)
     })
+    categoriesContainer.appendChild(rightArrow)
 
-    const leftObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.intersectionRatio > 0.10) {
-          leftBtn.innerText = ''
-          leftBtn.style = 'display: block; background: transparent; pointer-events: none'
-        } else {
-          leftBtn.innerText = '<'
-          leftBtn.style = 'display: flex; background: linear-gradient(to right, white, transparent); pointer-events: auto'
-        }
-      })
-    }, { threshold: 0.10 })
+    const options = { root: categoriesContainer, threshold: 0.9 }
+    const firstCategory = categoriesWrapper.children[0]
+    const lastCategory = categoriesWrapper.children[this.config.categories.length]
 
-    const rightObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.intersectionRatio > 0.90) {
-          rightBtn.innerText = ''
-          rightBtn.style = 'display: block; background: transparent; pointer-events: none'
-        } else {
-          rightBtn.innerText = '>'
-          rightBtn.style = 'display: flex; background: linear-gradient(to left, white, transparent); pointer-events: auto'
-        }
-      })
-    }, { threshold: 0.90 })
+    const firstCategoryObserver = new IntersectionObserver((e) => {
+      this.categoryObserverCb(leftArrow, e[0].intersectionRatio >= 0.9)
+    }, options)
+    firstCategoryObserver.observe(firstCategory)
 
-    leftObserver.observe(firstListItem)
-    rightObserver.observe(lastListItem)
+    const lastCategoryObserver = new IntersectionObserver((e) => {
+      this.categoryObserverCb(rightArrow, e[0].intersectionRatio >= 0.9)
+    }, options)
+    lastCategoryObserver.observe(lastCategory)
 
     return categoriesContainer
   }
 
+  categoryObserverCb (el, hide) {
+    if (!el) {
+      return
+    }
+    el.style.display = hide ? 'none' : 'flex'
+  }
+
   updateActiveCategory (activeCategory) {
     this.selectedCategory = activeCategory
-    const tabColor = this.config.styles.categories.tabColor
+
     this.inboxCard.scrollTop = 0
     let counter = 0
-    this.categories.forEach((c) => {
-      c.style.backgroundColor = c.innerText.trim() === activeCategory ? tabColor : `${tabColor}4d`
-    })
+
+    this.prevCategoryRef && this.prevCategoryRef.setAttribute('selected', 'false')
+    this.selectedCategoryRef.setAttribute('selected', 'true')
+
     this.inboxCard.childNodes.forEach(c => {
       if (c.getAttribute('id') !== 'emptyInboxMsg') {
         c.style.display = (this.selectedCategory === 'All' || c.getAttribute('category') === this.selectedCategory) ? 'block' : 'none'
@@ -270,70 +301,89 @@ export class Inbox extends HTMLElement {
       }
     })
     if (counter === 0) {
-      this.emptyInboxMsg.innerHTML = `${activeCategory} messages will be displayed here.`
+      this.emptyInboxMsg.innerText = `${activeCategory} messages will be displayed here.`
       this.emptyInboxMsg.style.display = 'block'
     } else {
       this.emptyInboxMsg.style.display = 'none'
     }
   }
 
-  buildUIForMessages (messages) {
-    if (!messages) {
-      messages = this.fetchUnexpiredInboxMessages()
-    }
-
-    this.updateTSForRenderedMsgs()
+  buildUIForMessages (messages = {}) {
+    !this.isPreview && this.updateTSForRenderedMsgs()
     this.inboxCard.scrollTop = 0
     const firstChild = this.inboxCard.firstChild
-    this.messagesToBeAdded.forEach((m) => {
-      // it can so happen that the message has expired by the time one opens the inbox
-      if (messages[m]) {
-        const item = new Message(this.config, messages[m])
-        item.setAttribute('id', messages[m].id)
-        item.setAttribute('category', messages[m].tags[0])
-        item.setAttribute('pivot', messages[m].wzrk_pivot)
-        item.style.display = (this.selectedCategory === 'All' || messages[m].category === this.selectedCategory) ? 'block' : 'none'
-        this.inboxCard.insertBefore(item, firstChild)
-        this.observer.observe(item)
-      }
-    })
-    this.messagesToBeAdded = []
-    const hasMessages = this.inboxCard.querySelectorAll('inbox-message').length
+    for (const m in messages) {
+      const item = new Message(this.config, messages[m])
+      item.setAttribute('id', messages[m].id)
+      item.setAttribute('category', messages[m].tags[0])
+      item.setAttribute('pivot', messages[m].wzrk_pivot)
+      item.setAttribute('part', 'inbox-message')
+      item.style.display = (this.selectedCategory === 'All' || messages[m].category === this.selectedCategory) ? 'block' : 'none'
+      this.inboxCard.insertBefore(item, firstChild)
+      this.observer.observe(item)
+    }
+
+    const hasMessages = this.inboxCard.querySelectorAll('inbox-message[style*="display: block"]').length
     this.emptyInboxMsg.style.display = hasMessages ? 'none' : 'block'
   }
+
+  /**
+   * Adds a click listener on the document. For every click we check
+   * 1. if the click has happenned within the inbox
+   *    - on close button, we close the inbox
+   *    - on any of the category, we set that as the activeCategory
+   *    - on any of the message, we mark that msg as read and raise notification clicked event. To identify the clicks on a button, we have p.id.startsWith('button-')
+   * 2. if the user has clicked on the inboxSelector, we toggle inbox
+   * 3. if the click is anywhere else on the UI and the inbox is open, we simply close it
+   */
 
   addClickListenerOnDocument = (() => {
     return (e) => {
       if (e.composedPath().includes(this.inbox)) {
-        const path = e.path.filter((p) => (p.id && p.id.startsWith('button-')) || p.tagName === 'INBOX-MESSAGE')
+        // path is not supported on FF. So we fallback to e.composedPath
+        const path = e.path || (e.composedPath && e.composedPath())
         if (path.length) {
-          const el = path[path.length - 1]
-          this.updateMessageInLS(el.message.id, { ...el.message, read: 1 })
-          if (el.shadow.getElementById('unreadMarker')) { el.shadow.getElementById('unreadMarker').style.display = 'none' }
-          el.raiseClickedEvent(path)
+          const id = path[0].id
+          if (id === 'closeInbox') {
+            this.toggleInbox()
+          } else if (id.startsWith('category-')) {
+            this.prevCategoryRef = this.selectedCategoryRef
+            this.selectedCategoryRef = path[0]
+            this.updateActiveCategory(path[0].innerText)
+          } else if (!this.isPreview) {
+            const _path = path.filter((p) => p.id?.startsWith('button-') || p.tagName === 'INBOX-MESSAGE')
+            if (_path.length) {
+              const messageEl = _path[_path.length - 1]
+              if (!messageEl.message.read) {
+                this.updateMessageInLS(messageEl.message.id, { ...messageEl.message, read: 1 })
+                messageEl.shadow.getElementById('unreadMarker').style.display = 'none'
+              }
+              messageEl.raiseClickedEvent(_path[0])
+            }
+          }
         }
-        return
-      }
-      if (this.inboxSelector.contains(e.target)) {
+      } else if (this.inboxSelector.contains(e.target) || this.isInboxOpen) {
         this.toggleInbox(e)
-        return
-      }
-      if (this.isInboxOpen) {
-        this.toggleInbox()
       }
     }
   })()
 
-  raiseViewedEvent (entries, observer) {
-    if (this.isInboxOpen && this.messagesToBeAdded.length === 0) {
+  /**
+   * This function will be called every time when a message comes into the inbox viewport and it's visibility increases to 50% or drops below 50%
+   * If a msg is 50% visible in the UI, we need to mark the message as viewed in LS and raise notification viewed event
+   */
+  handleMessageViewed (entries) {
+    const raiseViewedEvent = !this.isPreview
+    if (this.isInboxOpen) {
       entries.forEach((e) => {
-        if (e.boundingClientRect.top < e.rootBounds.bottom && e.boundingClientRect.top >= e.rootBounds.top && this.unviewedMessages.hasOwnProperty(e.target.id)) {
-          window.clevertap.renderNotificationViewed({ msgId: e.target.campaignId, pivotId: e.target.pivotId })
+        if (e.isIntersecting && this.unviewedMessages.hasOwnProperty(e.target.id)) {
           e.target.message.viewed = 1
+          if (raiseViewedEvent) {
+            window.clevertap.renderNotificationViewed({ msgId: e.target.campaignId, pivotId: e.target.pivotId })
+            this.updateMessageInLS(e.target.id, { ...e.target.message, viewed: 1 })
+          }
           this.unviewedCounter--
-          // is this really needed
-          Promise.resolve().then(() => { this.updateMessageInLS(e.target.id, { ...e.target.message, viewed: 1 }) })
-          this.updateUnviewedBadgeCounter(this.unviewedCounter)
+          this.updateUnviewedBadgeCounter()
           delete this.unviewedMessages[e.target.id]
         }
       })
@@ -341,46 +391,88 @@ export class Inbox extends HTMLElement {
   }
 
   updateMessageInLS (key, value) {
-    const messages = getInboxMessagesFromLS(this.WEB_INBOX)
+    const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
     messages[key] = value
-    saveInboxMessagesToLS(messages)
+    StorageManager.saveToLSorCookie(WEBINBOX, messages)
   }
 
+  // create a separte fn fro refactoring
   toggleInbox (e) {
     this.isInboxOpen = !this.isInboxOpen
     if (this.isInboxOpen) {
       this.inboxCard.scrollTop = 0
-      this.buildUIForMessages()
+      !this.isPreview && this.deleteExpiredAndGetUnexpiredMsgs()
       this.inbox.style.display = 'block'
-      const { xPos, yPos } = getInboxPosition(e.pageX, e.pageY, 392)
-      this.inbox.style.top = yPos + 'px'
-      this.inbox.style.left = xPos + 'px'
+      this.setInboxPosition(e)
     } else {
       this.inbox.style.display = 'none'
     }
   }
 
-  updateUnviewedBadgeCounter (count) {
-    this.unviewedBadge.innerText = count > 9 ? '9+' : count
-    this.unviewedBadge.style.display = count ? 'flex' : 'none'
+  setInboxPosition (e) {
+    const windowWidth = window.outerWidth
+    const customInboxStyles = getComputedStyle($ct.inbox)
+    const top = customInboxStyles.getPropertyValue('--inbox-top')
+    const bottom = customInboxStyles.getPropertyValue('--inbox-bottom')
+    const left = customInboxStyles.getPropertyValue('--inbox-left')
+    const right = customInboxStyles.getPropertyValue('--inbox-right')
+    const hasPositionDefined = top || bottom || left || right
+    if (windowWidth > 481 && !hasPositionDefined) {
+      const res = getInboxPosition(e, this.inbox.clientHeight, this.inbox.clientHeight)
+      const xPos = res.xPos
+      const yPos = res.yPos
+      this.inbox.style.top = yPos + 'px'
+      this.inbox.style.left = xPos + 'px'
+    }
+  }
+
+  /**
+   * Updates the UI with the number of unviewed messages
+   * If there are more than 9 unviewed messages, we show the count as 9+
+   */
+  updateUnviewedBadgeCounter () {
+    if (this.unviewedBadge !== null) {
+      this.unviewedBadge.innerText = this.unviewedCounter > 9 ? '9+' : this.unviewedCounter
+      this.unviewedBadge.style.display = this.unviewedCounter > 0 ? 'flex' : 'none'
+    }
   }
 
   updateTSForRenderedMsgs () {
     this.inboxCard.querySelectorAll('inbox-message').forEach((m) => {
       const ts = m.id.split('_')[1]
-      m.shadow.getElementById('timeStamp').firstChild.innerHTML = determineTimeStampText(ts)
+      m.shadow.getElementById('timeStamp').firstChild.innerText = determineTimeStampText(ts)
     })
   }
 
   getInboxStyles () {
-    return inboxContainerStyles(
-      this.config.styles.header.backgroundColor,
-      this.config.styles.header.titleColor,
-      this.config.styles.header.closeIconColor,
-      this.config.styles.categories.tabColor,
-      this.config.styles.categories.titleColor,
-      this.config.styles.panelBackgroundColor,
-      this.config.styles.panelBorderColor
-    )
+    const styles = {
+      panelBackgroundColor: this.config.styles.panelBackgroundColor,
+      panelBorderColor: this.config.styles.panelBorderColor,
+      headerBackgroundColor: this.config.styles.header.backgroundColor,
+      headerTitleColor: this.config.styles.header.titleColor,
+      closeIconColor: this.config.styles.header.closeIconColor,
+      categoriesTabColor: this.config.styles.categories.tabColor,
+      categoriesTitleColor: this.config.styles.categories.titleColor,
+      selectedCategoryTabColor: this.config.styles.categories.selectedTab.tabColor,
+      selectedCategoryTitleColor: this.config.styles.categories.selectedTab.titleColor
+    }
+    if (this.config.styles.categories.borderColor) {
+      styles.categoriesBorderColor = this.config.styles.categories.borderColor
+    }
+    if (this.config.styles.categories.selectedTab.borderColor) {
+      styles.selectedCategoryBorderColor = this.config.styles.categories.selectedTab.borderColor
+    }
+
+    const inboxStyles = inboxContainerStyles(styles)
+
+    const msgStyles = messageStyles({
+      backgroundColor: this.config.styles.cards.backgroundColor,
+      borderColor: this.config.styles.cards.borderColor,
+      titleColor: this.config.styles.cards.titleColor,
+      descriptionColor: this.config.styles.cards.descriptionColor,
+      buttonColor: this.config.styles.cards.buttonColor,
+      buttonTextColor: this.config.styles.cards.buttonTextColor
+    })
+    return inboxStyles + msgStyles
   }
 }

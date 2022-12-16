@@ -29,8 +29,6 @@ import {
   COMMAND_DELETE,
   EVT_PUSH
 } from './util/constants'
-import { Inbox } from './modules/web-inbox/WebInbox'
-import { Message } from './modules/web-inbox/Message'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
@@ -38,6 +36,7 @@ import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe } fr
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
+import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox } from './modules/web-inbox/helper'
 
 export default class CleverTap {
   #logger
@@ -187,27 +186,31 @@ export default class CleverTap {
       this.#request.saveAndFireRequest(pageLoadUrl, false)
     }
 
-    if (customElements.get('inbox-message') === undefined) {
-      customElements.define('inbox-message', Message)
+    if (hasWebInboxSettingsInLS) {
+      checkAndRegisterWebInboxElements()
+      initializeWebInbox()
     }
 
-    if (customElements.get('web-inbox') === undefined) {
-      customElements.define('web-inbox', Inbox)
-      window.addEventListener('load', () => {
-        $ct.inbox = new Inbox({ logger: this.#logger })
-        document.body.appendChild($ct.inbox)
-      })
-    }
-
-    // PM to define functionalities that we will need to expose to clients
-    this.inbox = {
-      addNewMessages: (msgs = []) => {
-        $ct.inbox.incomingMessages = msgs
-      },
-      getBadgeCount: () => {
-        return $ct.inbox.unviewedCounter
-      }
-    }
+    // this.inbox = {
+    //   addNewMessages: (msgs = []) => {
+    //     if ($ct.inbox) {
+    //       $ct.inbox.incomingMessages = msgs
+    //     } else {
+    //       console.error('can not add messages to inbox as inbox is not initialised')
+    //     }
+    //   },
+    //   getBadgeCount: () => {
+    //     if ($ct.inbox) {
+    //       return $ct.inbox.unviewedCounter
+    //     } else {
+    //       console.error('can not get badge count as inbox is not initialised')
+    //     }
+    //   },
+    //   getMessages: () => {
+    //     const deleteMsgsFromUI = false
+    //     return this.deleteExpiredAndGetUnexpiredMsgs(deleteMsgsFromUI)
+    //   }
+    // }
 
     // method for notification viewed
     this.renderNotificationViewed = (detail) => {
