@@ -142,11 +142,6 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
       }
       ${this.display.navBtnsCss}
       ${this.display.navArrowsCss}
-      @media (max-width: 480px) {
-        .left, .right {
-          display: none
-        }
-      }
       </style>
   `
   }

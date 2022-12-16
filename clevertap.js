@@ -3508,11 +3508,7 @@
     }, {
       key: "getStyles",
       value: function getStyles() {
-<<<<<<< HEAD
         return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        background-color: grey;\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      .carousel__item img {\n        height: ".concat(this.divHeight ? this.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
-=======
-        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        background-color: grey;\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      .carousel__item img {\n        height: ".concat(this.divHeight ? this.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      @media (max-width: 480px) {\n        .left, .right {\n          display: none\n        }\n      }\n      </style>\n  ");
->>>>>>> hides carousel arrows for mobile view
       }
     }, {
       key: "updateSelectedItem",
@@ -6283,11 +6279,7 @@
         }
 
         data.af = {
-<<<<<<< HEAD
           lib: 'web-sdk-v1.3.5'
-=======
-          lib: 'web-sdk-v1.3.4'
->>>>>>> hides carousel arrows for mobile view
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
