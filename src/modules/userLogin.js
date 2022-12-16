@@ -61,6 +61,7 @@ export default class UserLoginHandler extends Array {
     this.#device = device
   }
 
+  // On User Login
   #processOUL (profileArr) {
     let sendOULFlag = true
     StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
@@ -71,7 +72,8 @@ export default class UserLoginHandler extends Array {
       if (k == null) {
         k = {}
         kId = ids
-      } else { /* check if already exists */
+      } else {
+        /* check if already exists */
         kId = k.id
         let anonymousUser = false
         let foundInCache = false
@@ -79,17 +81,19 @@ export default class UserLoginHandler extends Array {
           kId = ids[0]
           anonymousUser = true
         }
-
         if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
           $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
         }
 
         if (anonymousUser) {
           if ((g) != null) {
+            // if have gcookie
             $ct.LRU_CACHE.set(kId, g)
             $ct.blockRequest = false
           }
         } else {
+          // check if the id is present in the cache
+          // set foundInCache to true
           for (const idx in ids) {
             if (ids.hasOwnProperty(idx)) {
               const id = ids[idx]
@@ -105,6 +109,7 @@ export default class UserLoginHandler extends Array {
         if (foundInCache) {
           if (kId !== $ct.LRU_CACHE.getLastKey()) {
             // New User found
+            // remove the entire cache
             this.#handleCookieFromCache()
           } else {
             sendOULFlag = false
@@ -211,6 +216,7 @@ export default class UserLoginHandler extends Array {
             // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
             // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
             // stored in the cache and replace it with the response arp.
+
             this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag)
           }
         }

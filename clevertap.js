@@ -225,18 +225,6 @@
     };
   }
 
-  function _toConsumableArray(arr) {
-    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
-  }
-
-  function _arrayWithoutHoles(arr) {
-    if (Array.isArray(arr)) return _arrayLikeToArray(arr);
-  }
-
-  function _iterableToArray(iter) {
-    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
-  }
-
   function _unsupportedIterableToArray(o, minLen) {
     if (!o) return;
     if (typeof o === "string") return _arrayLikeToArray(o, minLen);
@@ -252,10 +240,6 @@
     for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
 
     return arr2;
-  }
-
-  function _nonIterableSpread() {
-    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
   function _createForOfIteratorHelper(o, allowArrayLike) {
@@ -495,8 +479,6 @@
   var COMMAND_ADD = '$add';
   var COMMAND_REMOVE = '$remove';
   var COMMAND_DELETE = '$delete';
-  var WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG';
-  var WEBINBOX = 'WZRK_INBOX';
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
@@ -908,7 +890,6 @@
     // helper variable to handle race condition and check when notifications were called
     unsubGroups: [],
     updatedCategoryLong: null,
-    inbox: null,
     isPrivacyArrPushed: false,
     privacyArray: [] // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
@@ -1111,6 +1092,17 @@
       _classPrivateFieldLooseBase(this, _device)[_device] = device;
       _classPrivateFieldLooseBase(this, _session)[_session] = session;
     }
+    /**
+     *
+     * @param {string} global gcookie
+     * @param {string} session
+     * @param {boolean} resume true in case of OUL (on user login), false in all other cases
+     * true signifies that the response in OUL response
+     * @param {number} respNumber the index of the request in backupmanager
+     * @param {boolean} optOutResponse
+     * @returns
+     */
+
 
     _createClass(CleverTapAPI, [{
       key: "s",
@@ -1125,7 +1117,20 @@
         if (respNumber > $ct.globalCache.REQ_N) {
           // request for some other user so ignore
           return;
-        }
+        } // for a condition when a request's response is received
+        // while an OUL request is already in progress
+        // remove the request from backup cache and return
+
+
+        if (window.isOULInProgress && !resume) {
+          return;
+        } // set isOULInProgress to false, if resume is true
+
+
+        if (resume) {
+          window.isOULInProgress = false;
+        } // optout
+
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
           _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
@@ -1148,30 +1153,28 @@
               var guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
 
               if (!guidFromLRUCache) {
-                StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true);
+                StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true); // replace login identity in OUL request
+                // with the gcookie returned in exchange
+
                 $ct.LRU_CACHE.set(kIdFromLS.id, global);
               }
             }
 
-            StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
+            StorageManager.saveToLSorCookie(GCOOKIE_NAME, global); // lastk provides the guid
+
             var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
             if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
-              var lastGUID = $ct.LRU_CACHE.cache[lastK];
+              var lastGUID = $ct.LRU_CACHE.cache[lastK]; // fire the request directly via fireRequest to unregister the token
+              // then other requests with the updated guid should follow
 
               _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
             }
           }
-
-          StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
-          StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
         }
 
-        if (resume) {
-          $ct.blockRequest = false;
-
-          _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Resumed requests');
-        }
+        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
+        StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
 
         if (StorageManager._isLocalStorageSupported()) {
           _classPrivateFieldLooseBase(this, _session)[_session].manageSession(session);
@@ -1186,9 +1189,16 @@
           obj.t = getNow(); // time of last response from server
 
           _classPrivateFieldLooseBase(this, _session)[_session].setSessionCookieObject(obj);
-        }
+        } // set blockRequest to false only if the device has a valid gcookie
 
-        if (resume && !_classPrivateFieldLooseBase(this, _request)[_request].processingBackup) {
+
+        if (isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
+          $ct.blockRequest = false;
+        } // if request are not blocked and other network request(s) are not being processed
+        // process request(s) from backup from local storage or cookie
+
+
+        if (!$ct.blockRequest && !_classPrivateFieldLooseBase(this, _request)[_request].processingBackup) {
           _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
         }
 
@@ -1919,6 +1929,14 @@
 
     _createClass(RequestDispatcher, null, [{
       key: "fireRequest",
+      // ANCHOR - Requests get fired from here
+
+      /**
+       *
+       * @param {string} url
+       * @param {*} skipARP
+       * @param {boolean} sendOULFlag
+       */
       value: function fireRequest(url, skipARP, sendOULFlag) {
         _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
       }
@@ -1968,24 +1986,42 @@
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
       return;
+    } // set a request in progress
+    // so that if gcookie is not present, no other request can be made asynchronusly
+
+
+    if (!isValueValid(this.device.gcookie)) {
+      $ct.blockRequest = true;
     }
+    /**
+     * if the gcookie is null
+     * and the request is not the first request
+     * and the tries are less than max tries
+     * keep retrying
+     */
+
 
     if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
+      // if ongoing First Request is in progress, initiate retry
       setTimeout(function () {
         _this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
 
         _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
       }, 50);
       return;
-    }
+    } // set isOULInProgress to true
+    // when sendOULFlag is set to true
+
 
     if (!sendOULFlag) {
       if (isValueValid(this.device.gcookie)) {
-        // add cookie to url
+        // add gcookie to url
         url = addToURL(url, 'gc', this.device.gcookie);
       }
 
       url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
+    } else {
+      window.isOULInProgress = true;
     }
 
     url = addToURL(url, 'tries', tries); // Add tries to URL
@@ -2963,7 +2999,8 @@
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$2)[_oldValues$2] = values;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _device$1)[_device$1] = device;
       return _this;
-    }
+    } // On User Login
+
 
     _createClass(UserLoginHandler, [{
       key: "clear",
@@ -3030,10 +3067,13 @@
 
         if (anonymousUser) {
           if (g != null) {
+            // if have gcookie
             $ct.LRU_CACHE.set(kId, g);
             $ct.blockRequest = false;
           }
         } else {
+          // check if the id is present in the cache
+          // set foundInCache to true
           for (var idx in ids) {
             if (ids.hasOwnProperty(idx)) {
               var id = ids[idx];
@@ -3050,6 +3090,7 @@
         if (foundInCache) {
           if (kId !== $ct.LRU_CACHE.getLastKey()) {
             // New User found
+            // remove the entire cache
             _classPrivateFieldLooseBase(_this2, _handleCookieFromCache)[_handleCookieFromCache]();
           } else {
             sendOULFlag = false;
@@ -3303,7 +3344,7 @@
     }, {
       key: "getBannerContent",
       value: function getBannerContent() {
-        return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n        }\n        img {\n          height: auto;\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ".concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:600px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
+        return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n          cursor: pointer;\n        }\n        img {\n          height: ".concat(this.divHeight ? this.divHeight : 'auto', ";\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ").concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:480px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
       }
     }, {
       key: "details",
@@ -3538,1022 +3579,6 @@
 
     return CTWebPersonalisationCarousel;
   }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
-
-  var messageStyles = function messageStyles(_ref) {
-    var backgroundColor = _ref.backgroundColor,
-        borderColor = _ref.borderColor,
-        titleColor = _ref.titleColor,
-        descriptionColor = _ref.descriptionColor,
-        buttonColor = _ref.buttonColor,
-        buttonTextColor = _ref.buttonTextColor;
-    return "\n    <style id=\"messageStyles\">\n      inbox-message::part(messageWrapper) {\n        margin-bottom: 16px; \n      }\n      inbox-message::part(message) {\n        background-color: ".concat(backgroundColor, "; \n        border: 1px solid ").concat(borderColor, ";\n        border-radius: 4px; \n        overflow: hidden;\n      }\n      inbox-message::part(iconTitleDescWrapper) {\n        display: flex; \n        padding: 16px;\n      }\n      inbox-message::part(titleDescWrapper) {\n        display: flex; \n        flex-direction: column;\n      }\n      inbox-message::part(iconImgContainer) {\n        display: flex; \n        margin-right: 16px;\n      }\n      inbox-message::part(mainImg) {\n        width: 100%; \n        background: #b2b1ae;\n      }\n      inbox-message::part(iconImg) {\n        height: 40px; \n        width: 40px;\n      }\n      inbox-message::part(title) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 600; \n        color: ").concat(titleColor, "\n      }\n      inbox-message::part(description) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 400; \n        color: ").concat(descriptionColor, "\n      }\n      inbox-message::part(button) {\n        background-color: ").concat(buttonColor, "; \n        color: ").concat(buttonTextColor, "; \n        padding: 8px 16px; \n        font-size: 12px; \n        line-height: 16px; \n        font-weight: 600; \n        flex: 1; \n        border-radius: 0px; \n        text-transform: capitalize; \n        cursor: pointer; \n        border: none;\n      }\n      inbox-message::part(buttonsContainer) {\n        display: flex;\n        position: relative;\n      }\n      inbox-message::part(snackbar) {\n        position: absolute;\n        top: calc(-100% - 12px);\n        left: 50%;\n        transform: translate(-50%, 0px);\n        font-size: 14px;\n        font-weight: 400;\n        background: #FFFFFF;\n        border: 1px solid #ECEDF2;\n        box-shadow: 0px 4px 8px rgb(0 0 0 / 6%), 0px 0px 2px rgb(0 0 0 / 4%);\n        border-radius: 4px;\n        z-index: 2;\n        display: none;\n        width: max-content;\n        align-items: center;\n        padding: 8px 16px;\n        justify-content: center;\n      }\n\n      inbox-message::part(snackbar-msg) {\n        color: black;\n        margin-left: 8px;\n      }\n\n      inbox-message::part(timeStamp) {\n        display: flex; \n        justify-content: end; \n        align-items: center; \n        margin-top: 4px; \n        font-size: 12px !important; \n        line-height: 16px; \n        color: black;\n      }\n      inbox-message::part(unreadMarker) {\n        height: 8px; \n        width: 8px; \n        border-radius: 50%; \n        background-color: #FFBA00; \n        margin-left: 8px;\n      }\n      @media only screen and (min-width: 420px) {\n        inbox-message::part(mainImg) {\n          height: 180px;\n        }\n      }\n    </style>\n  ");
-  };
-  var inboxContainerStyles = function inboxContainerStyles(_ref2) {
-    var panelBackgroundColor = _ref2.panelBackgroundColor,
-        panelBorderColor = _ref2.panelBorderColor,
-        headerBackgroundColor = _ref2.headerBackgroundColor,
-        headerTitleColor = _ref2.headerTitleColor,
-        closeIconColor = _ref2.closeIconColor,
-        categoriesTabColor = _ref2.categoriesTabColor,
-        categoriesTitleColor = _ref2.categoriesTitleColor,
-        categoriesBorderColor = _ref2.categoriesBorderColor,
-        selectedCategoryTabColor = _ref2.selectedCategoryTabColor,
-        selectedCategoryTitleColor = _ref2.selectedCategoryTitleColor,
-        selectedCategoryBorderColor = _ref2.selectedCategoryBorderColor;
-    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          box-sizing: border-box;\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n        }\n  \n        #emptyInboxMsg {\n          display: none;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          margin: 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          justify-content: center; \n          align-items: center;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          width: -webkit-fill-available;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 8px 8px 0 8px;\n          overflow-y: auto;\n        }\n  \n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - 100px); \n            padding: 0 16px;\n          }\n  \n        }\n      </style>\n      ");
-  };
-
-  var Message = /*#__PURE__*/function (_HTMLElement) {
-    _inherits(Message, _HTMLElement);
-
-    var _super = _createSuper(Message);
-
-    function Message(config, message) {
-      var _this;
-
-      _classCallCheck(this, Message);
-
-      _this = _super.call(this);
-      _this.wrapper = null;
-      _this.snackBar = null;
-      _this.shadow = _this.attachShadow({
-        mode: 'open'
-      });
-      _this.config = config;
-      _this.message = message;
-
-      _this.renderMessage(message);
-
-      return _this;
-    }
-
-    _createClass(Message, [{
-      key: "createEl",
-      value: function createEl(type, id, part) {
-        var _el = document.createElement(type);
-
-        _el.setAttribute('id', id);
-
-        _el.setAttribute('part', part || id);
-
-        return _el;
-      }
-    }, {
-      key: "renderMessage",
-      value: function renderMessage(msg) {
-        this.wrapper = this.createEl('div', 'messageWrapper');
-
-        switch (msg.templateType) {
-          case 'text-only':
-          case 'text-with-icon':
-          case 'text-with-icon-and-image':
-            {
-              var message = this.prepareBasicMessage(msg.msg[0]);
-              this.wrapper.appendChild(message);
-            }
-        }
-
-        var timeStamp = this.createEl('div', 'timeStamp');
-        timeStamp.innerHTML = "<span>".concat(determineTimeStampText(msg.id.split('_')[1]), "<span>");
-
-        if (!msg.read) {
-          var unreadMarker = this.createEl('span', 'unreadMarker');
-          timeStamp.appendChild(unreadMarker);
-        }
-
-        this.wrapper.appendChild(timeStamp);
-        this.shadow.appendChild(this.wrapper);
-      }
-    }, {
-      key: "prepareBasicMessage",
-      value: function prepareBasicMessage(msg) {
-        var message = this.createEl('div', 'message');
-
-        if (msg.imageUrl) {
-          var imageContainer = this.addImage(msg.imageUrl, 'mainImg');
-          message.appendChild(imageContainer);
-        }
-
-        var iconTitleDescWrapper = this.createEl('div', 'iconTitleDescWrapper');
-
-        if (msg.iconUrl) {
-          var iconContainer = this.addImage(msg.iconUrl, 'iconImg');
-          iconTitleDescWrapper.appendChild(iconContainer);
-        }
-
-        var titleDescWrapper = this.createEl('div', 'titleDescWrapper');
-
-        if (msg.title) {
-          var title = this.createEl('div', 'title');
-          title.innerText = msg.title;
-          titleDescWrapper.appendChild(title);
-        }
-
-        if (msg.description) {
-          var description = this.createEl('div', 'description');
-          description.innerText = msg.description;
-          titleDescWrapper.appendChild(description);
-        }
-
-        if (msg.title || msg.description) {
-          iconTitleDescWrapper.appendChild(titleDescWrapper);
-        }
-
-        if (msg.iconUrl || msg.title || msg.description) {
-          message.appendChild(iconTitleDescWrapper);
-        }
-
-        if (msg.buttons && msg.buttons.length) {
-          var buttonsContainer = this.addButtons(msg.buttons);
-          message.appendChild(buttonsContainer);
-        }
-
-        return message;
-      }
-    }, {
-      key: "addButtons",
-      value: function addButtons() {
-        var _this2 = this;
-
-        var buttons = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-        var buttonsContainer = this.createEl('div', 'buttonsContainer');
-        var hasCopyAction = false;
-        buttons.forEach(function (b, i) {
-          var button = _this2.createEl('button', "button-".concat(i), 'button');
-
-          button.innerText = b.text;
-
-          if (i > 0) {
-            button.style.cssText += 'margin-left: 2px;';
-          }
-
-          if (b.action === 'copy') {
-            hasCopyAction = true;
-          }
-
-          buttonsContainer.appendChild(button);
-        });
-
-        if (hasCopyAction) {
-          this.addSnackbar(buttonsContainer);
-        }
-
-        return buttonsContainer;
-      }
-    }, {
-      key: "addSnackbar",
-      value: function addSnackbar(buttonsContainer) {
-        this.snackBar = this.createEl('div', "snackbar-".concat(this.campaignId), 'snackbar');
-        this.snackBar.innerHTML = greenTickSvg;
-        var clipboardMsg = this.createEl('span', "snackbar-msg-".concat(this.campaignId), 'snackbar-msg');
-        clipboardMsg.innerText = 'Copied to clipboard';
-        this.snackBar.appendChild(clipboardMsg);
-        buttonsContainer.appendChild(this.snackBar);
-      }
-    }, {
-      key: "addImage",
-      value: function addImage(url, type) {
-        var imageContainer = this.createEl('div', "".concat(type, "Container"));
-        var image = this.createEl('img', type);
-        image.setAttribute('src', url); // images will be fetched as and when the element comes into the viewport
-
-        image.setAttribute('loading', 'lazy');
-        imageContainer.appendChild(image);
-        return imageContainer;
-      }
-    }, {
-      key: "getMessageStyles",
-      value: function getMessageStyles() {
-        return messageStyles(this.config.styles.cards.backgroundColor, this.config.styles.cards.borderColor, this.config.styles.cards.titleColor, this.config.styles.cards.descriptionColor, this.config.styles.cards.buttonColor, this.config.styles.cards.buttonTextColor);
-      }
-    }, {
-      key: "raiseClickedEvent",
-      value: function raiseClickedEvent(path) {
-        switch (this.message.templateType) {
-          case 'text-only':
-          case 'text-with-icon':
-          case 'text-with-icon-and-image':
-            {
-              this.raiseClickedForBasicTemplates(path);
-            }
-        }
-      }
-    }, {
-      key: "raiseClickedForBasicTemplates",
-      value: function raiseClickedForBasicTemplates(path) {
-        var _this3 = this;
-
-        var msg = this.message.msg[0];
-        var payload = {
-          msgId: this.campaignId,
-          pivotId: this.pivotId
-        };
-
-        if (path.tagName === 'BUTTON') {
-          var id = path.id.split('-')[1];
-          var button = msg.buttons[id];
-          payload.kv = {
-            wzrk_c2a: button.text
-          };
-
-          if (button.action === 'url') {
-            button.openUrlInNewTab ? window.open(button.url, '_blank') : window.location = button.url;
-          } else if (button.action === 'copy') {
-            window.focus();
-            navigator.clipboard.writeText(button.clipboardText);
-            this.snackBar.style.setProperty('display', 'flex', 'important');
-            setTimeout(function () {
-              _this3.snackBar.style.setProperty('display', 'none', 'important');
-            }, 2000);
-          }
-        } else if (path.tagName === 'INBOX-MESSAGE' && msg.onClickUrl) {
-          msg.openUrlInNewTab ? window.open(msg.onClickUrl, '_blank') : window.location = msg.onClickUrl;
-        }
-
-        window.clevertap.renderNotificationClicked(payload);
-      }
-    }, {
-      key: "pivotId",
-      get: function get() {
-        return this.message.wzrk_pivot;
-      }
-    }, {
-      key: "campaignId",
-      get: function get() {
-        return this.message.wzrk_id;
-      }
-    }]);
-
-    return Message;
-  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
-
-  var Inbox = /*#__PURE__*/function (_HTMLElement) {
-    _inherits(Inbox, _HTMLElement);
-
-    var _super = _createSuper(Inbox);
-
-    function Inbox(logger) {
-      var _this;
-
-      _classCallCheck(this, Inbox);
-
-      _this = _super.call(this);
-      _this.isInboxOpen = false;
-      _this.selectedCategory = null;
-      _this.unviewedMessages = {};
-      _this.unviewedCounter = 0;
-      _this.isPreview = false;
-      _this.inboxSelector = null;
-      _this.inbox = null;
-      _this.emptyInboxMsg = null;
-      _this.inboxCard = null;
-      _this.unviewedBadge = null;
-      _this.observer = null;
-      _this.selectedCategoryRef = null;
-
-      _this.addClickListenerOnDocument = function () {
-        return function (e) {
-          if (e.composedPath().includes(_this.inbox)) {
-            // path is not supported on FF. So we fallback to e.composedPath
-            var path = e.path || e.composedPath && e.composedPath();
-
-            if (path.length) {
-              var id = path[0].id;
-
-              if (id === 'closeInbox') {
-                _this.toggleInbox();
-              } else if (id.startsWith('category-')) {
-                _this.prevCategoryRef = _this.selectedCategoryRef;
-                _this.selectedCategoryRef = path[0];
-
-                _this.updateActiveCategory(path[0].innerText);
-              } else if (!_this.isPreview) {
-                var _path = path.filter(function (p) {
-                  var _p$id;
-
-                  return ((_p$id = p.id) === null || _p$id === void 0 ? void 0 : _p$id.startsWith('button-')) || p.tagName === 'INBOX-MESSAGE';
-                });
-
-                if (_path.length) {
-                  var messageEl = _path[_path.length - 1];
-
-                  if (!messageEl.message.read) {
-                    _this.updateMessageInLS(messageEl.message.id, _objectSpread2(_objectSpread2({}, messageEl.message), {}, {
-                      read: 1
-                    }));
-
-                    messageEl.shadow.getElementById('unreadMarker').style.display = 'none';
-                  }
-
-                  messageEl.raiseClickedEvent(_path[0]);
-                }
-              }
-            }
-          } else if (_this.inboxSelector.contains(e.target) || _this.isInboxOpen) {
-            _this.toggleInbox(e);
-          }
-        };
-      }();
-
-      _this.logger = logger;
-      _this.shadow = _this.attachShadow({
-        mode: 'open'
-      });
-      return _this;
-    }
-
-    _createClass(Inbox, [{
-      key: "connectedCallback",
-      value: function connectedCallback() {
-        this.init();
-      }
-    }, {
-      key: "init",
-      value: function init() {
-        this.config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-
-        if (Object.keys(this.config).length === 0) {
-          return;
-        }
-
-        this.inboxSelector = document.getElementById(this.config.inboxSelector);
-
-        if (this.inboxSelector === null) {
-          return;
-        }
-
-        if (this.config.styles.notificationsBadge) {
-          this.addUnviewedBadge();
-        } else if (this.unviewedBadge) {
-          // TODO - verify this
-          this.unviewedBadge.remove();
-        }
-
-        this.createinbox();
-        /**
-         * We need to remove the listener as there could be a scenario where init would be called when
-         * we get updated web inbox settings from LC after the inbox has been initialised.
-         * It can so happen that the inbox-selector would have changed.
-         */
-
-        document.removeEventListener('click', this.addClickListenerOnDocument);
-        document.addEventListener('click', this.addClickListenerOnDocument);
-        this.config.categories.length && this.updateActiveCategory(this.selectedCategoryRef.innerText);
-        this.shadow.innerHTML = this.getInboxStyles();
-        this.shadow.appendChild(this.inbox);
-      }
-    }, {
-      key: "addMsgsToInboxFromLS",
-      value: function addMsgsToInboxFromLS() {
-        var _this2 = this;
-
-        var messages = this.deleteExpiredAndGetUnexpiredMsgs(false);
-        var msgIds = Object.keys(messages);
-
-        if (msgIds.length === 0) {
-          return;
-        }
-
-        msgIds.forEach(function (m) {
-          if (!messages[m].viewed) {
-            _this2.unviewedMessages[m] = messages[m];
-            _this2.unviewedCounter++;
-          }
-        });
-        this.buildUIForMessages(messages);
-        this.updateUnviewedBadgeCounter();
-      }
-      /**
-       * @param {*} deleteMsgsFromUI - If this param is true, then we'll have to check the UI and delete expired messages from the DOM
-       * It'll be false when you are building the inbox layout for the very first time.
-       *
-       * This method reads the inbox messages from LS,
-       * based on the deleteMsgsFromUI flag deletes the expired messages from UI and decrements the unviewed counter if the message was not viewed,
-       * sorts the messages based on the date,
-       * saves the unexpired messages to LS
-       * and returns the sorted unexpired messages
-       *
-       * Scenarios when we encounter expired messages -
-       * 1. building ui for the 1st time, no need to decrement the unviewed counter as the correct count will be set at the time of rendering
-       * 2. UI is already built (deleteMsgsFromUI = true) and you open the inbox
-       *    a. You'll find the expired msg in inbox
-       *    b. You'll not find the expired msg in inbox.
-       *       This happens when we receive new messages from LC, increment unviewed counter, save it in LS. (We build the UI only when the user opens inbox.)
-       *  In both the above scenarios, we'll still have to decrement the unviewed counter if the message was not viewed.
-       */
-
-    }, {
-      key: "deleteExpiredAndGetUnexpiredMsgs",
-      value: function deleteExpiredAndGetUnexpiredMsgs() {
-        var deleteMsgsFromUI = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
-        var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
-        var now = Math.floor(Date.now() / 1000);
-
-        for (var msg in messages) {
-          if (messages[msg].wzrk_ttl && messages[msg].wzrk_ttl > 0 && messages[msg].wzrk_ttl < now) {
-            if (deleteMsgsFromUI) {
-              var el = this.shadowRoot.getElementById(messages[msg].id);
-              el && el.remove();
-
-              if (!messages[msg].viewed) {
-                this.unviewedCounter--;
-                this.updateUnviewedBadgeCounter();
-              }
-            }
-
-            delete messages[msg];
-          }
-        }
-
-        messages = Object.values(messages).sort(function (a, b) {
-          return b.date - a.date;
-        }).reduce(function (acc, m) {
-          acc[m.id] = m;
-          return acc;
-        }, {});
-        StorageManager.saveToLSorCookie(WEBINBOX, messages);
-        return messages;
-      }
-    }, {
-      key: "updateInboxMessages",
-      value: function updateInboxMessages() {
-        var _this3 = this;
-
-        var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-        var inboxMsgs = this.deleteExpiredAndGetUnexpiredMsgs();
-        var date = Date.now();
-        var incomingMsgs = {};
-        msgs.forEach(function (m, i) {
-          var key = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
-          m.id = key; // We are doing this to preserve the order of the messages
-
-          m.date = date - i;
-          m.read = 0;
-          m.viewed = 0;
-          inboxMsgs[key] = m;
-          incomingMsgs[key] = m;
-          _this3.unviewedMessages[key] = m;
-          _this3.unviewedCounter++;
-        });
-        StorageManager.saveToLSorCookie(WEBINBOX, inboxMsgs);
-        this.updateUnviewedBadgeCounter();
-        this.buildUIForMessages(incomingMsgs);
-      }
-    }, {
-      key: "createEl",
-      value: function createEl(type, id, part) {
-        var _el = document.createElement(type);
-
-        _el.setAttribute('id', id);
-
-        _el.setAttribute('part', part || id);
-
-        return _el;
-      }
-    }, {
-      key: "addUnviewedBadge",
-      value: function addUnviewedBadge() {
-        var _this4 = this;
-
-        if (!this.unviewedBadge) {
-          this.unviewedBadge = this.createEl('div', 'unviewedBadge'); // As this unviewedBadge element will be directly added to the DOM, we are defining inline styles
-
-          this.unviewedBadge.style.cssText = "display: none; position: absolute; height: 16px; width: 26px; border-radius: 8px; background-color: ".concat(this.config.styles.notificationsBadge.backgroundColor, "; font-size: 12px; color: ").concat(this.config.styles.notificationsBadge.textColor, "; font-weight: bold; align-items: center; justify-content: center;");
-          document.body.appendChild(this.unviewedBadge);
-        }
-
-        this.updateUnviewedBadgePosition(); // called when user switches b/w portrait and landscape mode.
-
-        window.addEventListener('resize', function () {
-          _this4.updateUnviewedBadgePosition();
-        });
-      }
-    }, {
-      key: "updateUnviewedBadgePosition",
-      value: function updateUnviewedBadgePosition() {
-        var _this$inboxSelector$g = this.inboxSelector.getBoundingClientRect(),
-            top = _this$inboxSelector$g.top,
-            right = _this$inboxSelector$g.right;
-
-        this.unviewedBadge.style.top = "".concat(top - 8, "px");
-        this.unviewedBadge.style.left = "".concat(right - 8, "px");
-      }
-    }, {
-      key: "createinbox",
-      value: function createinbox() {
-        var _this5 = this;
-
-        this.inbox = this.createEl('div', 'inbox');
-        var header = this.createEl('div', 'header');
-        var headerTitle = this.createEl('div', 'headerTitle');
-        headerTitle.innerText = this.config.title;
-        var closeIcon = this.createEl('div', 'closeInbox');
-        closeIcon.innerHTML = '&times';
-        header.appendChild(headerTitle);
-        header.appendChild(closeIcon);
-        this.inbox.appendChild(header);
-
-        if (this.config.categories.length) {
-          var categories = this.createCategories();
-          this.inbox.appendChild(categories);
-        }
-
-        this.inboxCard = this.createEl('div', 'inboxCard');
-        this.inbox.appendChild(this.inboxCard);
-        this.emptyInboxMsg = this.createEl('div', 'emptyInboxMsg');
-        this.inboxCard.appendChild(this.emptyInboxMsg); // Intersection observer for notification viewed
-
-        var options = {
-          root: this.inboxCard,
-          rootMargin: '0px',
-          threshold: 0.5
-        };
-        this.observer = new IntersectionObserver(function (entries, observer) {
-          _this5.handleMessageViewed(entries);
-        }, options);
-        this.addMsgsToInboxFromLS();
-      }
-    }, {
-      key: "createCategories",
-      value: function createCategories() {
-        var _this6 = this;
-
-        var categoriesContainer = this.createEl('div', 'categoriesContainer');
-        var leftArrow = this.createEl('div', 'leftArrow');
-        leftArrow.innerHTML = arrowSvg;
-        leftArrow.children[0].style = 'transform: rotate(180deg)';
-        leftArrow.addEventListener('click', function () {
-          _this6.shadowRoot.getElementById('categoriesWrapper').scrollBy(-70, 0);
-        });
-        categoriesContainer.appendChild(leftArrow);
-        var categoriesWrapper = this.createEl('div', 'categoriesWrapper');
-
-        var _categories = ['All'].concat(_toConsumableArray(this.config.categories));
-
-        _categories.forEach(function (c, i) {
-          var category = _this6.createEl('div', "category-".concat(i), 'category');
-
-          category.innerText = c;
-
-          if (i === 0) {
-            _this6.selectedCategoryRef = category;
-          }
-
-          categoriesWrapper.appendChild(category);
-        });
-
-        categoriesContainer.appendChild(categoriesWrapper);
-        var rightArrow = this.createEl('div', 'rightArrow');
-        rightArrow.innerHTML = arrowSvg;
-        rightArrow.addEventListener('click', function () {
-          _this6.shadowRoot.getElementById('categoriesWrapper').scrollBy(70, 0);
-        });
-        categoriesContainer.appendChild(rightArrow);
-        var options = {
-          root: categoriesContainer,
-          threshold: 0.9
-        };
-        var firstCategory = categoriesWrapper.children[0];
-        var lastCategory = categoriesWrapper.children[this.config.categories.length];
-        var firstCategoryObserver = new IntersectionObserver(function (e) {
-          _this6.categoryObserverCb(leftArrow, e[0].intersectionRatio >= 0.9);
-        }, options);
-        firstCategoryObserver.observe(firstCategory);
-        var lastCategoryObserver = new IntersectionObserver(function (e) {
-          _this6.categoryObserverCb(rightArrow, e[0].intersectionRatio >= 0.9);
-        }, options);
-        lastCategoryObserver.observe(lastCategory);
-        return categoriesContainer;
-      }
-    }, {
-      key: "categoryObserverCb",
-      value: function categoryObserverCb(el, hide) {
-        if (!el) {
-          return;
-        }
-
-        el.style.display = hide ? 'none' : 'flex';
-      }
-    }, {
-      key: "updateActiveCategory",
-      value: function updateActiveCategory(activeCategory) {
-        var _this7 = this;
-
-        this.selectedCategory = activeCategory;
-        this.inboxCard.scrollTop = 0;
-        var counter = 0;
-        this.prevCategoryRef && this.prevCategoryRef.setAttribute('selected', 'false');
-        this.selectedCategoryRef.setAttribute('selected', 'true');
-        this.inboxCard.childNodes.forEach(function (c) {
-          if (c.getAttribute('id') !== 'emptyInboxMsg') {
-            c.style.display = _this7.selectedCategory === 'All' || c.getAttribute('category') === _this7.selectedCategory ? 'block' : 'none';
-
-            if (c.style.display === 'block') {
-              counter++;
-            }
-          }
-        });
-
-        if (counter === 0) {
-          this.emptyInboxMsg.innerText = "".concat(activeCategory, " messages will be displayed here.");
-          this.emptyInboxMsg.style.display = 'block';
-        } else {
-          this.emptyInboxMsg.style.display = 'none';
-        }
-      }
-    }, {
-      key: "buildUIForMessages",
-      value: function buildUIForMessages() {
-        var messages = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-        !this.isPreview && this.updateTSForRenderedMsgs();
-        this.inboxCard.scrollTop = 0;
-        var firstChild = this.inboxCard.firstChild;
-
-        for (var m in messages) {
-          var item = new Message(this.config, messages[m]);
-          item.setAttribute('id', messages[m].id);
-          item.setAttribute('category', messages[m].tags[0]);
-          item.setAttribute('pivot', messages[m].wzrk_pivot);
-          item.setAttribute('part', 'inbox-message');
-          item.style.display = this.selectedCategory === 'All' || messages[m].category === this.selectedCategory ? 'block' : 'none';
-          this.inboxCard.insertBefore(item, firstChild);
-          this.observer.observe(item);
-        }
-
-        var hasMessages = this.inboxCard.querySelectorAll('inbox-message[style*="display: block"]').length;
-        this.emptyInboxMsg.style.display = hasMessages ? 'none' : 'block';
-      }
-      /**
-       * Adds a click listener on the document. For every click we check
-       * 1. if the click has happenned within the inbox
-       *    - on close button, we close the inbox
-       *    - on any of the category, we set that as the activeCategory
-       *    - on any of the message, we mark that msg as read and raise notification clicked event. To identify the clicks on a button, we have p.id.startsWith('button-')
-       * 2. if the user has clicked on the inboxSelector, we toggle inbox
-       * 3. if the click is anywhere else on the UI and the inbox is open, we simply close it
-       */
-
-    }, {
-      key: "handleMessageViewed",
-
-      /**
-       * This function will be called every time when a message comes into the inbox viewport and it's visibility increases to 50% or drops below 50%
-       * If a msg is 50% visible in the UI, we need to mark the message as viewed in LS and raise notification viewed event
-       */
-      value: function handleMessageViewed(entries) {
-        var _this8 = this;
-
-        var raiseViewedEvent = !this.isPreview;
-
-        if (this.isInboxOpen) {
-          entries.forEach(function (e) {
-            if (e.isIntersecting && _this8.unviewedMessages.hasOwnProperty(e.target.id)) {
-              e.target.message.viewed = 1;
-
-              if (raiseViewedEvent) {
-                window.clevertap.renderNotificationViewed({
-                  msgId: e.target.campaignId,
-                  pivotId: e.target.pivotId
-                });
-
-                _this8.updateMessageInLS(e.target.id, _objectSpread2(_objectSpread2({}, e.target.message), {}, {
-                  viewed: 1
-                }));
-              }
-
-              _this8.unviewedCounter--;
-
-              _this8.updateUnviewedBadgeCounter();
-
-              delete _this8.unviewedMessages[e.target.id];
-            }
-          });
-        }
-      }
-    }, {
-      key: "updateMessageInLS",
-      value: function updateMessageInLS(key, value) {
-        var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
-        messages[key] = value;
-        StorageManager.saveToLSorCookie(WEBINBOX, messages);
-      } // create a separte fn fro refactoring
-
-    }, {
-      key: "toggleInbox",
-      value: function toggleInbox(e) {
-        this.isInboxOpen = !this.isInboxOpen;
-
-        if (this.isInboxOpen) {
-          this.inboxCard.scrollTop = 0;
-          !this.isPreview && this.deleteExpiredAndGetUnexpiredMsgs();
-          this.inbox.style.display = 'block';
-          this.setInboxPosition(e);
-        } else {
-          this.inbox.style.display = 'none';
-        }
-      }
-    }, {
-      key: "setInboxPosition",
-      value: function setInboxPosition(e) {
-        var windowWidth = window.outerWidth;
-        var customInboxStyles = getComputedStyle($ct.inbox);
-        var top = customInboxStyles.getPropertyValue('--inbox-top');
-        var bottom = customInboxStyles.getPropertyValue('--inbox-bottom');
-        var left = customInboxStyles.getPropertyValue('--inbox-left');
-        var right = customInboxStyles.getPropertyValue('--inbox-right');
-        var hasPositionDefined = top || bottom || left || right;
-
-        if (windowWidth > 481 && !hasPositionDefined) {
-          var res = getInboxPosition(e, this.inbox.clientHeight, this.inbox.clientWidth);
-          var xPos = res.xPos;
-          var yPos = res.yPos;
-          this.inbox.style.top = yPos + 'px';
-          this.inbox.style.left = xPos + 'px';
-        }
-      }
-      /**
-       * Updates the UI with the number of unviewed messages
-       * If there are more than 9 unviewed messages, we show the count as 9+
-       */
-
-    }, {
-      key: "updateUnviewedBadgeCounter",
-      value: function updateUnviewedBadgeCounter() {
-        if (this.unviewedBadge !== null) {
-          this.unviewedBadge.innerText = this.unviewedCounter > 9 ? '9+' : this.unviewedCounter;
-          this.unviewedBadge.style.display = this.unviewedCounter > 0 ? 'flex' : 'none';
-        }
-      }
-    }, {
-      key: "updateTSForRenderedMsgs",
-      value: function updateTSForRenderedMsgs() {
-        this.inboxCard.querySelectorAll('inbox-message').forEach(function (m) {
-          var ts = m.id.split('_')[1];
-          m.shadow.getElementById('timeStamp').firstChild.innerText = determineTimeStampText(ts);
-        });
-      }
-    }, {
-      key: "getInboxStyles",
-      value: function getInboxStyles() {
-        var styles = {
-          panelBackgroundColor: this.config.styles.panelBackgroundColor,
-          panelBorderColor: this.config.styles.panelBorderColor,
-          headerBackgroundColor: this.config.styles.header.backgroundColor,
-          headerTitleColor: this.config.styles.header.titleColor,
-          closeIconColor: this.config.styles.header.closeIconColor,
-          categoriesTabColor: this.config.styles.categories.tabColor,
-          categoriesTitleColor: this.config.styles.categories.titleColor,
-          selectedCategoryTabColor: this.config.styles.categories.selectedTab.tabColor,
-          selectedCategoryTitleColor: this.config.styles.categories.selectedTab.titleColor
-        };
-
-        if (this.config.styles.categories.borderColor) {
-          styles.categoriesBorderColor = this.config.styles.categories.borderColor;
-        }
-
-        if (this.config.styles.categories.selectedTab.borderColor) {
-          styles.selectedCategoryBorderColor = this.config.styles.categories.selectedTab.borderColor;
-        }
-
-        var inboxStyles = inboxContainerStyles(styles);
-        var msgStyles = messageStyles({
-          backgroundColor: this.config.styles.cards.backgroundColor,
-          borderColor: this.config.styles.cards.borderColor,
-          titleColor: this.config.styles.cards.titleColor,
-          descriptionColor: this.config.styles.cards.descriptionColor,
-          buttonColor: this.config.styles.cards.buttonColor,
-          buttonTextColor: this.config.styles.cards.buttonTextColor
-        });
-        return inboxStyles + msgStyles;
-      }
-    }, {
-      key: "incomingMessages",
-      get: function get() {
-        return [];
-      },
-      set: function set() {
-        var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-
-        if (msgs.length > 0) {
-          this.updateInboxMessages(msgs);
-        }
-      }
-    }, {
-      key: "incomingMessagesForPreview",
-      get: function get() {
-        return [];
-      },
-      set: function set() {
-        var _this9 = this;
-
-        var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-
-        if (msgs.length > 0) {
-          this.isPreview = true;
-          this.unviewedCounter = 0;
-          msgs.forEach(function (m) {
-            m.id = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
-            _this9.unviewedMessages[m.id] = m;
-            _this9.unviewedCounter++;
-          });
-          this.buildUIForMessages(msgs);
-          this.updateUnviewedBadgeCounter();
-        }
-      }
-    }]);
-
-    return Inbox;
-  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
-
-  var processWebInboxSettings = function processWebInboxSettings(webInboxSetting) {
-    var _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-
-    if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting)) {
-      // TODO - remove this later on
-      console.log('saving webInboxSetting to LS ::', webInboxSetting);
-      StorageManager.saveToLSorCookie(WEBINBOX_CONFIG, webInboxSetting);
-      /**
-       *  TODO - test what happens when the inbox is open ?
-       */
-
-      $ct.inbox && $ct.inbox.init();
-    }
-  };
-  var processInboxNotifs = function processInboxNotifs(msg) {
-    if (msg.inbox_preview) {
-      $ct.inbox.incomingMessagesForPreview = msg.inbox_notifs;
-    } else {
-      $ct.inbox.incomingMessages = msg.inbox_notifs;
-    }
-  };
-  var processWebInboxResponse = function processWebInboxResponse(msg) {
-    if (msg.webInboxSetting) {
-      processWebInboxSettings(msg.webInboxSetting);
-    }
-
-    if (msg.inbox_notifs != null) {
-      processInboxNotifs(msg);
-    }
-  };
-  var addWebInbox = function addWebInbox(logger) {
-    $ct.inbox = new Inbox({
-      logger: logger
-    });
-    document.body.appendChild($ct.inbox);
-  };
-  var initializeWebInbox = function initializeWebInbox(logger) {
-    return new Promise(function (resolve) {
-      if (document.readyState === 'complete') {
-        addWebInbox(logger);
-        resolve();
-      } else {
-        window.addEventListener('load', function () {
-          /**
-           * We need this null check here because $ct.inbox could be initialised via init method too on document load.
-           * In that case we don't need to call addWebInbox method
-           */
-          if ($ct.inbox === null) {
-            addWebInbox(logger);
-          }
-
-          resolve();
-        });
-      }
-    });
-  };
-  var checkAndRegisterWebInboxElements = function checkAndRegisterWebInboxElements() {
-    if (customElements.get('web-inbox') === undefined) {
-      customElements.define('web-inbox', Inbox);
-      customElements.define('inbox-message', Message);
-    }
-  }; // TODO - add more comments?
-
-  var getInboxPosition = function getInboxPosition(e, inboxHeight, inboxWidth) {
-    var horizontalScroll = document.scrollingElement.scrollLeft;
-    var verticalScroll = document.scrollingElement.scrollTop;
-    var windowWidth = window.innerWidth + horizontalScroll;
-    var windowHeight = window.innerHeight + verticalScroll;
-    var selectorRect = e.target.getBoundingClientRect();
-    var selectorX = selectorRect.x + horizontalScroll;
-    var selectorY = selectorRect.y + verticalScroll;
-    var selectorLeft = selectorRect.left + horizontalScroll;
-    var selectorRight = selectorRect.right + horizontalScroll;
-    var selectorTop = selectorRect.top + verticalScroll;
-    var selectorBottom = selectorRect.bottom + verticalScroll;
-    var selectorHeight = selectorRect.height;
-    var selectorWidth = selectorRect.width;
-    var selectorCenter = {
-      x: selectorX + selectorWidth / 2,
-      y: selectorY + selectorHeight / 2
-    };
-    var halfOfInboxHeight = inboxHeight / 2;
-    var halfOfInboxWidth = inboxWidth / 2;
-    var inboxOnSide = false;
-    var xPos, yPos;
-    var padding = 16;
-    /**
-     * y co-ordinates:
-     * Try to push the card downwards
-     * if that's not possible, push it upwards
-     * if that too is not possible, then the card will be placed on the side. Add some padding.
-     *
-     * x co-ordinates:
-     * If the card is on the side,
-     *    try to place it to the right. If it's not possible,
-     *    place it to the left
-     * If the card is either on top/ bottom, set the x co-ordinate such that the selector center and the inbox card center become the same
-     * Now,
-     *  if the left of the inbox card is < 0,
-     *    try to get the left aligned to the selectorLeft.
-     *    if that's not possible, simply set left to 0
-     *  if the right of the inbox card > windowWidth,
-     *    try to get the right of rhe inbox card aligned with the selectorRight
-     *    if that's not possible, simply set the inbox right to the window Right
-     */
-
-    if (selectorBottom + inboxHeight <= windowHeight) {
-      // try to place the card down
-      var availableHeight = windowHeight - (selectorBottom + inboxHeight);
-      yPos = availableHeight >= padding ? selectorBottom + padding : selectorBottom + availableHeight;
-    } else if (selectorTop - inboxHeight >= verticalScroll) {
-      // try to place the card up
-      var _availableHeight = selectorTop - inboxHeight;
-
-      yPos = _availableHeight >= padding ? selectorTop - inboxHeight - padding : selectorTop - inboxHeight - _availableHeight;
-    } else {
-      inboxOnSide = true;
-      yPos = selectorCenter.y - halfOfInboxHeight; // with this the y co-ordinate of the selector center and the inbox card center become the same
-
-      if (yPos < verticalScroll) {
-        yPos = verticalScroll;
-      } else if (yPos + inboxHeight > windowHeight) {
-        yPos = windowHeight - inboxHeight;
-      }
-    }
-
-    if (inboxOnSide) {
-      // See if we can place the card to the right of the selector
-      var inboxRight = selectorRight + inboxWidth;
-
-      if (inboxRight <= windowWidth) {
-        var availableWidth = inboxRight + padding <= windowWidth ? padding : windowWidth - inboxRight;
-        xPos = selectorRight + availableWidth;
-      } else {
-        var inboxLeft = selectorLeft - inboxWidth;
-
-        var _availableWidth = inboxLeft - padding >= horizontalScroll ? padding : inboxLeft - horizontalScroll;
-
-        xPos = inboxLeft - _availableWidth;
-      }
-    } else {
-      xPos = selectorCenter.x - halfOfInboxWidth;
-
-      if (xPos < horizontalScroll) {
-        if (selectorLeft + inboxWidth <= windowWidth) {
-          xPos = selectorLeft;
-        } else {
-          xPos = horizontalScroll;
-        }
-      } else if (xPos + inboxWidth > windowWidth) {
-        if (selectorRight - inboxWidth >= horizontalScroll) {
-          xPos = selectorRight - inboxWidth;
-        } else {
-          xPos = windowWidth - inboxWidth;
-        }
-      }
-    }
-
-    return {
-      xPos: xPos,
-      yPos: yPos
-    };
-  };
-  var determineTimeStampText = function determineTimeStampText(ts) {
-    var now = Date.now();
-    var diff = Math.floor((now - ts) / 60000);
-
-    if (diff < 5) {
-      return 'Just now';
-    }
-
-    if (diff < 60) {
-      return "".concat(diff, " minute").concat(diff > 1 ? 's' : '', " ago");
-    }
-
-    diff = Math.floor(diff / 60);
-
-    if (diff < 24) {
-      return "".concat(diff, " hour").concat(diff > 1 ? 's' : '', " ago");
-    }
-
-    diff = Math.floor(diff / 24);
-    return "".concat(diff, " day").concat(diff > 1 ? 's' : '', " ago");
-  };
-  var hasWebInboxSettingsInLS = function hasWebInboxSettingsInLS() {
-    return Object.keys(StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}).length > 0;
-  };
-  var arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
-  var greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
   var _tr = function _tr(msg, _ref) {
     var device = _ref.device,
@@ -4811,6 +3836,7 @@
       var bannerEl = document.createElement('ct-web-personalisation-banner');
       bannerEl.msgId = targetingMsgJson.wzrk_id;
       bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
+      bannerEl.divHeight = targetingMsgJson.display.divHeight;
       bannerEl.details = targetingMsgJson.display.details[0];
       var containerEl = document.getElementById(divId);
       containerEl.innerHTML = '';
@@ -5361,24 +4387,6 @@
       }
     };
 
-    if (msg.webInboxSetting || msg.inbox_notifs != null) {
-      /**
-       * When the user visits a website for the 1st time after web inbox channel is setup,
-       * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
-       * as we would not have any entry related to webInboxSettings in the LS
-       */
-      checkAndRegisterWebInboxElements();
-
-      if ($ct.inbox === null) {
-        msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
-        initializeWebInbox(_logger).then(function () {
-          processWebInboxResponse(msg);
-        });
-      } else {
-        processWebInboxResponse(msg);
-      }
-    }
-
     if (StorageManager._isLocalStorageSupported()) {
       try {
         if (msg.evpr != null) {
@@ -5872,16 +4880,28 @@
             data.dsync = true;
           }
         }
-      }
+      } // saves url to backup cache and fires the request
+
+      /**
+       *
+       * @param {string} url
+       * @param {boolean} override whether the request can go through or not
+       * @param {Boolean} sendOULFlag - true in case of a On User Login request
+       */
+
     }, {
       key: "saveAndFireRequest",
       value: function saveAndFireRequest(url, override, sendOULFlag) {
         var now = getNow();
         url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
         var data = url + '&i=' + now + '&sn=' + seqNo;
-        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]); // if there is no override
+        // and an OUL request is not in progress
+        // then process the request as it is
+        // else block the request
+        // note - $ct.blockRequest should ideally be used for override
 
-        if (!$ct.blockRequest || override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
+        if ((!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) && !window.isOULInProgress) {
           if (now === requestTime) {
             seqNo++;
           } else {
@@ -5891,7 +4911,7 @@
 
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
-          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to block request - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]));
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
         }
       }
     }, {
@@ -5930,7 +4950,8 @@
     }, {
       key: "registerToken",
       value: function registerToken(payload) {
-        if (!payload) return;
+        if (!payload) return; // add gcookie etc to the payload
+
         payload = this.addSystemDataToObject(payload, true);
         payload = JSON.stringify(payload);
 
@@ -5956,7 +4977,7 @@
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-        this.saveAndFireRequest(pageLoadUrl, false);
+        this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       }
     }]);
 
@@ -6379,11 +5400,9 @@
             subscriptionData.browser = 'Firefox';
           }
 
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData); // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
-          {
-            _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].registerToken(subscriptionData);
-          }
+          _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].registerToken(subscriptionData);
 
           if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
             subscriptionCallback();
@@ -6902,33 +5921,8 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]));
 
-        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
-      };
-
-      if (hasWebInboxSettingsInLS) {
-        checkAndRegisterWebInboxElements();
-        initializeWebInbox();
-      } // this.inbox = {
-      //   addNewMessages: (msgs = []) => {
-      //     if ($ct.inbox) {
-      //       $ct.inbox.incomingMessages = msgs
-      //     } else {
-      //       console.error('can not add messages to inbox as inbox is not initialised')
-      //     }
-      //   },
-      //   getBadgeCount: () => {
-      //     if ($ct.inbox) {
-      //       return $ct.inbox.unviewedCounter
-      //     } else {
-      //       console.error('can not get badge count as inbox is not initialised')
-      //     }
-      //   },
-      //   getMessages: () => {
-      //     const deleteMsgsFromUI = false
-      //     return this.deleteExpiredAndGetUnexpiredMsgs(deleteMsgsFromUI)
-      //   }
-      // }
-      // method for notification viewed
+        _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+      }; // method for notification viewed
 
 
       this.renderNotificationViewed = function (detail) {
@@ -7144,7 +6138,8 @@
         // Npm imports/require will need to call init explictly with accountId
         this.init();
       }
-    }
+    } // starts here
+
 
     _createClass(CleverTap, [{
       key: "init",
@@ -7204,7 +6199,9 @@
         }
 
         _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 1;
-      }
+      } // process the option array provided to the clevertap object
+      // after its been initialized
+
     }, {
       key: "pageChanged",
       value: function pageChanged() {
@@ -7277,12 +6274,12 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.3.2'
+          lib: 'web-sdk-v1.3.3'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
+        _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
 
         _classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] = currLocation;
         setTimeout(function () {
@@ -7380,7 +6377,7 @@
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING);
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 
-    _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, false);
+    _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
   };
 
   var _isPingContinuous2 = function _isPingContinuous2() {

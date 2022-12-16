@@ -120,23 +120,34 @@ export default class RequestManager {
     }
   }
 
+  // saves url to backup cache and fires the request
+  /**
+   *
+   * @param {string} url
+   * @param {boolean} override whether the request can go through or not
+   * @param {Boolean} sendOULFlag - true in case of a On User Login request
+   */
   saveAndFireRequest (url, override, sendOULFlag) {
     const now = getNow()
     url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N)
     const data = url + '&i=' + now + '&sn=' + seqNo
     StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.#logger)
 
-    if (!$ct.blockRequest || override || (this.#clearCookie !== undefined && this.#clearCookie)) {
+    // if there is no override
+    // and an OUL request is not in progress
+    // then process the request as it is
+    // else block the request
+    // note - $ct.blockRequest should ideally be used for override
+    if ((!override || (this.#clearCookie !== undefined && this.#clearCookie)) && !window.isOULInProgress) {
       if (now === requestTime) {
         seqNo++
       } else {
         requestTime = now
         seqNo = 0
       }
-
       RequestDispatcher.fireRequest(data, false, sendOULFlag)
     } else {
-      this.#logger.debug(`Not fired due to block request - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie}`)
+      this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)
     }
   }
 
@@ -169,7 +180,7 @@ export default class RequestManager {
 
   registerToken (payload) {
     if (!payload) return
-
+    // add gcookie etc to the payload
     payload = this.addSystemDataToObject(payload, true)
     payload = JSON.stringify(payload)
     let pageLoadUrl = this.#account.dataPostURL
@@ -190,7 +201,7 @@ export default class RequestManager {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-    this.saveAndFireRequest(pageLoadUrl, false)
+    this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
   }
 
   #addToLocalEventMap (evtName) {

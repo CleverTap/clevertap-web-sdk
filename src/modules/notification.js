@@ -148,13 +148,7 @@ export default class NotificationHandler extends Array {
               subscriptionData.browser = 'Firefox'
             }
             StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
-
-            // var shouldSendToken = typeof sessionObj['p'] === STRING_CONSTANTS.UNDEFINED || sessionObj['p'] === 1
-            //     || sessionObj['p'] === 2 || sessionObj['p'] === 3 || sessionObj['p'] === 4 || sessionObj['p'] === 5;
-            const shouldSendToken = true
-            if (shouldSendToken) {
-              this.#request.registerToken(subscriptionData)
-            }
+            this.#request.registerToken(subscriptionData)
 
             if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
               subscriptionCallback()

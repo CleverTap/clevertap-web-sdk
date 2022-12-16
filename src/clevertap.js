@@ -182,8 +182,7 @@ export default class CleverTap {
       let pageLoadUrl = this.#account.dataPostURL
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
-
-      this.#request.saveAndFireRequest(pageLoadUrl, false)
+      this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
     }
 
     if (hasWebInboxSettingsInLS) {
@@ -397,6 +396,7 @@ export default class CleverTap {
     }
   }
 
+  // starts here
   init (accountId, region, targetDomain) {
     if (this.#onloadcalled === 1) {
       // already initailsed
@@ -448,6 +448,8 @@ export default class CleverTap {
     this.#onloadcalled = 1
   }
 
+  // process the option array provided to the clevertap object
+  // after its been initialized
   #processOldValues () {
     this.onUserLogin._processOldValues()
     this.privacy._processOldValues()
@@ -523,7 +525,7 @@ export default class CleverTap {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
-    this.#request.saveAndFireRequest(pageLoadUrl, false)
+    this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
 
     this.#previousUrl = currLocation
     setTimeout(() => {
@@ -547,7 +549,7 @@ export default class CleverTap {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING)
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
-    this.#request.saveAndFireRequest(pageLoadUrl, false)
+    this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
   }
 
   #isPingContinuous () {

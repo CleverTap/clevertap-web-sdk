@@ -17,11 +17,23 @@ export default class CleverTapAPI {
     this.#session = session
   }
 
+  /**
+   *
+   * @param {string} global gcookie
+   * @param {string} session
+   * @param {boolean} resume true in case of OUL (on user login), false in all other cases
+   * true signifies that the response in OUL response
+   * @param {number} respNumber the index of the request in backupmanager
+   * @param {boolean} optOutResponse
+   * @returns
+   */
+
   s (global, session, resume, respNumber, optOutResponse) {
     // call back function used to store global and session ids for the user
     if (typeof respNumber === 'undefined') {
       respNumber = 0
     }
+
     StorageManager.removeBackup(respNumber, this.#logger)
 
     if (respNumber > $ct.globalCache.REQ_N) {
@@ -29,15 +41,27 @@ export default class CleverTapAPI {
       return
     }
 
+    // for a condition when a request's response is received
+    // while an OUL request is already in progress
+    // remove the request from backup cache and return
+
+    if (window.isOULInProgress && !resume) {
+      return
+    }
+
+    // set isOULInProgress to false, if resume is true
+    if (resume) {
+      window.isOULInProgress = false
+    }
+    // optout
+
     if (!isValueValid(this.#device.gcookie) || resume || typeof optOutResponse === 'boolean') {
       this.#logger.debug(`Cookie was ${this.#device.gcookie} set to ${global}`)
       this.#device.gcookie = global
-
       if (!isValueValid(this.#device.gcookie)) {
         // clear useIP meta prop
         StorageManager.getAndClearMetaProp(USEIP_KEY)
       }
-
       if (global && StorageManager._isLocalStorageSupported()) {
         if ($ct.LRU_CACHE == null) {
           $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
@@ -48,26 +72,25 @@ export default class CleverTapAPI {
           const guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id]
           if (!guidFromLRUCache) {
             StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true)
+            // replace login identity in OUL request
+            // with the gcookie returned in exchange
             $ct.LRU_CACHE.set(kIdFromLS.id, global)
           }
         }
 
         StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
+        // lastk provides the guid
         const lastK = $ct.LRU_CACHE.getSecondLastKey()
         if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
           const lastGUID = $ct.LRU_CACHE.cache[lastK]
+          // fire the request directly via fireRequest to unregister the token
+          // then other requests with the updated guid should follow
           this.#request.unregisterTokenForGuid(lastGUID)
         }
       }
-
-      StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
-      StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
     }
-
-    if (resume) {
-      $ct.blockRequest = false
-      this.#logger.debug('Resumed requests')
-    }
+    StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
+    StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
 
     if (StorageManager._isLocalStorageSupported()) {
       this.#session.manageSession(session)
@@ -83,7 +106,14 @@ export default class CleverTapAPI {
       this.#session.setSessionCookieObject(obj)
     }
 
-    if (resume && !this.#request.processingBackup) {
+    // set blockRequest to false only if the device has a valid gcookie
+    if (isValueValid(this.#device.gcookie)) {
+      $ct.blockRequest = false
+    }
+
+    // if request are not blocked and other network request(s) are not being processed
+    // process request(s) from backup from local storage or cookie
+    if ((!$ct.blockRequest && !this.#request.processingBackup)) {
       this.#request.processBackupEvents()
     }
 
