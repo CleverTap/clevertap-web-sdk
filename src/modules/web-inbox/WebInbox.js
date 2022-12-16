@@ -418,7 +418,7 @@ export class Inbox extends HTMLElement {
     const right = customInboxStyles.getPropertyValue('--inbox-right')
     const hasPositionDefined = top || bottom || left || right
     if (windowWidth > 481 && !hasPositionDefined) {
-      const res = getInboxPosition(e, this.inbox.clientHeight, this.inbox.clientHeight)
+      const res = getInboxPosition(e, this.inbox.clientHeight, this.inbox.clientWidth)
       const xPos = res.xPos
       const yPos = res.yPos
       this.inbox.style.top = yPos + 'px'

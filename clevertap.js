@@ -4264,7 +4264,7 @@
         var hasPositionDefined = top || bottom || left || right;
 
         if (windowWidth > 481 && !hasPositionDefined) {
-          var res = getInboxPosition(e, this.inbox.clientHeight, this.inbox.clientHeight);
+          var res = getInboxPosition(e, this.inbox.clientHeight, this.inbox.clientWidth);
           var xPos = res.xPos;
           var yPos = res.yPos;
           this.inbox.style.top = yPos + 'px';
