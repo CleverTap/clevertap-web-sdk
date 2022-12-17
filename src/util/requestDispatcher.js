@@ -1,5 +1,5 @@
 
-import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY } from './constants'
+import { ARP_COOKIE, LCOOKIE_NAME, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY } from './constants'
 import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
 import { StorageManager, $ct } from './storage'
@@ -76,6 +76,15 @@ export default class RequestDispatcher {
     s.async = true
     document.getElementsByTagName('head')[0].appendChild(s)
     this.logger.debug('req snt -> url: ' + url)
+    // set fired true is cache
+    // so that alredy fired request do not get processed again
+    // when backup events from cache are being processed
+    const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
+    if (backupMap && backupMap[$ct.globalCache.REQ_N] && backupMap[$ct.globalCache.REQ_N].q) {
+      backupMap[$ct.globalCache.REQ_N].fired = true
+      StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap)
+      console.log(backupMap[$ct.globalCache.REQ_N])
+    }
   }
 
   /**
@@ -84,8 +93,8 @@ export default class RequestDispatcher {
    * @param {*} skipARP
    * @param {boolean} sendOULFlag
    */
-  static fireRequest (url, skipARP, sendOULFlag) {
-    this.#fireRequest(url, 1, skipARP, sendOULFlag)
+  static fireRequest (url, skipARP, sendOULFlag, seqNo) {
+    this.#fireRequest(url, 1, skipARP, sendOULFlag, seqNo)
   }
 
   static #dropRequestDueToOptOut () {

@@ -1937,8 +1937,8 @@
        * @param {*} skipARP
        * @param {boolean} sendOULFlag
        */
-      value: function fireRequest(url, skipARP, sendOULFlag) {
-        _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
+      value: function fireRequest(url, skipARP, sendOULFlag, seqNo) {
+        _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, seqNo);
       }
     }]);
 
@@ -2054,7 +2054,17 @@
     s.setAttribute('rel', 'nofollow');
     s.async = true;
     document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url);
+    this.logger.debug('req snt -> url: ' + url); // set fired true is cache
+    // so that alredy fired request do not get processed again
+    // when backup events from cache are being processed
+
+    var backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
+
+    if (backupMap && backupMap[$ct.globalCache.REQ_N] && backupMap[$ct.globalCache.REQ_N].q) {
+      backupMap[$ct.globalCache.REQ_N].fired = true;
+      StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap);
+      console.log(backupMap[$ct.globalCache.REQ_N]);
+    }
   };
 
   RequestDispatcher.logger = void 0;
@@ -6274,7 +6284,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.3.3'
+          lib: 'web-sdk-v1.3.4'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
