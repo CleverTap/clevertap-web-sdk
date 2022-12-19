@@ -1946,25 +1946,6 @@
        * @param {boolean} sendOULFlag
        */
       value: function fireRequest(url, skipARP, sendOULFlag) {
-        // if sdk is offline
-        // in case the request is fired directly from here without saveAndFireRequest()
-        // save the request in backup and return
-        if ($ct.offline) {
-          // read the backup array
-          var backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
-          var backupLength = 1;
-
-          if (backupMap) {
-            backupLength = Object.keys(backupMap).length;
-          }
-
-          var now = getNow();
-          url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
-          var data = url + '&i=' + now + '&sn=' + backupLength;
-          StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.logger);
-          return;
-        }
-
         _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
       }
     }]);
@@ -6304,6 +6285,7 @@
         data.af = {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
           lib: 'web-sdk-v1.3.5'
 =======
           lib: 'web-sdk-v1.3.4'
@@ -6311,6 +6293,9 @@
 =======
           lib: 'web-sdk-v1.3.4'
 >>>>>>> adds offline support to the sdk, where events can be sent at a later desired time
+=======
+          lib: 'web-sdk-v1.3.5'
+>>>>>>> updated clevertap sdk and package.json version
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
