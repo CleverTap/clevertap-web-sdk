@@ -83,7 +83,6 @@ export default class RequestDispatcher {
     if (backupMap && backupMap[$ct.globalCache.REQ_N] && backupMap[$ct.globalCache.REQ_N].q) {
       backupMap[$ct.globalCache.REQ_N].fired = true
       StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap)
-      console.log(backupMap[$ct.globalCache.REQ_N])
     }
   }
 
@@ -93,8 +92,8 @@ export default class RequestDispatcher {
    * @param {*} skipARP
    * @param {boolean} sendOULFlag
    */
-  static fireRequest (url, skipARP, sendOULFlag, seqNo) {
-    this.#fireRequest(url, 1, skipARP, sendOULFlag, seqNo)
+  static fireRequest (url, skipARP, sendOULFlag) {
+    this.#fireRequest(url, 1, skipARP, sendOULFlag)
   }
 
   static #dropRequestDueToOptOut () {
