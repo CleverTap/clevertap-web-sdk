@@ -131,8 +131,8 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
         background-size: cover;
       }
 
-      .carousel__item img {
-        height: ${this.target && this.target.display && this.target.display.divHeight ? this.target.display.divHeight : 'auto'};
+      ct-web-personalisation-banner::part(banner__img) {
+        height: ${this.target && this.target.display && this.target.display.divHeight ? this.target.display.divHeight + 'px' : 'auto'};
         width: 100%;
         transition: 2s;
       }
