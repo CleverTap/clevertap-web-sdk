@@ -1138,7 +1138,9 @@
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
           // since global is received
-          newGuid = true;
+          if (global) {
+            newGuid = true;
+          }
 
           if (resume || typeof optOutResponse === 'boolean') {
             _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
@@ -1184,7 +1186,7 @@
             }
           }
         } else {
-          if (global !== _classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
+          if (global && global !== _classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
             newGuid = true;
           } else {
             newGuid = false;
@@ -2071,14 +2073,7 @@
     s.setAttribute('rel', 'nofollow');
     s.async = true;
     document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url); // // set fired true is cache
-    // // so that alredy fired request do not get processed again
-    // // when backup events from cache are being processed
-    // const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
-    // if (backupMap && backupMap[$ct.globalCache.REQ_N] && backupMap[$ct.globalCache.REQ_N].q) {
-    //   backupMap[$ct.globalCache.REQ_N].fired = true
-    //   StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap)
-    // }
+    this.logger.debug('req snt -> url: ' + url);
   };
 
   RequestDispatcher.logger = void 0;
