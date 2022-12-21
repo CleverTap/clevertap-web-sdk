@@ -1136,14 +1136,6 @@
           oulReq = false;
         }
 
-        if (isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
-          if (global !== _classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
-            newGuid = true;
-          } else {
-            newGuid = false;
-          }
-        }
-
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
           // since global is received
           newGuid = true;
@@ -1192,10 +1184,10 @@
             }
           }
         } else {
-          console.log(_classPrivateFieldLooseBase(this, _device)[_device].gcookie);
-
           if (global !== _classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
             newGuid = true;
+          } else {
+            newGuid = false;
           }
         }
 
@@ -1220,17 +1212,10 @@
 
         if (isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
           $ct.blockRequest = false;
-        } // if request are not blocked and other network request(s) are not being processed
-        // process request(s) from backup from local storage or cookie
+        } // only process the backup events after an OUL request or a new guid is recieved
 
 
         if ((oulReq || newGuid) && !_classPrivateFieldLooseBase(this, _request)[_request].processingBackup) {
-          console.trace();
-          console.log({
-            blockRequest: $ct.blockRequest,
-            processingBackup: _classPrivateFieldLooseBase(this, _request)[_request].processingBackup
-          });
-
           _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
         }
 

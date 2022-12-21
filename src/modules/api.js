@@ -59,22 +59,16 @@ export default class CleverTapAPI {
       oulReq = false
     }
 
-    if (isValueValid(this.#device.gcookie)) {
-      if (global !== this.#device.gcookie) {
-        newGuid = true
-      } else {
-        newGuid = false
-      }
-    }
-
     if (!isValueValid(this.#device.gcookie)) {
       // since global is received
-      newGuid = true
+      if (global) {
+        newGuid = true
+      }
       if (resume || typeof optOutResponse === 'boolean') {
         this.#logger.debug(`Cookie was ${this.#device.gcookie} set to ${global}`)
         this.#device.gcookie = global
         if (!isValueValid(this.#device.gcookie)) {
-        // clear useIP meta prop
+          // clear useIP meta prop
           StorageManager.getAndClearMetaProp(USEIP_KEY)
         }
         if (global && StorageManager._isLocalStorageSupported()) {
@@ -108,9 +102,10 @@ export default class CleverTapAPI {
         }
       }
     } else {
-      console.log(this.#device.gcookie)
-      if (global !== this.#device.gcookie) {
+      if (global && global !== this.#device.gcookie) {
         newGuid = true
+      } else {
+        newGuid = false
       }
     }
     StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
@@ -135,11 +130,8 @@ export default class CleverTapAPI {
       $ct.blockRequest = false
     }
 
-    // if request are not blocked and other network request(s) are not being processed
-    // process request(s) from backup from local storage or cookie
+    // only process the backup events after an OUL request or a new guid is recieved
     if ((oulReq || newGuid) && !this.#request.processingBackup) {
-      console.trace()
-      console.log({ blockRequest: $ct.blockRequest, processingBackup: this.#request.processingBackup })
       this.#request.processBackupEvents()
     }
 
