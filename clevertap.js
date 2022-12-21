@@ -1107,7 +1107,9 @@
     _createClass(CleverTapAPI, [{
       key: "s",
       value: function s(global, session, resume, respNumber, optOutResponse) {
-        // call back function used to store global and session ids for the user
+        var oulReq = false;
+        var newGuid = false; // call back function used to store global and session ids for the user
+
         if (typeof respNumber === 'undefined') {
           respNumber = 0;
         }
@@ -1125,12 +1127,20 @@
         if (window.isOULInProgress && !resume) {
           return;
         } // set isOULInProgress to false, if resume is true
+        // also process the backupevents in case of OUL
 
 
         if (resume) {
           window.isOULInProgress = false;
-        } // optout
+          oulReq = true;
+        }
 
+        if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
+          // since global is received
+          if (global) {
+            newGuid = true;
+          }
+        }
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
           _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
@@ -1148,15 +1158,18 @@
             }
 
             var kIdFromLS = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
+            var guidFromLRUCache;
 
-            if (kIdFromLS != null && kIdFromLS.id && resume) {
-              var guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
+            if (kIdFromLS != null && kIdFromLS.id) {
+              guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
 
-              if (!guidFromLRUCache) {
-                StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true); // replace login identity in OUL request
-                // with the gcookie returned in exchange
+              if (resume) {
+                if (!guidFromLRUCache) {
+                  StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true); // replace login identity in OUL request
+                  // with the gcookie returned in exchange
 
-                $ct.LRU_CACHE.set(kIdFromLS.id, global);
+                  $ct.LRU_CACHE.set(kIdFromLS.id, global);
+                }
               }
             }
 
@@ -1194,11 +1207,10 @@
 
         if (isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
           $ct.blockRequest = false;
-        } // if request are not blocked and other network request(s) are not being processed
-        // process request(s) from backup from local storage or cookie
+        } // only process the backup events after an OUL request or a new guid is recieved
 
 
-        if (!$ct.blockRequest && !_classPrivateFieldLooseBase(this, _request)[_request].processingBackup) {
+        if ((oulReq || newGuid) && !_classPrivateFieldLooseBase(this, _request)[_request].processingBackup) {
           _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
         }
 
@@ -6274,7 +6286,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.3.3'
+          lib: 'web-sdk-v1.3.5'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

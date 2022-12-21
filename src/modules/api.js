@@ -29,6 +29,8 @@ export default class CleverTapAPI {
    */
 
   s (global, session, resume, respNumber, optOutResponse) {
+    let oulReq = false
+    let newGuid = false
     // call back function used to store global and session ids for the user
     if (typeof respNumber === 'undefined') {
       respNumber = 0
@@ -50,10 +52,18 @@ export default class CleverTapAPI {
     }
 
     // set isOULInProgress to false, if resume is true
+    // also process the backupevents in case of OUL
     if (resume) {
       window.isOULInProgress = false
+      oulReq = true
     }
-    // optout
+
+    if (!isValueValid(this.#device.gcookie)) {
+      // since global is received
+      if (global) {
+        newGuid = true
+      }
+    }
 
     if (!isValueValid(this.#device.gcookie) || resume || typeof optOutResponse === 'boolean') {
       this.#logger.debug(`Cookie was ${this.#device.gcookie} set to ${global}`)
@@ -68,13 +78,16 @@ export default class CleverTapAPI {
         }
 
         const kIdFromLS = StorageManager.readFromLSorCookie(KCOOKIE_NAME)
-        if (kIdFromLS != null && kIdFromLS.id && resume) {
-          const guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id]
-          if (!guidFromLRUCache) {
-            StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true)
-            // replace login identity in OUL request
-            // with the gcookie returned in exchange
-            $ct.LRU_CACHE.set(kIdFromLS.id, global)
+        let guidFromLRUCache
+        if (kIdFromLS != null && kIdFromLS.id) {
+          guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id]
+          if (resume) {
+            if (!guidFromLRUCache) {
+              StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true)
+              // replace login identity in OUL request
+              // with the gcookie returned in exchange
+              $ct.LRU_CACHE.set(kIdFromLS.id, global)
+            }
           }
         }
 
@@ -89,6 +102,7 @@ export default class CleverTapAPI {
         }
       }
     }
+
     StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
     StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
 
@@ -111,9 +125,8 @@ export default class CleverTapAPI {
       $ct.blockRequest = false
     }
 
-    // if request are not blocked and other network request(s) are not being processed
-    // process request(s) from backup from local storage or cookie
-    if ((!$ct.blockRequest && !this.#request.processingBackup)) {
+    // only process the backup events after an OUL request or a new guid is recieved
+    if ((oulReq || newGuid) && !this.#request.processingBackup) {
       this.#request.processBackupEvents()
     }
 

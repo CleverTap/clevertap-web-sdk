@@ -48,7 +48,6 @@ export default class RequestManager {
         }
       }
     }
-
     StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap)
     this.processingBackup = false
   }
