@@ -1107,7 +1107,8 @@
     _createClass(CleverTapAPI, [{
       key: "s",
       value: function s(global, session, resume, respNumber, optOutResponse) {
-        var oulReq, newGuid; // call back function used to store global and session ids for the user
+        var oulReq = false;
+        var newGuid = false; // call back function used to store global and session ids for the user
 
         if (typeof respNumber === 'undefined') {
           respNumber = 0;
@@ -1132,8 +1133,6 @@
         if (resume) {
           window.isOULInProgress = false;
           oulReq = true;
-        } else {
-          oulReq = false;
         }
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
@@ -1141,55 +1140,49 @@
           if (global) {
             newGuid = true;
           }
+        }
 
-          if (resume || typeof optOutResponse === 'boolean') {
-            _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
+        if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
+          _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
 
-            _classPrivateFieldLooseBase(this, _device)[_device].gcookie = global;
+          _classPrivateFieldLooseBase(this, _device)[_device].gcookie = global;
 
-            if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
-              // clear useIP meta prop
-              StorageManager.getAndClearMetaProp(USEIP_KEY);
+          if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
+            // clear useIP meta prop
+            StorageManager.getAndClearMetaProp(USEIP_KEY);
+          }
+
+          if (global && StorageManager._isLocalStorageSupported()) {
+            if ($ct.LRU_CACHE == null) {
+              $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
             }
 
-            if (global && StorageManager._isLocalStorageSupported()) {
-              if ($ct.LRU_CACHE == null) {
-                $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
-              }
+            var kIdFromLS = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
+            var guidFromLRUCache;
 
-              var kIdFromLS = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
-              var guidFromLRUCache;
+            if (kIdFromLS != null && kIdFromLS.id) {
+              guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
 
-              if (kIdFromLS != null && kIdFromLS.id) {
-                guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
+              if (resume) {
+                if (!guidFromLRUCache) {
+                  StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true); // replace login identity in OUL request
+                  // with the gcookie returned in exchange
 
-                if (resume) {
-                  if (!guidFromLRUCache) {
-                    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true); // replace login identity in OUL request
-                    // with the gcookie returned in exchange
-
-                    $ct.LRU_CACHE.set(kIdFromLS.id, global);
-                  }
+                  $ct.LRU_CACHE.set(kIdFromLS.id, global);
                 }
               }
-
-              StorageManager.saveToLSorCookie(GCOOKIE_NAME, global); // lastk provides the guid
-
-              var lastK = $ct.LRU_CACHE.getSecondLastKey();
-
-              if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
-                var lastGUID = $ct.LRU_CACHE.cache[lastK]; // fire the request directly via fireRequest to unregister the token
-                // then other requests with the updated guid should follow
-
-                _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
-              }
             }
-          }
-        } else {
-          if (global && global !== _classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
-            newGuid = true;
-          } else {
-            newGuid = false;
+
+            StorageManager.saveToLSorCookie(GCOOKIE_NAME, global); // lastk provides the guid
+
+            var lastK = $ct.LRU_CACHE.getSecondLastKey();
+
+            if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+              var lastGUID = $ct.LRU_CACHE.cache[lastK]; // fire the request directly via fireRequest to unregister the token
+              // then other requests with the updated guid should follow
+
+              _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
+            }
           }
         }
 
