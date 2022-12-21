@@ -3599,30 +3599,6 @@
     return CTWebPersonalisationCarousel;
   }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
 
-  var messageStyles = function messageStyles(_ref) {
-    var backgroundColor = _ref.backgroundColor,
-        borderColor = _ref.borderColor,
-        titleColor = _ref.titleColor,
-        descriptionColor = _ref.descriptionColor,
-        buttonColor = _ref.buttonColor,
-        buttonTextColor = _ref.buttonTextColor;
-    return "\n    <style id=\"messageStyles\">\n      inbox-message::part(messageWrapper) {\n        margin-bottom: 16px; \n      }\n      inbox-message::part(message) {\n        background-color: ".concat(backgroundColor, "; \n        border: 1px solid ").concat(borderColor, ";\n        border-radius: 4px; \n        overflow: hidden;\n      }\n      inbox-message::part(iconTitleDescWrapper) {\n        display: flex; \n        padding: 16px;\n      }\n      inbox-message::part(titleDescWrapper) {\n        display: flex; \n        flex-direction: column;\n      }\n      inbox-message::part(iconImgContainer) {\n        display: flex; \n        margin-right: 16px;\n      }\n      inbox-message::part(mainImg) {\n        width: 100%; \n        background: #b2b1ae;\n      }\n      inbox-message::part(iconImg) {\n        height: 40px; \n        width: 40px;\n      }\n      inbox-message::part(title) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 600; \n        color: ").concat(titleColor, "\n      }\n      inbox-message::part(description) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 400; \n        color: ").concat(descriptionColor, "\n      }\n      inbox-message::part(button) {\n        background-color: ").concat(buttonColor, "; \n        color: ").concat(buttonTextColor, "; \n        padding: 8px 16px; \n        font-size: 12px; \n        line-height: 16px; \n        font-weight: 600; \n        flex: 1; \n        border-radius: 0px; \n        text-transform: capitalize; \n        cursor: pointer; \n        border: none;\n      }\n      inbox-message::part(buttonsContainer) {\n        display: flex;\n        position: relative;\n      }\n      inbox-message::part(snackbar) {\n        position: absolute;\n        top: calc(-100% - 12px);\n        left: 50%;\n        transform: translate(-50%, 0px);\n        font-size: 14px;\n        font-weight: 400;\n        background: #FFFFFF;\n        border: 1px solid #ECEDF2;\n        box-shadow: 0px 4px 8px rgb(0 0 0 / 6%), 0px 0px 2px rgb(0 0 0 / 4%);\n        border-radius: 4px;\n        z-index: 2;\n        display: none;\n        width: max-content;\n        align-items: center;\n        padding: 8px 16px;\n        justify-content: center;\n      }\n\n      inbox-message::part(snackbar-msg) {\n        color: black;\n        margin-left: 8px;\n      }\n\n      inbox-message::part(timeStamp) {\n        display: flex; \n        justify-content: end; \n        align-items: center; \n        margin-top: 4px; \n        font-size: 12px !important; \n        line-height: 16px; \n        color: black;\n      }\n      inbox-message::part(unreadMarker) {\n        height: 8px; \n        width: 8px; \n        border-radius: 50%; \n        background-color: #FFBA00; \n        margin-left: 8px;\n      }\n      @media only screen and (min-width: 420px) {\n        inbox-message::part(mainImg) {\n          height: 180px;\n        }\n      }\n    </style>\n  ");
-  };
-  var inboxContainerStyles = function inboxContainerStyles(_ref2) {
-    var panelBackgroundColor = _ref2.panelBackgroundColor,
-        panelBorderColor = _ref2.panelBorderColor,
-        headerBackgroundColor = _ref2.headerBackgroundColor,
-        headerTitleColor = _ref2.headerTitleColor,
-        closeIconColor = _ref2.closeIconColor,
-        categoriesTabColor = _ref2.categoriesTabColor,
-        categoriesTitleColor = _ref2.categoriesTitleColor,
-        categoriesBorderColor = _ref2.categoriesBorderColor,
-        selectedCategoryTabColor = _ref2.selectedCategoryTabColor,
-        selectedCategoryTitleColor = _ref2.selectedCategoryTitleColor,
-        selectedCategoryBorderColor = _ref2.selectedCategoryBorderColor;
-    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          box-sizing: border-box;\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n        }\n  \n        #emptyInboxMsg {\n          display: none;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          margin: 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          justify-content: center; \n          align-items: center;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          width: -webkit-fill-available;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 8px 8px 0 8px;\n          overflow-y: auto;\n        }\n  \n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - 100px); \n            padding: 0 16px;\n          }\n  \n        }\n      </style>\n      ");
-  };
-
   var Message = /*#__PURE__*/function (_HTMLElement) {
     _inherits(Message, _HTMLElement);
 
@@ -3782,25 +3758,20 @@
         return imageContainer;
       }
     }, {
-      key: "getMessageStyles",
-      value: function getMessageStyles() {
-        return messageStyles(this.config.styles.cards.backgroundColor, this.config.styles.cards.borderColor, this.config.styles.cards.titleColor, this.config.styles.cards.descriptionColor, this.config.styles.cards.buttonColor, this.config.styles.cards.buttonTextColor);
-      }
-    }, {
       key: "raiseClickedEvent",
-      value: function raiseClickedEvent(path) {
+      value: function raiseClickedEvent(path, isPreview) {
         switch (this.message.templateType) {
           case 'text-only':
           case 'text-with-icon':
           case 'text-with-icon-and-image':
             {
-              this.raiseClickedForBasicTemplates(path);
+              this.raiseClickedForBasicTemplates(path, isPreview);
             }
         }
       }
     }, {
       key: "raiseClickedForBasicTemplates",
-      value: function raiseClickedForBasicTemplates(path) {
+      value: function raiseClickedForBasicTemplates(path, isPreview) {
         var _this3 = this;
 
         var msg = this.message.msg[0];
@@ -3830,7 +3801,9 @@
           msg.openUrlInNewTab ? window.open(msg.onClickUrl, '_blank') : window.location = msg.onClickUrl;
         }
 
-        window.clevertap.renderNotificationClicked(payload);
+        if (!isPreview) {
+          window.clevertap.renderNotificationClicked(payload);
+        }
       }
     }, {
       key: "pivotId",
@@ -3846,6 +3819,31 @@
 
     return Message;
   }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
+
+  var messageStyles = function messageStyles(_ref) {
+    var backgroundColor = _ref.backgroundColor,
+        borderColor = _ref.borderColor,
+        titleColor = _ref.titleColor,
+        descriptionColor = _ref.descriptionColor,
+        buttonColor = _ref.buttonColor,
+        buttonTextColor = _ref.buttonTextColor,
+        unreadMarkerColor = _ref.unreadMarkerColor;
+    return "\n    <style id=\"messageStyles\">\n      inbox-message::part(messageWrapper) {\n        margin-bottom: 16px; \n      }\n      inbox-message::part(message) {\n        background-color: ".concat(backgroundColor, "; \n        border: 1px solid ").concat(borderColor, ";\n        border-radius: 4px; \n        overflow: hidden;\n        min-height: 40px;\n      }\n      inbox-message::part(message):hover {\n        box-shadow: 0px 4px 8px rgb(0 0 0 / 10%);\n      }\n      inbox-message::part(iconTitleDescWrapper) {\n        display: flex; \n        padding: 16px;\n      }\n      inbox-message::part(titleDescWrapper) {\n        display: flex; \n        flex-direction: column;\n      }\n      inbox-message::part(iconImgContainer) {\n        display: flex; \n        margin-right: 16px;\n      }\n      inbox-message::part(mainImgContainer) {\n        line-height: 0;\n      }\n      inbox-message::part(mainImg) {\n        width: 100%; \n        background: #b2b1ae;\n      }\n      inbox-message::part(iconImg) {\n        height: 40px; \n        width: 40px;\n      }\n      inbox-message::part(title) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 600; \n        color: ").concat(titleColor, "\n      }\n      inbox-message::part(description) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 400; \n        color: ").concat(descriptionColor, "\n      }\n      inbox-message::part(button) {\n        background-color: ").concat(buttonColor, "; \n        color: ").concat(buttonTextColor, "; \n        padding: 8px 16px; \n        font-size: 12px; \n        line-height: 16px; \n        font-weight: 600; \n        flex: 1; \n        border-radius: 0px; \n        text-transform: capitalize; \n        cursor: pointer; \n        border: none;\n      }\n      inbox-message::part(buttonsContainer) {\n        display: flex;\n        position: relative;\n      }\n      inbox-message::part(snackbar) {\n        position: absolute;\n        top: calc(-100% - 12px);\n        left: 50%;\n        transform: translate(-50%, 0px);\n        font-size: 14px;\n        font-weight: 400;\n        background: #FFFFFF;\n        border: 1px solid #ECEDF2;\n        box-shadow: 0px 4px 8px rgb(0 0 0 / 6%), 0px 0px 2px rgb(0 0 0 / 4%);\n        border-radius: 4px;\n        z-index: 2;\n        display: none;\n        width: max-content;\n        align-items: center;\n        padding: 8px 16px;\n        justify-content: center;\n      }\n\n      inbox-message::part(snackbar-msg) {\n        color: black;\n        margin-left: 8px;\n      }\n\n      inbox-message::part(timeStamp) {\n        display: flex; \n        justify-content: end; \n        align-items: center; \n        margin-top: 4px; \n        font-size: 12px !important; \n        line-height: 16px; \n        color: black;\n      }\n      inbox-message::part(unreadMarker) {\n        height: 8px; \n        width: 8px; \n        border-radius: 50%; \n        background-color: ").concat(unreadMarkerColor, "; \n        margin-left: 8px;\n      }\n      @media only screen and (min-width: 420px) {\n        inbox-message::part(mainImg) {\n          height: 180px;\n        }\n      }\n    </style>\n  ");
+  };
+  var inboxContainerStyles = function inboxContainerStyles(_ref2) {
+    var panelBackgroundColor = _ref2.panelBackgroundColor,
+        panelBorderColor = _ref2.panelBorderColor,
+        headerBackgroundColor = _ref2.headerBackgroundColor,
+        headerTitleColor = _ref2.headerTitleColor,
+        closeIconColor = _ref2.closeIconColor,
+        categoriesTabColor = _ref2.categoriesTabColor,
+        categoriesTitleColor = _ref2.categoriesTitleColor,
+        categoriesBorderColor = _ref2.categoriesBorderColor,
+        selectedCategoryTabColor = _ref2.selectedCategoryTabColor,
+        selectedCategoryTitleColor = _ref2.selectedCategoryTitleColor,
+        selectedCategoryBorderColor = _ref2.selectedCategoryBorderColor;
+    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: none;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          margin: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          justify-content: center; \n          align-items: center;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          width: -webkit-fill-available;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 16px 16px 0 16px;\n          overflow-y: auto;\n        }\n  \n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - 100px); \n          }\n  \n        }\n      </style>\n      ");
+  };
 
   var Inbox = /*#__PURE__*/function (_HTMLElement) {
     _inherits(Inbox, _HTMLElement);
@@ -3887,7 +3885,7 @@
                 _this.selectedCategoryRef = path[0];
 
                 _this.updateActiveCategory(path[0].innerText);
-              } else if (!_this.isPreview) {
+              } else {
                 var _path = path.filter(function (p) {
                   var _p$id;
 
@@ -3905,7 +3903,7 @@
                     messageEl.shadow.getElementById('unreadMarker').style.display = 'none';
                   }
 
-                  messageEl.raiseClickedEvent(_path[0]);
+                  messageEl.raiseClickedEvent(_path[0], _this.isPreview);
                 }
               }
             }
@@ -4232,10 +4230,16 @@
         for (var m in messages) {
           var item = new Message(this.config, messages[m]);
           item.setAttribute('id', messages[m].id);
-          item.setAttribute('category', messages[m].tags[0]);
           item.setAttribute('pivot', messages[m].wzrk_pivot);
           item.setAttribute('part', 'inbox-message');
-          item.style.display = this.selectedCategory === 'All' || messages[m].category === this.selectedCategory ? 'block' : 'none';
+
+          if (this.config.categories.length > 0) {
+            item.setAttribute('category', messages[m].tags[0] || '');
+            item.style.display = this.selectedCategory === 'All' || messages[m].category === this.selectedCategory ? 'block' : 'none';
+          } else {
+            item.style.display = 'block';
+          }
+
           this.inboxCard.insertBefore(item, firstChild);
           this.observer.observe(item);
         }
@@ -4293,9 +4297,11 @@
     }, {
       key: "updateMessageInLS",
       value: function updateMessageInLS(key, value) {
-        var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
-        messages[key] = value;
-        StorageManager.saveToLSorCookie(WEBINBOX, messages);
+        if (!this.isPreview) {
+          var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+          messages[key] = value;
+          StorageManager.saveToLSorCookie(WEBINBOX, messages);
+        }
       } // create a separte fn fro refactoring
 
     }, {
@@ -4360,7 +4366,7 @@
           panelBorderColor: this.config.styles.panelBorderColor,
           headerBackgroundColor: this.config.styles.header.backgroundColor,
           headerTitleColor: this.config.styles.header.titleColor,
-          closeIconColor: this.config.styles.header.closeIconColor,
+          closeIconColor: this.config.styles.closeIconColor,
           categoriesTabColor: this.config.styles.categories.tabColor,
           categoriesTitleColor: this.config.styles.categories.titleColor,
           selectedCategoryTabColor: this.config.styles.categories.selectedTab.tabColor,
@@ -4376,13 +4382,15 @@
         }
 
         var inboxStyles = inboxContainerStyles(styles);
+        var cardStyles = this.config.styles.cards;
         var msgStyles = messageStyles({
-          backgroundColor: this.config.styles.cards.backgroundColor,
-          borderColor: this.config.styles.cards.borderColor,
-          titleColor: this.config.styles.cards.titleColor,
-          descriptionColor: this.config.styles.cards.descriptionColor,
-          buttonColor: this.config.styles.cards.buttonColor,
-          buttonTextColor: this.config.styles.cards.buttonTextColor
+          backgroundColor: cardStyles.backgroundColor,
+          borderColor: cardStyles.borderColor,
+          titleColor: cardStyles.titleColor,
+          descriptionColor: cardStyles.descriptionColor,
+          buttonColor: cardStyles.buttonColor,
+          buttonTextColor: cardStyles.buttonTextColor,
+          unreadMarkerColor: cardStyles.unreadMarkerColor
         });
         return inboxStyles + msgStyles;
       }

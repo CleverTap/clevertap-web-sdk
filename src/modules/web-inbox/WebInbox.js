@@ -315,10 +315,14 @@ export class Inbox extends HTMLElement {
     for (const m in messages) {
       const item = new Message(this.config, messages[m])
       item.setAttribute('id', messages[m].id)
-      item.setAttribute('category', messages[m].tags[0])
       item.setAttribute('pivot', messages[m].wzrk_pivot)
       item.setAttribute('part', 'inbox-message')
-      item.style.display = (this.selectedCategory === 'All' || messages[m].category === this.selectedCategory) ? 'block' : 'none'
+      if (this.config.categories.length > 0) {
+        item.setAttribute('category', messages[m].tags[0] || '')
+        item.style.display = (this.selectedCategory === 'All' || messages[m].category === this.selectedCategory) ? 'block' : 'none'
+      } else {
+        item.style.display = 'block'
+      }
       this.inboxCard.insertBefore(item, firstChild)
       this.observer.observe(item)
     }
@@ -350,7 +354,7 @@ export class Inbox extends HTMLElement {
             this.prevCategoryRef = this.selectedCategoryRef
             this.selectedCategoryRef = path[0]
             this.updateActiveCategory(path[0].innerText)
-          } else if (!this.isPreview) {
+          } else {
             const _path = path.filter((p) => p.id?.startsWith('button-') || p.tagName === 'INBOX-MESSAGE')
             if (_path.length) {
               const messageEl = _path[_path.length - 1]
@@ -358,7 +362,7 @@ export class Inbox extends HTMLElement {
                 this.updateMessageInLS(messageEl.message.id, { ...messageEl.message, read: 1 })
                 messageEl.shadow.getElementById('unreadMarker').style.display = 'none'
               }
-              messageEl.raiseClickedEvent(_path[0])
+              messageEl.raiseClickedEvent(_path[0], this.isPreview)
             }
           }
         }
@@ -391,9 +395,11 @@ export class Inbox extends HTMLElement {
   }
 
   updateMessageInLS (key, value) {
-    const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
-    messages[key] = value
-    StorageManager.saveToLSorCookie(WEBINBOX, messages)
+    if (!this.isPreview) {
+      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      messages[key] = value
+      StorageManager.saveToLSorCookie(WEBINBOX, messages)
+    }
   }
 
   // create a separte fn fro refactoring
@@ -450,7 +456,7 @@ export class Inbox extends HTMLElement {
       panelBorderColor: this.config.styles.panelBorderColor,
       headerBackgroundColor: this.config.styles.header.backgroundColor,
       headerTitleColor: this.config.styles.header.titleColor,
-      closeIconColor: this.config.styles.header.closeIconColor,
+      closeIconColor: this.config.styles.closeIconColor,
       categoriesTabColor: this.config.styles.categories.tabColor,
       categoriesTitleColor: this.config.styles.categories.titleColor,
       selectedCategoryTabColor: this.config.styles.categories.selectedTab.tabColor,
@@ -465,13 +471,15 @@ export class Inbox extends HTMLElement {
 
     const inboxStyles = inboxContainerStyles(styles)
 
+    const cardStyles = this.config.styles.cards
     const msgStyles = messageStyles({
-      backgroundColor: this.config.styles.cards.backgroundColor,
-      borderColor: this.config.styles.cards.borderColor,
-      titleColor: this.config.styles.cards.titleColor,
-      descriptionColor: this.config.styles.cards.descriptionColor,
-      buttonColor: this.config.styles.cards.buttonColor,
-      buttonTextColor: this.config.styles.cards.buttonTextColor
+      backgroundColor: cardStyles.backgroundColor,
+      borderColor: cardStyles.borderColor,
+      titleColor: cardStyles.titleColor,
+      descriptionColor: cardStyles.descriptionColor,
+      buttonColor: cardStyles.buttonColor,
+      buttonTextColor: cardStyles.buttonTextColor,
+      unreadMarkerColor: cardStyles.unreadMarkerColor
     })
     return inboxStyles + msgStyles
   }

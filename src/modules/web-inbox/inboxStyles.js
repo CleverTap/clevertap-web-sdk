@@ -1,4 +1,4 @@
-export const messageStyles = ({ backgroundColor, borderColor, titleColor, descriptionColor, buttonColor, buttonTextColor }) => {
+export const messageStyles = ({ backgroundColor, borderColor, titleColor, descriptionColor, buttonColor, buttonTextColor, unreadMarkerColor }) => {
   return `
     <style id="messageStyles">
       inbox-message::part(messageWrapper) {
@@ -9,6 +9,10 @@ export const messageStyles = ({ backgroundColor, borderColor, titleColor, descri
         border: 1px solid ${borderColor};
         border-radius: 4px; 
         overflow: hidden;
+        min-height: 40px;
+      }
+      inbox-message::part(message):hover {
+        box-shadow: 0px 4px 8px rgb(0 0 0 / 10%);
       }
       inbox-message::part(iconTitleDescWrapper) {
         display: flex; 
@@ -21,6 +25,9 @@ export const messageStyles = ({ backgroundColor, borderColor, titleColor, descri
       inbox-message::part(iconImgContainer) {
         display: flex; 
         margin-right: 16px;
+      }
+      inbox-message::part(mainImgContainer) {
+        line-height: 0;
       }
       inbox-message::part(mainImg) {
         width: 100%; 
@@ -96,7 +103,7 @@ export const messageStyles = ({ backgroundColor, borderColor, titleColor, descri
         height: 8px; 
         width: 8px; 
         border-radius: 50%; 
-        background-color: #FFBA00; 
+        background-color: ${unreadMarkerColor}; 
         margin-left: 8px;
       }
       @media only screen and (min-width: 420px) {
@@ -131,12 +138,13 @@ export const inboxContainerStyles = ({
           box-shadow: 0px 2px 10px 0px #d7d7d791;
           background-color: ${panelBackgroundColor}; 
           border: 1px solid ${panelBorderColor};
-          box-sizing: border-box;
           top: 0;
           left: 0;
           height: 100%;
           overflow: auto;
           z-index: 1;
+          box-sizing: content-box;
+          border-radius: 4px;
         }
   
         #emptyInboxMsg {
@@ -175,7 +183,7 @@ export const inboxContainerStyles = ({
         }
   
         #categoriesContainer {
-          margin: 16px; 
+          margin: 16px 16px 0 16px; 
           height: 32px; 
           display: flex;
           scroll-behavior: smooth;
@@ -244,7 +252,7 @@ export const inboxContainerStyles = ({
         }
   
         #inboxCard {
-          padding: 8px 8px 0 8px;
+          padding: 16px 16px 0 16px;
           overflow-y: auto;
         }
   
@@ -261,7 +269,6 @@ export const inboxContainerStyles = ({
   
           #inboxCard {
             height: calc(var(--inbox-height, 546px) - 100px); 
-            padding: 0 16px;
           }
   
         }

@@ -1,4 +1,3 @@
-import { messageStyles } from './inboxStyles'
 import { determineTimeStampText, greenTickSvg } from './helper'
 export class Message extends HTMLElement {
   constructor (config, message) {
@@ -126,28 +125,17 @@ export class Message extends HTMLElement {
     return imageContainer
   }
 
-  getMessageStyles () {
-    return messageStyles(
-      this.config.styles.cards.backgroundColor,
-      this.config.styles.cards.borderColor,
-      this.config.styles.cards.titleColor,
-      this.config.styles.cards.descriptionColor,
-      this.config.styles.cards.buttonColor,
-      this.config.styles.cards.buttonTextColor
-    )
-  }
-
-  raiseClickedEvent (path) {
+  raiseClickedEvent (path, isPreview) {
     switch (this.message.templateType) {
       case 'text-only':
       case 'text-with-icon':
       case 'text-with-icon-and-image': {
-        this.raiseClickedForBasicTemplates(path)
+        this.raiseClickedForBasicTemplates(path, isPreview)
       }
     }
   }
 
-  raiseClickedForBasicTemplates (path) {
+  raiseClickedForBasicTemplates (path, isPreview) {
     const msg = this.message.msg[0]
     const payload = { msgId: this.campaignId, pivotId: this.pivotId }
     if (path.tagName === 'BUTTON') {
@@ -169,6 +157,8 @@ export class Message extends HTMLElement {
     } else if (path.tagName === 'INBOX-MESSAGE' && msg.onClickUrl) {
       msg.openUrlInNewTab ? window.open(msg.onClickUrl, '_blank') : (window.location = msg.onClickUrl)
     }
-    window.clevertap.renderNotificationClicked(payload)
+    if (!isPreview) {
+      window.clevertap.renderNotificationClicked(payload)
+    }
   }
 }
