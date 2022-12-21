@@ -132,7 +132,7 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
       }
 
       ct-web-personalisation-banner::part(banner__img) {
-        height: ${this.target && this.target.display && this.target.display.divHeight ? this.target.display.divHeight + 'px' : 'auto'};
+        height: ${this.target && this.target.display && this.target.display.divHeight ? this.target.display.divHeight : 'auto'};
         width: 100%;
         transition: 2s;
       }
