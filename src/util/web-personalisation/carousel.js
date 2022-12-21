@@ -132,7 +132,7 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
       }
 
       .carousel__item img {
-        height: ${this.divHeight ? this.divHeight : 'auto'};
+        height: ${this.target && this.target.display && this.target.display.divHeight ? this.target.display.divHeight : 'auto'};
         width: 100%;
         transition: 2s;
       }
