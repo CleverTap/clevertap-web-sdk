@@ -3511,7 +3511,7 @@
       value: function getStyles() {
         var _this$target, _this$target$display;
 
-        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        background-color: grey;\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      .carousel__item img {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
+        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        background-color: grey;\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      ct-web-personalisation-banner::part(banner__img) {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
       }
     }, {
       key: "updateSelectedItem",
@@ -6283,19 +6283,7 @@
         }
 
         data.af = {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
           lib: 'web-sdk-v1.3.5'
-=======
-          lib: 'web-sdk-v1.3.4'
->>>>>>> adds offline support to the sdk, where events can be sent at a later desired time
-=======
-          lib: 'web-sdk-v1.3.4'
->>>>>>> adds offline support to the sdk, where events can be sent at a later desired time
-=======
-          lib: 'web-sdk-v1.3.5'
->>>>>>> updated clevertap sdk and package.json version
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
