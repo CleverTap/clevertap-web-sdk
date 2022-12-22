@@ -60,7 +60,7 @@ export class CTWebPersonalisationBanner extends HTMLElement {
         <picture>
           <source media="(min-width:480px)" srcset="${this.details.desktopImageURL}">
           <source srcset="${this.details.mobileImageURL}">
-          <img src="${this.details.desktopImageURL}" alt="Please upload a picture" style="width:100%;">
+          <img src="${this.details.desktopImageURL}" alt="Please upload a picture" style="width:100%;" part="banner__img">
         </picture>
         ${this.details.html ? this.details.html : ''}
       </div>
