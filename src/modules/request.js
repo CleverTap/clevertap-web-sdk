@@ -144,6 +144,7 @@ export default class RequestManager {
         requestTime = now
         seqNo = 0
       }
+      window.oulReqN = $ct.globalCache.REQ_N
       RequestDispatcher.fireRequest(data, false, sendOULFlag)
     } else {
       this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)

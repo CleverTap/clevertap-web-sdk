@@ -21,8 +21,7 @@ export default class CleverTapAPI {
    *
    * @param {string} global gcookie
    * @param {string} session
-   * @param {boolean} resume true in case of OUL (on user login), false in all other cases
-   * true signifies that the response in OUL response
+   * @param {boolean} resume sent true in case of an OUL request from client side, which is returned as it is by server
    * @param {number} respNumber the index of the request in backupmanager
    * @param {boolean} optOutResponse
    * @returns
@@ -31,6 +30,18 @@ export default class CleverTapAPI {
   s (global, session, resume, respNumber, optOutResponse) {
     let oulReq = false
     let newGuid = false
+
+    // for a scenario when OUL request is true from client side
+    // but resume is returned as false from server end
+    // we maintan a OulReqN var in the window object
+    // and compare with respNumber to determine the response of an OUL request
+    if (window.isOULInProgress) {
+      if (resume || (respNumber !== 'undefined' && respNumber === window.oulReqN)) {
+        window.isOULInProgress = false
+        oulReq = true
+      }
+    }
+
     // call back function used to store global and session ids for the user
     if (typeof respNumber === 'undefined') {
       respNumber = 0
@@ -43,23 +54,7 @@ export default class CleverTapAPI {
       return
     }
 
-    // for a condition when a request's response is received
-    // while an OUL request is already in progress
-    // remove the request from backup cache and return
-
-    if (window.isOULInProgress && !resume) {
-      return
-    }
-
-    // set isOULInProgress to false, if resume is true
-    // also process the backupevents in case of OUL
-    if (resume) {
-      window.isOULInProgress = false
-      oulReq = true
-    }
-
     if (!isValueValid(this.#device.gcookie)) {
-      // since global is received
       if (global) {
         newGuid = true
       }
