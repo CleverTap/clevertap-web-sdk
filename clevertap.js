@@ -891,7 +891,8 @@
     unsubGroups: [],
     updatedCategoryLong: null,
     isPrivacyArrPushed: false,
-    privacyArray: [] // domain: window.location.hostname, url -> getHostName()
+    privacyArray: [],
+    offline: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -3510,7 +3511,7 @@
       value: function getStyles() {
         var _this$target, _this$target$display;
 
-        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        background-color: grey;\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      .carousel__item img {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
+        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        background-color: grey;\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      ct-web-personalisation-banner::part(banner__img) {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
       }
     }, {
       key: "updateSelectedItem",
@@ -4900,7 +4901,9 @@
         var now = getNow();
         url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
         var data = url + '&i=' + now + '&sn=' + seqNo;
-        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]); // if there is no override
+        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]); // if offline is set to true, save the request in backup and return
+
+        if ($ct.offline) return; // if there is no override
         // and an OUL request is not in progress
         // then process the request as it is
         // else block the request
@@ -6345,6 +6348,23 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
 
         _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+      } // offline mode
+
+      /**
+       * events will be recorded and queued locally when passed with true
+       * but will not be sent to the server until offline is disabled by passing false
+       * @param {boolean} arg
+       */
+
+    }, {
+      key: "setOffline",
+      value: function setOffline(arg) {
+        $ct.offline = arg; // if offline is disabled
+        // process events from cache
+
+        if (!arg) {
+          _classPrivateFieldLooseBase(this, _request$6)[_request$6].processBackupEvents();
+        }
       }
     }, {
       key: "popupCallback",

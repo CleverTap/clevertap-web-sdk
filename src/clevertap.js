@@ -575,4 +575,20 @@ export default class CleverTap {
 
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
   }
+
+  // offline mode
+  /**
+   * events will be recorded and queued locally when passed with true
+   * but will not be sent to the server until offline is disabled by passing false
+   * @param {boolean} arg
+   */
+
+  setOffline (arg) {
+    $ct.offline = arg
+    // if offline is disabled
+    // process events from cache
+    if (!arg) {
+      this.#request.processBackupEvents()
+    }
+  }
 }
