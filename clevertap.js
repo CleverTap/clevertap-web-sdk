@@ -1108,7 +1108,15 @@
       key: "s",
       value: function s(global, session, resume, respNumber, optOutResponse) {
         var oulReq = false;
-        var newGuid = false; // call back function used to store global and session ids for the user
+        var newGuid = false;
+
+        if (window.isOULInProgress) {
+          if (resume || respNumber !== 'undefined' && respNumber === window.oulReqN) {
+            window.isOULInProgress = false;
+            oulReq = true;
+          }
+        } // call back function used to store global and session ids for the user
+
 
         if (typeof respNumber === 'undefined') {
           respNumber = 0;
@@ -1119,20 +1127,6 @@
         if (respNumber > $ct.globalCache.REQ_N) {
           // request for some other user so ignore
           return;
-        } // for a condition when a request's response is received
-        // while an OUL request is already in progress
-        // remove the request from backup cache and return
-
-
-        if (window.isOULInProgress && !resume) {
-          return;
-        } // set isOULInProgress to false, if resume is true
-        // also process the backupevents in case of OUL
-
-
-        if (resume) {
-          window.isOULInProgress = false;
-          oulReq = true;
         }
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
@@ -4921,6 +4915,7 @@
             seqNo = 0;
           }
 
+          window.oulReqN = $ct.globalCache.REQ_N;
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
           _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
