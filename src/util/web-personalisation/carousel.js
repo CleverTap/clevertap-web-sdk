@@ -131,8 +131,8 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
         background-size: cover;
       }
 
-      .carousel__item img {
-        height: auto;
+      ct-web-personalisation-banner::part(banner__img) {
+        height: ${this?.target?.display?.divHeight ? this.target.display.divHeight : 'auto'};
         width: 100%;
         transition: 2s;
       }
@@ -151,13 +151,12 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
       const prevItem = this.shadow.getElementById(`carousel__item-${this.previouslySelectedItem}`)
       const prevButton = this.shadow.getElementById(`carousel__button-${this.previouslySelectedItem}`)
       prevItem.classList.remove('carousel__item--selected')
-      prevButton !== null ?? prevButton.classList.remove('carousel__button--selected')
+      prevButton.classList.remove('carousel__button--selected')
     }
-
     const item = this.shadow.getElementById(`carousel__item-${this.selectedItem}`)
     const button = this.shadow.getElementById(`carousel__button-${this.selectedItem}`)
     item.classList.add('carousel__item--selected')
-    button !== null ?? button.classList.add('carousel__button--selected')
+    button.classList.add('carousel__button--selected')
   }
 
   startAutoSlide () {

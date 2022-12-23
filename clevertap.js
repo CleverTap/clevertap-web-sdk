@@ -891,7 +891,8 @@
     unsubGroups: [],
     updatedCategoryLong: null,
     isPrivacyArrPushed: false,
-    privacyArray: [] // domain: window.location.hostname, url -> getHostName()
+    privacyArray: [],
+    offline: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -1096,8 +1097,7 @@
      *
      * @param {string} global gcookie
      * @param {string} session
-     * @param {boolean} resume true in case of OUL (on user login), false in all other cases
-     * true signifies that the response in OUL response
+     * @param {boolean} resume sent true in case of an OUL request from client side, which is returned as it is by server
      * @param {number} respNumber the index of the request in backupmanager
      * @param {boolean} optOutResponse
      * @returns
@@ -1107,7 +1107,20 @@
     _createClass(CleverTapAPI, [{
       key: "s",
       value: function s(global, session, resume, respNumber, optOutResponse) {
-        // call back function used to store global and session ids for the user
+        var oulReq = false;
+        var newGuid = false; // for a scenario when OUL request is true from client side
+        // but resume is returned as false from server end
+        // we maintan a OulReqN var in the window object
+        // and compare with respNumber to determine the response of an OUL request
+
+        if (window.isOULInProgress) {
+          if (resume || respNumber !== 'undefined' && respNumber === window.oulReqN) {
+            window.isOULInProgress = false;
+            oulReq = true;
+          }
+        } // call back function used to store global and session ids for the user
+
+
         if (typeof respNumber === 'undefined') {
           respNumber = 0;
         }
@@ -1117,20 +1130,13 @@
         if (respNumber > $ct.globalCache.REQ_N) {
           // request for some other user so ignore
           return;
-        } // for a condition when a request's response is received
-        // while an OUL request is already in progress
-        // remove the request from backup cache and return
+        }
 
-
-        if (window.isOULInProgress && !resume) {
-          return;
-        } // set isOULInProgress to false, if resume is true
-
-
-        if (resume) {
-          window.isOULInProgress = false;
-        } // optout
-
+        if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
+          if (global) {
+            newGuid = true;
+          }
+        }
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
           _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
@@ -1148,15 +1154,18 @@
             }
 
             var kIdFromLS = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
+            var guidFromLRUCache;
 
-            if (kIdFromLS != null && kIdFromLS.id && resume) {
-              var guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
+            if (kIdFromLS != null && kIdFromLS.id) {
+              guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
 
-              if (!guidFromLRUCache) {
-                StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true); // replace login identity in OUL request
-                // with the gcookie returned in exchange
+              if (resume) {
+                if (!guidFromLRUCache) {
+                  StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true); // replace login identity in OUL request
+                  // with the gcookie returned in exchange
 
-                $ct.LRU_CACHE.set(kIdFromLS.id, global);
+                  $ct.LRU_CACHE.set(kIdFromLS.id, global);
+                }
               }
             }
 
@@ -1194,11 +1203,10 @@
 
         if (isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie)) {
           $ct.blockRequest = false;
-        } // if request are not blocked and other network request(s) are not being processed
-        // process request(s) from backup from local storage or cookie
+        } // only process the backup events after an OUL request or a new guid is recieved
 
 
-        if (!$ct.blockRequest && !_classPrivateFieldLooseBase(this, _request)[_request].processingBackup) {
+        if ((oulReq || newGuid) && !_classPrivateFieldLooseBase(this, _request)[_request].processingBackup) {
           _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
         }
 
@@ -3344,7 +3352,7 @@
     }, {
       key: "getBannerContent",
       value: function getBannerContent() {
-        return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n          cursor: pointer;\n        }\n        img {\n          height: ".concat(this.divHeight ? this.divHeight : 'auto', ";\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ").concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:480px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
+        return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n          cursor: pointer;\n        }\n        img {\n          height: ".concat(this.divHeight ? this.divHeight : 'auto', ";\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ").concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:480px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\" part=\"banner__img\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
       }
     }, {
       key: "details",
@@ -3501,26 +3509,24 @@
     }, {
       key: "getStyles",
       value: function getStyles() {
-        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        background-color: grey;\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      .carousel__item img {\n        height: auto;\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ".concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
+        var _this$target, _this$target$display;
+
+        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        background-color: grey;\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      ct-web-personalisation-banner::part(banner__img) {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
       }
     }, {
       key: "updateSelectedItem",
       value: function updateSelectedItem() {
-        var _ref2;
-
         if (this.previouslySelectedItem !== -1) {
-          var _ref;
-
           var prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
           var prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
           prevItem.classList.remove('carousel__item--selected');
-          (_ref = prevButton !== null) !== null && _ref !== void 0 ? _ref : prevButton.classList.remove('carousel__button--selected');
+          prevButton.classList.remove('carousel__button--selected');
         }
 
         var item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
         var button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
         item.classList.add('carousel__item--selected');
-        (_ref2 = button !== null) !== null && _ref2 !== void 0 ? _ref2 : button.classList.add('carousel__button--selected');
+        button.classList.add('carousel__button--selected');
       }
     }, {
       key: "startAutoSlide",
@@ -4895,7 +4901,9 @@
         var now = getNow();
         url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
         var data = url + '&i=' + now + '&sn=' + seqNo;
-        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]); // if there is no override
+        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]); // if offline is set to true, save the request in backup and return
+
+        if ($ct.offline) return; // if there is no override
         // and an OUL request is not in progress
         // then process the request as it is
         // else block the request
@@ -4909,6 +4917,7 @@
             seqNo = 0;
           }
 
+          window.oulReqN = $ct.globalCache.REQ_N;
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
           _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
@@ -6274,7 +6283,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.3.3'
+          lib: 'web-sdk-v1.3.5'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
@@ -6339,6 +6348,28 @@
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
 
         _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+      } // offline mode
+
+      /**
+       * events will be recorded and queued locally when passed with true
+       * but will not be sent to the server until offline is disabled by passing false
+       * @param {boolean} arg
+       */
+
+    }, {
+      key: "setOffline",
+      value: function setOffline(arg) {
+        if (typeof arg !== 'boolean') {
+          console.log('setOffline should be called with a value of type boolean');
+          return;
+        }
+
+        $ct.offline = arg; // if offline is disabled
+        // process events from cache
+
+        if (!arg) {
+          _classPrivateFieldLooseBase(this, _request$6)[_request$6].processBackupEvents();
+        }
       }
     }, {
       key: "popupCallback",
