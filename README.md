@@ -151,6 +151,19 @@ Web push notifications provide the ability to communicate brief, yet important a
 
 To know more on how to configure web push notifications for Chrome, Firefox and Safari, checkout [CleverTap Web Push guide](https://developer.clevertap.com/docs/web#section-web-push).
 
+
+### Offline Mode
+
+Allow to set CleverTap SDK to offline. By default this is set to `false`
+
+Once offline is set to `true`, events will be recorded and queued locally but will not be sent to the server until offline is disabled. Calling this method again with offline set to `false` will allow events to be sent to the server, and the SDK instance will immediately attempt to send events that have been queued while offline.
+
+```javascript
+  clevertap.setOffline(true) // sets the sdk in offline mode.Events will be queued locally and will be fired only when offline mode is set to false
+  clevertap.setOffline(false) // disables the offline mode. Events will now get fired immediately
+
+```
+
 ### Debugging
 
 This section is applicable for all browsers such as, Chrome, Firefox, and Safari. Error messages and warnings are logged to the JS console of the browser.
