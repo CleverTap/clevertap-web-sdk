@@ -6359,6 +6359,11 @@
     }, {
       key: "setOffline",
       value: function setOffline(arg) {
+        if (typeof arg !== 'boolean') {
+          console.log('setOffline should be called with a value of type boolean');
+          return;
+        }
+
         $ct.offline = arg; // if offline is disabled
         // process events from cache
 
