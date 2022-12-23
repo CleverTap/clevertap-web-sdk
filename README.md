@@ -154,9 +154,11 @@ To know more on how to configure web push notifications for Chrome, Firefox and 
 
 ### Offline Mode
 
-Allow to set CleverTap SDK to offline. By default this is set to `false`
+The offline mode allows setting CleverTap SDK to offline. The `setOffline` method determines the SDK online state. By default the offline state of the sdk is set to `false`.
 
-Once offline is set to `true`, events will be recorded and queued locally but will not be sent to the server until offline is disabled. Calling this method again with offline set to `false` will allow events to be sent to the server, and the SDK instance will immediately attempt to send events that have been queued while offline.
+However, once the `setOffline` method is passed with `true` as described below, the CleverTap SDK goes offline. All the events are recorded and queued locally, but they are not sent to the CleverTap server.
+
+When the `setOffline` method is passed with `false`, as described below, the CleverTap SDK goes online, and the queued events are sent to the server immediately.
 
 ```javascript
   clevertap.setOffline(true) // sets the sdk in offline mode.Events will be queued locally and will be fired only when offline mode is set to false
