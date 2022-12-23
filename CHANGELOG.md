@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.3.5]
+## [1.3.5] - 23 Dec, 2022
 - Fixes cases where a requests were processed twice from cache
 - Multiple On User Login requests can be fired consequtively.
 - Dynamic image dimensions for web carousel
