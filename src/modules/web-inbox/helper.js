@@ -3,9 +3,9 @@ import { Inbox } from './WebInbox'
 import { Message } from './Message'
 import { WEBINBOX_CONFIG } from '../../util/constants'
 
-export const processWebInboxSettings = (webInboxSetting) => {
+export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
   const _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
-  if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting)) {
+  if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting) && !isPreview) {
     // TODO - remove this later on
     console.log('saving webInboxSetting to LS ::', webInboxSetting)
     StorageManager.saveToLSorCookie(WEBINBOX_CONFIG, webInboxSetting)
@@ -26,7 +26,7 @@ export const processInboxNotifs = (msg) => {
 
 export const processWebInboxResponse = (msg) => {
   if (msg.webInboxSetting) {
-    processWebInboxSettings(msg.webInboxSetting)
+    processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview)
   }
   if (msg.inbox_notifs != null) {
     processInboxNotifs(msg)

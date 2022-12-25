@@ -41,7 +41,7 @@ export class Inbox extends HTMLElement {
   }
 
   set incomingMessagesForPreview (msgs = []) {
-    if (msgs.length > 0) {
+    if (msgs.length > 0 && this.inbox) {
       this.isPreview = true
       this.unviewedCounter = 0
       msgs.forEach((m) => {
@@ -391,6 +391,8 @@ export class Inbox extends HTMLElement {
           if (raiseViewedEvent) {
             window.clevertap.renderNotificationViewed({ msgId: e.target.campaignId, pivotId: e.target.pivotId })
             this.updateMessageInLS(e.target.id, { ...e.target.message, viewed: 1 })
+          } else {
+            console.log('Notifiction viewed event will be raised at run time with payload ::', { msgId: e.target.campaignId, pivotId: e.target.pivotId })
           }
           this.unviewedCounter--
           this.updateUnviewedBadgeCounter()

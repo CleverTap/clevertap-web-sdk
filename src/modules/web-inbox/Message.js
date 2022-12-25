@@ -157,7 +157,9 @@ export class Message extends HTMLElement {
     } else if (path.tagName === 'INBOX-MESSAGE' && msg.onClickUrl) {
       msg.openUrlInNewTab ? window.open(msg.onClickUrl, '_blank') : (window.location = msg.onClickUrl)
     }
-    if (!isPreview) {
+    if (isPreview) {
+      console.log('Notifiction clicked event will be raised at run time with payload ::', payload)
+    } else {
       window.clevertap.renderNotificationClicked(payload)
     }
   }
