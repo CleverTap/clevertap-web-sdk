@@ -3801,7 +3801,9 @@
           msg.openUrlInNewTab ? window.open(msg.onClickUrl, '_blank') : window.location = msg.onClickUrl;
         }
 
-        if (!isPreview) {
+        if (isPreview) {
+          console.log('Notifiction clicked event will be raised at run time with payload ::', payload);
+        } else {
           window.clevertap.renderNotificationClicked(payload);
         }
       }
@@ -4291,6 +4293,11 @@
                 _this8.updateMessageInLS(e.target.id, _objectSpread2(_objectSpread2({}, e.target.message), {}, {
                   viewed: 1
                 }));
+              } else {
+                console.log('Notifiction viewed event will be raised at run time with payload ::', {
+                  msgId: e.target.campaignId,
+                  pivotId: e.target.pivotId
+                });
               }
 
               _this8.unviewedCounter--;
@@ -4428,7 +4435,7 @@
 
         var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
 
-        if (msgs.length > 0) {
+        if (msgs.length > 0 && this.inbox) {
           this.isPreview = true;
           this.unviewedCounter = 0;
           msgs.forEach(function (m) {
@@ -4446,9 +4453,11 @@
   }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
 
   var processWebInboxSettings = function processWebInboxSettings(webInboxSetting) {
+    var isPreview = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
     var _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
 
-    if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting)) {
+    if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting) && !isPreview) {
       // TODO - remove this later on
       console.log('saving webInboxSetting to LS ::', webInboxSetting);
       StorageManager.saveToLSorCookie(WEBINBOX_CONFIG, webInboxSetting);
@@ -4468,7 +4477,7 @@
   };
   var processWebInboxResponse = function processWebInboxResponse(msg) {
     if (msg.webInboxSetting) {
-      processWebInboxSettings(msg.webInboxSetting);
+      processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview);
     }
 
     if (msg.inbox_notifs != null) {
