@@ -4466,6 +4466,8 @@
 
     if (isPreview) {
       $ct.inbox.inboxConfigForPreview = webInboxSetting;
+      $ct.inbox.isPreview = true;
+      $ct.inbox && $ct.inbox.init();
     } else if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting)) {
       StorageManager.saveToLSorCookie(WEBINBOX_CONFIG, webInboxSetting);
       /**
