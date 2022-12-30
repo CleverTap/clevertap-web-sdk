@@ -32,7 +32,7 @@ export class Inbox extends HTMLElement {
   }
 
   set incomingMessages (msgs = []) {
-    if (msgs.length > 0) {
+    if (msgs.length > 0 && this.inbox) {
       this.updateInboxMessages(msgs)
     }
   }
