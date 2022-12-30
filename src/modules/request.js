@@ -48,7 +48,6 @@ export default class RequestManager {
         }
       }
     }
-
     StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap)
     this.processingBackup = false
   }
@@ -133,6 +132,8 @@ export default class RequestManager {
     const data = url + '&i=' + now + '&sn=' + seqNo
     StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.#logger)
 
+    // if offline is set to true, save the request in backup and return
+    if ($ct.offline) return
     // if there is no override
     // and an OUL request is not in progress
     // then process the request as it is
@@ -145,6 +146,7 @@ export default class RequestManager {
         requestTime = now
         seqNo = 0
       }
+      window.oulReqN = $ct.globalCache.REQ_N
       RequestDispatcher.fireRequest(data, false, sendOULFlag)
     } else {
       this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)
