@@ -3864,6 +3864,7 @@
       _this.unviewedMessages = {};
       _this.unviewedCounter = 0;
       _this.isPreview = false;
+      _this.inboxConfigForPreview = {};
       _this.inboxSelector = null;
       _this.inbox = null;
       _this.emptyInboxMsg = null;
@@ -3931,7 +3932,7 @@
     }, {
       key: "init",
       value: function init() {
-        this.config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+        this.config = this.isPreview ? this.inboxConfigForPreview : StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
 
         if (Object.keys(this.config).length === 0) {
           return;
@@ -4457,9 +4458,9 @@
 
     var _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
 
-    if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting) && !isPreview) {
-      // TODO - remove this later on
-      console.log('saving webInboxSetting to LS ::', webInboxSetting);
+    if (isPreview) {
+      $ct.inbox.inboxConfigForPreview = webInboxSetting;
+    } else if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting)) {
       StorageManager.saveToLSorCookie(WEBINBOX_CONFIG, webInboxSetting);
       /**
        *  TODO - test what happens when the inbox is open ?
