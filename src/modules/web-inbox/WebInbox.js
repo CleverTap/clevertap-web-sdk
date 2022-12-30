@@ -16,6 +16,7 @@ export class Inbox extends HTMLElement {
   unviewedMessages = {}
   unviewedCounter = 0
   isPreview = false
+  inboxConfigForPreview = {}
 
   // dom references
   inboxSelector = null
@@ -59,7 +60,7 @@ export class Inbox extends HTMLElement {
   }
 
   init () {
-    this.config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+    this.config = this.isPreview ? this.inboxConfigForPreview : StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
     if (Object.keys(this.config).length === 0) {
       return
     }

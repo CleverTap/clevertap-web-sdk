@@ -5,9 +5,9 @@ import { WEBINBOX_CONFIG } from '../../util/constants'
 
 export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
   const _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
-  if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting) && !isPreview) {
-    // TODO - remove this later on
-    console.log('saving webInboxSetting to LS ::', webInboxSetting)
+  if (isPreview) {
+    $ct.inbox.inboxConfigForPreview = webInboxSetting
+  } else if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting)) {
     StorageManager.saveToLSorCookie(WEBINBOX_CONFIG, webInboxSetting)
     /**
      *  TODO - test what happens when the inbox is open ?
