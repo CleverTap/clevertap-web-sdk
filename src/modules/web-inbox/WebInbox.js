@@ -418,6 +418,10 @@ export class Inbox extends HTMLElement {
       this.inboxCard.scrollTop = 0
       !this.isPreview && this.deleteExpiredAndGetUnexpiredMsgs()
       this.inbox.style.display = 'block'
+      this.selectedCategoryRef.setAttribute('selected', 'false')
+      this.selectedCategoryRef = this.shadowRoot.getElementById('category-0')
+      this.updateActiveCategory(this.selectedCategoryRef.innerText)
+      this.shadowRoot.getElementById('categoriesWrapper').scrollLeft -= this.shadowRoot.getElementById('categoriesWrapper').scrollWidth
       this.setInboxPosition(e)
     } else {
       this.inbox.style.display = 'none'

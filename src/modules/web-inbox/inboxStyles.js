@@ -199,6 +199,7 @@ export const inboxContainerStyles = ({
           display: flex;
           white-space: nowrap;
           width: -webkit-fill-available;
+          scrollbar-width: none;
         }
 
         #categoriesWrapper::-webkit-scrollbar {
