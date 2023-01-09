@@ -30,7 +30,7 @@ import { StorageManager, $ct } from './storage'
 import RequestDispatcher from './requestDispatcher'
 import { CTWebPersonalisationBanner } from './web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
-import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxResponse, processWebInboxSettings } from '../modules/web-inbox/helper'
+import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxResponse, processWebInboxSettings, hasWebInboxSettingsInLS } from '../modules/web-inbox/helper'
 
 const _tr = (msg, {
   device,
@@ -826,7 +826,9 @@ const _tr = (msg, {
      * as we would not have any entry related to webInboxSettings in the LS
      */
 
-    checkAndRegisterWebInboxElements()
+    if (hasWebInboxSettingsInLS()) {
+      checkAndRegisterWebInboxElements()
+    }
     if ($ct.inbox === null) {
       msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
       initializeWebInbox(_logger).then(() => {

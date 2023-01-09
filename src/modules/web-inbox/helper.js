@@ -61,9 +61,9 @@ export const initializeWebInbox = (logger) => {
 }
 
 export const checkAndRegisterWebInboxElements = () => {
-  if (customElements.get('web-inbox') === undefined) {
-    customElements.define('web-inbox', Inbox)
-    customElements.define('inbox-message', Message)
+  if (customElements.get('ct-web-inbox') === undefined) {
+    customElements.define('ct-web-inbox', Inbox)
+    customElements.define('ct-inbox-message', Message)
   }
 }
 

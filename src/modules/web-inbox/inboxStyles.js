@@ -1,55 +1,55 @@
 export const messageStyles = ({ backgroundColor, borderColor, titleColor, descriptionColor, buttonColor, buttonTextColor, unreadMarkerColor }) => {
   return `
     <style id="messageStyles">
-      inbox-message::part(messageWrapper) {
+      ct-inbox-message::part(messageWrapper) {
         margin-bottom: 16px; 
       }
-      inbox-message::part(message) {
+      ct-inbox-message::part(message) {
         background-color: ${backgroundColor}; 
         border: 1px solid ${borderColor};
         border-radius: 4px; 
         overflow: hidden;
         min-height: 40px;
       }
-      inbox-message::part(message):hover {
+      ct-inbox-message::part(message):hover {
         box-shadow: 0px 4px 8px rgb(0 0 0 / 10%);
       }
-      inbox-message::part(iconTitleDescWrapper) {
+      ct-inbox-message::part(iconTitleDescWrapper) {
         display: flex; 
         padding: 16px;
       }
-      inbox-message::part(titleDescWrapper) {
+      ct-inbox-message::part(titleDescWrapper) {
         display: flex; 
         flex-direction: column;
       }
-      inbox-message::part(iconImgContainer) {
+      ct-inbox-message::part(iconImgContainer) {
         display: flex; 
         margin-right: 16px;
       }
-      inbox-message::part(mainImgContainer) {
+      ct-inbox-message::part(mainImgContainer) {
         line-height: 0;
       }
-      inbox-message::part(mainImg) {
+      ct-inbox-message::part(mainImg) {
         width: 100%; 
         background: #b2b1ae;
       }
-      inbox-message::part(iconImg) {
+      ct-inbox-message::part(iconImg) {
         height: 40px; 
         width: 40px;
       }
-      inbox-message::part(title) {
+      ct-inbox-message::part(title) {
         font-size: 14px !important; 
         line-height: 20px; 
         font-weight: 600; 
         color: ${titleColor}
       }
-      inbox-message::part(description) {
+      ct-inbox-message::part(description) {
         font-size: 14px !important; 
         line-height: 20px; 
         font-weight: 400; 
         color: ${descriptionColor}
       }
-      inbox-message::part(button) {
+      ct-inbox-message::part(button) {
         background-color: ${buttonColor}; 
         color: ${buttonTextColor}; 
         padding: 8px 16px; 
@@ -62,11 +62,11 @@ export const messageStyles = ({ backgroundColor, borderColor, titleColor, descri
         cursor: pointer; 
         border: none;
       }
-      inbox-message::part(buttonsContainer) {
+      ct-inbox-message::part(buttonsContainer) {
         display: flex;
         position: relative;
       }
-      inbox-message::part(snackbar) {
+      ct-inbox-message::part(snackbar) {
         position: absolute;
         top: calc(-100% - 12px);
         left: 50%;
@@ -85,12 +85,12 @@ export const messageStyles = ({ backgroundColor, borderColor, titleColor, descri
         justify-content: center;
       }
 
-      inbox-message::part(snackbar-msg) {
+      ct-inbox-message::part(snackbar-msg) {
         color: black;
         margin-left: 8px;
       }
 
-      inbox-message::part(timeStamp) {
+      ct-inbox-message::part(timeStamp) {
         display: flex; 
         justify-content: end; 
         align-items: center; 
@@ -99,7 +99,7 @@ export const messageStyles = ({ backgroundColor, borderColor, titleColor, descri
         line-height: 16px; 
         color: black;
       }
-      inbox-message::part(unreadMarker) {
+      ct-inbox-message::part(unreadMarker) {
         height: 8px; 
         width: 8px; 
         border-radius: 50%; 
@@ -107,7 +107,7 @@ export const messageStyles = ({ backgroundColor, borderColor, titleColor, descri
         margin-left: 8px;
       }
       @media only screen and (min-width: 420px) {
-        inbox-message::part(mainImg) {
+        ct-inbox-message::part(mainImg) {
           height: 180px;
         }
       }

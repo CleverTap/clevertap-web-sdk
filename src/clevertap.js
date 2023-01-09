@@ -185,7 +185,7 @@ export default class CleverTap {
       this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
     }
 
-    if (hasWebInboxSettingsInLS) {
+    if (hasWebInboxSettingsInLS()) {
       checkAndRegisterWebInboxElements()
       initializeWebInbox()
     }

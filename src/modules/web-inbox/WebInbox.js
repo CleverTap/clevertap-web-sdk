@@ -323,7 +323,7 @@ export class Inbox extends HTMLElement {
       const item = new Message(this.config, messages[m])
       item.setAttribute('id', messages[m].id)
       item.setAttribute('pivot', messages[m].wzrk_pivot)
-      item.setAttribute('part', 'inbox-message')
+      item.setAttribute('part', 'ct-inbox-message')
       if (this.config.categories.length > 0) {
         item.setAttribute('category', messages[m].tags[0] || '')
         item.style.display = (this.selectedCategory === 'All' || messages[m].category === this.selectedCategory) ? 'block' : 'none'
@@ -334,7 +334,7 @@ export class Inbox extends HTMLElement {
       this.observer.observe(item)
     }
 
-    const hasMessages = this.inboxCard.querySelectorAll('inbox-message[style*="display: block"]').length
+    const hasMessages = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]').length
     this.emptyInboxMsg.style.display = hasMessages ? 'none' : 'block'
   }
 
@@ -362,7 +362,7 @@ export class Inbox extends HTMLElement {
             this.selectedCategoryRef = path[0]
             this.updateActiveCategory(path[0].innerText)
           } else {
-            const _path = path.filter((p) => p.id?.startsWith('button-') || p.tagName === 'INBOX-MESSAGE')
+            const _path = path.filter((p) => p.id?.startsWith('button-') || p.tagName === 'CT-INBOX-MESSAGE')
             if (_path.length) {
               const messageEl = _path[_path.length - 1]
               if (!messageEl.message.read) {
@@ -457,7 +457,7 @@ export class Inbox extends HTMLElement {
   }
 
   updateTSForRenderedMsgs () {
-    this.inboxCard.querySelectorAll('inbox-message').forEach((m) => {
+    this.inboxCard.querySelectorAll('ct-inbox-message').forEach((m) => {
       const ts = m.id.split('_')[1]
       m.shadow.getElementById('timeStamp').firstChild.innerText = determineTimeStampText(ts)
     })

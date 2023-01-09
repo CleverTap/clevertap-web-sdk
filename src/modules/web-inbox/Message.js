@@ -154,7 +154,7 @@ export class Message extends HTMLElement {
           this.snackBar.style.setProperty('display', 'none', 'important')
         }, 2000)
       }
-    } else if (path.tagName === 'INBOX-MESSAGE' && msg.onClickUrl) {
+    } else if (path.tagName === 'CT-INBOX-MESSAGE' && msg.onClickUrl) {
       msg.openUrlInNewTab ? window.open(msg.onClickUrl, '_blank') : (window.location = msg.onClickUrl)
     }
     if (isPreview) {

@@ -3811,7 +3811,7 @@
               _this3.snackBar.style.setProperty('display', 'none', 'important');
             }, 2000);
           }
-        } else if (path.tagName === 'INBOX-MESSAGE' && msg.onClickUrl) {
+        } else if (path.tagName === 'CT-INBOX-MESSAGE' && msg.onClickUrl) {
           msg.openUrlInNewTab ? window.open(msg.onClickUrl, '_blank') : window.location = msg.onClickUrl;
         }
 
@@ -3844,7 +3844,7 @@
         buttonColor = _ref.buttonColor,
         buttonTextColor = _ref.buttonTextColor,
         unreadMarkerColor = _ref.unreadMarkerColor;
-    return "\n    <style id=\"messageStyles\">\n      inbox-message::part(messageWrapper) {\n        margin-bottom: 16px; \n      }\n      inbox-message::part(message) {\n        background-color: ".concat(backgroundColor, "; \n        border: 1px solid ").concat(borderColor, ";\n        border-radius: 4px; \n        overflow: hidden;\n        min-height: 40px;\n      }\n      inbox-message::part(message):hover {\n        box-shadow: 0px 4px 8px rgb(0 0 0 / 10%);\n      }\n      inbox-message::part(iconTitleDescWrapper) {\n        display: flex; \n        padding: 16px;\n      }\n      inbox-message::part(titleDescWrapper) {\n        display: flex; \n        flex-direction: column;\n      }\n      inbox-message::part(iconImgContainer) {\n        display: flex; \n        margin-right: 16px;\n      }\n      inbox-message::part(mainImgContainer) {\n        line-height: 0;\n      }\n      inbox-message::part(mainImg) {\n        width: 100%; \n        background: #b2b1ae;\n      }\n      inbox-message::part(iconImg) {\n        height: 40px; \n        width: 40px;\n      }\n      inbox-message::part(title) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 600; \n        color: ").concat(titleColor, "\n      }\n      inbox-message::part(description) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 400; \n        color: ").concat(descriptionColor, "\n      }\n      inbox-message::part(button) {\n        background-color: ").concat(buttonColor, "; \n        color: ").concat(buttonTextColor, "; \n        padding: 8px 16px; \n        font-size: 12px; \n        line-height: 16px; \n        font-weight: 600; \n        flex: 1; \n        border-radius: 0px; \n        text-transform: capitalize; \n        cursor: pointer; \n        border: none;\n      }\n      inbox-message::part(buttonsContainer) {\n        display: flex;\n        position: relative;\n      }\n      inbox-message::part(snackbar) {\n        position: absolute;\n        top: calc(-100% - 12px);\n        left: 50%;\n        transform: translate(-50%, 0px);\n        font-size: 14px;\n        font-weight: 400;\n        background: #FFFFFF;\n        border: 1px solid #ECEDF2;\n        box-shadow: 0px 4px 8px rgb(0 0 0 / 6%), 0px 0px 2px rgb(0 0 0 / 4%);\n        border-radius: 4px;\n        z-index: 2;\n        display: none;\n        width: max-content;\n        align-items: center;\n        padding: 8px 16px;\n        justify-content: center;\n      }\n\n      inbox-message::part(snackbar-msg) {\n        color: black;\n        margin-left: 8px;\n      }\n\n      inbox-message::part(timeStamp) {\n        display: flex; \n        justify-content: end; \n        align-items: center; \n        margin-top: 4px; \n        font-size: 12px !important; \n        line-height: 16px; \n        color: black;\n      }\n      inbox-message::part(unreadMarker) {\n        height: 8px; \n        width: 8px; \n        border-radius: 50%; \n        background-color: ").concat(unreadMarkerColor, "; \n        margin-left: 8px;\n      }\n      @media only screen and (min-width: 420px) {\n        inbox-message::part(mainImg) {\n          height: 180px;\n        }\n      }\n    </style>\n  ");
+    return "\n    <style id=\"messageStyles\">\n      ct-inbox-message::part(messageWrapper) {\n        margin-bottom: 16px; \n      }\n      ct-inbox-message::part(message) {\n        background-color: ".concat(backgroundColor, "; \n        border: 1px solid ").concat(borderColor, ";\n        border-radius: 4px; \n        overflow: hidden;\n        min-height: 40px;\n      }\n      ct-inbox-message::part(message):hover {\n        box-shadow: 0px 4px 8px rgb(0 0 0 / 10%);\n      }\n      ct-inbox-message::part(iconTitleDescWrapper) {\n        display: flex; \n        padding: 16px;\n      }\n      ct-inbox-message::part(titleDescWrapper) {\n        display: flex; \n        flex-direction: column;\n      }\n      ct-inbox-message::part(iconImgContainer) {\n        display: flex; \n        margin-right: 16px;\n      }\n      ct-inbox-message::part(mainImgContainer) {\n        line-height: 0;\n      }\n      ct-inbox-message::part(mainImg) {\n        width: 100%; \n        background: #b2b1ae;\n      }\n      ct-inbox-message::part(iconImg) {\n        height: 40px; \n        width: 40px;\n      }\n      ct-inbox-message::part(title) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 600; \n        color: ").concat(titleColor, "\n      }\n      ct-inbox-message::part(description) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 400; \n        color: ").concat(descriptionColor, "\n      }\n      ct-inbox-message::part(button) {\n        background-color: ").concat(buttonColor, "; \n        color: ").concat(buttonTextColor, "; \n        padding: 8px 16px; \n        font-size: 12px; \n        line-height: 16px; \n        font-weight: 600; \n        flex: 1; \n        border-radius: 0px; \n        text-transform: capitalize; \n        cursor: pointer; \n        border: none;\n      }\n      ct-inbox-message::part(buttonsContainer) {\n        display: flex;\n        position: relative;\n      }\n      ct-inbox-message::part(snackbar) {\n        position: absolute;\n        top: calc(-100% - 12px);\n        left: 50%;\n        transform: translate(-50%, 0px);\n        font-size: 14px;\n        font-weight: 400;\n        background: #FFFFFF;\n        border: 1px solid #ECEDF2;\n        box-shadow: 0px 4px 8px rgb(0 0 0 / 6%), 0px 0px 2px rgb(0 0 0 / 4%);\n        border-radius: 4px;\n        z-index: 2;\n        display: none;\n        width: max-content;\n        align-items: center;\n        padding: 8px 16px;\n        justify-content: center;\n      }\n\n      ct-inbox-message::part(snackbar-msg) {\n        color: black;\n        margin-left: 8px;\n      }\n\n      ct-inbox-message::part(timeStamp) {\n        display: flex; \n        justify-content: end; \n        align-items: center; \n        margin-top: 4px; \n        font-size: 12px !important; \n        line-height: 16px; \n        color: black;\n      }\n      ct-inbox-message::part(unreadMarker) {\n        height: 8px; \n        width: 8px; \n        border-radius: 50%; \n        background-color: ").concat(unreadMarkerColor, "; \n        margin-left: 8px;\n      }\n      @media only screen and (min-width: 420px) {\n        ct-inbox-message::part(mainImg) {\n          height: 180px;\n        }\n      }\n    </style>\n  ");
   };
   var inboxContainerStyles = function inboxContainerStyles(_ref2) {
     var panelBackgroundColor = _ref2.panelBackgroundColor,
@@ -3907,7 +3907,7 @@
                 var _path = path.filter(function (p) {
                   var _p$id;
 
-                  return ((_p$id = p.id) === null || _p$id === void 0 ? void 0 : _p$id.startsWith('button-')) || p.tagName === 'INBOX-MESSAGE';
+                  return ((_p$id = p.id) === null || _p$id === void 0 ? void 0 : _p$id.startsWith('button-')) || p.tagName === 'CT-INBOX-MESSAGE';
                 });
 
                 if (_path.length) {
@@ -4256,7 +4256,7 @@
           var item = new Message(this.config, messages[m]);
           item.setAttribute('id', messages[m].id);
           item.setAttribute('pivot', messages[m].wzrk_pivot);
-          item.setAttribute('part', 'inbox-message');
+          item.setAttribute('part', 'ct-inbox-message');
 
           if (this.config.categories.length > 0) {
             item.setAttribute('category', messages[m].tags[0] || '');
@@ -4269,7 +4269,7 @@
           this.observer.observe(item);
         }
 
-        var hasMessages = this.inboxCard.querySelectorAll('inbox-message[style*="display: block"]').length;
+        var hasMessages = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]').length;
         this.emptyInboxMsg.style.display = hasMessages ? 'none' : 'block';
       }
       /**
@@ -4387,7 +4387,7 @@
     }, {
       key: "updateTSForRenderedMsgs",
       value: function updateTSForRenderedMsgs() {
-        this.inboxCard.querySelectorAll('inbox-message').forEach(function (m) {
+        this.inboxCard.querySelectorAll('ct-inbox-message').forEach(function (m) {
           var ts = m.id.split('_')[1];
           m.shadow.getElementById('timeStamp').firstChild.innerText = determineTimeStampText(ts);
         });
@@ -4532,9 +4532,9 @@
     });
   };
   var checkAndRegisterWebInboxElements = function checkAndRegisterWebInboxElements() {
-    if (customElements.get('web-inbox') === undefined) {
-      customElements.define('web-inbox', Inbox);
-      customElements.define('inbox-message', Message);
+    if (customElements.get('ct-web-inbox') === undefined) {
+      customElements.define('ct-web-inbox', Inbox);
+      customElements.define('ct-inbox-message', Message);
     }
   }; // TODO - add more comments?
 
@@ -5478,7 +5478,9 @@
        * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
        * as we would not have any entry related to webInboxSettings in the LS
        */
-      checkAndRegisterWebInboxElements();
+      if (hasWebInboxSettingsInLS()) {
+        checkAndRegisterWebInboxElements();
+      }
 
       if ($ct.inbox === null) {
         msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
@@ -7030,7 +7032,7 @@
         _classPrivateFieldLooseBase(_this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       };
 
-      if (hasWebInboxSettingsInLS) {
+      if (hasWebInboxSettingsInLS()) {
         checkAndRegisterWebInboxElements();
         initializeWebInbox();
       } // this.inbox = {
