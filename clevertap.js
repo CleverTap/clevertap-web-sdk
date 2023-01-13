@@ -3596,7 +3596,55 @@
     var _session = session;
     var _request = request;
     var _logger = logger;
-    var _wizCounter = 0; // Campaign House keeping
+    var _wizCounter = 0; // msg = msg = {
+    //   arp: {
+    //     j_n: 'Zw==',
+    //     i_n: 'Y2NmewICAw==',
+    //     d_ts: 0,
+    //     dh: 0,
+    //     v: 1,
+    //     j_s: '{ }',
+    //     id: 'WWW-WWW-WWRZ',
+    //     e_ts: 0,
+    //     r_ts: 1649748826,
+    //     rc_w: 60,
+    //     rc_n: 5
+    //   },
+    //   inapp_notifs: [
+    //     {
+    //       msgContent: {
+    //         html: '<!DOCTYPE html><html><head><style>.CT_imageOnly{border-radius:8px;z-index:2;position:relative;cursor:pointer;padding:6px}.CT_imageOnlyClose{z-index:3;cursor:pointer;color:#d8d8d8;height:25px;width:25px;border:2px solid #fff;border-radius:100%;position:absolute;line-height:22px;font-size:18px;font-weight:700;text-align:center;background:#fff;top:-8px;right:-8px}img{max-height:\"100%\";max-width:\"100%\";object-fit:contain}</style></head><body><div id=\"image_Wrapper\" class=\"CT_imageOnly\"><img style=\"width:100%\" src=\"https://assets-in.bmscdn.com/promotions/cms/creatives/1665490539413_bulleweb.jpg\" alt=\"add image\"><span class=\"CT_imageOnlyClose\" style=\"background-color:#353535;color:#fff\" id=\"CT_Close_Btn\">&times;</span></div><script>var imgClick=1,close_btn=document.getElementById(\"CT_Close_Btn\"),image_Wrapper=document.getElementById(\"image_Wrapper\");image_Wrapper.onclick=function(e){1==imgClick&&(window.open(\"https://www.google.com\",\"_blank\"),clevertap.event.push(\"Clicked\"))},close_btn.onclick=function(){imgClick=0,image_Wrapper.style.display=\"none\"}</script></body></html>',
+    //         type: 1,
+    //         templateType: 'interstitial'
+    //       },
+    //       display: {
+    //         layout: 3,
+    //         'show-close': true,
+    //         'position-cs': 'center-screen',
+    //         'background-colour-picker': '#FFFFFF',
+    //         'text-colour-picker': '#474747',
+    //         'c2a-colour-picker': '#f28046',
+    //         'c2a-text-colour-picker': '#ffffff',
+    //         br: true,
+    //         imageUrl: '',
+    //         ctaText: '',
+    //         proto: 'template',
+    //         iFrameStyle: 'display:block;overflow:hidden;position:fixed;z-index:2147483647;right:5%;top:5%;',
+    //         mdc: '1000',
+    //         efc: 1,
+    //         wtarget_type: 0,
+    //         wmc: 1,
+    //         ff: 'Desktop',
+    //         desktopWidth: '70%',
+    //         tabletWidth: '40%',
+    //         mobileWidth: '60%'
+    //       },
+    //       wzrk_id: '1655316906_20220620',
+    //       wzrk_pivot: 'wzrk_default'
+    //     }
+    //   ]
+    // }
+    // Campaign House keeping
 
     var doCampHouseKeeping = function doCampHouseKeeping(targetingMsgJson) {
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
@@ -3858,11 +3906,66 @@
       container.appendChild(carousel);
     };
 
+    var renderPopUpImageOnly = function renderPopUpImageOnly(targetingMsgJson) {
+      var displayObj = targetingMsgJson.display;
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      var divId = 'imageOnlyDiv' + displayObj.layout;
+
+      var getWidth = function getWidth() {
+        // set width as per Popup dimensions
+        if ((/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent)) && /iPad/i.test(navigator.userAgent) === false) {
+          // for small devices  - mobile phones
+          return "width: ".concat(displayObj.mobileWidth, ";");
+        } else if ('ontouchstart' in window || /tablet/i.test(navigator.userAgent)) {
+          // medium devices - tablets
+          return "width: ".concat(displayObj.tabletWidth, ";");
+        } else {
+          // desktop
+          return "width: ".concat(displayObj.desktopWidth, ";");
+        }
+      };
+
+      if (document.getElementById(divId) != null) {
+        return;
+      }
+
+      $ct.campaignDivMap[campaignId] = divId; // let legacy = false
+
+      var msgDiv = document.createElement('div');
+      msgDiv.id = divId;
+      msgDiv.setAttribute('style', getWidth() + displayObj.iFrameStyle);
+      document.body.appendChild(msgDiv);
+      var iframe = document.createElement('iframe');
+      iframe.frameborder = '0px';
+      iframe.marginheight = '0px';
+      iframe.marginwidth = '0px';
+      iframe.scrolling = 'no';
+      iframe.id = 'wiz-iframe';
+      var html = targetingMsgJson.msgContent.html;
+      html.replace(/##campaignId##/g, campaignId);
+      iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100%; border:0px !important; border-color:none !important;');
+      msgDiv.appendChild(iframe);
+      var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
+      var doc = ifrm.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+
+      iframe.onload = function () {
+        iframe.height = iframe.contentWindow.document.body.offsetHeight;
+
+        iframe.contentWindow.document.body.onresize = function () {
+          iframe.height = iframe.contentWindow.document.body.offsetHeight;
+        };
+      };
+    };
+
     var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       var displayObj = targetingMsgJson.display;
 
       if (displayObj.wtarget_type === 2) {
+        // Handling Web Native display
         // Logic for kv pair data
         if (targetingMsgJson.msgContent.type === 1) {
           var inaObj = {};
@@ -3915,7 +4018,13 @@
       }
 
       if (displayObj.layout === 1) {
+        // Handling Web Exit Intent
         return showExitIntent(undefined, targetingMsgJson);
+      }
+
+      if (displayObj.layout === 3) {
+        // Handling Web Popup Image Only
+        return renderPopUpImageOnly(targetingMsgJson);
       }
 
       if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
@@ -4391,7 +4500,25 @@
           }
         }
       }
-    };
+    }; // if (msg.webInboxSetting || msg.inbox_notifs != null) {
+    //   /**
+    //    * When the user visits a website for the 1st time after web inbox channel is setup,
+    //    * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
+    //    * as we would not have any entry related to webInboxSettings in the LS
+    //    */
+    //   if (hasWebInboxSettingsInLS()) {
+    //     checkAndRegisterWebInboxElements()
+    //   }
+    //   if ($ct.inbox === null) {
+    //     msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
+    //     initializeWebInbox(_logger).then(() => {
+    //       processWebInboxResponse(msg)
+    //     })
+    //   } else {
+    //     processWebInboxResponse(msg)
+    //   }
+    // }
+
 
     if (StorageManager._isLocalStorageSupported()) {
       try {
@@ -6360,7 +6487,7 @@
       key: "setOffline",
       value: function setOffline(arg) {
         if (typeof arg !== 'boolean') {
-          console.log('setOffline should be called with a value of type boolean');
+          console.error('setOffline should be called with a value of type boolean');
           return;
         }
 
