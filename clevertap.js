@@ -3973,6 +3973,13 @@
         iframe.contentWindow.document.body.onresize = function () {
           iframe.height = iframe.contentWindow.document.body.scrollHeight;
         };
+
+        iframe.contentWindow.document.body.onclick = function () {
+          window.clevertap.renderNotificationClicked({
+            msgId: targetingMsgJson.wzrk_id,
+            pivotId: targetingMsgJson.wzrk_pivot
+          });
+        };
       };
     };
 
