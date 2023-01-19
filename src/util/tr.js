@@ -45,7 +45,7 @@ const _tr = (msg, {
   const _logger = logger
   let _wizCounter = 0
 
-  // msg = msg = {
+  // msg = {
   //   arp: {
   //     j_n: 'Zw==',
   //     i_n: 'Y2NmewICAw==',
@@ -62,7 +62,7 @@ const _tr = (msg, {
   //   inapp_notifs: [
   //     {
   //       msgContent: {
-  //         html: '<!DOCTYPE html><html><head><style>.CT_imageOnly{border-radius:8px;z-index:2;position:relative;cursor:pointer;padding:6px}.CT_imageOnlyClose{z-index:3;cursor:pointer;color:#d8d8d8;height:25px;width:25px;border:2px solid #fff;border-radius:100%;position:absolute;line-height:22px;font-size:18px;font-weight:700;text-align:center;background:#fff;top:-8px;right:-8px}img{max-height:\"100%\";max-width:\"100%\";object-fit:contain}</style></head><body><div id=\"image_Wrapper\" class=\"CT_imageOnly\"><img style=\"width:100%\" src=\"https://assets-in.bmscdn.com/promotions/cms/creatives/1665490539413_bulleweb.jpg\" alt=\"add image\"><span class=\"CT_imageOnlyClose\" style=\"background-color:#353535;color:#fff\" id=\"CT_Close_Btn\">&times;</span></div><script>var imgClick=1,close_btn=document.getElementById(\"CT_Close_Btn\"),image_Wrapper=document.getElementById(\"image_Wrapper\");image_Wrapper.onclick=function(e){1==imgClick&&(window.open(\"https://www.google.com\",\"_blank\"),clevertap.event.push(\"Clicked\"))},close_btn.onclick=function(){imgClick=0,image_Wrapper.style.display=\"none\"}</script></body></html>',
+  //         html: '<style type=\"text/css\">body{margin:0;padding:0}.wzrkPPwarp{margin:20px;padding:0}.CT_IMAGEONLY_NO_OVERLAY{z-index:2;position:relative;cursor:pointer}img{max-height:100vh;border-radius:8px;width:100%;object-fit:contain;border:3px solid #080808}a.wzrkClose{cursor:pointer;position:absolute;top:6px;right:4px;z-index:2147483647;font-size:19px;font-weight:700;text-decoration:none;width:25px;height:25px;line-height:23px;text-align:center;-webkit-appearance:none;line-height:22px;background:#353535;border:#fff 2px solid;border-radius:100%;color:#fff}a:hover.wzrkClose{color:#fff!important;-webkit-appearance:none}</style><div class=\"wzrkPPwarp\"><a href=\"javascript:void(0);\" onclick=parent.$WZRK_WR.closeIframe(\"##campaignId##\",\"imageOnlyDiv\"); class=\"wzrkClose\" style=\"background-color:#353535;color:#fff\">&times;</a><div class=\"CT_IMAGEONLY_NO_OVERLAY\" id=\"contentDiv\"><img src=\"https://pbs.twimg.com/media/C2enSycVIAAYNcN.jpg\" alt=\"add image\"></div></div>',
   //         type: 1,
   //         templateType: 'interstitial'
   //       },
@@ -78,15 +78,18 @@ const _tr = (msg, {
   //         imageUrl: '',
   //         ctaText: '',
   //         proto: 'template',
-  //         iFrameStyle: 'display:block;overflow:hidden;position:fixed;z-index:2147483647;right:5%;top:5%;',
+  //         iFrameStyle: 'display:block;overflow:hidden;position:fixed;z-index:2147483647;right:0;top:0;',
   //         mdc: '1000',
   //         efc: 1,
   //         wtarget_type: 0,
   //         wmc: 1,
+  //         onClick: 'https://eu1.clevertap-prod.com/r?e=Kw1rGR8ECQJ6bgV%2BDSYSC1FfXl8%2BPw0iMxoSN3JwQlEkKTskOQU7L3JwTXQXKjUUNDUnJUZwcUgyLDclIyYcJEZZV100OyYiODRyCF5ZUl8yPi4wdS0oOVlvWFB1YHB6YWxjfwEGAAVmBWB7ZWliegMIExh3eCUxJTENO1tGXkB1YHJpICAgIG1UVFI2Lz4%2FdSc%3D&c=662145120&r=https%3A%2F%2Fwww.carousell.ph%2Fsmart_render%2F%3Ftype%3Dmarket-landing-page%26name%3Dfindtheone-ph',
   //         ff: 'Desktop',
-  //         desktopWidth: '70%',
-  //         tabletWidth: '40%',
-  //         mobileWidth: '60%'
+  //         desktopWidth: '50%',
+  //         tabletWidth: '20%',
+  //         mobileWidth: '80%',
+  //         showOverlay: false,
+  //         window: 1
   //       },
   //       wzrk_id: '1655316906_20220620',
   //       wzrk_pivot: 'wzrk_default'
@@ -330,28 +333,34 @@ const _tr = (msg, {
 
   const renderPopUpImageOnly = (targetingMsgJson) => {
     const displayObj = targetingMsgJson.display
-    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
-    const divId = 'imageOnlyDiv' + displayObj.layout
+
     const getWidth = () => {
       // set width as per Popup dimensions
       if ((/mobile/i.test(navigator.userAgent) || (/mini/i.test(navigator.userAgent))) && /iPad/i.test(navigator.userAgent) === false) {
         // for small devices  - mobile phones
-        return `width: ${displayObj.mobileWidth};`
+        return `max-width: ${displayObj.mobileWidth};`
       } else if ('ontouchstart' in window || (/tablet/i.test(navigator.userAgent))) {
         // medium devices - tablets
-        return `width: ${displayObj.tabletWidth};`
+        return `max-width: ${displayObj.tabletWidth};`
       } else {
         // desktop
-        return `width: ${displayObj.desktopWidth};`
+        return `max-width: ${displayObj.desktopWidth};`
       }
     }
-    if (document.getElementById(divId) != null) {
+    if (document.getElementById('imageOnlyDiv') != null) {
       return
     }
-    $ct.campaignDivMap[campaignId] = divId
-    // let legacy = false
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
+    $ct.campaignDivMap[campaignId] = 'imageOnlyDiv'
+
+    if (displayObj.showOverlay) {
+      const opacityDiv = document.createElement('div')
+      opacityDiv.id = 'intentOpacityDiv'
+      opacityDiv.setAttribute('style', 'position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: rgba(0,0,0,0.7);')
+      document.body.appendChild(opacityDiv)
+    }
     const msgDiv = document.createElement('div')
-    msgDiv.id = divId
+    msgDiv.id = 'imageOnlyDiv'
     msgDiv.setAttribute('style', getWidth() + displayObj.iFrameStyle)
 
     document.body.appendChild(msgDiv)
@@ -362,10 +371,15 @@ const _tr = (msg, {
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe'
 
-    const html = targetingMsgJson.msgContent.html
-    html.replace(/##campaignId##/g, campaignId)
-
+    let html = targetingMsgJson.msgContent.html
+    html = html.replace(/##campaignId##/g, campaignId)
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100%; border:0px !important; border-color:none !important;')
+
+    // if (displayObj.showOverlay) {
+    //   iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;')
+    // } else {
+    //   iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100%; border:0px !important; border-color:none !important;')
+    // }
     msgDiv.appendChild(iframe)
     const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
     const doc = ifrm.document
@@ -374,9 +388,10 @@ const _tr = (msg, {
     doc.close()
 
     iframe.onload = () => {
-      iframe.height = iframe.contentWindow.document.body.offsetHeight
+      iframe.height = iframe.contentWindow.document.body.scrollHeight
+      window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
       iframe.contentWindow.document.body.onresize = () => {
-        iframe.height = iframe.contentWindow.document.body.offsetHeight
+        iframe.height = iframe.contentWindow.document.body.scrollHeight
       }
     }
   }
