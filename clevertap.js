@@ -3666,7 +3666,7 @@
         var timeStamp = this.createEl('div', 'timeStamp');
         timeStamp.innerHTML = "<span>".concat(determineTimeStampText(msg.id.split('_')[1]), "<span>");
 
-        if (!msg.read) {
+        if (!msg.viewed) {
           var unreadMarker = this.createEl('span', 'unreadMarker');
           timeStamp.appendChild(unreadMarker);
         }
@@ -3859,7 +3859,7 @@
         selectedCategoryTitleColor = _ref2.selectedCategoryTitleColor,
         selectedCategoryBorderColor = _ref2.selectedCategoryBorderColor,
         headerCategoryAndPoweredByCTHeight = _ref2.headerCategoryAndPoweredByCTHeight;
-    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: none;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          justify-content: center; \n          align-items: center;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          width: -webkit-fill-available;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 16px 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n        }\n\n        #poweredByCT {\n          display: block;\n          height: 16px;\n          padding: 8px 0px;\n          margin: auto;\n        }\n  \n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryAndPoweredByCTHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
+    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: none;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 16px 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n        }\n\n        #poweredByCT {\n          display: block;\n          height: 16px;\n          padding: 8px 0px;\n          margin: auto;\n        }\n  \n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryAndPoweredByCTHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
   };
 
   var Inbox = /*#__PURE__*/function (_HTMLElement) {
@@ -3912,15 +3912,6 @@
 
                 if (_path.length) {
                   var messageEl = _path[_path.length - 1];
-
-                  if (!messageEl.message.read) {
-                    _this.updateMessageInLS(messageEl.message.id, _objectSpread2(_objectSpread2({}, messageEl.message), {}, {
-                      read: 1
-                    }));
-
-                    messageEl.shadow.getElementById('unreadMarker').style.display = 'none';
-                  }
-
                   messageEl.raiseClickedEvent(_path[0], _this.isPreview);
                 }
               }
@@ -4064,7 +4055,6 @@
           m.id = key; // We are doing this to preserve the order of the messages
 
           m.date = date - i;
-          m.read = 0;
           m.viewed = 0;
           inboxMsgs[key] = m;
           incomingMsgs[key] = m;
@@ -4277,7 +4267,7 @@
        * 1. if the click has happenned within the inbox
        *    - on close button, we close the inbox
        *    - on any of the category, we set that as the activeCategory
-       *    - on any of the message, we mark that msg as read and raise notification clicked event. To identify the clicks on a button, we have p.id.startsWith('button-')
+       *    - on any of the message, we mark raise notification clicked event. To identify the clicks on a button, we have p.id.startsWith('button-')
        * 2. if the user has clicked on the inboxSelector, we toggle inbox
        * 3. if the click is anywhere else on the UI and the inbox is open, we simply close it
        */
@@ -4296,7 +4286,7 @@
 
         if (this.isInboxOpen) {
           entries.forEach(function (e) {
-            if (e.isIntersecting && _this8.unviewedMessages.hasOwnProperty(e.target.id)) {
+            if (e.isIntersecting && _this8.unviewedMessages.hasOwnProperty(e.target.id) && e.target.message.viewed === 0) {
               e.target.message.viewed = 1;
 
               if (raiseViewedEvent) {
@@ -4308,6 +4298,10 @@
                 _this8.updateMessageInLS(e.target.id, _objectSpread2(_objectSpread2({}, e.target.message), {}, {
                   viewed: 1
                 }));
+
+                setTimeout(function () {
+                  e.target.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+                }, 1000);
               } else {
                 console.log('Notifiction viewed event will be raised at run time with payload ::', {
                   msgId: e.target.campaignId,
@@ -7055,7 +7049,128 @@
       //     return this.deleteExpiredAndGetUnexpiredMsgs(deleteMsgsFromUI)
       //   }
       // }
-      // method for notification viewed
+      // Get Inbox Message Count
+
+
+      this.getInboxMessageCount = function () {
+        var msgCount = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+        return Object.keys(msgCount).length;
+      }; // Get Inbox Unread Message Count
+
+
+      this.getInboxMessageUnreadCount = function () {
+        if ($ct.inbox) {
+          return $ct.inbox.unviewedCounter;
+        } else {
+          console.log('No Unread messages');
+        }
+      }; // Get All Inbox messages
+
+
+      this.getAllInboxMessages = function () {
+        return StorageManager.readFromLSorCookie(WEBINBOX) || {};
+      }; // Get only Unread messages
+
+
+      this.getUnreadInboxMessages = function () {
+        if ($ct.inbox) {
+          return $ct.inbox.unviewedMessages;
+        } else {
+          console.log('No Unread messages');
+        }
+      }; // Get message object belonging to the given message id only. Message id should be a String
+
+
+      this.getInboxMessageForId = function (messageId) {
+        var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+
+        if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
+          return messages[messageId];
+        } else {
+          console.log('No message available for this Id');
+        }
+      }; // Delete message from the Inbox. Message id should be a String
+      // If the message to be deleted is unviewed then decrement the badge count, delete the message from unviewedMessages list
+      // Then remove the message from local storage and update cookie
+
+
+      this.deleteInboxMessage = function (messageId) {
+        var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+
+        if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
+          var el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId);
+
+          if (messages[messageId].viewed === 0) {
+            $ct.inbox.unviewedCounter--;
+            delete $ct.inbox.unviewedMessages[messageId];
+            document.getElementById('unviewedBadge').innerText = $ct.inbox.unviewedCounter;
+            document.getElementById('unviewedBadge').style.display = $ct.inbox.unviewedCounter > 0 ? 'flex' : 'none';
+          }
+
+          el && el.remove();
+          delete messages[messageId];
+          StorageManager.saveToLSorCookie(WEBINBOX, messages);
+        } else {
+          console.log('No message available to delete for this Id');
+        }
+      };
+      /* Mark Message as Read. Message id should be a String
+       - Check if the message Id exist in the unread message list
+       - Remove the unread marker, update the viewed flag, decrement the bage Count
+       - renderNotificationViewed */
+
+
+      this.markReadInboxMessage = function (messageId) {
+        var unreadMsg = $ct.inbox.unviewedMessages;
+        var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+
+        if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
+          var el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId);
+          el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+          messages[messageId].viewed = 1;
+          var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1;
+          document.getElementById('unviewedBadge').innerText = counter;
+          document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none';
+          window.clevertap.renderNotificationViewed({
+            msgId: messages[messageId].wzrk_id,
+            pivotId: messages[messageId].pivotId
+          });
+          $ct.inbox.unviewedCounter--;
+          delete $ct.inbox.unviewedMessages[messageId];
+        } else {
+          console.log('No message available for this Id');
+        }
+      };
+      /* Mark all messages as read
+        - Get the count of unread messages, update unread marker style
+        - renderNotificationViewed, update the badge count and style
+      */
+
+
+      this.markReadAllInboxMessage = function () {
+        var unreadMsg = $ct.inbox.unviewedMessages;
+        var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+
+        if (Object.keys(unreadMsg).length > 0) {
+          var msgIds = Object.keys(unreadMsg);
+          msgIds.forEach(function (key) {
+            var el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(key);
+            el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+            messages[key].viewed = 1;
+            window.clevertap.renderNotificationViewed({
+              msgId: messages[key].wzrk_id,
+              pivotId: messages[key].wzrk_pivot
+            });
+          });
+          document.getElementById('unviewedBadge').innerText = 0;
+          document.getElementById('unviewedBadge').style.display = 'none';
+          StorageManager.saveToLSorCookie(WEBINBOX, messages);
+          $ct.inbox.unviewedCounter = 0;
+          $ct.inbox.unviewedMessages = {};
+        } else {
+          console.log('No Unread Messages');
+        }
+      }; // method for notification viewed
 
 
       this.renderNotificationViewed = function (detail) {

@@ -156,7 +156,6 @@ export class Inbox extends HTMLElement {
       m.id = key
       // We are doing this to preserve the order of the messages
       m.date = date - i
-      m.read = 0
       m.viewed = 0
       inboxMsgs[key] = m
       incomingMsgs[key] = m
@@ -343,7 +342,7 @@ export class Inbox extends HTMLElement {
    * 1. if the click has happenned within the inbox
    *    - on close button, we close the inbox
    *    - on any of the category, we set that as the activeCategory
-   *    - on any of the message, we mark that msg as read and raise notification clicked event. To identify the clicks on a button, we have p.id.startsWith('button-')
+   *    - on any of the message, we mark raise notification clicked event. To identify the clicks on a button, we have p.id.startsWith('button-')
    * 2. if the user has clicked on the inboxSelector, we toggle inbox
    * 3. if the click is anywhere else on the UI and the inbox is open, we simply close it
    */
@@ -365,10 +364,6 @@ export class Inbox extends HTMLElement {
             const _path = path.filter((p) => p.id?.startsWith('button-') || p.tagName === 'CT-INBOX-MESSAGE')
             if (_path.length) {
               const messageEl = _path[_path.length - 1]
-              if (!messageEl.message.read) {
-                this.updateMessageInLS(messageEl.message.id, { ...messageEl.message, read: 1 })
-                messageEl.shadow.getElementById('unreadMarker').style.display = 'none'
-              }
               messageEl.raiseClickedEvent(_path[0], this.isPreview)
             }
           }
@@ -387,11 +382,14 @@ export class Inbox extends HTMLElement {
     const raiseViewedEvent = !this.isPreview
     if (this.isInboxOpen) {
       entries.forEach((e) => {
-        if (e.isIntersecting && this.unviewedMessages.hasOwnProperty(e.target.id)) {
+        if (e.isIntersecting && this.unviewedMessages.hasOwnProperty(e.target.id) && e.target.message.viewed === 0) {
           e.target.message.viewed = 1
           if (raiseViewedEvent) {
             window.clevertap.renderNotificationViewed({ msgId: e.target.campaignId, pivotId: e.target.pivotId })
             this.updateMessageInLS(e.target.id, { ...e.target.message, viewed: 1 })
+            setTimeout(() => {
+              e.target.shadowRoot.getElementById('unreadMarker').style.display = 'none'
+            }, 1000)
           } else {
             console.log('Notifiction viewed event will be raised at run time with payload ::', { msgId: e.target.campaignId, pivotId: e.target.pivotId })
           }

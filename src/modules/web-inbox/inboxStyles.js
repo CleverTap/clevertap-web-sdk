@@ -188,8 +188,6 @@ export const inboxContainerStyles = ({
           height: 32px; 
           display: flex;
           scroll-behavior: smooth;
-          justify-content: center; 
-          align-items: center;
           position: relative;
         }
 
@@ -198,7 +196,6 @@ export const inboxContainerStyles = ({
           overflow-x: scroll;
           display: flex;
           white-space: nowrap;
-          width: -webkit-fill-available;
           scrollbar-width: none;
         }
 

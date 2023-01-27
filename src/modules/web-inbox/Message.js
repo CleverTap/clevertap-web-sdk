@@ -40,7 +40,7 @@ export class Message extends HTMLElement {
 
     const timeStamp = this.createEl('div', 'timeStamp')
     timeStamp.innerHTML = `<span>${determineTimeStampText(msg.id.split('_')[1])}<span>`
-    if (!msg.read) {
+    if (!msg.viewed) {
       const unreadMarker = this.createEl('span', 'unreadMarker')
       timeStamp.appendChild(unreadMarker)
     }

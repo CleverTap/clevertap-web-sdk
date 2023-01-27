@@ -27,7 +27,8 @@ import {
   COMMAND_ADD,
   COMMAND_REMOVE,
   COMMAND_DELETE,
-  EVT_PUSH
+  EVT_PUSH,
+  WEBINBOX
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -210,6 +211,114 @@ export default class CleverTap {
     //     return this.deleteExpiredAndGetUnexpiredMsgs(deleteMsgsFromUI)
     //   }
     // }
+
+    // Get Inbox Message Count
+    this.getInboxMessageCount = () => {
+      const msgCount = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      return Object.keys(msgCount).length
+    }
+
+    // Get Inbox Unread Message Count
+    this.getInboxMessageUnreadCount = () => {
+      if ($ct.inbox) {
+        return $ct.inbox.unviewedCounter
+      } else {
+        console.log('No Unread messages')
+      }
+    }
+
+    // Get All Inbox messages
+    this.getAllInboxMessages = () => {
+      return StorageManager.readFromLSorCookie(WEBINBOX) || {}
+    }
+
+    // Get only Unread messages
+    this.getUnreadInboxMessages = () => {
+      if ($ct.inbox) {
+        return $ct.inbox.unviewedMessages
+      } else {
+        console.log('No Unread messages')
+      }
+    }
+
+    // Get message object belonging to the given message id only. Message id should be a String
+    this.getInboxMessageForId = (messageId) => {
+      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
+        return messages[messageId]
+      } else {
+        console.log('No message available for this Id')
+      }
+    }
+
+    // Delete message from the Inbox. Message id should be a String
+    // If the message to be deleted is unviewed then decrement the badge count, delete the message from unviewedMessages list
+    // Then remove the message from local storage and update cookie
+    this.deleteInboxMessage = (messageId) => {
+      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
+        const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
+        if (messages[messageId].viewed === 0) {
+          $ct.inbox.unviewedCounter--
+          delete $ct.inbox.unviewedMessages[messageId]
+          document.getElementById('unviewedBadge').innerText = $ct.inbox.unviewedCounter
+          document.getElementById('unviewedBadge').style.display = $ct.inbox.unviewedCounter > 0 ? 'flex' : 'none'
+        }
+        el && el.remove()
+        delete messages[messageId]
+        StorageManager.saveToLSorCookie(WEBINBOX, messages)
+      } else {
+        console.log('No message available to delete for this Id')
+      }
+    }
+
+    /* Mark Message as Read. Message id should be a String
+     - Check if the message Id exist in the unread message list
+     - Remove the unread marker, update the viewed flag, decrement the bage Count
+     - renderNotificationViewed */
+    this.markReadInboxMessage = (messageId) => {
+      const unreadMsg = $ct.inbox.unviewedMessages
+      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
+        const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
+        el.shadowRoot.getElementById('unreadMarker').style.display = 'none'
+        messages[messageId].viewed = 1
+
+        var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1
+        document.getElementById('unviewedBadge').innerText = counter
+        document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none'
+        window.clevertap.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
+        $ct.inbox.unviewedCounter--
+        delete $ct.inbox.unviewedMessages[messageId]
+      } else {
+        console.log('No message available for this Id')
+      }
+    }
+
+    /* Mark all messages as read
+      - Get the count of unread messages, update unread marker style
+      - renderNotificationViewed, update the badge count and style
+    */
+    this.markReadAllInboxMessage = () => {
+      const unreadMsg = $ct.inbox.unviewedMessages
+      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      if (Object.keys(unreadMsg).length > 0) {
+        const msgIds = Object.keys(unreadMsg)
+        msgIds.forEach(key => {
+          const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(key)
+          el.shadowRoot.getElementById('unreadMarker').style.display = 'none'
+          messages[key].viewed = 1
+          window.clevertap.renderNotificationViewed({ msgId: messages[key].wzrk_id, pivotId: messages[key].wzrk_pivot })
+        })
+        document.getElementById('unviewedBadge').innerText = 0
+        document.getElementById('unviewedBadge').style.display = 'none'
+        StorageManager.saveToLSorCookie(WEBINBOX, messages)
+        $ct.inbox.unviewedCounter = 0
+        $ct.inbox.unviewedMessages = {}
+      } else {
+        console.log('No Unread Messages')
+      }
+    }
 
     // method for notification viewed
     this.renderNotificationViewed = (detail) => {
