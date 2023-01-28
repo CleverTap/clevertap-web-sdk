@@ -2710,7 +2710,9 @@
         }
 
         if ($ct.globalProfileMap == null) {
-          $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
+          var _StorageManager$readF;
+
+          $ct.globalProfileMap = (_StorageManager$readF = StorageManager.readFromLSorCookie(PR_COOKIE)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : {};
         }
 
         $ct.globalProfileMap[key] = array;
@@ -2731,7 +2733,9 @@
         var array = [];
 
         if ($ct.globalProfileMap == null) {
-          $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
+          var _StorageManager$readF2;
+
+          $ct.globalProfileMap = (_StorageManager$readF2 = StorageManager.readFromLSorCookie(PR_COOKIE)) !== null && _StorageManager$readF2 !== void 0 ? _StorageManager$readF2 : {};
         } // if the value to be set is either string or number
 
 
@@ -2781,11 +2785,13 @@
     }, {
       key: "_handleMultiValueRemove",
       value: function _handleMultiValueRemove(propKey, propVal, command) {
+        var _$ct$globalProfileMap2;
+
         if ($ct.globalProfileMap == null) {
           $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
         }
 
-        if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+        if (!($ct === null || $ct === void 0 ? void 0 : (_$ct$globalProfileMap2 = $ct.globalProfileMap) === null || _$ct$globalProfileMap2 === void 0 ? void 0 : _$ct$globalProfileMap2.hasOwnProperty(propKey))) {
           console.error("The property ".concat(propKey, " does not exist."));
         } else {
           if (typeof propVal === 'string' || typeof propVal === 'number') {
@@ -2818,11 +2824,13 @@
     }, {
       key: "_handleMultiValueDelete",
       value: function _handleMultiValueDelete(propKey, command) {
+        var _$ct$globalProfileMap3;
+
         if ($ct.globalProfileMap == null) {
           $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
         }
 
-        if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+        if (!($ct === null || $ct === void 0 ? void 0 : (_$ct$globalProfileMap3 = $ct.globalProfileMap) === null || _$ct$globalProfileMap3 === void 0 ? void 0 : _$ct$globalProfileMap3.hasOwnProperty(propKey))) {
           console.error("The property ".concat(propKey, " does not exist."));
         } else {
           delete $ct.globalProfileMap[propKey];
@@ -6360,7 +6368,7 @@
       key: "setOffline",
       value: function setOffline(arg) {
         if (typeof arg !== 'boolean') {
-          console.log('setOffline should be called with a value of type boolean');
+          console.error('setOffline should be called with a value of type boolean');
           return;
         }
 
