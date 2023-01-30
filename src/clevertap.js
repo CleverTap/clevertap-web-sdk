@@ -191,27 +191,6 @@ export default class CleverTap {
       initializeWebInbox()
     }
 
-    // this.inbox = {
-    //   addNewMessages: (msgs = []) => {
-    //     if ($ct.inbox) {
-    //       $ct.inbox.incomingMessages = msgs
-    //     } else {
-    //       console.error('can not add messages to inbox as inbox is not initialised')
-    //     }
-    //   },
-    //   getBadgeCount: () => {
-    //     if ($ct.inbox) {
-    //       return $ct.inbox.unviewedCounter
-    //     } else {
-    //       console.error('can not get badge count as inbox is not initialised')
-    //     }
-    //   },
-    //   getMessages: () => {
-    //     const deleteMsgsFromUI = false
-    //     return this.deleteExpiredAndGetUnexpiredMsgs(deleteMsgsFromUI)
-    //   }
-    // }
-
     // Get Inbox Message Count
     this.getInboxMessageCount = () => {
       const msgCount = StorageManager.readFromLSorCookie(WEBINBOX) || {}
