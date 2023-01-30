@@ -4500,6 +4500,7 @@
     }
   };
   var addWebInbox = function addWebInbox(logger) {
+    checkAndRegisterWebInboxElements();
     $ct.inbox = new Inbox({
       logger: logger
     });

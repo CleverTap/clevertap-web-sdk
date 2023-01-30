@@ -36,6 +36,7 @@ export const processWebInboxResponse = (msg) => {
 }
 
 export const addWebInbox = (logger) => {
+  checkAndRegisterWebInboxElements()
   $ct.inbox = new Inbox({ logger })
   document.body.appendChild($ct.inbox)
 }
