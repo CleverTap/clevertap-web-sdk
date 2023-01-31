@@ -48,6 +48,8 @@ export const COMMAND_SET = '$set'
 export const COMMAND_ADD = '$add'
 export const COMMAND_REMOVE = '$remove'
 export const COMMAND_DELETE = '$delete'
+export const WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG'
+export const WEBINBOX = 'WZRK_INBOX'
 
 export const SYSTEM_EVENTS = [
   'Stayed',
