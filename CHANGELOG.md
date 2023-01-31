@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 31 Jan, 2023
+- Introduces the new "Web Inbox" channel
+- Fixes issue for addMultiValue where property can be added for anonymous profile
+- Adds user's location handling by setting latitude and longitude.
+
 ## [1.3.5] - 23 Dec, 2022
 - Fixes cases where a requests were processed twice from cache
 - Multiple On User Login requests can be fired consequtively.

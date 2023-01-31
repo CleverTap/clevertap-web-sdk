@@ -30,6 +30,7 @@ import { StorageManager, $ct } from './storage'
 import RequestDispatcher from './requestDispatcher'
 import { CTWebPersonalisationBanner } from './web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
+import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxResponse, processWebInboxSettings, hasWebInboxSettingsInLS } from '../modules/web-inbox/helper'
 
 const _tr = (msg, {
   device,
@@ -815,6 +816,26 @@ const _tr = (msg, {
           $ct.globalEventsMap[key] = newEvtObj
         }
       }
+    }
+  }
+
+  if (msg.webInboxSetting || msg.inbox_notifs != null) {
+    /**
+     * When the user visits a website for the 1st time after web inbox channel is setup,
+     * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
+     * as we would not have any entry related to webInboxSettings in the LS
+     */
+
+    if (hasWebInboxSettingsInLS()) {
+      checkAndRegisterWebInboxElements()
+    }
+    if ($ct.inbox === null) {
+      msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
+      initializeWebInbox(_logger).then(() => {
+        processWebInboxResponse(msg)
+      })
+    } else {
+      processWebInboxResponse(msg)
     }
   }
 
