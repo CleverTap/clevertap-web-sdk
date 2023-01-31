@@ -260,7 +260,8 @@ export const $ct = {
   inbox: null,
   isPrivacyArrPushed: false,
   privacyArray: [],
-  offline: false
+  offline: false,
+  location: null
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }

@@ -412,6 +412,65 @@ export default class CleverTap {
       handleEmailSubscription(subscription, reEncoded, fetchGroups, this.#account, this.#logger)
     }
 
+    /**
+     *
+     * @param {number} lat
+     * @param {number} lng
+     * @param {callback function} handleCoordinates
+     * @returns
+    */
+    this.getLocation = function (lat, lng) {
+      // latitude and longitude should be number type
+      if ((lat && typeof lat !== 'number') || (lng && typeof lng !== 'number')) {
+        console.log('Latitude and Longitude must be of number type')
+        return
+      }
+      if (lat && lng) {
+        // valid latitude ranges bw +-90
+        if (lat <= -90 || lat > 90) {
+          console.log('A vaid latitude must range between -90 and 90')
+          return
+        }
+        // valid longitude ranges bw +-180
+        if (lng <= -180 || lng > 180) {
+          console.log('A valid longitude must range between -180 and 180')
+          return
+        }
+        $ct.location = { Latitude: lat, Longitude: lng }
+        this.sendMultiValueData({ Latitude: lat, Longitude: lng })
+      } else {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError)
+        } else {
+          console.log('Geolocation is not supported by this browser.')
+        }
+      }
+    }
+
+    function showPosition (position) {
+      var lat = position.coords.latitude
+      var lng = position.coords.longitude
+      $ct.location = { Latitude: lat, Longitude: lng }
+      this.sendMultiValueData({ Latitude: lat, Longitude: lng })
+    }
+
+    function showError (error) {
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          console.log('User denied the request for Geolocation.')
+          break
+        case error.POSITION_UNAVAILABLE:
+          console.log('Location information is unavailable.')
+          break
+        case error.TIMEOUT:
+          console.log('The request to get user location timed out.')
+          break
+        case error.UNKNOWN_ERROR:
+          console.log('An unknown error occurred.')
+          break
+      }
+    }
+
     const api = this.#api
     api.logout = this.logout
     api.clear = this.clear
@@ -681,6 +740,9 @@ export default class CleverTap {
       keys.forEach(key => {
         data.af[key] = payload[key]
       })
+    }
+    if ($ct.location) {
+      data.af = { ...data.af, ...$ct.location }
     }
     data = this.#request.addSystemDataToProfileObject(data, undefined)
     this.#request.addFlags(data)
