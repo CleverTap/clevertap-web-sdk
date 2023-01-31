@@ -3952,7 +3952,6 @@
         if (this.config.styles.notificationsBadge) {
           this.addUnviewedBadge();
         } else if (this.unviewedBadge) {
-          // TODO - verify this
           this.unviewedBadge.remove();
         }
 
@@ -4476,10 +4475,6 @@
       $ct.inbox && $ct.inbox.init();
     } else if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting)) {
       StorageManager.saveToLSorCookie(WEBINBOX_CONFIG, webInboxSetting);
-      /**
-       *  TODO - test what happens when the inbox is open ?
-       */
-
       $ct.inbox && $ct.inbox.init();
     }
   };
@@ -7043,7 +7038,7 @@
         if ($ct.inbox) {
           return $ct.inbox.unviewedCounter;
         } else {
-          console.log('No Unread messages');
+          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No Unread messages');
         }
       }; // Get All Inbox messages
 
@@ -7057,7 +7052,7 @@
         if ($ct.inbox) {
           return $ct.inbox.unviewedMessages;
         } else {
-          console.log('No Unread messages');
+          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No Unread messages');
         }
       }; // Get message object belonging to the given message id only. Message id should be a String
 
@@ -7068,7 +7063,7 @@
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
           return messages[messageId];
         } else {
-          console.log('No message available for this Id');
+          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No message available for message Id ' + messageId);
         }
       }; // Delete message from the Inbox. Message id should be a String
       // If the message to be deleted is unviewed then decrement the badge count, delete the message from unviewedMessages list
@@ -7092,7 +7087,7 @@
           delete messages[messageId];
           StorageManager.saveToLSorCookie(WEBINBOX, messages);
         } else {
-          console.log('No message available to delete for this Id');
+          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No message available for message Id ' + messageId);
         }
       };
       /* Mark Message as Read. Message id should be a String
@@ -7119,7 +7114,7 @@
           $ct.inbox.unviewedCounter--;
           delete $ct.inbox.unviewedMessages[messageId];
         } else {
-          console.log('No message available for this Id');
+          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No message available for message Id ' + messageId);
         }
       };
       /* Mark all messages as read
@@ -7149,7 +7144,7 @@
           $ct.inbox.unviewedCounter = 0;
           $ct.inbox.unviewedMessages = {};
         } else {
-          console.log('No Unread Messages');
+          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No Unread Messages');
         }
       }; // method for notification viewed
 
@@ -7503,7 +7498,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.3.5'
+          lib: 'web-sdk-v1.4.0'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

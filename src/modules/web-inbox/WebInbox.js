@@ -72,7 +72,6 @@ export class Inbox extends HTMLElement {
     if (this.config.styles.notificationsBadge) {
       this.addUnviewedBadge()
     } else if (this.unviewedBadge) {
-      // TODO - verify this
       this.unviewedBadge.remove()
     }
 

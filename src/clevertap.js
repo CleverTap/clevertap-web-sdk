@@ -202,7 +202,7 @@ export default class CleverTap {
       if ($ct.inbox) {
         return $ct.inbox.unviewedCounter
       } else {
-        console.log('No Unread messages')
+        this.#logger.error('No Unread messages')
       }
     }
 
@@ -216,7 +216,7 @@ export default class CleverTap {
       if ($ct.inbox) {
         return $ct.inbox.unviewedMessages
       } else {
-        console.log('No Unread messages')
+        this.#logger.error('No Unread messages')
       }
     }
 
@@ -226,7 +226,7 @@ export default class CleverTap {
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
         return messages[messageId]
       } else {
-        console.log('No message available for this Id')
+        this.#logger.error('No message available for message Id ' + messageId)
       }
     }
 
@@ -247,7 +247,7 @@ export default class CleverTap {
         delete messages[messageId]
         StorageManager.saveToLSorCookie(WEBINBOX, messages)
       } else {
-        console.log('No message available to delete for this Id')
+        this.#logger.error('No message available for message Id ' + messageId)
       }
     }
 
@@ -270,7 +270,7 @@ export default class CleverTap {
         $ct.inbox.unviewedCounter--
         delete $ct.inbox.unviewedMessages[messageId]
       } else {
-        console.log('No message available for this Id')
+        this.#logger.error('No message available for message Id ' + messageId)
       }
     }
 
@@ -295,7 +295,7 @@ export default class CleverTap {
         $ct.inbox.unviewedCounter = 0
         $ct.inbox.unviewedMessages = {}
       } else {
-        console.log('No Unread Messages')
+        this.#logger.error('No Unread Messages')
       }
     }
 

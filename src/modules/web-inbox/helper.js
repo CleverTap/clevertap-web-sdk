@@ -11,9 +11,6 @@ export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
     $ct.inbox && $ct.inbox.init()
   } else if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting)) {
     StorageManager.saveToLSorCookie(WEBINBOX_CONFIG, webInboxSetting)
-    /**
-     *  TODO - test what happens when the inbox is open ?
-     */
     $ct.inbox && $ct.inbox.init()
   }
 }
