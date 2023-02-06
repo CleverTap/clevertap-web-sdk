@@ -254,6 +254,7 @@ export const inboxContainerStyles = ({
           padding: 16px 16px 0 16px;
           overflow-y: auto;
           box-sizing: border-box;
+          margin-top: 16px;
         }
 
         #poweredByCT {
