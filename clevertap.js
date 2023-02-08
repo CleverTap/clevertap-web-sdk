@@ -3586,6 +3586,142 @@
     return CTWebPersonalisationCarousel;
   }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
 
+  var CTWebPopupImageOnly = /*#__PURE__*/function (_HTMLElement) {
+    _inherits(CTWebPopupImageOnly, _HTMLElement);
+
+    var _super = _createSuper(CTWebPopupImageOnly);
+
+    function CTWebPopupImageOnly() {
+      var _this;
+
+      _classCallCheck(this, CTWebPopupImageOnly);
+
+      _this = _super.call(this);
+      _this._target = null;
+      _this.shadow = null;
+      _this.popup = null;
+      _this.shadow = _this.attachShadow({
+        mode: 'open'
+      });
+      return _this;
+    }
+
+    _createClass(CTWebPopupImageOnly, [{
+      key: "renderImageOnlyPopup",
+      value: function renderImageOnlyPopup() {
+        var _this2 = this;
+
+        this.shadow.innerHTML = this.getImageOnlyPopupContent();
+        this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
+        this.popup.addEventListener('load', this.updateImageWidth(this.popup, this.target.msgContent.border));
+        window.clevertap.renderNotificationViewed({
+          msgId: this.msgId,
+          pivotId: this.pivotId
+        });
+
+        if (this.onClickUrl) {
+          this.popup.addEventListener('click', function () {
+            _this2.target.display.window ? window.open(_this2.onClickUrl, '_blank') : window.parent.location.href = _this2.onClickUrl;
+            window.clevertap.renderNotificationClicked({
+              msgId: _this2.msgId,
+              pivotId: _this2.pivotId
+            });
+          });
+        }
+      }
+    }, {
+      key: "getImageOnlyPopupContent",
+      value: function getImageOnlyPopupContent() {
+        return "\n        ".concat(this.target.msgContent.css, "\n        ").concat(this.target.msgContent.html, "\n      ");
+      }
+      /* We need to specify the width as 100% on the image tag, else it won't scale up although
+      * there's room for scaling
+      * this function is needed to remove the whitespaces present that gets introduced due to object-fit: contain
+      * around the image
+      * while adding border to images, in case it's landscape and it's max-width is set to 100%,
+      * in some cases, the border overflows outside the vw
+      * One fix would be to add box-sizing:border-box; but behaves weirdly while calculating the width
+      * and the resulting image does not occupy the full width althoug there's room for scaling.
+      * Same issue with portrait images wrt to height on mobile devices
+      * Thus this hack
+      */
+
+    }, {
+      key: "updateImageWidth",
+      value: function updateImageWidth(img, border) {
+        var _this3 = this;
+
+        return function () {
+          var borderSize = border !== 'none' ? parseInt(border.split('px')[0]) : 0;
+
+          var _this3$getRenderedIma = _this3.getRenderedImageWidthAndHeight(img, 2 * borderSize),
+              width = _this3$getRenderedIma.width,
+              height = _this3$getRenderedIma.height;
+
+          var _width = width ? "".concat(width, "px") : 'auto';
+
+          var _height = height ? "".concat(height, "px") : 'auto';
+
+          img.style.setProperty('width', _width);
+          img.style.setProperty('height', _height);
+          img.style.setProperty('border', border);
+          img.style.setProperty('visibility', 'visible');
+        };
+      }
+    }, {
+      key: "getRenderedImageWidthAndHeight",
+      value: function getRenderedImageWidthAndHeight(img, borderSize) {
+        var ratio = img.naturalWidth / img.naturalHeight;
+
+        if (window.innerHeight <= img.height + borderSize) {
+          var width = (img.height - borderSize) * ratio;
+          return {
+            width: width
+          };
+        } else if (window.innerWidth <= img.width + borderSize) {
+          var height = (img.width - borderSize) / ratio;
+          return {
+            height: height
+          };
+        } else {
+          var _width2 = img.height * ratio;
+
+          return {
+            width: _width2
+          };
+        }
+      }
+    }, {
+      key: "target",
+      get: function get() {
+        return this._target || '';
+      },
+      set: function set(val) {
+        if (this._target === null) {
+          this._target = val;
+          this.renderImageOnlyPopup();
+        }
+      }
+    }, {
+      key: "msgId",
+      get: function get() {
+        return this.target.wzrk_id;
+      }
+    }, {
+      key: "pivotId",
+      get: function get() {
+        return this.target.wzrk_pivot;
+      }
+    }, {
+      key: "onClickUrl",
+      get: function get() {
+        return this.target.display.onClickUrl;
+      }
+    }]);
+
+    return CTWebPopupImageOnly;
+  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
+
   var _tr = function _tr(msg, _ref) {
     var device = _ref.device,
         session = _ref.session,
@@ -3613,33 +3749,20 @@
     //   inapp_notifs: [
     //     {
     //       msgContent: {
-    //         html: '<style type=\"text/css\">body{margin:0;padding:0}.wzrkPPwarp{margin:20px;padding:0}.CT_IMAGEONLY_NO_OVERLAY{z-index:2;position:relative;cursor:pointer}img{max-height:100vh;border-radius:8px;width:100%;object-fit:contain;border:3px solid #080808}a.wzrkClose{cursor:pointer;position:absolute;top:6px;right:4px;z-index:2147483647;font-size:19px;font-weight:700;text-decoration:none;width:25px;height:25px;line-height:23px;text-align:center;-webkit-appearance:none;line-height:22px;background:#353535;border:#fff 2px solid;border-radius:100%;color:#fff}a:hover.wzrkClose{color:#fff!important;-webkit-appearance:none}</style><div class=\"wzrkPPwarp\"><a href=\"javascript:void(0);\" onclick=parent.$WZRK_WR.closeIframe(\"##campaignId##\",\"imageOnlyDiv\"); class=\"wzrkClose\" style=\"background-color:#353535;color:#fff\">&times;</a><div class=\"CT_IMAGEONLY_NO_OVERLAY\" id=\"contentDiv\"><img src=\"https://pbs.twimg.com/media/C2enSycVIAAYNcN.jpg\" alt=\"add image\"></div></div>',
-    //         type: 1,
-    //         templateType: 'interstitial'
+    //         html: '<div><picture><source media=\"(min-width:481px)\" srcset=\"https://pbs.twimg.com/media/C2enSycVIAAYNcN.jpg\"><source media=\"(max-width:480px)\" srcset=\"https://pbs.twimg.com/media/C2enSycVIAAYNcN.jpg\"><img id=\"imageOnlyPopup\" src=\"https://pbs.twimg.com/media/C2enSycVIAAYNcN.jpg\" alt=\"Please upload a picture\" style=\"visibility:hidden\"></picture></div>',
+    //         css: '<style>img{position:absolute;height:auto;max-width:40%;top:50%;left:50%;transform:translate(-50%,-50%);bottom:unset;right:unset;object-fit:contain;z-index:2147483647;width:100%;max-height:100%}@media only screen and (min-width:600px){img{max-height:90%;max-width:60%;top:50%;left:50%;transform:translate(-50%,-50%);bottom:unset;right:unset}}@media only screen and (min-width:900px){img{max-width:60%}}</style>',
+    //         templateType: 'image-only',
+    //         border: '3px solid black'
     //       },
     //       display: {
     //         layout: 3,
-    //         'show-close': true,
-    //         'position-cs': 'center-screen',
-    //         'background-colour-picker': '#FFFFFF',
-    //         'text-colour-picker': '#474747',
-    //         'c2a-colour-picker': '#f28046',
-    //         'c2a-text-colour-picker': '#ffffff',
-    //         br: true,
-    //         imageUrl: '',
-    //         ctaText: '',
-    //         proto: 'template',
-    //         iFrameStyle: 'display:block;overflow:hidden;position:fixed;z-index:2147483647;right:0;top:0;',
     //         mdc: '1000',
     //         efc: 1,
     //         wtarget_type: 0,
     //         wmc: 1,
-    //         onClick: 'https://eu1.clevertap-prod.com/r?e=Kw1rGR8ECQJ6bgV%2BDSYSC1FfXl8%2BPw0iMxoSN3JwQlEkKTskOQU7L3JwTXQXKjUUNDUnJUZwcUgyLDclIyYcJEZZV100OyYiODRyCF5ZUl8yPi4wdS0oOVlvWFB1YHB6YWxjfwEGAAVmBWB7ZWliegMIExh3eCUxJTENO1tGXkB1YHJpICAgIG1UVFI2Lz4%2FdSc%3D&c=662145120&r=https%3A%2F%2Fwww.carousell.ph%2Fsmart_render%2F%3Ftype%3Dmarket-landing-page%26name%3Dfindtheone-ph',
     //         ff: 'Desktop',
-    //         desktopWidth: '50%',
-    //         tabletWidth: '20%',
-    //         mobileWidth: '80%',
-    //         showOverlay: false,
+    //         showOverlay: true,
+    //         onClickUrl: 'https://eu1.clevertap-prod.com/r?e=Kw1rGR8ECQJ6bgV%2BDSYSC1FfXl8%2BPw0iMxoSN3JwQlEkKTskOQU7L3JwTXQXKjUUNDUnJUZwcUgyLDclIyYcJEZZV100OyYiODRyCF5ZUl8yPi4wdS0oOVlvWFB1YHB6YWxjfwEGAAVmBWB7ZWliegMIExh3eCUxJTENO1tGXkB1YHJpICAgIG1UVFI2Lz4%2FdSc%3D&c=662145120&r=https%3A%2F%2Fwww.carousell.ph%2Fsmart_render%2F%3Ftype%3Dmarket-landing-page%26name%3Dfindtheone-ph',
     //         window: 1
     //       },
     //       wzrk_id: '1655316906_20220620',
@@ -3910,87 +4033,12 @@
     };
 
     var renderPopUpImageOnly = function renderPopUpImageOnly(targetingMsgJson) {
-      var displayObj = targetingMsgJson.display;
-
-      var getWidth = function getWidth() {
-        // set width as per Popup dimensions
-        if ((/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent)) && /iPad/i.test(navigator.userAgent) === false) {
-          // for small devices  - mobile phones
-          return "max-width: ".concat(displayObj.mobileWidth, ";");
-        } else if ('ontouchstart' in window || /tablet/i.test(navigator.userAgent)) {
-          // medium devices - tablets
-          return "max-width: ".concat(displayObj.tabletWidth, ";");
-        } else {
-          // desktop
-          return "max-width: ".concat(displayObj.desktopWidth, ";");
-        }
-      };
-
-      if (document.getElementById('imageOnlyDiv') != null) {
-        return;
-      }
-
-      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-      $ct.campaignDivMap[campaignId] = 'imageOnlyDiv';
-
-      if (displayObj.showOverlay) {
-        var opacityDiv = document.createElement('div');
-        opacityDiv.id = 'intentOpacityDiv';
-        opacityDiv.setAttribute('style', 'position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: rgba(0,0,0,0.7);');
-        document.body.appendChild(opacityDiv);
-      }
-
-      var msgDiv = document.createElement('div');
-      msgDiv.id = 'imageOnlyDiv';
-      msgDiv.setAttribute('style', getWidth() + displayObj.iFrameStyle);
-      document.body.appendChild(msgDiv);
-      var iframe = document.createElement('iframe');
-      iframe.frameborder = '0px';
-      iframe.marginheight = '0px';
-      iframe.marginwidth = '0px';
-      iframe.scrolling = 'no';
-      iframe.id = 'wiz-iframe';
-      var html = targetingMsgJson.msgContent.html;
-      html = html.replace(/##campaignId##/g, campaignId);
-      iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100%; border:0px !important; border-color:none !important;'); // if (displayObj.showOverlay) {
-      //   iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;')
-      // } else {
-      //   iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100%; border:0px !important; border-color:none !important;')
-      // }
-
-      msgDiv.appendChild(iframe);
-      var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      var doc = ifrm.document;
-      doc.open();
-      doc.write(html);
-      doc.close();
-
-      iframe.onload = function () {
-        iframe.height = iframe.contentWindow.document.body.scrollHeight;
-        window.clevertap.renderNotificationViewed({
-          msgId: targetingMsgJson.wzrk_id,
-          pivotId: targetingMsgJson.wzrk_pivot
-        });
-
-        iframe.contentWindow.onresize = function () {
-          iframe.height = iframe.contentWindow.document.body.scrollHeight;
-        };
-
-        iframe.contentWindow.document.body.onclick = function () {
-          window.clevertap.renderNotificationClicked({
-            msgId: targetingMsgJson.wzrk_id,
-            pivotId: targetingMsgJson.wzrk_pivot
-          });
-
-          if (displayObj.onClick != null && displayObj.onClick !== '') {
-            if (displayObj.window === 1) {
-              window.open(displayObj.onClick, '_blank');
-            } else {
-              window.location = displayObj.onClick;
-            }
-          }
-        };
-      };
+      var divId = 'wzrkImageOnlyDiv';
+      var popupImageOnly = document.createElement('ct-web-popup-imageonly');
+      popupImageOnly.target = targetingMsgJson;
+      var containerEl = document.getElementById(divId);
+      containerEl.innerHTML = '';
+      containerEl.appendChild(popupImageOnly);
     };
 
     var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
@@ -4057,7 +4105,25 @@
 
       if (displayObj.layout === 3) {
         // Handling Web Popup Image Only
+        if (document.getElementById('wzrkImageOnlyDiv') != null) {
+          return;
+        }
+
+        var _msgDiv = document.createElement('div');
+
+        _msgDiv.id = 'wzrkImageOnlyDiv'; // msgDiv.setAttribute('style', 'position: absolute;top: 10px;right: 10px')
+
+        document.body.appendChild(_msgDiv);
+
+        if (customElements.get('ct-web-popup-imageonly') === undefined) {
+          customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
+        }
+
         return renderPopUpImageOnly(targetingMsgJson);
+      }
+
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
       }
 
       if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
