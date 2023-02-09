@@ -462,7 +462,7 @@ export class Inbox extends HTMLElement {
 
   getInboxStyles () {
     const headerHeight = 36
-    const categoriesHeight = this.config.categories.length ? 48 : 0
+    const categoriesHeight = this.config.categories.length ? 64 : 0
     const hidePoweredByCTHeight = this.config.hidePoweredByCT === false ? 32 : 0
 
     const styles = {

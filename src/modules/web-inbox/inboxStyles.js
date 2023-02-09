@@ -185,7 +185,7 @@ export const inboxContainerStyles = ({
         }
   
         #categoriesContainer {
-          padding: 16px 16px 0 16px; 
+          padding: 16px; 
           height: 32px; 
           display: flex;
           scroll-behavior: smooth;
@@ -252,7 +252,7 @@ export const inboxContainerStyles = ({
         }
   
         #inboxCard {
-          padding: 16px 16px 0 16px;
+          padding: 0 16px 0 16px;
           overflow-y: auto;
           box-sizing: border-box;
           margin-top: 16px;

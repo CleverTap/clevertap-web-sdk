@@ -85,22 +85,22 @@ const _tr = (msg, {
       let totalDailyLimit = -1
       let totalSessionLimit = -1
 
-      if (targetingMsgJson[DISPLAY].efc != null) {
+      if (targetingMsgJson[DISPLAY].efc != null) { // exclude from frequency cap
         excludeFromFreqCaps = parseInt(targetingMsgJson[DISPLAY].efc, 10)
       }
-      if (targetingMsgJson[DISPLAY].mdc != null) {
+      if (targetingMsgJson[DISPLAY].mdc != null) { // Campaign Session Limit
         campaignSessionLimit = parseInt(targetingMsgJson[DISPLAY].mdc, 10)
       }
-      if (targetingMsgJson[DISPLAY].tdc != null) {
+      if (targetingMsgJson[DISPLAY].tdc != null) { // No of web popups in a day per campaign
         campaignDailyLimit = parseInt(targetingMsgJson[DISPLAY].tdc, 10)
       }
-      if (targetingMsgJson[DISPLAY].tlc != null) {
+      if (targetingMsgJson[DISPLAY].tlc != null) { // Total Campaign Limit
         campaignTotalLimit = parseInt(targetingMsgJson[DISPLAY].tlc, 10)
       }
-      if (targetingMsgJson[DISPLAY].wmp != null) {
+      if (targetingMsgJson[DISPLAY].wmp != null) { // No of campaigns per day
         totalDailyLimit = parseInt(targetingMsgJson[DISPLAY].wmp, 10)
       }
-      if (targetingMsgJson[DISPLAY].wmc != null) {
+      if (targetingMsgJson[DISPLAY].wmc != null) { // No of campaigns per session
         totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10)
       }
 
@@ -303,6 +303,27 @@ const _tr = (msg, {
       if (targetingMsgJson.msgContent.type === 2) {
         const divId = targetingMsgJson.display.divId
         if (document.getElementById(divId) == null) {
+          // Options for the observer (which mutations to observe)
+          const config = { attributes: true, childList: true, subtree: true }
+          let backoffCounter = 0
+          // Callback function to execute when mutations are observed
+          const callback = (mutationList, observer) => {
+            if (document.getElementById(divId) != null && backoffCounter <= 2) {
+              backoffCounter = 3
+              if (customElements.get('ct-web-personalisation-banner') === undefined) {
+                customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner)
+              }
+              renderPersonalisationBanner(targetingMsgJson)
+            }
+            if (backoffCounter > 2) {
+              observer.disconnect()
+            }
+            backoffCounter++
+          }
+          // Create an observer instance linked to the callback function
+          const observer = new MutationObserver(callback)
+          // Start observing the target node for configured mutations
+          observer.observe(document.body, config)
           return
         }
         if (customElements.get('ct-web-personalisation-banner') === undefined) {
