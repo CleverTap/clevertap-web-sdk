@@ -185,7 +185,7 @@ export const inboxContainerStyles = ({
         }
   
         #categoriesContainer {
-          padding: 16px; 
+          padding: 16px 16px 0 16px; 
           height: 32px; 
           display: flex;
           scroll-behavior: smooth;

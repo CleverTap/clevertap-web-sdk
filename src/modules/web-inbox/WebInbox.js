@@ -415,10 +415,12 @@ export class Inbox extends HTMLElement {
       this.inboxCard.scrollTop = 0
       !this.isPreview && this.deleteExpiredAndGetUnexpiredMsgs()
       this.inbox.style.display = 'block'
-      this.selectedCategoryRef.setAttribute('selected', 'false')
-      this.selectedCategoryRef = this.shadowRoot.getElementById('category-0')
-      this.updateActiveCategory(this.selectedCategoryRef.innerText)
-      this.shadowRoot.getElementById('categoriesWrapper').scrollLeft -= this.shadowRoot.getElementById('categoriesWrapper').scrollWidth
+      if (this.config.categories.length) {
+        this.selectedCategoryRef.setAttribute('selected', 'false')
+        this.selectedCategoryRef = this.shadowRoot.getElementById('category-0')
+        this.updateActiveCategory(this.selectedCategoryRef.innerText)
+        this.shadowRoot.getElementById('categoriesWrapper').scrollLeft -= this.shadowRoot.getElementById('categoriesWrapper').scrollWidth
+      }
       this.setInboxPosition(e)
     } else {
       this.inbox.style.display = 'none'
@@ -462,7 +464,7 @@ export class Inbox extends HTMLElement {
 
   getInboxStyles () {
     const headerHeight = 36
-    const categoriesHeight = this.config.categories.length ? 64 : 0
+    const categoriesHeight = this.config.categories.length ? 64 : 16
     const hidePoweredByCTHeight = this.config.hidePoweredByCT === false ? 32 : 0
 
     const styles = {
