@@ -37,7 +37,7 @@ export class CTWebPersonalisationBanner extends HTMLElement {
       <style type="text/css">
         .banner {
           position: relative;
-          cursor: pointer;
+          cursor: ${this.details.onClick ? 'pointer' : ''}
         }
         img {
           height: ${this.divHeight ? this.divHeight : 'auto'};
