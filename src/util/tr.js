@@ -259,6 +259,9 @@ const _tr = (msg, {
   }
 
   const renderPersonalisationBanner = (targetingMsgJson) => {
+    if (customElements.get('ct-web-personalisation-banner') === undefined) {
+      customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner)
+    }
     const divId = targetingMsgJson.display.divId
     const bannerEl = document.createElement('ct-web-personalisation-banner')
     bannerEl.msgId = targetingMsgJson.wzrk_id
@@ -271,6 +274,9 @@ const _tr = (msg, {
   }
 
   const renderPersonalisationCarousel = (targetingMsgJson) => {
+    if (customElements.get('ct-web-personalisation-carousel') === undefined) {
+      customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel)
+    }
     const divId = targetingMsgJson.display.divId
     const carousel = document.createElement('ct-web-personalisation-carousel')
     carousel.target = targetingMsgJson
@@ -298,42 +304,6 @@ const _tr = (msg, {
         const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
         document.dispatchEvent(kvPairsEvent)
         return
-      }
-      // Logic for personalisation banner
-      if (targetingMsgJson.msgContent.type === 2) {
-        const divId = targetingMsgJson.display.divId
-        if (document.getElementById(divId) == null) {
-          if (document.readyState === 'complete') {
-            return
-          } else {
-            window.addEventListener('load', () => {
-              const divId = targetingMsgJson.display.divId
-              if (document.getElementById(divId) != null) {
-                if (customElements.get('ct-web-personalisation-banner') === undefined) {
-                  customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner)
-                }
-                return renderPersonalisationBanner(targetingMsgJson)
-              }
-            })
-          }
-          return
-        } else {
-          if (customElements.get('ct-web-personalisation-banner') === undefined) {
-            customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner)
-          }
-          return renderPersonalisationBanner(targetingMsgJson)
-        }
-      }
-      // Logic for personalisation carousel
-      if (targetingMsgJson.msgContent.type === 3) {
-        const divId = targetingMsgJson.display.divId
-        if (document.getElementById(divId) == null) {
-          return
-        }
-        if (customElements.get('ct-web-personalisation-carousel') === undefined) {
-          customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel)
-        }
-        return renderPersonalisationCarousel(targetingMsgJson)
       }
     }
     if (displayObj.layout === 1) {
@@ -801,11 +771,27 @@ const _tr = (msg, {
   if (msg.inapp_notifs != null) {
     for (let index = 0; index < msg.inapp_notifs.length; index++) {
       const targetNotif = msg.inapp_notifs[index]
-      if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0 || targetNotif.display.wtarget_type === 2) {
+      if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
         showFooterNotification(targetNotif)
       } else if (targetNotif.display.wtarget_type === 1) { // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif
         window.document.body.onmouseleave = showExitIntent
+      } else if (targetNotif.display.wtarget_type === 2) { // if display['wtarget_type']==2 then web native display
+        exitintentObj = targetNotif
+        if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) { // Check for banner and carousel
+          if (document.readyState === 'complete') {
+            targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
+          } else {
+            window.addEventListener('load', () => {
+              const divId = targetNotif.display.divId
+              if (document.getElementById(divId) != null) {
+                targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
+              }
+            })
+          }
+        } else {
+          showFooterNotification(targetNotif)
+        }
       }
     }
   }

@@ -4918,6 +4918,10 @@
     };
 
     var renderPersonalisationBanner = function renderPersonalisationBanner(targetingMsgJson) {
+      if (customElements.get('ct-web-personalisation-banner') === undefined) {
+        customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
+      }
+
       var divId = targetingMsgJson.display.divId;
       var bannerEl = document.createElement('ct-web-personalisation-banner');
       bannerEl.msgId = targetingMsgJson.wzrk_id;
@@ -4930,6 +4934,10 @@
     };
 
     var renderPersonalisationCarousel = function renderPersonalisationCarousel(targetingMsgJson) {
+      if (customElements.get('ct-web-personalisation-carousel') === undefined) {
+        customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
+      }
+
       var divId = targetingMsgJson.display.divId;
       var carousel = document.createElement('ct-web-personalisation-carousel');
       carousel.target = targetingMsgJson;
@@ -4961,52 +4969,6 @@
           });
           document.dispatchEvent(kvPairsEvent);
           return;
-        } // Logic for personalisation banner
-
-
-        if (targetingMsgJson.msgContent.type === 2) {
-          var _divId = targetingMsgJson.display.divId;
-
-          if (document.getElementById(_divId) == null) {
-            if (document.readyState === 'complete') {
-              return;
-            } else {
-              window.addEventListener('load', function () {
-                var divId = targetingMsgJson.display.divId;
-
-                if (document.getElementById(divId) != null) {
-                  if (customElements.get('ct-web-personalisation-banner') === undefined) {
-                    customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
-                  }
-
-                  return renderPersonalisationBanner(targetingMsgJson);
-                }
-              });
-            }
-
-            return;
-          } else {
-            if (customElements.get('ct-web-personalisation-banner') === undefined) {
-              customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
-            }
-
-            return renderPersonalisationBanner(targetingMsgJson);
-          }
-        } // Logic for personalisation carousel
-
-
-        if (targetingMsgJson.msgContent.type === 3) {
-          var _divId2 = targetingMsgJson.display.divId;
-
-          if (document.getElementById(_divId2) == null) {
-            return;
-          }
-
-          if (customElements.get('ct-web-personalisation-carousel') === undefined) {
-            customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
-          }
-
-          return renderPersonalisationCarousel(targetingMsgJson);
         }
       }
 
@@ -5450,16 +5412,40 @@
     }
 
     if (msg.inapp_notifs != null) {
-      for (var index = 0; index < msg.inapp_notifs.length; index++) {
+      var _loop = function _loop(index) {
         var targetNotif = msg.inapp_notifs[index];
 
-        if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0 || targetNotif.display.wtarget_type === 2) {
+        if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
           showFooterNotification(targetNotif);
         } else if (targetNotif.display.wtarget_type === 1) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
           window.document.body.onmouseleave = showExitIntent;
+        } else if (targetNotif.display.wtarget_type === 2) {
+          // if display['wtarget_type']==2 then web native display
+          exitintentObj = targetNotif;
+
+          if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
+            // Check for banner and carousel
+            if (document.readyState === 'complete') {
+              targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
+            } else {
+              window.addEventListener('load', function () {
+                var divId = targetNotif.display.divId;
+
+                if (document.getElementById(divId) != null) {
+                  targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
+                }
+              });
+            }
+          } else {
+            showFooterNotification(targetNotif);
+          }
         }
+      };
+
+      for (var index = 0; index < msg.inapp_notifs.length; index++) {
+        _loop(index);
       }
     }
 
