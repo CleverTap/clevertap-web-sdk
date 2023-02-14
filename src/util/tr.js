@@ -782,9 +782,23 @@ const _tr = (msg, {
           if (document.readyState === 'complete') {
             targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
           } else {
-            window.addEventListener('load', () => {
-              const divId = targetNotif.display.divId
-              if (document.getElementById(divId) != null) {
+            window.addEventListener('load', function () {
+              var divId = targetNotif.display.divId
+              let id = document.getElementById(divId)
+              if (id === null) {
+                let count = 0
+                const t = setInterval(() => {
+                  if (count === 10 || id !== null) {
+                    clearInterval(t)
+                    if (id !== null) {
+                      return targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
+                    }
+                  } else {
+                    id = document.getElementById(divId)
+                    count++
+                  }
+                }, 5000)
+              } else {
                 targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
               }
             })

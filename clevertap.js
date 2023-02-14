@@ -5432,8 +5432,23 @@
             } else {
               window.addEventListener('load', function () {
                 var divId = targetNotif.display.divId;
+                var id = document.getElementById(divId);
 
-                if (document.getElementById(divId) != null) {
+                if (id === null) {
+                  var count = 0;
+                  var t = setInterval(function () {
+                    if (count === 10 || id !== null) {
+                      clearInterval(t);
+
+                      if (id !== null) {
+                        return targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
+                      }
+                    } else {
+                      id = document.getElementById(divId);
+                      count++;
+                    }
+                  }, 5000);
+                } else {
                   targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
                 }
               });
