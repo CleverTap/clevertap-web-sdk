@@ -5411,8 +5411,42 @@
       return;
     }
 
+    var processNativeDisplayArr = function processNativeDisplayArr(arrInAppNotifs) {
+      Object.keys(arrInAppNotifs).map(function (key) {
+        var divId = arrInAppNotifs[key].display.divId;
+        var id = document.getElementById(divId);
+
+        if (id !== null) {
+          arrInAppNotifs[key].msgContent.type === 2 ? renderPersonalisationBanner(arrInAppNotifs[key]) : renderPersonalisationCarousel(arrInAppNotifs[key]);
+          delete arrInAppNotifs[key];
+        }
+      });
+    };
+
+    var addLoadListener = function addLoadListener(arrInAppNotifs) {
+      console.log('listener', arrInAppNotifs);
+      window.addEventListener('load', function () {
+        var count = 0;
+
+        if (count < 20) {
+          var t = setInterval(function () {
+            processNativeDisplayArr(arrInAppNotifs);
+
+            if (Object.keys(arrInAppNotifs).length === 0 || count === 20) {
+              clearInterval(t);
+              arrInAppNotifs = {};
+            }
+
+            count++;
+          }, 500);
+        }
+      });
+    };
+
     if (msg.inapp_notifs != null) {
-      var _loop = function _loop(index) {
+      var arrInAppNotifs = {};
+
+      for (var index = 0; index < msg.inapp_notifs.length; index++) {
         var targetNotif = msg.inapp_notifs[index];
 
         if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
@@ -5423,44 +5457,22 @@
           window.document.body.onmouseleave = showExitIntent;
         } else if (targetNotif.display.wtarget_type === 2) {
           // if display['wtarget_type']==2 then web native display
-          exitintentObj = targetNotif;
-
           if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
             // Check for banner and carousel
-            if (document.readyState === 'complete') {
-              targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
-            } else {
-              window.addEventListener('load', function () {
-                var divId = targetNotif.display.divId;
-                var id = document.getElementById(divId);
-
-                if (id === null) {
-                  var count = 0;
-                  var t = setInterval(function () {
-                    if (count === 10 || id !== null) {
-                      clearInterval(t);
-
-                      if (id !== null) {
-                        return targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
-                      }
-                    } else {
-                      id = document.getElementById(divId);
-                      count++;
-                    }
-                  }, 5000);
-                } else {
-                  targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
-                }
-              });
-            }
+            arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
           } else {
             showFooterNotification(targetNotif);
           }
         }
-      };
+      } // Process banner or carousel campaign array
 
-      for (var index = 0; index < msg.inapp_notifs.length; index++) {
-        _loop(index);
+
+      if (Object.keys(arrInAppNotifs).length) {
+        if (document.readyState === 'complete') {
+          processNativeDisplayArr();
+        } else {
+          addLoadListener(arrInAppNotifs);
+        }
       }
     }
 

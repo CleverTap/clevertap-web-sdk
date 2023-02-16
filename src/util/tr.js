@@ -768,7 +768,36 @@ const _tr = (msg, {
     }
     return
   }
+  const processNativeDisplayArr = (arrInAppNotifs) => {
+    Object.keys(arrInAppNotifs).map(key => {
+      var divId = arrInAppNotifs[key].display.divId
+      const id = document.getElementById(divId)
+      if (id !== null) {
+        arrInAppNotifs[key].msgContent.type === 2 ? renderPersonalisationBanner(arrInAppNotifs[key]) : renderPersonalisationCarousel(arrInAppNotifs[key])
+        delete arrInAppNotifs[key]
+      }
+    })
+  }
+
+  const addLoadListener = (arrInAppNotifs) => {
+    console.log('listener', arrInAppNotifs)
+    window.addEventListener('load', () => {
+      let count = 0
+      if (count < 20) {
+        const t = setInterval(() => {
+          processNativeDisplayArr(arrInAppNotifs)
+          if (Object.keys(arrInAppNotifs).length === 0 || count === 20) {
+            clearInterval(t)
+            arrInAppNotifs = {}
+          }
+          count++
+        }, 500)
+      }
+    })
+  }
+
   if (msg.inapp_notifs != null) {
+    const arrInAppNotifs = {}
     for (let index = 0; index < msg.inapp_notifs.length; index++) {
       const targetNotif = msg.inapp_notifs[index]
       if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
@@ -777,35 +806,19 @@ const _tr = (msg, {
         exitintentObj = targetNotif
         window.document.body.onmouseleave = showExitIntent
       } else if (targetNotif.display.wtarget_type === 2) { // if display['wtarget_type']==2 then web native display
-        exitintentObj = targetNotif
         if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) { // Check for banner and carousel
-          if (document.readyState === 'complete') {
-            targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
-          } else {
-            window.addEventListener('load', function () {
-              var divId = targetNotif.display.divId
-              let id = document.getElementById(divId)
-              if (id === null) {
-                let count = 0
-                const t = setInterval(() => {
-                  if (count === 10 || id !== null) {
-                    clearInterval(t)
-                    if (id !== null) {
-                      return targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
-                    }
-                  } else {
-                    id = document.getElementById(divId)
-                    count++
-                  }
-                }, 5000)
-              } else {
-                targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
-              }
-            })
-          }
+          arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
         } else {
           showFooterNotification(targetNotif)
         }
+      }
+    }
+    // Process banner or carousel campaign array
+    if (Object.keys(arrInAppNotifs).length) {
+      if (document.readyState === 'complete') {
+        processNativeDisplayArr()
+      } else {
+        addLoadListener(arrInAppNotifs)
       }
     }
   }
