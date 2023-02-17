@@ -780,7 +780,6 @@ const _tr = (msg, {
   }
 
   const addLoadListener = (arrInAppNotifs) => {
-    console.log('listener', arrInAppNotifs)
     window.addEventListener('load', () => {
       let count = 0
       if (count < 20) {
@@ -807,7 +806,11 @@ const _tr = (msg, {
         window.document.body.onmouseleave = showExitIntent
       } else if (targetNotif.display.wtarget_type === 2) { // if display['wtarget_type']==2 then web native display
         if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) { // Check for banner and carousel
-          arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
+          if (document.getElementById(targetNotif.display.divId) !== null) {
+            targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
+          } else {
+            arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
+          }
         } else {
           showFooterNotification(targetNotif)
         }
