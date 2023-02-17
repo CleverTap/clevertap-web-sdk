@@ -3600,6 +3600,7 @@
       _this._target = null;
       _this.shadow = null;
       _this.popup = null;
+      _this.container = null;
       _this.shadow = _this.attachShadow({
         mode: 'open'
       });
@@ -3608,12 +3609,19 @@
 
     _createClass(CTWebPopupImageOnly, [{
       key: "renderImageOnlyPopup",
+      // TODO - handle resize coz there can be a scenario where the user changes the orientation b/w portrait and landscape
       value: function renderImageOnlyPopup() {
         var _this2 = this;
 
         this.shadow.innerHTML = this.getImageOnlyPopupContent();
         this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
-        this.popup.addEventListener('load', this.updateImageWidth(this.popup, this.target.msgContent.border));
+        this.container = this.shadowRoot.getElementById('container');
+        this.closeIcon = this.shadowRoot.getElementById('close');
+        this.popup.addEventListener('load', this.updateImageAndContainerWidth()); // TODO - this will remove the <ct-webpopup-imageonly> element from the DOM. Sonam to check if we need to remove wzrkImageOnlyDiv element as well.
+
+        this.closeIcon.addEventListener('click', function () {
+          _this2.remove();
+        });
         window.clevertap.renderNotificationViewed({
           msgId: this.msgId,
           pivotId: this.pivotId
@@ -3633,63 +3641,32 @@
       key: "getImageOnlyPopupContent",
       value: function getImageOnlyPopupContent() {
         return "\n        ".concat(this.target.msgContent.css, "\n        ").concat(this.target.msgContent.html, "\n      ");
-      }
-      /* We need to specify the width as 100% on the image tag, else it won't scale up although
-      * there's room for scaling
-      * this function is needed to remove the whitespaces present that gets introduced due to object-fit: contain
-      * around the image
-      * while adding border to images, in case it's landscape and it's max-width is set to 100%,
-      * in some cases, the border overflows outside the vw
-      * One fix would be to add box-sizing:border-box; but behaves weirdly while calculating the width
-      * and the resulting image does not occupy the full width althoug there's room for scaling.
-      * Same issue with portrait images wrt to height on mobile devices
-      * Thus this hack
-      */
+      } // TODO - Add comments
 
     }, {
-      key: "updateImageWidth",
-      value: function updateImageWidth(img, border) {
+      key: "updateImageAndContainerWidth",
+      value: function updateImageAndContainerWidth() {
         var _this3 = this;
 
         return function () {
-          var borderSize = border !== 'none' ? parseInt(border.split('px')[0]) : 0;
+          var width = _this3.getRenderedImageWidth(_this3.popup);
 
-          var _this3$getRenderedIma = _this3.getRenderedImageWidthAndHeight(img, 2 * borderSize),
-              width = _this3$getRenderedIma.width,
-              height = _this3$getRenderedIma.height;
+          _this3.popup.style.setProperty('width', "".concat(width, "px"));
 
-          var _width = width ? "".concat(width, "px") : 'auto';
+          _this3.container.style.setProperty('width', "".concat(width, "px"));
 
-          var _height = height ? "".concat(height, "px") : 'auto';
+          _this3.container.style.setProperty('height', 'auto');
 
-          img.style.setProperty('width', _width);
-          img.style.setProperty('height', _height);
-          img.style.setProperty('border', border);
-          img.style.setProperty('visibility', 'visible');
+          _this3.popup.style.setProperty('visibility', 'visible');
+
+          _this3.closeIcon.style.setProperty('visibility', 'visible');
         };
       }
     }, {
-      key: "getRenderedImageWidthAndHeight",
-      value: function getRenderedImageWidthAndHeight(img, borderSize) {
+      key: "getRenderedImageWidth",
+      value: function getRenderedImageWidth(img) {
         var ratio = img.naturalWidth / img.naturalHeight;
-
-        if (window.innerHeight <= img.height + borderSize) {
-          var width = (img.height - borderSize) * ratio;
-          return {
-            width: width
-          };
-        } else if (window.innerWidth <= img.width + borderSize) {
-          var height = (img.width - borderSize) / ratio;
-          return {
-            height: height
-          };
-        } else {
-          var _width2 = img.height * ratio;
-
-          return {
-            width: _width2
-          };
-        }
+        return img.height * ratio;
       }
     }, {
       key: "target",
