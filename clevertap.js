@@ -2445,7 +2445,7 @@
       if (divId != null) {
         document.getElementById(divId).style.display = 'none';
 
-        if (divId === 'intentPreview' || divId === 'imageOnlyDiv') {
+        if (divId === 'intentPreview') {
           if (document.getElementById('intentOpacityDiv') != null) {
             document.getElementById('intentOpacityDiv').style.display = 'none';
           }
@@ -3617,9 +3617,10 @@
         this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
         this.container = this.shadowRoot.getElementById('container');
         this.closeIcon = this.shadowRoot.getElementById('close');
-        this.popup.addEventListener('load', this.updateImageAndContainerWidth()); // TODO - this will remove the <ct-webpopup-imageonly> element from the DOM. Sonam to check if we need to remove wzrkImageOnlyDiv element as well.
-
+        this.popup.addEventListener('load', this.updateImageAndContainerWidth());
         this.closeIcon.addEventListener('click', function () {
+          document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
+
           _this2.remove();
         });
         window.clevertap.renderNotificationViewed({

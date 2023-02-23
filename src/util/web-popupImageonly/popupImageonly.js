@@ -41,8 +41,10 @@ export class CTWebPopupImageOnly extends HTMLElement {
 
       this.popup.addEventListener('load', this.updateImageAndContainerWidth())
 
-      // TODO - this will remove the <ct-webpopup-imageonly> element from the DOM. Sonam to check if we need to remove wzrkImageOnlyDiv element as well.
-      this.closeIcon.addEventListener('click', () => { this.remove() })
+      this.closeIcon.addEventListener('click', () => {
+        document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
+        this.remove()
+      })
 
       window.clevertap.renderNotificationViewed({ msgId: this.msgId, pivotId: this.pivotId })
 
