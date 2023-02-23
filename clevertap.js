@@ -460,6 +460,8 @@
   var PR_COOKIE = 'WZRK_PR';
   var ARP_COOKIE = 'WZRK_ARP';
   var LCOOKIE_NAME = 'WZRK_L';
+  var CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign detail for each guid
+
   var GLOBAL = 'global';
   var DISPLAY = 'display';
   var WEBPUSH_LS_KEY = 'WZRK_WPR';
@@ -2114,20 +2116,24 @@
       }
     }
 
+    console.log('getCampaignObject ', campObj);
     return campObj;
   };
   var saveCampaignObject = function saveCampaignObject(campaignObj) {
     if (StorageManager._isLocalStorageSupported()) {
       var campObj = JSON.stringify(campaignObj);
       StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj));
+      getCampaignObjectForGuid();
     }
   };
-  var getCampaignObjForLc = function getCampaignObjForLc() {
+  var getCampaignObjectForGuid = function getCampaignObjectForGuid() {
+    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    var guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
     var campObj = {};
 
-    if (StorageManager._isLocalStorageSupported()) {
+    if (guid != null && StorageManager._isLocalStorageSupported()) {
       campObj = getCampaignObject();
-      var resultObj = [];
+      var campKeyObj = Object.keys(guidCampObj).length && guidCampObj[guid] ? guidCampObj[guid] : {};
       var globalObj = campObj.global;
       var today = getToday();
       var dailyObj = campObj[today];
@@ -2136,6 +2142,8 @@
         var campaignIdArray = Object.keys(globalObj);
 
         for (var index in campaignIdArray) {
+          var resultObj = [];
+
           if (campaignIdArray.hasOwnProperty(index)) {
             var dailyC = 0;
             var totalC = 0;
@@ -2153,11 +2161,52 @@
               totalC = globalObj[campaignId];
             }
 
-            var element = [campaignId, dailyC, totalC];
-            resultObj.push(element);
+            resultObj = [campaignId, dailyC, totalC];
+            campKeyObj[campaignId] = resultObj;
           }
         }
       }
+
+      guidCampObj[guid] = campKeyObj;
+      console.log(encodeURIComponent(JSON.stringify(guidCampObj)));
+      console.log(guidCampObj); // console.log('Result Object ', encodeURIComponent(obj), guidCampObj)
+
+      StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+    }
+  };
+  var getCampaignObjForLc = function getCampaignObjForLc() {
+    // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
+    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    var campObj = {};
+
+    if (StorageManager._isLocalStorageSupported()) {
+      campObj = getCampaignObject();
+      var resultObj = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid] ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]) : []; // console.log('Result Objct ', Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]))
+      // let resultObj = []
+      // const globalObj = campObj.global
+
+      var today = getToday();
+      var dailyObj = campObj[today]; // if (typeof globalObj !== 'undefined') {
+      //   const campaignIdArray = Object.keys(globalObj)
+      //   for (const index in campaignIdArray) {
+      //     if (campaignIdArray.hasOwnProperty(index)) {
+      //       let dailyC = 0
+      //       let totalC = 0
+      //       const campaignId = campaignIdArray[index]
+      //       if (campaignId === 'tc') {
+      //         continue
+      //       }
+      //       if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
+      //         dailyC = dailyObj[campaignId]
+      //       }
+      //       if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
+      //         totalC = globalObj[campaignId]
+      //       }
+      //       const element = [campaignId, dailyC, totalC]
+      //       resultObj.push(element)
+      //     }
+      //   }
+      // }
 
       var todayC = 0;
 
@@ -5472,7 +5521,7 @@
 
       if (Object.keys(arrInAppNotifs).length) {
         if (document.readyState === 'complete') {
-          processNativeDisplayArr();
+          processNativeDisplayArr(arrInAppNotifs);
         } else {
           addLoadListener(arrInAppNotifs);
         }
@@ -5535,6 +5584,7 @@
           StorageManager.setMetaProp('lsTime', now);
           StorageManager.setMetaProp('exTs', syncExpiry);
           mergeEventMap(eventsMap);
+          console.log('EV cookie 1', $ct.globalEventsMap);
           StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
 
           if ($ct.globalProfileMap == null) {
@@ -6149,6 +6199,7 @@
       }
 
       $ct.globalEventsMap[evtName] = evtDetail;
+      console.log('EV cookie 2', $ct.globalEventsMap);
       StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
     }
   };
