@@ -446,7 +446,7 @@ const _tr = (msg, {
 
     const adjustIFrameHeight = () => {
       // adjust iframe and body height of html inside correctly
-      contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
+      contentHeight = document.getElementById('wiz-iframe')?.contentDocument.getElementById('contentDiv')?.scrollHeight
       if (displayObj['custom-editor'] !== true && !isBanner) {
         contentHeight += 25
       }

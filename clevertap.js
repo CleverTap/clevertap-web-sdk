@@ -5146,8 +5146,10 @@
       doc.close();
 
       var adjustIFrameHeight = function adjustIFrameHeight() {
+        var _document$getElementB, _document$getElementB2;
+
         // adjust iframe and body height of html inside correctly
-        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
+        contentHeight = (_document$getElementB = document.getElementById('wiz-iframe')) === null || _document$getElementB === void 0 ? void 0 : (_document$getElementB2 = _document$getElementB.contentDocument.getElementById('contentDiv')) === null || _document$getElementB2 === void 0 ? void 0 : _document$getElementB2.scrollHeight;
 
         if (displayObj['custom-editor'] !== true && !isBanner) {
           contentHeight += 25;
