@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.4.1] - 28 Feb, 2023
+- Fixes banner and carousel loading
+- Fixes Web Inbox UI
+
 ## [1.4.0] - 31 Jan, 2023
 - Introduces the new "Web Inbox" channel
 - Fixes issue for addMultiValue where property can be added for anonymous profile
