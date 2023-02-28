@@ -227,7 +227,6 @@ export default class RequestManager {
         evtDetail.push(nowTs)
       }
       $ct.globalEventsMap[evtName] = evtDetail
-      console.log('EV cookie 2', $ct.globalEventsMap)
       StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap)
     }
   }

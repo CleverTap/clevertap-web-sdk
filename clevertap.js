@@ -5536,7 +5536,6 @@
           StorageManager.setMetaProp('lsTime', now);
           StorageManager.setMetaProp('exTs', syncExpiry);
           mergeEventMap(eventsMap);
-          console.log('EV cookie 1', $ct.globalEventsMap);
           StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
 
           if ($ct.globalProfileMap == null) {
@@ -6151,7 +6150,6 @@
       }
 
       $ct.globalEventsMap[evtName] = evtDetail;
-      console.log('EV cookie 2', $ct.globalEventsMap);
       StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
     }
   };
