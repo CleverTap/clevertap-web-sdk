@@ -460,7 +460,6 @@
   var PR_COOKIE = 'WZRK_PR';
   var ARP_COOKIE = 'WZRK_ARP';
   var LCOOKIE_NAME = 'WZRK_L';
-
   var GLOBAL = 'global';
   var DISPLAY = 'display';
   var WEBPUSH_LS_KEY = 'WZRK_WPR';
