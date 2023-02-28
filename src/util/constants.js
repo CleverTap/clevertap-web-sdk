@@ -16,7 +16,6 @@ export const PR_COOKIE = 'WZRK_PR'
 export const ARP_COOKIE = 'WZRK_ARP'
 export const LCOOKIE_NAME = 'WZRK_L'
 export const NOTIF_COOKIE_NAME = 'WZRK_N'
-export const CAMP_COOKIE_G = 'WZRK_CAMP_G'// cookie for storing campaign detail for each guid
 export const GLOBAL = 'global'
 export const TOTAL_COUNT = 'tc'
 export const DISPLAY = 'display'
