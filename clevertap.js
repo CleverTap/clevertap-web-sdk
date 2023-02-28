@@ -1999,14 +1999,9 @@
   };
 
   var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
-    // for first request allow the request to go through
-    if (!$ct.blockRequest) {
-      return false;
-    }
-
     if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
       $ct.isOptInRequest = false;
-      return true;
+      return false;
     }
 
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
