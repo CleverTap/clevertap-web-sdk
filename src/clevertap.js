@@ -574,16 +574,14 @@ export default class CleverTap {
       return
     }
 
-    this.#request.processBackupEvents()
-
     $ct.isPrivacyArrPushed = true
     if ($ct.privacyArray.length > 0) {
       this.privacy.push($ct.privacyArray)
     }
 
     this.#processOldValues()
-
     this.pageChanged()
+    this.#request.processBackupEvents()
 
     if (this.#isSpa) {
       // listen to click on the document and check if URL has changed.

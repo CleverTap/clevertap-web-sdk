@@ -1999,9 +1999,14 @@
   };
 
   var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
+    // for first request allow the request to go through
+    if (!$ct.blockRequest) {
+      return false;
+    }
+
     if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
       $ct.isOptInRequest = false;
-      return false;
+      return true;
     }
 
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
@@ -7524,8 +7529,6 @@
           return;
         }
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].processBackupEvents();
-
         $ct.isPrivacyArrPushed = true;
 
         if ($ct.privacyArray.length > 0) {
@@ -7535,6 +7538,8 @@
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
         this.pageChanged();
+
+        _classPrivateFieldLooseBase(this, _request$6)[_request$6].processBackupEvents();
 
         if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa]) {
           // listen to click on the document and check if URL has changed.
