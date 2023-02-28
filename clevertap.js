@@ -460,7 +460,6 @@
   var PR_COOKIE = 'WZRK_PR';
   var ARP_COOKIE = 'WZRK_ARP';
   var LCOOKIE_NAME = 'WZRK_L';
-  var CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign detail for each guid
 
   var GLOBAL = 'global';
   var DISPLAY = 'display';
@@ -2116,24 +2115,20 @@
       }
     }
 
-    console.log('getCampaignObject ', campObj);
     return campObj;
   };
   var saveCampaignObject = function saveCampaignObject(campaignObj) {
     if (StorageManager._isLocalStorageSupported()) {
       var campObj = JSON.stringify(campaignObj);
       StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj));
-      getCampaignObjectForGuid();
     }
   };
-  var getCampaignObjectForGuid = function getCampaignObjectForGuid() {
-    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-    var guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
+  var getCampaignObjForLc = function getCampaignObjForLc() {
     var campObj = {};
 
-    if (guid != null && StorageManager._isLocalStorageSupported()) {
+    if (StorageManager._isLocalStorageSupported()) {
       campObj = getCampaignObject();
-      var campKeyObj = Object.keys(guidCampObj).length && guidCampObj[guid] ? guidCampObj[guid] : {};
+      var resultObj = [];
       var globalObj = campObj.global;
       var today = getToday();
       var dailyObj = campObj[today];
@@ -2142,8 +2137,6 @@
         var campaignIdArray = Object.keys(globalObj);
 
         for (var index in campaignIdArray) {
-          var resultObj = [];
-
           if (campaignIdArray.hasOwnProperty(index)) {
             var dailyC = 0;
             var totalC = 0;
@@ -2161,52 +2154,11 @@
               totalC = globalObj[campaignId];
             }
 
-            resultObj = [campaignId, dailyC, totalC];
-            campKeyObj[campaignId] = resultObj;
+            var element = [campaignId, dailyC, totalC];
+            resultObj.push(element);
           }
         }
       }
-
-      guidCampObj[guid] = campKeyObj;
-      console.log(encodeURIComponent(JSON.stringify(guidCampObj)));
-      console.log(guidCampObj); // console.log('Result Object ', encodeURIComponent(obj), guidCampObj)
-
-      StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
-    }
-  };
-  var getCampaignObjForLc = function getCampaignObjForLc() {
-    // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-    var campObj = {};
-
-    if (StorageManager._isLocalStorageSupported()) {
-      campObj = getCampaignObject();
-      var resultObj = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid] ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]) : []; // console.log('Result Objct ', Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]))
-      // let resultObj = []
-      // const globalObj = campObj.global
-
-      var today = getToday();
-      var dailyObj = campObj[today]; // if (typeof globalObj !== 'undefined') {
-      //   const campaignIdArray = Object.keys(globalObj)
-      //   for (const index in campaignIdArray) {
-      //     if (campaignIdArray.hasOwnProperty(index)) {
-      //       let dailyC = 0
-      //       let totalC = 0
-      //       const campaignId = campaignIdArray[index]
-      //       if (campaignId === 'tc') {
-      //         continue
-      //       }
-      //       if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-      //         dailyC = dailyObj[campaignId]
-      //       }
-      //       if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-      //         totalC = globalObj[campaignId]
-      //       }
-      //       const element = [campaignId, dailyC, totalC]
-      //       resultObj.push(element)
-      //     }
-      //   }
-      // }
 
       var todayC = 0;
 
