@@ -13,6 +13,7 @@ export const messageStyles = ({ backgroundColor, borderColor, titleColor, descri
       }
       ct-inbox-message::part(message):hover {
         box-shadow: 0px 4px 8px rgb(0 0 0 / 10%);
+        cursor: pointer;
       }
       ct-inbox-message::part(iconTitleDescWrapper) {
         display: flex; 
@@ -251,9 +252,10 @@ export const inboxContainerStyles = ({
         }
   
         #inboxCard {
-          padding: 16px 16px 0 16px;
+          padding: 0 16px 0 16px;
           overflow-y: auto;
           box-sizing: border-box;
+          margin-top: 16px;
         }
 
         #poweredByCT {
