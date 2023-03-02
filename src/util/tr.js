@@ -325,6 +325,7 @@ const _tr = (msg, {
     popupImageOnly.target = targetingMsgJson
     const containerEl = document.getElementById(divId)
     containerEl.innerHTML = ''
+    containerEl.style.visibility = 'hidden'
     containerEl.appendChild(popupImageOnly)
   }
 

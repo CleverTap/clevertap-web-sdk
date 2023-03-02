@@ -3661,6 +3661,8 @@
           _this3.popup.style.setProperty('visibility', 'visible');
 
           _this3.closeIcon.style.setProperty('visibility', 'visible');
+
+          document.getElementById('wzrkImageOnlyDiv').style.visibility = 'visible';
         };
       }
     }, {
@@ -4016,6 +4018,7 @@
       popupImageOnly.target = targetingMsgJson;
       var containerEl = document.getElementById(divId);
       containerEl.innerHTML = '';
+      containerEl.style.visibility = 'hidden';
       containerEl.appendChild(popupImageOnly);
     };
 
