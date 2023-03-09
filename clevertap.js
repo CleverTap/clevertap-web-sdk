@@ -452,6 +452,8 @@
   var GCOOKIE_NAME = 'WZRK_G';
   var KCOOKIE_NAME = 'WZRK_K';
   var CAMP_COOKIE_NAME = 'WZRK_CAMP';
+  var CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
+
   var SCOOKIE_PREFIX = 'WZRK_S';
   var SCOOKIE_EXP_TIME_IN_SECS = 60 * 20; // 20 mins
 
@@ -2120,14 +2122,17 @@
     if (StorageManager._isLocalStorageSupported()) {
       var campObj = JSON.stringify(campaignObj);
       StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj));
+      getCampaignObjectForGuid();
     }
   };
-  var getCampaignObjForLc = function getCampaignObjForLc() {
+  var getCampaignObjectForGuid = function getCampaignObjectForGuid() {
+    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    var guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
     var campObj = {};
 
-    if (StorageManager._isLocalStorageSupported()) {
+    if (guid != null && StorageManager._isLocalStorageSupported()) {
       campObj = getCampaignObject();
-      var resultObj = [];
+      var campKeyObj = Object.keys(guidCampObj).length && guidCampObj[guid] ? guidCampObj[guid] : {};
       var globalObj = campObj.global;
       var today = getToday();
       var dailyObj = campObj[today];
@@ -2136,6 +2141,8 @@
         var campaignIdArray = Object.keys(globalObj);
 
         for (var index in campaignIdArray) {
+          var resultObj = [];
+
           if (campaignIdArray.hasOwnProperty(index)) {
             var dailyC = 0;
             var totalC = 0;
@@ -2153,11 +2160,49 @@
               totalC = globalObj[campaignId];
             }
 
-            var element = [campaignId, dailyC, totalC];
-            resultObj.push(element);
+            resultObj = [campaignId, dailyC, totalC];
+            campKeyObj[campaignId] = resultObj;
           }
         }
       }
+
+      guidCampObj[guid] = campKeyObj;
+      StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+    }
+  };
+  var getCampaignObjForLc = function getCampaignObjForLc() {
+    // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
+    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    var campObj = {};
+
+    if (StorageManager._isLocalStorageSupported()) {
+      campObj = getCampaignObject();
+      var resultObj = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid] ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]) : []; // console.log('Result Objct ', Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]))
+      // let resultObj = []
+      // const globalObj = campObj.global
+
+      var today = getToday();
+      var dailyObj = campObj[today]; // if (typeof globalObj !== 'undefined') {
+      //   const campaignIdArray = Object.keys(globalObj)
+      //   for (const index in campaignIdArray) {
+      //     if (campaignIdArray.hasOwnProperty(index)) {
+      //       let dailyC = 0
+      //       let totalC = 0
+      //       const campaignId = campaignIdArray[index]
+      //       if (campaignId === 'tc') {
+      //         continue
+      //       }
+      //       if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
+      //         dailyC = dailyObj[campaignId]
+      //       }
+      //       if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
+      //         totalC = globalObj[campaignId]
+      //       }
+      //       const element = [campaignId, dailyC, totalC]
+      //       resultObj.push(element)
+      //     }
+      //   }
+      // }
 
       var todayC = 0;
 
@@ -5535,6 +5580,7 @@
           StorageManager.setMetaProp('lsTime', now);
           StorageManager.setMetaProp('exTs', syncExpiry);
           mergeEventMap(eventsMap);
+          console.log('EV cookie 1', $ct.globalEventsMap);
           StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
 
           if ($ct.globalProfileMap == null) {
@@ -5548,7 +5594,7 @@
           arp(msg.arp);
         }
 
-        if (msg.inapp_stale != null) {
+        if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
           var campObj = getCampaignObject();
           var globalObj = campObj.global;
 
@@ -5556,6 +5602,16 @@
             for (var idx in msg.inapp_stale) {
               if (msg.inapp_stale.hasOwnProperty(idx)) {
                 delete globalObj[msg.inapp_stale[idx]];
+
+                if (StorageManager.read(CAMP_COOKIE_G)) {
+                  var guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+                  var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+                  if (guidCampObj[guid] && guidCampObj[guid][msg.inapp_stale[idx]]) {
+                    delete guidCampObj[guid][msg.inapp_stale[idx]];
+                    StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+                  }
+                }
               }
             }
           }

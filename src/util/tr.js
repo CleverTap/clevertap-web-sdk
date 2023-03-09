@@ -14,7 +14,9 @@ import {
   NOTIFICATION_VIEWED,
   NOTIFICATION_CLICKED,
   WZRK_PREFIX,
-  WZRK_ID
+  WZRK_ID,
+  CAMP_COOKIE_G,
+  GCOOKIE_NAME
 } from './constants'
 
 import {
@@ -879,6 +881,7 @@ const _tr = (msg, {
         StorageManager.setMetaProp('lsTime', now)
         StorageManager.setMetaProp('exTs', syncExpiry)
         mergeEventMap(eventsMap)
+        console.log('EV cookie 1', $ct.globalEventsMap)
         StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap)
         if ($ct.globalProfileMap == null) {
           addToLocalProfileMap(profileMap, true)
@@ -889,13 +892,21 @@ const _tr = (msg, {
       if (msg.arp != null) {
         arp(msg.arp)
       }
-      if (msg.inapp_stale != null) {
+      if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
         const campObj = getCampaignObject()
         const globalObj = campObj.global
         if (globalObj != null) {
           for (const idx in msg.inapp_stale) {
             if (msg.inapp_stale.hasOwnProperty(idx)) {
               delete globalObj[msg.inapp_stale[idx]]
+              if (StorageManager.read(CAMP_COOKIE_G)) {
+                const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))
+                const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+                if (guidCampObj[guid] && guidCampObj[guid][msg.inapp_stale[idx]]) {
+                  delete guidCampObj[guid][msg.inapp_stale[idx]]
+                  StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
+                }
+              }
             }
           }
         }
