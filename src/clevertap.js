@@ -581,8 +581,12 @@ export default class CleverTap {
 
     this.#processOldValues()
     this.pageChanged()
-    this.#request.processBackupEvents()
-
+    const backupInterval = setInterval(() => {
+      if (this.#device.gcookie) {
+        clearInterval(backupInterval)
+        this.#request.processBackupEvents()
+      }
+    }, 3000)
     if (this.#isSpa) {
       // listen to click on the document and check if URL has changed.
       document.addEventListener('click', this.#boundCheckPageChanged)

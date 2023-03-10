@@ -7489,6 +7489,8 @@
     _createClass(CleverTap, [{
       key: "init",
       value: function init(accountId, region, targetDomain) {
+        var _this2 = this;
+
         if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
           // already initailsed
           return;
@@ -7532,8 +7534,16 @@
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
         this.pageChanged();
+        var backupInterval = setInterval(function () {
+          console.log('hit on backupInterval');
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].processBackupEvents();
+          if (_classPrivateFieldLooseBase(_this2, _device$3)[_device$3].gcookie) {
+            _classPrivateFieldLooseBase(_this2, _request$6)[_request$6].processBackupEvents();
+
+            clearInterval(backupInterval);
+          }
+        }, 3000); // setTimeout(() => {
+        // }, 2000)
 
         if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa]) {
           // listen to click on the document and check if URL has changed.
@@ -7550,7 +7560,7 @@
     }, {
       key: "pageChanged",
       value: function pageChanged() {
-        var _this2 = this;
+        var _this3 = this;
 
         var currLocation = window.location.href;
         var urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
@@ -7630,12 +7640,12 @@
         setTimeout(function () {
           if (pgCount <= 3) {
             // send ping for up to 3 pages
-            _classPrivateFieldLooseBase(_this2, _pingRequest)[_pingRequest]();
+            _classPrivateFieldLooseBase(_this3, _pingRequest)[_pingRequest]();
           }
 
-          if (_classPrivateFieldLooseBase(_this2, _isPingContinuous)[_isPingContinuous]()) {
+          if (_classPrivateFieldLooseBase(_this3, _isPingContinuous)[_isPingContinuous]()) {
             setInterval(function () {
-              _classPrivateFieldLooseBase(_this2, _pingRequest)[_pingRequest]();
+              _classPrivateFieldLooseBase(_this3, _pingRequest)[_pingRequest]();
             }, CONTINUOUS_PING_FREQ_IN_MILLIS);
           }
         }, FIRST_PING_FREQ_IN_MILLIS);
