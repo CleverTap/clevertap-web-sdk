@@ -465,7 +465,7 @@ const _tr = (msg, {
     if (targetingMsgJson.msgContent.type === 1) {
       html = targetingMsgJson.msgContent.html
       html = html.replace(/##campaignId##/g, campaignId)
-      html = html.replace(/##campaignI_batchIdd##/g, targetingMsgJson.wzrk_id)
+      html = html.replace(/##campaignId_batchIdd##/g, targetingMsgJson.wzrk_id)
     } else {
       const css = '' +
         '<style type="text/css">' +
@@ -775,7 +775,7 @@ const _tr = (msg, {
     if (targetingMsgJson.msgContent.type === 1) {
       html = targetingMsgJson.msgContent.html
       html = html.replace(/##campaignId##/g, campaignId)
-      html = html.replace(/##campaignI_batchIdd##/g, targetingMsgJson.wzrk_id)
+      html = html.replace(/##campaignId_batchIdd##/g, targetingMsgJson.wzrk_id)
     } else {
       const css = '' +
         '<style type="text/css">' +

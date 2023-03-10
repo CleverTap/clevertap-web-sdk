@@ -39,7 +39,9 @@ export class CTWebPopupImageOnly extends HTMLElement {
       this.container = this.shadowRoot.getElementById('container')
       this.closeIcon = this.shadowRoot.getElementById('close')
 
-      this.popup.addEventListener('load', this.updateImageAndContainerWidth())
+      const resizeCallback = this.updateImageAndContainerWidth()
+      this.popup.addEventListener('load', resizeCallback)
+      window.addEventListener('resize', resizeCallback)
 
       this.closeIcon.addEventListener('click', () => {
         document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
@@ -63,10 +65,22 @@ export class CTWebPopupImageOnly extends HTMLElement {
       `
     }
 
+    initialWindowWidth = 0
+    initialImgWidth = 0
+
     // TODO - Add comments
     updateImageAndContainerWidth () {
       return () => {
-        const width = this.getRenderedImageWidth(this.popup)
+        // setting initial width to calculate scale ratio later
+        if (!this.initialWindowWidth) {
+          this.initialWindowWidth = window.innerWidth
+          this.initialImgWidth = this.popup.width
+        }
+
+        // get scaled width
+        const width = this.getRenderedImageWidth()
+
+        // set style properties with scaled
         this.popup.style.setProperty('width', `${width}px`)
         this.container.style.setProperty('width', `${width}px`)
         this.container.style.setProperty('height', 'auto')
@@ -76,8 +90,8 @@ export class CTWebPopupImageOnly extends HTMLElement {
       }
     }
 
-    getRenderedImageWidth (img) {
-      const ratio = img.naturalWidth / img.naturalHeight
-      return img.height * ratio
+    getRenderedImageWidth () {
+      const ratio = window.innerWidth / this.initialWindowWidth
+      return this.initialImgWidth * ratio
     }
 }
