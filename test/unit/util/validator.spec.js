@@ -75,7 +75,7 @@ describe('util/validator', function () {
 
       test('should log error if array length > 50 and returns false if array items are not an object', () => {
         const items = []
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 51; i++) {
           items.push('item' + i)
         }
         const input = {
