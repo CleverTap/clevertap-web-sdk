@@ -4997,9 +4997,12 @@
         return showExitIntent(undefined, targetingMsgJson);
       }
 
-      if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
-      }
+      } // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+      //   return
+      // }
+
 
       var divId = 'wizParDiv' + displayObj.layout;
 
@@ -5324,11 +5327,13 @@
         return;
       }
 
-      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-
-      if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       }
+
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+      //   return
+      // }
 
       $ct.campaignDivMap[campaignId] = 'intentPreview';
       var legacy = false;

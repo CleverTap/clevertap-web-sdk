@@ -312,9 +312,12 @@ const _tr = (msg, {
       return showExitIntent(undefined, targetingMsgJson)
     }
 
-    if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
+    // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+    //   return
+    // }
 
     const divId = 'wizParDiv' + displayObj.layout
 
@@ -654,10 +657,13 @@ const _tr = (msg, {
       return
     }
 
-    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
-    if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
+    // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+    //   return
+    // }
 
     $ct.campaignDivMap[campaignId] = 'intentPreview'
     let legacy = false
