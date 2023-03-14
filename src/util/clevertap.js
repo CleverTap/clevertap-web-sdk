@@ -68,7 +68,7 @@ export const getCampaignObjectForGuid = () => {
   const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {}
 
   let campObj = {}
-  if (guid != null && StorageManager._isLocalStorageSupported()) {
+  if (guid && StorageManager._isLocalStorageSupported()) {
     campObj = getCampaignObject()
     const campKeyObj = (Object.keys(guidCampObj).length && guidCampObj[guid]) ? guidCampObj[guid] : {}
     const globalObj = campObj.global
@@ -108,32 +108,8 @@ export const getCampaignObjForLc = () => {
   if (StorageManager._isLocalStorageSupported()) {
     campObj = getCampaignObject()
     let resultObj = (StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]) ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]) : []
-    // console.log('Result Objct ', Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]))
-    // let resultObj = []
-    // const globalObj = campObj.global
     const today = getToday()
     const dailyObj = campObj[today]
-    // if (typeof globalObj !== 'undefined') {
-    //   const campaignIdArray = Object.keys(globalObj)
-    //   for (const index in campaignIdArray) {
-    //     if (campaignIdArray.hasOwnProperty(index)) {
-    //       let dailyC = 0
-    //       let totalC = 0
-    //       const campaignId = campaignIdArray[index]
-    //       if (campaignId === 'tc') {
-    //         continue
-    //       }
-    //       if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-    //         dailyC = dailyObj[campaignId]
-    //       }
-    //       if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-    //         totalC = globalObj[campaignId]
-    //       }
-    //       const element = [campaignId, dailyC, totalC]
-    //       resultObj.push(element)
-    //     }
-    //   }
-    // }
     let todayC = 0
     if (typeof dailyObj !== 'undefined' && typeof dailyObj.tc !== 'undefined') {
       todayC = dailyObj.tc

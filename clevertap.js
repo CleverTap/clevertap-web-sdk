@@ -2130,7 +2130,7 @@
     var guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
     var campObj = {};
 
-    if (guid != null && StorageManager._isLocalStorageSupported()) {
+    if (guid && StorageManager._isLocalStorageSupported()) {
       campObj = getCampaignObject();
       var campKeyObj = Object.keys(guidCampObj).length && guidCampObj[guid] ? guidCampObj[guid] : {};
       var globalObj = campObj.global;
@@ -2177,33 +2177,9 @@
 
     if (StorageManager._isLocalStorageSupported()) {
       campObj = getCampaignObject();
-      var resultObj = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid] ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]) : []; // console.log('Result Objct ', Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]))
-      // let resultObj = []
-      // const globalObj = campObj.global
-
+      var resultObj = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid] ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]) : [];
       var today = getToday();
-      var dailyObj = campObj[today]; // if (typeof globalObj !== 'undefined') {
-      //   const campaignIdArray = Object.keys(globalObj)
-      //   for (const index in campaignIdArray) {
-      //     if (campaignIdArray.hasOwnProperty(index)) {
-      //       let dailyC = 0
-      //       let totalC = 0
-      //       const campaignId = campaignIdArray[index]
-      //       if (campaignId === 'tc') {
-      //         continue
-      //       }
-      //       if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-      //         dailyC = dailyObj[campaignId]
-      //       }
-      //       if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-      //         totalC = globalObj[campaignId]
-      //       }
-      //       const element = [campaignId, dailyC, totalC]
-      //       resultObj.push(element)
-      //     }
-      //   }
-      // }
-
+      var dailyObj = campObj[today];
       var todayC = 0;
 
       if (typeof dailyObj !== 'undefined' && typeof dailyObj.tc !== 'undefined') {
@@ -5580,7 +5556,6 @@
           StorageManager.setMetaProp('lsTime', now);
           StorageManager.setMetaProp('exTs', syncExpiry);
           mergeEventMap(eventsMap);
-          console.log('EV cookie 1', $ct.globalEventsMap);
           StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
 
           if ($ct.globalProfileMap == null) {
