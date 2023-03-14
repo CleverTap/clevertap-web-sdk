@@ -73,9 +73,9 @@ describe('util/validator', function () {
         expect(result).toBeFalsy()
       })
 
-      test('should log error if array length > 16 and returns false if array items are not an object', () => {
+      test('should log error if array length > 50 and returns false if array items are not an object', () => {
         const items = []
-        for (let i = 0; i < 17; i++) {
+        for (let i = 0; i < 50; i++) {
           items.push('item' + i)
         }
         const input = {
