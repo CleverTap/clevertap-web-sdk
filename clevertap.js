@@ -452,6 +452,8 @@
   var GCOOKIE_NAME = 'WZRK_G';
   var KCOOKIE_NAME = 'WZRK_K';
   var CAMP_COOKIE_NAME = 'WZRK_CAMP';
+  var CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
+
   var SCOOKIE_PREFIX = 'WZRK_S';
   var SCOOKIE_EXP_TIME_IN_SECS = 60 * 20; // 20 mins
 
@@ -2119,46 +2121,77 @@
   var saveCampaignObject = function saveCampaignObject(campaignObj) {
     if (StorageManager._isLocalStorageSupported()) {
       var campObj = JSON.stringify(campaignObj);
-      StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj));
+      StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj)); // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
+
+      setCampaignObjectForGuid();
+    }
+  }; // set Campaign Object against the guid, with daily count and total count details
+
+  var setCampaignObjectForGuid = function setCampaignObjectForGuid() {
+    if (StorageManager._isLocalStorageSupported()) {
+      var guid = StorageManager.read(GCOOKIE_NAME);
+
+      if (isValueValid(guid)) {
+        try {
+          guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+          var guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
+          var campObj = {};
+
+          if (guid && StorageManager._isLocalStorageSupported()) {
+            campObj = getCampaignObject();
+            var campKeyObj = Object.keys(guidCampObj).length && guidCampObj[guid] ? guidCampObj[guid] : {};
+            var globalObj = campObj.global;
+            var today = getToday();
+            var dailyObj = campObj[today];
+
+            if (typeof globalObj !== 'undefined') {
+              var campaignIdArray = Object.keys(globalObj);
+
+              for (var index in campaignIdArray) {
+                var resultObj = [];
+
+                if (campaignIdArray.hasOwnProperty(index)) {
+                  var dailyC = 0;
+                  var totalC = 0;
+                  var campaignId = campaignIdArray[index];
+
+                  if (campaignId === 'tc') {
+                    continue;
+                  }
+
+                  if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
+                    dailyC = dailyObj[campaignId];
+                  }
+
+                  if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
+                    totalC = globalObj[campaignId];
+                  }
+
+                  resultObj = [campaignId, dailyC, totalC];
+                  campKeyObj[campaignId] = resultObj;
+                }
+              }
+            }
+
+            guidCampObj[guid] = campKeyObj;
+            StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+          }
+        } catch (e) {
+          console.error('Invalid clevertap Id ' + e);
+        }
+      }
     }
   };
   var getCampaignObjForLc = function getCampaignObjForLc() {
+    // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
+    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
     var campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
       campObj = getCampaignObject();
-      var resultObj = [];
-      var globalObj = campObj.global;
+      var resultObj = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid] ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]) : [];
       var today = getToday();
       var dailyObj = campObj[today];
-
-      if (typeof globalObj !== 'undefined') {
-        var campaignIdArray = Object.keys(globalObj);
-
-        for (var index in campaignIdArray) {
-          if (campaignIdArray.hasOwnProperty(index)) {
-            var dailyC = 0;
-            var totalC = 0;
-            var campaignId = campaignIdArray[index];
-
-            if (campaignId === 'tc') {
-              continue;
-            }
-
-            if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-              dailyC = dailyObj[campaignId];
-            }
-
-            if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-              totalC = globalObj[campaignId];
-            }
-
-            var element = [campaignId, dailyC, totalC];
-            resultObj.push(element);
-          }
-        }
-      }
-
       var todayC = 0;
 
       if (typeof dailyObj !== 'undefined' && typeof dailyObj.tc !== 'undefined') {
@@ -4730,7 +4763,7 @@
         }
 
         if (targetingMsgJson[DISPLAY].tlc != null) {
-          // Total Campaign Limit
+          // Total lifetime count
           campaignTotalLimit = parseInt(targetingMsgJson[DISPLAY].tlc, 10);
         }
 
@@ -4751,7 +4784,7 @@
           var campaignSessionCount = _sessionObj[campaignId];
           var totalSessionCount = _sessionObj.tc; // dnd
 
-          if (campaignSessionCount === 'dnd') {
+          if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
             return false;
           } // session
 
@@ -4976,9 +5009,12 @@
         return showExitIntent(undefined, targetingMsgJson);
       }
 
-      if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
-      }
+      } // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+      //   return
+      // }
+
 
       var divId = 'wizParDiv' + displayObj.layout;
 
@@ -5303,11 +5339,13 @@
         return;
       }
 
-      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-
-      if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       }
+
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+      //   return
+      // }
 
       $ct.campaignDivMap[campaignId] = 'intentPreview';
       var legacy = false;
@@ -5548,7 +5586,7 @@
           arp(msg.arp);
         }
 
-        if (msg.inapp_stale != null) {
+        if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
           var campObj = getCampaignObject();
           var globalObj = campObj.global;
 
@@ -5556,6 +5594,16 @@
             for (var idx in msg.inapp_stale) {
               if (msg.inapp_stale.hasOwnProperty(idx)) {
                 delete globalObj[msg.inapp_stale[idx]];
+
+                if (StorageManager.read(CAMP_COOKIE_G)) {
+                  var guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+                  var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+                  if (guidCampObj[guid] && guidCampObj[guid][msg.inapp_stale[idx]]) {
+                    delete guidCampObj[guid][msg.inapp_stale[idx]];
+                    StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+                  }
+                }
               }
             }
           }
@@ -7535,15 +7583,12 @@
 
         this.pageChanged();
         var backupInterval = setInterval(function () {
-          console.log('hit on backupInterval');
-
           if (_classPrivateFieldLooseBase(_this2, _device$3)[_device$3].gcookie) {
-            _classPrivateFieldLooseBase(_this2, _request$6)[_request$6].processBackupEvents();
-
             clearInterval(backupInterval);
+
+            _classPrivateFieldLooseBase(_this2, _request$6)[_request$6].processBackupEvents();
           }
-        }, 3000); // setTimeout(() => {
-        // }, 2000)
+        }, 3000);
 
         if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa]) {
           // listen to click on the document and check if URL has changed.
@@ -7629,7 +7674,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.4.1'
+          lib: 'web-sdk-v1.4.2'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

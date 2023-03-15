@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.4.2] - 15 Mar, 2023
+- Fixes repeated firing of requests from processBackupEvents functionality
+- Updates Charged Item count limit to 50
+- Fixes Notification rendering in accordance to Delivery preferences
+
 ## [1.4.1] - 28 Feb, 2023
 - Fixes banner and carousel loading
 - Fixes Web Inbox UI
