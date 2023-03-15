@@ -14,7 +14,9 @@ import {
   NOTIFICATION_VIEWED,
   NOTIFICATION_CLICKED,
   WZRK_PREFIX,
-  WZRK_ID
+  WZRK_ID,
+  CAMP_COOKIE_G,
+  GCOOKIE_NAME
 } from './constants'
 
 import {
@@ -94,7 +96,7 @@ const _tr = (msg, {
       if (targetingMsgJson[DISPLAY].tdc != null) { // No of web popups in a day per campaign
         campaignDailyLimit = parseInt(targetingMsgJson[DISPLAY].tdc, 10)
       }
-      if (targetingMsgJson[DISPLAY].tlc != null) { // Total Campaign Limit
+      if (targetingMsgJson[DISPLAY].tlc != null) { // Total lifetime count
         campaignTotalLimit = parseInt(targetingMsgJson[DISPLAY].tlc, 10)
       }
       if (targetingMsgJson[DISPLAY].wmp != null) { // No of campaigns per day
@@ -110,7 +112,7 @@ const _tr = (msg, {
         const campaignSessionCount = sessionObj[campaignId]
         const totalSessionCount = sessionObj.tc
         // dnd
-        if (campaignSessionCount === 'dnd') {
+        if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
           return false
         }
 
@@ -310,9 +312,12 @@ const _tr = (msg, {
       return showExitIntent(undefined, targetingMsgJson)
     }
 
-    if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
+    // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+    //   return
+    // }
 
     const divId = 'wizParDiv' + displayObj.layout
 
@@ -382,6 +387,7 @@ const _tr = (msg, {
     if (targetingMsgJson.msgContent.type === 1) {
       html = targetingMsgJson.msgContent.html
       html = html.replace(/##campaignId##/g, campaignId)
+      html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id)
     } else {
       const css = '' +
         '<style type="text/css">' +
@@ -652,10 +658,13 @@ const _tr = (msg, {
       return
     }
 
-    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
-    if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
+    // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+    //   return
+    // }
 
     $ct.campaignDivMap[campaignId] = 'intentPreview'
     let legacy = false
@@ -691,6 +700,7 @@ const _tr = (msg, {
     if (targetingMsgJson.msgContent.type === 1) {
       html = targetingMsgJson.msgContent.html
       html = html.replace(/##campaignId##/g, campaignId)
+      html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id)
     } else {
       const css = '' +
         '<style type="text/css">' +
@@ -889,13 +899,21 @@ const _tr = (msg, {
       if (msg.arp != null) {
         arp(msg.arp)
       }
-      if (msg.inapp_stale != null) {
+      if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
         const campObj = getCampaignObject()
         const globalObj = campObj.global
         if (globalObj != null) {
           for (const idx in msg.inapp_stale) {
             if (msg.inapp_stale.hasOwnProperty(idx)) {
               delete globalObj[msg.inapp_stale[idx]]
+              if (StorageManager.read(CAMP_COOKIE_G)) {
+                const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))
+                const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+                if (guidCampObj[guid] && guidCampObj[guid][msg.inapp_stale[idx]]) {
+                  delete guidCampObj[guid][msg.inapp_stale[idx]]
+                  StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
+                }
+              }
             }
           }
         }

@@ -452,6 +452,8 @@
   var GCOOKIE_NAME = 'WZRK_G';
   var KCOOKIE_NAME = 'WZRK_K';
   var CAMP_COOKIE_NAME = 'WZRK_CAMP';
+  var CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
+
   var SCOOKIE_PREFIX = 'WZRK_S';
   var SCOOKIE_EXP_TIME_IN_SECS = 60 * 20; // 20 mins
 
@@ -1353,8 +1355,8 @@
               return false;
             }
 
-            if (chargedObj[key].length > 16) {
-              logger.reportError(522, 'Charged Items exceed 16 limit. Actual count: ' + chargedObj[key].length + '. Additional items will be dropped.');
+            if (chargedObj[key].length > 50) {
+              logger.reportError(522, 'Charged Items exceed 50 limit. Actual count: ' + chargedObj[key].length);
             }
 
             for (var itemKey in chargedObj[key]) {
@@ -2119,46 +2121,77 @@
   var saveCampaignObject = function saveCampaignObject(campaignObj) {
     if (StorageManager._isLocalStorageSupported()) {
       var campObj = JSON.stringify(campaignObj);
-      StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj));
+      StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj)); // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
+
+      setCampaignObjectForGuid();
+    }
+  }; // set Campaign Object against the guid, with daily count and total count details
+
+  var setCampaignObjectForGuid = function setCampaignObjectForGuid() {
+    if (StorageManager._isLocalStorageSupported()) {
+      var guid = StorageManager.read(GCOOKIE_NAME);
+
+      if (isValueValid(guid)) {
+        try {
+          guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+          var guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
+          var campObj = {};
+
+          if (guid && StorageManager._isLocalStorageSupported()) {
+            campObj = getCampaignObject();
+            var campKeyObj = Object.keys(guidCampObj).length && guidCampObj[guid] ? guidCampObj[guid] : {};
+            var globalObj = campObj.global;
+            var today = getToday();
+            var dailyObj = campObj[today];
+
+            if (typeof globalObj !== 'undefined') {
+              var campaignIdArray = Object.keys(globalObj);
+
+              for (var index in campaignIdArray) {
+                var resultObj = [];
+
+                if (campaignIdArray.hasOwnProperty(index)) {
+                  var dailyC = 0;
+                  var totalC = 0;
+                  var campaignId = campaignIdArray[index];
+
+                  if (campaignId === 'tc') {
+                    continue;
+                  }
+
+                  if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
+                    dailyC = dailyObj[campaignId];
+                  }
+
+                  if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
+                    totalC = globalObj[campaignId];
+                  }
+
+                  resultObj = [campaignId, dailyC, totalC];
+                  campKeyObj[campaignId] = resultObj;
+                }
+              }
+            }
+
+            guidCampObj[guid] = campKeyObj;
+            StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+          }
+        } catch (e) {
+          console.error('Invalid clevertap Id ' + e);
+        }
+      }
     }
   };
   var getCampaignObjForLc = function getCampaignObjForLc() {
+    // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
+    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
     var campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
       campObj = getCampaignObject();
-      var resultObj = [];
-      var globalObj = campObj.global;
+      var resultObj = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid] ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]) : [];
       var today = getToday();
       var dailyObj = campObj[today];
-
-      if (typeof globalObj !== 'undefined') {
-        var campaignIdArray = Object.keys(globalObj);
-
-        for (var index in campaignIdArray) {
-          if (campaignIdArray.hasOwnProperty(index)) {
-            var dailyC = 0;
-            var totalC = 0;
-            var campaignId = campaignIdArray[index];
-
-            if (campaignId === 'tc') {
-              continue;
-            }
-
-            if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-              dailyC = dailyObj[campaignId];
-            }
-
-            if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-              totalC = globalObj[campaignId];
-            }
-
-            var element = [campaignId, dailyC, totalC];
-            resultObj.push(element);
-          }
-        }
-      }
-
       var todayC = 0;
 
       if (typeof dailyObj !== 'undefined' && typeof dailyObj.tc !== 'undefined') {
@@ -4730,7 +4763,7 @@
         }
 
         if (targetingMsgJson[DISPLAY].tlc != null) {
-          // Total Campaign Limit
+          // Total lifetime count
           campaignTotalLimit = parseInt(targetingMsgJson[DISPLAY].tlc, 10);
         }
 
@@ -4751,7 +4784,7 @@
           var campaignSessionCount = _sessionObj[campaignId];
           var totalSessionCount = _sessionObj.tc; // dnd
 
-          if (campaignSessionCount === 'dnd') {
+          if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
             return false;
           } // session
 
@@ -4976,9 +5009,12 @@
         return showExitIntent(undefined, targetingMsgJson);
       }
 
-      if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
-      }
+      } // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+      //   return
+      // }
+
 
       var divId = 'wizParDiv' + displayObj.layout;
 
@@ -5050,6 +5086,7 @@
       if (targetingMsgJson.msgContent.type === 1) {
         html = targetingMsgJson.msgContent.html;
         html = html.replace(/##campaignId##/g, campaignId);
+        html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
         var css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + 'td{vertical-align:top;}' + 'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' + '</style>';
         var bgColor, textColor, btnBg, leftTd, btColor;
@@ -5303,11 +5340,13 @@
         return;
       }
 
-      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-
-      if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       }
+
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+      //   return
+      // }
 
       $ct.campaignDivMap[campaignId] = 'intentPreview';
       var legacy = false;
@@ -5345,6 +5384,7 @@
       if (targetingMsgJson.msgContent.type === 1) {
         html = targetingMsgJson.msgContent.html;
         html = html.replace(/##campaignId##/g, campaignId);
+        html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
         var css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + '#contentDiv .button{padding-top:20px;}' + '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' + '</style>';
         var bgColor, textColor, btnBg, btColor;
@@ -5548,7 +5588,7 @@
           arp(msg.arp);
         }
 
-        if (msg.inapp_stale != null) {
+        if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
           var campObj = getCampaignObject();
           var globalObj = campObj.global;
 
@@ -5556,6 +5596,16 @@
             for (var idx in msg.inapp_stale) {
               if (msg.inapp_stale.hasOwnProperty(idx)) {
                 delete globalObj[msg.inapp_stale[idx]];
+
+                if (StorageManager.read(CAMP_COOKIE_G)) {
+                  var guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+                  var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+                  if (guidCampObj[guid] && guidCampObj[guid][msg.inapp_stale[idx]]) {
+                    delete guidCampObj[guid][msg.inapp_stale[idx]];
+                    StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+                  }
+                }
               }
             }
           }
@@ -7489,6 +7539,8 @@
     _createClass(CleverTap, [{
       key: "init",
       value: function init(accountId, region, targetDomain) {
+        var _this2 = this;
+
         if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
           // already initailsed
           return;
@@ -7532,8 +7584,13 @@
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
         this.pageChanged();
+        var backupInterval = setInterval(function () {
+          if (_classPrivateFieldLooseBase(_this2, _device$3)[_device$3].gcookie) {
+            clearInterval(backupInterval);
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].processBackupEvents();
+            _classPrivateFieldLooseBase(_this2, _request$6)[_request$6].processBackupEvents();
+          }
+        }, 3000);
 
         if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa]) {
           // listen to click on the document and check if URL has changed.
@@ -7550,7 +7607,7 @@
     }, {
       key: "pageChanged",
       value: function pageChanged() {
-        var _this2 = this;
+        var _this3 = this;
 
         var currLocation = window.location.href;
         var urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
@@ -7619,7 +7676,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.4.1'
+          lib: 'web-sdk-v1.4.2'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
@@ -7630,12 +7687,12 @@
         setTimeout(function () {
           if (pgCount <= 3) {
             // send ping for up to 3 pages
-            _classPrivateFieldLooseBase(_this2, _pingRequest)[_pingRequest]();
+            _classPrivateFieldLooseBase(_this3, _pingRequest)[_pingRequest]();
           }
 
-          if (_classPrivateFieldLooseBase(_this2, _isPingContinuous)[_isPingContinuous]()) {
+          if (_classPrivateFieldLooseBase(_this3, _isPingContinuous)[_isPingContinuous]()) {
             setInterval(function () {
-              _classPrivateFieldLooseBase(_this2, _pingRequest)[_pingRequest]();
+              _classPrivateFieldLooseBase(_this3, _pingRequest)[_pingRequest]();
             }, CONTINUOUS_PING_FREQ_IN_MILLIS);
           }
         }, FIRST_PING_FREQ_IN_MILLIS);
