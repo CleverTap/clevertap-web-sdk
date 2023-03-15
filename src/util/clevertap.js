@@ -36,8 +36,10 @@ import {
   isConvertibleToNumber,
   isObjectEmpty,
   isString,
-  isNumber
+  isNumber,
+  isValueValid
 } from './datatypes'
+
 import { addToURL, getURLParams } from './url'
 import { compressData } from './encoder'
 import RequestDispatcher from './requestDispatcher'
@@ -66,40 +68,48 @@ export const saveCampaignObject = (campaignObj) => {
 
 // set Campaign Object against the guid, with daily count and total count details
 export const setCampaignObjectForGuid = () => {
-  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-  const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {}
-
-  let campObj = {}
-  if (guid && StorageManager._isLocalStorageSupported()) {
-    campObj = getCampaignObject()
-    const campKeyObj = (Object.keys(guidCampObj).length && guidCampObj[guid]) ? guidCampObj[guid] : {}
-    const globalObj = campObj.global
-    const today = getToday()
-    const dailyObj = campObj[today]
-    if (typeof globalObj !== 'undefined') {
-      const campaignIdArray = Object.keys(globalObj)
-      for (const index in campaignIdArray) {
-        let resultObj = []
-        if (campaignIdArray.hasOwnProperty(index)) {
-          let dailyC = 0
-          let totalC = 0
-          const campaignId = campaignIdArray[index]
-          if (campaignId === 'tc') {
-            continue
+  if (StorageManager._isLocalStorageSupported()) {
+    let guid = StorageManager.read(GCOOKIE_NAME)
+    if (isValueValid(guid)) {
+      try {
+        guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+        const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {}
+        let campObj = {}
+        if (guid && StorageManager._isLocalStorageSupported()) {
+          campObj = getCampaignObject()
+          const campKeyObj = (Object.keys(guidCampObj).length && guidCampObj[guid]) ? guidCampObj[guid] : {}
+          const globalObj = campObj.global
+          const today = getToday()
+          const dailyObj = campObj[today]
+          if (typeof globalObj !== 'undefined') {
+            const campaignIdArray = Object.keys(globalObj)
+            for (const index in campaignIdArray) {
+              let resultObj = []
+              if (campaignIdArray.hasOwnProperty(index)) {
+                let dailyC = 0
+                let totalC = 0
+                const campaignId = campaignIdArray[index]
+                if (campaignId === 'tc') {
+                  continue
+                }
+                if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
+                  dailyC = dailyObj[campaignId]
+                }
+                if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
+                  totalC = globalObj[campaignId]
+                }
+                resultObj = [campaignId, dailyC, totalC]
+                campKeyObj[campaignId] = resultObj
+              }
+            }
           }
-          if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-            dailyC = dailyObj[campaignId]
-          }
-          if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-            totalC = globalObj[campaignId]
-          }
-          resultObj = [campaignId, dailyC, totalC]
-          campKeyObj[campaignId] = resultObj
+          guidCampObj[guid] = campKeyObj
+          StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
         }
+      } catch (e) {
+        console.error('Invalid clevertap Id ' + e)
       }
     }
-    guidCampObj[guid] = campKeyObj
-    StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
   }
 }
 export const getCampaignObjForLc = () => {

@@ -2128,48 +2128,58 @@
   }; // set Campaign Object against the guid, with daily count and total count details
 
   var setCampaignObjectForGuid = function setCampaignObjectForGuid() {
-    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-    var guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
-    var campObj = {};
+    if (StorageManager._isLocalStorageSupported()) {
+      var guid = StorageManager.read(GCOOKIE_NAME);
 
-    if (guid && StorageManager._isLocalStorageSupported()) {
-      campObj = getCampaignObject();
-      var campKeyObj = Object.keys(guidCampObj).length && guidCampObj[guid] ? guidCampObj[guid] : {};
-      var globalObj = campObj.global;
-      var today = getToday();
-      var dailyObj = campObj[today];
+      if (isValueValid(guid)) {
+        try {
+          guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+          var guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
+          var campObj = {};
 
-      if (typeof globalObj !== 'undefined') {
-        var campaignIdArray = Object.keys(globalObj);
+          if (guid && StorageManager._isLocalStorageSupported()) {
+            campObj = getCampaignObject();
+            var campKeyObj = Object.keys(guidCampObj).length && guidCampObj[guid] ? guidCampObj[guid] : {};
+            var globalObj = campObj.global;
+            var today = getToday();
+            var dailyObj = campObj[today];
 
-        for (var index in campaignIdArray) {
-          var resultObj = [];
+            if (typeof globalObj !== 'undefined') {
+              var campaignIdArray = Object.keys(globalObj);
 
-          if (campaignIdArray.hasOwnProperty(index)) {
-            var dailyC = 0;
-            var totalC = 0;
-            var campaignId = campaignIdArray[index];
+              for (var index in campaignIdArray) {
+                var resultObj = [];
 
-            if (campaignId === 'tc') {
-              continue;
+                if (campaignIdArray.hasOwnProperty(index)) {
+                  var dailyC = 0;
+                  var totalC = 0;
+                  var campaignId = campaignIdArray[index];
+
+                  if (campaignId === 'tc') {
+                    continue;
+                  }
+
+                  if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
+                    dailyC = dailyObj[campaignId];
+                  }
+
+                  if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
+                    totalC = globalObj[campaignId];
+                  }
+
+                  resultObj = [campaignId, dailyC, totalC];
+                  campKeyObj[campaignId] = resultObj;
+                }
+              }
             }
 
-            if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-              dailyC = dailyObj[campaignId];
-            }
-
-            if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-              totalC = globalObj[campaignId];
-            }
-
-            resultObj = [campaignId, dailyC, totalC];
-            campKeyObj[campaignId] = resultObj;
+            guidCampObj[guid] = campKeyObj;
+            StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
           }
+        } catch (e) {
+          console.error('Invalid clevertap Id ' + e);
         }
       }
-
-      guidCampObj[guid] = campKeyObj;
-      StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
     }
   };
   var getCampaignObjForLc = function getCampaignObjForLc() {
