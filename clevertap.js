@@ -1353,8 +1353,8 @@
               return false;
             }
 
-            if (chargedObj[key].length > 16) {
-              logger.reportError(522, 'Charged Items exceed 16 limit. Actual count: ' + chargedObj[key].length + '. Additional items will be dropped.');
+            if (chargedObj[key].length > 50) {
+              logger.reportError(522, 'Charged Items exceed 50 limit. Actual count: ' + chargedObj[key].length);
             }
 
             for (var itemKey in chargedObj[key]) {
