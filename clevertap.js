@@ -2121,11 +2121,13 @@
   var saveCampaignObject = function saveCampaignObject(campaignObj) {
     if (StorageManager._isLocalStorageSupported()) {
       var campObj = JSON.stringify(campaignObj);
-      StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj));
-      getCampaignObjectForGuid();
+      StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj)); // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
+
+      setCampaignObjectForGuid();
     }
-  };
-  var getCampaignObjectForGuid = function getCampaignObjectForGuid() {
+  }; // set Campaign Object against the guid, with daily count and total count details
+
+  var setCampaignObjectForGuid = function setCampaignObjectForGuid() {
     var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
     var guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
     var campObj = {};
@@ -4751,7 +4753,7 @@
         }
 
         if (targetingMsgJson[DISPLAY].tlc != null) {
-          // Total Campaign Limit
+          // Total lifetime count
           campaignTotalLimit = parseInt(targetingMsgJson[DISPLAY].tlc, 10);
         }
 
@@ -7655,7 +7657,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.4.1'
+          lib: 'web-sdk-v1.4.2'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

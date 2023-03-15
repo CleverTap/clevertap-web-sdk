@@ -96,7 +96,7 @@ const _tr = (msg, {
       if (targetingMsgJson[DISPLAY].tdc != null) { // No of web popups in a day per campaign
         campaignDailyLimit = parseInt(targetingMsgJson[DISPLAY].tdc, 10)
       }
-      if (targetingMsgJson[DISPLAY].tlc != null) { // Total Campaign Limit
+      if (targetingMsgJson[DISPLAY].tlc != null) { // Total lifetime count
         campaignTotalLimit = parseInt(targetingMsgJson[DISPLAY].tlc, 10)
       }
       if (targetingMsgJson[DISPLAY].wmp != null) { // No of campaigns per day

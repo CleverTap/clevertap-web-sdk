@@ -59,11 +59,13 @@ export const saveCampaignObject = (campaignObj) => {
   if (StorageManager._isLocalStorageSupported()) {
     const campObj = JSON.stringify(campaignObj)
     StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj))
-    getCampaignObjectForGuid()
+    // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
+    setCampaignObjectForGuid()
   }
 }
 
-export const getCampaignObjectForGuid = () => {
+// set Campaign Object against the guid, with daily count and total count details
+export const setCampaignObjectForGuid = () => {
   const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
   const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {}
 
