@@ -4772,7 +4772,7 @@
           var campaignSessionCount = _sessionObj[campaignId];
           var totalSessionCount = _sessionObj.tc; // dnd
 
-          if (campaignSessionCount === 'dnd') {
+          if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
             return false;
           } // session
 

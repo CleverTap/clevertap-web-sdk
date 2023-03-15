@@ -112,7 +112,7 @@ const _tr = (msg, {
         const campaignSessionCount = sessionObj[campaignId]
         const totalSessionCount = sessionObj.tc
         // dnd
-        if (campaignSessionCount === 'dnd') {
+        if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
           return false
         }
 
