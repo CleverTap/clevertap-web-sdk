@@ -3761,17 +3761,8 @@
     return CTWebPopupImageOnly;
   }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
 
-  var _tr = function _tr(msg, _ref) {
-    var device = _ref.device,
-        session = _ref.session,
-        request = _ref.request,
-        logger = _ref.logger,
-        isWebPopUpSpamControlDisabled = _ref.isWebPopUpSpamControlDisabled;
-    var _device = device;
-    var _session = session;
-    var _request = request;
-    var _logger = logger;
-    var _wizCounter = 0; // Campaign House keeping
+  var Message = /*#__PURE__*/function (_HTMLElement) {
+    _inherits(Message, _HTMLElement);
 
     var _super = _createSuper(Message);
 
@@ -5167,9 +5158,6 @@
         return;
       }
 
-      if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
-      }
-
       var divId = 'wizParDiv' + displayObj.layout;
 
       if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
@@ -5697,25 +5685,7 @@
           }
         }
       }
-    }; // if (msg.webInboxSetting || msg.inbox_notifs != null) {
-    //   /**
-    //    * When the user visits a website for the 1st time after web inbox channel is setup,
-    //    * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
-    //    * as we would not have any entry related to webInboxSettings in the LS
-    //    */
-    //   if (hasWebInboxSettingsInLS()) {
-    //     checkAndRegisterWebInboxElements()
-    //   }
-    //   if ($ct.inbox === null) {
-    //     msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
-    //     initializeWebInbox(_logger).then(() => {
-    //       processWebInboxResponse(msg)
-    //     })
-    //   } else {
-    //     processWebInboxResponse(msg)
-    //   }
-    // }
-
+    };
 
     if (msg.webInboxSetting || msg.inbox_notifs != null) {
       /**

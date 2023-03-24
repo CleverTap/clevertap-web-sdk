@@ -340,13 +340,6 @@ const _tr = (msg, {
       return
     }
 
-    if (doCampHouseKeeping(targetingMsgJson) === false) {
-      return
-    }
-    // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
-    //   return
-    // }
-
     const divId = 'wizParDiv' + displayObj.layout
 
     if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
