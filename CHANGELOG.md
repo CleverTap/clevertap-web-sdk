@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 24 Mar, 2023
+- Introduces the new templates 'Image Only' in 'Web pop up'.
+
 ## [1.4.2] - 15 Mar, 2023
 - Fixes repeated firing of requests from processBackupEvents functionality
 - Updates Charged Item count limit to 50

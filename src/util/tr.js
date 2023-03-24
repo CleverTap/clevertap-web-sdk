@@ -32,6 +32,7 @@ import { StorageManager, $ct } from './storage'
 import RequestDispatcher from './requestDispatcher'
 import { CTWebPersonalisationBanner } from './web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
+import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxResponse, processWebInboxSettings, hasWebInboxSettingsInLS } from '../modules/web-inbox/helper'
 
 const _tr = (msg, {
@@ -287,11 +288,21 @@ const _tr = (msg, {
     container.appendChild(carousel)
   }
 
+  const renderPopUpImageOnly = (targetingMsgJson) => {
+    const divId = 'wzrkImageOnlyDiv'
+    const popupImageOnly = document.createElement('ct-web-popup-imageonly')
+    popupImageOnly.target = targetingMsgJson
+    const containerEl = document.getElementById(divId)
+    containerEl.innerHTML = ''
+    containerEl.style.visibility = 'hidden'
+    containerEl.appendChild(popupImageOnly)
+  }
+
   const renderFooterNotification = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     const displayObj = targetingMsgJson.display
 
-    if (displayObj.wtarget_type === 2) {
+    if (displayObj.wtarget_type === 2) { // Handling Web Native display
       // Logic for kv pair data
       if (targetingMsgJson.msgContent.type === 1) {
         const inaObj = {}
@@ -308,16 +319,26 @@ const _tr = (msg, {
         return
       }
     }
-    if (displayObj.layout === 1) {
+    if (displayObj.layout === 1) { // Handling Web Exit Intent
       return showExitIntent(undefined, targetingMsgJson)
+    }
+    if (displayObj.layout === 3) { // Handling Web Popup Image Only
+      if (document.getElementById('wzrkImageOnlyDiv') != null) {
+        return
+      }
+      const msgDiv = document.createElement('div')
+      msgDiv.id = 'wzrkImageOnlyDiv'
+      // msgDiv.setAttribute('style', 'position: absolute;top: 10px;right: 10px')
+      document.body.appendChild(msgDiv)
+      if (customElements.get('ct-web-popup-imageonly') === undefined) {
+        customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly)
+      }
+      return renderPopUpImageOnly(targetingMsgJson)
     }
 
     if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
-    // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
-    //   return
-    // }
 
     const divId = 'wizParDiv' + displayObj.layout
 

@@ -3647,6 +3647,120 @@
     return CTWebPersonalisationCarousel;
   }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
 
+  var CTWebPopupImageOnly = /*#__PURE__*/function (_HTMLElement) {
+    _inherits(CTWebPopupImageOnly, _HTMLElement);
+
+    var _super = _createSuper(CTWebPopupImageOnly);
+
+    function CTWebPopupImageOnly() {
+      var _this;
+
+      _classCallCheck(this, CTWebPopupImageOnly);
+
+      _this = _super.call(this);
+      _this._target = null;
+      _this.shadow = null;
+      _this.popup = null;
+      _this.container = null;
+      _this.shadow = _this.attachShadow({
+        mode: 'open'
+      });
+      return _this;
+    }
+
+    _createClass(CTWebPopupImageOnly, [{
+      key: "renderImageOnlyPopup",
+      value: function renderImageOnlyPopup() {
+        var _this2 = this;
+
+        this.shadow.innerHTML = this.getImageOnlyPopupContent();
+        this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
+        this.container = this.shadowRoot.getElementById('container');
+        this.closeIcon = this.shadowRoot.getElementById('close');
+        this.popup.addEventListener('load', this.updateImageAndContainerWidth());
+        this.closeIcon.addEventListener('click', function () {
+          document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
+
+          _this2.remove();
+        });
+        window.clevertap.renderNotificationViewed({
+          msgId: this.msgId,
+          pivotId: this.pivotId
+        });
+
+        if (this.onClickUrl) {
+          this.popup.addEventListener('click', function () {
+            _this2.target.display.window ? window.open(_this2.onClickUrl, '_blank') : window.parent.location.href = _this2.onClickUrl;
+            window.clevertap.renderNotificationClicked({
+              msgId: _this2.msgId,
+              pivotId: _this2.pivotId
+            });
+          });
+        }
+      }
+    }, {
+      key: "getImageOnlyPopupContent",
+      value: function getImageOnlyPopupContent() {
+        return "\n        ".concat(this.target.msgContent.css, "\n        ").concat(this.target.msgContent.html, "\n      ");
+      }
+    }, {
+      key: "updateImageAndContainerWidth",
+      value: function updateImageAndContainerWidth() {
+        var _this3 = this;
+
+        return function () {
+          var width = _this3.getRenderedImageWidth(_this3.popup);
+
+          _this3.popup.style.setProperty('width', "".concat(width, "px"));
+
+          _this3.container.style.setProperty('width', "".concat(width, "px"));
+
+          _this3.container.style.setProperty('height', 'auto');
+
+          _this3.popup.style.setProperty('visibility', 'visible');
+
+          _this3.closeIcon.style.setProperty('visibility', 'visible');
+
+          document.getElementById('wzrkImageOnlyDiv').style.visibility = 'visible';
+        };
+      }
+    }, {
+      key: "getRenderedImageWidth",
+      value: function getRenderedImageWidth(img) {
+        var ratio = img.naturalWidth / img.naturalHeight;
+        return img.height * ratio;
+      }
+    }, {
+      key: "target",
+      get: function get() {
+        return this._target || '';
+      },
+      set: function set(val) {
+        if (this._target === null) {
+          this._target = val;
+          this.renderImageOnlyPopup();
+        }
+      }
+    }, {
+      key: "msgId",
+      get: function get() {
+        return this.target.wzrk_id;
+      }
+    }, {
+      key: "pivotId",
+      get: function get() {
+        return this.target.wzrk_pivot;
+      }
+    }, {
+      key: "onClickUrl",
+      get: function get() {
+        return this.target.display.onClickUrl;
+      }
+    }]);
+
+    return CTWebPopupImageOnly;
+  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
+
   var Message = /*#__PURE__*/function (_HTMLElement) {
     _inherits(Message, _HTMLElement);
 
@@ -4979,11 +5093,22 @@
       container.appendChild(carousel);
     };
 
+    var renderPopUpImageOnly = function renderPopUpImageOnly(targetingMsgJson) {
+      var divId = 'wzrkImageOnlyDiv';
+      var popupImageOnly = document.createElement('ct-web-popup-imageonly');
+      popupImageOnly.target = targetingMsgJson;
+      var containerEl = document.getElementById(divId);
+      containerEl.innerHTML = '';
+      containerEl.style.visibility = 'hidden';
+      containerEl.appendChild(popupImageOnly);
+    };
+
     var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       var displayObj = targetingMsgJson.display;
 
       if (displayObj.wtarget_type === 2) {
+        // Handling Web Native display
         // Logic for kv pair data
         if (targetingMsgJson.msgContent.type === 1) {
           var inaObj = {};
@@ -5006,15 +5131,32 @@
       }
 
       if (displayObj.layout === 1) {
+        // Handling Web Exit Intent
         return showExitIntent(undefined, targetingMsgJson);
+      }
+
+      if (displayObj.layout === 3) {
+        // Handling Web Popup Image Only
+        if (document.getElementById('wzrkImageOnlyDiv') != null) {
+          return;
+        }
+
+        var _msgDiv = document.createElement('div');
+
+        _msgDiv.id = 'wzrkImageOnlyDiv'; // msgDiv.setAttribute('style', 'position: absolute;top: 10px;right: 10px')
+
+        document.body.appendChild(_msgDiv);
+
+        if (customElements.get('ct-web-popup-imageonly') === undefined) {
+          customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
+        }
+
+        return renderPopUpImageOnly(targetingMsgJson);
       }
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
-      } // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
-      //   return
-      // }
-
+      }
 
       var divId = 'wizParDiv' + displayObj.layout;
 
@@ -7676,7 +7818,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.4.2'
+          lib: 'web-sdk-v1.5.0'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
