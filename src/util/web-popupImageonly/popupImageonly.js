@@ -32,16 +32,13 @@ export class CTWebPopupImageOnly extends HTMLElement {
       return this.target.display.onClickUrl
     }
 
-    // TODO - handle resize coz there can be a scenario where the user changes the orientation b/w portrait and landscape
     renderImageOnlyPopup () {
       this.shadow.innerHTML = this.getImageOnlyPopupContent()
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup')
       this.container = this.shadowRoot.getElementById('container')
       this.closeIcon = this.shadowRoot.getElementById('close')
 
-      const resizeCallback = this.updateImageAndContainerWidth()
-      this.popup.addEventListener('load', resizeCallback)
-      window.addEventListener('resize', resizeCallback)
+      this.popup.addEventListener('load', this.updateImageAndContainerWidth())
 
       this.closeIcon.addEventListener('click', () => {
         document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
@@ -65,22 +62,9 @@ export class CTWebPopupImageOnly extends HTMLElement {
       `
     }
 
-    initialWindowWidth = 0
-    initialImgWidth = 0
-
-    // TODO - Add comments
     updateImageAndContainerWidth () {
       return () => {
-        // setting initial width to calculate scale ratio later
-        if (!this.initialWindowWidth) {
-          this.initialWindowWidth = window.innerWidth
-          this.initialImgWidth = this.popup.width
-        }
-
-        // get scaled width
-        const width = this.getRenderedImageWidth()
-
-        // set style properties with scaled
+        const width = this.getRenderedImageWidth(this.popup)
         this.popup.style.setProperty('width', `${width}px`)
         this.container.style.setProperty('width', `${width}px`)
         this.container.style.setProperty('height', 'auto')
@@ -90,8 +74,8 @@ export class CTWebPopupImageOnly extends HTMLElement {
       }
     }
 
-    getRenderedImageWidth () {
-      const ratio = window.innerWidth / this.initialWindowWidth
-      return this.initialImgWidth * ratio
+    getRenderedImageWidth (img) {
+      const ratio = img.naturalWidth / img.naturalHeight
+      return img.height * ratio
     }
 }

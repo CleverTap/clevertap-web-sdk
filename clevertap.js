@@ -3601,8 +3601,6 @@
       _this.shadow = null;
       _this.popup = null;
       _this.container = null;
-      _this.initialWindowWidth = 0;
-      _this.initialImgWidth = 0;
       _this.shadow = _this.attachShadow({
         mode: 'open'
       });
@@ -3611,7 +3609,6 @@
 
     _createClass(CTWebPopupImageOnly, [{
       key: "renderImageOnlyPopup",
-      // TODO - handle resize coz there can be a scenario where the user changes the orientation b/w portrait and landscape
       value: function renderImageOnlyPopup() {
         var _this2 = this;
 
@@ -3619,9 +3616,7 @@
         this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
         this.container = this.shadowRoot.getElementById('container');
         this.closeIcon = this.shadowRoot.getElementById('close');
-        var resizeCallback = this.updateImageAndContainerWidth();
-        this.popup.addEventListener('load', resizeCallback);
-        window.addEventListener('resize', resizeCallback);
+        this.popup.addEventListener('load', this.updateImageAndContainerWidth());
         this.closeIcon.addEventListener('click', function () {
           document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
 
@@ -3649,20 +3644,11 @@
       }
     }, {
       key: "updateImageAndContainerWidth",
-      // TODO - Add comments
       value: function updateImageAndContainerWidth() {
         var _this3 = this;
 
         return function () {
-          // setting initial width to calculate scale ratio later
-          if (!_this3.initialWindowWidth) {
-            _this3.initialWindowWidth = window.innerWidth;
-            _this3.initialImgWidth = _this3.popup.width;
-          } // get scaled width
-
-
-          var width = _this3.getRenderedImageWidth(); // set style properties with scaled
-
+          var width = _this3.getRenderedImageWidth(_this3.popup);
 
           _this3.popup.style.setProperty('width', "".concat(width, "px"));
 
@@ -3679,9 +3665,9 @@
       }
     }, {
       key: "getRenderedImageWidth",
-      value: function getRenderedImageWidth() {
-        var ratio = window.innerWidth / this.initialWindowWidth;
-        return this.initialImgWidth * ratio;
+      value: function getRenderedImageWidth(img) {
+        var ratio = img.naturalWidth / img.naturalHeight;
+        return img.height * ratio;
       }
     }, {
       key: "target",
@@ -3724,45 +3710,7 @@
     var _session = session;
     var _request = request;
     var _logger = logger;
-    var _wizCounter = 0; // msg = {
-    //   arp: {
-    //     j_n: 'Zw==',
-    //     i_n: 'Y2NmewICAw==',
-    //     d_ts: 0,
-    //     dh: 0,
-    //     v: 1,
-    //     j_s: '{ }',
-    //     id: 'WWW-WWW-WWRZ',
-    //     e_ts: 0,
-    //     r_ts: 1649748826,
-    //     rc_w: 60,
-    //     rc_n: 5
-    //   },
-    //   inapp_notifs: [
-    //     {
-    //       msgContent: {
-    //         html: '<div><picture><source media=\"(min-width:481px)\" srcset=\"https://pbs.twimg.com/media/C2enSycVIAAYNcN.jpg\"><source media=\"(max-width:480px)\" srcset=\"https://pbs.twimg.com/media/C2enSycVIAAYNcN.jpg\"><img id=\"imageOnlyPopup\" src=\"https://pbs.twimg.com/media/C2enSycVIAAYNcN.jpg\" alt=\"Please upload a picture\" style=\"visibility:hidden\"></picture></div>',
-    //         css: '<style>img{position:absolute;height:auto;max-width:40%;top:50%;left:50%;transform:translate(-50%,-50%);bottom:unset;right:unset;object-fit:contain;z-index:2147483647;width:100%;max-height:100%}@media only screen and (min-width:600px){img{max-height:90%;max-width:60%;top:50%;left:50%;transform:translate(-50%,-50%);bottom:unset;right:unset}}@media only screen and (min-width:900px){img{max-width:60%}}</style>',
-    //         templateType: 'image-only',
-    //         border: '3px solid black'
-    //       },
-    //       display: {
-    //         layout: 3,
-    //         mdc: '1000',
-    //         efc: 1,
-    //         wtarget_type: 0,
-    //         wmc: 1,
-    //         ff: 'Desktop',
-    //         showOverlay: true,
-    //         onClickUrl: 'https://eu1.clevertap-prod.com/r?e=Kw1rGR8ECQJ6bgV%2BDSYSC1FfXl8%2BPw0iMxoSN3JwQlEkKTskOQU7L3JwTXQXKjUUNDUnJUZwcUgyLDclIyYcJEZZV100OyYiODRyCF5ZUl8yPi4wdS0oOVlvWFB1YHB6YWxjfwEGAAVmBWB7ZWliegMIExh3eCUxJTENO1tGXkB1YHJpICAgIG1UVFI2Lz4%2FdSc%3D&c=662145120&r=https%3A%2F%2Fwww.carousell.ph%2Fsmart_render%2F%3Ftype%3Dmarket-landing-page%26name%3Dfindtheone-ph',
-    //         window: 1
-    //       },
-    //       wzrk_id: '1655316906_20220620',
-    //       wzrk_pivot: 'wzrk_default'
-    //     }
-    //   ]
-    // }
-    // Campaign House keeping
+    var _wizCounter = 0; // Campaign House keeping
 
     var doCampHouseKeeping = function doCampHouseKeeping(targetingMsgJson) {
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
@@ -4193,7 +4141,6 @@
       if (targetingMsgJson.msgContent.type === 1) {
         html = targetingMsgJson.msgContent.html;
         html = html.replace(/##campaignId##/g, campaignId);
-        html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
         var css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + 'td{vertical-align:top;}' + 'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' + '</style>';
         var bgColor, textColor, btnBg, leftTd, btColor;
@@ -4489,7 +4436,6 @@
       if (targetingMsgJson.msgContent.type === 1) {
         html = targetingMsgJson.msgContent.html;
         html = html.replace(/##campaignId##/g, campaignId);
-        html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
         var css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + '#contentDiv .button{padding-top:20px;}' + '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' + '</style>';
         var bgColor, textColor, btnBg, btColor;
