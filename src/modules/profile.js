@@ -184,7 +184,7 @@ export default class ProfileHandler extends Array {
       }
     }
     if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
+      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) ?? {}
     }
     $ct.globalProfileMap[key] = array
     StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
@@ -201,7 +201,7 @@ export default class ProfileHandler extends Array {
   _handleMultiValueAdd (propKey, propVal, command) {
     var array = []
     if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
+      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) ?? {}
     }
     // if the value to be set is either string or number
     if (typeof propVal === 'string' || typeof propVal === 'number') {
@@ -247,7 +247,7 @@ export default class ProfileHandler extends Array {
     if ($ct.globalProfileMap == null) {
       $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
     }
-    if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+    if (!$ct?.globalProfileMap?.hasOwnProperty(propKey)) {
       console.error(`The property ${propKey} does not exist.`)
     } else {
       if (typeof propVal === 'string' || typeof propVal === 'number') {
@@ -278,7 +278,7 @@ export default class ProfileHandler extends Array {
     if ($ct.globalProfileMap == null) {
       $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
     }
-    if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+    if (!$ct?.globalProfileMap?.hasOwnProperty(propKey)) {
       console.error(`The property ${propKey} does not exist.`)
     } else {
       delete $ct.globalProfileMap[propKey]

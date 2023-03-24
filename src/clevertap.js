@@ -27,7 +27,8 @@ import {
   COMMAND_ADD,
   COMMAND_REMOVE,
   COMMAND_DELETE,
-  EVT_PUSH
+  EVT_PUSH,
+  WEBINBOX
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -36,6 +37,7 @@ import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe } fr
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
+import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox } from './modules/web-inbox/helper'
 
 export default class CleverTap {
   #logger
@@ -183,6 +185,120 @@ export default class CleverTap {
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
       this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
     }
+
+    if (hasWebInboxSettingsInLS()) {
+      checkAndRegisterWebInboxElements()
+      initializeWebInbox()
+    }
+
+    // Get Inbox Message Count
+    this.getInboxMessageCount = () => {
+      const msgCount = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      return Object.keys(msgCount).length
+    }
+
+    // Get Inbox Unread Message Count
+    this.getInboxMessageUnreadCount = () => {
+      if ($ct.inbox) {
+        return $ct.inbox.unviewedCounter
+      } else {
+        this.#logger.error('No Unread messages')
+      }
+    }
+
+    // Get All Inbox messages
+    this.getAllInboxMessages = () => {
+      return StorageManager.readFromLSorCookie(WEBINBOX) || {}
+    }
+
+    // Get only Unread messages
+    this.getUnreadInboxMessages = () => {
+      if ($ct.inbox) {
+        return $ct.inbox.unviewedMessages
+      } else {
+        this.#logger.error('No Unread messages')
+      }
+    }
+
+    // Get message object belonging to the given message id only. Message id should be a String
+    this.getInboxMessageForId = (messageId) => {
+      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
+        return messages[messageId]
+      } else {
+        this.#logger.error('No message available for message Id ' + messageId)
+      }
+    }
+
+    // Delete message from the Inbox. Message id should be a String
+    // If the message to be deleted is unviewed then decrement the badge count, delete the message from unviewedMessages list
+    // Then remove the message from local storage and update cookie
+    this.deleteInboxMessage = (messageId) => {
+      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
+        const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
+        if (messages[messageId].viewed === 0) {
+          $ct.inbox.unviewedCounter--
+          delete $ct.inbox.unviewedMessages[messageId]
+          document.getElementById('unviewedBadge').innerText = $ct.inbox.unviewedCounter
+          document.getElementById('unviewedBadge').style.display = $ct.inbox.unviewedCounter > 0 ? 'flex' : 'none'
+        }
+        el && el.remove()
+        delete messages[messageId]
+        StorageManager.saveToLSorCookie(WEBINBOX, messages)
+      } else {
+        this.#logger.error('No message available for message Id ' + messageId)
+      }
+    }
+
+    /* Mark Message as Read. Message id should be a String
+     - Check if the message Id exist in the unread message list
+     - Remove the unread marker, update the viewed flag, decrement the bage Count
+     - renderNotificationViewed */
+    this.markReadInboxMessage = (messageId) => {
+      const unreadMsg = $ct.inbox.unviewedMessages
+      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
+        const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
+        el.shadowRoot.getElementById('unreadMarker').style.display = 'none'
+        messages[messageId].viewed = 1
+
+        var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1
+        document.getElementById('unviewedBadge').innerText = counter
+        document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none'
+        window.clevertap.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
+        $ct.inbox.unviewedCounter--
+        delete $ct.inbox.unviewedMessages[messageId]
+      } else {
+        this.#logger.error('No message available for message Id ' + messageId)
+      }
+    }
+
+    /* Mark all messages as read
+      - Get the count of unread messages, update unread marker style
+      - renderNotificationViewed, update the badge count and style
+    */
+    this.markReadAllInboxMessage = () => {
+      const unreadMsg = $ct.inbox.unviewedMessages
+      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      if (Object.keys(unreadMsg).length > 0) {
+        const msgIds = Object.keys(unreadMsg)
+        msgIds.forEach(key => {
+          const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(key)
+          el.shadowRoot.getElementById('unreadMarker').style.display = 'none'
+          messages[key].viewed = 1
+          window.clevertap.renderNotificationViewed({ msgId: messages[key].wzrk_id, pivotId: messages[key].wzrk_pivot })
+        })
+        document.getElementById('unviewedBadge').innerText = 0
+        document.getElementById('unviewedBadge').style.display = 'none'
+        StorageManager.saveToLSorCookie(WEBINBOX, messages)
+        $ct.inbox.unviewedCounter = 0
+        $ct.inbox.unviewedMessages = {}
+      } else {
+        this.#logger.error('No Unread Messages')
+      }
+    }
+
     // method for notification viewed
     this.renderNotificationViewed = (detail) => {
       processNotificationEvent(NOTIFICATION_VIEWED, detail)
@@ -296,6 +412,65 @@ export default class CleverTap {
       handleEmailSubscription(subscription, reEncoded, fetchGroups, this.#account, this.#logger)
     }
 
+    /**
+     *
+     * @param {number} lat
+     * @param {number} lng
+     * @param {callback function} handleCoordinates
+     * @returns
+    */
+    this.getLocation = function (lat, lng) {
+      // latitude and longitude should be number type
+      if ((lat && typeof lat !== 'number') || (lng && typeof lng !== 'number')) {
+        console.log('Latitude and Longitude must be of number type')
+        return
+      }
+      if (lat && lng) {
+        // valid latitude ranges bw +-90
+        if (lat <= -90 || lat > 90) {
+          console.log('A vaid latitude must range between -90 and 90')
+          return
+        }
+        // valid longitude ranges bw +-180
+        if (lng <= -180 || lng > 180) {
+          console.log('A valid longitude must range between -180 and 180')
+          return
+        }
+        $ct.location = { Latitude: lat, Longitude: lng }
+        this.sendMultiValueData({ Latitude: lat, Longitude: lng })
+      } else {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError)
+        } else {
+          console.log('Geolocation is not supported by this browser.')
+        }
+      }
+    }
+
+    function showPosition (position) {
+      var lat = position.coords.latitude
+      var lng = position.coords.longitude
+      $ct.location = { Latitude: lat, Longitude: lng }
+      this.sendMultiValueData({ Latitude: lat, Longitude: lng })
+    }
+
+    function showError (error) {
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          console.log('User denied the request for Geolocation.')
+          break
+        case error.POSITION_UNAVAILABLE:
+          console.log('Location information is unavailable.')
+          break
+        case error.TIMEOUT:
+          console.log('The request to get user location timed out.')
+          break
+        case error.UNKNOWN_ERROR:
+          console.log('An unknown error occurred.')
+          break
+      }
+    }
+
     const api = this.#api
     api.logout = this.logout
     api.clear = this.clear
@@ -399,17 +574,19 @@ export default class CleverTap {
       return
     }
 
-    this.#request.processBackupEvents()
-
     $ct.isPrivacyArrPushed = true
     if ($ct.privacyArray.length > 0) {
       this.privacy.push($ct.privacyArray)
     }
 
     this.#processOldValues()
-
     this.pageChanged()
-
+    const backupInterval = setInterval(() => {
+      if (this.#device.gcookie) {
+        clearInterval(backupInterval)
+        this.#request.processBackupEvents()
+      }
+    }, 3000)
     if (this.#isSpa) {
       // listen to click on the document and check if URL has changed.
       document.addEventListener('click', this.#boundCheckPageChanged)
@@ -565,6 +742,9 @@ export default class CleverTap {
       keys.forEach(key => {
         data.af[key] = payload[key]
       })
+    }
+    if ($ct.location) {
+      data.af = { ...data.af, ...$ct.location }
     }
     data = this.#request.addSystemDataToProfileObject(data, undefined)
     this.#request.addFlags(data)
