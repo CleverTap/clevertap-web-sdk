@@ -14,7 +14,9 @@ import {
   NOTIFICATION_VIEWED,
   NOTIFICATION_CLICKED,
   WZRK_PREFIX,
-  WZRK_ID
+  WZRK_ID,
+  CAMP_COOKIE_G,
+  GCOOKIE_NAME
 } from './constants'
 
 import {
@@ -31,6 +33,7 @@ import RequestDispatcher from './requestDispatcher'
 import { CTWebPersonalisationBanner } from './web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
+import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxResponse, processWebInboxSettings, hasWebInboxSettingsInLS } from '../modules/web-inbox/helper'
 
 const _tr = (msg, {
   device,
@@ -85,22 +88,22 @@ const _tr = (msg, {
       let totalDailyLimit = -1
       let totalSessionLimit = -1
 
-      if (targetingMsgJson[DISPLAY].efc != null) {
+      if (targetingMsgJson[DISPLAY].efc != null) { // exclude from frequency cap
         excludeFromFreqCaps = parseInt(targetingMsgJson[DISPLAY].efc, 10)
       }
-      if (targetingMsgJson[DISPLAY].mdc != null) {
+      if (targetingMsgJson[DISPLAY].mdc != null) { // Campaign Session Limit
         campaignSessionLimit = parseInt(targetingMsgJson[DISPLAY].mdc, 10)
       }
-      if (targetingMsgJson[DISPLAY].tdc != null) {
+      if (targetingMsgJson[DISPLAY].tdc != null) { // No of web popups in a day per campaign
         campaignDailyLimit = parseInt(targetingMsgJson[DISPLAY].tdc, 10)
       }
-      if (targetingMsgJson[DISPLAY].tlc != null) {
+      if (targetingMsgJson[DISPLAY].tlc != null) { // Total lifetime count
         campaignTotalLimit = parseInt(targetingMsgJson[DISPLAY].tlc, 10)
       }
-      if (targetingMsgJson[DISPLAY].wmp != null) {
+      if (targetingMsgJson[DISPLAY].wmp != null) { // No of campaigns per day
         totalDailyLimit = parseInt(targetingMsgJson[DISPLAY].wmp, 10)
       }
-      if (targetingMsgJson[DISPLAY].wmc != null) {
+      if (targetingMsgJson[DISPLAY].wmc != null) { // No of campaigns per session
         totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10)
       }
 
@@ -110,7 +113,7 @@ const _tr = (msg, {
         const campaignSessionCount = sessionObj[campaignId]
         const totalSessionCount = sessionObj.tc
         // dnd
-        if (campaignSessionCount === 'dnd') {
+        if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
           return false
         }
 
@@ -259,6 +262,9 @@ const _tr = (msg, {
   }
 
   const renderPersonalisationBanner = (targetingMsgJson) => {
+    if (customElements.get('ct-web-personalisation-banner') === undefined) {
+      customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner)
+    }
     const divId = targetingMsgJson.display.divId
     const bannerEl = document.createElement('ct-web-personalisation-banner')
     bannerEl.msgId = targetingMsgJson.wzrk_id
@@ -271,6 +277,9 @@ const _tr = (msg, {
   }
 
   const renderPersonalisationCarousel = (targetingMsgJson) => {
+    if (customElements.get('ct-web-personalisation-carousel') === undefined) {
+      customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel)
+    }
     const divId = targetingMsgJson.display.divId
     const carousel = document.createElement('ct-web-personalisation-carousel')
     carousel.target = targetingMsgJson
@@ -309,28 +318,6 @@ const _tr = (msg, {
         document.dispatchEvent(kvPairsEvent)
         return
       }
-      // Logic for personalisation banner
-      if (targetingMsgJson.msgContent.type === 2) {
-        const divId = targetingMsgJson.display.divId
-        if (document.getElementById(divId) == null) {
-          return
-        }
-        if (customElements.get('ct-web-personalisation-banner') === undefined) {
-          customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner)
-        }
-        return renderPersonalisationBanner(targetingMsgJson)
-      }
-      // Logic for personalisation carousel
-      if (targetingMsgJson.msgContent.type === 3) {
-        const divId = targetingMsgJson.display.divId
-        if (document.getElementById(divId) == null) {
-          return
-        }
-        if (customElements.get('ct-web-personalisation-carousel') === undefined) {
-          customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel)
-        }
-        return renderPersonalisationCarousel(targetingMsgJson)
-      }
     }
     if (displayObj.layout === 1) { // Handling Web Exit Intent
       return showExitIntent(undefined, targetingMsgJson)
@@ -353,9 +340,12 @@ const _tr = (msg, {
       return
     }
 
-    if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
+    // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+    //   return
+    // }
 
     const divId = 'wizParDiv' + displayObj.layout
 
@@ -425,6 +415,7 @@ const _tr = (msg, {
     if (targetingMsgJson.msgContent.type === 1) {
       html = targetingMsgJson.msgContent.html
       html = html.replace(/##campaignId##/g, campaignId)
+      html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id)
     } else {
       const css = '' +
         '<style type="text/css">' +
@@ -695,10 +686,13 @@ const _tr = (msg, {
       return
     }
 
-    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
-    if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
+    // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
+    //   return
+    // }
 
     $ct.campaignDivMap[campaignId] = 'intentPreview'
     let legacy = false
@@ -734,6 +728,7 @@ const _tr = (msg, {
     if (targetingMsgJson.msgContent.type === 1) {
       html = targetingMsgJson.msgContent.html
       html = html.replace(/##campaignId##/g, campaignId)
+      html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id)
     } else {
       const css = '' +
         '<style type="text/css">' +
@@ -811,14 +806,60 @@ const _tr = (msg, {
     }
     return
   }
+  const processNativeDisplayArr = (arrInAppNotifs) => {
+    Object.keys(arrInAppNotifs).map(key => {
+      var divId = arrInAppNotifs[key].display.divId
+      const id = document.getElementById(divId)
+      if (id !== null) {
+        arrInAppNotifs[key].msgContent.type === 2 ? renderPersonalisationBanner(arrInAppNotifs[key]) : renderPersonalisationCarousel(arrInAppNotifs[key])
+        delete arrInAppNotifs[key]
+      }
+    })
+  }
+
+  const addLoadListener = (arrInAppNotifs) => {
+    window.addEventListener('load', () => {
+      let count = 0
+      if (count < 20) {
+        const t = setInterval(() => {
+          processNativeDisplayArr(arrInAppNotifs)
+          if (Object.keys(arrInAppNotifs).length === 0 || count === 20) {
+            clearInterval(t)
+            arrInAppNotifs = {}
+          }
+          count++
+        }, 500)
+      }
+    })
+  }
+
   if (msg.inapp_notifs != null) {
+    const arrInAppNotifs = {}
     for (let index = 0; index < msg.inapp_notifs.length; index++) {
       const targetNotif = msg.inapp_notifs[index]
-      if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0 || targetNotif.display.wtarget_type === 2) {
+      if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
         showFooterNotification(targetNotif)
       } else if (targetNotif.display.wtarget_type === 1) { // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif
         window.document.body.onmouseleave = showExitIntent
+      } else if (targetNotif.display.wtarget_type === 2) { // if display['wtarget_type']==2 then web native display
+        if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) { // Check for banner and carousel
+          if (document.getElementById(targetNotif.display.divId) !== null) {
+            targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
+          } else {
+            arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
+          }
+        } else {
+          showFooterNotification(targetNotif)
+        }
+      }
+    }
+    // Process banner or carousel campaign array
+    if (Object.keys(arrInAppNotifs).length) {
+      if (document.readyState === 'complete') {
+        processNativeDisplayArr(arrInAppNotifs)
+      } else {
+        addLoadListener(arrInAppNotifs)
       }
     }
   }
@@ -846,25 +887,25 @@ const _tr = (msg, {
     }
   }
 
-  // if (msg.webInboxSetting || msg.inbox_notifs != null) {
-  //   /**
-  //    * When the user visits a website for the 1st time after web inbox channel is setup,
-  //    * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
-  //    * as we would not have any entry related to webInboxSettings in the LS
-  //    */
+  if (msg.webInboxSetting || msg.inbox_notifs != null) {
+    /**
+     * When the user visits a website for the 1st time after web inbox channel is setup,
+     * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
+     * as we would not have any entry related to webInboxSettings in the LS
+     */
 
-  //   if (hasWebInboxSettingsInLS()) {
-  //     checkAndRegisterWebInboxElements()
-  //   }
-  //   if ($ct.inbox === null) {
-  //     msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
-  //     initializeWebInbox(_logger).then(() => {
-  //       processWebInboxResponse(msg)
-  //     })
-  //   } else {
-  //     processWebInboxResponse(msg)
-  //   }
-  // }
+    if (hasWebInboxSettingsInLS()) {
+      checkAndRegisterWebInboxElements()
+    }
+    if ($ct.inbox === null) {
+      msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
+      initializeWebInbox(_logger).then(() => {
+        processWebInboxResponse(msg)
+      })
+    } else {
+      processWebInboxResponse(msg)
+    }
+  }
 
   if (StorageManager._isLocalStorageSupported()) {
     try {
@@ -886,13 +927,21 @@ const _tr = (msg, {
       if (msg.arp != null) {
         arp(msg.arp)
       }
-      if (msg.inapp_stale != null) {
+      if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
         const campObj = getCampaignObject()
         const globalObj = campObj.global
         if (globalObj != null) {
           for (const idx in msg.inapp_stale) {
             if (msg.inapp_stale.hasOwnProperty(idx)) {
               delete globalObj[msg.inapp_stale[idx]]
+              if (StorageManager.read(CAMP_COOKIE_G)) {
+                const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))
+                const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+                if (guidCampObj[guid] && guidCampObj[guid][msg.inapp_stale[idx]]) {
+                  delete guidCampObj[guid][msg.inapp_stale[idx]]
+                  StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
+                }
+              }
             }
           }
         }

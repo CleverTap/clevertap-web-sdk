@@ -8,6 +8,7 @@ export const CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID'
 export const GCOOKIE_NAME = 'WZRK_G'
 export const KCOOKIE_NAME = 'WZRK_K'
 export const CAMP_COOKIE_NAME = 'WZRK_CAMP'
+export const CAMP_COOKIE_G = 'WZRK_CAMP_G'// cookie for storing campaign details against guid
 export const SCOOKIE_PREFIX = 'WZRK_S'
 export const SCOOKIE_EXP_TIME_IN_SECS = 60 * 20 // 20 mins
 export const EV_COOKIE = 'WZRK_EV'
@@ -48,6 +49,8 @@ export const COMMAND_SET = '$set'
 export const COMMAND_ADD = '$add'
 export const COMMAND_REMOVE = '$remove'
 export const COMMAND_DELETE = '$delete'
+export const WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG'
+export const WEBINBOX = 'WZRK_INBOX'
 
 export const SYSTEM_EVENTS = [
   'Stayed',
