@@ -894,7 +894,7 @@ const _tr = (msg, {
       msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
       initializeWebInbox(_logger).then(() => {
         processWebInboxResponse(msg)
-      })
+      }).catch(e => {})
     } else {
       processWebInboxResponse(msg)
     }

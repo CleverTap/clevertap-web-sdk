@@ -215,6 +215,7 @@ export class Inbox extends HTMLElement {
     this.inbox.appendChild(this.inboxCard)
 
     this.emptyInboxMsg = this.createEl('div', 'emptyInboxMsg')
+    this.emptyInboxMsg.innerText = 'All messages will be displayed here.'
     this.inboxCard.appendChild(this.emptyInboxMsg)
 
     if (this.config.hidePoweredByCT === false) {
@@ -415,6 +416,7 @@ export class Inbox extends HTMLElement {
       this.inboxCard.scrollTop = 0
       !this.isPreview && this.deleteExpiredAndGetUnexpiredMsgs()
       this.inbox.style.display = 'block'
+      this.inbox.style.zIndex = '2147483647'
       if (this.config.categories.length) {
         this.selectedCategoryRef.setAttribute('selected', 'false')
         this.selectedCategoryRef = this.shadowRoot.getElementById('category-0')

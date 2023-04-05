@@ -150,7 +150,7 @@ export const inboxContainerStyles = ({
         }
   
         #emptyInboxMsg {
-          display: none;
+          display: block;
           padding: 10px;
           text-align: center;
           color: black;
