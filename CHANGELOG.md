@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.5.1] - 6 Apr, 2023
+- Fixes issue for Web Inbox where DOM was not loaded during searching inbox-selector.
+
 ## [1.5.0] - 24 Mar, 2023
 - Introduces the new templates 'Image Only' in 'Web pop up'.
 

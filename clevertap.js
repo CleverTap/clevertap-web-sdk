@@ -4485,7 +4485,7 @@
           this.inboxCard.scrollTop = 0;
           !this.isPreview && this.deleteExpiredAndGetUnexpiredMsgs();
           this.inbox.style.display = 'block';
-          this.inbox.style.zIndex = '2147483647';
+          this.inbox.style.zIndex = '2147483647'; // zIndex should be max for the inbox to be rendered on top of all elements
 
           if (this.config.categories.length) {
             this.selectedCategoryRef.setAttribute('selected', 'false');
@@ -7850,7 +7850,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.5.0'
+          lib: 'web-sdk-v1.5.1'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

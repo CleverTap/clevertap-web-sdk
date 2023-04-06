@@ -416,7 +416,7 @@ export class Inbox extends HTMLElement {
       this.inboxCard.scrollTop = 0
       !this.isPreview && this.deleteExpiredAndGetUnexpiredMsgs()
       this.inbox.style.display = 'block'
-      this.inbox.style.zIndex = '2147483647'
+      this.inbox.style.zIndex = '2147483647' // zIndex should be max for the inbox to be rendered on top of all elements
       if (this.config.categories.length) {
         this.selectedCategoryRef.setAttribute('selected', 'false')
         this.selectedCategoryRef = this.shadowRoot.getElementById('category-0')
