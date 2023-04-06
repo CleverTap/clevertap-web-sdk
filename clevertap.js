@@ -2073,7 +2073,7 @@
 
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
 
-    while (ctCbScripts[0]) {
+    while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
     }
 
@@ -4007,7 +4007,7 @@
         selectedCategoryTitleColor = _ref2.selectedCategoryTitleColor,
         selectedCategoryBorderColor = _ref2.selectedCategoryBorderColor,
         headerCategoryAndPoweredByCTHeight = _ref2.headerCategoryAndPoweredByCTHeight;
-    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: none;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n        }\n\n        #poweredByCT {\n          display: block;\n          height: 16px;\n          padding: 8px 0px;\n          margin: auto;\n        }\n  \n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryAndPoweredByCTHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
+    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n        }\n\n        #poweredByCT {\n          display: block;\n          height: 16px;\n          padding: 8px 0px;\n          margin: auto;\n        }\n  \n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryAndPoweredByCTHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
   };
 
   var Inbox = /*#__PURE__*/function (_HTMLElement) {
@@ -4274,6 +4274,7 @@
         this.inboxCard = this.createEl('div', 'inboxCard');
         this.inbox.appendChild(this.inboxCard);
         this.emptyInboxMsg = this.createEl('div', 'emptyInboxMsg');
+        this.emptyInboxMsg.innerText = 'All messages will be displayed here.';
         this.inboxCard.appendChild(this.emptyInboxMsg);
 
         if (this.config.hidePoweredByCT === false) {
@@ -4484,6 +4485,7 @@
           this.inboxCard.scrollTop = 0;
           !this.isPreview && this.deleteExpiredAndGetUnexpiredMsgs();
           this.inbox.style.display = 'block';
+          this.inbox.style.zIndex = '2147483647'; // zIndex should be max for the inbox to be rendered on top of all elements
 
           if (this.config.categories.length) {
             this.selectedCategoryRef.setAttribute('selected', 'false');
@@ -4654,12 +4656,14 @@
     document.body.appendChild($ct.inbox);
   };
   var initializeWebInbox = function initializeWebInbox(logger) {
-    return new Promise(function (resolve) {
+    return new Promise(function (resolve, reject) {
       if (document.readyState === 'complete') {
         addWebInbox(logger);
         resolve();
       } else {
-        window.addEventListener('load', function () {
+        var config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+
+        var onLoaded = function onLoaded() {
           /**
            * We need this null check here because $ct.inbox could be initialised via init method too on document load.
            * In that case we don't need to call addWebInbox method
@@ -4669,6 +4673,34 @@
           }
 
           resolve();
+        };
+
+        window.addEventListener('load', function () {
+          /**
+           * Scripts can be loaded layzily, we may not get element from dom as it may not be mounted yet
+           * We will to check element for 10 seconds and give up
+           */
+          if (document.getElementById(config.inboxSelector)) {
+            onLoaded();
+          } else {
+            // check for element for next 10 seconds
+            var count = 0;
+
+            if (count < 20) {
+              var t = setInterval(function () {
+                if (document.getElementById(config.inboxSelector)) {
+                  onLoaded();
+                  clearInterval(t);
+                  resolve();
+                } else if (count >= 20) {
+                  clearInterval(t);
+                  reject(new Error('Failed to add inbox'));
+                }
+
+                count++;
+              }, 500);
+            }
+          }
         });
       }
     });
@@ -5701,7 +5733,7 @@
         msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
         initializeWebInbox(_logger).then(function () {
           processWebInboxResponse(msg);
-        });
+        }).catch(function (e) {});
       } else {
         processWebInboxResponse(msg);
       }
@@ -7818,7 +7850,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.5.0'
+          lib: 'web-sdk-v1.5.1'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

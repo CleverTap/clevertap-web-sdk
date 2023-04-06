@@ -65,7 +65,7 @@ export default class RequestDispatcher {
     }
     // TODO: Try using Function constructor instead of appending script.
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
-    while (ctCbScripts[0]) {
+    while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
     }
     const s = document.createElement('script')

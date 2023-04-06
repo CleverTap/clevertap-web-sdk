@@ -39,12 +39,13 @@ export const addWebInbox = (logger) => {
 }
 
 export const initializeWebInbox = (logger) => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (document.readyState === 'complete') {
       addWebInbox(logger)
       resolve()
     } else {
-      window.addEventListener('load', () => {
+      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+      const onLoaded = () => {
         /**
          * We need this null check here because $ct.inbox could be initialised via init method too on document load.
          * In that case we don't need to call addWebInbox method
@@ -53,6 +54,31 @@ export const initializeWebInbox = (logger) => {
           addWebInbox(logger)
         }
         resolve()
+      }
+      window.addEventListener('load', () => {
+        /**
+         * Scripts can be loaded layzily, we may not get element from dom as it may not be mounted yet
+         * We will to check element for 10 seconds and give up
+         */
+        if (document.getElementById(config.inboxSelector)) {
+          onLoaded()
+        } else {
+          // check for element for next 10 seconds
+          let count = 0
+          if (count < 20) {
+            const t = setInterval(() => {
+              if (document.getElementById(config.inboxSelector)) {
+                onLoaded()
+                clearInterval(t)
+                resolve()
+              } else if (count >= 20) {
+                clearInterval(t)
+                reject(new Error('Failed to add inbox'))
+              }
+              count++
+            }, 500)
+          }
+        }
       })
     }
   })
