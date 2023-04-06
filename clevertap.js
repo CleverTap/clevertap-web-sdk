@@ -2073,7 +2073,7 @@
 
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
 
-    while (ctCbScripts[0]) {
+    while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
     }
 
