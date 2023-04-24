@@ -74,19 +74,33 @@ const _tr = (msg, {
 
     if (StorageManager._isLocalStorageSupported()) {
       delete sessionStorage[CAMP_COOKIE_NAME]
+      var campTypeObj = {}
       const campObj = getCampaignObject()
-
+      if (targetingMsgJson.display.wtarget_type === 3) {
+        campTypeObj = campObj.hasOwnProperty('wi') ? campObj.wi : campObj.hasOwnProperty('wp') ? campObj.wp : {}
+      }
+      if (campObj.hasOwnProperty('global')) {
+        campTypeObj.wp = campObj
+      }
+      console.log('Is there obj ', campObj.hasOwnProperty('global'))
+      // console.log('Camp type obj', campTypeObj)
       // global session limit. default is 1
       if (targetingMsgJson[DISPLAY].wmc == null) {
         targetingMsgJson[DISPLAY].wmc = 1
       }
 
-      var excludeFromFreqCaps = -1
-      let campaignSessionLimit = -1
-      let campaignDailyLimit = -1
-      let campaignTotalLimit = -1
+      // global session limit for web inbox. default is 1
+      if (targetingMsgJson[DISPLAY].wimc == null) {
+        targetingMsgJson[DISPLAY].wimc = 1
+      }
+
+      var excludeFromFreqCaps = -1 // efc - Exclude from frequency caps
+      let campaignSessionLimit = -1 // mdc - Once per session
+      let campaignDailyLimit = -1 // tdc - Once per day
+      let campaignTotalLimit = -1 // tlc - Once per user for the duration of campaign
       let totalDailyLimit = -1
-      let totalSessionLimit = -1
+      let totalSessionLimit = -1 // wmc - Web Popup Global Session Limit
+      let totalInboxSessionLimit = -1 // wimc - Web Inbox Global Session Limit
 
       if (targetingMsgJson[DISPLAY].efc != null) { // exclude from frequency cap
         excludeFromFreqCaps = parseInt(targetingMsgJson[DISPLAY].efc, 10)
@@ -107,8 +121,11 @@ const _tr = (msg, {
         totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10)
       }
 
+      if (targetingMsgJson[DISPLAY].wimc != null) { // No of inbox campaigns per session
+        totalInboxSessionLimit = parseInt(targetingMsgJson[DISPLAY].wimc, 10)
+      }
       // session level capping
-      let sessionObj = campObj[_session.sessionId]
+      let sessionObj = campTypeObj[_session.sessionId]
       if (sessionObj) {
         const campaignSessionCount = sessionObj[campaignId]
         const totalSessionCount = sessionObj.tc
@@ -121,17 +138,21 @@ const _tr = (msg, {
         if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
           return false
         }
+        // Inbox session
+        if (totalInboxSessionLimit > 0 && totalSessionCount >= totalInboxSessionLimit && excludeFromFreqCaps < 0) {
+          return false
+        }
         // campaign session
         if (campaignSessionLimit > 0 && campaignSessionCount >= campaignSessionLimit) {
           return false
         }
       } else {
         sessionObj = {}
-        campObj[_session.sessionId] = sessionObj
+        campTypeObj[_session.sessionId] = sessionObj
       }
 
       // daily level capping
-      var dailyObj = campObj[today]
+      var dailyObj = campTypeObj[today]
       if (dailyObj != null) {
         const campaignDailyCount = dailyObj[campaignId]
         const totalDailyCount = dailyObj.tc
@@ -145,10 +166,10 @@ const _tr = (msg, {
         }
       } else {
         dailyObj = {}
-        campObj[today] = dailyObj
+        campTypeObj[today] = dailyObj
       }
 
-      var globalObj = campObj[GLOBAL]
+      var globalObj = campTypeObj[GLOBAL]
       if (globalObj != null) {
         const campaignTotalCount = globalObj[campaignId]
         // campaign total
@@ -157,7 +178,7 @@ const _tr = (msg, {
         }
       } else {
         globalObj = {}
-        campObj[GLOBAL] = globalObj
+        campTypeObj[GLOBAL] = globalObj
       }
     }
     // delay
@@ -178,12 +199,16 @@ const _tr = (msg, {
     incrCount(dailyObj, campaignId, excludeFromFreqCaps)
     incrCount(globalObj, campaignId, excludeFromFreqCaps)
 
+    let campKey = 'wp'
+    if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
+      campKey = 'wi'
+    }
     // get ride of stale sessions and day entries
     const newCampObj = {}
     newCampObj[_session.sessionId] = sessionObj
     newCampObj[today] = dailyObj
     newCampObj[GLOBAL] = globalObj
-    saveCampaignObject(newCampObj)
+    saveCampaignObject({ [campKey]: newCampObj })
   }
 
   const getCookieParams = () => {
@@ -893,11 +918,49 @@ const _tr = (msg, {
     if ($ct.inbox === null) {
       msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
       initializeWebInbox(_logger).then(() => {
+        if (msg.inbox_notifs) {
+          for (let index = 0; index < msg.inapp_notifs.length; index++) {
+            if (doCampHouseKeeping(msg.inbox_notifs[index]) === false) {
+              return
+            } else {
+              processWebInboxResponse(msg)
+            }
+          }
+        }
         processWebInboxResponse(msg)
       }).catch(e => {})
     } else {
-      processWebInboxResponse(msg)
+      if (msg.inbox_notifs) {
+        for (let index = 0; index < msg.inbox_notifs.length; index++) {
+          if (doCampHouseKeeping(msg.inbox_notifs[index]) === false) {
+            return
+          } else {
+            processWebInboxResponse(msg)
+          }
+        }
+      }
     }
+  }
+
+  const staleDataUpdate = (staledata, campType) => {
+    const campObj = getCampaignObject()
+    const globalObj = campObj.campType.global
+    if (globalObj != null && campType) {
+      for (const idx in staledata) {
+        if (staledata.hasOwnProperty(idx)) {
+          delete globalObj[staledata[idx]]
+          if (StorageManager.read(CAMP_COOKIE_G)) {
+            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))
+            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+            if (guidCampObj[guid] && guidCampObj[guid].campType[staledata[idx]]) {
+              delete guidCampObj[guid].campType[staledata[idx]]
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
+            }
+          }
+        }
+      }
+    }
+    saveCampaignObject(campObj)
   }
 
   if (StorageManager._isLocalStorageSupported()) {
@@ -921,25 +984,33 @@ const _tr = (msg, {
         arp(msg.arp)
       }
       if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
-        const campObj = getCampaignObject()
-        const globalObj = campObj.global
-        if (globalObj != null) {
-          for (const idx in msg.inapp_stale) {
-            if (msg.inapp_stale.hasOwnProperty(idx)) {
-              delete globalObj[msg.inapp_stale[idx]]
-              if (StorageManager.read(CAMP_COOKIE_G)) {
-                const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))
-                const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-                if (guidCampObj[guid] && guidCampObj[guid][msg.inapp_stale[idx]]) {
-                  delete guidCampObj[guid][msg.inapp_stale[idx]]
-                  StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
-                }
-              }
-            }
-          }
-        }
-        saveCampaignObject(campObj)
+        // web popup stale
+        staleDataUpdate(msg.inapp_stale, 'wp')
       }
+      if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
+        // web inbox stale
+        staleDataUpdate(msg.inbox_stale, 'wi')
+      }
+      // if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
+      // const campObj = getCampaignObject()
+      // const globalObj = campObj.wp.global
+      // if (globalObj != null) {
+      //   for (const idx in msg.inapp_stale) {
+      //     if (msg.inapp_stale.hasOwnProperty(idx)) {
+      //       delete globalObj[msg.inapp_stale[idx]]
+      //       if (StorageManager.read(CAMP_COOKIE_G)) {
+      //         const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))
+      //         const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+      //         if (guidCampObj[guid] && guidCampObj[guid].wp[msg.inapp_stale[idx]]) {
+      //           delete guidCampObj[guid].wp[msg.inapp_stale[idx]]
+      //           StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
+      //         }
+      //       }
+      //     }
+      //   }
+      // }
+      // saveCampaignObject(campObj)
+      // }
     } catch (e) {
       _logger.error('Unable to persist evrp/arp: ' + e)
     }

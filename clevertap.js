@@ -2102,25 +2102,32 @@
     value: _addARPToRequest2
   });
 
-  // CleverTap specific utilities
   var getCampaignObject = function getCampaignObject() {
-    var campObj = {};
+    var finalcampObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
-      campObj = StorageManager.read(CAMP_COOKIE_NAME);
+      var campObj = StorageManager.read(CAMP_COOKIE_NAME);
 
       if (campObj != null) {
         campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
+
+        if (campObj.hasOwnProperty('global')) {
+          finalcampObj.wp = campObj;
+        } else {
+          finalcampObj = campObj;
+        }
       } else {
-        campObj = {};
+        finalcampObj = {};
       }
     }
 
-    return campObj;
+    return finalcampObj;
   };
   var saveCampaignObject = function saveCampaignObject(campaignObj) {
     if (StorageManager._isLocalStorageSupported()) {
-      var campObj = JSON.stringify(campaignObj);
+      var newObj = _objectSpread2(_objectSpread2({}, getCampaignObject()), campaignObj);
+
+      var campObj = JSON.stringify(newObj);
       StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj)); // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
 
       setCampaignObjectForGuid();
@@ -2135,45 +2142,48 @@
         try {
           guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
           var guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
-          var campObj = {};
 
           if (guid && StorageManager._isLocalStorageSupported()) {
-            campObj = getCampaignObject();
-            var campKeyObj = Object.keys(guidCampObj).length && guidCampObj[guid] ? guidCampObj[guid] : {};
-            var globalObj = campObj.global;
-            var today = getToday();
-            var dailyObj = campObj[today];
+            var finalCampObj = {};
+            var campObj = getCampaignObject();
+            Object.keys(campObj).forEach(function (key) {
+              var campKeyObj = Object.keys(guidCampObj).length && guidCampObj[guid][key] ? guidCampObj[guid][key] : {};
+              var globalObj = campObj[key].global;
+              var today = getToday();
+              var dailyObj = campObj[key][today];
 
-            if (typeof globalObj !== 'undefined') {
-              var campaignIdArray = Object.keys(globalObj);
+              if (typeof globalObj !== 'undefined') {
+                var campaignIdArray = Object.keys(globalObj);
 
-              for (var index in campaignIdArray) {
-                var resultObj = [];
+                for (var index in campaignIdArray) {
+                  var resultObj = [];
 
-                if (campaignIdArray.hasOwnProperty(index)) {
-                  var dailyC = 0;
-                  var totalC = 0;
-                  var campaignId = campaignIdArray[index];
+                  if (campaignIdArray.hasOwnProperty(index)) {
+                    var dailyC = 0;
+                    var totalC = 0;
+                    var campaignId = campaignIdArray[index];
 
-                  if (campaignId === 'tc') {
-                    continue;
+                    if (campaignId === 'tc') {
+                      continue;
+                    }
+
+                    if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
+                      dailyC = dailyObj[campaignId];
+                    }
+
+                    if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
+                      totalC = globalObj[campaignId];
+                    }
+
+                    resultObj = [campaignId, dailyC, totalC];
+                    campKeyObj[campaignId] = resultObj;
                   }
-
-                  if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-                    dailyC = dailyObj[campaignId];
-                  }
-
-                  if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-                    totalC = globalObj[campaignId];
-                  }
-
-                  resultObj = [campaignId, dailyC, totalC];
-                  campKeyObj[campaignId] = resultObj;
                 }
               }
-            }
 
-            guidCampObj[guid] = campKeyObj;
+              finalCampObj = _objectSpread2(_objectSpread2({}, finalCampObj), {}, _defineProperty({}, key, campKeyObj));
+            });
+            guidCampObj[guid] = finalCampObj;
             StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
           }
         } catch (e) {
@@ -2188,19 +2198,27 @@
     var campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
+      var resultObj = {};
       campObj = getCampaignObject();
-      var resultObj = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid] ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]) : [];
+      var resultObjWP = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp) : [];
+      var resultObjWI = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi) : [];
       var today = getToday();
-      var dailyObj = campObj[today];
-      var todayC = 0;
+      var todayCwp = 0;
+      var todayCwi = 0;
 
-      if (typeof dailyObj !== 'undefined' && typeof dailyObj.tc !== 'undefined') {
-        todayC = dailyObj.tc;
+      if (campObj.wp && campObj.wp[today] && campObj.wp[today].tc !== 'undefined') {
+        todayCwp = campObj.wp[today].tc;
+      }
+
+      if (campObj.wi && campObj.wi[today] && campObj.wi[today].tc !== 'undefined') {
+        todayCwi = campObj.wi[today].tc;
       }
 
       resultObj = {
-        wmp: todayC,
-        tlc: resultObj
+        wmp: todayCwp,
+        wimp: todayCwi,
+        tlc: resultObjWP,
+        witlc: resultObjWI
       };
       return resultObj;
     }
@@ -2480,7 +2498,7 @@
     if (campaignId != null && campaignId !== '-1') {
       if (StorageManager._isLocalStorageSupported()) {
         var campaignObj = getCampaignObject();
-        var sessionCampaignObj = campaignObj[currentSessionId];
+        var sessionCampaignObj = campaignObj.wp[currentSessionId];
 
         if (sessionCampaignObj == null) {
           sessionCampaignObj = {};
@@ -4880,18 +4898,41 @@
 
       if (StorageManager._isLocalStorageSupported()) {
         delete sessionStorage[CAMP_COOKIE_NAME];
-        var campObj = getCampaignObject(); // global session limit. default is 1
+        var campTypeObj = {};
+        var campObj = getCampaignObject();
+
+        if (targetingMsgJson.display.wtarget_type === 3) {
+          campTypeObj = campObj.hasOwnProperty('wi') ? campObj.wi : campObj.hasOwnProperty('wp') ? campObj.wp : {};
+        }
+
+        if (campObj.hasOwnProperty('global')) {
+          campTypeObj.wp = campObj;
+        }
+
+        console.log('Is there obj ', campObj.hasOwnProperty('global')); // console.log('Camp type obj', campTypeObj)
+        // global session limit. default is 1
 
         if (targetingMsgJson[DISPLAY].wmc == null) {
           targetingMsgJson[DISPLAY].wmc = 1;
+        } // global session limit for web inbox. default is 1
+
+
+        if (targetingMsgJson[DISPLAY].wimc == null) {
+          targetingMsgJson[DISPLAY].wimc = 1;
         }
 
-        var excludeFromFreqCaps = -1;
-        var campaignSessionLimit = -1;
-        var campaignDailyLimit = -1;
-        var campaignTotalLimit = -1;
+        var excludeFromFreqCaps = -1; // efc - Exclude from frequency caps
+
+        var campaignSessionLimit = -1; // mdc - Once per session
+
+        var campaignDailyLimit = -1; // tdc - Once per day
+
+        var campaignTotalLimit = -1; // tlc - Once per user for the duration of campaign
+
         var totalDailyLimit = -1;
-        var totalSessionLimit = -1;
+        var totalSessionLimit = -1; // wmc - Web Popup Global Session Limit
+
+        var totalInboxSessionLimit = -1; // wimc - Web Inbox Global Session Limit
 
         if (targetingMsgJson[DISPLAY].efc != null) {
           // exclude from frequency cap
@@ -4921,10 +4962,15 @@
         if (targetingMsgJson[DISPLAY].wmc != null) {
           // No of campaigns per session
           totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10);
+        }
+
+        if (targetingMsgJson[DISPLAY].wimc != null) {
+          // No of inbox campaigns per session
+          totalInboxSessionLimit = parseInt(targetingMsgJson[DISPLAY].wimc, 10);
         } // session level capping
 
 
-        var _sessionObj = campObj[_session.sessionId];
+        var _sessionObj = campTypeObj[_session.sessionId];
 
         if (_sessionObj) {
           var campaignSessionCount = _sessionObj[campaignId];
@@ -4937,6 +4983,11 @@
 
           if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
             return false;
+          } // Inbox session
+
+
+          if (totalInboxSessionLimit > 0 && totalSessionCount >= totalInboxSessionLimit && excludeFromFreqCaps < 0) {
+            return false;
           } // campaign session
 
 
@@ -4945,11 +4996,11 @@
           }
         } else {
           _sessionObj = {};
-          campObj[_session.sessionId] = _sessionObj;
+          campTypeObj[_session.sessionId] = _sessionObj;
         } // daily level capping
 
 
-        var dailyObj = campObj[today];
+        var dailyObj = campTypeObj[today];
 
         if (dailyObj != null) {
           var campaignDailyCount = dailyObj[campaignId];
@@ -4965,10 +5016,10 @@
           }
         } else {
           dailyObj = {};
-          campObj[today] = dailyObj;
+          campTypeObj[today] = dailyObj;
         }
 
-        var globalObj = campObj[GLOBAL];
+        var globalObj = campTypeObj[GLOBAL];
 
         if (globalObj != null) {
           var campaignTotalCount = globalObj[campaignId]; // campaign total
@@ -4978,7 +5029,7 @@
           }
         } else {
           globalObj = {};
-          campObj[GLOBAL] = globalObj;
+          campTypeObj[GLOBAL] = globalObj;
         }
       } // delay
 
@@ -4999,13 +5050,19 @@
 
       incrCount(sessionObj, campaignId, excludeFromFreqCaps);
       incrCount(dailyObj, campaignId, excludeFromFreqCaps);
-      incrCount(globalObj, campaignId, excludeFromFreqCaps); // get ride of stale sessions and day entries
+      incrCount(globalObj, campaignId, excludeFromFreqCaps);
+      var campKey = 'wp';
+
+      if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
+        campKey = 'wi';
+      } // get ride of stale sessions and day entries
+
 
       var newCampObj = {};
       newCampObj[_session.sessionId] = sessionObj;
       newCampObj[today] = dailyObj;
       newCampObj[GLOBAL] = globalObj;
-      saveCampaignObject(newCampObj);
+      saveCampaignObject(_defineProperty({}, campKey, newCampObj));
     };
 
     var getCookieParams = function getCookieParams() {
@@ -5732,12 +5789,55 @@
       if ($ct.inbox === null) {
         msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
         initializeWebInbox(_logger).then(function () {
+          if (msg.inbox_notifs) {
+            for (var _index = 0; _index < msg.inapp_notifs.length; _index++) {
+              if (doCampHouseKeeping(msg.inbox_notifs[_index]) === false) {
+                return;
+              } else {
+                processWebInboxResponse(msg);
+              }
+            }
+          }
+
           processWebInboxResponse(msg);
         }).catch(function (e) {});
       } else {
-        processWebInboxResponse(msg);
+        if (msg.inbox_notifs) {
+          for (var _index2 = 0; _index2 < msg.inbox_notifs.length; _index2++) {
+            if (doCampHouseKeeping(msg.inbox_notifs[_index2]) === false) {
+              return;
+            } else {
+              processWebInboxResponse(msg);
+            }
+          }
+        }
       }
     }
+
+    var staleDataUpdate = function staleDataUpdate(staledata, campType) {
+      var campObj = getCampaignObject();
+      var globalObj = campObj.campType.global;
+
+      if (globalObj != null && campType) {
+        for (var idx in staledata) {
+          if (staledata.hasOwnProperty(idx)) {
+            delete globalObj[staledata[idx]];
+
+            if (StorageManager.read(CAMP_COOKIE_G)) {
+              var guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+              var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+              if (guidCampObj[guid] && guidCampObj[guid].campType[staledata[idx]]) {
+                delete guidCampObj[guid].campType[staledata[idx]];
+                StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+              }
+            }
+          }
+        }
+      }
+
+      saveCampaignObject(campObj);
+    };
 
     if (StorageManager._isLocalStorageSupported()) {
       try {
@@ -5763,29 +5863,34 @@
         }
 
         if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
-          var campObj = getCampaignObject();
-          var globalObj = campObj.global;
-
-          if (globalObj != null) {
-            for (var idx in msg.inapp_stale) {
-              if (msg.inapp_stale.hasOwnProperty(idx)) {
-                delete globalObj[msg.inapp_stale[idx]];
-
-                if (StorageManager.read(CAMP_COOKIE_G)) {
-                  var guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-                  var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-
-                  if (guidCampObj[guid] && guidCampObj[guid][msg.inapp_stale[idx]]) {
-                    delete guidCampObj[guid][msg.inapp_stale[idx]];
-                    StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
-                  }
-                }
-              }
-            }
-          }
-
-          saveCampaignObject(campObj);
+          // web popup stale
+          staleDataUpdate(msg.inapp_stale, 'wp');
         }
+
+        if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
+          // web inbox stale
+          staleDataUpdate(msg.inbox_stale, 'wi');
+        } // if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
+        // const campObj = getCampaignObject()
+        // const globalObj = campObj.wp.global
+        // if (globalObj != null) {
+        //   for (const idx in msg.inapp_stale) {
+        //     if (msg.inapp_stale.hasOwnProperty(idx)) {
+        //       delete globalObj[msg.inapp_stale[idx]]
+        //       if (StorageManager.read(CAMP_COOKIE_G)) {
+        //         const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))
+        //         const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+        //         if (guidCampObj[guid] && guidCampObj[guid].wp[msg.inapp_stale[idx]]) {
+        //           delete guidCampObj[guid].wp[msg.inapp_stale[idx]]
+        //           StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
+        //         }
+        //       }
+        //     }
+        //   }
+        // }
+        // saveCampaignObject(campObj)
+        // }
+
       } catch (e) {
         _logger.error('Unable to persist evrp/arp: ' + e);
       }
