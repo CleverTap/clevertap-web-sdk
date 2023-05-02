@@ -4925,9 +4925,9 @@
         var campObj = getCampaignObject();
 
         if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
-          campTypeObj = campObj.hasOwnProperty('wi');
+          campTypeObj = campObj.wi;
         } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) {
-          campTypeObj = campObj.hasOwnProperty('wp');
+          campTypeObj = campObj.wp;
         } else {
           campTypeObj = {};
         }
