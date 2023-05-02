@@ -499,6 +499,7 @@
   var COMMAND_DELETE = '$delete';
   var WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG';
   var WEBINBOX = 'WZRK_INBOX';
+  var MAX_INBOX_MSG = 15;
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
@@ -4197,19 +4198,14 @@
           }
         }
 
-        messages = Object.values(messages).sort(function (a, b) {
-          return b.date - a.date;
-        }).reduce(function (acc, m) {
-          acc[m.id] = m;
-          return acc;
-        }, {});
         StorageManager.saveToLSorCookie(WEBINBOX, messages);
         return messages;
       }
     }, {
       key: "updateInboxMessages",
       value: function updateInboxMessages() {
-        var _this3 = this;
+        var _this3 = this,
+            _this$maxMsgsInInbox;
 
         var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
         var inboxMsgs = this.deleteExpiredAndGetUnexpiredMsgs();
@@ -4226,7 +4222,34 @@
           _this3.unviewedMessages[key] = m;
           _this3.unviewedCounter++;
         });
-        StorageManager.saveToLSorCookie(WEBINBOX, inboxMsgs);
+        var maxMsgsInInbox = (_this$maxMsgsInInbox = this.maxMsgsInInbox) !== null && _this$maxMsgsInInbox !== void 0 ? _this$maxMsgsInInbox : MAX_INBOX_MSG;
+        var trimmedSortedValues = Object.values(inboxMsgs).sort(function (a, b) {
+          return b.date - a.date;
+        }).slice(0, maxMsgsInInbox);
+        var trimmedInboxMsgs = trimmedSortedValues.reduce(function (acc, m) {
+          acc[m.id] = m;
+          return acc;
+        }, {});
+
+        if (Object.keys(inboxMsgs).length > Object.keys(trimmedInboxMsgs).length) {
+          for (var key in inboxMsgs) {
+            if (!trimmedInboxMsgs.hasOwnProperty(key)) {
+              if (inboxMsgs[key].viewed === 0) {
+                this.unviewedCounter--;
+                delete this.unviewedMessages[key];
+              }
+
+              delete inboxMsgs[key];
+              var elementToRemove = this.shadowRoot.getElementById(key);
+
+              if (elementToRemove) {
+                elementToRemove.remove();
+              }
+            }
+          }
+        }
+
+        StorageManager.saveToLSorCookie(WEBINBOX, trimmedInboxMsgs);
         this.updateUnviewedBadgeCounter();
         this.buildUIForMessages(incomingMsgs);
       }
@@ -4907,10 +4930,8 @@
 
         if (campObj.hasOwnProperty('global')) {
           campTypeObj.wp = campObj;
-        }
+        } // global session limit. default is 1
 
-        console.log('Is there obj ', campObj.hasOwnProperty('global')); // console.log('Camp type obj', campTypeObj)
-        // global session limit. default is 1
 
         if (targetingMsgJson[DISPLAY].wmc == null) {
           targetingMsgJson[DISPLAY].wmc = 1;
@@ -4978,16 +4999,18 @@
 
           if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
             return false;
-          } // session
+          }
 
-
-          if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
-            return false;
-          } // Inbox session
-
-
-          if (totalInboxSessionLimit > 0 && totalSessionCount >= totalInboxSessionLimit && excludeFromFreqCaps < 0) {
-            return false;
+          if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
+            // Inbox session
+            if (totalInboxSessionLimit > 0 && totalSessionCount >= totalInboxSessionLimit && excludeFromFreqCaps < 0) {
+              return false;
+            }
+          } else {
+            // session
+            if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
+              return false;
+            }
           } // campaign session
 
 
@@ -5226,13 +5249,24 @@
 
       if (displayObj.layout === 3) {
         // Handling Web Popup Image Only
-        if (document.getElementById('wzrkImageOnlyDiv') != null) {
+        var _divId = 'wzrkImageOnlyDiv';
+
+        if (doCampHouseKeeping(targetingMsgJson) === false) {
+          return;
+        }
+
+        if (isWebPopUpSpamControlDisabled && document.getElementById(_divId) != null) {
+          var element = document.getElementById(_divId);
+          element.remove();
+        }
+
+        if (document.getElementById(_divId) != null) {
           return;
         }
 
         var _msgDiv = document.createElement('div');
 
-        _msgDiv.id = 'wzrkImageOnlyDiv'; // msgDiv.setAttribute('style', 'position: absolute;top: 10px;right: 10px')
+        _msgDiv.id = _divId; // msgDiv.setAttribute('style', 'position: absolute;top: 10px;right: 10px')
 
         document.body.appendChild(_msgDiv);
 
@@ -5250,8 +5284,9 @@
       var divId = 'wizParDiv' + displayObj.layout;
 
       if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
-        var element = document.getElementById(divId);
-        element.remove();
+        var _element = document.getElementById(divId);
+
+        _element.remove();
       }
 
       if (document.getElementById(divId) != null) {
@@ -5816,7 +5851,7 @@
 
     var staleDataUpdate = function staleDataUpdate(staledata, campType) {
       var campObj = getCampaignObject();
-      var globalObj = campObj.campType.global;
+      var globalObj = campObj[campType].global;
 
       if (globalObj != null && campType) {
         for (var idx in staledata) {
@@ -5827,8 +5862,8 @@
               var guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
               var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
 
-              if (guidCampObj[guid] && guidCampObj[guid].campType[staledata[idx]]) {
-                delete guidCampObj[guid].campType[staledata[idx]];
+              if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
+                delete guidCampObj[guid][campType][staledata[idx]];
                 StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
               }
             }
@@ -5867,30 +5902,10 @@
           staleDataUpdate(msg.inapp_stale, 'wp');
         }
 
-        if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
+        if (msg.inbox_stale != null && msg.inbox_stale.length > 0) {
           // web inbox stale
           staleDataUpdate(msg.inbox_stale, 'wi');
-        } // if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
-        // const campObj = getCampaignObject()
-        // const globalObj = campObj.wp.global
-        // if (globalObj != null) {
-        //   for (const idx in msg.inapp_stale) {
-        //     if (msg.inapp_stale.hasOwnProperty(idx)) {
-        //       delete globalObj[msg.inapp_stale[idx]]
-        //       if (StorageManager.read(CAMP_COOKIE_G)) {
-        //         const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))
-        //         const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-        //         if (guidCampObj[guid] && guidCampObj[guid].wp[msg.inapp_stale[idx]]) {
-        //           delete guidCampObj[guid].wp[msg.inapp_stale[idx]]
-        //           StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
-        //         }
-        //       }
-        //     }
-        //   }
-        // }
-        // saveCampaignObject(campObj)
-        // }
-
+        }
       } catch (e) {
         _logger.error('Unable to persist evrp/arp: ' + e);
       }

@@ -2,7 +2,7 @@ import { StorageManager, $ct } from '../../util/storage'
 import { Message } from './Message'
 import { inboxContainerStyles, messageStyles } from './inboxStyles'
 import { getInboxPosition, determineTimeStampText, arrowSvg } from './helper'
-import { WEBINBOX, WEBINBOX_CONFIG } from '../../util/constants'
+import { MAX_INBOX_MSG, WEBINBOX, WEBINBOX_CONFIG } from '../../util/constants'
 
 export class Inbox extends HTMLElement {
   constructor (logger) {
@@ -125,7 +125,7 @@ export class Inbox extends HTMLElement {
    *  In both the above scenarios, we'll still have to decrement the unviewed counter if the message was not viewed.
    */
   deleteExpiredAndGetUnexpiredMsgs (deleteMsgsFromUI = true) {
-    let messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+    const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
     const now = Math.floor(Date.now() / 1000)
     for (const msg in messages) {
       if (messages[msg].wzrk_ttl && messages[msg].wzrk_ttl > 0 && messages[msg].wzrk_ttl < now) {
@@ -141,7 +141,6 @@ export class Inbox extends HTMLElement {
       }
     }
 
-    messages = Object.values(messages).sort((a, b) => b.date - a.date).reduce((acc, m) => { acc[m.id] = m; return acc }, {})
     StorageManager.saveToLSorCookie(WEBINBOX, messages)
     return messages
   }
@@ -161,7 +160,25 @@ export class Inbox extends HTMLElement {
       this.unviewedMessages[key] = m
       this.unviewedCounter++
     })
-    StorageManager.saveToLSorCookie(WEBINBOX, inboxMsgs)
+    const maxMsgsInInbox = this.maxMsgsInInbox ?? MAX_INBOX_MSG
+    const trimmedSortedValues = Object.values(inboxMsgs).sort((a, b) => b.date - a.date).slice(0, maxMsgsInInbox)
+    const trimmedInboxMsgs = trimmedSortedValues.reduce((acc, m) => { acc[m.id] = m; return acc }, {})
+
+    if (Object.keys(inboxMsgs).length > Object.keys(trimmedInboxMsgs).length) {
+      for (const key in inboxMsgs) {
+        if (!trimmedInboxMsgs.hasOwnProperty(key)) {
+          if (inboxMsgs[key].viewed === 0) {
+            this.unviewedCounter--
+            delete this.unviewedMessages[key]
+          }
+          delete inboxMsgs[key]
+          const elementToRemove = this.shadowRoot.getElementById(key)
+          if (elementToRemove) { elementToRemove.remove() }
+        }
+      }
+    }
+    StorageManager.saveToLSorCookie(WEBINBOX, trimmedInboxMsgs)
+
     this.updateUnviewedBadgeCounter()
     this.buildUIForMessages(incomingMsgs)
   }

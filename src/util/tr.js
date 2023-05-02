@@ -82,8 +82,6 @@ const _tr = (msg, {
       if (campObj.hasOwnProperty('global')) {
         campTypeObj.wp = campObj
       }
-      console.log('Is there obj ', campObj.hasOwnProperty('global'))
-      // console.log('Camp type obj', campTypeObj)
       // global session limit. default is 1
       if (targetingMsgJson[DISPLAY].wmc == null) {
         targetingMsgJson[DISPLAY].wmc = 1
@@ -134,14 +132,18 @@ const _tr = (msg, {
           return false
         }
 
-        // session
-        if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
-          return false
+        if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
+          // Inbox session
+          if (totalInboxSessionLimit > 0 && totalSessionCount >= totalInboxSessionLimit && excludeFromFreqCaps < 0) {
+            return false
+          }
+        } else {
+          // session
+          if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
+            return false
+          }
         }
-        // Inbox session
-        if (totalInboxSessionLimit > 0 && totalSessionCount >= totalInboxSessionLimit && excludeFromFreqCaps < 0) {
-          return false
-        }
+
         // campaign session
         if (campaignSessionLimit > 0 && campaignSessionCount >= campaignSessionLimit) {
           return false
@@ -348,11 +350,19 @@ const _tr = (msg, {
       return showExitIntent(undefined, targetingMsgJson)
     }
     if (displayObj.layout === 3) { // Handling Web Popup Image Only
-      if (document.getElementById('wzrkImageOnlyDiv') != null) {
+      const divId = 'wzrkImageOnlyDiv'
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return
+      }
+      if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
+        const element = document.getElementById(divId)
+        element.remove()
+      }
+      if (document.getElementById(divId) != null) {
         return
       }
       const msgDiv = document.createElement('div')
-      msgDiv.id = 'wzrkImageOnlyDiv'
+      msgDiv.id = divId
       // msgDiv.setAttribute('style', 'position: absolute;top: 10px;right: 10px')
       document.body.appendChild(msgDiv)
       if (customElements.get('ct-web-popup-imageonly') === undefined) {
@@ -944,7 +954,7 @@ const _tr = (msg, {
 
   const staleDataUpdate = (staledata, campType) => {
     const campObj = getCampaignObject()
-    const globalObj = campObj.campType.global
+    const globalObj = campObj[campType].global
     if (globalObj != null && campType) {
       for (const idx in staledata) {
         if (staledata.hasOwnProperty(idx)) {
@@ -952,8 +962,8 @@ const _tr = (msg, {
           if (StorageManager.read(CAMP_COOKIE_G)) {
             const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))
             const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-            if (guidCampObj[guid] && guidCampObj[guid].campType[staledata[idx]]) {
-              delete guidCampObj[guid].campType[staledata[idx]]
+            if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
+              delete guidCampObj[guid][campType][staledata[idx]]
               StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
             }
           }
@@ -987,30 +997,10 @@ const _tr = (msg, {
         // web popup stale
         staleDataUpdate(msg.inapp_stale, 'wp')
       }
-      if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
+      if (msg.inbox_stale != null && msg.inbox_stale.length > 0) {
         // web inbox stale
         staleDataUpdate(msg.inbox_stale, 'wi')
       }
-      // if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
-      // const campObj = getCampaignObject()
-      // const globalObj = campObj.wp.global
-      // if (globalObj != null) {
-      //   for (const idx in msg.inapp_stale) {
-      //     if (msg.inapp_stale.hasOwnProperty(idx)) {
-      //       delete globalObj[msg.inapp_stale[idx]]
-      //       if (StorageManager.read(CAMP_COOKIE_G)) {
-      //         const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))
-      //         const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-      //         if (guidCampObj[guid] && guidCampObj[guid].wp[msg.inapp_stale[idx]]) {
-      //           delete guidCampObj[guid].wp[msg.inapp_stale[idx]]
-      //           StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
-      //         }
-      //       }
-      //     }
-      //   }
-      // }
-      // saveCampaignObject(campObj)
-      // }
     } catch (e) {
       _logger.error('Unable to persist evrp/arp: ' + e)
     }
