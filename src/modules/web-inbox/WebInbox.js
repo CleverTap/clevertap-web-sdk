@@ -160,7 +160,7 @@ export class Inbox extends HTMLElement {
       this.unviewedMessages[key] = m
       this.unviewedCounter++
     })
-    const maxMsgsInInbox = this.maxMsgsInInbox ?? MAX_INBOX_MSG
+    const maxMsgsInInbox = this.config.maxMsgsInInbox ?? MAX_INBOX_MSG
     const trimmedSortedValues = Object.values(inboxMsgs).sort((a, b) => b.date - a.date).slice(0, maxMsgsInInbox)
     const trimmedInboxMsgs = trimmedSortedValues.reduce((acc, m) => { acc[m.id] = m; return acc }, {})
 

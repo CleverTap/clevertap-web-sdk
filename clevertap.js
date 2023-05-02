@@ -4205,7 +4205,7 @@
       key: "updateInboxMessages",
       value: function updateInboxMessages() {
         var _this3 = this,
-            _this$maxMsgsInInbox;
+            _this$config$maxMsgsI;
 
         var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
         var inboxMsgs = this.deleteExpiredAndGetUnexpiredMsgs();
@@ -4222,7 +4222,7 @@
           _this3.unviewedMessages[key] = m;
           _this3.unviewedCounter++;
         });
-        var maxMsgsInInbox = (_this$maxMsgsInInbox = this.maxMsgsInInbox) !== null && _this$maxMsgsInInbox !== void 0 ? _this$maxMsgsInInbox : MAX_INBOX_MSG;
+        var maxMsgsInInbox = (_this$config$maxMsgsI = this.config.maxMsgsInInbox) !== null && _this$config$maxMsgsI !== void 0 ? _this$config$maxMsgsI : MAX_INBOX_MSG;
         var trimmedSortedValues = Object.values(inboxMsgs).sort(function (a, b) {
           return b.date - a.date;
         }).slice(0, maxMsgsInInbox);
