@@ -4924,8 +4924,12 @@
         var campTypeObj = {};
         var campObj = getCampaignObject();
 
-        if (targetingMsgJson.display.wtarget_type === 3) {
-          campTypeObj = campObj.hasOwnProperty('wi') ? campObj.wi : campObj.hasOwnProperty('wp') ? campObj.wp : {};
+        if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
+          campTypeObj = campObj.hasOwnProperty('wi');
+        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) {
+          campTypeObj = campObj.hasOwnProperty('wp');
+        } else {
+          campTypeObj = {};
         }
 
         if (campObj.hasOwnProperty('global')) {
