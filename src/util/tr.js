@@ -323,20 +323,11 @@ const _tr = (msg, {
       return showExitIntent(undefined, targetingMsgJson)
     }
     if (displayObj.layout === 3) { // Handling Web Popup Image Only
-      const divId = 'wzrkImageOnlyDiv'
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
-        return
-      }
-      if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
-        const element = document.getElementById(divId)
-        element.remove()
-      }
-      if (document.getElementById(divId) != null) {
+      if (document.getElementById('wzrkImageOnlyDiv') != null) {
         return
       }
       const msgDiv = document.createElement('div')
-      msgDiv.id = divId
-      // msgDiv.setAttribute('style', 'position: absolute;top: 10px;right: 10px')
+      msgDiv.id = 'wzrkImageOnlyDiv'
       document.body.appendChild(msgDiv)
       if (customElements.get('ct-web-popup-imageonly') === undefined) {
         customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly)

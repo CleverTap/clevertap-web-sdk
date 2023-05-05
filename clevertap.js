@@ -5173,25 +5173,13 @@
 
       if (displayObj.layout === 3) {
         // Handling Web Popup Image Only
-        var _divId = 'wzrkImageOnlyDiv';
-
-        if (doCampHouseKeeping(targetingMsgJson) === false) {
-          return;
-        }
-
-        if (isWebPopUpSpamControlDisabled && document.getElementById(_divId) != null) {
-          var element = document.getElementById(_divId);
-          element.remove();
-        }
-
-        if (document.getElementById(_divId) != null) {
+        if (document.getElementById('wzrkImageOnlyDiv') != null) {
           return;
         }
 
         var _msgDiv = document.createElement('div');
 
-        _msgDiv.id = _divId; // msgDiv.setAttribute('style', 'position: absolute;top: 10px;right: 10px')
-
+        _msgDiv.id = 'wzrkImageOnlyDiv';
         document.body.appendChild(_msgDiv);
 
         if (customElements.get('ct-web-popup-imageonly') === undefined) {
@@ -5208,9 +5196,8 @@
       var divId = 'wizParDiv' + displayObj.layout;
 
       if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
-        var _element = document.getElementById(divId);
-
-        _element.remove();
+        var element = document.getElementById(divId);
+        element.remove();
       }
 
       if (document.getElementById(divId) != null) {
