@@ -265,13 +265,13 @@ const _tr = (msg, {
     if (customElements.get('ct-web-personalisation-banner') === undefined) {
       customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner)
     }
-    const divId = targetingMsgJson.display.divId
+    const divId = targetingMsgJson.display.divId ?? targetingMsgJson.display.divSelector
     const bannerEl = document.createElement('ct-web-personalisation-banner')
     bannerEl.msgId = targetingMsgJson.wzrk_id
     bannerEl.pivotId = targetingMsgJson.wzrk_pivot
     bannerEl.divHeight = targetingMsgJson.display.divHeight
     bannerEl.details = targetingMsgJson.display.details[0]
-    const containerEl = document.getElementById(divId)
+    const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId)
     containerEl.innerHTML = ''
     containerEl.appendChild(bannerEl)
   }
@@ -280,10 +280,10 @@ const _tr = (msg, {
     if (customElements.get('ct-web-personalisation-carousel') === undefined) {
       customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel)
     }
-    const divId = targetingMsgJson.display.divId
+    const divId = targetingMsgJson.display.divId ?? targetingMsgJson.display.divSelector
     const carousel = document.createElement('ct-web-personalisation-carousel')
     carousel.target = targetingMsgJson
-    const container = document.getElementById(divId)
+    const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId)
     container.innerHTML = ''
     container.appendChild(carousel)
   }
@@ -323,11 +323,19 @@ const _tr = (msg, {
       return showExitIntent(undefined, targetingMsgJson)
     }
     if (displayObj.layout === 3) { // Handling Web Popup Image Only
-      if (document.getElementById('wzrkImageOnlyDiv') != null) {
+      const divId = 'wzrkImageOnlyDiv'
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return
+      }
+      if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
+        const element = document.getElementById(divId)
+        element.remove()
+      }
+      if (document.getElementById(divId) != null) {
         return
       }
       const msgDiv = document.createElement('div')
-      msgDiv.id = 'wzrkImageOnlyDiv'
+      msgDiv.id = divId
       // msgDiv.setAttribute('style', 'position: absolute;top: 10px;right: 10px')
       document.body.appendChild(msgDiv)
       if (customElements.get('ct-web-popup-imageonly') === undefined) {
@@ -801,8 +809,14 @@ const _tr = (msg, {
   }
   const processNativeDisplayArr = (arrInAppNotifs) => {
     Object.keys(arrInAppNotifs).map(key => {
-      var divId = arrInAppNotifs[key].display.divId
-      const id = document.getElementById(divId)
+      var elementId, id
+      if (arrInAppNotifs[key].display.divId) {
+        elementId = arrInAppNotifs[key].display.divId
+        id = document.getElementById(elementId)
+      } else {
+        elementId = arrInAppNotifs[key].display.divSelector
+        id = document.querySelector(elementId)
+      }
       if (id !== null) {
         arrInAppNotifs[key].msgContent.type === 2 ? renderPersonalisationBanner(arrInAppNotifs[key]) : renderPersonalisationCarousel(arrInAppNotifs[key])
         delete arrInAppNotifs[key]
@@ -837,7 +851,8 @@ const _tr = (msg, {
         window.document.body.onmouseleave = showExitIntent
       } else if (targetNotif.display.wtarget_type === 2) { // if display['wtarget_type']==2 then web native display
         if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) { // Check for banner and carousel
-          if (document.getElementById(targetNotif.display.divId) !== null) {
+          const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector)
+          if (element !== null) {
             targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
           } else {
             arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
