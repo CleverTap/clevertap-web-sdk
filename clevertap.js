@@ -5186,8 +5186,7 @@
 
         var _msgDiv = document.createElement('div');
 
-        _msgDiv.id = _divId; // msgDiv.setAttribute('style', 'position: absolute;top: 10px;right: 10px')
-
+        _msgDiv.id = _divId;
         document.body.appendChild(_msgDiv);
 
         if (customElements.get('ct-web-popup-imageonly') === undefined) {
@@ -5530,10 +5529,7 @@
         return;
       }
 
-      var campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
-      //   return
-      // }
-
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       $ct.campaignDivMap[campaignId] = 'intentPreview';
       var legacy = false;
       var opacityDiv = document.createElement('div');
@@ -7862,7 +7858,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.5.1'
+          lib: 'web-sdk-v1.5.2'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

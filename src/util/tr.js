@@ -336,7 +336,6 @@ const _tr = (msg, {
       }
       const msgDiv = document.createElement('div')
       msgDiv.id = divId
-      // msgDiv.setAttribute('style', 'position: absolute;top: 10px;right: 10px')
       document.body.appendChild(msgDiv)
       if (customElements.get('ct-web-popup-imageonly') === undefined) {
         customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly)
@@ -691,10 +690,6 @@ const _tr = (msg, {
       return
     }
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
-    // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
-    //   return
-    // }
-
     $ct.campaignDivMap[campaignId] = 'intentPreview'
     let legacy = false
     const opacityDiv = document.createElement('div')
