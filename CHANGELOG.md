@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.5.2] - 8 May, 2023
-- Adds support for Web Popup Image Only frequency capping
+- Fixes Web Popup Image Only frequency capping
 - Updates divId for Web Native Display Banner and Carousel 
 
 ## [1.5.1] - 6 Apr, 2023
