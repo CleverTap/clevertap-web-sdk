@@ -5173,13 +5173,24 @@
 
       if (displayObj.layout === 3) {
         // Handling Web Popup Image Only
-        if (document.getElementById('wzrkImageOnlyDiv') != null) {
+        var _divId = 'wzrkImageOnlyDiv';
+
+        if (doCampHouseKeeping(targetingMsgJson) === false) {
+          return;
+        }
+
+        if (isWebPopUpSpamControlDisabled && document.getElementById(_divId) != null) {
+          var element = document.getElementById(_divId);
+          element.remove();
+        }
+
+        if (document.getElementById(_divId) != null) {
           return;
         }
 
         var _msgDiv = document.createElement('div');
 
-        _msgDiv.id = 'wzrkImageOnlyDiv';
+        _msgDiv.id = _divId;
         document.body.appendChild(_msgDiv);
 
         if (customElements.get('ct-web-popup-imageonly') === undefined) {
@@ -5196,8 +5207,9 @@
       var divId = 'wizParDiv' + displayObj.layout;
 
       if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
-        var element = document.getElementById(divId);
-        element.remove();
+        var _element = document.getElementById(divId);
+
+        _element.remove();
       }
 
       if (document.getElementById(divId) != null) {
@@ -5521,10 +5533,7 @@
         return;
       }
 
-      var campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
-      //   return
-      // }
-
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       $ct.campaignDivMap[campaignId] = 'intentPreview';
       var legacy = false;
       var opacityDiv = document.createElement('div');
@@ -7862,7 +7871,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.5.1'
+          lib: 'web-sdk-v1.5.2'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

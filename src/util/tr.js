@@ -323,11 +323,19 @@ const _tr = (msg, {
       return showExitIntent(undefined, targetingMsgJson)
     }
     if (displayObj.layout === 3) { // Handling Web Popup Image Only
-      if (document.getElementById('wzrkImageOnlyDiv') != null) {
+      const divId = 'wzrkImageOnlyDiv'
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return
+      }
+      if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
+        const element = document.getElementById(divId)
+        element.remove()
+      }
+      if (document.getElementById(divId) != null) {
         return
       }
       const msgDiv = document.createElement('div')
-      msgDiv.id = 'wzrkImageOnlyDiv'
+      msgDiv.id = divId
       document.body.appendChild(msgDiv)
       if (customElements.get('ct-web-popup-imageonly') === undefined) {
         customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly)
@@ -682,10 +690,6 @@ const _tr = (msg, {
       return
     }
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
-    // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
-    //   return
-    // }
-
     $ct.campaignDivMap[campaignId] = 'intentPreview'
     let legacy = false
     const opacityDiv = document.createElement('div')
