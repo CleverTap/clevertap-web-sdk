@@ -4228,8 +4228,8 @@
           _this3.unviewedCounter++;
         });
         StorageManager.saveToLSorCookie(WEBINBOX, inboxMsgs);
-        this.updateUnviewedBadgeCounter();
         this.buildUIForMessages(incomingMsgs);
+        this.updateUnviewedBadgeCounter();
       }
     }, {
       key: "createEl",
@@ -4425,16 +4425,11 @@
             item.style.display = 'block';
           }
 
-          this.inboxCard.insertBefore(item, firstChild); // if (msgCount > maxMsgsInInbox) {
-          //   const ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]')
-          //   if (ctInboxMsgs.length > 0) { ctInboxMsgs[ctInboxMsgs.length - 1].remove() }
-          // }
-
+          this.inboxCard.insertBefore(item, firstChild);
           this.observer.observe(item);
         }
 
         var msgTotalCount = this.inboxCard.querySelectorAll('ct-inbox-message').length;
-        console.log('Message Block count is ', msgTotalCount);
 
         while (msgTotalCount > maxMsgsInInbox) {
           var ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message');
@@ -4444,10 +4439,7 @@
           }
 
           msgTotalCount--;
-        } // const ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]')
-        // ctInboxMsgs[ctInboxMsgs.length - 1].remove()
-        // console.log('last ele ', ctInboxMsgs[ctInboxMsgs.length - 1])
-
+        }
 
         var hasMessages = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]').length;
         this.emptyInboxMsg.style.display = hasMessages ? 'none' : 'block';
@@ -4568,9 +4560,18 @@
     }, {
       key: "updateUnviewedBadgeCounter",
       value: function updateUnviewedBadgeCounter() {
+        var counter = 0;
+        this.inboxCard.querySelectorAll('ct-inbox-message').forEach(function (m) {
+          var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+
+          if (messages[m.id].viewed === 0) {
+            counter++;
+          }
+        });
+
         if (this.unviewedBadge !== null) {
-          this.unviewedBadge.innerText = this.unviewedCounter > this.config.maxMsgsInInbox ? this.config.maxMsgsInInbox : this.unviewedCounter > 9 ? '9+' : this.unviewedCounter;
-          this.unviewedBadge.style.display = this.unviewedCounter > 0 ? 'flex' : 'none';
+          this.unviewedBadge.innerText = counter > 9 ? '9+' : counter;
+          this.unviewedBadge.style.display = counter > 0 ? 'flex' : 'none';
         }
       }
     }, {

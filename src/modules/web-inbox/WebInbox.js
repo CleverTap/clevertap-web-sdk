@@ -161,8 +161,8 @@ export class Inbox extends HTMLElement {
       this.unviewedCounter++
     })
     StorageManager.saveToLSorCookie(WEBINBOX, inboxMsgs)
-    this.updateUnviewedBadgeCounter()
     this.buildUIForMessages(incomingMsgs)
+    this.updateUnviewedBadgeCounter()
   }
 
   createEl (type, id, part) {
@@ -331,25 +331,15 @@ export class Inbox extends HTMLElement {
         item.style.display = 'block'
       }
       this.inboxCard.insertBefore(item, firstChild)
-      // if (msgCount > maxMsgsInInbox) {
-      //   const ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]')
-      //   if (ctInboxMsgs.length > 0) { ctInboxMsgs[ctInboxMsgs.length - 1].remove() }
-      // }
       this.observer.observe(item)
     }
 
     let msgTotalCount = this.inboxCard.querySelectorAll('ct-inbox-message').length
-    console.log('Message Block count is ', msgTotalCount)
-
     while (msgTotalCount > maxMsgsInInbox) {
       const ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message')
       if (ctInboxMsgs.length > 0) { ctInboxMsgs[ctInboxMsgs.length - 1].remove() }
       msgTotalCount--
     }
-    // const ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]')
-    // ctInboxMsgs[ctInboxMsgs.length - 1].remove()
-    // console.log('last ele ', ctInboxMsgs[ctInboxMsgs.length - 1])
-
     const hasMessages = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]').length
     this.emptyInboxMsg.style.display = hasMessages ? 'none' : 'block'
   }
@@ -468,9 +458,16 @@ export class Inbox extends HTMLElement {
    * If there are more than 9 unviewed messages, we show the count as 9+
    */
   updateUnviewedBadgeCounter () {
+    let counter = 0
+    this.inboxCard.querySelectorAll('ct-inbox-message').forEach((m) => {
+      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      if (messages[m.id].viewed === 0) {
+        counter++
+      }
+    })
     if (this.unviewedBadge !== null) {
-      this.unviewedBadge.innerText = this.unviewedCounter > this.config.maxMsgsInInbox ? this.config.maxMsgsInInbox : this.unviewedCounter > 9 ? '9+' : this.unviewedCounter
-      this.unviewedBadge.style.display = this.unviewedCounter > 0 ? 'flex' : 'none'
+      this.unviewedBadge.innerText = counter > 9 ? '9+' : counter
+      this.unviewedBadge.style.display = counter > 0 ? 'flex' : 'none'
     }
   }
 
