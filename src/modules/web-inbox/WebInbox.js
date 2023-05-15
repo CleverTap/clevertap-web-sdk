@@ -2,7 +2,7 @@ import { StorageManager, $ct } from '../../util/storage'
 import { Message } from './Message'
 import { inboxContainerStyles, messageStyles } from './inboxStyles'
 import { getInboxPosition, determineTimeStampText, arrowSvg } from './helper'
-import { MAX_INBOX_MSG, WEBINBOX, WEBINBOX_CONFIG } from '../../util/constants'
+import { WEBINBOX, WEBINBOX_CONFIG, MAX_INBOX_MSG } from '../../util/constants'
 
 export class Inbox extends HTMLElement {
   constructor (logger) {
@@ -125,7 +125,7 @@ export class Inbox extends HTMLElement {
    *  In both the above scenarios, we'll still have to decrement the unviewed counter if the message was not viewed.
    */
   deleteExpiredAndGetUnexpiredMsgs (deleteMsgsFromUI = true) {
-    const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+    let messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
     const now = Math.floor(Date.now() / 1000)
     for (const msg in messages) {
       if (messages[msg].wzrk_ttl && messages[msg].wzrk_ttl > 0 && messages[msg].wzrk_ttl < now) {
@@ -140,7 +140,7 @@ export class Inbox extends HTMLElement {
         delete messages[msg]
       }
     }
-
+    messages = Object.values(messages).sort((a, b) => b.date - a.date).reduce((acc, m) => { acc[m.id] = m; return acc }, {})
     StorageManager.saveToLSorCookie(WEBINBOX, messages)
     return messages
   }
@@ -160,25 +160,7 @@ export class Inbox extends HTMLElement {
       this.unviewedMessages[key] = m
       this.unviewedCounter++
     })
-    const maxMsgsInInbox = this.config.maxMsgsInInbox ?? MAX_INBOX_MSG
-    const trimmedSortedValues = Object.values(inboxMsgs).sort((a, b) => b.date - a.date).slice(0, maxMsgsInInbox)
-    const trimmedInboxMsgs = trimmedSortedValues.reduce((acc, m) => { acc[m.id] = m; return acc }, {})
-
-    if (Object.keys(inboxMsgs).length > Object.keys(trimmedInboxMsgs).length) {
-      for (const key in inboxMsgs) {
-        if (!trimmedInboxMsgs.hasOwnProperty(key)) {
-          if (inboxMsgs[key].viewed === 0) {
-            this.unviewedCounter--
-            delete this.unviewedMessages[key]
-          }
-          delete inboxMsgs[key]
-          const elementToRemove = this.shadowRoot.getElementById(key)
-          if (elementToRemove) { elementToRemove.remove() }
-        }
-      }
-    }
-    StorageManager.saveToLSorCookie(WEBINBOX, trimmedInboxMsgs)
-
+    StorageManager.saveToLSorCookie(WEBINBOX, inboxMsgs)
     this.updateUnviewedBadgeCounter()
     this.buildUIForMessages(incomingMsgs)
   }
@@ -334,7 +316,9 @@ export class Inbox extends HTMLElement {
   buildUIForMessages (messages = {}) {
     !this.isPreview && this.updateTSForRenderedMsgs()
     this.inboxCard.scrollTop = 0
+    const maxMsgsInInbox = this.config.maxMsgsInInbox ?? MAX_INBOX_MSG
     const firstChild = this.inboxCard.firstChild
+
     for (const m in messages) {
       const item = new Message(this.config, messages[m])
       item.setAttribute('id', messages[m].id)
@@ -347,8 +331,24 @@ export class Inbox extends HTMLElement {
         item.style.display = 'block'
       }
       this.inboxCard.insertBefore(item, firstChild)
+      // if (msgCount > maxMsgsInInbox) {
+      //   const ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]')
+      //   if (ctInboxMsgs.length > 0) { ctInboxMsgs[ctInboxMsgs.length - 1].remove() }
+      // }
       this.observer.observe(item)
     }
+
+    let msgTotalCount = this.inboxCard.querySelectorAll('ct-inbox-message').length
+    console.log('Message Block count is ', msgTotalCount)
+
+    while (msgTotalCount > maxMsgsInInbox) {
+      const ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message')
+      if (ctInboxMsgs.length > 0) { ctInboxMsgs[ctInboxMsgs.length - 1].remove() }
+      msgTotalCount--
+    }
+    // const ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]')
+    // ctInboxMsgs[ctInboxMsgs.length - 1].remove()
+    // console.log('last ele ', ctInboxMsgs[ctInboxMsgs.length - 1])
 
     const hasMessages = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]').length
     this.emptyInboxMsg.style.display = hasMessages ? 'none' : 'block'
@@ -469,7 +469,7 @@ export class Inbox extends HTMLElement {
    */
   updateUnviewedBadgeCounter () {
     if (this.unviewedBadge !== null) {
-      this.unviewedBadge.innerText = this.unviewedCounter > 9 ? '9+' : this.unviewedCounter
+      this.unviewedBadge.innerText = this.unviewedCounter > this.config.maxMsgsInInbox ? this.config.maxMsgsInInbox : this.unviewedCounter > 9 ? '9+' : this.unviewedCounter
       this.unviewedBadge.style.display = this.unviewedCounter > 0 ? 'flex' : 'none'
     }
   }

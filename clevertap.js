@@ -4198,14 +4198,19 @@
           }
         }
 
+        messages = Object.values(messages).sort(function (a, b) {
+          return b.date - a.date;
+        }).reduce(function (acc, m) {
+          acc[m.id] = m;
+          return acc;
+        }, {});
         StorageManager.saveToLSorCookie(WEBINBOX, messages);
         return messages;
       }
     }, {
       key: "updateInboxMessages",
       value: function updateInboxMessages() {
-        var _this3 = this,
-            _this$config$maxMsgsI;
+        var _this3 = this;
 
         var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
         var inboxMsgs = this.deleteExpiredAndGetUnexpiredMsgs();
@@ -4222,34 +4227,7 @@
           _this3.unviewedMessages[key] = m;
           _this3.unviewedCounter++;
         });
-        var maxMsgsInInbox = (_this$config$maxMsgsI = this.config.maxMsgsInInbox) !== null && _this$config$maxMsgsI !== void 0 ? _this$config$maxMsgsI : MAX_INBOX_MSG;
-        var trimmedSortedValues = Object.values(inboxMsgs).sort(function (a, b) {
-          return b.date - a.date;
-        }).slice(0, maxMsgsInInbox);
-        var trimmedInboxMsgs = trimmedSortedValues.reduce(function (acc, m) {
-          acc[m.id] = m;
-          return acc;
-        }, {});
-
-        if (Object.keys(inboxMsgs).length > Object.keys(trimmedInboxMsgs).length) {
-          for (var key in inboxMsgs) {
-            if (!trimmedInboxMsgs.hasOwnProperty(key)) {
-              if (inboxMsgs[key].viewed === 0) {
-                this.unviewedCounter--;
-                delete this.unviewedMessages[key];
-              }
-
-              delete inboxMsgs[key];
-              var elementToRemove = this.shadowRoot.getElementById(key);
-
-              if (elementToRemove) {
-                elementToRemove.remove();
-              }
-            }
-          }
-        }
-
-        StorageManager.saveToLSorCookie(WEBINBOX, trimmedInboxMsgs);
+        StorageManager.saveToLSorCookie(WEBINBOX, inboxMsgs);
         this.updateUnviewedBadgeCounter();
         this.buildUIForMessages(incomingMsgs);
       }
@@ -4426,9 +4404,12 @@
     }, {
       key: "buildUIForMessages",
       value: function buildUIForMessages() {
+        var _this$config$maxMsgsI;
+
         var messages = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
         !this.isPreview && this.updateTSForRenderedMsgs();
         this.inboxCard.scrollTop = 0;
+        var maxMsgsInInbox = (_this$config$maxMsgsI = this.config.maxMsgsInInbox) !== null && _this$config$maxMsgsI !== void 0 ? _this$config$maxMsgsI : MAX_INBOX_MSG;
         var firstChild = this.inboxCard.firstChild;
 
         for (var m in messages) {
@@ -4444,9 +4425,29 @@
             item.style.display = 'block';
           }
 
-          this.inboxCard.insertBefore(item, firstChild);
+          this.inboxCard.insertBefore(item, firstChild); // if (msgCount > maxMsgsInInbox) {
+          //   const ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]')
+          //   if (ctInboxMsgs.length > 0) { ctInboxMsgs[ctInboxMsgs.length - 1].remove() }
+          // }
+
           this.observer.observe(item);
         }
+
+        var msgTotalCount = this.inboxCard.querySelectorAll('ct-inbox-message').length;
+        console.log('Message Block count is ', msgTotalCount);
+
+        while (msgTotalCount > maxMsgsInInbox) {
+          var ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message');
+
+          if (ctInboxMsgs.length > 0) {
+            ctInboxMsgs[ctInboxMsgs.length - 1].remove();
+          }
+
+          msgTotalCount--;
+        } // const ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]')
+        // ctInboxMsgs[ctInboxMsgs.length - 1].remove()
+        // console.log('last ele ', ctInboxMsgs[ctInboxMsgs.length - 1])
+
 
         var hasMessages = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]').length;
         this.emptyInboxMsg.style.display = hasMessages ? 'none' : 'block';
@@ -4568,7 +4569,7 @@
       key: "updateUnviewedBadgeCounter",
       value: function updateUnviewedBadgeCounter() {
         if (this.unviewedBadge !== null) {
-          this.unviewedBadge.innerText = this.unviewedCounter > 9 ? '9+' : this.unviewedCounter;
+          this.unviewedBadge.innerText = this.unviewedCounter > this.config.maxMsgsInInbox ? this.config.maxMsgsInInbox : this.unviewedCounter > 9 ? '9+' : this.unviewedCounter;
           this.unviewedBadge.style.display = this.unviewedCounter > 0 ? 'flex' : 'none';
         }
       }
