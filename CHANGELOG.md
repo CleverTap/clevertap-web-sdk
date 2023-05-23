@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 23 May, 2023
+- Introduces frequency caps for 'Web Inbox' channel.
+
 ## [1.5.2] - 8 May, 2023
 - Fixes Web Popup Image Only frequency capping
 - Updates divId for Web Native Display Banner and Carousel 

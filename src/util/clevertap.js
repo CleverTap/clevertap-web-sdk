@@ -45,21 +45,27 @@ import { compressData } from './encoder'
 import RequestDispatcher from './requestDispatcher'
 
 export const getCampaignObject = () => {
-  let campObj = {}
+  let finalcampObj = {}
   if (StorageManager._isLocalStorageSupported()) {
-    campObj = StorageManager.read(CAMP_COOKIE_NAME)
+    let campObj = StorageManager.read(CAMP_COOKIE_NAME)
     if (campObj != null) {
       campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'))
+      if (campObj.hasOwnProperty('global')) {
+        finalcampObj.wp = campObj
+      } else {
+        finalcampObj = campObj
+      }
     } else {
-      campObj = {}
+      finalcampObj = {}
     }
   }
-  return campObj
+  return finalcampObj
 }
 
 export const saveCampaignObject = (campaignObj) => {
   if (StorageManager._isLocalStorageSupported()) {
-    const campObj = JSON.stringify(campaignObj)
+    const newObj = { ...getCampaignObject(), ...campaignObj }
+    const campObj = JSON.stringify(newObj)
     StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj))
     // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
     setCampaignObjectForGuid()
@@ -74,36 +80,39 @@ export const setCampaignObjectForGuid = () => {
       try {
         guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
         const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {}
-        let campObj = {}
         if (guid && StorageManager._isLocalStorageSupported()) {
-          campObj = getCampaignObject()
-          const campKeyObj = (Object.keys(guidCampObj).length && guidCampObj[guid]) ? guidCampObj[guid] : {}
-          const globalObj = campObj.global
-          const today = getToday()
-          const dailyObj = campObj[today]
-          if (typeof globalObj !== 'undefined') {
-            const campaignIdArray = Object.keys(globalObj)
-            for (const index in campaignIdArray) {
-              let resultObj = []
-              if (campaignIdArray.hasOwnProperty(index)) {
-                let dailyC = 0
-                let totalC = 0
-                const campaignId = campaignIdArray[index]
-                if (campaignId === 'tc') {
-                  continue
+          var finalCampObj = {}
+          var campObj = getCampaignObject()
+          Object.keys(campObj).forEach(key => {
+            const campKeyObj = (Object.keys(guidCampObj).length && guidCampObj[guid][key]) ? guidCampObj[guid][key] : {}
+            const globalObj = campObj[key].global
+            const today = getToday()
+            const dailyObj = campObj[key][today]
+            if (typeof globalObj !== 'undefined') {
+              const campaignIdArray = Object.keys(globalObj)
+              for (const index in campaignIdArray) {
+                let resultObj = []
+                if (campaignIdArray.hasOwnProperty(index)) {
+                  let dailyC = 0
+                  let totalC = 0
+                  const campaignId = campaignIdArray[index]
+                  if (campaignId === 'tc') {
+                    continue
+                  }
+                  if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
+                    dailyC = dailyObj[campaignId]
+                  }
+                  if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
+                    totalC = globalObj[campaignId]
+                  }
+                  resultObj = [campaignId, dailyC, totalC]
+                  campKeyObj[campaignId] = resultObj
                 }
-                if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-                  dailyC = dailyObj[campaignId]
-                }
-                if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-                  totalC = globalObj[campaignId]
-                }
-                resultObj = [campaignId, dailyC, totalC]
-                campKeyObj[campaignId] = resultObj
               }
             }
-          }
-          guidCampObj[guid] = campKeyObj
+            finalCampObj = { ...finalCampObj, [key]: campKeyObj }
+          })
+          guidCampObj[guid] = finalCampObj
           StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
         }
       } catch (e) {
@@ -118,17 +127,24 @@ export const getCampaignObjForLc = () => {
 
   let campObj = {}
   if (StorageManager._isLocalStorageSupported()) {
+    let resultObj = {}
     campObj = getCampaignObject()
-    let resultObj = (StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]) ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid]) : []
+    const resultObjWP = (StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp) ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp) : []
+    const resultObjWI = (StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi) ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi) : []
     const today = getToday()
-    const dailyObj = campObj[today]
-    let todayC = 0
-    if (typeof dailyObj !== 'undefined' && typeof dailyObj.tc !== 'undefined') {
-      todayC = dailyObj.tc
+    let todayCwp = 0
+    let todayCwi = 0
+    if (campObj.wp && campObj.wp[today] && campObj.wp[today].tc !== 'undefined') {
+      todayCwp = campObj.wp[today].tc
+    }
+    if (campObj.wi && campObj.wi[today] && campObj.wi[today].tc !== 'undefined') {
+      todayCwi = campObj.wi[today].tc
     }
     resultObj = {
-      wmp: todayC,
-      tlc: resultObj
+      wmp: todayCwp,
+      wimp: todayCwi,
+      tlc: resultObjWP,
+      witlc: resultObjWI
     }
     return resultObj
   }
@@ -384,7 +400,7 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     if (StorageManager._isLocalStorageSupported()) {
       const campaignObj = getCampaignObject()
 
-      let sessionCampaignObj = campaignObj[currentSessionId]
+      let sessionCampaignObj = campaignObj.wp[currentSessionId]
       if (sessionCampaignObj == null) {
         sessionCampaignObj = {}
         campaignObj[currentSessionId] = sessionCampaignObj
