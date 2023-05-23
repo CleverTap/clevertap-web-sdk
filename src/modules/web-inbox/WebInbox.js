@@ -2,7 +2,7 @@ import { StorageManager, $ct } from '../../util/storage'
 import { Message } from './Message'
 import { inboxContainerStyles, messageStyles } from './inboxStyles'
 import { getInboxPosition, determineTimeStampText, arrowSvg } from './helper'
-import { WEBINBOX, WEBINBOX_CONFIG } from '../../util/constants'
+import { WEBINBOX, WEBINBOX_CONFIG, MAX_INBOX_MSG } from '../../util/constants'
 
 export class Inbox extends HTMLElement {
   constructor (logger) {
@@ -140,7 +140,6 @@ export class Inbox extends HTMLElement {
         delete messages[msg]
       }
     }
-
     messages = Object.values(messages).sort((a, b) => b.date - a.date).reduce((acc, m) => { acc[m.id] = m; return acc }, {})
     StorageManager.saveToLSorCookie(WEBINBOX, messages)
     return messages
@@ -162,8 +161,8 @@ export class Inbox extends HTMLElement {
       this.unviewedCounter++
     })
     StorageManager.saveToLSorCookie(WEBINBOX, inboxMsgs)
-    this.updateUnviewedBadgeCounter()
     this.buildUIForMessages(incomingMsgs)
+    this.updateUnviewedBadgeCounter()
   }
 
   createEl (type, id, part) {
@@ -317,7 +316,9 @@ export class Inbox extends HTMLElement {
   buildUIForMessages (messages = {}) {
     !this.isPreview && this.updateTSForRenderedMsgs()
     this.inboxCard.scrollTop = 0
+    const maxMsgsInInbox = this.config.maxMsgsInInbox ?? MAX_INBOX_MSG
     const firstChild = this.inboxCard.firstChild
+
     for (const m in messages) {
       const item = new Message(this.config, messages[m])
       item.setAttribute('id', messages[m].id)
@@ -333,6 +334,12 @@ export class Inbox extends HTMLElement {
       this.observer.observe(item)
     }
 
+    let msgTotalCount = this.inboxCard.querySelectorAll('ct-inbox-message').length
+    while (msgTotalCount > maxMsgsInInbox) {
+      const ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message')
+      if (ctInboxMsgs.length > 0) { ctInboxMsgs[ctInboxMsgs.length - 1].remove() }
+      msgTotalCount--
+    }
     const hasMessages = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]').length
     this.emptyInboxMsg.style.display = hasMessages ? 'none' : 'block'
   }
@@ -451,9 +458,16 @@ export class Inbox extends HTMLElement {
    * If there are more than 9 unviewed messages, we show the count as 9+
    */
   updateUnviewedBadgeCounter () {
+    let counter = 0
+    this.inboxCard.querySelectorAll('ct-inbox-message').forEach((m) => {
+      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      if (messages[m.id].viewed === 0) {
+        counter++
+      }
+    })
     if (this.unviewedBadge !== null) {
-      this.unviewedBadge.innerText = this.unviewedCounter > 9 ? '9+' : this.unviewedCounter
-      this.unviewedBadge.style.display = this.unviewedCounter > 0 ? 'flex' : 'none'
+      this.unviewedBadge.innerText = counter > 9 ? '9+' : counter
+      this.unviewedBadge.style.display = counter > 0 ? 'flex' : 'none'
     }
   }
 
