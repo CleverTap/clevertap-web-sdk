@@ -7983,7 +7983,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.5.1'
+          lib: 'web-sdk-v1.6.0'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

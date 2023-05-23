@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 23 May, 2023
+- Introduces frequency caps for 'Web Inbox' channel.
+
 ## [1.5.1] - 6 Apr, 2023
 - Fixes issue for Web Inbox where DOM was not loaded during searching inbox-selector.
 
