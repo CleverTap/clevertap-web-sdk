@@ -5073,8 +5073,7 @@
           logger: _logger
         });
         return false;
-      } // const sessionObj = _session.getSessionCookieObject()
-
+      }
 
       incrCount(sessionObj, campaignId, excludeFromFreqCaps);
       incrCount(dailyObj, campaignId, excludeFromFreqCaps);
@@ -5274,6 +5273,7 @@
         }
 
         var _msgDiv = document.createElement('div');
+
         _msgDiv.id = _divId;
         document.body.appendChild(_msgDiv);
 

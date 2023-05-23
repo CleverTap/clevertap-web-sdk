@@ -199,7 +199,6 @@ const _tr = (msg, {
       })
       return false
     }
-    // const sessionObj = _session.getSessionCookieObject()
 
     incrCount(sessionObj, campaignId, excludeFromFreqCaps)
     incrCount(dailyObj, campaignId, excludeFromFreqCaps)
