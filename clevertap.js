@@ -5182,30 +5182,34 @@
     };
 
     var renderPersonalisationBanner = function renderPersonalisationBanner(targetingMsgJson) {
+      var _targetingMsgJson$dis;
+
       if (customElements.get('ct-web-personalisation-banner') === undefined) {
         customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
       }
 
-      var divId = targetingMsgJson.display.divId;
+      var divId = (_targetingMsgJson$dis = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis !== void 0 ? _targetingMsgJson$dis : targetingMsgJson.display.divSelector;
       var bannerEl = document.createElement('ct-web-personalisation-banner');
       bannerEl.msgId = targetingMsgJson.wzrk_id;
       bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
       bannerEl.divHeight = targetingMsgJson.display.divHeight;
       bannerEl.details = targetingMsgJson.display.details[0];
-      var containerEl = document.getElementById(divId);
+      var containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
       containerEl.innerHTML = '';
       containerEl.appendChild(bannerEl);
     };
 
     var renderPersonalisationCarousel = function renderPersonalisationCarousel(targetingMsgJson) {
+      var _targetingMsgJson$dis2;
+
       if (customElements.get('ct-web-personalisation-carousel') === undefined) {
         customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
       }
 
-      var divId = targetingMsgJson.display.divId;
+      var divId = (_targetingMsgJson$dis2 = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis2 !== void 0 ? _targetingMsgJson$dis2 : targetingMsgJson.display.divSelector;
       var carousel = document.createElement('ct-web-personalisation-carousel');
       carousel.target = targetingMsgJson;
-      var container = document.getElementById(divId);
+      var container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
       container.innerHTML = '';
       container.appendChild(carousel);
     };
@@ -5270,9 +5274,7 @@
         }
 
         var _msgDiv = document.createElement('div');
-
-        _msgDiv.id = _divId; // msgDiv.setAttribute('style', 'position: absolute;top: 10px;right: 10px')
-
+        _msgDiv.id = _divId;
         document.body.appendChild(_msgDiv);
 
         if (customElements.get('ct-web-popup-imageonly') === undefined) {
@@ -5615,10 +5617,7 @@
         return;
       }
 
-      var campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // if (!isWebPopUpSpamControlDisabled && doCampHouseKeeping(targetingMsgJson) === false) {
-      //   return
-      // }
-
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       $ct.campaignDivMap[campaignId] = 'intentPreview';
       var legacy = false;
       var opacityDiv = document.createElement('div');
@@ -5724,8 +5723,15 @@
 
     var processNativeDisplayArr = function processNativeDisplayArr(arrInAppNotifs) {
       Object.keys(arrInAppNotifs).map(function (key) {
-        var divId = arrInAppNotifs[key].display.divId;
-        var id = document.getElementById(divId);
+        var elementId, id;
+
+        if (arrInAppNotifs[key].display.divId) {
+          elementId = arrInAppNotifs[key].display.divId;
+          id = document.getElementById(elementId);
+        } else {
+          elementId = arrInAppNotifs[key].display.divSelector;
+          id = document.querySelector(elementId);
+        }
 
         if (id !== null) {
           arrInAppNotifs[key].msgContent.type === 2 ? renderPersonalisationBanner(arrInAppNotifs[key]) : renderPersonalisationCarousel(arrInAppNotifs[key]);
@@ -5769,7 +5775,9 @@
           // if display['wtarget_type']==2 then web native display
           if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
             // Check for banner and carousel
-            if (document.getElementById(targetNotif.display.divId) !== null) {
+            var element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
+
+            if (element !== null) {
               targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
             } else {
               arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
