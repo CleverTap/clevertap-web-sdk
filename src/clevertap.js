@@ -260,9 +260,8 @@ export default class CleverTap {
       const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
       if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
         const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
-        el.shadowRoot.getElementById('unreadMarker').style.display = 'none'
+        if (el !== null) { el.shadowRoot.getElementById('unreadMarker').style.display = 'none' }
         messages[messageId].viewed = 1
-
         var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1
         document.getElementById('unviewedBadge').innerText = counter
         document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none'
@@ -285,7 +284,7 @@ export default class CleverTap {
         const msgIds = Object.keys(unreadMsg)
         msgIds.forEach(key => {
           const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(key)
-          el.shadowRoot.getElementById('unreadMarker').style.display = 'none'
+          if (el !== null) { el.shadowRoot.getElementById('unreadMarker').style.display = 'none' }
           messages[key].viewed = 1
           window.clevertap.renderNotificationViewed({ msgId: messages[key].wzrk_id, pivotId: messages[key].wzrk_pivot })
         })

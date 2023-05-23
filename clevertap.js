@@ -4997,11 +4997,11 @@
         } // session level capping
 
 
-        var _sessionObj = campTypeObj[_session.sessionId];
+        var sessionObj = campTypeObj[_session.sessionId];
 
-        if (_sessionObj) {
-          var campaignSessionCount = _sessionObj[campaignId];
-          var totalSessionCount = _sessionObj.tc; // dnd
+        if (sessionObj) {
+          var campaignSessionCount = sessionObj[campaignId];
+          var totalSessionCount = sessionObj.tc; // dnd
 
           if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
             return false;
@@ -5024,8 +5024,8 @@
             return false;
           }
         } else {
-          _sessionObj = {};
-          campTypeObj[_session.sessionId] = _sessionObj;
+          sessionObj = {};
+          campTypeObj[_session.sessionId] = sessionObj;
         } // daily level capping
 
 
@@ -5073,9 +5073,8 @@
           logger: _logger
         });
         return false;
-      }
+      } // const sessionObj = _session.getSessionCookieObject()
 
-      var sessionObj = _session.getSessionCookieObject();
 
       incrCount(sessionObj, campaignId, excludeFromFreqCaps);
       incrCount(dailyObj, campaignId, excludeFromFreqCaps);
@@ -7495,7 +7494,11 @@
 
         if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
           var el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId);
-          el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+
+          if (el !== null) {
+            el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+          }
+
           messages[messageId].viewed = 1;
           var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1;
           document.getElementById('unviewedBadge').innerText = counter;
@@ -7524,7 +7527,11 @@
           var msgIds = Object.keys(unreadMsg);
           msgIds.forEach(function (key) {
             var el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(key);
-            el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+
+            if (el !== null) {
+              el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+            }
+
             messages[key].viewed = 1;
             window.clevertap.renderNotificationViewed({
               msgId: messages[key].wzrk_id,

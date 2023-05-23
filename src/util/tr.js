@@ -127,7 +127,7 @@ const _tr = (msg, {
         totalInboxSessionLimit = parseInt(targetingMsgJson[DISPLAY].wimc, 10)
       }
       // session level capping
-      let sessionObj = campTypeObj[_session.sessionId]
+      var sessionObj = campTypeObj[_session.sessionId]
       if (sessionObj) {
         const campaignSessionCount = sessionObj[campaignId]
         const totalSessionCount = sessionObj.tc
@@ -199,7 +199,7 @@ const _tr = (msg, {
       })
       return false
     }
-    const sessionObj = _session.getSessionCookieObject()
+    // const sessionObj = _session.getSessionCookieObject()
 
     incrCount(sessionObj, campaignId, excludeFromFreqCaps)
     incrCount(dailyObj, campaignId, excludeFromFreqCaps)
