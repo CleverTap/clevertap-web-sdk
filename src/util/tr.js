@@ -1029,6 +1029,10 @@ const _tr = (msg, {
         // web inbox stale
         staleDataUpdate(msg.inbox_stale, 'wi')
       }
+      if (msg.native_display_stale != null && msg.native_display_stale.length > 0) {
+        // web inbox stale
+        staleDataUpdate(msg.native_display_stale, 'wnd')
+      }
     } catch (e) {
       _logger.error('Unable to persist evrp/arp: ' + e)
     }
