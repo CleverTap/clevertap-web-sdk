@@ -131,20 +131,28 @@ export const getCampaignObjForLc = () => {
     campObj = getCampaignObject()
     const resultObjWP = (StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp) ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp) : []
     const resultObjWI = (StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi) ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi) : []
+    const resultObjWND = (StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wnd) ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wnd) : []
+
     const today = getToday()
     let todayCwp = 0
     let todayCwi = 0
+    let todayCwnd = 0
     if (campObj.wp && campObj.wp[today] && campObj.wp[today].tc !== 'undefined') {
       todayCwp = campObj.wp[today].tc
     }
     if (campObj.wi && campObj.wi[today] && campObj.wi[today].tc !== 'undefined') {
       todayCwi = campObj.wi[today].tc
     }
+    if (campObj.wnd && campObj.wnd[today] && campObj.wnd[today].tc !== 'undefined') {
+      todayCwnd = campObj.wnd[today].tc
+    }
     resultObj = {
       wmp: todayCwp,
       wimp: todayCwi,
+      wndmp: todayCwnd,
       tlc: resultObjWP,
-      witlc: resultObjWI
+      witlc: resultObjWI,
+      wndtlc: resultObjWND
     }
     return resultObj
   }

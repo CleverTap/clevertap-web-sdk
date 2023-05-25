@@ -2203,9 +2203,11 @@
       campObj = getCampaignObject();
       var resultObjWP = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp) : [];
       var resultObjWI = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi) : [];
+      var resultObjWND = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wnd ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wnd) : [];
       var today = getToday();
       var todayCwp = 0;
       var todayCwi = 0;
+      var todayCwnd = 0;
 
       if (campObj.wp && campObj.wp[today] && campObj.wp[today].tc !== 'undefined') {
         todayCwp = campObj.wp[today].tc;
@@ -2215,11 +2217,17 @@
         todayCwi = campObj.wi[today].tc;
       }
 
+      if (campObj.wnd && campObj.wnd[today] && campObj.wnd[today].tc !== 'undefined') {
+        todayCwnd = campObj.wnd[today].tc;
+      }
+
       resultObj = {
         wmp: todayCwp,
         wimp: todayCwi,
+        wndmp: todayCwnd,
         tlc: resultObjWP,
-        witlc: resultObjWI
+        witlc: resultObjWI,
+        wndtlc: resultObjWND
       };
       return resultObj;
     }
@@ -4928,6 +4936,8 @@
 
         if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
           campTypeObj = campObj.wi;
+        } else if (targetingMsgJson.display.wtarget_type === 2 && (targetingMsgJson.msgContent.type === 2 || targetingMsgJson.msgContent.type === 3) && campObj.hasOwnProperty('wnd')) {
+          campTypeObj = campObj.wnd;
         } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) {
           campTypeObj = campObj.wp;
         } else {
@@ -4946,6 +4956,11 @@
 
         if (targetingMsgJson[DISPLAY].wimc == null) {
           targetingMsgJson[DISPLAY].wimc = 1;
+        } // global session limit for web native display. default is 1
+
+
+        if (targetingMsgJson[DISPLAY].wndmc == null) {
+          targetingMsgJson[DISPLAY].wndmc = 1;
         }
 
         var excludeFromFreqCaps = -1; // efc - Exclude from frequency caps
@@ -4960,6 +4975,8 @@
         var totalSessionLimit = -1; // wmc - Web Popup Global Session Limit
 
         var totalInboxSessionLimit = -1; // wimc - Web Inbox Global Session Limit
+
+        var totalNDSessionLimit = -1; // wndmc - Web Native display Global Session Limit
 
         if (targetingMsgJson[DISPLAY].efc != null) {
           // exclude from frequency cap
@@ -4994,6 +5011,11 @@
         if (targetingMsgJson[DISPLAY].wimc != null) {
           // No of inbox campaigns per session
           totalInboxSessionLimit = parseInt(targetingMsgJson[DISPLAY].wimc, 10);
+        }
+
+        if (targetingMsgJson[DISPLAY].wndmc != null) {
+          // No of native display campaigns per session
+          totalNDSessionLimit = parseInt(targetingMsgJson[DISPLAY].wndmc, 10);
         } // session level capping
 
 
@@ -5007,7 +5029,12 @@
             return false;
           }
 
-          if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
+          if (targetingMsgJson[DISPLAY].wtarget_type === 2) {
+            // Inbox session
+            if (totalNDSessionLimit > 0 && totalSessionCount >= totalNDSessionLimit && excludeFromFreqCaps < 0) {
+              return false;
+            }
+          } else if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
             // Inbox session
             if (totalInboxSessionLimit > 0 && totalSessionCount >= totalInboxSessionLimit && excludeFromFreqCaps < 0) {
               return false;
@@ -5183,6 +5210,10 @@
     var renderPersonalisationBanner = function renderPersonalisationBanner(targetingMsgJson) {
       var _targetingMsgJson$dis;
 
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
+      }
+
       if (customElements.get('ct-web-personalisation-banner') === undefined) {
         customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
       }
@@ -5200,6 +5231,10 @@
 
     var renderPersonalisationCarousel = function renderPersonalisationCarousel(targetingMsgJson) {
       var _targetingMsgJson$dis2;
+
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
+      }
 
       if (customElements.get('ct-web-personalisation-carousel') === undefined) {
         customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
