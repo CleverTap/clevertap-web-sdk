@@ -488,6 +488,7 @@
   var WZRK_ID = 'wzrk_id';
   var NOTIFICATION_VIEWED = 'Notification Viewed';
   var NOTIFICATION_CLICKED = 'Notification Clicked';
+  var SDK_DROP_OFF_EVENT = 'CT SDK DROP OFF';
   var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
   var PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD'; // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
 
@@ -902,6 +903,12 @@
     broadDomain: null,
     webPushEnabled: null,
     campaignDivMap: {},
+    lastRenderedCampaignsMap: {
+      intentPreview: '',
+      wizParDiv0: '',
+      wizParDiv2: '',
+      wzrkImageOnlyDiv: ''
+    },
     currentSessionId: null,
     wiz_counter: 0,
     // to keep track of number of times we load the body
@@ -2516,6 +2523,7 @@
 
       if (divId != null) {
         document.getElementById(divId).style.display = 'none';
+        $ct.lastRenderedCampaignsMap[divId] = campaignId;
 
         if (divId === 'intentPreview') {
           if (document.getElementById('intentOpacityDiv') != null) {
@@ -4892,7 +4900,20 @@
     var _session = session;
     var _request = request;
     var _logger = logger;
-    var _wizCounter = 0; // Campaign House keeping
+    var _wizCounter = 0;
+
+    var trackSDKDropOffs = function trackSDKDropOffs(details) {
+      _logger.debug('Raising', SDK_DROP_OFF_EVENT, 'event with the details :', details);
+
+      var data = {
+        type: 'event',
+        evtName: SDK_DROP_OFF_EVENT,
+        evtData: details
+      };
+
+      _request.processEvent(data);
+    }; // Campaign House keeping
+
 
     var doCampHouseKeeping = function doCampHouseKeeping(targetingMsgJson) {
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
@@ -4956,7 +4977,8 @@
 
         var campaignTotalLimit = -1; // tlc - Once per user for the duration of campaign
 
-        var totalDailyLimit = -1;
+        var totalDailyLimit = -1; // wmp - Web Popup Global Daily Limit
+
         var totalSessionLimit = -1; // wmc - Web Popup Global Session Limit
 
         var totalInboxSessionLimit = -1; // wimc - Web Inbox Global Session Limit
@@ -5004,6 +5026,10 @@
           var totalSessionCount = sessionObj.tc; // dnd
 
           if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
+            trackSDKDropOffs({
+              campId: campaignId,
+              reason: 'dnd'
+            });
             return false;
           }
 
@@ -5015,12 +5041,20 @@
           } else {
             // session
             if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
+              trackSDKDropOffs({
+                campId: campaignId,
+                reason: 'globalSessionLimit'
+              });
               return false;
             }
           } // campaign session
 
 
           if (campaignSessionLimit > 0 && campaignSessionCount >= campaignSessionLimit) {
+            trackSDKDropOffs({
+              campId: campaignId,
+              reason: 'campaignSessionLimit'
+            });
             return false;
           }
         } else {
@@ -5036,11 +5070,19 @@
           var totalDailyCount = dailyObj.tc; // daily
 
           if (totalDailyLimit > 0 && totalDailyCount >= totalDailyLimit && excludeFromFreqCaps < 0) {
+            trackSDKDropOffs({
+              campId: campaignId,
+              reason: 'globalDailyLimit'
+            });
             return false;
           } // campaign daily
 
 
           if (campaignDailyLimit > 0 && campaignDailyCount >= campaignDailyLimit) {
+            trackSDKDropOffs({
+              campId: campaignId,
+              reason: 'campaignDailyLimit'
+            });
             return false;
           }
         } else {
@@ -5054,6 +5096,10 @@
           var campaignTotalCount = globalObj[campaignId]; // campaign total
 
           if (campaignTotalLimit > 0 && campaignTotalCount >= campaignTotalLimit) {
+            trackSDKDropOffs({
+              campId: campaignId,
+              reason: 'oncePerUserLimit'
+            });
             return false;
           }
         } else {
@@ -5162,6 +5208,7 @@
 
     var setupClickUrl = function setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, isLegacy) {
       incrementImpression(targetingMsgJson);
+      $ct.lastRenderedCampaignsMap[divId] = targetingMsgJson.wzrk_id.split('_')[0];
       setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy);
     };
 
@@ -5269,6 +5316,11 @@
         }
 
         if (document.getElementById(_divId) != null) {
+          trackSDKDropOffs({
+            campId: campaignId,
+            reason: 'spamcontrol',
+            lastCamp: $ct.lastRenderedCampaignsMap[_divId]
+          });
           return;
         }
 
@@ -5297,6 +5349,11 @@
       }
 
       if (document.getElementById(divId) != null) {
+        trackSDKDropOffs({
+          campId: campaignId,
+          reason: 'spamcontrol',
+          lastCamp: $ct.lastRenderedCampaignsMap[divId]
+        });
         return;
       }
 
@@ -5598,6 +5655,8 @@
         targetingMsgJson = targetObj;
       }
 
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+
       if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
         var element = document.getElementById('intentPreview');
         element.remove();
@@ -5605,11 +5664,20 @@
       }
 
       if (document.getElementById('intentPreview') != null) {
+        trackSDKDropOffs({
+          campId: campaignId,
+          reason: 'spamcontrol',
+          lastCamp: $ct.lastRenderedCampaignsMap.intentPreview
+        });
         return;
       } // dont show exit intent on tablet/mobile - only on desktop
 
 
       if (targetingMsgJson.display.layout == null && (/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent) || /iPad/i.test(navigator.userAgent) || 'ontouchstart' in window || /tablet/i.test(navigator.userAgent))) {
+        trackSDKDropOffs({
+          campId: campaignId,
+          reason: 'layout null or exit intent'
+        });
         return;
       }
 
@@ -5617,7 +5685,6 @@
         return;
       }
 
-      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       $ct.campaignDivMap[campaignId] = 'intentPreview';
       var legacy = false;
       var opacityDiv = document.createElement('div');

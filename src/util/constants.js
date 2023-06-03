@@ -41,6 +41,7 @@ export const WZRK_PREFIX = 'wzrk_'
 export const WZRK_ID = 'wzrk_id'
 export const NOTIFICATION_VIEWED = 'Notification Viewed'
 export const NOTIFICATION_CLICKED = 'Notification Clicked'
+export const SDK_DROP_OFF_EVENT = 'CT SDK DROP OFF'
 export const FIRE_PUSH_UNREGISTERED = 'WZRK_FPU'
 export const PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD' // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
 export const COMMAND_INCREMENT = '$incr'

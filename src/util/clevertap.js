@@ -413,6 +413,7 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     const divId = $ct.campaignDivMap[campaignId]
     if (divId != null) {
       document.getElementById(divId).style.display = 'none'
+      $ct.lastRenderedCampaignsMap[divId] = campaignId
       if (divId === 'intentPreview') {
         if (document.getElementById('intentOpacityDiv') != null) {
           document.getElementById('intentOpacityDiv').style.display = 'none'

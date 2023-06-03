@@ -16,7 +16,8 @@ import {
   WZRK_PREFIX,
   WZRK_ID,
   CAMP_COOKIE_G,
-  GCOOKIE_NAME
+  GCOOKIE_NAME,
+  SDK_DROP_OFF_EVENT
 } from './constants'
 
 import {
@@ -47,6 +48,16 @@ const _tr = (msg, {
   const _request = request
   const _logger = logger
   let _wizCounter = 0
+
+  const trackSDKDropOffs = (details) => {
+    _logger.debug('Raising', SDK_DROP_OFF_EVENT, 'event with the details :', details)
+    const data = {
+      type: 'event',
+      evtName: SDK_DROP_OFF_EVENT,
+      evtData: details
+    }
+    _request.processEvent(data)
+  }
 
   // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
@@ -100,7 +111,7 @@ const _tr = (msg, {
       let campaignSessionLimit = -1 // mdc - Once per session
       let campaignDailyLimit = -1 // tdc - Once per day
       let campaignTotalLimit = -1 // tlc - Once per user for the duration of campaign
-      let totalDailyLimit = -1
+      let totalDailyLimit = -1 // wmp - Web Popup Global Daily Limit
       let totalSessionLimit = -1 // wmc - Web Popup Global Session Limit
       let totalInboxSessionLimit = -1 // wimc - Web Inbox Global Session Limit
 
@@ -133,6 +144,7 @@ const _tr = (msg, {
         const totalSessionCount = sessionObj.tc
         // dnd
         if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
+          trackSDKDropOffs({ campId: campaignId, reason: 'dnd' })
           return false
         }
 
@@ -144,12 +156,14 @@ const _tr = (msg, {
         } else {
           // session
           if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
+            trackSDKDropOffs({ campId: campaignId, reason: 'globalSessionLimit' })
             return false
           }
         }
 
         // campaign session
         if (campaignSessionLimit > 0 && campaignSessionCount >= campaignSessionLimit) {
+          trackSDKDropOffs({ campId: campaignId, reason: 'campaignSessionLimit' })
           return false
         }
       } else {
@@ -164,10 +178,12 @@ const _tr = (msg, {
         const totalDailyCount = dailyObj.tc
         // daily
         if (totalDailyLimit > 0 && totalDailyCount >= totalDailyLimit && excludeFromFreqCaps < 0) {
+          trackSDKDropOffs({ campId: campaignId, reason: 'globalDailyLimit' })
           return false
         }
         // campaign daily
         if (campaignDailyLimit > 0 && campaignDailyCount >= campaignDailyLimit) {
+          trackSDKDropOffs({ campId: campaignId, reason: 'campaignDailyLimit' })
           return false
         }
       } else {
@@ -180,6 +196,7 @@ const _tr = (msg, {
         const campaignTotalCount = globalObj[campaignId]
         // campaign total
         if (campaignTotalLimit > 0 && campaignTotalCount >= campaignTotalLimit) {
+          trackSDKDropOffs({ campId: campaignId, reason: 'oncePerUserLimit' })
           return false
         }
       } else {
@@ -277,6 +294,7 @@ const _tr = (msg, {
 
   const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
     incrementImpression(targetingMsgJson)
+    $ct.lastRenderedCampaignsMap[divId] = targetingMsgJson.wzrk_id.split('_')[0]
     setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy)
   }
 
@@ -362,6 +380,7 @@ const _tr = (msg, {
         element.remove()
       }
       if (document.getElementById(divId) != null) {
+        trackSDKDropOffs({ campId: campaignId, reason: 'spamcontrol', lastCamp: $ct.lastRenderedCampaignsMap[divId] })
         return
       }
       const msgDiv = document.createElement('div')
@@ -384,6 +403,7 @@ const _tr = (msg, {
       element.remove()
     }
     if (document.getElementById(divId) != null) {
+      trackSDKDropOffs({ campId: campaignId, reason: 'spamcontrol', lastCamp: $ct.lastRenderedCampaignsMap[divId] })
       return
     }
     $ct.campaignDivMap[campaignId] = divId
@@ -700,6 +720,8 @@ const _tr = (msg, {
       targetingMsgJson = targetObj
     }
 
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
+
     if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
       const element = document.getElementById('intentPreview')
       element.remove()
@@ -707,19 +729,21 @@ const _tr = (msg, {
     }
 
     if (document.getElementById('intentPreview') != null) {
+      trackSDKDropOffs({ campId: campaignId, reason: 'spamcontrol', lastCamp: $ct.lastRenderedCampaignsMap.intentPreview })
       return
     }
     // dont show exit intent on tablet/mobile - only on desktop
     if (targetingMsgJson.display.layout == null &&
       ((/mobile/i.test(navigator.userAgent)) || (/mini/i.test(navigator.userAgent)) || (/iPad/i.test(navigator.userAgent)) ||
         ('ontouchstart' in window) || (/tablet/i.test(navigator.userAgent)))) {
+      trackSDKDropOffs({ campId: campaignId, reason: 'layout null or exit intent' })
       return
     }
 
     if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
-    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
+
     $ct.campaignDivMap[campaignId] = 'intentPreview'
     let legacy = false
     const opacityDiv = document.createElement('div')
