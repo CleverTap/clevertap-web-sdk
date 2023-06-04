@@ -4903,7 +4903,7 @@
     var _wizCounter = 0;
 
     var trackSDKDropOffs = function trackSDKDropOffs(details) {
-      _logger.debug('Raising', SDK_DROP_OFF_EVENT, 'event with the details :', details);
+      _logger.debug("Raising ".concat(SDK_DROP_OFF_EVENT, " event"));
 
       var data = {
         type: 'event',

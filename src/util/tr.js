@@ -50,7 +50,7 @@ const _tr = (msg, {
   let _wizCounter = 0
 
   const trackSDKDropOffs = (details) => {
-    _logger.debug('Raising', SDK_DROP_OFF_EVENT, 'event with the details :', details)
+    _logger.debug(`Raising ${SDK_DROP_OFF_EVENT} event`)
     const data = {
       type: 'event',
       evtName: SDK_DROP_OFF_EVENT,
