@@ -3678,6 +3678,7 @@
 
       _this = _super.call(this);
       _this._target = null;
+      _this._session = null;
       _this.shadow = null;
       _this.popup = null;
       _this.container = null;
@@ -3692,6 +3693,8 @@
       value: function renderImageOnlyPopup() {
         var _this2 = this;
 
+        var campaignId = this.target.wzrk_id.split('_')[0];
+        var currentSessionId = this.session.sessionId;
         this.shadow.innerHTML = this.getImageOnlyPopupContent();
         this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
         this.container = this.shadowRoot.getElementById('container');
@@ -3701,6 +3704,21 @@
           document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
 
           _this2.remove();
+
+          if (campaignId != null && campaignId !== '-1') {
+            if (StorageManager._isLocalStorageSupported()) {
+              var campaignObj = getCampaignObject();
+              var sessionCampaignObj = campaignObj.wp[currentSessionId];
+
+              if (sessionCampaignObj == null) {
+                sessionCampaignObj = {};
+                campaignObj[currentSessionId] = sessionCampaignObj;
+              }
+
+              sessionCampaignObj[campaignId] = 'dnd';
+              saveCampaignObject(campaignObj);
+            }
+          }
         });
         window.clevertap.renderNotificationViewed({
           msgId: this.msgId,
@@ -3759,6 +3777,14 @@
           this._target = val;
           this.renderImageOnlyPopup();
         }
+      }
+    }, {
+      key: "session",
+      get: function get() {
+        return this._session || '';
+      },
+      set: function set(val) {
+        this._session = val;
       }
     }, {
       key: "msgId",
@@ -5216,6 +5242,7 @@
     var renderPopUpImageOnly = function renderPopUpImageOnly(targetingMsgJson) {
       var divId = 'wzrkImageOnlyDiv';
       var popupImageOnly = document.createElement('ct-web-popup-imageonly');
+      popupImageOnly.session = _session;
       popupImageOnly.target = targetingMsgJson;
       var containerEl = document.getElementById(divId);
       containerEl.innerHTML = '';
