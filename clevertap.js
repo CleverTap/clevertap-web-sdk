@@ -2148,7 +2148,7 @@
             var finalCampObj = {};
             var campObj = getCampaignObject();
             Object.keys(campObj).forEach(function (key) {
-              var campKeyObj = Object.keys(guidCampObj).length && guidCampObj[guid][key] ? guidCampObj[guid][key] : {};
+              var campKeyObj = guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key] ? guidCampObj[guid][key] : {};
               var globalObj = campObj[key].global;
               var today = getToday();
               var dailyObj = campObj[key][today];
@@ -2201,8 +2201,11 @@
     if (StorageManager._isLocalStorageSupported()) {
       var resultObj = {};
       campObj = getCampaignObject();
-      var resultObjWP = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp) : [];
-      var resultObjWI = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi) : [];
+      var storageValue = StorageManager.read(CAMP_COOKIE_G);
+      var decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
+      var parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      var resultObjWP = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wp ? Object.values(parsedValue[guid].wp) : [];
+      var resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
       var today = getToday();
       var todayCwp = 0;
       var todayCwi = 0;
