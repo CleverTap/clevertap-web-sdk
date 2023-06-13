@@ -2148,7 +2148,7 @@
             var finalCampObj = {};
             var campObj = getCampaignObject();
             Object.keys(campObj).forEach(function (key) {
-              var campKeyObj = Object.keys(guidCampObj).length && guidCampObj[guid][key] ? guidCampObj[guid][key] : {};
+              var campKeyObj = guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key] ? guidCampObj[guid][key] : {};
               var globalObj = campObj[key].global;
               var today = getToday();
               var dailyObj = campObj[key][today];
@@ -2201,8 +2201,11 @@
     if (StorageManager._isLocalStorageSupported()) {
       var resultObj = {};
       campObj = getCampaignObject();
-      var resultObjWP = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp) : [];
-      var resultObjWI = StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi) : [];
+      var storageValue = StorageManager.read(CAMP_COOKIE_G);
+      var decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
+      var parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      var resultObjWP = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wp ? Object.values(parsedValue[guid].wp) : [];
+      var resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
       var today = getToday();
       var todayCwp = 0;
       var todayCwi = 0;
@@ -3678,6 +3681,7 @@
 
       _this = _super.call(this);
       _this._target = null;
+      _this._session = null;
       _this.shadow = null;
       _this.popup = null;
       _this.container = null;
@@ -3692,6 +3696,8 @@
       value: function renderImageOnlyPopup() {
         var _this2 = this;
 
+        var campaignId = this.target.wzrk_id.split('_')[0];
+        var currentSessionId = this.session.sessionId;
         this.shadow.innerHTML = this.getImageOnlyPopupContent();
         this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
         this.container = this.shadowRoot.getElementById('container');
@@ -3701,6 +3707,21 @@
           document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
 
           _this2.remove();
+
+          if (campaignId != null && campaignId !== '-1') {
+            if (StorageManager._isLocalStorageSupported()) {
+              var campaignObj = getCampaignObject();
+              var sessionCampaignObj = campaignObj.wp[currentSessionId];
+
+              if (sessionCampaignObj == null) {
+                sessionCampaignObj = {};
+                campaignObj[currentSessionId] = sessionCampaignObj;
+              }
+
+              sessionCampaignObj[campaignId] = 'dnd';
+              saveCampaignObject(campaignObj);
+            }
+          }
         });
         window.clevertap.renderNotificationViewed({
           msgId: this.msgId,
@@ -3759,6 +3780,14 @@
           this._target = val;
           this.renderImageOnlyPopup();
         }
+      }
+    }, {
+      key: "session",
+      get: function get() {
+        return this._session || '';
+      },
+      set: function set(val) {
+        this._session = val;
       }
     }, {
       key: "msgId",
@@ -4737,7 +4766,7 @@
                   resolve();
                 } else if (count >= 20) {
                   clearInterval(t);
-                  reject(new Error('Failed to add inbox'));
+                  console.error('No Unread messages'); // reject(new Error('Failed to add inbox'))
                 }
 
                 count++;
@@ -5216,6 +5245,7 @@
     var renderPopUpImageOnly = function renderPopUpImageOnly(targetingMsgJson) {
       var divId = 'wzrkImageOnlyDiv';
       var popupImageOnly = document.createElement('ct-web-popup-imageonly');
+      popupImageOnly.session = _session;
       popupImageOnly.target = targetingMsgJson;
       var containerEl = document.getElementById(divId);
       containerEl.innerHTML = '';
@@ -7991,7 +8021,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.6.0'
+          lib: 'web-sdk-v1.6.1'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

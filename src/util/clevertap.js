@@ -84,7 +84,7 @@ export const setCampaignObjectForGuid = () => {
           var finalCampObj = {}
           var campObj = getCampaignObject()
           Object.keys(campObj).forEach(key => {
-            const campKeyObj = (Object.keys(guidCampObj).length && guidCampObj[guid][key]) ? guidCampObj[guid][key] : {}
+            const campKeyObj = (guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key]) ? guidCampObj[guid][key] : {}
             const globalObj = campObj[key].global
             const today = getToday()
             const dailyObj = campObj[key][today]
@@ -129,8 +129,22 @@ export const getCampaignObjForLc = () => {
   if (StorageManager._isLocalStorageSupported()) {
     let resultObj = {}
     campObj = getCampaignObject()
-    const resultObjWP = (StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp) ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wp) : []
-    const resultObjWI = (StorageManager.read(CAMP_COOKIE_G) && JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi) ? Object.values(JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))[guid].wi) : []
+    const storageValue = StorageManager.read(CAMP_COOKIE_G)
+    const decodedValue = storageValue ? decodeURIComponent(storageValue) : null
+    const parsedValue = decodedValue ? JSON.parse(decodedValue) : null
+
+    const resultObjWP = (!!guid &&
+                        storageValue !== undefined && storageValue !== null &&
+                        parsedValue && parsedValue[guid] && parsedValue[guid].wp)
+      ? Object.values(parsedValue[guid].wp)
+      : []
+
+    const resultObjWI = (!!guid &&
+                        storageValue !== undefined && storageValue !== null &&
+                        parsedValue && parsedValue[guid] && parsedValue[guid].wi)
+      ? Object.values(parsedValue[guid].wi)
+      : []
+
     const today = getToday()
     let todayCwp = 0
     let todayCwi = 0

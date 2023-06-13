@@ -73,7 +73,8 @@ export const initializeWebInbox = (logger) => {
                 resolve()
               } else if (count >= 20) {
                 clearInterval(t)
-                reject(new Error('Failed to add inbox'))
+                console.error('No Unread messages')
+                // reject(new Error('Failed to add inbox'))
               }
               count++
             }, 500)

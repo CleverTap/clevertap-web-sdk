@@ -1,8 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.1] - 13 Jun, 2023
+- Fixes a bug related to updating the WZRK_CAMP cookie for Web Popup Image Only campaigns.
+- Fixes a bug that causes an 'Uncaught TypeError' when attempting to access the WZRK_CAMP cookie.
+
 ## [1.6.0] - 23 May, 2023
 - Introduces frequency caps for 'Web Inbox' channel.
+- Contains a bug which caused an 'Uncaught TypeError' when attempting to access the WZRK_CAMP cookie. Please update to v1.6.1
 
 ## [1.5.2] - 8 May, 2023
 - Fixes Web Popup Image Only frequency capping
