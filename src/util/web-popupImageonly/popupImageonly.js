@@ -1,3 +1,9 @@
+import {
+  getCampaignObject,
+  saveCampaignObject
+} from '../clevertap'
+import { StorageManager } from '../storage'
+
 export class CTWebPopupImageOnly extends HTMLElement {
   constructor () {
     super()
@@ -5,6 +11,7 @@ export class CTWebPopupImageOnly extends HTMLElement {
   }
 
     _target = null
+    _session = null
     shadow = null
     popup = null
     container = null
@@ -20,6 +27,14 @@ export class CTWebPopupImageOnly extends HTMLElement {
       }
     }
 
+    get session () {
+      return this._session || ''
+    }
+
+    set session (val) {
+      this._session = val
+    }
+
     get msgId () {
       return this.target.wzrk_id
     }
@@ -33,6 +48,9 @@ export class CTWebPopupImageOnly extends HTMLElement {
     }
 
     renderImageOnlyPopup () {
+      const campaignId = this.target.wzrk_id.split('_')[0]
+      const currentSessionId = this.session.sessionId
+
       this.shadow.innerHTML = this.getImageOnlyPopupContent()
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup')
       this.container = this.shadowRoot.getElementById('container')
@@ -43,6 +61,19 @@ export class CTWebPopupImageOnly extends HTMLElement {
       this.closeIcon.addEventListener('click', () => {
         document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
         this.remove()
+        if (campaignId != null && campaignId !== '-1') {
+          if (StorageManager._isLocalStorageSupported()) {
+            const campaignObj = getCampaignObject()
+
+            let sessionCampaignObj = campaignObj.wp[currentSessionId]
+            if (sessionCampaignObj == null) {
+              sessionCampaignObj = {}
+              campaignObj[currentSessionId] = sessionCampaignObj
+            }
+            sessionCampaignObj[campaignId] = 'dnd'
+            saveCampaignObject(campaignObj)
+          }
+        }
       })
 
       window.clevertap.renderNotificationViewed({ msgId: this.msgId, pivotId: this.pivotId })
