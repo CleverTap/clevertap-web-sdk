@@ -321,6 +321,7 @@ const _tr = (msg, {
   const renderPopUpImageOnly = (targetingMsgJson) => {
     const divId = 'wzrkImageOnlyDiv'
     const popupImageOnly = document.createElement('ct-web-popup-imageonly')
+    popupImageOnly.session = _session
     popupImageOnly.target = targetingMsgJson
     const containerEl = document.getElementById(divId)
     containerEl.innerHTML = ''
