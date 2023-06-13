@@ -4740,7 +4740,7 @@
                   resolve();
                 } else if (count >= 20) {
                   clearInterval(t);
-                  reject(new Error('Failed to add inbox'));
+                  console.error('No Unread messages'); // reject(new Error('Failed to add inbox'))
                 }
 
                 count++;
@@ -7994,7 +7994,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.6.0'
+          lib: 'web-sdk-v1.6.1'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
