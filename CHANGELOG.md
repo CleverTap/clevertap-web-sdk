@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.6.0] - 23 May, 2023
 - Introduces frequency caps for 'Web Inbox' channel.
-- Contains a bug which caused an 'Uncaught TypeError' when attempting to access the WZRK_CAMP cookie.
+- Contains a bug which caused an 'Uncaught TypeError' when attempting to access the WZRK_CAMP cookie. Please update to v1.6.1
 
 ## [1.5.2] - 8 May, 2023
 - Fixes Web Popup Image Only frequency capping
