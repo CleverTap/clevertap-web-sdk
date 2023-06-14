@@ -5873,6 +5873,7 @@
                 return;
               } else {
                 processWebInboxResponse(msg);
+                return;
               }
             }
           }

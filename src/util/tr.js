@@ -940,6 +940,7 @@ const _tr = (msg, {
               return
             } else {
               processWebInboxResponse(msg)
+              return
             }
           }
         }
