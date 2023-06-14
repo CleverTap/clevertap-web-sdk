@@ -935,7 +935,7 @@ const _tr = (msg, {
       msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
       initializeWebInbox(_logger).then(() => {
         if (msg.inbox_notifs) {
-          for (let index = 0; index < msg.inapp_notifs.length; index++) {
+          for (let index = 0; index < msg.inbox_notifs.length; index++) {
             if (doCampHouseKeeping(msg.inbox_notifs[index]) === false) {
               return
             } else {

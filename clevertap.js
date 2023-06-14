@@ -5868,7 +5868,7 @@
         msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
         initializeWebInbox(_logger).then(function () {
           if (msg.inbox_notifs) {
-            for (var _index = 0; _index < msg.inapp_notifs.length; _index++) {
+            for (var _index = 0; _index < msg.inbox_notifs.length; _index++) {
               if (doCampHouseKeeping(msg.inbox_notifs[_index]) === false) {
                 return;
               } else {
