@@ -16,10 +16,11 @@ export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
 }
 
 export const processInboxNotifs = (msg) => {
+  console.log('inbox notifs is ', msg)
   if (msg.inbox_preview) {
-    $ct.inbox.incomingMessagesForPreview = msg.inbox_notifs
+    $ct.inbox.incomingMessagesForPreview = msg
   } else {
-    $ct.inbox.incomingMessages = msg.inbox_notifs
+    $ct.inbox.incomingMessages = msg
   }
 }
 

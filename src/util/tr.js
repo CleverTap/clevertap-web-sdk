@@ -33,7 +33,7 @@ import RequestDispatcher from './requestDispatcher'
 import { CTWebPersonalisationBanner } from './web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
-import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxResponse, processWebInboxSettings, hasWebInboxSettingsInLS } from '../modules/web-inbox/helper'
+import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
 
 const _tr = (msg, {
   device,
@@ -934,27 +934,34 @@ const _tr = (msg, {
     if ($ct.inbox === null) {
       msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
       initializeWebInbox(_logger).then(() => {
+        if (msg.webInboxSetting) {
+          processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview)
+        }
         if (msg.inbox_notifs) {
+          const msgArr = []
           for (let index = 0; index < msg.inbox_notifs.length; index++) {
             if (doCampHouseKeeping(msg.inbox_notifs[index]) === false) {
+              processInboxNotifs(msgArr)
               return
             } else {
-              processWebInboxResponse(msg)
-              return
+              msgArr.push(msg.inbox_notifs[index])
             }
           }
+          processInboxNotifs(msgArr)
         }
-        processWebInboxResponse(msg)
       }).catch(e => {})
     } else {
       if (msg.inbox_notifs) {
+        const msgArr = []
         for (let index = 0; index < msg.inbox_notifs.length; index++) {
           if (doCampHouseKeeping(msg.inbox_notifs[index]) === false) {
+            processInboxNotifs(msgArr)
             return
           } else {
-            processWebInboxResponse(msg)
+            msgArr.push(msg.inbox_notifs[index])
           }
         }
+        processInboxNotifs(msgArr)
       }
     }
   }

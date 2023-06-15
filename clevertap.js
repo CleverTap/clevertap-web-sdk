@@ -4705,19 +4705,12 @@
     }
   };
   var processInboxNotifs = function processInboxNotifs(msg) {
-    if (msg.inbox_preview) {
-      $ct.inbox.incomingMessagesForPreview = msg.inbox_notifs;
-    } else {
-      $ct.inbox.incomingMessages = msg.inbox_notifs;
-    }
-  };
-  var processWebInboxResponse = function processWebInboxResponse(msg) {
-    if (msg.webInboxSetting) {
-      processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview);
-    }
+    console.log('inbox notifs is ', msg);
 
-    if (msg.inbox_notifs != null) {
-      processInboxNotifs(msg);
+    if (msg.inbox_preview) {
+      $ct.inbox.incomingMessagesForPreview = msg;
+    } else {
+      $ct.inbox.incomingMessages = msg;
     }
   };
   var addWebInbox = function addWebInbox(logger) {
@@ -5867,28 +5860,39 @@
       if ($ct.inbox === null) {
         msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
         initializeWebInbox(_logger).then(function () {
-          if (msg.inbox_notifs) {
-            for (var _index = 0; _index < msg.inbox_notifs.length; _index++) {
-              if (doCampHouseKeeping(msg.inbox_notifs[_index]) === false) {
-                return;
-              } else {
-                processWebInboxResponse(msg);
-                return;
-              }
-            }
+          if (msg.webInboxSetting) {
+            processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview);
           }
 
-          processWebInboxResponse(msg);
+          if (msg.inbox_notifs) {
+            var msgArr = [];
+
+            for (var _index = 0; _index < msg.inbox_notifs.length; _index++) {
+              if (doCampHouseKeeping(msg.inbox_notifs[_index]) === false) {
+                processInboxNotifs(msgArr);
+                return;
+              } else {
+                msgArr.push(msg.inbox_notifs[_index]);
+              }
+            }
+
+            processInboxNotifs(msgArr);
+          }
         }).catch(function (e) {});
       } else {
         if (msg.inbox_notifs) {
+          var msgArr = [];
+
           for (var _index2 = 0; _index2 < msg.inbox_notifs.length; _index2++) {
             if (doCampHouseKeeping(msg.inbox_notifs[_index2]) === false) {
+              processInboxNotifs(msgArr);
               return;
             } else {
-              processWebInboxResponse(msg);
+              msgArr.push(msg.inbox_notifs[_index2]);
             }
           }
+
+          processInboxNotifs(msgArr);
         }
       }
     }
