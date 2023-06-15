@@ -4705,14 +4705,13 @@
     }
   };
   var processInboxNotifs = function processInboxNotifs(msg) {
-    console.log('inbox notifs is ', msg);
-
-    if (msg.inbox_preview) {
-      $ct.inbox.incomingMessagesForPreview = msg;
-    } else {
-      $ct.inbox.incomingMessages = msg;
-    }
-  };
+    // Todo - Check if this can be eliminated
+    // console.log('inbox notifs is ', msg)      ------ Removing this since inbox_preview doesn't need campaign housekeeping
+    // if (msg.inbox_preview) {
+    //   $ct.inbox.incomingMessagesForPreview = msg
+    // } else {
+    $ct.inbox.incomingMessages = msg; // }
+  }; // Todo - Check if this function can be removed
   var addWebInbox = function addWebInbox(logger) {
     checkAndRegisterWebInboxElements();
     $ct.inbox = new Inbox({
@@ -5860,6 +5859,7 @@
       if ($ct.inbox === null) {
         msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
         initializeWebInbox(_logger).then(function () {
+          // Todo : Handle the if conditions in other way - Code refractor
           if (msg.webInboxSetting) {
             processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview);
           }
@@ -5878,6 +5878,10 @@
 
             processInboxNotifs(msgArr);
           }
+
+          if (msg.inbox_preview) {
+            $ct.inbox.incomingMessagesForPreview = msg;
+          }
         }).catch(function (e) {});
       } else {
         if (msg.inbox_notifs) {
@@ -5893,6 +5897,10 @@
           }
 
           processInboxNotifs(msgArr);
+        }
+
+        if (msg.inbox_preview) {
+          $ct.inbox.incomingMessagesForPreview = msg;
         }
       }
     }

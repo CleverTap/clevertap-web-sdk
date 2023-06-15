@@ -934,6 +934,7 @@ const _tr = (msg, {
     if ($ct.inbox === null) {
       msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
       initializeWebInbox(_logger).then(() => {
+        // Todo : Handle the if conditions in other way - Code refractor
         if (msg.webInboxSetting) {
           processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview)
         }
@@ -949,6 +950,9 @@ const _tr = (msg, {
           }
           processInboxNotifs(msgArr)
         }
+        if (msg.inbox_preview) {
+          $ct.inbox.incomingMessagesForPreview = msg
+        }
       }).catch(e => {})
     } else {
       if (msg.inbox_notifs) {
@@ -962,6 +966,9 @@ const _tr = (msg, {
           }
         }
         processInboxNotifs(msgArr)
+      }
+      if (msg.inbox_preview) {
+        $ct.inbox.incomingMessagesForPreview = msg
       }
     }
   }

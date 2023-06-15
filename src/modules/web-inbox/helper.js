@@ -16,14 +16,17 @@ export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
 }
 
 export const processInboxNotifs = (msg) => {
-  console.log('inbox notifs is ', msg)
-  if (msg.inbox_preview) {
-    $ct.inbox.incomingMessagesForPreview = msg
-  } else {
-    $ct.inbox.incomingMessages = msg
-  }
+  // Todo - Check if this can be eliminated
+
+  // console.log('inbox notifs is ', msg)      ------ Removing this since inbox_preview doesn't need campaign housekeeping
+  // if (msg.inbox_preview) {
+  //   $ct.inbox.incomingMessagesForPreview = msg
+  // } else {
+  $ct.inbox.incomingMessages = msg
+  // }
 }
 
+// Todo - Check if this function can be removed
 export const processWebInboxResponse = (msg) => {
   if (msg.webInboxSetting) {
     processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview)
