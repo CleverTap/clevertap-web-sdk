@@ -921,6 +921,25 @@ const _tr = (msg, {
     }
   }
 
+  const handleInboxNotifications = () => {
+    if (msg.inbox_preview) {
+      processInboxNotifs(msg)
+      return
+    }
+    if (msg.inbox_notifs) {
+      const msgArr = []
+      for (let index = 0; index < msg.inbox_notifs.length; index++) {
+        if (doCampHouseKeeping(msg.inbox_notifs[index]) === false) {
+          processInboxNotifs(msgArr)
+          return
+        } else {
+          msgArr.push(msg.inbox_notifs[index])
+        }
+      }
+      processInboxNotifs(msgArr)
+    }
+  }
+
   if (msg.webInboxSetting || msg.inbox_notifs != null) {
     /**
      * When the user visits a website for the 1st time after web inbox channel is setup,
@@ -933,43 +952,13 @@ const _tr = (msg, {
     }
     if ($ct.inbox === null) {
       msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
-      initializeWebInbox(_logger).then(() => {
-        // Todo : Handle the if conditions in other way - Code refractor
-        if (msg.webInboxSetting) {
-          processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview)
-        }
-        if (msg.inbox_notifs) {
-          const msgArr = []
-          for (let index = 0; index < msg.inbox_notifs.length; index++) {
-            if (doCampHouseKeeping(msg.inbox_notifs[index]) === false) {
-              processInboxNotifs(msgArr)
-              return
-            } else {
-              msgArr.push(msg.inbox_notifs[index])
-            }
-          }
-          processInboxNotifs(msgArr)
-        }
-        if (msg.inbox_preview) {
-          $ct.inbox.incomingMessagesForPreview = msg
-        }
-      }).catch(e => {})
+      initializeWebInbox(_logger)
+        .then(() => {
+          handleInboxNotifications()
+        })
+        .catch(e => {})
     } else {
-      if (msg.inbox_notifs) {
-        const msgArr = []
-        for (let index = 0; index < msg.inbox_notifs.length; index++) {
-          if (doCampHouseKeeping(msg.inbox_notifs[index]) === false) {
-            processInboxNotifs(msgArr)
-            return
-          } else {
-            msgArr.push(msg.inbox_notifs[index])
-          }
-        }
-        processInboxNotifs(msgArr)
-      }
-      if (msg.inbox_preview) {
-        $ct.inbox.incomingMessagesForPreview = msg
-      }
+      handleInboxNotifications()
     }
   }
 

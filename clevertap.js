@@ -4589,6 +4589,12 @@
     }, {
       key: "updateUnviewedBadgeCounter",
       value: function updateUnviewedBadgeCounter() {
+        if (this.isPreview) {
+          this.unviewedBadge.innerText = this.unviewedCounter > 9 ? '9+' : this.unviewedCounter;
+          this.unviewedBadge.style.display = this.unviewedCounter > 0 ? 'flex' : 'none';
+          return;
+        }
+
         var counter = 0;
         this.inboxCard.querySelectorAll('ct-inbox-message').forEach(function (m) {
           var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
@@ -4705,12 +4711,11 @@
     }
   };
   var processInboxNotifs = function processInboxNotifs(msg) {
-    // Todo - Check if this can be eliminated
-    // console.log('inbox notifs is ', msg)      ------ Removing this since inbox_preview doesn't need campaign housekeeping
-    // if (msg.inbox_preview) {
-    //   $ct.inbox.incomingMessagesForPreview = msg
-    // } else {
-    $ct.inbox.incomingMessages = msg; // }
+    if (msg.inbox_preview) {
+      $ct.inbox.incomingMessagesForPreview = msg.inbox_notifs;
+    } else {
+      $ct.inbox.incomingMessages = msg;
+    }
   }; // Todo - Check if this function can be removed
   var addWebInbox = function addWebInbox(logger) {
     checkAndRegisterWebInboxElements();
@@ -5846,6 +5851,28 @@
       }
     };
 
+    var handleInboxNotifications = function handleInboxNotifications() {
+      if (msg.inbox_preview) {
+        processInboxNotifs(msg);
+        return;
+      }
+
+      if (msg.inbox_notifs) {
+        var msgArr = [];
+
+        for (var _index = 0; _index < msg.inbox_notifs.length; _index++) {
+          if (doCampHouseKeeping(msg.inbox_notifs[_index]) === false) {
+            processInboxNotifs(msgArr);
+            return;
+          } else {
+            msgArr.push(msg.inbox_notifs[_index]);
+          }
+        }
+
+        processInboxNotifs(msgArr);
+      }
+    };
+
     if (msg.webInboxSetting || msg.inbox_notifs != null) {
       /**
        * When the user visits a website for the 1st time after web inbox channel is setup,
@@ -5859,49 +5886,10 @@
       if ($ct.inbox === null) {
         msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
         initializeWebInbox(_logger).then(function () {
-          // Todo : Handle the if conditions in other way - Code refractor
-          if (msg.webInboxSetting) {
-            processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview);
-          }
-
-          if (msg.inbox_notifs) {
-            var msgArr = [];
-
-            for (var _index = 0; _index < msg.inbox_notifs.length; _index++) {
-              if (doCampHouseKeeping(msg.inbox_notifs[_index]) === false) {
-                processInboxNotifs(msgArr);
-                return;
-              } else {
-                msgArr.push(msg.inbox_notifs[_index]);
-              }
-            }
-
-            processInboxNotifs(msgArr);
-          }
-
-          if (msg.inbox_preview) {
-            $ct.inbox.incomingMessagesForPreview = msg;
-          }
+          handleInboxNotifications();
         }).catch(function (e) {});
       } else {
-        if (msg.inbox_notifs) {
-          var msgArr = [];
-
-          for (var _index2 = 0; _index2 < msg.inbox_notifs.length; _index2++) {
-            if (doCampHouseKeeping(msg.inbox_notifs[_index2]) === false) {
-              processInboxNotifs(msgArr);
-              return;
-            } else {
-              msgArr.push(msg.inbox_notifs[_index2]);
-            }
-          }
-
-          processInboxNotifs(msgArr);
-        }
-
-        if (msg.inbox_preview) {
-          $ct.inbox.incomingMessagesForPreview = msg;
-        }
+        handleInboxNotifications();
       }
     }
 
