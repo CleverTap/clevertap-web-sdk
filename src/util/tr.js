@@ -930,8 +930,7 @@ const _tr = (msg, {
       const msgArr = []
       for (let index = 0; index < msg.inbox_notifs.length; index++) {
         if (doCampHouseKeeping(msg.inbox_notifs[index]) === false) {
-          processInboxNotifs(msgArr)
-          return
+          continue
         } else {
           msgArr.push(msg.inbox_notifs[index])
         }

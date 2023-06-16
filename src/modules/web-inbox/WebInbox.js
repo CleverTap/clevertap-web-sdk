@@ -457,10 +457,15 @@ export class Inbox extends HTMLElement {
    * Updates the UI with the number of unviewed messages
    * If there are more than 9 unviewed messages, we show the count as 9+
    */
+
+  setBadgeStyle = (msgCount) => {
+    this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount
+    this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none'
+  }
+
   updateUnviewedBadgeCounter () {
-    if (this.isPreview) {
-      this.unviewedBadge.innerText = this.unviewedCounter > 9 ? '9+' : this.unviewedCounter
-      this.unviewedBadge.style.display = this.unviewedCounter > 0 ? 'flex' : 'none'
+    if (this.isPreview && this.unviewedBadge !== null) {
+      this.setBadgeStyle(this.unviewedCounter)
       return
     }
     let counter = 0
@@ -471,8 +476,7 @@ export class Inbox extends HTMLElement {
       }
     })
     if (this.unviewedBadge !== null) {
-      this.unviewedBadge.innerText = counter > 9 ? '9+' : counter
-      this.unviewedBadge.style.display = counter > 0 ? 'flex' : 'none'
+      this.setBadgeStyle(counter)
     }
   }
 
