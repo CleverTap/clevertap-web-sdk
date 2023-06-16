@@ -4119,8 +4119,10 @@
       }();
 
       _this.setBadgeStyle = function (msgCount) {
-        _this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount;
-        _this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none';
+        if (_this.unviewedBadge !== null) {
+          _this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount;
+          _this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none';
+        }
       };
 
       _this.logger = logger;
@@ -4594,7 +4596,7 @@
     }, {
       key: "updateUnviewedBadgeCounter",
       value: function updateUnviewedBadgeCounter() {
-        if (this.isPreview && this.unviewedBadge !== null) {
+        if (this.isPreview) {
           this.setBadgeStyle(this.unviewedCounter);
           return;
         }
@@ -4607,10 +4609,7 @@
             counter++;
           }
         });
-
-        if (this.unviewedBadge !== null) {
-          this.setBadgeStyle(counter);
-        }
+        this.setBadgeStyle(counter);
       }
     }, {
       key: "updateTSForRenderedMsgs",
@@ -5864,10 +5863,7 @@
         var msgArr = [];
 
         for (var _index = 0; _index < msg.inbox_notifs.length; _index++) {
-          if (doCampHouseKeeping(msg.inbox_notifs[_index]) === false) {
-            // processInboxNotifs(msgArr)
-            continue;
-          } else {
+          if (doCampHouseKeeping(msg.inbox_notifs[_index]) !== false) {
             msgArr.push(msg.inbox_notifs[_index]);
           }
         }

@@ -459,12 +459,14 @@ export class Inbox extends HTMLElement {
    */
 
   setBadgeStyle = (msgCount) => {
-    this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount
-    this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none'
+    if (this.unviewedBadge !== null) {
+      this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount
+      this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none'
+    }
   }
 
   updateUnviewedBadgeCounter () {
-    if (this.isPreview && this.unviewedBadge !== null) {
+    if (this.isPreview) {
       this.setBadgeStyle(this.unviewedCounter)
       return
     }
@@ -475,9 +477,7 @@ export class Inbox extends HTMLElement {
         counter++
       }
     })
-    if (this.unviewedBadge !== null) {
-      this.setBadgeStyle(counter)
-    }
+    this.setBadgeStyle(counter)
   }
 
   updateTSForRenderedMsgs () {
