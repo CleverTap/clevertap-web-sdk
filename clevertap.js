@@ -8137,9 +8137,13 @@
   };
 
   var _checkPageChanged2 = function _checkPageChanged2() {
-    if (_classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] !== location.href) {
-      this.pageChanged();
-    }
+    var _this4 = this;
+
+    setTimeout(function () {
+      if (_classPrivateFieldLooseBase(_this4, _previousUrl)[_previousUrl] !== location.href) {
+        _this4.pageChanged();
+      }
+    }, 300);
   };
 
   var _pingRequest2 = function _pingRequest2() {

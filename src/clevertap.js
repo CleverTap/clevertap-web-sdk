@@ -607,9 +607,11 @@ export default class CleverTap {
   }
 
   #checkPageChanged () {
-    if (this.#previousUrl !== location.href) {
-      this.pageChanged()
-    }
+    setTimeout(() => {
+      if (this.#previousUrl !== location.href) {
+        this.pageChanged()
+      }
+    }, 300)
   }
 
   pageChanged () {
