@@ -7950,6 +7950,15 @@
       // after its been initialized
 
     }, {
+      key: "debounce",
+      value: function debounce(func, delay) {
+        var timeout;
+        return function () {
+          clearTimeout(timeout);
+          timeout = setTimeout(func, delay);
+        };
+      }
+    }, {
       key: "pageChanged",
       value: function pageChanged() {
         var _this3 = this;
@@ -8139,11 +8148,12 @@
   var _checkPageChanged2 = function _checkPageChanged2() {
     var _this4 = this;
 
-    setTimeout(function () {
+    var debouncedPageChanged = this.debounce(function () {
       if (_classPrivateFieldLooseBase(_this4, _previousUrl)[_previousUrl] !== location.href) {
         _this4.pageChanged();
       }
     }, 300);
+    debouncedPageChanged();
   };
 
   var _pingRequest2 = function _pingRequest2() {
