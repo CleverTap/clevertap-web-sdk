@@ -669,6 +669,12 @@ export default class CleverTap {
     // send dsync flag when page = 1
     if (parseInt(data.pg) === 1) {
       this.#overrideDSyncFlag(data)
+      data.type = 'profile'
+      var profileObj = {}
+      profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
+      data.profile = profileObj
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
     }
     data.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$' }
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
