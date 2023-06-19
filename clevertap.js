@@ -7868,20 +7868,18 @@
 
         if (parseInt(data.pg) === 1) {
           _classPrivateFieldLooseBase(this, _overrideDSyncFlag)[_overrideDSyncFlag](data);
+
+          data.type = 'profile';
+          var profileObj = {};
+          profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+          data.profile = profileObj;
+          pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
         }
 
         data.af = {
           lib: 'web-sdk-v1.5.2'
         };
-        if(pgCount == 1){
-          data.type = 'profile'
-        var profileObj = {}
-        profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
-        data.profile = profileObj
-        pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
-        }
-        
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 
