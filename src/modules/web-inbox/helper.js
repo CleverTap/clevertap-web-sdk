@@ -23,7 +23,6 @@ export const processInboxNotifs = (msg) => {
   }
 }
 
-// Todo - Check if this function can be removed
 export const processWebInboxResponse = (msg) => {
   if (msg.webInboxSetting) {
     processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview)
@@ -93,7 +92,6 @@ export const checkAndRegisterWebInboxElements = () => {
   }
 }
 
-// TODO - add more comments?
 export const getInboxPosition = (e, inboxHeight, inboxWidth) => {
   const horizontalScroll = document.scrollingElement.scrollLeft
   const verticalScroll = document.scrollingElement.scrollTop
