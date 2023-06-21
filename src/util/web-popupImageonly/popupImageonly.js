@@ -99,6 +99,7 @@ export class CTWebPopupImageOnly extends HTMLElement {
         this.popup.style.setProperty('width', `${width}px`)
         this.container.style.setProperty('width', `${width}px`)
         this.container.style.setProperty('height', 'auto')
+        this.container.style.setProperty('position', 'fixed')
         this.popup.style.setProperty('visibility', 'visible')
         this.closeIcon.style.setProperty('visibility', 'visible')
         document.getElementById('wzrkImageOnlyDiv').style.visibility = 'visible'

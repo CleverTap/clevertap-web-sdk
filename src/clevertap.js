@@ -606,10 +606,21 @@ export default class CleverTap {
     this.notifications._processOldValues()
   }
 
-  #checkPageChanged () {
-    if (this.#previousUrl !== location.href) {
-      this.pageChanged()
+  debounce (func, delay) {
+    let timeout
+    return function () {
+      clearTimeout(timeout)
+      timeout = setTimeout(func, delay)
     }
+  }
+
+  #checkPageChanged () {
+    const debouncedPageChanged = this.debounce(() => {
+      if (this.#previousUrl !== location.href) {
+        this.pageChanged()
+      }
+    }, 300)
+    debouncedPageChanged()
   }
 
   pageChanged () {
