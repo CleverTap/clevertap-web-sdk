@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.2] - 21 Jun, 2023
+- Fixes a bug that causes the Web Inbox campaign to fail rendering upon page load, and ensures that the campaign limit for the inbox is correctly enforced.
+- Fixes a bug in the Web Popup Image-only campaign, preventing the popup from scrolling along with the page.
+- Fixes a bug where cpg (current page) was inaccurately sent during page transitions.
+
 ## [1.6.1] - 13 Jun, 2023
 - Fixes a bug related to updating the WZRK_CAMP cookie for Web Popup Image Only campaigns.
 - Fixes a bug that causes an 'Uncaught TypeError' when attempting to access the WZRK_CAMP cookie.

@@ -33,7 +33,7 @@ import RequestDispatcher from './requestDispatcher'
 import { CTWebPersonalisationBanner } from './web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
-import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxResponse, processWebInboxSettings, hasWebInboxSettingsInLS } from '../modules/web-inbox/helper'
+import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
 
 const _tr = (msg, {
   device,
@@ -921,6 +921,22 @@ const _tr = (msg, {
     }
   }
 
+  const handleInboxNotifications = () => {
+    if (msg.inbox_preview) {
+      processInboxNotifs(msg)
+      return
+    }
+    if (msg.inbox_notifs) {
+      const msgArr = []
+      for (let index = 0; index < msg.inbox_notifs.length; index++) {
+        if (doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
+          msgArr.push(msg.inbox_notifs[index])
+        }
+      }
+      processInboxNotifs(msgArr)
+    }
+  }
+
   if (msg.webInboxSetting || msg.inbox_notifs != null) {
     /**
      * When the user visits a website for the 1st time after web inbox channel is setup,
@@ -933,28 +949,13 @@ const _tr = (msg, {
     }
     if ($ct.inbox === null) {
       msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
-      initializeWebInbox(_logger).then(() => {
-        if (msg.inbox_notifs) {
-          for (let index = 0; index < msg.inapp_notifs.length; index++) {
-            if (doCampHouseKeeping(msg.inbox_notifs[index]) === false) {
-              return
-            } else {
-              processWebInboxResponse(msg)
-            }
-          }
-        }
-        processWebInboxResponse(msg)
-      }).catch(e => {})
+      initializeWebInbox(_logger)
+        .then(() => {
+          handleInboxNotifications()
+        })
+        .catch(e => {})
     } else {
-      if (msg.inbox_notifs) {
-        for (let index = 0; index < msg.inbox_notifs.length; index++) {
-          if (doCampHouseKeeping(msg.inbox_notifs[index]) === false) {
-            return
-          } else {
-            processWebInboxResponse(msg)
-          }
-        }
-      }
+      handleInboxNotifications()
     }
   }
 

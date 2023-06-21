@@ -19,7 +19,7 @@ export const processInboxNotifs = (msg) => {
   if (msg.inbox_preview) {
     $ct.inbox.incomingMessagesForPreview = msg.inbox_notifs
   } else {
-    $ct.inbox.incomingMessages = msg.inbox_notifs
+    $ct.inbox.incomingMessages = msg
   }
 }
 
@@ -92,7 +92,6 @@ export const checkAndRegisterWebInboxElements = () => {
   }
 }
 
-// TODO - add more comments?
 export const getInboxPosition = (e, inboxHeight, inboxWidth) => {
   const horizontalScroll = document.scrollingElement.scrollLeft
   const verticalScroll = document.scrollingElement.scrollTop
