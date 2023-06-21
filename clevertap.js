@@ -3757,6 +3757,8 @@
 
           _this3.container.style.setProperty('height', 'auto');
 
+          _this3.container.style.setProperty('position', 'fixed');
+
           _this3.popup.style.setProperty('visibility', 'visible');
 
           _this3.closeIcon.style.setProperty('visibility', 'visible');
