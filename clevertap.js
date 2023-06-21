@@ -4720,7 +4720,7 @@
     } else {
       $ct.inbox.incomingMessages = msg;
     }
-  }; // Todo - Check if this function can be removed
+  };
   var addWebInbox = function addWebInbox(logger) {
     checkAndRegisterWebInboxElements();
     $ct.inbox = new Inbox({
@@ -4783,8 +4783,7 @@
       customElements.define('ct-web-inbox', Inbox);
       customElements.define('ct-inbox-message', Message);
     }
-  }; // TODO - add more comments?
-
+  };
   var getInboxPosition = function getInboxPosition(e, inboxHeight, inboxWidth) {
     var horizontalScroll = document.scrollingElement.scrollLeft;
     var verticalScroll = document.scrollingElement.scrollTop;
