@@ -473,7 +473,7 @@ export class Inbox extends HTMLElement {
     let counter = 0
     this.inboxCard.querySelectorAll('ct-inbox-message').forEach((m) => {
       const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
-      if (messages[m.id].viewed === 0) {
+      if (messages[m.id] && messages[m.id].viewed === 0) {
         counter++
       }
     })

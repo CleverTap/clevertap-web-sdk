@@ -4607,7 +4607,7 @@
         this.inboxCard.querySelectorAll('ct-inbox-message').forEach(function (m) {
           var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
 
-          if (messages[m.id].viewed === 0) {
+          if (messages[m.id] && messages[m.id].viewed === 0) {
             counter++;
           }
         });
