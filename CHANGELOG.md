@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.2] - 14 Jun, 2023
+- Fixes a bug that prevents the web inbox campaign from rendering on page load.
+
 ## [1.6.1] - 13 Jun, 2023
 - Fixes a bug related to updating the WZRK_CAMP cookie for Web Popup Image Only campaigns.
 - Fixes a bug that causes an 'Uncaught TypeError' when attempting to access the WZRK_CAMP cookie.

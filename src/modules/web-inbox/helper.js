@@ -19,10 +19,11 @@ export const processInboxNotifs = (msg) => {
   if (msg.inbox_preview) {
     $ct.inbox.incomingMessagesForPreview = msg.inbox_notifs
   } else {
-    $ct.inbox.incomingMessages = msg.inbox_notifs
+    $ct.inbox.incomingMessages = msg
   }
 }
 
+// Todo - Check if this function can be removed
 export const processWebInboxResponse = (msg) => {
   if (msg.webInboxSetting) {
     processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview)

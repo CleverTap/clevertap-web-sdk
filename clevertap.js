@@ -4120,6 +4120,13 @@
         };
       }();
 
+      _this.setBadgeStyle = function (msgCount) {
+        if (_this.unviewedBadge !== null) {
+          _this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount;
+          _this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none';
+        }
+      };
+
       _this.logger = logger;
       _this.shadow = _this.attachShadow({
         mode: 'open'
@@ -4591,6 +4598,11 @@
     }, {
       key: "updateUnviewedBadgeCounter",
       value: function updateUnviewedBadgeCounter() {
+        if (this.isPreview) {
+          this.setBadgeStyle(this.unviewedCounter);
+          return;
+        }
+
         var counter = 0;
         this.inboxCard.querySelectorAll('ct-inbox-message').forEach(function (m) {
           var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
@@ -4599,11 +4611,7 @@
             counter++;
           }
         });
-
-        if (this.unviewedBadge !== null) {
-          this.unviewedBadge.innerText = counter > 9 ? '9+' : counter;
-          this.unviewedBadge.style.display = counter > 0 ? 'flex' : 'none';
-        }
+        this.setBadgeStyle(counter);
       }
     }, {
       key: "updateTSForRenderedMsgs",
@@ -4710,18 +4718,9 @@
     if (msg.inbox_preview) {
       $ct.inbox.incomingMessagesForPreview = msg.inbox_notifs;
     } else {
-      $ct.inbox.incomingMessages = msg.inbox_notifs;
+      $ct.inbox.incomingMessages = msg;
     }
-  };
-  var processWebInboxResponse = function processWebInboxResponse(msg) {
-    if (msg.webInboxSetting) {
-      processWebInboxSettings(msg.webInboxSetting, msg.inbox_preview);
-    }
-
-    if (msg.inbox_notifs != null) {
-      processInboxNotifs(msg);
-    }
-  };
+  }; // Todo - Check if this function can be removed
   var addWebInbox = function addWebInbox(logger) {
     checkAndRegisterWebInboxElements();
     $ct.inbox = new Inbox({
@@ -5856,6 +5855,25 @@
       }
     };
 
+    var handleInboxNotifications = function handleInboxNotifications() {
+      if (msg.inbox_preview) {
+        processInboxNotifs(msg);
+        return;
+      }
+
+      if (msg.inbox_notifs) {
+        var msgArr = [];
+
+        for (var _index = 0; _index < msg.inbox_notifs.length; _index++) {
+          if (doCampHouseKeeping(msg.inbox_notifs[_index]) !== false) {
+            msgArr.push(msg.inbox_notifs[_index]);
+          }
+        }
+
+        processInboxNotifs(msgArr);
+      }
+    };
+
     if (msg.webInboxSetting || msg.inbox_notifs != null) {
       /**
        * When the user visits a website for the 1st time after web inbox channel is setup,
@@ -5869,28 +5887,10 @@
       if ($ct.inbox === null) {
         msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
         initializeWebInbox(_logger).then(function () {
-          if (msg.inbox_notifs) {
-            for (var _index = 0; _index < msg.inapp_notifs.length; _index++) {
-              if (doCampHouseKeeping(msg.inbox_notifs[_index]) === false) {
-                return;
-              } else {
-                processWebInboxResponse(msg);
-              }
-            }
-          }
-
-          processWebInboxResponse(msg);
+          handleInboxNotifications();
         }).catch(function (e) {});
       } else {
-        if (msg.inbox_notifs) {
-          for (var _index2 = 0; _index2 < msg.inbox_notifs.length; _index2++) {
-            if (doCampHouseKeeping(msg.inbox_notifs[_index2]) === false) {
-              return;
-            } else {
-              processWebInboxResponse(msg);
-            }
-          }
-        }
+        handleInboxNotifications();
       }
     }
 
@@ -8032,7 +8032,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.6.1'
+          lib: 'web-sdk-v1.6.2'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

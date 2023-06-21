@@ -457,7 +457,19 @@ export class Inbox extends HTMLElement {
    * Updates the UI with the number of unviewed messages
    * If there are more than 9 unviewed messages, we show the count as 9+
    */
+
+  setBadgeStyle = (msgCount) => {
+    if (this.unviewedBadge !== null) {
+      this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount
+      this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none'
+    }
+  }
+
   updateUnviewedBadgeCounter () {
+    if (this.isPreview) {
+      this.setBadgeStyle(this.unviewedCounter)
+      return
+    }
     let counter = 0
     this.inboxCard.querySelectorAll('ct-inbox-message').forEach((m) => {
       const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
@@ -465,10 +477,7 @@ export class Inbox extends HTMLElement {
         counter++
       }
     })
-    if (this.unviewedBadge !== null) {
-      this.unviewedBadge.innerText = counter > 9 ? '9+' : counter
-      this.unviewedBadge.style.display = counter > 0 ? 'flex' : 'none'
-    }
+    this.setBadgeStyle(counter)
   }
 
   updateTSForRenderedMsgs () {
