@@ -100,7 +100,6 @@ export const initializeWebInbox = (logger) => {
               } else if (count >= 20) {
                 clearInterval(t)
                 logger.debug('Failed to add inbox')
-                // reject(new Error(''))
               }
               count++
             }, 500)

@@ -201,7 +201,7 @@ export default class CleverTap {
       if ($ct.inbox) {
         return $ct.inbox.unviewedCounter
       } else {
-        this.#logger.error('No Unread messages')
+        this.#logger.debug('No unread messages')
       }
     }
 
@@ -215,7 +215,7 @@ export default class CleverTap {
       if ($ct.inbox) {
         return $ct.inbox.unviewedMessages
       } else {
-        this.#logger.error('No Unread messages')
+        this.#logger.debug('No unread messages')
       }
     }
 
@@ -294,7 +294,7 @@ export default class CleverTap {
         $ct.inbox.unviewedCounter = 0
         $ct.inbox.unviewedMessages = {}
       } else {
-        this.#logger.error('No Unread Messages')
+        this.#logger.debug('All messages are already read')
       }
     }
 

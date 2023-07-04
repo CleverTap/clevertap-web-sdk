@@ -4795,7 +4795,7 @@
                   resolve();
                 } else if (count >= 20) {
                   clearInterval(t);
-                  logger.debug('Failed to add inbox'); // reject(new Error(''))
+                  logger.debug('Failed to add inbox');
                 }
 
                 count++;
@@ -7497,7 +7497,7 @@
         if ($ct.inbox) {
           return $ct.inbox.unviewedCounter;
         } else {
-          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No Unread messages');
+          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('No unread messages');
         }
       }; // Get All Inbox messages
 
@@ -7511,7 +7511,7 @@
         if ($ct.inbox) {
           return $ct.inbox.unviewedMessages;
         } else {
-          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No Unread messages');
+          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('No unread messages');
         }
       }; // Get message object belonging to the given message id only. Message id should be a String
 
@@ -7612,7 +7612,7 @@
           $ct.inbox.unviewedCounter = 0;
           $ct.inbox.unviewedMessages = {};
         } else {
-          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No Unread Messages');
+          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('All messages are already read');
         }
       }; // method for notification viewed
 
