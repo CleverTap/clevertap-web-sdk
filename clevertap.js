@@ -4217,7 +4217,7 @@
       key: "deleteExpiredAndGetUnexpiredMsgs",
       value: function deleteExpiredAndGetUnexpiredMsgs() {
         var deleteMsgsFromUI = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
-        var messages = getMessages();
+        var messages = getInboxMessages();
         var now = Math.floor(Date.now() / 1000);
 
         for (var msg in messages) {
@@ -4245,7 +4245,7 @@
           }, {});
         }
 
-        saveMessages(messages);
+        saveInboxMessages(messages);
         return messages;
       }
     }, {
@@ -4255,7 +4255,6 @@
 
         var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
         var inboxMsgs = this.deleteExpiredAndGetUnexpiredMsgs();
-        console.log('inbox msgs ', inboxMsgs);
         var date = Date.now();
         var incomingMsgs = {};
         msgs.forEach(function (m, i) {
@@ -4269,10 +4268,7 @@
           _this3.unviewedMessages[key] = m;
           _this3.unviewedCounter++;
         });
-        saveMessages(inboxMsgs); // const gudInboxObj = {}
-        // gudInboxObj[guid] = inboxMsgs
-        // StorageManager.saveToLSorCookie(WEBINBOX, gudInboxObj)
-
+        saveInboxMessages(inboxMsgs);
         this.buildUIForMessages(incomingMsgs);
         this.updateUnviewedBadgeCounter();
       }
@@ -4549,9 +4545,9 @@
       key: "updateMessageInLS",
       value: function updateMessageInLS(key, value) {
         if (!this.isPreview) {
-          var messages = getMessages();
+          var messages = getInboxMessages();
           messages[key] = value;
-          saveMessages(messages);
+          saveInboxMessages(messages);
         }
       } // create a separte fn fro refactoring
 
@@ -4612,7 +4608,7 @@
 
         var counter = 0;
         this.inboxCard.querySelectorAll('ct-inbox-message').forEach(function (m) {
-          var messages = getMessages();
+          var messages = getInboxMessages();
 
           if (messages[m.id] && messages[m.id].viewed === 0) {
             counter++;
@@ -4735,11 +4731,12 @@
     });
     document.body.appendChild($ct.inbox);
   };
-  var getMessages = function getMessages() {
+  var getInboxMessages = function getInboxMessages() {
     var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
     var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
 
     if (Object.keys(messages) && Object.keys(messages).length > 0) {
+      // Doing this to migrate message to guid level
       if (Object.keys(messages)[0].includes('_')) {
         var gudInboxObj = {};
         gudInboxObj[guid] = messages;
@@ -4751,13 +4748,11 @@
 
     return messages;
   };
-  var saveMessages = function saveMessages(messages) {
+  var saveInboxMessages = function saveInboxMessages(messages) {
     var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-    var gudInboxObj = {};
-    gudInboxObj[guid] = messages;
     var storedInboxObj = StorageManager.readFromLSorCookie(WEBINBOX) || {};
 
-    var newObj = _objectSpread2(_objectSpread2({}, storedInboxObj), gudInboxObj);
+    var newObj = _objectSpread2(_objectSpread2({}, storedInboxObj), {}, _defineProperty({}, guid, messages));
 
     StorageManager.saveToLSorCookie(WEBINBOX, newObj);
   };
@@ -4800,7 +4795,7 @@
                   resolve();
                 } else if (count >= 20) {
                   clearInterval(t);
-                  console.error('No Unread messages'); // reject(new Error('Failed to add inbox'))
+                  logger.debug('Failed to add inbox'); // reject(new Error(''))
                 }
 
                 count++;
@@ -7488,12 +7483,12 @@
 
       if (hasWebInboxSettingsInLS()) {
         checkAndRegisterWebInboxElements();
-        initializeWebInbox();
+        initializeWebInbox(_classPrivateFieldLooseBase(this, _logger$9)[_logger$9]);
       } // Get Inbox Message Count
 
 
       this.getInboxMessageCount = function () {
-        var msgCount = getMessages();
+        var msgCount = getInboxMessages();
         return Object.keys(msgCount).length;
       }; // Get Inbox Unread Message Count
 
@@ -7508,7 +7503,7 @@
 
 
       this.getAllInboxMessages = function () {
-        return getMessages();
+        return getInboxMessages();
       }; // Get only Unread messages
 
 
@@ -7522,7 +7517,7 @@
 
 
       this.getInboxMessageForId = function (messageId) {
-        var messages = getMessages();
+        var messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
           return messages[messageId];
@@ -7535,7 +7530,7 @@
 
 
       this.deleteInboxMessage = function (messageId) {
-        var messages = getMessages();
+        var messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
           var el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId);
@@ -7549,7 +7544,7 @@
 
           el && el.remove();
           delete messages[messageId];
-          saveMessages(messages);
+          saveInboxMessages(messages);
         } else {
           _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No message available for message Id ' + messageId);
         }
@@ -7562,7 +7557,7 @@
 
       this.markReadInboxMessage = function (messageId) {
         var unreadMsg = $ct.inbox.unviewedMessages;
-        var messages = getMessages();
+        var messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
           var el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId);
@@ -7581,7 +7576,7 @@
           });
           $ct.inbox.unviewedCounter--;
           delete $ct.inbox.unviewedMessages[messageId];
-          saveMessages(messages);
+          saveInboxMessages(messages);
         } else {
           _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No message available for message Id ' + messageId);
         }
@@ -7594,7 +7589,7 @@
 
       this.markReadAllInboxMessage = function () {
         var unreadMsg = $ct.inbox.unviewedMessages;
-        var messages = getMessages();
+        var messages = getInboxMessages();
 
         if (Object.keys(unreadMsg).length > 0) {
           var msgIds = Object.keys(unreadMsg);
@@ -7613,7 +7608,7 @@
           });
           document.getElementById('unviewedBadge').innerText = 0;
           document.getElementById('unviewedBadge').style.display = 'none';
-          saveMessages(messages);
+          saveInboxMessages(messages);
           $ct.inbox.unviewedCounter = 0;
           $ct.inbox.unviewedMessages = {};
         } else {

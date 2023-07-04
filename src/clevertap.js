@@ -36,7 +36,7 @@ import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe } fr
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
-import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getMessages, saveMessages } from './modules/web-inbox/helper'
+import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 
 export default class CleverTap {
   #logger
@@ -187,12 +187,12 @@ export default class CleverTap {
 
     if (hasWebInboxSettingsInLS()) {
       checkAndRegisterWebInboxElements()
-      initializeWebInbox()
+      initializeWebInbox(this.#logger)
     }
 
     // Get Inbox Message Count
     this.getInboxMessageCount = () => {
-      const msgCount = getMessages()
+      const msgCount = getInboxMessages()
       return Object.keys(msgCount).length
     }
 
@@ -207,7 +207,7 @@ export default class CleverTap {
 
     // Get All Inbox messages
     this.getAllInboxMessages = () => {
-      return getMessages()
+      return getInboxMessages()
     }
 
     // Get only Unread messages
@@ -221,7 +221,7 @@ export default class CleverTap {
 
     // Get message object belonging to the given message id only. Message id should be a String
     this.getInboxMessageForId = (messageId) => {
-      const messages = getMessages()
+      const messages = getInboxMessages()
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
         return messages[messageId]
       } else {
@@ -233,7 +233,7 @@ export default class CleverTap {
     // If the message to be deleted is unviewed then decrement the badge count, delete the message from unviewedMessages list
     // Then remove the message from local storage and update cookie
     this.deleteInboxMessage = (messageId) => {
-      const messages = getMessages()
+      const messages = getInboxMessages()
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
         const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
         if (messages[messageId].viewed === 0) {
@@ -244,7 +244,7 @@ export default class CleverTap {
         }
         el && el.remove()
         delete messages[messageId]
-        saveMessages(messages)
+        saveInboxMessages(messages)
       } else {
         this.#logger.error('No message available for message Id ' + messageId)
       }
@@ -256,7 +256,7 @@ export default class CleverTap {
      - renderNotificationViewed */
     this.markReadInboxMessage = (messageId) => {
       const unreadMsg = $ct.inbox.unviewedMessages
-      const messages = getMessages()
+      const messages = getInboxMessages()
       if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
         const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
         if (el !== null) { el.shadowRoot.getElementById('unreadMarker').style.display = 'none' }
@@ -267,7 +267,7 @@ export default class CleverTap {
         window.clevertap.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
         $ct.inbox.unviewedCounter--
         delete $ct.inbox.unviewedMessages[messageId]
-        saveMessages(messages)
+        saveInboxMessages(messages)
       } else {
         this.#logger.error('No message available for message Id ' + messageId)
       }
@@ -279,7 +279,7 @@ export default class CleverTap {
     */
     this.markReadAllInboxMessage = () => {
       const unreadMsg = $ct.inbox.unviewedMessages
-      const messages = getMessages()
+      const messages = getInboxMessages()
       if (Object.keys(unreadMsg).length > 0) {
         const msgIds = Object.keys(unreadMsg)
         msgIds.forEach(key => {
@@ -290,7 +290,7 @@ export default class CleverTap {
         })
         document.getElementById('unviewedBadge').innerText = 0
         document.getElementById('unviewedBadge').style.display = 'none'
-        saveMessages(messages)
+        saveInboxMessages(messages)
         $ct.inbox.unviewedCounter = 0
         $ct.inbox.unviewedMessages = {}
       } else {
