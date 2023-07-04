@@ -1,7 +1,7 @@
 import { StorageManager, $ct } from '../../util/storage'
 import { Inbox } from './WebInbox'
 import { Message } from './Message'
-import { WEBINBOX_CONFIG } from '../../util/constants'
+import { WEBINBOX_CONFIG, GCOOKIE_NAME, WEBINBOX } from '../../util/constants'
 
 export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
   const _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
@@ -36,6 +36,33 @@ export const addWebInbox = (logger) => {
   checkAndRegisterWebInboxElements()
   $ct.inbox = new Inbox({ logger })
   document.body.appendChild($ct.inbox)
+}
+
+export const getMessages = () => {
+  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+  let messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+
+  if (Object.keys(messages) && Object.keys(messages).length > 0) {
+    if (Object.keys(messages)[0].includes('_')) {
+      const gudInboxObj = {}
+      gudInboxObj[guid] = messages
+      StorageManager.saveToLSorCookie(WEBINBOX, gudInboxObj)
+    } else {
+      messages = messages.hasOwnProperty(guid) ? messages[guid] : {}
+    }
+  }
+  return messages
+}
+
+export const saveMessages = (messages) => {
+  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+  const gudInboxObj = {}
+  gudInboxObj[guid] = messages
+
+  const storedInboxObj = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+
+  const newObj = { ...storedInboxObj, ...gudInboxObj }
+  StorageManager.saveToLSorCookie(WEBINBOX, newObj)
 }
 
 export const initializeWebInbox = (logger) => {

@@ -1,8 +1,8 @@
 import { StorageManager, $ct } from '../../util/storage'
 import { Message } from './Message'
 import { inboxContainerStyles, messageStyles } from './inboxStyles'
-import { getInboxPosition, determineTimeStampText, arrowSvg } from './helper'
-import { WEBINBOX, WEBINBOX_CONFIG, MAX_INBOX_MSG } from '../../util/constants'
+import { getInboxPosition, determineTimeStampText, arrowSvg, getMessages, saveMessages } from './helper'
+import { WEBINBOX_CONFIG, MAX_INBOX_MSG } from '../../util/constants'
 
 export class Inbox extends HTMLElement {
   constructor (logger) {
@@ -92,7 +92,7 @@ export class Inbox extends HTMLElement {
 
   addMsgsToInboxFromLS () {
     const messages = this.deleteExpiredAndGetUnexpiredMsgs(false)
-    const msgIds = Object.keys(messages)
+    const msgIds = messages ? Object.keys(messages) : []
     if (msgIds.length === 0) {
       return
     }
@@ -125,7 +125,8 @@ export class Inbox extends HTMLElement {
    *  In both the above scenarios, we'll still have to decrement the unviewed counter if the message was not viewed.
    */
   deleteExpiredAndGetUnexpiredMsgs (deleteMsgsFromUI = true) {
-    let messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+    let messages = getMessages()
+
     const now = Math.floor(Date.now() / 1000)
     for (const msg in messages) {
       if (messages[msg].wzrk_ttl && messages[msg].wzrk_ttl > 0 && messages[msg].wzrk_ttl < now) {
@@ -140,13 +141,16 @@ export class Inbox extends HTMLElement {
         delete messages[msg]
       }
     }
-    messages = Object.values(messages).sort((a, b) => b.date - a.date).reduce((acc, m) => { acc[m.id] = m; return acc }, {})
-    StorageManager.saveToLSorCookie(WEBINBOX, messages)
+    if (messages && messages.length > 0) {
+      messages = Object.values(messages).sort((a, b) => b.date - a.date).reduce((acc, m) => { acc[m.id] = m; return acc }, {})
+    }
+    saveMessages(messages)
     return messages
   }
 
   updateInboxMessages (msgs = []) {
     const inboxMsgs = this.deleteExpiredAndGetUnexpiredMsgs()
+    console.log('inbox msgs ', inboxMsgs)
     const date = Date.now()
     const incomingMsgs = {}
     msgs.forEach((m, i) => {
@@ -160,7 +164,10 @@ export class Inbox extends HTMLElement {
       this.unviewedMessages[key] = m
       this.unviewedCounter++
     })
-    StorageManager.saveToLSorCookie(WEBINBOX, inboxMsgs)
+    saveMessages(inboxMsgs)
+    // const gudInboxObj = {}
+    // gudInboxObj[guid] = inboxMsgs
+    // StorageManager.saveToLSorCookie(WEBINBOX, gudInboxObj)
     this.buildUIForMessages(incomingMsgs)
     this.updateUnviewedBadgeCounter()
   }
@@ -410,9 +417,9 @@ export class Inbox extends HTMLElement {
 
   updateMessageInLS (key, value) {
     if (!this.isPreview) {
-      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      const messages = getMessages()
       messages[key] = value
-      StorageManager.saveToLSorCookie(WEBINBOX, messages)
+      saveMessages(messages)
     }
   }
 
@@ -472,7 +479,7 @@ export class Inbox extends HTMLElement {
     }
     let counter = 0
     this.inboxCard.querySelectorAll('ct-inbox-message').forEach((m) => {
-      const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+      const messages = getMessages()
       if (messages[m.id] && messages[m.id].viewed === 0) {
         counter++
       }
