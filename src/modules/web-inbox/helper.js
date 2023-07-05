@@ -38,27 +38,28 @@ export const addWebInbox = (logger) => {
   document.body.appendChild($ct.inbox)
 }
 
-export const getInboxMessages = () => {
-  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-  let messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
-
-  if (Object.keys(messages) && Object.keys(messages).length > 0) {
-    // Doing this to migrate message to guid level
-    if (Object.keys(messages)[0].includes('_')) {
-      const gudInboxObj = {}
-      gudInboxObj[guid] = messages
-      StorageManager.saveToLSorCookie(WEBINBOX, gudInboxObj)
-    } else {
-      messages = messages.hasOwnProperty(guid) ? messages[guid] : {}
-    }
+const getAndMigrateInboxMessages = (guid) => {
+  const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+  // Doing this to migrate message to guid level
+  if (Object.keys(messages).length > 0 && Object.keys(messages)[0].includes('_')) {
+    const gudInboxObj = {}
+    gudInboxObj[guid] = messages
+    StorageManager.saveToLSorCookie(WEBINBOX, gudInboxObj)
+    return gudInboxObj
   }
   return messages
 }
 
+export const getInboxMessages = () => {
+  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+  const messages = getAndMigrateInboxMessages(guid)
+
+  return messages.hasOwnProperty(guid) ? messages[guid] : {}
+}
+
 export const saveInboxMessages = (messages) => {
   const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-
-  const storedInboxObj = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+  const storedInboxObj = getAndMigrateInboxMessages(guid)
 
   const newObj = { ...storedInboxObj, [guid]: messages }
   StorageManager.saveToLSorCookie(WEBINBOX, newObj)
