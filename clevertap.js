@@ -4747,11 +4747,21 @@
 
   var getInboxMessages = function getInboxMessages() {
     var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+    if (!isValueValid(guid)) {
+      return {};
+    }
+
     var messages = getAndMigrateInboxMessages(guid);
     return messages.hasOwnProperty(guid) ? messages[guid] : {};
   };
   var saveInboxMessages = function saveInboxMessages(messages) {
     var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+    if (!isValueValid(guid)) {
+      return;
+    }
+
     var storedInboxObj = getAndMigrateInboxMessages(guid);
 
     var newObj = _objectSpread2(_objectSpread2({}, storedInboxObj), {}, _defineProperty({}, guid, messages));

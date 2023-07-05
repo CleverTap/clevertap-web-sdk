@@ -2,6 +2,7 @@ import { StorageManager, $ct } from '../../util/storage'
 import { Inbox } from './WebInbox'
 import { Message } from './Message'
 import { WEBINBOX_CONFIG, GCOOKIE_NAME, WEBINBOX } from '../../util/constants'
+import { isValueValid } from '../../util/datatypes'
 
 export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
   const _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
@@ -52,6 +53,7 @@ const getAndMigrateInboxMessages = (guid) => {
 
 export const getInboxMessages = () => {
   const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+  if (!isValueValid(guid)) { return {} }
   const messages = getAndMigrateInboxMessages(guid)
 
   return messages.hasOwnProperty(guid) ? messages[guid] : {}
@@ -59,6 +61,7 @@ export const getInboxMessages = () => {
 
 export const saveInboxMessages = (messages) => {
   const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+  if (!isValueValid(guid)) { return }
   const storedInboxObj = getAndMigrateInboxMessages(guid)
 
   const newObj = { ...storedInboxObj, [guid]: messages }
