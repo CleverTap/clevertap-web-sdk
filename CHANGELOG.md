@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.6.3] - 7 Jul, 2023
+## [1.6.3] - 8 Jul, 2023
 - Adds guid level handling for Web Inbox messages.
 
 ## [1.6.2] - 21 Jun, 2023
