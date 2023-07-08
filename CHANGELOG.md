@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.6.3] - 8 Jul, 2023
-- Adds guid level handling for Web Inbox messages.
+- Adds support to store Web Inbox messages per user.
 
 ## [1.6.2] - 21 Jun, 2023
 - Fixes a bug that causes the Web Inbox campaign to fail rendering upon page load, and ensures that the campaign limit for the inbox is correctly enforced.
