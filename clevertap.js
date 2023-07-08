@@ -3266,19 +3266,19 @@
             var ids = [];
 
             if (StorageManager._isLocalStorageSupported()) {
-              if (profileObj.Identity != null) {
+              if (profileObj.Identity) {
                 ids.push(profileObj.Identity);
               }
 
-              if (profileObj.Email != null) {
+              if (profileObj.Email) {
                 ids.push(profileObj.Email);
               }
 
-              if (profileObj.GPID != null) {
+              if (profileObj.GPID) {
                 ids.push('GP:' + profileObj.GPID);
               }
 
-              if (profileObj.FBID != null) {
+              if (profileObj.FBID) {
                 ids.push('FB:' + profileObj.FBID);
               }
 
@@ -4179,7 +4179,7 @@
         var _this2 = this;
 
         var messages = this.deleteExpiredAndGetUnexpiredMsgs(false);
-        var msgIds = Object.keys(messages);
+        var msgIds = messages ? Object.keys(messages) : [];
 
         if (msgIds.length === 0) {
           return;
@@ -4217,7 +4217,7 @@
       key: "deleteExpiredAndGetUnexpiredMsgs",
       value: function deleteExpiredAndGetUnexpiredMsgs() {
         var deleteMsgsFromUI = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
-        var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+        var messages = getInboxMessages();
         var now = Math.floor(Date.now() / 1000);
 
         for (var msg in messages) {
@@ -4236,13 +4236,16 @@
           }
         }
 
-        messages = Object.values(messages).sort(function (a, b) {
-          return b.date - a.date;
-        }).reduce(function (acc, m) {
-          acc[m.id] = m;
-          return acc;
-        }, {});
-        StorageManager.saveToLSorCookie(WEBINBOX, messages);
+        if (messages && messages.length > 0) {
+          messages = Object.values(messages).sort(function (a, b) {
+            return b.date - a.date;
+          }).reduce(function (acc, m) {
+            acc[m.id] = m;
+            return acc;
+          }, {});
+        }
+
+        saveInboxMessages(messages);
         return messages;
       }
     }, {
@@ -4265,7 +4268,7 @@
           _this3.unviewedMessages[key] = m;
           _this3.unviewedCounter++;
         });
-        StorageManager.saveToLSorCookie(WEBINBOX, inboxMsgs);
+        saveInboxMessages(inboxMsgs);
         this.buildUIForMessages(incomingMsgs);
         this.updateUnviewedBadgeCounter();
       }
@@ -4542,9 +4545,9 @@
       key: "updateMessageInLS",
       value: function updateMessageInLS(key, value) {
         if (!this.isPreview) {
-          var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+          var messages = getInboxMessages();
           messages[key] = value;
-          StorageManager.saveToLSorCookie(WEBINBOX, messages);
+          saveInboxMessages(messages);
         }
       } // create a separte fn fro refactoring
 
@@ -4605,7 +4608,7 @@
 
         var counter = 0;
         this.inboxCard.querySelectorAll('ct-inbox-message').forEach(function (m) {
-          var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+          var messages = getInboxMessages();
 
           if (messages[m.id] && messages[m.id].viewed === 0) {
             counter++;
@@ -4728,6 +4731,43 @@
     });
     document.body.appendChild($ct.inbox);
   };
+
+  var getAndMigrateInboxMessages = function getAndMigrateInboxMessages(guid) {
+    var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}; // Doing this to migrate message to guid level
+
+    if (Object.keys(messages).length > 0 && Object.keys(messages)[0].includes('_')) {
+      var gudInboxObj = {};
+      gudInboxObj[guid] = messages;
+      StorageManager.saveToLSorCookie(WEBINBOX, gudInboxObj);
+      return gudInboxObj;
+    }
+
+    return messages;
+  };
+
+  var getInboxMessages = function getInboxMessages() {
+    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+    if (!isValueValid(guid)) {
+      return {};
+    }
+
+    var messages = getAndMigrateInboxMessages(guid);
+    return messages.hasOwnProperty(guid) ? messages[guid] : {};
+  };
+  var saveInboxMessages = function saveInboxMessages(messages) {
+    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+    if (!isValueValid(guid)) {
+      return;
+    }
+
+    var storedInboxObj = getAndMigrateInboxMessages(guid);
+
+    var newObj = _objectSpread2(_objectSpread2({}, storedInboxObj), {}, _defineProperty({}, guid, messages));
+
+    StorageManager.saveToLSorCookie(WEBINBOX, newObj);
+  };
   var initializeWebInbox = function initializeWebInbox(logger) {
     return new Promise(function (resolve, reject) {
       if (document.readyState === 'complete') {
@@ -4767,7 +4807,7 @@
                   resolve();
                 } else if (count >= 20) {
                   clearInterval(t);
-                  console.error('No Unread messages'); // reject(new Error('Failed to add inbox'))
+                  logger.debug('Failed to add inbox');
                 }
 
                 count++;
@@ -7455,12 +7495,12 @@
 
       if (hasWebInboxSettingsInLS()) {
         checkAndRegisterWebInboxElements();
-        initializeWebInbox();
+        initializeWebInbox(_classPrivateFieldLooseBase(this, _logger$9)[_logger$9]);
       } // Get Inbox Message Count
 
 
       this.getInboxMessageCount = function () {
-        var msgCount = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+        var msgCount = getInboxMessages();
         return Object.keys(msgCount).length;
       }; // Get Inbox Unread Message Count
 
@@ -7469,13 +7509,13 @@
         if ($ct.inbox) {
           return $ct.inbox.unviewedCounter;
         } else {
-          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No Unread messages');
+          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('No unread messages');
         }
       }; // Get All Inbox messages
 
 
       this.getAllInboxMessages = function () {
-        return StorageManager.readFromLSorCookie(WEBINBOX) || {};
+        return getInboxMessages();
       }; // Get only Unread messages
 
 
@@ -7483,13 +7523,13 @@
         if ($ct.inbox) {
           return $ct.inbox.unviewedMessages;
         } else {
-          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No Unread messages');
+          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('No unread messages');
         }
       }; // Get message object belonging to the given message id only. Message id should be a String
 
 
       this.getInboxMessageForId = function (messageId) {
-        var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+        var messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
           return messages[messageId];
@@ -7502,7 +7542,7 @@
 
 
       this.deleteInboxMessage = function (messageId) {
-        var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+        var messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
           var el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId);
@@ -7516,7 +7556,7 @@
 
           el && el.remove();
           delete messages[messageId];
-          StorageManager.saveToLSorCookie(WEBINBOX, messages);
+          saveInboxMessages(messages);
         } else {
           _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No message available for message Id ' + messageId);
         }
@@ -7529,7 +7569,7 @@
 
       this.markReadInboxMessage = function (messageId) {
         var unreadMsg = $ct.inbox.unviewedMessages;
-        var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+        var messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
           var el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId);
@@ -7548,6 +7588,7 @@
           });
           $ct.inbox.unviewedCounter--;
           delete $ct.inbox.unviewedMessages[messageId];
+          saveInboxMessages(messages);
         } else {
           _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No message available for message Id ' + messageId);
         }
@@ -7560,7 +7601,7 @@
 
       this.markReadAllInboxMessage = function () {
         var unreadMsg = $ct.inbox.unviewedMessages;
-        var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {};
+        var messages = getInboxMessages();
 
         if (Object.keys(unreadMsg).length > 0) {
           var msgIds = Object.keys(unreadMsg);
@@ -7579,11 +7620,11 @@
           });
           document.getElementById('unviewedBadge').innerText = 0;
           document.getElementById('unviewedBadge').style.display = 'none';
-          StorageManager.saveToLSorCookie(WEBINBOX, messages);
+          saveInboxMessages(messages);
           $ct.inbox.unviewedCounter = 0;
           $ct.inbox.unviewedMessages = {};
         } else {
-          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No Unread Messages');
+          _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('All messages are already read');
         }
       }; // method for notification viewed
 
@@ -8031,7 +8072,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.6.2'
+          lib: 'web-sdk-v1.6.3'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));

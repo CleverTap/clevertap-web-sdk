@@ -1,7 +1,8 @@
 import { StorageManager, $ct } from '../../util/storage'
 import { Inbox } from './WebInbox'
 import { Message } from './Message'
-import { WEBINBOX_CONFIG } from '../../util/constants'
+import { WEBINBOX_CONFIG, GCOOKIE_NAME, WEBINBOX } from '../../util/constants'
+import { isValueValid } from '../../util/datatypes'
 
 export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
   const _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
@@ -36,6 +37,35 @@ export const addWebInbox = (logger) => {
   checkAndRegisterWebInboxElements()
   $ct.inbox = new Inbox({ logger })
   document.body.appendChild($ct.inbox)
+}
+
+const getAndMigrateInboxMessages = (guid) => {
+  const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+  // Doing this to migrate message to guid level
+  if (Object.keys(messages).length > 0 && Object.keys(messages)[0].includes('_')) {
+    const gudInboxObj = {}
+    gudInboxObj[guid] = messages
+    StorageManager.saveToLSorCookie(WEBINBOX, gudInboxObj)
+    return gudInboxObj
+  }
+  return messages
+}
+
+export const getInboxMessages = () => {
+  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+  if (!isValueValid(guid)) { return {} }
+  const messages = getAndMigrateInboxMessages(guid)
+
+  return messages.hasOwnProperty(guid) ? messages[guid] : {}
+}
+
+export const saveInboxMessages = (messages) => {
+  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+  if (!isValueValid(guid)) { return }
+  const storedInboxObj = getAndMigrateInboxMessages(guid)
+
+  const newObj = { ...storedInboxObj, [guid]: messages }
+  StorageManager.saveToLSorCookie(WEBINBOX, newObj)
 }
 
 export const initializeWebInbox = (logger) => {
@@ -73,8 +103,7 @@ export const initializeWebInbox = (logger) => {
                 resolve()
               } else if (count >= 20) {
                 clearInterval(t)
-                console.error('No Unread messages')
-                // reject(new Error('Failed to add inbox'))
+                logger.debug('Failed to add inbox')
               }
               count++
             }, 500)

@@ -180,16 +180,16 @@ export default class UserLoginHandler extends Array {
             data.profile = profileObj
             const ids = []
             if (StorageManager._isLocalStorageSupported()) {
-              if (profileObj.Identity != null) {
+              if (profileObj.Identity) {
                 ids.push(profileObj.Identity)
               }
-              if (profileObj.Email != null) {
+              if (profileObj.Email) {
                 ids.push(profileObj.Email)
               }
-              if (profileObj.GPID != null) {
+              if (profileObj.GPID) {
                 ids.push('GP:' + profileObj.GPID)
               }
-              if (profileObj.FBID != null) {
+              if (profileObj.FBID) {
                 ids.push('FB:' + profileObj.FBID)
               }
               if (ids.length > 0) {
