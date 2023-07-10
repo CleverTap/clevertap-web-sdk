@@ -67,7 +67,7 @@ clevertap.init('ACCOUNT_ID', 'REGION', 'TARGET_DOMAIN') // Replace with values a
 
 Here: \
 ```ACCOUNT_ID``` (mandatory): This value can be got from Projects page on the CleverTap Dashboard.\
-```REGION``` (optional): This will be same as the region of the CleverTap Dashboard. Possible values: (in1, sg1, us1, aps3, mec1).\
+```REGION``` (optional): This will be same as the region of the CleverTap Dashboard. Possible values: (in1/sg1/us1/aps3/mec1).\
 ```TARGET_DOMAIN``` (optional): domain of the proxy server.
 
 For SPAs you need to also set the following:
