@@ -2,7 +2,7 @@
   <img src="https://github.com/CleverTap/clevertap-ios-sdk/blob/master/docs/images/clevertap-logo.png" width = "50%"/>
 </p>
 
-# CleverTap Web SDK 
+# CleverTap Web SDK
 
 ![npm version](https://img.shields.io/npm/v/clevertap-web-sdk)
 <a href="https://github.com/CleverTap/clevertap-web-sdk/releases">
@@ -42,12 +42,12 @@ clevertap.account.push({"id": "CLEVERTAP_ACCOUNT_ID"});
 clevertap.privacy.push({optOut: false}); //set the flag to true, if the user of the device opts out of sharing their data
 clevertap.privacy.push({useIP: false}); //set the flag to true, if the user agrees to share their IP data
  (function () {
-		 var wzrk = document.createElement('script');
-		 wzrk.type = 'text/javascript';
-		 wzrk.async = true;
-		 wzrk.src = 'https://d2r1yp2w7bby2u.cloudfront.net/js/clevertap.min.js';
-		 var s = document.getElementsByTagName('script')[0];
-		 s.parentNode.insertBefore(wzrk, s);
+   var wzrk = document.createElement('script');
+   wzrk.type = 'text/javascript';
+   wzrk.async = true;
+   wzrk.src = 'https://d2r1yp2w7bby2u.cloudfront.net/js/clevertap.min.js';
+   var s = document.getElementsByTagName('script')[0];
+   s.parentNode.insertBefore(wzrk, s);
   })();
 </script>
 ```
@@ -57,23 +57,26 @@ clevertap.privacy.push({useIP: false}); //set the flag to true, if the user agre
 ### Add your CleverTap account credentials
 
 Only in case you are using a package manager
+
 ```javascript
 import clevertap from 'clevertap-web-sdk'
 clevertap.privacy.push({optOut: false}) // Set the flag to true, if the user of the device opts out of sharing their data
 clevertap.privacy.push({useIP: false})  // Set the flag to true, if the user agrees to share their IP data
 clevertap.init('ACCOUNT_ID', 'REGION', 'TARGET_DOMAIN') // Replace with values applicable to you. Refer below
 ```
+
 Here: \
 ```ACCOUNT_ID``` (mandatory): This value can be got from Projects page on the CleverTap Dashboard.\
-```REGION``` (optional): This will be same as the region of the CleverTap Dashboard. Possible values: (in1/us1/sg1).\
+```REGION``` (optional): This will be same as the region of the CleverTap Dashboard. Possible values: (in1, sg1, us1, aps3, mec1).\
 ```TARGET_DOMAIN``` (optional): domain of the proxy server.
 
 For SPAs you need to also set the following:
+
 ```javascript
 clevertap.spa = true
 ```
 
-### 
+###
 
 ### Event Push
 
@@ -151,7 +154,6 @@ Web push notifications provide the ability to communicate brief, yet important a
 
 To know more on how to configure web push notifications for Chrome, Firefox and Safari, checkout [CleverTap Web Push guide](https://developer.clevertap.com/docs/web#section-web-push).
 
-
 ### Offline Mode
 
 The offline mode allows setting CleverTap SDK to offline. The `setOffline` method determines the SDK online state. By default the offline state of the sdk is set to `false`.
@@ -183,11 +185,10 @@ clevertap.setLogLevel(LOG_LEVEL)
 //  3: display all logs
 ```
 
-
 ## 𝌡 Example Usage
+
 * A [React Application](/example-apps/react) showing the integration of our SDK in a create react app project.
 * An [Angular Application](/example-apps/angular) showing the integration of our SDK in an Angular CLI generated project.
-
 
 ## 🆕 Change Log
 
@@ -196,4 +197,3 @@ Refer to the [CleverTap Web SDK Change Log](/CHANGELOG.md).
 ## 📄 License
 
 CleverTap Web SDK is released under the MIT license. See [LICENSE](/LICENSE) for details.
-
