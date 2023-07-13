@@ -54,7 +54,8 @@ export default class NotificationHandler extends Array {
   }
 
   #setUpWebPushNotifications (subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-    if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
+    if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1 || navigator.userAgent.indexOf('Safari') !== -1) {
+      console.log('normal way')
       this.#setUpChromeFirefoxNotifications(subscriptionCallback, serviceWorkerPath)
     } else if (navigator.userAgent.indexOf('Safari') !== -1) {
       this.#setUpSafariNotifications(subscriptionCallback, apnsWebPushId, apnsServiceUrl)
@@ -67,28 +68,41 @@ export default class NotificationHandler extends Array {
 
   #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
     // ensure that proper arguments are passed
-    if (typeof apnsWebPushId === 'undefined') {
-      this.#logger.error('Ensure that APNS Web Push ID is supplied')
-    }
-    if (typeof apnsServiceUrl === 'undefined') {
-      this.#logger.error('Ensure that APNS Web Push service path is supplied')
-    }
-    if ('safari' in window && 'pushNotification' in window.safari) {
-      window.safari.pushNotification.requestPermission(
-        apnsServiceUrl,
-        apnsWebPushId, {}, (subscription) => {
-          if (subscription.permission === 'granted') {
-            const subscriptionData = JSON.parse(JSON.stringify(subscription))
-            subscriptionData.endpoint = subscription.deviceToken
-            subscriptionData.browser = 'Safari'
-            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+    // if (typeof apnsWebPushId === 'undefined') {
+    //   this.#logger.error('Ensure that APNS Web Push ID is supplied')
+    // }
+    // if (typeof apnsServiceUrl === 'undefined') {
+    //   this.#logger.error('Ensure that APNS Web Push service path is supplied')
+    // }
+    if ('safari' in window && 'pushNotification' in window.safari && navigator.serviceWorker && window.PushManager && window.Notification) {
+      Notification.requestPermission().then((subscription) => {
+        console.log('first step', subscription)
+        if (subscription === 'granted') {
+          console.log('second step', subscription)
 
-            this.#request.registerToken(subscriptionData)
-            this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
-          } else if (subscription.permission === 'denied') {
-            this.#logger.info('Error subscribing to Safari web push')
-          }
-        })
+          navigator.serviceWorker.getRegistration().then(function (registration) {
+            console.log('third step', registration)
+            registration.pushManager.subscribe({ userVisibleOnly: true }).then(function (subscription) {
+              console.log('fourth step', subscription)
+              console.log('Push notifications are allowed.')
+              // save the push subscription in your database
+            }).catch(function (error) {
+              console.log('fifth step', subscription)
+              console.log('Error:', error)
+            })
+          })
+
+          const subscriptionData = JSON.parse(JSON.stringify(subscription))
+          subscriptionData.endpoint = subscription.deviceToken
+          subscriptionData.browser = 'Safari'
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+
+          this.#request.registerToken(subscriptionData)
+          this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
+        } else if (subscription.permission === 'denied') {
+          this.#logger.info('Error subscribing to Safari web push')
+        }
+      })
     }
   }
 
@@ -100,13 +114,14 @@ export default class NotificationHandler extends Array {
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
+        console.log('we already have registration', registration)
         if (typeof __wzrk_account_id !== 'undefined') { // eslint-disable-line
           // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
           // hence add a timeout and hope serviceWroker is ready within that time.
           return new Promise(resolve => setTimeout(() => resolve(registration), 5000))
         }
         registrationScope = registration.scope
-
+        console.log('check on next step for registrationScope', registrationScope)
         // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
         // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
         // OR getRegistrations PROMISE IF ITS FIREFOX
@@ -122,18 +137,22 @@ export default class NotificationHandler extends Array {
           }
         }
       }).then((serviceWorkerRegistration) => {
+        console.log('check on next step for serviceWorkerRegistration', typeof (serviceWorkerRegistration))
         // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
         if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
           serviceWorkerRegistration = serviceWorkerRegistration.filter((i) => i.scope === registrationScope)[0]
         }
         const subscribeObj = { userVisibleOnly: true }
-
+        console.log('fcmPublicKey', this.#fcmPublicKey)
+        this.#fcmPublicKey = 'BI9Ppw9NRz-gUn8dNxyn7WE9PlsbIVGvk9NAS1Pu3Igs6QS8q_0R-_qLN9N5dGDKlgf9wXfAzXphOaxtwLL3RNE'
         if (this.#fcmPublicKey != null) {
           subscribeObj.applicationServerKey = urlBase64ToUint8Array(this.#fcmPublicKey)
+          console.log('fcmPublicKey', subscribeObj)
         }
 
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj)
           .then((subscription) => {
+            console.log('check on next step for serviceWorker subscription', subscription)
             this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
 
             // convert the subscription keys to strings; this sets it up nicely for pushing to LC
@@ -146,6 +165,8 @@ export default class NotificationHandler extends Array {
             } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
               subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
               subscriptionData.browser = 'Firefox'
+            } else {
+              console.log('checking common way', subscriptionData, subscriptionData.endpoint)
             }
             StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
             this.#request.registerToken(subscriptionData)
@@ -154,6 +175,7 @@ export default class NotificationHandler extends Array {
               subscriptionCallback()
             }
           }).catch((error) => {
+            console.log('not able to subscribe', error)
             this.#logger.error('Error subscribing: ' + error)
             // unsubscribe from webpush if error
             serviceWorkerRegistration.pushManager.getSubscription().then((subscription) => {
