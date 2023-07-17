@@ -450,18 +450,17 @@ export const arp = (jsonMap) => {
       let arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE)
       if (arpFromStorage == null || isOULARP) {
         arpFromStorage = {}
-      }
-
-      for (const key in jsonMap) {
-        if (jsonMap.hasOwnProperty(key)) {
-          if (jsonMap[key] === -1) {
-            delete arpFromStorage[key]
-          } else {
-            arpFromStorage[key] = jsonMap[key]
+        for (const key in jsonMap) {
+          if (jsonMap.hasOwnProperty(key)) {
+            if (jsonMap[key] === -1) {
+              delete arpFromStorage[key]
+            } else {
+              arpFromStorage[key] = jsonMap[key]
+            }
           }
         }
+        StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage)
       }
-      StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage)
     } catch (e) {
       console.error('Unable to parse ARP JSON: ' + e)
     }

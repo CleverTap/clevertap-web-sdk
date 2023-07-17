@@ -61,6 +61,11 @@ export default class CleverTapAPI {
     }
 
     if (!isValueValid(this.#device.gcookie) || resume || typeof optOutResponse === 'boolean') {
+      const objSession = this.#session.getSessionCookieObject()
+
+      if (window.isOULInProgress || (objSession.s && session < objSession.s)) {
+        return
+      }
       this.#logger.debug(`Cookie was ${this.#device.gcookie} set to ${global}`)
       this.#device.gcookie = global
       if (!isValueValid(this.#device.gcookie)) {
@@ -96,10 +101,9 @@ export default class CleverTapAPI {
           this.#request.unregisterTokenForGuid(lastGUID)
         }
       }
+      StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
+      StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
     }
-
-    StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
-    StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
 
     if (StorageManager._isLocalStorageSupported()) {
       this.#session.manageSession(session)
