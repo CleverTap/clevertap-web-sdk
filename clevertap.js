@@ -1162,9 +1162,9 @@
         }
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
-          var objSession = _classPrivateFieldLooseBase(this, _session)[_session].getSessionCookieObject();
+          var sessionObj = _classPrivateFieldLooseBase(this, _session)[_session].getSessionCookieObject();
 
-          if (window.isOULInProgress || objSession.s && session < objSession.s) {
+          if (window.isOULInProgress || sessionObj.s && session < sessionObj.s) {
             return;
           }
 

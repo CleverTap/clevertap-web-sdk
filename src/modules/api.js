@@ -61,9 +61,9 @@ export default class CleverTapAPI {
     }
 
     if (!isValueValid(this.#device.gcookie) || resume || typeof optOutResponse === 'boolean') {
-      const objSession = this.#session.getSessionCookieObject()
+      const sessionObj = this.#session.getSessionCookieObject()
 
-      if (window.isOULInProgress || (objSession.s && session < objSession.s)) {
+      if (window.isOULInProgress || (sessionObj.s && session < sessionObj.s)) {
         return
       }
       this.#logger.debug(`Cookie was ${this.#device.gcookie} set to ${global}`)
