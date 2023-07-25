@@ -63,6 +63,9 @@ export default class CleverTapAPI {
     if (!isValueValid(this.#device.gcookie) || resume || typeof optOutResponse === 'boolean') {
       const sessionObj = this.#session.getSessionCookieObject()
 
+      /*  If the received session is less than the session in the cookie,
+          then don't update guid as it will be response for old request
+      */
       if (window.isOULInProgress || (sessionObj.s && session < sessionObj.s)) {
         return
       }

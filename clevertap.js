@@ -1163,6 +1163,10 @@
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
           var sessionObj = _classPrivateFieldLooseBase(this, _session)[_session].getSessionCookieObject();
+          /*  If the received session is less than the session in the cookie,
+              then don't update guid as it will be response for old request
+          */
+
 
           if (window.isOULInProgress || sessionObj.s && session < sessionObj.s) {
             return;
@@ -2544,6 +2548,7 @@
     var isOULARP = !!(jsonMap[IS_OUL] != null && jsonMap[IS_OUL] === true);
 
     if (StorageManager._isLocalStorageSupported()) {
+      // Update arp only if it is null or an oul request
       try {
         var arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE);
 

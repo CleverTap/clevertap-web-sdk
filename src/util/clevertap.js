@@ -446,6 +446,7 @@ export const arp = (jsonMap) => {
   const isOULARP = !!((jsonMap[IS_OUL] != null && jsonMap[IS_OUL] === true))
 
   if (StorageManager._isLocalStorageSupported()) {
+    // Update arp only if it is null or an oul request
     try {
       let arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE)
       if (arpFromStorage == null || isOULARP) {
