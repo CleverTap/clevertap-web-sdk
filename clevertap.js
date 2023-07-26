@@ -2545,7 +2545,7 @@
       return null;
     }
 
-    var isOULARP = !!(jsonMap[IS_OUL] != null && jsonMap[IS_OUL] === true);
+    var isOULARP = jsonMap[IS_OUL] === true;
 
     if (StorageManager._isLocalStorageSupported()) {
       // Update arp only if it is null or an oul request

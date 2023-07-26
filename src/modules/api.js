@@ -66,7 +66,7 @@ export default class CleverTapAPI {
       /*  If the received session is less than the session in the cookie,
           then don't update guid as it will be response for old request
       */
-      if (window.isOULInProgress || (sessionObj.s && session < sessionObj.s)) {
+      if (window.isOULInProgress || (sessionObj.s && (session < sessionObj.s))) {
         return
       }
       this.#logger.debug(`Cookie was ${this.#device.gcookie} set to ${global}`)
