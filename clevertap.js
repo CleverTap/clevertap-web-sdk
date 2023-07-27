@@ -1162,6 +1162,16 @@
         }
 
         if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
+          var sessionObj = _classPrivateFieldLooseBase(this, _session)[_session].getSessionCookieObject();
+          /*  If the received session is less than the session in the cookie,
+              then don't update guid as it will be response for old request
+          */
+
+
+          if (window.isOULInProgress || sessionObj.s && session < sessionObj.s) {
+            return;
+          }
+
           _classPrivateFieldLooseBase(this, _logger)[_logger].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device)[_device].gcookie, " set to ").concat(global));
 
           _classPrivateFieldLooseBase(this, _device)[_device].gcookie = global;
@@ -1203,10 +1213,10 @@
               _classPrivateFieldLooseBase(this, _request)[_request].unregisterTokenForGuid(lastGUID);
             }
           }
-        }
 
-        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
-        StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
+          StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
+          StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
+        }
 
         if (StorageManager._isLocalStorageSupported()) {
           _classPrivateFieldLooseBase(this, _session)[_session].manageSession(session);
@@ -2535,27 +2545,28 @@
       return null;
     }
 
-    var isOULARP = !!(jsonMap[IS_OUL] != null && jsonMap[IS_OUL] === true);
+    var isOULARP = jsonMap[IS_OUL] === true;
 
     if (StorageManager._isLocalStorageSupported()) {
+      // Update arp only if it is null or an oul request
       try {
         var arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE);
 
         if (arpFromStorage == null || isOULARP) {
           arpFromStorage = {};
-        }
 
-        for (var key in jsonMap) {
-          if (jsonMap.hasOwnProperty(key)) {
-            if (jsonMap[key] === -1) {
-              delete arpFromStorage[key];
-            } else {
-              arpFromStorage[key] = jsonMap[key];
+          for (var key in jsonMap) {
+            if (jsonMap.hasOwnProperty(key)) {
+              if (jsonMap[key] === -1) {
+                delete arpFromStorage[key];
+              } else {
+                arpFromStorage[key] = jsonMap[key];
+              }
             }
           }
-        }
 
-        StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage);
+          StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage);
+        }
       } catch (e) {
         console.error('Unable to parse ARP JSON: ' + e);
       }
