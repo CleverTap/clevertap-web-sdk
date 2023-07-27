@@ -61,6 +61,14 @@ export default class CleverTapAPI {
     }
 
     if (!isValueValid(this.#device.gcookie) || resume || typeof optOutResponse === 'boolean') {
+      const sessionObj = this.#session.getSessionCookieObject()
+
+      /*  If the received session is less than the session in the cookie,
+          then don't update guid as it will be response for old request
+      */
+      if (window.isOULInProgress || (sessionObj.s && (session < sessionObj.s))) {
+        return
+      }
       this.#logger.debug(`Cookie was ${this.#device.gcookie} set to ${global}`)
       this.#device.gcookie = global
       if (!isValueValid(this.#device.gcookie)) {
@@ -96,10 +104,9 @@ export default class CleverTapAPI {
           this.#request.unregisterTokenForGuid(lastGUID)
         }
       }
+      StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
+      StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
     }
-
-    StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
-    StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
 
     if (StorageManager._isLocalStorageSupported()) {
       this.#session.manageSession(session)
