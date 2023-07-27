@@ -1,5 +1,8 @@
 # Change Log
 All notable changes to this project will be documented in this file.
+## [1.6.4] - 27 Jul, 2023
+- Fixes a bug related to updating the WZRK_G on onUserLogin.
+- Updated WZRK_G cookie expiry to 1 year.
 
 ## [1.6.3] - 8 Jul, 2023
 - Adds support to store Web Inbox messages per user.
