@@ -474,7 +474,7 @@
   var IS_OUL = 'isOUL';
   var EVT_PUSH = 'push';
   var EVT_PING = 'ping';
-  var COOKIE_EXPIRY = 86400 * 365; // 1 Years in seconds
+  var COOKIE_EXPIRY = 86400 * 365; // 1 Year in seconds
 
   var MAX_TRIES = 200; // API tries
 
@@ -8083,7 +8083,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.6.3'
+          lib: 'web-sdk-v1.6.4'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
