@@ -474,7 +474,7 @@
   var IS_OUL = 'isOUL';
   var EVT_PUSH = 'push';
   var EVT_PING = 'ping';
-  var COOKIE_EXPIRY = 86400 * 365 * 10; // 10 Years in seconds
+  var COOKIE_EXPIRY = 86400 * 365; // 1 Years in seconds
 
   var MAX_TRIES = 200; // API tries
 
