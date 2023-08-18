@@ -105,11 +105,15 @@ export default class ProfileHandler extends Array {
             data = this.#request.addSystemDataToObject(data, undefined)
 
             this.#request.addFlags(data)
-            const compressedData = compressData(JSON.stringify(data), this.#logger)
 
             let pageLoadUrl = this.#account.dataPostURL
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+            // check if sessionStorage has key WZRK_D
+            if (sessionStorage.hasOwnProperty('WZRK_D')) {
+              data.debug = true
+              pageLoadUrl = addToURL(pageLoadUrl, 'debug', true)
+            }
+            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
             this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
           }
@@ -156,10 +160,14 @@ export default class ProfileHandler extends Array {
       data.profile = profileObj
       data = this.#request.addSystemDataToProfileObject(data, undefined)
       this.#request.addFlags(data)
-      const compressedData = compressData(JSON.stringify(data), this.#logger)
       let pageLoadUrl = this.#account.dataPostURL
       pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+      // check if sessionStorage has key WZRK_D
+      if (sessionStorage.hasOwnProperty('WZRK_D')) {
+        data.debug = true
+        pageLoadUrl = addToURL(pageLoadUrl, 'debug', true)
+      }
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
       this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
     }
@@ -301,10 +309,14 @@ export default class ProfileHandler extends Array {
     data.profile = profileObj
     data = this.#request.addSystemDataToProfileObject(data, undefined)
     this.#request.addFlags(data)
-    const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+    // check if sessionStorage has key WZRK_D
+    if (sessionStorage.hasOwnProperty('WZRK_D')) {
+      data.debug = true
+      pageLoadUrl = addToURL(pageLoadUrl, 'debug', true)
+    }
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
   }
