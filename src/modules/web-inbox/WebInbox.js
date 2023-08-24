@@ -322,7 +322,8 @@ export class Inbox extends HTMLElement {
     const maxMsgsInInbox = this.config.maxMsgsInInbox ?? MAX_INBOX_MSG
     const firstChild = this.inboxCard.firstChild
 
-    for (const m in messages) {
+    const sortedMsgs = Object.values(messages).sort((a, b) => b.date - a.date).map((m) => m.id)
+    for (const m of sortedMsgs) {
       const item = new Message(this.config, messages[m])
       item.setAttribute('id', messages[m].id)
       item.setAttribute('pivot', messages[m].wzrk_pivot)

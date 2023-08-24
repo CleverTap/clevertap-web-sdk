@@ -4463,22 +4463,37 @@
         this.inboxCard.scrollTop = 0;
         var maxMsgsInInbox = (_this$config$maxMsgsI = this.config.maxMsgsInInbox) !== null && _this$config$maxMsgsI !== void 0 ? _this$config$maxMsgsI : MAX_INBOX_MSG;
         var firstChild = this.inboxCard.firstChild;
+        var sortedMsgs = Object.values(messages).sort(function (a, b) {
+          return b.date - a.date;
+        }).map(function (m) {
+          return m.id;
+        });
 
-        for (var m in messages) {
-          var item = new Message(this.config, messages[m]);
-          item.setAttribute('id', messages[m].id);
-          item.setAttribute('pivot', messages[m].wzrk_pivot);
-          item.setAttribute('part', 'ct-inbox-message');
+        var _iterator = _createForOfIteratorHelper(sortedMsgs),
+            _step;
 
-          if (this.config.categories.length > 0) {
-            item.setAttribute('category', messages[m].tags[0] || '');
-            item.style.display = this.selectedCategory === 'All' || messages[m].category === this.selectedCategory ? 'block' : 'none';
-          } else {
-            item.style.display = 'block';
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done;) {
+            var m = _step.value;
+            var item = new Message(this.config, messages[m]);
+            item.setAttribute('id', messages[m].id);
+            item.setAttribute('pivot', messages[m].wzrk_pivot);
+            item.setAttribute('part', 'ct-inbox-message');
+
+            if (this.config.categories.length > 0) {
+              item.setAttribute('category', messages[m].tags[0] || '');
+              item.style.display = this.selectedCategory === 'All' || messages[m].category === this.selectedCategory ? 'block' : 'none';
+            } else {
+              item.style.display = 'block';
+            }
+
+            this.inboxCard.insertBefore(item, firstChild);
+            this.observer.observe(item);
           }
-
-          this.inboxCard.insertBefore(item, firstChild);
-          this.observer.observe(item);
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
         }
 
         var msgTotalCount = this.inboxCard.querySelectorAll('ct-inbox-message').length;
@@ -8083,7 +8098,7 @@
         }
 
         data.af = {
-          lib: 'web-sdk-v1.6.4'
+          lib: 'web-sdk-v1.6.5'
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
