@@ -1,5 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
+
+## [1.6.5] - 24 Aug, 2023
+- Fixes a bug related to sequence of message in Web Inbox
+- Adds the parameter for location.protocol in page request
+
 ## [1.6.4] - 27 Jul, 2023
 - Fixes a bug related to updating the WZRK_G on onUserLogin.
 - Updated WZRK_G cookie expiry to 1 year.
