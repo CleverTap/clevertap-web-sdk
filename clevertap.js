@@ -8097,8 +8097,11 @@
           _classPrivateFieldLooseBase(this, _overrideDSyncFlag)[_overrideDSyncFlag](data);
         }
 
+        var proto = document.location.protocol;
+        proto = proto.replace(':', '');
         data.af = {
-          lib: 'web-sdk-v1.6.5'
+          lib: 'web-sdk-v1.6.5',
+          protocol: proto
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
