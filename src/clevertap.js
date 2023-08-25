@@ -681,13 +681,7 @@ export default class CleverTap {
       this.#overrideDSyncFlag(data)
     }
     data.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$' }
-
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
-    // check if sessionStorage has key WZRK_D
-    if (sessionStorage.hasOwnProperty('WZRK_D')) {
-      data.debug = true
-      pageLoadUrl = addToURL(pageLoadUrl, 'debug', true)
-    }
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
@@ -711,12 +705,7 @@ export default class CleverTap {
     let pageLoadUrl = this.#account.dataPostURL
     let data = {}
     data = this.#request.addSystemDataToObject(data, undefined)
-    // check if sessionStorage has key WZRK_D
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING)
-    if (sessionStorage.hasOwnProperty('WZRK_D')) {
-      data.debug = true
-      pageLoadUrl = addToURL(pageLoadUrl, 'debug', true)
-    }
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
@@ -771,11 +760,6 @@ export default class CleverTap {
     this.#request.addFlags(data)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-    // check if sessionStorage has key WZRK_D
-    if (sessionStorage.hasOwnProperty('WZRK_D')) {
-      data.debug = true
-      pageLoadUrl = addToURL(pageLoadUrl, 'debug', true)
-    }
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)

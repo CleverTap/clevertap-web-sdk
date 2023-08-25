@@ -72,6 +72,7 @@ export default class RequestManager {
     const obj = this.#session.getSessionCookieObject()
     dataObject.s = obj.s // session cookie
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
+    if (sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
 
     return dataObject
   }
@@ -91,6 +92,7 @@ export default class RequestManager {
     const obj = this.#session.getSessionCookieObject()
     dataObject.s = obj.s // session cookie
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
+    if (sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
 
     return dataObject
   }
@@ -200,11 +202,6 @@ export default class RequestManager {
     data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-    // check if sessionStorage has key WZRK_D
-    if (sessionStorage.hasOwnProperty('WZRK_D')) {
-      data.debug = true
-      pageLoadUrl = addToURL(pageLoadUrl, 'debug', true)
-    }
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
     this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)

@@ -79,11 +79,6 @@ export default class Privacy extends Array {
         data = this.#request.addSystemDataToObject(data, undefined)
         let pageLoadUrl = this.#account.dataPostURL
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-        // check if sessionStorage has key WZRK_D
-        if (sessionStorage.hasOwnProperty('WZRK_D')) {
-          data.debug = true
-          pageLoadUrl = addToURL(pageLoadUrl, 'debug', true)
-        }
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false')
         this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
