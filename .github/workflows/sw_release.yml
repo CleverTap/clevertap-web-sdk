@@ -1,4 +1,4 @@
-name: Release to npm and s3
+name: Release sw_webpush.min.js to s3
 on:
   release:
     types: [published]

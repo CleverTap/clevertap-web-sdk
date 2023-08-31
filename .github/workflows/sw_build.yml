@@ -1,4 +1,4 @@
-name: Test and build
+name: Build SW Webpush
 on:
   push:
     branches:
