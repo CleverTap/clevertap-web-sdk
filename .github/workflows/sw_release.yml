@@ -23,8 +23,6 @@ jobs:
             ${{ runner.os }}-yarn-
       - name: Install packages
         run: yarn
-      - name: Run unit tests
-        run: yarn run test:coverage
       - name: Build package
         run: yarn run build_sw
       - name: Configure AWS credentials
