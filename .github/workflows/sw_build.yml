@@ -33,4 +33,4 @@ jobs:
       - name: Run unit tests
         run: yarn run test:coverage
       - name: Build package
-        run: yarn run build
+        run: yarn run build_sw
