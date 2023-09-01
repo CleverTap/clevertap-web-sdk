@@ -33,7 +33,7 @@ jobs:
       - name: Build package
         run: yarn run build_sw
       - name: Create Artifact
-          uses: actions/upload-artifact@v3
-          with:
-            name: test
-            path: 'sw_webpush.min.js'
+        uses: actions/upload-artifact@v3
+        with:
+          name: test
+          path: 'sw_webpush.min.js'
