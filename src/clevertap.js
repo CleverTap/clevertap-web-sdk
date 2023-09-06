@@ -49,7 +49,7 @@ export default class CleverTap {
   #isSpa
   #previousUrl
   #boundCheckPageChanged = this.#checkPageChanged.bind(this)
-  #isWebPopUpSpamControlDisabled
+  #dismissSpamControl
   enablePersonalization
 
   get spa () {
@@ -70,12 +70,13 @@ export default class CleverTap {
   }
 
   get dismissSpamControl () {
-    return this.#isWebPopUpSpamControlDisabled
+    return this.#dismissSpamControl
   }
 
   set dismissSpamControl (value) {
-    const isWebPopUpSpamControlDisabled = value === true
-    this.#isWebPopUpSpamControlDisabled = isWebPopUpSpamControlDisabled
+    const dismissSpamControl = value === true
+    this.#dismissSpamControl = dismissSpamControl
+    $ct.dismissSpamControl = dismissSpamControl
   }
 
   constructor (clevertap = {}) {
@@ -85,6 +86,7 @@ export default class CleverTap {
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2])
     this.#device = new DeviceManager({ logger: this.#logger })
+    this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.#session = new SessionManager({
       logger: this.#logger,
       isPersonalisationActive: this._isPersonalisationActive
@@ -436,7 +438,7 @@ export default class CleverTap {
           return
         }
         $ct.location = { Latitude: lat, Longitude: lng }
-        this.sendMultiValueData({ Latitude: lat, Longitude: lng })
+        this.sendLocationData({ Latitude: lat, Longitude: lng })
       } else {
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError)
@@ -450,7 +452,7 @@ export default class CleverTap {
       var lat = position.coords.latitude
       var lng = position.coords.longitude
       $ct.location = { Latitude: lat, Longitude: lng }
-      this.sendMultiValueData({ Latitude: lat, Longitude: lng })
+      this.sendLocationData({ Latitude: lat, Longitude: lng })
     }
 
     function showError (error) {
@@ -484,8 +486,7 @@ export default class CleverTap {
         device: this.#device,
         session: this.#session,
         request: this.#request,
-        logger: this.#logger,
-        isWebPopUpSpamControlDisabled: this.#isWebPopUpSpamControlDisabled
+        logger: this.#logger
       })
     }
     api.setEnum = (enumVal) => {
@@ -739,7 +740,7 @@ export default class CleverTap {
    *
    * @param {object} payload
    */
-  sendMultiValueData (payload) {
+  sendLocationData (payload) {
     // Send the updated value to LC
     let data = {}
     data.af = {}
