@@ -5362,9 +5362,10 @@
         if (isWebPopUpSpamControlDisabled && document.getElementById(_divId) != null) {
           var element = document.getElementById(_divId);
           element.remove();
-        }
+        } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
 
-        if (document.getElementById(_divId) != null) {
+
+        if (document.getElementById(_divId) != null || document.getElementById('intentPreview') != null) {
           return;
         }
 
@@ -5698,9 +5699,10 @@
         var element = document.getElementById('intentPreview');
         element.remove();
         document.getElementById('intentOpacityDiv').remove();
-      }
+      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
 
-      if (document.getElementById('intentPreview') != null) {
+
+      if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
         return;
       } // dont show exit intent on tablet/mobile - only on desktop
 
