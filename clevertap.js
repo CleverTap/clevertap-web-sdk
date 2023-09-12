@@ -8101,7 +8101,7 @@
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
         data.af = {
-          lib: 'web-sdk-v1.6.5',
+          lib: 'web-sdk-v1.6.6',
           protocol: proto
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
