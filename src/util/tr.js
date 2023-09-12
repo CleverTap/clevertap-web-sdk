@@ -361,7 +361,8 @@ const _tr = (msg, {
         const element = document.getElementById(divId)
         element.remove()
       }
-      if (document.getElementById(divId) != null) {
+      // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+      if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
         return
       }
       const msgDiv = document.createElement('div')
@@ -705,8 +706,8 @@ const _tr = (msg, {
       element.remove()
       document.getElementById('intentOpacityDiv').remove()
     }
-
-    if (document.getElementById('intentPreview') != null) {
+    // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+    if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
       return
     }
     // dont show exit intent on tablet/mobile - only on desktop
