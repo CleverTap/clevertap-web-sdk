@@ -915,7 +915,8 @@
     isPrivacyArrPushed: false,
     privacyArray: [],
     offline: false,
-    location: null // domain: window.location.hostname, url -> getHostName()
+    location: null,
+    dismissSpamControl: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -4981,8 +4982,7 @@
     var device = _ref.device,
         session = _ref.session,
         request = _ref.request,
-        logger = _ref.logger,
-        isWebPopUpSpamControlDisabled = _ref.isWebPopUpSpamControlDisabled;
+        logger = _ref.logger;
     var _device = device;
     var _session = session;
     var _request = request;
@@ -5098,7 +5098,7 @@
           var campaignSessionCount = sessionObj[campaignId];
           var totalSessionCount = sessionObj.tc; // dnd
 
-          if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
+          if (campaignSessionCount === 'dnd' && !$ct.dismissSpamControl) {
             return false;
           }
 
@@ -5359,7 +5359,7 @@
           return;
         }
 
-        if (isWebPopUpSpamControlDisabled && document.getElementById(_divId) != null) {
+        if ($ct.dismissSpamControl && document.getElementById(_divId) != null) {
           var element = document.getElementById(_divId);
           element.remove();
         } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
@@ -5387,7 +5387,7 @@
 
       var divId = 'wizParDiv' + displayObj.layout;
 
-      if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
+      if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         var _element = document.getElementById(divId);
 
         _element.remove();
@@ -5695,7 +5695,7 @@
         targetingMsgJson = targetObj;
       }
 
-      if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
+      if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
         var element = document.getElementById('intentPreview');
         element.remove();
         document.getElementById('intentOpacityDiv').remove();
@@ -7297,7 +7297,7 @@
 
   var _boundCheckPageChanged = _classPrivateFieldLooseKey("boundCheckPageChanged");
 
-  var _isWebPopUpSpamControlDisabled = _classPrivateFieldLooseKey("isWebPopUpSpamControlDisabled");
+  var _dismissSpamControl = _classPrivateFieldLooseKey("dismissSpamControl");
 
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
@@ -7332,11 +7332,12 @@
     }, {
       key: "dismissSpamControl",
       get: function get() {
-        return _classPrivateFieldLooseBase(this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled];
+        return _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl];
       },
       set: function set(value) {
-        var isWebPopUpSpamControlDisabled = value === true;
-        _classPrivateFieldLooseBase(this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled] = isWebPopUpSpamControlDisabled;
+        var dismissSpamControl = value === true;
+        _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
+        $ct.dismissSpamControl = dismissSpamControl;
       }
     }]);
 
@@ -7406,7 +7407,7 @@
         writable: true,
         value: _classPrivateFieldLooseBase(this, _checkPageChanged)[_checkPageChanged].bind(this)
       });
-      Object.defineProperty(this, _isWebPopUpSpamControlDisabled, {
+      Object.defineProperty(this, _dismissSpamControl, {
         writable: true,
         value: void 0
       });
@@ -7423,6 +7424,7 @@
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
       });
+      _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         isPersonalisationActive: this._isPersonalisationActive
@@ -7812,7 +7814,7 @@
             Latitude: lat,
             Longitude: lng
           };
-          this.sendMultiValueData({
+          this.sendLocationData({
             Latitude: lat,
             Longitude: lng
           });
@@ -7832,7 +7834,7 @@
           Latitude: lat,
           Longitude: lng
         };
-        this.sendMultiValueData({
+        this.sendLocationData({
           Latitude: lat,
           Longitude: lng
         });
@@ -7876,8 +7878,7 @@
           device: _classPrivateFieldLooseBase(_this, _device$3)[_device$3],
           session: _classPrivateFieldLooseBase(_this, _session$3)[_session$3],
           request: _classPrivateFieldLooseBase(_this, _request$6)[_request$6],
-          logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9],
-          isWebPopUpSpamControlDisabled: _classPrivateFieldLooseBase(_this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled]
+          logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]
         });
       };
 
@@ -8102,7 +8103,7 @@
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
         data.af = {
-          lib: 'web-sdk-v1.6.5',
+          lib: 'web-sdk-v1.6.6',
           protocol: proto
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
@@ -8130,13 +8131,13 @@
         return StorageManager._isLocalStorageSupported() && this.enablePersonalization;
       }
     }, {
-      key: "sendMultiValueData",
+      key: "sendLocationData",
 
       /**
        *
        * @param {object} payload
        */
-      value: function sendMultiValueData(payload) {
+      value: function sendLocationData(payload) {
         // Send the updated value to LC
         var data = {};
         data.af = {};
