@@ -39,8 +39,7 @@ const _tr = (msg, {
   device,
   session,
   request,
-  logger,
-  isWebPopUpSpamControlDisabled
+  logger
 }) => {
   const _device = device
   const _session = session
@@ -132,7 +131,7 @@ const _tr = (msg, {
         const campaignSessionCount = sessionObj[campaignId]
         const totalSessionCount = sessionObj.tc
         // dnd
-        if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
+        if (campaignSessionCount === 'dnd' && !$ct.dismissSpamControl) {
           return false
         }
 
@@ -358,11 +357,12 @@ const _tr = (msg, {
       if (doCampHouseKeeping(targetingMsgJson) === false) {
         return
       }
-      if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
+      if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         const element = document.getElementById(divId)
         element.remove()
       }
-      if (document.getElementById(divId) != null) {
+      // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+      if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
         return
       }
       const msgDiv = document.createElement('div')
@@ -380,7 +380,7 @@ const _tr = (msg, {
 
     const divId = 'wizParDiv' + displayObj.layout
 
-    if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
+    if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
       const element = document.getElementById(divId)
       element.remove()
     }
@@ -701,13 +701,13 @@ const _tr = (msg, {
       targetingMsgJson = targetObj
     }
 
-    if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
+    if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
       const element = document.getElementById('intentPreview')
       element.remove()
       document.getElementById('intentOpacityDiv').remove()
     }
-
-    if (document.getElementById('intentPreview') != null) {
+    // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+    if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
       return
     }
     // dont show exit intent on tablet/mobile - only on desktop

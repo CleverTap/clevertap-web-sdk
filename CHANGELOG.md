@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.6] - 13 Sept, 2023
+- Fixes a bug related to Interstitial and ImageOnly campaign coexistance
+- Fixed a bug where dismiss spam control was not working for campaigns created with delay.
+
 ## [1.6.5] - 24 Aug, 2023
 - Fixes a bug related to sequence of message in Web Inbox
 - Adds the parameter for location.protocol in page request
