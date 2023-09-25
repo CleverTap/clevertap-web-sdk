@@ -4712,16 +4712,19 @@
         var _this9 = this;
 
         var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+        var previewMsgs = {};
 
         if (msgs.length > 0 && this.inbox) {
           this.isPreview = true;
           this.unviewedCounter = 0;
           msgs.forEach(function (m) {
-            m.id = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
-            _this9.unviewedMessages[m.id] = m;
+            var key = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
+            m.id = key;
+            previewMsgs[key] = m;
+            _this9.unviewedMessages[key] = m;
             _this9.unviewedCounter++;
           });
-          this.buildUIForMessages(msgs);
+          this.buildUIForMessages(previewMsgs);
           this.updateUnviewedBadgeCounter();
         }
       }

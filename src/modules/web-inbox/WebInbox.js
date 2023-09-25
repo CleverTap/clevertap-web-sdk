@@ -42,15 +42,18 @@ export class Inbox extends HTMLElement {
   }
 
   set incomingMessagesForPreview (msgs = []) {
+    const previewMsgs = {}
     if (msgs.length > 0 && this.inbox) {
       this.isPreview = true
       this.unviewedCounter = 0
       msgs.forEach((m) => {
-        m.id = `${m.wzrk_id.split('_')[0]}_${Date.now()}`
-        this.unviewedMessages[m.id] = m
+        const key = `${m.wzrk_id.split('_')[0]}_${Date.now()}`
+        m.id = key
+        previewMsgs[key] = m
+        this.unviewedMessages[key] = m
         this.unviewedCounter++
       })
-      this.buildUIForMessages(msgs)
+      this.buildUIForMessages(previewMsgs)
       this.updateUnviewedBadgeCounter()
     }
   }
