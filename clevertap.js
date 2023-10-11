@@ -3715,6 +3715,9 @@
         this.container = this.shadowRoot.getElementById('container');
         this.closeIcon = this.shadowRoot.getElementById('close');
         this.popup.addEventListener('load', this.updateImageAndContainerWidth());
+        new ResizeObserver(function () {
+          return _this2.handleResize(_this2.popup, _this2.container);
+        }).observe(this.popup);
         this.closeIcon.addEventListener('click', function () {
           document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
 
@@ -3749,6 +3752,12 @@
             });
           });
         }
+      }
+    }, {
+      key: "handleResize",
+      value: function handleResize(popup, container) {
+        var width = this.getRenderedImageWidth(popup);
+        container.style.setProperty('width', "".concat(width, "px"));
       }
     }, {
       key: "getImageOnlyPopupContent",

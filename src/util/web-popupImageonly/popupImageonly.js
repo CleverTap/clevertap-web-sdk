@@ -57,6 +57,7 @@ export class CTWebPopupImageOnly extends HTMLElement {
       this.closeIcon = this.shadowRoot.getElementById('close')
 
       this.popup.addEventListener('load', this.updateImageAndContainerWidth())
+      new ResizeObserver(() => this.handleResize(this.popup, this.container)).observe(this.popup)
 
       this.closeIcon.addEventListener('click', () => {
         document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
@@ -84,6 +85,11 @@ export class CTWebPopupImageOnly extends HTMLElement {
           window.clevertap.renderNotificationClicked({ msgId: this.msgId, pivotId: this.pivotId })
         })
       }
+    }
+
+    handleResize (popup, container) {
+      const width = this.getRenderedImageWidth(popup)
+      container.style.setProperty('width', `${width}px`)
     }
 
     getImageOnlyPopupContent () {
