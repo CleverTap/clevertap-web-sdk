@@ -15,6 +15,7 @@ export class CTWebPopupImageOnly extends HTMLElement {
     shadow = null
     popup = null
     container = null
+    resizeObserver = null
 
     get target () {
       return this._target || ''
@@ -57,9 +58,11 @@ export class CTWebPopupImageOnly extends HTMLElement {
       this.closeIcon = this.shadowRoot.getElementById('close')
 
       this.popup.addEventListener('load', this.updateImageAndContainerWidth())
-      new ResizeObserver(() => this.handleResize(this.popup, this.container)).observe(this.popup)
+      this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container))
+      this.resizeObserver.observe(this.popup)
 
       this.closeIcon.addEventListener('click', () => {
+        this.resizeObserver.unobserve(this.popup)
         document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
         this.remove()
         if (campaignId != null && campaignId !== '-1') {

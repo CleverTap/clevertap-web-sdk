@@ -3697,6 +3697,7 @@
       _this.shadow = null;
       _this.popup = null;
       _this.container = null;
+      _this.resizeObserver = null;
       _this.shadow = _this.attachShadow({
         mode: 'open'
       });
@@ -3715,10 +3716,13 @@
         this.container = this.shadowRoot.getElementById('container');
         this.closeIcon = this.shadowRoot.getElementById('close');
         this.popup.addEventListener('load', this.updateImageAndContainerWidth());
-        new ResizeObserver(function () {
+        this.resizeObserver = new ResizeObserver(function () {
           return _this2.handleResize(_this2.popup, _this2.container);
-        }).observe(this.popup);
+        });
+        this.resizeObserver.observe(this.popup);
         this.closeIcon.addEventListener('click', function () {
+          _this2.resizeObserver.unobserve(_this2.popup);
+
           document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
 
           _this2.remove();
