@@ -203,7 +203,6 @@ export default class NotificationHandler extends Array {
     let okCallback
     let rejectCallback
     let subscriptionCallback
-    let hidePoweredByCT
     let serviceWorkerPath
     let httpsPopupPath
     let httpsIframePath
@@ -223,7 +222,6 @@ export default class NotificationHandler extends Array {
         okCallback = notifObj.okCallback
         rejectCallback = notifObj.rejectCallback
         subscriptionCallback = notifObj.subscriptionCallback
-        hidePoweredByCT = notifObj.hidePoweredByCT
         serviceWorkerPath = notifObj.serviceWorkerPath
         httpsPopupPath = notifObj.httpsPopupPath
         httpsIframePath = notifObj.httpsIframePath
@@ -242,10 +240,6 @@ export default class NotificationHandler extends Array {
 
     if (skipDialog == null) {
       skipDialog = false
-    }
-
-    if (hidePoweredByCT == null) {
-      hidePoweredByCT = false
     }
 
     if (serviceWorkerPath == null) {
@@ -354,8 +348,7 @@ export default class NotificationHandler extends Array {
                   body: bodyText,
                   confirmButtonText: okButtonText,
                   confirmButtonColor: okButtonColor,
-                  rejectButtonText: rejectButtonText,
-                  hidePoweredByCT: hidePoweredByCT
+                  rejectButtonText: rejectButtonText
                 }, (enabled) => { // callback function
                   if (enabled) {
                     // the user accepted on the dialog box
@@ -384,8 +377,7 @@ export default class NotificationHandler extends Array {
           body: bodyText,
           confirmButtonText: okButtonText,
           confirmButtonColor: okButtonColor,
-          rejectButtonText: rejectButtonText,
-          hidePoweredByCT: hidePoweredByCT
+          rejectButtonText: rejectButtonText
         }, (enabled) => { // callback function
           if (enabled) {
             // the user accepted on the dialog box
