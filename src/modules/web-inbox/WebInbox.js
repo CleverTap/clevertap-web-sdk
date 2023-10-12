@@ -223,12 +223,6 @@ export class Inbox extends HTMLElement {
     this.emptyInboxMsg.innerText = 'All messages will be displayed here.'
     this.inboxCard.appendChild(this.emptyInboxMsg)
 
-    if (this.config.hidePoweredByCT === false) {
-      const poweredByText = this.createEl('img', 'poweredByCT')
-      poweredByText.src = 'https://d2r1yp2w7bby2u.cloudfront.net/js/PB_CT_new.png'
-      this.inbox.appendChild(poweredByText)
-    }
-
     // Intersection observer for notification viewed
     const options = {
       root: this.inboxCard,
@@ -497,7 +491,6 @@ export class Inbox extends HTMLElement {
   getInboxStyles () {
     const headerHeight = 36
     const categoriesHeight = this.config.categories.length ? 64 : 16
-    const hidePoweredByCTHeight = this.config.hidePoweredByCT === false ? 32 : 0
 
     const styles = {
       panelBackgroundColor: this.config.styles.panelBackgroundColor,
@@ -509,7 +502,7 @@ export class Inbox extends HTMLElement {
       categoriesTitleColor: this.config.styles.categories.titleColor,
       selectedCategoryTabColor: this.config.styles.categories.selectedTab.tabColor,
       selectedCategoryTitleColor: this.config.styles.categories.selectedTab.titleColor,
-      headerCategoryAndPoweredByCTHeight: headerHeight + categoriesHeight + hidePoweredByCTHeight
+      headerCategoryHeight: headerHeight + categoriesHeight
     }
     if (this.config.styles.categories.borderColor) {
       styles.categoriesBorderColor = this.config.styles.categories.borderColor
