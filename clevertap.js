@@ -915,7 +915,8 @@
     isPrivacyArrPushed: false,
     privacyArray: [],
     offline: false,
-    location: null // domain: window.location.hostname, url -> getHostName()
+    location: null,
+    dismissSpamControl: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -3688,6 +3689,7 @@
       _this.shadow = null;
       _this.popup = null;
       _this.container = null;
+      _this.resizeObserver = null;
       _this.shadow = _this.attachShadow({
         mode: 'open'
       });
@@ -3706,7 +3708,13 @@
         this.container = this.shadowRoot.getElementById('container');
         this.closeIcon = this.shadowRoot.getElementById('close');
         this.popup.addEventListener('load', this.updateImageAndContainerWidth());
+        this.resizeObserver = new ResizeObserver(function () {
+          return _this2.handleResize(_this2.popup, _this2.container);
+        });
+        this.resizeObserver.observe(this.popup);
         this.closeIcon.addEventListener('click', function () {
+          _this2.resizeObserver.unobserve(_this2.popup);
+
           document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
 
           _this2.remove();
@@ -3740,6 +3748,12 @@
             });
           });
         }
+      }
+    }, {
+      key: "handleResize",
+      value: function handleResize(popup, container) {
+        var width = this.getRenderedImageWidth(popup);
+        container.style.setProperty('width', "".concat(width, "px"));
       }
     }, {
       key: "getImageOnlyPopupContent",
@@ -4059,8 +4073,8 @@
         selectedCategoryTabColor = _ref2.selectedCategoryTabColor,
         selectedCategoryTitleColor = _ref2.selectedCategoryTitleColor,
         selectedCategoryBorderColor = _ref2.selectedCategoryBorderColor,
-        headerCategoryAndPoweredByCTHeight = _ref2.headerCategoryAndPoweredByCTHeight;
-    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n        }\n\n        #poweredByCT {\n          display: block;\n          height: 16px;\n          padding: 8px 0px;\n          margin: auto;\n        }\n  \n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryAndPoweredByCTHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
+        headerCategoryHeight = _ref2.headerCategoryHeight;
+    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n        }\n\n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
   };
 
   var Inbox = /*#__PURE__*/function (_HTMLElement) {
@@ -4338,14 +4352,7 @@
         this.inbox.appendChild(this.inboxCard);
         this.emptyInboxMsg = this.createEl('div', 'emptyInboxMsg');
         this.emptyInboxMsg.innerText = 'All messages will be displayed here.';
-        this.inboxCard.appendChild(this.emptyInboxMsg);
-
-        if (this.config.hidePoweredByCT === false) {
-          var poweredByText = this.createEl('img', 'poweredByCT');
-          poweredByText.src = 'https://d2r1yp2w7bby2u.cloudfront.net/js/PB_CT_new.png';
-          this.inbox.appendChild(poweredByText);
-        } // Intersection observer for notification viewed
-
+        this.inboxCard.appendChild(this.emptyInboxMsg); // Intersection observer for notification viewed
 
         var options = {
           root: this.inboxCard,
@@ -4455,22 +4462,37 @@
         this.inboxCard.scrollTop = 0;
         var maxMsgsInInbox = (_this$config$maxMsgsI = this.config.maxMsgsInInbox) !== null && _this$config$maxMsgsI !== void 0 ? _this$config$maxMsgsI : MAX_INBOX_MSG;
         var firstChild = this.inboxCard.firstChild;
+        var sortedMsgs = Object.values(messages).sort(function (a, b) {
+          return b.date - a.date;
+        }).map(function (m) {
+          return m.id;
+        });
 
-        for (var m in messages) {
-          var item = new Message(this.config, messages[m]);
-          item.setAttribute('id', messages[m].id);
-          item.setAttribute('pivot', messages[m].wzrk_pivot);
-          item.setAttribute('part', 'ct-inbox-message');
+        var _iterator = _createForOfIteratorHelper(sortedMsgs),
+            _step;
 
-          if (this.config.categories.length > 0) {
-            item.setAttribute('category', messages[m].tags[0] || '');
-            item.style.display = this.selectedCategory === 'All' || messages[m].category === this.selectedCategory ? 'block' : 'none';
-          } else {
-            item.style.display = 'block';
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done;) {
+            var m = _step.value;
+            var item = new Message(this.config, messages[m]);
+            item.setAttribute('id', messages[m].id);
+            item.setAttribute('pivot', messages[m].wzrk_pivot);
+            item.setAttribute('part', 'ct-inbox-message');
+
+            if (this.config.categories.length > 0) {
+              item.setAttribute('category', messages[m].tags[0] || '');
+              item.style.display = this.selectedCategory === 'All' || messages[m].category === this.selectedCategory ? 'block' : 'none';
+            } else {
+              item.style.display = 'block';
+            }
+
+            this.inboxCard.insertBefore(item, firstChild);
+            this.observer.observe(item);
           }
-
-          this.inboxCard.insertBefore(item, firstChild);
-          this.observer.observe(item);
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
         }
 
         var msgTotalCount = this.inboxCard.querySelectorAll('ct-inbox-message').length;
@@ -4632,7 +4654,6 @@
       value: function getInboxStyles() {
         var headerHeight = 36;
         var categoriesHeight = this.config.categories.length ? 64 : 16;
-        var hidePoweredByCTHeight = this.config.hidePoweredByCT === false ? 32 : 0;
         var styles = {
           panelBackgroundColor: this.config.styles.panelBackgroundColor,
           panelBorderColor: this.config.styles.panelBorderColor,
@@ -4643,7 +4664,7 @@
           categoriesTitleColor: this.config.styles.categories.titleColor,
           selectedCategoryTabColor: this.config.styles.categories.selectedTab.tabColor,
           selectedCategoryTitleColor: this.config.styles.categories.selectedTab.titleColor,
-          headerCategoryAndPoweredByCTHeight: headerHeight + categoriesHeight + hidePoweredByCTHeight
+          headerCategoryHeight: headerHeight + categoriesHeight
         };
 
         if (this.config.styles.categories.borderColor) {
@@ -4688,16 +4709,19 @@
         var _this9 = this;
 
         var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+        var previewMsgs = {};
 
         if (msgs.length > 0 && this.inbox) {
           this.isPreview = true;
           this.unviewedCounter = 0;
           msgs.forEach(function (m) {
-            m.id = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
-            _this9.unviewedMessages[m.id] = m;
+            var key = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
+            m.id = key;
+            previewMsgs[key] = m;
+            _this9.unviewedMessages[key] = m;
             _this9.unviewedCounter++;
           });
-          this.buildUIForMessages(msgs);
+          this.buildUIForMessages(previewMsgs);
           this.updateUnviewedBadgeCounter();
         }
       }
@@ -4958,8 +4982,7 @@
     var device = _ref.device,
         session = _ref.session,
         request = _ref.request,
-        logger = _ref.logger,
-        isWebPopUpSpamControlDisabled = _ref.isWebPopUpSpamControlDisabled;
+        logger = _ref.logger;
     var _device = device;
     var _session = session;
     var _request = request;
@@ -5075,7 +5098,7 @@
           var campaignSessionCount = sessionObj[campaignId];
           var totalSessionCount = sessionObj.tc; // dnd
 
-          if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
+          if (campaignSessionCount === 'dnd' && !$ct.dismissSpamControl) {
             return false;
           }
 
@@ -5336,12 +5359,13 @@
           return;
         }
 
-        if (isWebPopUpSpamControlDisabled && document.getElementById(_divId) != null) {
+        if ($ct.dismissSpamControl && document.getElementById(_divId) != null) {
           var element = document.getElementById(_divId);
           element.remove();
-        }
+        } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
 
-        if (document.getElementById(_divId) != null) {
+
+        if (document.getElementById(_divId) != null || document.getElementById('intentPreview') != null) {
           return;
         }
 
@@ -5363,7 +5387,7 @@
 
       var divId = 'wizParDiv' + displayObj.layout;
 
-      if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
+      if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         var _element = document.getElementById(divId);
 
         _element.remove();
@@ -5671,13 +5695,14 @@
         targetingMsgJson = targetObj;
       }
 
-      if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
+      if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
         var element = document.getElementById('intentPreview');
         element.remove();
         document.getElementById('intentOpacityDiv').remove();
-      }
+      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
 
-      if (document.getElementById('intentPreview') != null) {
+
+      if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
         return;
       } // dont show exit intent on tablet/mobile - only on desktop
 
@@ -7278,7 +7303,7 @@
 
   var _boundCheckPageChanged = _classPrivateFieldLooseKey("boundCheckPageChanged");
 
-  var _isWebPopUpSpamControlDisabled = _classPrivateFieldLooseKey("isWebPopUpSpamControlDisabled");
+  var _dismissSpamControl = _classPrivateFieldLooseKey("dismissSpamControl");
 
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
@@ -7313,11 +7338,12 @@
     }, {
       key: "dismissSpamControl",
       get: function get() {
-        return _classPrivateFieldLooseBase(this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled];
+        return _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl];
       },
       set: function set(value) {
-        var isWebPopUpSpamControlDisabled = value === true;
-        _classPrivateFieldLooseBase(this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled] = isWebPopUpSpamControlDisabled;
+        var dismissSpamControl = value === true;
+        _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
+        $ct.dismissSpamControl = dismissSpamControl;
       }
     }]);
 
@@ -7387,7 +7413,7 @@
         writable: true,
         value: _classPrivateFieldLooseBase(this, _checkPageChanged)[_checkPageChanged].bind(this)
       });
-      Object.defineProperty(this, _isWebPopUpSpamControlDisabled, {
+      Object.defineProperty(this, _dismissSpamControl, {
         writable: true,
         value: void 0
       });
@@ -7404,6 +7430,7 @@
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
       });
+      _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         isPersonalisationActive: this._isPersonalisationActive
@@ -7793,7 +7820,7 @@
             Latitude: lat,
             Longitude: lng
           };
-          this.sendMultiValueData({
+          this.sendLocationData({
             Latitude: lat,
             Longitude: lng
           });
@@ -7813,7 +7840,7 @@
           Latitude: lat,
           Longitude: lng
         };
-        this.sendMultiValueData({
+        this.sendLocationData({
           Latitude: lat,
           Longitude: lng
         });
@@ -7857,8 +7884,7 @@
           device: _classPrivateFieldLooseBase(_this, _device$3)[_device$3],
           session: _classPrivateFieldLooseBase(_this, _session$3)[_session$3],
           request: _classPrivateFieldLooseBase(_this, _request$6)[_request$6],
-          logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9],
-          isWebPopUpSpamControlDisabled: _classPrivateFieldLooseBase(_this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled]
+          logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]
         });
       };
 
@@ -8080,8 +8106,11 @@
           _classPrivateFieldLooseBase(this, _overrideDSyncFlag)[_overrideDSyncFlag](data);
         }
 
+        var proto = document.location.protocol;
+        proto = proto.replace(':', '');
         data.af = {
-          lib: 'web-sdk-v1.6.4'
+          lib: 'web-sdk-v1.6.6',
+          protocol: proto
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
@@ -8108,13 +8137,13 @@
         return StorageManager._isLocalStorageSupported() && this.enablePersonalization;
       }
     }, {
-      key: "sendMultiValueData",
+      key: "sendLocationData",
 
       /**
        *
        * @param {object} payload
        */
-      value: function sendMultiValueData(payload) {
+      value: function sendLocationData(payload) {
         // Send the updated value to LC
         var data = {};
         data.af = {};
