@@ -6431,6 +6431,10 @@
 
         dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
 
+        if (sessionStorage.hasOwnProperty('WZRK_D')) {
+          dataObject.debug = true;
+        }
+
         return dataObject;
       }
     }, {
@@ -6452,6 +6456,10 @@
         dataObject.s = obj.s; // session cookie
 
         dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
+
+        if (sessionStorage.hasOwnProperty('WZRK_D')) {
+          dataObject.debug = true;
+        }
 
         return dataObject;
       }
