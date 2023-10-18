@@ -206,10 +206,10 @@ export default class UserLoginHandler extends Array {
             if (sendOULFlag) {
               data[IS_OUL] = true
             }
-
+            const compressedData = compressData(JSON.stringify(data), this.#logger)
             let pageLoadUrl = this.#account.dataPostURL
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
+            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
             // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
             // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp

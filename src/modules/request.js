@@ -200,9 +200,10 @@ export default class RequestManager {
     data = this.addSystemDataToObject(data, undefined)
     this.addFlags(data)
     data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
     this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
   }

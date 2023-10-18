@@ -2762,10 +2762,12 @@
 
           _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data);
 
+          var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
+
           var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
 
           pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]));
+          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
 
           _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
         }
@@ -2942,10 +2944,12 @@
 
         _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data);
 
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
+
         var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]));
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
 
         _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       }
@@ -3003,10 +3007,12 @@
 
             _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data);
 
+            var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
+
             var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
 
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]));
+            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
 
             _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
           }
@@ -3304,10 +3310,12 @@
               data[IS_OUL] = true;
             }
 
+            var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]);
+
             var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostURL;
 
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$4)[_logger$4])); // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
+            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData); // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
             // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
             // stored in the cache and replace it with the response arp.
 
@@ -6551,11 +6559,12 @@
         data = this.addSystemDataToObject(data, undefined);
         this.addFlags(data);
         data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
 
         var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]));
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
         this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       }
     }]);
@@ -6702,11 +6711,12 @@
         data.type = 'profile';
         data.profile = profileObj;
         data = _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
 
         var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]));
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false');
 
         _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
@@ -8142,10 +8152,12 @@
 
         _classPrivateFieldLooseBase(this, _request$6)[_request$6].addFlags(data);
 
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]);
+
         var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
 
         _classPrivateFieldLooseBase(this, _request$6)[_request$6].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       } // offline mode

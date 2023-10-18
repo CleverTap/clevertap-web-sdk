@@ -105,10 +105,11 @@ export default class ProfileHandler extends Array {
             data = this.#request.addSystemDataToObject(data, undefined)
 
             this.#request.addFlags(data)
+            const compressedData = compressData(JSON.stringify(data), this.#logger)
 
             let pageLoadUrl = this.#account.dataPostURL
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
+            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
             this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
           }
@@ -156,9 +157,10 @@ export default class ProfileHandler extends Array {
       data = this.#request.addSystemDataToProfileObject(data, undefined)
 
       this.#request.addFlags(data)
+      const compressedData = compressData(JSON.stringify(data), this.#logger)
       let pageLoadUrl = this.#account.dataPostURL
       pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
       this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
     }
@@ -300,9 +302,10 @@ export default class ProfileHandler extends Array {
     data.profile = profileObj
     data = this.#request.addSystemDataToProfileObject(data, undefined)
     this.#request.addFlags(data)
+    const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
   }
