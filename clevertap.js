@@ -3697,6 +3697,7 @@
       _this.shadow = null;
       _this.popup = null;
       _this.container = null;
+      _this.resizeObserver = null;
       _this.shadow = _this.attachShadow({
         mode: 'open'
       });
@@ -3715,7 +3716,13 @@
         this.container = this.shadowRoot.getElementById('container');
         this.closeIcon = this.shadowRoot.getElementById('close');
         this.popup.addEventListener('load', this.updateImageAndContainerWidth());
+        this.resizeObserver = new ResizeObserver(function () {
+          return _this2.handleResize(_this2.popup, _this2.container);
+        });
+        this.resizeObserver.observe(this.popup);
         this.closeIcon.addEventListener('click', function () {
+          _this2.resizeObserver.unobserve(_this2.popup);
+
           document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
 
           _this2.remove();
@@ -3749,6 +3756,12 @@
             });
           });
         }
+      }
+    }, {
+      key: "handleResize",
+      value: function handleResize(popup, container) {
+        var width = this.getRenderedImageWidth(popup);
+        container.style.setProperty('width', "".concat(width, "px"));
       }
     }, {
       key: "getImageOnlyPopupContent",
