@@ -5728,7 +5728,9 @@
       var legacy = false;
       var opacityDiv = document.createElement('div');
       opacityDiv.id = 'intentOpacityDiv';
-      opacityDiv.setAttribute('style', 'position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: rgba(0,0,0,0.7);');
+      var opacity = targetingMsgJson.display.opacity || 0.7;
+      var rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
+      opacityDiv.setAttribute('style', "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
       document.body.appendChild(opacityDiv);
       var msgDiv = document.createElement('div');
       msgDiv.id = 'intentPreview';
@@ -7071,7 +7073,6 @@
     var okCallback;
     var rejectCallback;
     var subscriptionCallback;
-    var hidePoweredByCT;
     var serviceWorkerPath;
     var httpsPopupPath;
     var httpsIframePath;
@@ -7091,7 +7092,6 @@
         okCallback = notifObj.okCallback;
         rejectCallback = notifObj.rejectCallback;
         subscriptionCallback = notifObj.subscriptionCallback;
-        hidePoweredByCT = notifObj.hidePoweredByCT;
         serviceWorkerPath = notifObj.serviceWorkerPath;
         httpsPopupPath = notifObj.httpsPopupPath;
         httpsIframePath = notifObj.httpsIframePath;
@@ -7110,10 +7110,6 @@
 
     if (skipDialog == null) {
       skipDialog = false;
-    }
-
-    if (hidePoweredByCT == null) {
-      hidePoweredByCT = false;
     }
 
     if (serviceWorkerPath == null) {
@@ -7237,8 +7233,7 @@
                   body: bodyText,
                   confirmButtonText: okButtonText,
                   confirmButtonColor: okButtonColor,
-                  rejectButtonText: rejectButtonText,
-                  hidePoweredByCT: hidePoweredByCT
+                  rejectButtonText: rejectButtonText
                 }, function (enabled) {
                   // callback function
                   if (enabled) {
@@ -7270,8 +7265,7 @@
           body: bodyText,
           confirmButtonText: okButtonText,
           confirmButtonColor: okButtonColor,
-          rejectButtonText: rejectButtonText,
-          hidePoweredByCT: hidePoweredByCT
+          rejectButtonText: rejectButtonText
         }, function (enabled) {
           // callback function
           if (enabled) {
