@@ -128,7 +128,7 @@ export const inboxContainerStyles = ({
   selectedCategoryTabColor,
   selectedCategoryTitleColor,
   selectedCategoryBorderColor,
-  headerCategoryAndPoweredByCTHeight
+  headerCategoryHeight
 }) => {
   return `
       <style id="webInboxStyles">
@@ -258,13 +258,6 @@ export const inboxContainerStyles = ({
           margin-top: 16px;
         }
 
-        #poweredByCT {
-          display: block;
-          height: 16px;
-          padding: 8px 0px;
-          margin: auto;
-        }
-  
         @media only screen and (min-width: 420px) {
           #inbox {
             width: var(--inbox-width, 392px);
@@ -277,7 +270,7 @@ export const inboxContainerStyles = ({
           }
   
           #inboxCard {
-            height: calc(var(--inbox-height, 546px) - ${headerCategoryAndPoweredByCTHeight}px); 
+            height: calc(var(--inbox-height, 546px) - ${headerCategoryHeight}px); 
           }
   
         }

@@ -725,7 +725,9 @@ const _tr = (msg, {
     let legacy = false
     const opacityDiv = document.createElement('div')
     opacityDiv.id = 'intentOpacityDiv'
-    opacityDiv.setAttribute('style', 'position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: rgba(0,0,0,0.7);')
+    const opacity = targetingMsgJson.display.opacity || 0.7
+    const rgbaColor = `rgba(0,0,0,${opacity})`
+    opacityDiv.setAttribute('style', `position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ${rgbaColor};`)
     document.body.appendChild(opacityDiv)
 
     const msgDiv = document.createElement('div')
