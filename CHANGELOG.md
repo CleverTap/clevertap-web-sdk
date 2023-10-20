@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.7] - 20 Oct, 2023
+- Fixes a bug related to Web Inbox preview.
+- Fixed a bug related to Web Popup ImageOnly resizing.
+- Adds the debug flag in requests when log level is 3 for Integration Debugger.
+- Adds handling for Web Popup Drag and Drop template.
+
 ## [1.6.6] - 13 Sept, 2023
 - Fixes a bug related to Interstitial and ImageOnly campaign coexistance
 - Fixed a bug where dismiss spam control was not working for campaigns created with delay.
