@@ -13,7 +13,7 @@ import {
   IS_OUL,
   categoryLongKey,
   CAMP_COOKIE_G,
-  GLOBAL_UNSUBSCRIBE
+  GLOBAL
 } from './constants'
 import {
   GENDER_ERROR,
@@ -550,7 +550,7 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
     }
 
     if (pageType) {
-      $ct.globalUnsubscribe = pageType === GLOBAL_UNSUBSCRIBE
+      $ct.globalUnsubscribe = pageType === GLOBAL
       url = addToURL(url, 'page_type', pageType)
     }
     RequestDispatcher.fireRequest(url)

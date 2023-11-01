@@ -462,7 +462,7 @@
   var PR_COOKIE = 'WZRK_PR';
   var ARP_COOKIE = 'WZRK_ARP';
   var LCOOKIE_NAME = 'WZRK_L';
-  var GLOBAL = 'global';
+  var GLOBAL = 'global'; // used for email unsubscribe also
   var DISPLAY = 'display';
   var WEBPUSH_LS_KEY = 'WZRK_WPR';
   var OPTOUT_KEY = 'optOut';
@@ -501,7 +501,6 @@
   var WEBINBOX = 'WZRK_INBOX';
   var MAX_INBOX_MSG = 15;
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
-  var GLOBAL_UNSUBSCRIBE = 'global';
 
   var isString = function isString(input) {
     return typeof input === 'string' || input instanceof String;
@@ -2621,7 +2620,7 @@
       }
 
       if (pageType) {
-        $ct.globalUnsubscribe = pageType === GLOBAL_UNSUBSCRIBE;
+        $ct.globalUnsubscribe = pageType === GLOBAL;
         url = addToURL(url, 'page_type', pageType);
       }
 
