@@ -501,6 +501,7 @@
   var WEBINBOX = 'WZRK_INBOX';
   var MAX_INBOX_MSG = 15;
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
+  var GLOBAL_UNSUBSCRIBE = 'global';
 
   var isString = function isString(input) {
     return typeof input === 'string' || input instanceof String;
@@ -916,7 +917,8 @@
     privacyArray: [],
     offline: false,
     location: null,
-    dismissSpamControl: false // domain: window.location.hostname, url -> getHostName()
+    dismissSpamControl: false,
+    globalUnsubscribe: true // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -2585,6 +2587,7 @@
 
     var encodedEmailId = urlParamsAsIs.e;
     var encodedProfileProps = urlParamsAsIs.p;
+    var pageType = urlParamsAsIs.page_type;
 
     if (typeof encodedEmailId !== 'undefined') {
       var data = {};
@@ -2615,6 +2618,11 @@
 
       if (subscription !== '-1') {
         url = addToURL(url, 'sub', subscription);
+      }
+
+      if (pageType) {
+        $ct.globalUnsubscribe = pageType === GLOBAL_UNSUBSCRIBE;
+        url = addToURL(url, 'page_type', pageType);
       }
 
       RequestDispatcher.fireRequest(url);
@@ -7943,6 +7951,14 @@
         api.setSubscriptionGroups(updatedGroups);
 
         _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
+      };
+
+      api.isGlobalUnsubscribe = function () {
+        return $ct.globalUnsubscribe;
+      };
+
+      api.setIsGlobalUnsubscribe = function (value) {
+        $ct.globalUnsubscribe = value;
       };
 
       api.setUpdatedCategoryLong = function (profile) {

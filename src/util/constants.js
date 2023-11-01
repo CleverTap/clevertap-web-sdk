@@ -61,3 +61,5 @@ export const SYSTEM_EVENTS = [
   NOTIFICATION_VIEWED,
   NOTIFICATION_CLICKED
 ]
+
+export const GLOBAL_UNSUBSCRIBE = 'global'
