@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.8] - 9 Nov, 2023
+- Adds handling for email unsubscribe.
+
 ## [1.6.7] - 20 Oct, 2023
 - Fixes a bug related to Web Inbox preview.
 - Fixed a bug related to Web Popup ImageOnly resizing.
