@@ -528,6 +528,12 @@ export default class CleverTap {
       api.setSubscriptionGroups(updatedGroups)
       _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
     }
+    api.isGlobalUnsubscribe = () => {
+      return $ct.globalUnsubscribe
+    }
+    api.setIsGlobalUnsubscribe = (value) => {
+      $ct.globalUnsubscribe = value
+    }
     api.setUpdatedCategoryLong = (profile) => {
       if (profile[categoryLongKey]) {
         $ct.updatedCategoryLong = profile[categoryLongKey]

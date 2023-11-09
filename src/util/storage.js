@@ -262,7 +262,8 @@ export const $ct = {
   privacyArray: [],
   offline: false,
   location: null,
-  dismissSpamControl: false
+  dismissSpamControl: false,
+  globalUnsubscribe: true
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }
