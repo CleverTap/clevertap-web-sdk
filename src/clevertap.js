@@ -687,9 +687,6 @@ export default class CleverTap {
     if (parseInt(data.pg) === 1) {
       this.#overrideDSyncFlag(data)
     }
-    let proto = document.location.protocol
-    proto = proto.replace(':', '')
-    data.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto }
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 

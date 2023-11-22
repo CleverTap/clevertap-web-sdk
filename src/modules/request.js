@@ -72,6 +72,9 @@ export default class RequestManager {
     const obj = this.#session.getSessionCookieObject()
     dataObject.s = obj.s // session cookie
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
+    let proto = document.location.protocol
+    proto = proto.replace(':', '')
+    dataObject.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto } // app fields
     if (sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
 
     return dataObject
@@ -92,6 +95,9 @@ export default class RequestManager {
     const obj = this.#session.getSessionCookieObject()
     dataObject.s = obj.s // session cookie
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
+    let proto = document.location.protocol
+    proto = proto.replace(':', '')
+    dataObject.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto } // app fields
     if (sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
 
     return dataObject

@@ -6440,6 +6440,13 @@
 
         dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
 
+        var proto = document.location.protocol;
+        proto = proto.replace(':', '');
+        dataObject.af = {
+          lib: 'web-sdk-v1.6.8',
+          protocol: proto
+        }; // app fields
+
         if (sessionStorage.hasOwnProperty('WZRK_D')) {
           dataObject.debug = true;
         }
@@ -6465,6 +6472,13 @@
         dataObject.s = obj.s; // session cookie
 
         dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
+
+        var proto = document.location.protocol;
+        proto = proto.replace(':', '');
+        dataObject.af = {
+          lib: 'web-sdk-v1.6.8',
+          protocol: proto
+        }; // app fields
 
         if (sessionStorage.hasOwnProperty('WZRK_D')) {
           dataObject.debug = true;
@@ -8125,12 +8139,6 @@
           _classPrivateFieldLooseBase(this, _overrideDSyncFlag)[_overrideDSyncFlag](data);
         }
 
-        var proto = document.location.protocol;
-        proto = proto.replace(':', '');
-        data.af = {
-          lib: 'web-sdk-v1.6.8',
-          protocol: proto
-        };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 
