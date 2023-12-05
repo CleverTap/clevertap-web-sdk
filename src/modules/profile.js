@@ -200,26 +200,30 @@ export default class ProfileHandler extends Array {
    * Adds array or single value against a key/property in profile object
    */
   _handleMultiValueAdd (propKey, propVal, command) {
+    // Initialize array
     var array = []
+
+    // Check if globalProfileMap is null, initialize if needed
     if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) ?? {}
+      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {}
     }
-    // if the value to be set is either string or number
+
+    // Check if the value to be set is either string or number
     if (typeof propVal === 'string' || typeof propVal === 'number') {
       if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
         array = $ct.globalProfileMap[propKey]
-        typeof propVal === 'number' ? array.push(propVal) : array.push(propVal.toLowerCase())
+        // Push the value to the array in a more concise way
+        array.push(typeof propVal === 'number' ? propVal : propVal.toLowerCase())
       } else {
         $ct.globalProfileMap[propKey] = propVal
       }
-      // if propVal is an array
     } else {
+      // Check if propVal is an array
       if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-        array = $ct.globalProfileMap[propKey]
+        array = Array.isArray($ct.globalProfileMap[propKey]) ? $ct.globalProfileMap[propKey] : [$ct.globalProfileMap[propKey]]
       }
-      /**
-       * checks for case sensitive inputs and filters the same ones
-       */
+
+      // Check for case-sensitive inputs and filter the same ones
       for (var i = 0; i < propVal.length; i++) {
         if (typeof propVal[i] === 'number' && !array.includes(propVal[i])) {
           array.push(propVal[i])
@@ -228,12 +232,18 @@ export default class ProfileHandler extends Array {
         } else if ((typeof propVal[i] === 'number' && array.includes(propVal[i])) || (typeof propVal[i] === 'string' && array.includes(propVal[i].toLowerCase()))) {
           console.error('Values already included')
         } else {
-          console.error('array supports only string or number type values')
+          console.error('Array supports only string or number type values')
         }
       }
+
+      // Update globalProfileMap with the array
       $ct.globalProfileMap[propKey] = array
     }
+
+    // Save to local storage or cookie
     StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+
+    // Call the sendMultiValueData function
     this.sendMultiValueData(propKey, propVal, command)
   }
 

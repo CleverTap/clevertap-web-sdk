@@ -917,7 +917,8 @@
     offline: false,
     location: null,
     dismissSpamControl: false,
-    globalUnsubscribe: true // domain: window.location.hostname, url -> getHostName()
+    globalUnsubscribe: true,
+    flutterVersion: null // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -2824,30 +2825,27 @@
     }, {
       key: "_handleMultiValueAdd",
       value: function _handleMultiValueAdd(propKey, propVal, command) {
-        var array = [];
+        // Initialize array
+        var array = []; // Check if globalProfileMap is null, initialize if needed
 
         if ($ct.globalProfileMap == null) {
-          var _StorageManager$readF2;
-
-          $ct.globalProfileMap = (_StorageManager$readF2 = StorageManager.readFromLSorCookie(PR_COOKIE)) !== null && _StorageManager$readF2 !== void 0 ? _StorageManager$readF2 : {};
-        } // if the value to be set is either string or number
+          $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
+        } // Check if the value to be set is either string or number
 
 
         if (typeof propVal === 'string' || typeof propVal === 'number') {
           if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-            array = $ct.globalProfileMap[propKey];
-            typeof propVal === 'number' ? array.push(propVal) : array.push(propVal.toLowerCase());
+            array = $ct.globalProfileMap[propKey]; // Push the value to the array in a more concise way
+
+            array.push(typeof propVal === 'number' ? propVal : propVal.toLowerCase());
           } else {
             $ct.globalProfileMap[propKey] = propVal;
-          } // if propVal is an array
-
-        } else {
-          if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-            array = $ct.globalProfileMap[propKey];
           }
-          /**
-           * checks for case sensitive inputs and filters the same ones
-           */
+        } else {
+          // Check if propVal is an array
+          if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
+            array = Array.isArray($ct.globalProfileMap[propKey]) ? $ct.globalProfileMap[propKey] : [$ct.globalProfileMap[propKey]];
+          } // Check for case-sensitive inputs and filter the same ones
 
 
           for (var i = 0; i < propVal.length; i++) {
@@ -2858,14 +2856,17 @@
             } else if (typeof propVal[i] === 'number' && array.includes(propVal[i]) || typeof propVal[i] === 'string' && array.includes(propVal[i].toLowerCase())) {
               console.error('Values already included');
             } else {
-              console.error('array supports only string or number type values');
+              console.error('Array supports only string or number type values');
             }
-          }
+          } // Update globalProfileMap with the array
+
 
           $ct.globalProfileMap[propKey] = array;
-        }
+        } // Save to local storage or cookie
 
-        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Call the sendMultiValueData function
+
         this.sendMultiValueData(propKey, propVal, command);
       }
       /**
@@ -4104,6 +4105,7 @@
 
       _this = _super.call(this);
       _this.isInboxOpen = false;
+      _this.isInboxFromFlutter = false;
       _this.selectedCategory = null;
       _this.unviewedMessages = {};
       _this.unviewedCounter = 0;
@@ -4147,7 +4149,11 @@
               }
             }
           } else if (_this.inboxSelector.contains(e.target) || _this.isInboxOpen) {
-            _this.toggleInbox(e);
+            if (_this.isInboxFromFlutter) {
+              _this.isInboxFromFlutter = false;
+            } else {
+              _this.toggleInbox(e);
+            }
           }
         };
       }();
@@ -4595,6 +4601,7 @@
       key: "toggleInbox",
       value: function toggleInbox(e) {
         this.isInboxOpen = !this.isInboxOpen;
+        this.isInboxFromFlutter = !!(e === null || e === void 0 ? void 0 : e.rect);
 
         if (this.isInboxOpen) {
           this.inboxCard.scrollTop = 0;
@@ -4871,7 +4878,7 @@
     var verticalScroll = document.scrollingElement.scrollTop;
     var windowWidth = window.innerWidth + horizontalScroll;
     var windowHeight = window.innerHeight + verticalScroll;
-    var selectorRect = e.target.getBoundingClientRect();
+    var selectorRect = e.rect || e.target.getBoundingClientRect();
     var selectorX = selectorRect.x + horizontalScroll;
     var selectorY = selectorRect.y + verticalScroll;
     var selectorLeft = selectorRect.left + horizontalScroll;
@@ -7522,6 +7529,10 @@
 
       this.getSCDomain = function () {
         return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
+      };
+
+      this.setLibrary = function (libName, libVersion) {
+        $ct.flutterVersion = _defineProperty({}, libName, libVersion);
       }; // Set the Signed Call sdk version and fire request
 
 
@@ -7626,9 +7637,13 @@
           }
 
           messages[messageId].viewed = 1;
-          var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1;
-          document.getElementById('unviewedBadge').innerText = counter;
-          document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none';
+
+          if (document.getElementById('unviewedBadge')) {
+            var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1;
+            document.getElementById('unviewedBadge').innerText = counter;
+            document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none';
+          }
+
           window.clevertap.renderNotificationViewed({
             msgId: messages[messageId].wzrk_id,
             pivotId: messages[messageId].pivotId
@@ -7638,6 +7653,16 @@
           saveInboxMessages(messages);
         } else {
           _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No message available for message Id ' + messageId);
+        }
+      };
+      /* Mark Message as Read. messageIds should be a an array of string */
+
+
+      this.markReadInboxMessagesForIds = function (messageIds) {
+        if (Array.isArray(messageIds)) {
+          for (var id = 0; id < messageIds.length; id++) {
+            _this.markReadInboxMessage(messageIds[id]);
+          }
         }
       };
       /* Mark all messages as read
@@ -7673,6 +7698,12 @@
         } else {
           _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('All messages are already read');
         }
+      };
+
+      this.toggleInbox = function (e) {
+        var _$ct$inbox;
+
+        return (_$ct$inbox = $ct.inbox) === null || _$ct$inbox === void 0 ? void 0 : _$ct$inbox.toggleInbox(e);
       }; // method for notification viewed
 
 
@@ -8127,10 +8158,10 @@
 
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
-        data.af = {
+        data.af = _objectSpread2({
           lib: 'web-sdk-v1.6.8',
           protocol: proto
-        };
+        }, $ct.flutterVersion);
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 
