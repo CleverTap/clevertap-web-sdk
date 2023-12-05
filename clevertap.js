@@ -5410,8 +5410,11 @@
 
       if (document.getElementById(divId) != null) {
         return;
-      }
+      } // Dispatch event for popup close
 
+
+      var closeCampaign = new Event('CT_close_campaign');
+      document.dispatchEvent(closeCampaign);
       $ct.campaignDivMap[campaignId] = divId;
       var isBanner = displayObj.layout === 2;
       var msgDiv = document.createElement('div');
@@ -5728,8 +5731,11 @@
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
-      }
+      } // Dispatch event for interstitial/exit intent close
 
+
+      var closeCampaign = new Event('CT_close_campaign');
+      document.dispatchEvent(closeCampaign);
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       $ct.campaignDivMap[campaignId] = 'intentPreview';
       var legacy = false;
