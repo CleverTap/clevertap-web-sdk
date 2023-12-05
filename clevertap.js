@@ -5410,11 +5410,8 @@
 
       if (document.getElementById(divId) != null) {
         return;
-      } // Dispatch event for popup close
+      }
 
-
-      var closeCampaign = new Event('CT_close_campaign');
-      document.dispatchEvent(closeCampaign);
       $ct.campaignDivMap[campaignId] = divId;
       var isBanner = displayObj.layout === 2;
       var msgDiv = document.createElement('div');
@@ -5511,7 +5508,10 @@
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe);
       var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      var doc = ifrm.document;
+      var doc = ifrm.document; // Dispatch event for popup close
+
+      var closeCampaign = new Event('CT_close_campaign');
+      document.dispatchEvent(closeCampaign);
       doc.open();
       doc.write(html);
 
@@ -5731,11 +5731,8 @@
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
-      } // Dispatch event for interstitial/exit intent close
+      }
 
-
-      var closeCampaign = new Event('CT_close_campaign');
-      document.dispatchEvent(closeCampaign);
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       $ct.campaignDivMap[campaignId] = 'intentPreview';
       var legacy = false;
@@ -5815,7 +5812,10 @@
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe);
       var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      var doc = ifrm.document;
+      var doc = ifrm.document; // Dispatch event for interstitial/exit intent close
+
+      var closeCampaign = new Event('CT_close_campaign');
+      document.dispatchEvent(closeCampaign);
       doc.open();
       doc.write(html);
 

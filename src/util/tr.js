@@ -387,9 +387,6 @@ const _tr = (msg, {
     if (document.getElementById(divId) != null) {
       return
     }
-    // Dispatch event for popup close
-    const closeCampaign = new Event('CT_close_campaign')
-    document.dispatchEvent(closeCampaign)
 
     $ct.campaignDivMap[campaignId] = divId
     const isBanner = displayObj.layout === 2
@@ -504,6 +501,10 @@ const _tr = (msg, {
     msgDiv.appendChild(iframe)
     const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
     const doc = ifrm.document
+
+    // Dispatch event for popup close
+    const closeCampaign = new Event('CT_close_campaign')
+    document.dispatchEvent(closeCampaign)
 
     doc.open()
     doc.write(html)
@@ -724,9 +725,6 @@ const _tr = (msg, {
     if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
-    // Dispatch event for interstitial/exit intent close
-    const closeCampaign = new Event('CT_close_campaign')
-    document.dispatchEvent(closeCampaign)
 
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     $ct.campaignDivMap[campaignId] = 'intentPreview'
@@ -819,6 +817,10 @@ const _tr = (msg, {
     msgDiv.appendChild(iframe)
     const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
     const doc = ifrm.document
+
+    // Dispatch event for interstitial/exit intent close
+    const closeCampaign = new Event('CT_close_campaign')
+    document.dispatchEvent(closeCampaign)
 
     doc.open()
     doc.write(html)
