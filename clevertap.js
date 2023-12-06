@@ -8166,7 +8166,7 @@
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
         data.af = _objectSpread2({
-          lib: 'web-sdk-v1.6.8',
+          lib: 'web-sdk-v1.6.9',
           protocol: proto
         }, $ct.flutterVersion);
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
