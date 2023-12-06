@@ -5508,9 +5508,9 @@
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe);
       var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      var doc = ifrm.document; // Dispatch event for popup close
+      var doc = ifrm.document; // Dispatch event for popup box/banner close
 
-      var closeCampaign = new Event('CT_close_campaign');
+      var closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
       doc.open();
       doc.write(html);
@@ -5814,7 +5814,7 @@
       var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
       var doc = ifrm.document; // Dispatch event for interstitial/exit intent close
 
-      var closeCampaign = new Event('CT_close_campaign');
+      var closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
       doc.open();
       doc.write(html);

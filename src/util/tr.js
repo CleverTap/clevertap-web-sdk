@@ -502,8 +502,8 @@ const _tr = (msg, {
     const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
     const doc = ifrm.document
 
-    // Dispatch event for popup close
-    const closeCampaign = new Event('CT_close_campaign')
+    // Dispatch event for popup box/banner close
+    const closeCampaign = new Event('CT_campaign_rendered')
     document.dispatchEvent(closeCampaign)
 
     doc.open()
@@ -819,7 +819,7 @@ const _tr = (msg, {
     const doc = ifrm.document
 
     // Dispatch event for interstitial/exit intent close
-    const closeCampaign = new Event('CT_close_campaign')
+    const closeCampaign = new Event('CT_campaign_rendered')
     document.dispatchEvent(closeCampaign)
 
     doc.open()
