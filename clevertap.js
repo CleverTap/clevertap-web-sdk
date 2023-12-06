@@ -4876,8 +4876,9 @@
     var selectorY = selectorRect.y + verticalScroll;
     var selectorLeft = selectorRect.left + horizontalScroll;
     var selectorRight = selectorRect.right + horizontalScroll;
-    var selectorTop = selectorRect.top + verticalScroll;
-    var selectorBottom = selectorRect.bottom + verticalScroll;
+    var selectorTop = selectorRect.top + verticalScroll; // const selectorBottom = selectorRect.bottom + verticalScroll
+
+    var selectorBottom = selectorRect.bottom;
     var selectorHeight = selectorRect.height;
     var selectorWidth = selectorRect.width;
     var selectorCenter = {
