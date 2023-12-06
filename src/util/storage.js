@@ -263,7 +263,8 @@ export const $ct = {
   offline: false,
   location: null,
   dismissSpamControl: false,
-  globalUnsubscribe: true
+  globalUnsubscribe: true,
+  flutterVersion: null
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }
