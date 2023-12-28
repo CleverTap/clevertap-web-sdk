@@ -59,6 +59,10 @@ export default class Account {
     }
   }
 
+  get dataPostPEURL () {
+    return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/defineVars`
+  }
+
   get dataPostURL () {
     return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/a?t=96`
   }

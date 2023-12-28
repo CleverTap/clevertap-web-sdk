@@ -6,7 +6,8 @@ export const logLevels = {
   DISABLE: 0,
   ERROR: 1,
   INFO: 2,
-  DEBUG: 3
+  DEBUG: 3,
+  ENABLE_PE: 4
 }
 
 export class Logger {

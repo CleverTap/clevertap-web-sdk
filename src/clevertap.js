@@ -37,6 +37,8 @@ import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
+import { Variable } from './modules/variables/variable'
+import VariableStore from './modules/variables/variableStore'
 
 export default class CleverTap {
   #logger
@@ -46,6 +48,7 @@ export default class CleverTap {
   #session
   #account
   #request
+  #variableStore
   #isSpa
   #previousUrl
   #boundCheckPageChanged = this.#checkPageChanged.bind(this)
@@ -131,6 +134,13 @@ export default class CleverTap {
       request: this.#request,
       account: this.#account
     }, clevertap.notifications)
+
+    this.#variableStore = new VariableStore({
+      logger: this.#logger,
+      request: this.#request,
+      account: this.#account,
+      event: this.event
+    })
 
     this.#api = new CleverTapAPI({
       logger: this.#logger,
@@ -790,5 +800,17 @@ export default class CleverTap {
     if (!arg) {
       this.#request.processBackupEvents()
     }
+  }
+
+  defineVariable (name, defaultValue) {
+    return Variable.define(name, defaultValue, this.#variableStore)
+  }
+
+  async syncVariables (onSyncSuccess, onSyncFailure) {
+    return this.#variableStore.syncVariables(onSyncSuccess, onSyncFailure)
+  }
+
+  async fetchVariables (onFetchSuccess, onFetchFailure) {
+    return this.#variableStore.fetchVariables(onFetchSuccess, onFetchFailure)
   }
 }

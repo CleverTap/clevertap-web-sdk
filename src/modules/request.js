@@ -238,4 +238,22 @@ export default class RequestManager {
       StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap)
     }
   }
+
+  async post (url, body) {
+    // todo, retries, cors, remove no-cors
+    try {
+      const r = await fetch(url, {
+        method: 'post',
+        headers: { 'Content-Type': 'application/json' },
+        body: body,
+        mode: 'no-cors'
+      })
+      const d = await r.json()
+      this.#logger.debug('Sync data successful', d)
+      return d
+    } catch (e) {
+      this.#logger.debug('Error in syncing variables', e)
+      throw e
+    }
+  }
 }
