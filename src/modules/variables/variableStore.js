@@ -1,5 +1,5 @@
-import { $ct } from '../../util/storage'
-
+import { VARIABLES } from '../../util/constants'
+import { StorageManager, $ct } from '../../util/storage'
 class VariableStore {
   #logger
   #request
@@ -8,11 +8,13 @@ class VariableStore {
 
   constructor ({ logger, request, account, event }) {
     this.variables = {}
+    this.remoteVariables = {}
     $ct.variableStore = this
     this.#logger = logger
     this.#account = account
     this.#request = request
     this.event = event
+    this.valuesFromClient = {}
   }
 
   registerVariable (varInstance) {
@@ -26,7 +28,7 @@ class VariableStore {
   }
 
   hasVarsRequestCompleted () {
-    return false
+    return true
   }
 
   async syncVariables (onSyncSuccess, onSyncFailure) {
@@ -63,15 +65,10 @@ class VariableStore {
   }
 
   async fetchVariables (onFetchComplete, onFetchFailure) {
-    // setTimeout(() => {
-    //   const name = 'love'
-    //   this.variables[name].update(20)
-    //   console.log('syncVariables', this.variables)
-    //   if (onFetchComplete) {
-    //     onFetchComplete()
-    //   }
-    // }, 2000)
-    this.event.push('wzrk_fetch', {})
+    this.event.push('wzrk_fetch', { t: 4 })
+    /* Todo: Save the received vars data in local storage
+        merge the received vars with the defined vars
+    */
 
     if (onFetchComplete) {
       onFetchComplete()
@@ -80,6 +77,19 @@ class VariableStore {
       onFetchFailure()
     }
     return null
+  }
+
+  mergeVariables (vars) {
+    // Merge the list with the
+    console.log('msg vars is ', vars)
+    StorageManager.saveToLSorCookie(VARIABLES, vars)
+    this.remoteVariables = vars
+
+    for (const name in this.variables) {
+      if (vars.hasOwnProperty(name)) {
+        this.variables[name].update(vars[name])
+      }
+    }
   }
 }
 

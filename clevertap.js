@@ -541,6 +541,7 @@
   var WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG';
   var WEBINBOX = 'WZRK_INBOX';
   var MAX_INBOX_MSG = 15;
+  var VARIABLES = 'WZRK_PE';
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
@@ -6020,6 +6021,11 @@
       }
     }
 
+    if (msg.vars) {
+      $ct.variableStore.mergeVariables(msg.vars);
+      return; // Pass the vars data to Variable Store
+    }
+
     var staleDataUpdate = function staleDataUpdate(staledata, campType) {
       var campObj = getCampaignObject();
       var globalObj = campObj[campType].global;
@@ -7443,7 +7449,8 @@
         if (_classPrivateFieldLooseBase(this, _variableStore)[_variableStore].hasVarsRequestCompleted()) {
           this.hadStarted = true;
           this.triggerValueChanged();
-        }
+        } // Add the callbacks to the list
+
       }
     }, {
       key: "triggerValueChanged",
@@ -7560,11 +7567,13 @@
       });
       this.event = void 0;
       this.variables = {};
+      this.remoteVariables = {};
       $ct.variableStore = this;
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
       _classPrivateFieldLooseBase(this, _account$5)[_account$5] = account;
       _classPrivateFieldLooseBase(this, _request$6)[_request$6] = request;
       this.event = event;
+      this.valuesFromClient = {};
     }
 
     _createClass(VariableStore, [{
@@ -7582,7 +7591,7 @@
     }, {
       key: "hasVarsRequestCompleted",
       value: function hasVarsRequestCompleted() {
-        return false;
+        return true;
       }
     }, {
       key: "syncVariables",
@@ -7652,15 +7661,12 @@
             while (1) {
               switch (_context2.prev = _context2.next) {
                 case 0:
-                  // setTimeout(() => {
-                  //   const name = 'love'
-                  //   this.variables[name].update(20)
-                  //   console.log('syncVariables', this.variables)
-                  //   if (onFetchComplete) {
-                  //     onFetchComplete()
-                  //   }
-                  // }, 2000)
-                  this.event.push('wzrk_fetch', {});
+                  this.event.push('wzrk_fetch', {
+                    t: 4
+                  });
+                  /* Todo: Save the received vars data in local storage
+                      merge the received vars with the defined vars
+                  */
 
                   if (onFetchComplete) {
                     onFetchComplete();
@@ -7686,6 +7692,20 @@
 
         return fetchVariables;
       }()
+    }, {
+      key: "mergeVariables",
+      value: function mergeVariables(vars) {
+        // Merge the list with the
+        console.log('msg vars is ', vars);
+        StorageManager.saveToLSorCookie(VARIABLES, vars);
+        this.remoteVariables = vars;
+
+        for (var name in this.variables) {
+          if (vars.hasOwnProperty(name)) {
+            this.variables[name].update(vars[name]);
+          }
+        }
+      }
     }]);
 
     return VariableStore;
