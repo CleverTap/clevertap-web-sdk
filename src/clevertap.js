@@ -49,7 +49,7 @@ export default class CleverTap {
   #isSpa
   #previousUrl
   #boundCheckPageChanged = this.#checkPageChanged.bind(this)
-  #isWebPopUpSpamControlDisabled
+  #dismissSpamControl
   enablePersonalization
 
   get spa () {
@@ -70,12 +70,13 @@ export default class CleverTap {
   }
 
   get dismissSpamControl () {
-    return this.#isWebPopUpSpamControlDisabled
+    return this.#dismissSpamControl
   }
 
   set dismissSpamControl (value) {
-    const isWebPopUpSpamControlDisabled = value === true
-    this.#isWebPopUpSpamControlDisabled = isWebPopUpSpamControlDisabled
+    const dismissSpamControl = value === true
+    this.#dismissSpamControl = dismissSpamControl
+    $ct.dismissSpamControl = dismissSpamControl
   }
 
   constructor (clevertap = {}) {
@@ -85,6 +86,7 @@ export default class CleverTap {
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2])
     this.#device = new DeviceManager({ logger: this.#logger })
+    this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.#session = new SessionManager({
       logger: this.#logger,
       isPersonalisationActive: this._isPersonalisationActive
@@ -174,6 +176,10 @@ export default class CleverTap {
       return this.#account.finalTargetDomain
     }
 
+    this.setLibrary = (libName, libVersion) => {
+      $ct.flutterVersion = { [libName]: libVersion }
+    }
+
     // Set the Signed Call sdk version and fire request
     this.setSCSDKVersion = (ver) => {
       this.#account.scSDKVersion = ver
@@ -261,15 +267,26 @@ export default class CleverTap {
         const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
         if (el !== null) { el.shadowRoot.getElementById('unreadMarker').style.display = 'none' }
         messages[messageId].viewed = 1
-        var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1
-        document.getElementById('unviewedBadge').innerText = counter
-        document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none'
+        if (document.getElementById('unviewedBadge')) {
+          var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1
+          document.getElementById('unviewedBadge').innerText = counter
+          document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none'
+        }
         window.clevertap.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
         $ct.inbox.unviewedCounter--
         delete $ct.inbox.unviewedMessages[messageId]
         saveInboxMessages(messages)
       } else {
         this.#logger.error('No message available for message Id ' + messageId)
+      }
+    }
+
+    /* Mark Message as Read. messageIds should be a an array of string */
+    this.markReadInboxMessagesForIds = (messageIds) => {
+      if (Array.isArray(messageIds)) {
+        for (var id = 0; id < messageIds.length; id++) {
+          this.markReadInboxMessage(messageIds[id])
+        }
       }
     }
 
@@ -297,6 +314,8 @@ export default class CleverTap {
         this.#logger.debug('All messages are already read')
       }
     }
+
+    this.toggleInbox = (e) => $ct.inbox?.toggleInbox(e)
 
     // method for notification viewed
     this.renderNotificationViewed = (detail) => {
@@ -436,7 +455,7 @@ export default class CleverTap {
           return
         }
         $ct.location = { Latitude: lat, Longitude: lng }
-        this.sendMultiValueData({ Latitude: lat, Longitude: lng })
+        this.sendLocationData({ Latitude: lat, Longitude: lng })
       } else {
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError)
@@ -450,7 +469,7 @@ export default class CleverTap {
       var lat = position.coords.latitude
       var lng = position.coords.longitude
       $ct.location = { Latitude: lat, Longitude: lng }
-      this.sendMultiValueData({ Latitude: lat, Longitude: lng })
+      this.sendLocationData({ Latitude: lat, Longitude: lng })
     }
 
     function showError (error) {
@@ -484,8 +503,7 @@ export default class CleverTap {
         device: this.#device,
         session: this.#session,
         request: this.#request,
-        logger: this.#logger,
-        isWebPopUpSpamControlDisabled: this.#isWebPopUpSpamControlDisabled
+        logger: this.#logger
       })
     }
     api.setEnum = (enumVal) => {
@@ -526,6 +544,12 @@ export default class CleverTap {
     api.changeSubscriptionGroups = (reEncoded, updatedGroups) => {
       api.setSubscriptionGroups(updatedGroups)
       _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
+    }
+    api.isGlobalUnsubscribe = () => {
+      return $ct.globalUnsubscribe
+    }
+    api.setIsGlobalUnsubscribe = (value) => {
+      $ct.globalUnsubscribe = value
     }
     api.setUpdatedCategoryLong = (profile) => {
       if (profile[categoryLongKey]) {
@@ -682,7 +706,7 @@ export default class CleverTap {
     }
     let proto = document.location.protocol
     proto = proto.replace(':', '')
-    data.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto }
+    data.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...$ct.flutterVersion }
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
@@ -739,7 +763,7 @@ export default class CleverTap {
    *
    * @param {object} payload
    */
-  sendMultiValueData (payload) {
+  sendLocationData (payload) {
     // Send the updated value to LC
     let data = {}
     data.af = {}

@@ -12,7 +12,8 @@ import {
   GCOOKIE_NAME,
   IS_OUL,
   categoryLongKey,
-  CAMP_COOKIE_G
+  CAMP_COOKIE_G,
+  GLOBAL
 } from './constants'
 import {
   GENDER_ERROR,
@@ -520,6 +521,7 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
   const urlParamsAsIs = getURLParams(location.href) // can't use url_params as it is in lowercase above
   const encodedEmailId = urlParamsAsIs.e
   const encodedProfileProps = urlParamsAsIs.p
+  const pageType = urlParamsAsIs.page_type
 
   if (typeof encodedEmailId !== 'undefined') {
     const data = {}
@@ -545,6 +547,11 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
 
     if (subscription !== '-1') {
       url = addToURL(url, 'sub', subscription)
+    }
+
+    if (pageType) {
+      $ct.globalUnsubscribe = pageType === GLOBAL
+      url = addToURL(url, 'page_type', pageType)
     }
     RequestDispatcher.fireRequest(url)
   }

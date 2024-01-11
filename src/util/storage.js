@@ -261,7 +261,10 @@ export const $ct = {
   isPrivacyArrPushed: false,
   privacyArray: [],
   offline: false,
-  location: null
+  location: null,
+  dismissSpamControl: false,
+  globalUnsubscribe: true,
+  flutterVersion: null
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }

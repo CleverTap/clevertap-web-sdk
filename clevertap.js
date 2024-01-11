@@ -462,7 +462,7 @@
   var PR_COOKIE = 'WZRK_PR';
   var ARP_COOKIE = 'WZRK_ARP';
   var LCOOKIE_NAME = 'WZRK_L';
-  var GLOBAL = 'global';
+  var GLOBAL = 'global'; // used for email unsubscribe also
   var DISPLAY = 'display';
   var WEBPUSH_LS_KEY = 'WZRK_WPR';
   var OPTOUT_KEY = 'optOut';
@@ -915,7 +915,10 @@
     isPrivacyArrPushed: false,
     privacyArray: [],
     offline: false,
-    location: null // domain: window.location.hostname, url -> getHostName()
+    location: null,
+    dismissSpamControl: false,
+    globalUnsubscribe: true,
+    flutterVersion: null // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -2584,6 +2587,7 @@
 
     var encodedEmailId = urlParamsAsIs.e;
     var encodedProfileProps = urlParamsAsIs.p;
+    var pageType = urlParamsAsIs.page_type;
 
     if (typeof encodedEmailId !== 'undefined') {
       var data = {};
@@ -2614,6 +2618,11 @@
 
       if (subscription !== '-1') {
         url = addToURL(url, 'sub', subscription);
+      }
+
+      if (pageType) {
+        $ct.globalUnsubscribe = pageType === GLOBAL;
+        url = addToURL(url, 'page_type', pageType);
       }
 
       RequestDispatcher.fireRequest(url);
@@ -2816,30 +2825,27 @@
     }, {
       key: "_handleMultiValueAdd",
       value: function _handleMultiValueAdd(propKey, propVal, command) {
-        var array = [];
+        // Initialize array
+        var array = []; // Check if globalProfileMap is null, initialize if needed
 
         if ($ct.globalProfileMap == null) {
-          var _StorageManager$readF2;
-
-          $ct.globalProfileMap = (_StorageManager$readF2 = StorageManager.readFromLSorCookie(PR_COOKIE)) !== null && _StorageManager$readF2 !== void 0 ? _StorageManager$readF2 : {};
-        } // if the value to be set is either string or number
+          $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
+        } // Check if the value to be set is either string or number
 
 
         if (typeof propVal === 'string' || typeof propVal === 'number') {
           if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-            array = $ct.globalProfileMap[propKey];
-            typeof propVal === 'number' ? array.push(propVal) : array.push(propVal.toLowerCase());
+            array = $ct.globalProfileMap[propKey]; // Push the value to the array in a more concise way
+
+            array.push(typeof propVal === 'number' ? propVal : propVal.toLowerCase());
           } else {
             $ct.globalProfileMap[propKey] = propVal;
-          } // if propVal is an array
-
-        } else {
-          if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-            array = $ct.globalProfileMap[propKey];
           }
-          /**
-           * checks for case sensitive inputs and filters the same ones
-           */
+        } else {
+          // Check if propVal is an array
+          if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
+            array = Array.isArray($ct.globalProfileMap[propKey]) ? $ct.globalProfileMap[propKey] : [$ct.globalProfileMap[propKey]];
+          } // Check for case-sensitive inputs and filter the same ones
 
 
           for (var i = 0; i < propVal.length; i++) {
@@ -2850,14 +2856,17 @@
             } else if (typeof propVal[i] === 'number' && array.includes(propVal[i]) || typeof propVal[i] === 'string' && array.includes(propVal[i].toLowerCase())) {
               console.error('Values already included');
             } else {
-              console.error('array supports only string or number type values');
+              console.error('Array supports only string or number type values');
             }
-          }
+          } // Update globalProfileMap with the array
+
 
           $ct.globalProfileMap[propKey] = array;
-        }
+        } // Save to local storage or cookie
 
-        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Call the sendMultiValueData function
+
         this.sendMultiValueData(propKey, propVal, command);
       }
       /**
@@ -3696,6 +3705,7 @@
       _this.shadow = null;
       _this.popup = null;
       _this.container = null;
+      _this.resizeObserver = null;
       _this.shadow = _this.attachShadow({
         mode: 'open'
       });
@@ -3714,7 +3724,13 @@
         this.container = this.shadowRoot.getElementById('container');
         this.closeIcon = this.shadowRoot.getElementById('close');
         this.popup.addEventListener('load', this.updateImageAndContainerWidth());
+        this.resizeObserver = new ResizeObserver(function () {
+          return _this2.handleResize(_this2.popup, _this2.container);
+        });
+        this.resizeObserver.observe(this.popup);
         this.closeIcon.addEventListener('click', function () {
+          _this2.resizeObserver.unobserve(_this2.popup);
+
           document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
 
           _this2.remove();
@@ -3748,6 +3764,12 @@
             });
           });
         }
+      }
+    }, {
+      key: "handleResize",
+      value: function handleResize(popup, container) {
+        var width = this.getRenderedImageWidth(popup);
+        container.style.setProperty('width', "".concat(width, "px"));
       }
     }, {
       key: "getImageOnlyPopupContent",
@@ -4067,8 +4089,8 @@
         selectedCategoryTabColor = _ref2.selectedCategoryTabColor,
         selectedCategoryTitleColor = _ref2.selectedCategoryTitleColor,
         selectedCategoryBorderColor = _ref2.selectedCategoryBorderColor,
-        headerCategoryAndPoweredByCTHeight = _ref2.headerCategoryAndPoweredByCTHeight;
-    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n        }\n\n        #poweredByCT {\n          display: block;\n          height: 16px;\n          padding: 8px 0px;\n          margin: auto;\n        }\n  \n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryAndPoweredByCTHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
+        headerCategoryHeight = _ref2.headerCategoryHeight;
+    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n        }\n\n        @media only screen and (min-width: 420px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
   };
 
   var Inbox = /*#__PURE__*/function (_HTMLElement) {
@@ -4083,6 +4105,7 @@
 
       _this = _super.call(this);
       _this.isInboxOpen = false;
+      _this.isInboxFromFlutter = false;
       _this.selectedCategory = null;
       _this.unviewedMessages = {};
       _this.unviewedCounter = 0;
@@ -4126,7 +4149,11 @@
               }
             }
           } else if (_this.inboxSelector.contains(e.target) || _this.isInboxOpen) {
-            _this.toggleInbox(e);
+            if (_this.isInboxFromFlutter) {
+              _this.isInboxFromFlutter = false;
+            } else {
+              _this.toggleInbox(e);
+            }
           }
         };
       }();
@@ -4346,14 +4373,7 @@
         this.inbox.appendChild(this.inboxCard);
         this.emptyInboxMsg = this.createEl('div', 'emptyInboxMsg');
         this.emptyInboxMsg.innerText = 'All messages will be displayed here.';
-        this.inboxCard.appendChild(this.emptyInboxMsg);
-
-        if (this.config.hidePoweredByCT === false) {
-          var poweredByText = this.createEl('img', 'poweredByCT');
-          poweredByText.src = 'https://d2r1yp2w7bby2u.cloudfront.net/js/PB_CT_new.png';
-          this.inbox.appendChild(poweredByText);
-        } // Intersection observer for notification viewed
-
+        this.inboxCard.appendChild(this.emptyInboxMsg); // Intersection observer for notification viewed
 
         var options = {
           root: this.inboxCard,
@@ -4581,6 +4601,7 @@
       key: "toggleInbox",
       value: function toggleInbox(e) {
         this.isInboxOpen = !this.isInboxOpen;
+        this.isInboxFromFlutter = !!(e === null || e === void 0 ? void 0 : e.rect);
 
         if (this.isInboxOpen) {
           this.inboxCard.scrollTop = 0;
@@ -4655,7 +4676,6 @@
       value: function getInboxStyles() {
         var headerHeight = 36;
         var categoriesHeight = this.config.categories.length ? 64 : 16;
-        var hidePoweredByCTHeight = this.config.hidePoweredByCT === false ? 32 : 0;
         var styles = {
           panelBackgroundColor: this.config.styles.panelBackgroundColor,
           panelBorderColor: this.config.styles.panelBorderColor,
@@ -4666,7 +4686,7 @@
           categoriesTitleColor: this.config.styles.categories.titleColor,
           selectedCategoryTabColor: this.config.styles.categories.selectedTab.tabColor,
           selectedCategoryTitleColor: this.config.styles.categories.selectedTab.titleColor,
-          headerCategoryAndPoweredByCTHeight: headerHeight + categoriesHeight + hidePoweredByCTHeight
+          headerCategoryHeight: headerHeight + categoriesHeight
         };
 
         if (this.config.styles.categories.borderColor) {
@@ -4711,16 +4731,19 @@
         var _this9 = this;
 
         var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+        var previewMsgs = {};
 
         if (msgs.length > 0 && this.inbox) {
           this.isPreview = true;
           this.unviewedCounter = 0;
           msgs.forEach(function (m) {
-            m.id = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
-            _this9.unviewedMessages[m.id] = m;
+            var key = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
+            m.id = key;
+            previewMsgs[key] = m;
+            _this9.unviewedMessages[key] = m;
             _this9.unviewedCounter++;
           });
-          this.buildUIForMessages(msgs);
+          this.buildUIForMessages(previewMsgs);
           this.updateUnviewedBadgeCounter();
         }
       }
@@ -4855,13 +4878,14 @@
     var verticalScroll = document.scrollingElement.scrollTop;
     var windowWidth = window.innerWidth + horizontalScroll;
     var windowHeight = window.innerHeight + verticalScroll;
-    var selectorRect = e.target.getBoundingClientRect();
+    var selectorRect = e.rect || e.target.getBoundingClientRect();
     var selectorX = selectorRect.x + horizontalScroll;
     var selectorY = selectorRect.y + verticalScroll;
     var selectorLeft = selectorRect.left + horizontalScroll;
     var selectorRight = selectorRect.right + horizontalScroll;
-    var selectorTop = selectorRect.top + verticalScroll;
-    var selectorBottom = selectorRect.bottom + verticalScroll;
+    var selectorTop = selectorRect.top + verticalScroll; // const selectorBottom = selectorRect.bottom + verticalScroll
+
+    var selectorBottom = selectorRect.bottom;
     var selectorHeight = selectorRect.height;
     var selectorWidth = selectorRect.width;
     var selectorCenter = {
@@ -4981,8 +5005,7 @@
     var device = _ref.device,
         session = _ref.session,
         request = _ref.request,
-        logger = _ref.logger,
-        isWebPopUpSpamControlDisabled = _ref.isWebPopUpSpamControlDisabled;
+        logger = _ref.logger;
     var _device = device;
     var _session = session;
     var _request = request;
@@ -5098,7 +5121,7 @@
           var campaignSessionCount = sessionObj[campaignId];
           var totalSessionCount = sessionObj.tc; // dnd
 
-          if (campaignSessionCount === 'dnd' && !isWebPopUpSpamControlDisabled) {
+          if (campaignSessionCount === 'dnd' && !$ct.dismissSpamControl) {
             return false;
           }
 
@@ -5359,12 +5382,13 @@
           return;
         }
 
-        if (isWebPopUpSpamControlDisabled && document.getElementById(_divId) != null) {
+        if ($ct.dismissSpamControl && document.getElementById(_divId) != null) {
           var element = document.getElementById(_divId);
           element.remove();
-        }
+        } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
 
-        if (document.getElementById(_divId) != null) {
+
+        if (document.getElementById(_divId) != null || document.getElementById('intentPreview') != null) {
           return;
         }
 
@@ -5386,7 +5410,7 @@
 
       var divId = 'wizParDiv' + displayObj.layout;
 
-      if (isWebPopUpSpamControlDisabled && document.getElementById(divId) != null) {
+      if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         var _element = document.getElementById(divId);
 
         _element.remove();
@@ -5492,7 +5516,10 @@
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe);
       var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      var doc = ifrm.document;
+      var doc = ifrm.document; // Dispatch event for popup box/banner close
+
+      var closeCampaign = new Event('CT_campaign_rendered');
+      document.dispatchEvent(closeCampaign);
       doc.open();
       doc.write(html);
 
@@ -5694,13 +5721,14 @@
         targetingMsgJson = targetObj;
       }
 
-      if (isWebPopUpSpamControlDisabled && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
+      if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
         var element = document.getElementById('intentPreview');
         element.remove();
         document.getElementById('intentOpacityDiv').remove();
-      }
+      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
 
-      if (document.getElementById('intentPreview') != null) {
+
+      if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
         return;
       } // dont show exit intent on tablet/mobile - only on desktop
 
@@ -5718,7 +5746,9 @@
       var legacy = false;
       var opacityDiv = document.createElement('div');
       opacityDiv.id = 'intentOpacityDiv';
-      opacityDiv.setAttribute('style', 'position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: rgba(0,0,0,0.7);');
+      var opacity = targetingMsgJson.display.opacity || 0.7;
+      var rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
+      opacityDiv.setAttribute('style', "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
       document.body.appendChild(opacityDiv);
       var msgDiv = document.createElement('div');
       msgDiv.id = 'intentPreview';
@@ -5790,7 +5820,10 @@
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe);
       var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      var doc = ifrm.document;
+      var doc = ifrm.document; // Dispatch event for interstitial/exit intent close
+
+      var closeCampaign = new Event('CT_campaign_rendered');
+      document.dispatchEvent(closeCampaign);
       doc.open();
       doc.write(html);
 
@@ -6421,6 +6454,10 @@
 
         dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
 
+        if (sessionStorage.hasOwnProperty('WZRK_D')) {
+          dataObject.debug = true;
+        }
+
         return dataObject;
       }
     }, {
@@ -6442,6 +6479,10 @@
         dataObject.s = obj.s; // session cookie
 
         dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
+
+        if (sessionStorage.hasOwnProperty('WZRK_D')) {
+          dataObject.debug = true;
+        }
 
         return dataObject;
       }
@@ -7053,7 +7094,6 @@
     var okCallback;
     var rejectCallback;
     var subscriptionCallback;
-    var hidePoweredByCT;
     var serviceWorkerPath;
     var httpsPopupPath;
     var httpsIframePath;
@@ -7073,7 +7113,6 @@
         okCallback = notifObj.okCallback;
         rejectCallback = notifObj.rejectCallback;
         subscriptionCallback = notifObj.subscriptionCallback;
-        hidePoweredByCT = notifObj.hidePoweredByCT;
         serviceWorkerPath = notifObj.serviceWorkerPath;
         httpsPopupPath = notifObj.httpsPopupPath;
         httpsIframePath = notifObj.httpsIframePath;
@@ -7092,10 +7131,6 @@
 
     if (skipDialog == null) {
       skipDialog = false;
-    }
-
-    if (hidePoweredByCT == null) {
-      hidePoweredByCT = false;
     }
 
     if (serviceWorkerPath == null) {
@@ -7219,8 +7254,7 @@
                   body: bodyText,
                   confirmButtonText: okButtonText,
                   confirmButtonColor: okButtonColor,
-                  rejectButtonText: rejectButtonText,
-                  hidePoweredByCT: hidePoweredByCT
+                  rejectButtonText: rejectButtonText
                 }, function (enabled) {
                   // callback function
                   if (enabled) {
@@ -7252,8 +7286,7 @@
           body: bodyText,
           confirmButtonText: okButtonText,
           confirmButtonColor: okButtonColor,
-          rejectButtonText: rejectButtonText,
-          hidePoweredByCT: hidePoweredByCT
+          rejectButtonText: rejectButtonText
         }, function (enabled) {
           // callback function
           if (enabled) {
@@ -7295,7 +7328,7 @@
 
   var _boundCheckPageChanged = _classPrivateFieldLooseKey("boundCheckPageChanged");
 
-  var _isWebPopUpSpamControlDisabled = _classPrivateFieldLooseKey("isWebPopUpSpamControlDisabled");
+  var _dismissSpamControl = _classPrivateFieldLooseKey("dismissSpamControl");
 
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
@@ -7330,11 +7363,12 @@
     }, {
       key: "dismissSpamControl",
       get: function get() {
-        return _classPrivateFieldLooseBase(this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled];
+        return _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl];
       },
       set: function set(value) {
-        var isWebPopUpSpamControlDisabled = value === true;
-        _classPrivateFieldLooseBase(this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled] = isWebPopUpSpamControlDisabled;
+        var dismissSpamControl = value === true;
+        _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
+        $ct.dismissSpamControl = dismissSpamControl;
       }
     }]);
 
@@ -7404,7 +7438,7 @@
         writable: true,
         value: _classPrivateFieldLooseBase(this, _checkPageChanged)[_checkPageChanged].bind(this)
       });
-      Object.defineProperty(this, _isWebPopUpSpamControlDisabled, {
+      Object.defineProperty(this, _dismissSpamControl, {
         writable: true,
         value: void 0
       });
@@ -7421,6 +7455,7 @@
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
       });
+      _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         isPersonalisationActive: this._isPersonalisationActive
@@ -7501,6 +7536,10 @@
 
       this.getSCDomain = function () {
         return _classPrivateFieldLooseBase(_this, _account$5)[_account$5].finalTargetDomain;
+      };
+
+      this.setLibrary = function (libName, libVersion) {
+        $ct.flutterVersion = _defineProperty({}, libName, libVersion);
       }; // Set the Signed Call sdk version and fire request
 
 
@@ -7605,9 +7644,13 @@
           }
 
           messages[messageId].viewed = 1;
-          var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1;
-          document.getElementById('unviewedBadge').innerText = counter;
-          document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none';
+
+          if (document.getElementById('unviewedBadge')) {
+            var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1;
+            document.getElementById('unviewedBadge').innerText = counter;
+            document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none';
+          }
+
           window.clevertap.renderNotificationViewed({
             msgId: messages[messageId].wzrk_id,
             pivotId: messages[messageId].pivotId
@@ -7617,6 +7660,16 @@
           saveInboxMessages(messages);
         } else {
           _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('No message available for message Id ' + messageId);
+        }
+      };
+      /* Mark Message as Read. messageIds should be a an array of string */
+
+
+      this.markReadInboxMessagesForIds = function (messageIds) {
+        if (Array.isArray(messageIds)) {
+          for (var id = 0; id < messageIds.length; id++) {
+            _this.markReadInboxMessage(messageIds[id]);
+          }
         }
       };
       /* Mark all messages as read
@@ -7652,6 +7705,12 @@
         } else {
           _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('All messages are already read');
         }
+      };
+
+      this.toggleInbox = function (e) {
+        var _$ct$inbox;
+
+        return (_$ct$inbox = $ct.inbox) === null || _$ct$inbox === void 0 ? void 0 : _$ct$inbox.toggleInbox(e);
       }; // method for notification viewed
 
 
@@ -7810,7 +7869,7 @@
             Latitude: lat,
             Longitude: lng
           };
-          this.sendMultiValueData({
+          this.sendLocationData({
             Latitude: lat,
             Longitude: lng
           });
@@ -7830,7 +7889,7 @@
           Latitude: lat,
           Longitude: lng
         };
-        this.sendMultiValueData({
+        this.sendLocationData({
           Latitude: lat,
           Longitude: lng
         });
@@ -7874,8 +7933,7 @@
           device: _classPrivateFieldLooseBase(_this, _device$3)[_device$3],
           session: _classPrivateFieldLooseBase(_this, _session$3)[_session$3],
           request: _classPrivateFieldLooseBase(_this, _request$6)[_request$6],
-          logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9],
-          isWebPopUpSpamControlDisabled: _classPrivateFieldLooseBase(_this, _isWebPopUpSpamControlDisabled)[_isWebPopUpSpamControlDisabled]
+          logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9]
         });
       };
 
@@ -7930,6 +7988,14 @@
         api.setSubscriptionGroups(updatedGroups);
 
         _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded);
+      };
+
+      api.isGlobalUnsubscribe = function () {
+        return $ct.globalUnsubscribe;
+      };
+
+      api.setIsGlobalUnsubscribe = function (value) {
+        $ct.globalUnsubscribe = value;
       };
 
       api.setUpdatedCategoryLong = function (profile) {
@@ -8099,10 +8165,10 @@
 
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
-        data.af = {
-          lib: 'web-sdk-v1.6.5',
+        data.af = _objectSpread2({
+          lib: 'web-sdk-v1.6.9',
           protocol: proto
-        };
+        }, $ct.flutterVersion);
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]));
 
@@ -8128,13 +8194,13 @@
         return StorageManager._isLocalStorageSupported() && this.enablePersonalization;
       }
     }, {
-      key: "sendMultiValueData",
+      key: "sendLocationData",
 
       /**
        *
        * @param {object} payload
        */
-      value: function sendMultiValueData(payload) {
+      value: function sendLocationData(payload) {
         // Send the updated value to LC
         var data = {};
         data.af = {};

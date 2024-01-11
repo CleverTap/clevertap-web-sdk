@@ -126,13 +126,14 @@ export const getInboxPosition = (e, inboxHeight, inboxWidth) => {
   const verticalScroll = document.scrollingElement.scrollTop
   const windowWidth = window.innerWidth + horizontalScroll
   const windowHeight = window.innerHeight + verticalScroll
-  const selectorRect = e.target.getBoundingClientRect()
+  const selectorRect = e.rect || e.target.getBoundingClientRect()
   const selectorX = selectorRect.x + horizontalScroll
   const selectorY = selectorRect.y + verticalScroll
   const selectorLeft = selectorRect.left + horizontalScroll
   const selectorRight = selectorRect.right + horizontalScroll
   const selectorTop = selectorRect.top + verticalScroll
-  const selectorBottom = selectorRect.bottom + verticalScroll
+  // const selectorBottom = selectorRect.bottom + verticalScroll
+  const selectorBottom = selectorRect.bottom
   const selectorHeight = selectorRect.height
   const selectorWidth = selectorRect.width
   const selectorCenter = {

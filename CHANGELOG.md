@@ -1,6 +1,25 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.9] - 6 Dec, 2023
+- Adds public method markReadInboxMessagesForIds.
+- Adds public method setLibrary to set the Flutter version.
+- Fixes a bug related to Web Inbox scroll.
+- Triggers an event to manage inline script errors related to Content Security Policy.
+
+## [1.6.8] - 9 Nov, 2023
+- Adds handling for email unsubscribe.
+
+## [1.6.7] - 20 Oct, 2023
+- Fixes a bug related to Web Inbox preview.
+- Fixed a bug related to Web Popup ImageOnly resizing.
+- Adds the debug flag in requests when log level is 3 for Integration Debugger.
+- Adds handling for Web Popup Drag and Drop template.
+
+## [1.6.6] - 13 Sept, 2023
+- Fixes a bug related to Interstitial and ImageOnly campaign coexistance
+- Fixed a bug where dismiss spam control was not working for campaigns created with delay.
+
 ## [1.6.5] - 24 Aug, 2023
 - Fixes a bug related to sequence of message in Web Inbox
 - Adds the parameter for location.protocol in page request
