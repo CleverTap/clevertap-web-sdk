@@ -5,6 +5,7 @@
   "main": "clevertap.js",
   "scripts": {
     "build": "rollup --config rollup.config.js",
+    "build_sw": "rollup --config sw_rollup.config.js",
     "test": "eslint --fix test && jest",
     "test:coverage": "rm -rf coverage && jest --coverage"
   },
