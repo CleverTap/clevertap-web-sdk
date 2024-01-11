@@ -29,33 +29,10 @@ if (typeof globalRedirectPath === 'undefined') {
 self.addEventListener('install', function (event) {
   // force this service worker to become the active service worker; removes any previous implementations or migrations
   self.skipWaiting()
-  // console.log('Service worker installed', self, event);
+  console.log('CT Service worker installed')
 })
 
 self.addEventListener('activate', function (event) {
-  // console.log('Service worker activated', self, event);
-  // Delete all caches that aren't named in CURRENT_CACHES.
-  // var expectedCacheNames = Object.keys(CURRENT_CACHES).map(function(key) {
-  //     return CURRENT_CACHES[key];
-  // });
-  //
-  // event.waitUntil(
-  //     caches.keys()
-  //         .then(function(cacheNames) {
-  //             return Promise.all(
-  //                 cacheNames.map(function(cacheName) {
-  //                     if (expectedCacheNames.indexOf(cacheName) === -1) {
-  //                         // If this cache name isn't present in the array of "expected" cache names, then delete it.
-  //                         console.log('Deleting out of date cache:', cacheName);
-  //                         return caches.delete(cacheName);
-  //                     }
-  //                 })
-  //             );
-  //         })
-  //         .catch(function(){
-  //             console.log("Error while clearing cache")
-  //         })
-  // );
   console.log('CT Service worker activated')
 })
 
@@ -140,9 +117,6 @@ self.addEventListener('notificationclick', function (event) {
   var promise = localforage.getItem(key).then(function (value) {
     var notificationData = JSON.parse(value)
     var redirectPath = notificationData.redirectPath
-    // console.log("event",event);
-    // console.log("redirect path: " + redirectPath);
-    // console.log("notification data: " + notificationData);
     onClick(event, redirectPath, notificationData)
   }).catch(function (err) {
     // This code runs if there were any errors
