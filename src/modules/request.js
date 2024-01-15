@@ -28,6 +28,7 @@ export default class RequestManager {
 
     RequestDispatcher.logger = logger
     RequestDispatcher.device = device
+    RequestDispatcher.account = account
   }
 
   processBackupEvents () {
@@ -134,7 +135,7 @@ export default class RequestManager {
    * @param {boolean} override whether the request can go through or not
    * @param {Boolean} sendOULFlag - true in case of a On User Login request
    */
-  saveAndFireRequest (url, override, sendOULFlag) {
+  saveAndFireRequest (url, override, sendOULFlag, evtName) {
     const now = getNow()
     url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N)
     const data = url + '&i=' + now + '&sn=' + seqNo
@@ -155,7 +156,7 @@ export default class RequestManager {
         seqNo = 0
       }
       window.oulReqN = $ct.globalCache.REQ_N
-      RequestDispatcher.fireRequest(data, false, sendOULFlag)
+      RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName)
     } else {
       this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)
     }
@@ -211,7 +212,7 @@ export default class RequestManager {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-    this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+    this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
   }
 
   #addToLocalEventMap (evtName) {
@@ -240,13 +241,11 @@ export default class RequestManager {
   }
 
   async post (url, body) {
-    // todo, retries, cors, remove no-cors
     try {
       const r = await fetch(url, {
         method: 'post',
         headers: { 'Content-Type': 'application/json' },
-        body: body,
-        mode: 'no-cors'
+        body: body
       })
       const d = await r.json()
       this.#logger.debug('Sync data successful', d)

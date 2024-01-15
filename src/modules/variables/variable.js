@@ -11,6 +11,14 @@ export class Variable {
     this.#variableStore = variableStore
   }
 
+  getValue () {
+    return this.value
+  }
+
+  getdefaultValue () {
+    return this.defaultValue
+  }
+
   static define (name, defaultValue, variableStore) {
     if (!name || typeof name !== 'string') {
       this.log('Empty or invalid name parameter provided.')

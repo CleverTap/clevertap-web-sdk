@@ -87,7 +87,7 @@ export default class CleverTap {
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
-    this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2])
+    this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.#session = new SessionManager({
@@ -560,7 +560,7 @@ export default class CleverTap {
   }
 
   // starts here
-  init (accountId, region, targetDomain) {
+  init (accountId, region, targetDomain, token) {
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
@@ -580,6 +580,9 @@ export default class CleverTap {
     }
     if (targetDomain) {
       this.#account.targetDomain = targetDomain
+    }
+    if (token) {
+      this.#account.token = token
     }
 
     const currLocation = location.href
@@ -623,7 +626,7 @@ export default class CleverTap {
     this.notifications._processOldValues()
   }
 
-  debounce (func, delay) {
+  #debounce (func, delay) {
     let timeout
     return function () {
       clearTimeout(timeout)
@@ -632,7 +635,7 @@ export default class CleverTap {
   }
 
   #checkPageChanged () {
-    const debouncedPageChanged = this.debounce(() => {
+    const debouncedPageChanged = this.#debounce(() => {
       if (this.#previousUrl !== location.href) {
         this.pageChanged()
       }
@@ -701,6 +704,10 @@ export default class CleverTap {
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+
+    if (parseInt(data.pg) === 1) {
+      this.event.push('wzrk_fetch', { t: 4 })
+    }
 
     this.#previousUrl = currLocation
     setTimeout(() => {
@@ -810,7 +817,11 @@ export default class CleverTap {
     return this.#variableStore.syncVariables(onSyncSuccess, onSyncFailure)
   }
 
-  async fetchVariables (onFetchSuccess, onFetchFailure) {
-    return this.#variableStore.fetchVariables(onFetchSuccess, onFetchFailure)
+  async fetchVariables (onFetchSuccess) {
+    return this.#variableStore.fetchVariables(onFetchSuccess)
+  }
+
+  addVariablesChangedCallback (callback) {
+    this.#variableStore.addVariablesChangedCallback(callback)
   }
 }

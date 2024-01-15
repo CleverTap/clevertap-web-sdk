@@ -53,6 +53,8 @@ export const WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG'
 export const WEBINBOX = 'WZRK_INBOX'
 export const MAX_INBOX_MSG = 15
 export const VARIABLES = 'WZRK_PE'
+export const PUSH_DELAY_MS = 1000
+export const MAX_DELAY_FREQUENCY = 1000 * 60 * 10
 
 export const SYSTEM_EVENTS = [
   'Stayed',
