@@ -824,4 +824,8 @@ export default class CleverTap {
   addVariablesChangedCallback (callback) {
     this.#variableStore.addVariablesChangedCallback(callback)
   }
+
+  addOneTimeVariablesChangedCallback (callback) {
+    this.#variableStore.addOneTimeVariablesChangedCallback(callback)
+  }
 }

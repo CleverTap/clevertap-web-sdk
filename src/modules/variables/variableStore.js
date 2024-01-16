@@ -10,6 +10,7 @@ class VariableStore {
   #remoteVariables
   #fetchCallback
   #variablesChangedCallbacks
+  #oneTimeVariablesChangedCallbacks
 
   constructor ({ logger, request, account, event }) {
     this.#logger = logger
@@ -20,6 +21,7 @@ class VariableStore {
     this.#variables = {}
     this.#remoteVariables = {}
     this.#variablesChangedCallbacks = []
+    this.#oneTimeVariablesChangedCallbacks = []
 
     $ct.variableStore = this
   }
@@ -43,7 +45,6 @@ class VariableStore {
       throw new Error('Account token is missing')
     }
 
-    // push event
     const payload = {
       type: 'varsPayload',
       vars: {}
@@ -54,7 +55,6 @@ class VariableStore {
         type: this.#variables[name].type
       }
     }
-    console.log('syncVariables', payload)
 
     var meta = {}
     meta = this.#request.addSystemDataToObject(meta, undefined)
@@ -67,18 +67,23 @@ class VariableStore {
     // todo: handle error
     try {
       const r = await this.#request.post(url, body)
-      if (onSyncSuccess) onSyncSuccess(r)
+      if (onSyncSuccess && typeof onSyncSuccess === 'function') {
+        onSyncSuccess(r)
+      }
       return r
     } catch (e) {
-      if (onSyncFailure) onSyncFailure(e)
+      if (onSyncFailure && typeof onSyncFailure === 'function') {
+        onSyncFailure(e)
+      }
       throw e
     }
   }
 
   async fetchVariables (onFetchComplete) {
     this.#event.push('wzrk_fetch', { t: 4 })
-    this.#fetchCallback = onFetchComplete
-    return null
+    if (onFetchComplete && typeof onFetchComplete === 'function') {
+      this.#fetchCallback = onFetchComplete
+    }
   }
 
   mergeVariables (vars) {
@@ -111,6 +116,16 @@ class VariableStore {
     }
   }
 
+  addOneTimeVariablesChangedCallback (callback) {
+    if (callback && typeof callback === 'function') {
+      if (this.hasVarsRequestCompleted()) {
+        callback()
+      } else {
+        this.#oneTimeVariablesChangedCallbacks.push(callback)
+      }
+    }
+  }
+
   removeVariablesChangedCallback (callback) {
     const index = this.#variablesChangedCallbacks.indexOf(callback)
     if (index !== -1) {
@@ -118,10 +133,21 @@ class VariableStore {
     }
   }
 
+  removeOneTimeVariablesChangedCallback (callback) {
+    const index = this.#oneTimeVariablesChangedCallbacks.indexOf(callback)
+    if (index !== -1) {
+      this.#oneTimeVariablesChangedCallbacks.splice(index, 1)
+    }
+  }
+
   #runVariablesChangedCallback () {
     for (var callback of this.#variablesChangedCallbacks) {
       callback()
     }
+    for (var callBack of this.#oneTimeVariablesChangedCallbacks) {
+      callBack()
+    }
+    this.#oneTimeVariablesChangedCallbacks.length = 0
   }
 }
 
