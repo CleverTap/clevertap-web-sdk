@@ -6873,6 +6873,8 @@
 
   var _oneTimeVariablesChangedCallbacks = _classPrivateFieldLooseKey("oneTimeVariablesChangedCallbacks");
 
+  var _hasVarsRequestCompleted = _classPrivateFieldLooseKey("hasVarsRequestCompleted");
+
   var _runVariablesChangedCallback = _classPrivateFieldLooseKey("runVariablesChangedCallback");
 
   class VariableStore {
@@ -6922,6 +6924,10 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _hasVarsRequestCompleted, {
+        writable: true,
+        value: false
+      });
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
       _classPrivateFieldLooseBase(this, _account$5)[_account$5] = account;
       _classPrivateFieldLooseBase(this, _request$6)[_request$6] = request;
@@ -6946,7 +6952,7 @@
     }
 
     hasVarsRequestCompleted() {
-      return false;
+      return _classPrivateFieldLooseBase(this, _hasVarsRequestCompleted)[_hasVarsRequestCompleted];
     }
 
     async syncVariables(onSyncSuccess, onSyncFailure) {
@@ -7004,6 +7010,7 @@
 
     mergeVariables(vars) {
       console.log('msg vars is ', vars);
+      _classPrivateFieldLooseBase(this, _hasVarsRequestCompleted)[_hasVarsRequestCompleted] = true;
       StorageManager.saveToLSorCookie(VARIABLES, vars);
       _classPrivateFieldLooseBase(this, _remoteVariables)[_remoteVariables] = vars;
 

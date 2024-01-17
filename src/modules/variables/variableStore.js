@@ -11,6 +11,7 @@ class VariableStore {
   #fetchCallback
   #variablesChangedCallbacks
   #oneTimeVariablesChangedCallbacks
+  #hasVarsRequestCompleted = false
 
   constructor ({ logger, request, account, event }) {
     this.#logger = logger
@@ -37,7 +38,7 @@ class VariableStore {
   }
 
   hasVarsRequestCompleted () {
-    return false
+    return this.#hasVarsRequestCompleted
   }
 
   async syncVariables (onSyncSuccess, onSyncFailure) {
@@ -88,6 +89,8 @@ class VariableStore {
 
   mergeVariables (vars) {
     console.log('msg vars is ', vars)
+    this.#hasVarsRequestCompleted = true
+
     StorageManager.saveToLSorCookie(VARIABLES, vars)
     this.#remoteVariables = vars
 
