@@ -258,7 +258,7 @@ export const inboxContainerStyles = ({
           margin-top: 16px;
         }
 
-        @media only screen and (min-width: 420px) {
+        @media only screen and (min-width: 480px) {
           #inbox {
             width: var(--inbox-width, 392px);
             height: var(--inbox-height, 546px);
