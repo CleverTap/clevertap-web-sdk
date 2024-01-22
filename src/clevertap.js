@@ -37,6 +37,7 @@ import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
+import { initialiseCTBuilder } from './modules/visualBuilder/pageBuilder'
 
 export default class CleverTap {
   #logger
@@ -371,9 +372,9 @@ export default class CleverTap {
       }
     }
     /**
- * @param {} key
- * @param {*} value
- */
+     * @param {} key
+     * @param {*} value
+     */
     this.handleIncrementValue = (key, value) => {
       this.profile._handleIncrementDecrementValue(key, value, COMMAND_INCREMENT)
     }
@@ -436,7 +437,7 @@ export default class CleverTap {
      * @param {number} lng
      * @param {callback function} handleCoordinates
      * @returns
-    */
+     */
     this.getLocation = function (lat, lng) {
       // latitude and longitude should be number type
       if ((lat && typeof lat !== 'number') || (lng && typeof lng !== 'number')) {
@@ -562,7 +563,14 @@ export default class CleverTap {
       // The accountId is present so can init with empty values.
       // Needed to maintain backward compatability with legacy implementations.
       // Npm imports/require will need to call init explictly with accountId
-      this.init()
+      const search = window.location.search
+      if (search === '?ctBuilder') {
+        // open in visual builder mode
+        console.log('open in visual builder mode')
+        initialiseCTBuilder()
+      } else {
+        this.init()
+      }
     }
   }
 
