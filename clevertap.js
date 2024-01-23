@@ -6069,18 +6069,23 @@
 
     async post(url, body) {
       try {
-        const r = await fetch(url, {
+        const response = await fetch(url, {
           method: 'post',
           headers: {
             'Content-Type': 'application/json'
           },
           body: body
         });
-        const d = await r.json();
 
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Sync data successful', d);
+        if (response.ok) {
+          const data = await response.json();
 
-        return d;
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Sync data successful', data);
+
+          return data;
+        } else {
+          throw response;
+        }
       } catch (e) {
         _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Error in syncing variables', e);
 
@@ -6760,6 +6765,15 @@
     getdefaultValue() {
       return this.defaultValue;
     }
+    /**
+     * Defines a new variable with the provided name, default value, and variable store.
+     * @static
+     * @param {string} name - The name of the variable.
+     * @param {*} defaultValue - The default value of the variable.
+     * @param {VariableStore} variableStore - The VariableStore instance for registration.
+     * @returns {Variable|null} - The created Variable instance or null if invalid parameters are provided.
+     */
+
 
     static define(name, defaultValue, variableStore) {
       if (!name || typeof name !== 'string') {
@@ -6938,6 +6952,11 @@
       _classPrivateFieldLooseBase(this, _oneTimeVariablesChangedCallbacks)[_oneTimeVariablesChangedCallbacks] = [];
       $ct.variableStore = this;
     }
+    /**
+     * Registers a variable instance in the store.
+     * @param {Object} varInstance - The variable instance to be registered.
+     */
+
 
     registerVariable(varInstance) {
       const {
@@ -6946,6 +6965,12 @@
       _classPrivateFieldLooseBase(this, _variables)[_variables][name] = varInstance;
       console.log('registerVariable', _classPrivateFieldLooseBase(this, _variables)[_variables]);
     }
+    /**
+     * Retrieves a variable by its name.
+     * @param {string} name - The name of the variable to retrieve.
+     * @returns {Object} - The variable instance.
+     */
+
 
     getVariable(name) {
       return _classPrivateFieldLooseBase(this, _variables)[_variables][name];
@@ -6954,6 +6979,14 @@
     hasVarsRequestCompleted() {
       return _classPrivateFieldLooseBase(this, _hasVarsRequestCompleted)[_hasVarsRequestCompleted];
     }
+    /**
+     * Synchronizes variables with the server.
+     * @param {Function} onSyncSuccess - Callback function on successful synchronization.
+     * @param {Function} onSyncFailure - Callback function on synchronization failure.
+     * @throws Will throw an error if the account token is missing.
+     * @returns {Promise} - The result of the synchronization request.
+     */
+
 
     async syncVariables(onSyncSuccess, onSyncFailure) {
       if (!_classPrivateFieldLooseBase(this, _account$5)[_account$5].token) {
@@ -6978,8 +7011,7 @@
       meta.type = 'meta';
       const body = JSON.stringify([meta, payload]);
 
-      const url = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostPEURL; // todo: handle error
-
+      const url = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostPEURL;
 
       try {
         const r = await _classPrivateFieldLooseBase(this, _request$6)[_request$6].post(url, body);
@@ -6994,9 +7026,20 @@
           onSyncFailure(e);
         }
 
-        throw e;
+        if (e.status === 400) {
+          _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].error('Invalid sync payload or clear the existing draft');
+        } else if (e.status === 401) {
+          _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].error('This is not a test profile');
+        } else {
+          _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].error('Sync variable failed');
+        }
       }
     }
+    /**
+     * Fetches variables from the server.
+     * @param {Function} onFetchComplete - Callback function on fetch completion.
+     */
+
 
     async fetchVariables(onFetchComplete) {
       _classPrivateFieldLooseBase(this, _event)[_event].push('wzrk_fetch', {

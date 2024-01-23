@@ -242,14 +242,18 @@ export default class RequestManager {
 
   async post (url, body) {
     try {
-      const r = await fetch(url, {
+      const response = await fetch(url, {
         method: 'post',
         headers: { 'Content-Type': 'application/json' },
         body: body
       })
-      const d = await r.json()
-      this.#logger.debug('Sync data successful', d)
-      return d
+      if (response.ok) {
+        const data = await response.json()
+        this.#logger.debug('Sync data successful', data)
+        return data
+      } else {
+        throw response
+      }
     } catch (e) {
       this.#logger.debug('Error in syncing variables', e)
       throw e

@@ -19,6 +19,14 @@ export class Variable {
     return this.defaultValue
   }
 
+  /**
+   * Defines a new variable with the provided name, default value, and variable store.
+   * @static
+   * @param {string} name - The name of the variable.
+   * @param {*} defaultValue - The default value of the variable.
+   * @param {VariableStore} variableStore - The VariableStore instance for registration.
+   * @returns {Variable|null} - The created Variable instance or null if invalid parameters are provided.
+   */
   static define (name, defaultValue, variableStore) {
     if (!name || typeof name !== 'string') {
       this.log('Empty or invalid name parameter provided.')

@@ -27,12 +27,21 @@ class VariableStore {
     $ct.variableStore = this
   }
 
+  /**
+   * Registers a variable instance in the store.
+   * @param {Object} varInstance - The variable instance to be registered.
+   */
   registerVariable (varInstance) {
     const { name } = varInstance
     this.#variables[name] = varInstance
     console.log('registerVariable', this.#variables)
   }
 
+  /**
+   * Retrieves a variable by its name.
+   * @param {string} name - The name of the variable to retrieve.
+   * @returns {Object} - The variable instance.
+   */
   getVariable (name) {
     return this.#variables[name]
   }
@@ -41,6 +50,13 @@ class VariableStore {
     return this.#hasVarsRequestCompleted
   }
 
+  /**
+   * Synchronizes variables with the server.
+   * @param {Function} onSyncSuccess - Callback function on successful synchronization.
+   * @param {Function} onSyncFailure - Callback function on synchronization failure.
+   * @throws Will throw an error if the account token is missing.
+   * @returns {Promise} - The result of the synchronization request.
+   */
   async syncVariables (onSyncSuccess, onSyncFailure) {
     if (!this.#account.token) {
       throw new Error('Account token is missing')
@@ -65,7 +81,6 @@ class VariableStore {
     const body = JSON.stringify([meta, payload])
     const url = this.#account.dataPostPEURL
 
-    // todo: handle error
     try {
       const r = await this.#request.post(url, body)
       if (onSyncSuccess && typeof onSyncSuccess === 'function') {
@@ -76,10 +91,20 @@ class VariableStore {
       if (onSyncFailure && typeof onSyncFailure === 'function') {
         onSyncFailure(e)
       }
-      throw e
+      if (e.status === 400) {
+        this.#logger.error('Invalid sync payload or clear the existing draft')
+      } else if (e.status === 401) {
+        this.#logger.error('This is not a test profile')
+      } else {
+        this.#logger.error('Sync variable failed')
+      }
     }
   }
 
+  /**
+   * Fetches variables from the server.
+   * @param {Function} onFetchComplete - Callback function on fetch completion.
+   */
   async fetchVariables (onFetchComplete) {
     this.#event.push('wzrk_fetch', { t: 4 })
     if (onFetchComplete && typeof onFetchComplete === 'function') {
