@@ -600,6 +600,7 @@
     location: null,
     dismissSpamControl: false,
     globalUnsubscribe: true,
+    flutterVersion: null,
     variableStore: {} // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
@@ -2446,7 +2447,7 @@
         }
 
         data.profile = profileObj;
-        data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToProfileObject(data, undefined);
+        data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
 
         _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data);
 
@@ -2505,23 +2506,21 @@
       var array = [];
 
       if ($ct.globalProfileMap == null) {
-        var _StorageManager$readF2;
-
-        $ct.globalProfileMap = (_StorageManager$readF2 = StorageManager.readFromLSorCookie(PR_COOKIE)) !== null && _StorageManager$readF2 !== void 0 ? _StorageManager$readF2 : {};
+        $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
       } // if the value to be set is either string or number
 
 
       if (typeof propVal === 'string' || typeof propVal === 'number') {
         if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
           array = $ct.globalProfileMap[propKey];
-          typeof propVal === 'number' ? array.push(propVal) : array.push(propVal.toLowerCase());
+          array.push(typeof propVal === 'number' ? propVal : propVal.toLowerCase());
         } else {
           $ct.globalProfileMap[propKey] = propVal;
         } // if propVal is an array
 
       } else {
         if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-          array = $ct.globalProfileMap[propKey];
+          array = Array.isArray($ct.globalProfileMap[propKey]) ? $ct.globalProfileMap[propKey] : [$ct.globalProfileMap[propKey]];
         }
         /**
          * checks for case sensitive inputs and filters the same ones
@@ -2536,7 +2535,7 @@
           } else if (typeof propVal[i] === 'number' && array.includes(propVal[i]) || typeof propVal[i] === 'string' && array.includes(propVal[i].toLowerCase())) {
             console.error('Values already included');
           } else {
-            console.error('array supports only string or number type values');
+            console.error('Array supports only string or number type values');
           }
         }
 
@@ -2625,7 +2624,7 @@
       }
 
       data.profile = profileObj;
-      data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToProfileObject(data, undefined);
+      data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
 
       _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data);
 
@@ -3645,6 +3644,7 @@
     constructor(logger) {
       super();
       this.isInboxOpen = false;
+      this.isInboxFromFlutter = false;
       this.selectedCategory = null;
       this.unviewedMessages = {};
       this.unviewedCounter = 0;
@@ -3687,7 +3687,11 @@
               }
             }
           } else if (this.inboxSelector.contains(e.target) || this.isInboxOpen) {
-            this.toggleInbox(e);
+            if (this.isInboxFromFlutter) {
+              this.isInboxFromFlutter = false;
+            } else {
+              this.toggleInbox(e);
+            }
           }
         };
       })();
@@ -4120,6 +4124,7 @@
 
     toggleInbox(e) {
       this.isInboxOpen = !this.isInboxOpen;
+      this.isInboxFromFlutter = !!(e === null || e === void 0 ? void 0 : e.rect);
 
       if (this.isInboxOpen) {
         this.inboxCard.scrollTop = 0;
@@ -4353,7 +4358,7 @@
     const verticalScroll = document.scrollingElement.scrollTop;
     const windowWidth = window.innerWidth + horizontalScroll;
     const windowHeight = window.innerHeight + verticalScroll;
-    const selectorRect = e.target.getBoundingClientRect();
+    const selectorRect = e.rect || e.target.getBoundingClientRect();
     const selectorX = selectorRect.x + horizontalScroll;
     const selectorY = selectorRect.y + verticalScroll;
     const selectorLeft = selectorRect.left + horizontalScroll;
@@ -5907,39 +5912,8 @@
       proto = proto.replace(':', '');
       dataObject.af = {
         lib: 'web-sdk-v2.0.0',
-        protocol: proto
-      }; // app fields
-
-      if (sessionStorage.hasOwnProperty('WZRK_D')) {
-        dataObject.debug = true;
-      }
-
-      return dataObject;
-    }
-
-    addSystemDataToProfileObject(dataObject, ignoreTrim) {
-      if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError)) {
-        dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError;
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError = {};
-      }
-
-      dataObject.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
-
-      if (isValueValid(_classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie)) {
-        dataObject.g = _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie;
-      }
-
-      const obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
-
-      dataObject.s = obj.s; // session cookie
-
-      dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
-
-      let proto = document.location.protocol;
-      proto = proto.replace(':', '');
-      dataObject.af = {
-        lib: 'web-sdk-v2.0.0',
-        protocol: proto
+        protocol: proto,
+        ...$ct.flutterVersion
       }; // app fields
 
       if (sessionStorage.hasOwnProperty('WZRK_D')) {
@@ -7364,6 +7338,12 @@
 
       this.getSCDomain = () => {
         return _classPrivateFieldLooseBase(this, _account$6)[_account$6].finalTargetDomain;
+      };
+
+      this.setLibrary = (libName, libVersion) => {
+        $ct.flutterVersion = {
+          [libName]: libVersion
+        };
       }; // Set the Signed Call sdk version and fire request
 
 
@@ -7468,9 +7448,13 @@
           }
 
           messages[messageId].viewed = 1;
-          var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1;
-          document.getElementById('unviewedBadge').innerText = counter;
-          document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none';
+
+          if (document.getElementById('unviewedBadge')) {
+            var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1;
+            document.getElementById('unviewedBadge').innerText = counter;
+            document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none';
+          }
+
           window.clevertap.renderNotificationViewed({
             msgId: messages[messageId].wzrk_id,
             pivotId: messages[messageId].pivotId
@@ -7480,6 +7464,16 @@
           saveInboxMessages(messages);
         } else {
           _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('No message available for message Id ' + messageId);
+        }
+      };
+      /* Mark Message as Read. messageIds should be a an array of string */
+
+
+      this.markReadInboxMessagesForIds = messageIds => {
+        if (Array.isArray(messageIds)) {
+          for (var id = 0; id < messageIds.length; id++) {
+            this.markReadInboxMessage(messageIds[id]);
+          }
         }
       };
       /* Mark all messages as read
@@ -7515,6 +7509,12 @@
         } else {
           _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('All messages are already read');
         }
+      };
+
+      this.toggleInbox = e => {
+        var _$ct$inbox;
+
+        return (_$ct$inbox = $ct.inbox) === null || _$ct$inbox === void 0 ? void 0 : _$ct$inbox.toggleInbox(e);
       }; // method for notification viewed
 
 
@@ -8027,7 +8027,7 @@
         };
       }
 
-      data = _classPrivateFieldLooseBase(this, _request$7)[_request$7].addSystemDataToProfileObject(data, undefined);
+      data = _classPrivateFieldLooseBase(this, _request$7)[_request$7].addSystemDataToObject(data, undefined);
 
       _classPrivateFieldLooseBase(this, _request$7)[_request$7].addFlags(data);
 
@@ -8071,19 +8071,35 @@
     }
 
     async syncVariables(onSyncSuccess, onSyncFailure) {
-      return _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].syncVariables(onSyncSuccess, onSyncFailure);
+      if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
+        return _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].syncVariables(onSyncSuccess, onSyncFailure);
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('App log level is not set to 4');
+      }
     }
 
     async fetchVariables(onFetchSuccess) {
-      return _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].fetchVariables(onFetchSuccess);
+      if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
+        return _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].fetchVariables(onFetchSuccess);
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('App log level is not set to 4');
+      }
     }
 
     addVariablesChangedCallback(callback) {
-      _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].addVariablesChangedCallback(callback);
+      if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
+        _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].addVariablesChangedCallback(callback);
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('App log level is not set to 4');
+      }
     }
 
     addOneTimeVariablesChangedCallback(callback) {
-      _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].addOneTimeVariablesChangedCallback(callback);
+      if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
+        _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].addOneTimeVariablesChangedCallback(callback);
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('App log level is not set to 4');
+      }
     }
 
   }
