@@ -8087,27 +8087,15 @@
     }
 
     async fetchVariables(onFetchSuccess) {
-      if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
-        return _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].fetchVariables(onFetchSuccess);
-      } else {
-        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('App log level is not set to 4');
-      }
+      return _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].fetchVariables(onFetchSuccess);
     }
 
     addVariablesChangedCallback(callback) {
-      if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
-        _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].addVariablesChangedCallback(callback);
-      } else {
-        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('App log level is not set to 4');
-      }
+      _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].addVariablesChangedCallback(callback);
     }
 
     addOneTimeVariablesChangedCallback(callback) {
-      if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
-        _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].addOneTimeVariablesChangedCallback(callback);
-      } else {
-        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('App log level is not set to 4');
-      }
+      _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].addOneTimeVariablesChangedCallback(callback);
     }
 
   }

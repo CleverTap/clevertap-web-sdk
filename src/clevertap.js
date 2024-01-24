@@ -843,26 +843,14 @@ export default class CleverTap {
   }
 
   async fetchVariables (onFetchSuccess) {
-    if (this.#logger.logLevel === 4) {
-      return this.#variableStore.fetchVariables(onFetchSuccess)
-    } else {
-      this.#logger.error('App log level is not set to 4')
-    }
+    return this.#variableStore.fetchVariables(onFetchSuccess)
   }
 
   addVariablesChangedCallback (callback) {
-    if (this.#logger.logLevel === 4) {
-      this.#variableStore.addVariablesChangedCallback(callback)
-    } else {
-      this.#logger.error('App log level is not set to 4')
-    }
+    this.#variableStore.addVariablesChangedCallback(callback)
   }
 
   addOneTimeVariablesChangedCallback (callback) {
-    if (this.#logger.logLevel === 4) {
-      this.#variableStore.addOneTimeVariablesChangedCallback(callback)
-    } else {
-      this.#logger.error('App log level is not set to 4')
-    }
+    this.#variableStore.addOneTimeVariablesChangedCallback(callback)
   }
 }
