@@ -827,11 +827,7 @@ export default class CleverTap {
   }
 
   defineVariable (name, defaultValue) {
-    if (this.#logger.logLevel === 4) {
-      return Variable.define(name, defaultValue, this.#variableStore)
-    } else {
-      this.#logger.error('App log level is not set to 4')
-    }
+    return Variable.define(name, defaultValue, this.#variableStore)
   }
 
   async syncVariables (onSyncSuccess, onSyncFailure) {

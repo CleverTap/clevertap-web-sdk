@@ -8071,11 +8071,7 @@
     }
 
     defineVariable(name, defaultValue) {
-      if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
-        return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1]);
-      } else {
-        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('App log level is not set to 4');
-      }
+      return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1]);
     }
 
     async syncVariables(onSyncSuccess, onSyncFailure) {
