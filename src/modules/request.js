@@ -75,30 +75,7 @@ export default class RequestManager {
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
     let proto = document.location.protocol
     proto = proto.replace(':', '')
-    dataObject.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto } // app fields
-    if (sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
-
-    return dataObject
-  }
-
-  addSystemDataToProfileObject (dataObject, ignoreTrim) {
-    if (!isObjectEmpty(this.#logger.wzrkError)) {
-      dataObject.wzrk_error = this.#logger.wzrkError
-      this.#logger.wzrkError = {}
-    }
-
-    dataObject.id = this.#account.id
-
-    if (isValueValid(this.#device.gcookie)) {
-      dataObject.g = this.#device.gcookie
-    }
-
-    const obj = this.#session.getSessionCookieObject()
-    dataObject.s = obj.s // session cookie
-    dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
-    let proto = document.location.protocol
-    proto = proto.replace(':', '')
-    dataObject.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto } // app fields
+    dataObject.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...$ct.flutterVersion } // app fields
     if (sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
 
     return dataObject

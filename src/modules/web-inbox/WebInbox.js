@@ -12,6 +12,7 @@ export class Inbox extends HTMLElement {
   }
 
   isInboxOpen = false
+  isInboxFromFlutter = false
   selectedCategory = null
   unviewedMessages = {}
   unviewedCounter = 0
@@ -377,7 +378,11 @@ export class Inbox extends HTMLElement {
           }
         }
       } else if (this.inboxSelector.contains(e.target) || this.isInboxOpen) {
-        this.toggleInbox(e)
+        if (this.isInboxFromFlutter) {
+          this.isInboxFromFlutter = false
+        } else {
+          this.toggleInbox(e)
+        }
       }
     }
   })()
@@ -420,6 +425,7 @@ export class Inbox extends HTMLElement {
   // create a separte fn fro refactoring
   toggleInbox (e) {
     this.isInboxOpen = !this.isInboxOpen
+    this.isInboxFromFlutter = !!e?.rect
     if (this.isInboxOpen) {
       this.inboxCard.scrollTop = 0
       !this.isPreview && this.deleteExpiredAndGetUnexpiredMsgs()

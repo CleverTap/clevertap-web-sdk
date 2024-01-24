@@ -186,6 +186,10 @@ export default class CleverTap {
       return this.#account.finalTargetDomain
     }
 
+    this.setLibrary = (libName, libVersion) => {
+      $ct.flutterVersion = { [libName]: libVersion }
+    }
+
     // Set the Signed Call sdk version and fire request
     this.setSCSDKVersion = (ver) => {
       this.#account.scSDKVersion = ver
@@ -273,15 +277,26 @@ export default class CleverTap {
         const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
         if (el !== null) { el.shadowRoot.getElementById('unreadMarker').style.display = 'none' }
         messages[messageId].viewed = 1
-        var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1
-        document.getElementById('unviewedBadge').innerText = counter
-        document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none'
+        if (document.getElementById('unviewedBadge')) {
+          var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1
+          document.getElementById('unviewedBadge').innerText = counter
+          document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none'
+        }
         window.clevertap.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
         $ct.inbox.unviewedCounter--
         delete $ct.inbox.unviewedMessages[messageId]
         saveInboxMessages(messages)
       } else {
         this.#logger.error('No message available for message Id ' + messageId)
+      }
+    }
+
+    /* Mark Message as Read. messageIds should be a an array of string */
+    this.markReadInboxMessagesForIds = (messageIds) => {
+      if (Array.isArray(messageIds)) {
+        for (var id = 0; id < messageIds.length; id++) {
+          this.markReadInboxMessage(messageIds[id])
+        }
       }
     }
 
@@ -309,6 +324,8 @@ export default class CleverTap {
         this.#logger.debug('All messages are already read')
       }
     }
+
+    this.toggleInbox = (e) => $ct.inbox?.toggleInbox(e)
 
     // method for notification viewed
     this.renderNotificationViewed = (detail) => {
@@ -779,7 +796,7 @@ export default class CleverTap {
     if ($ct.location) {
       data.af = { ...data.af, ...$ct.location }
     }
-    data = this.#request.addSystemDataToProfileObject(data, undefined)
+    data = this.#request.addSystemDataToObject(data, undefined)
     this.#request.addFlags(data)
     const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL

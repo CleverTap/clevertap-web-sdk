@@ -154,7 +154,7 @@ export default class ProfileHandler extends Array {
         profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
       }
       data.profile = profileObj
-      data = this.#request.addSystemDataToProfileObject(data, undefined)
+      data = this.#request.addSystemDataToObject(data, undefined)
 
       this.#request.addFlags(data)
       const compressedData = compressData(JSON.stringify(data), this.#logger)
@@ -202,20 +202,20 @@ export default class ProfileHandler extends Array {
   _handleMultiValueAdd (propKey, propVal, command) {
     var array = []
     if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) ?? {}
+      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {}
     }
     // if the value to be set is either string or number
     if (typeof propVal === 'string' || typeof propVal === 'number') {
       if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
         array = $ct.globalProfileMap[propKey]
-        typeof propVal === 'number' ? array.push(propVal) : array.push(propVal.toLowerCase())
+        array.push(typeof propVal === 'number' ? propVal : propVal.toLowerCase())
       } else {
         $ct.globalProfileMap[propKey] = propVal
       }
       // if propVal is an array
     } else {
       if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-        array = $ct.globalProfileMap[propKey]
+        array = Array.isArray($ct.globalProfileMap[propKey]) ? $ct.globalProfileMap[propKey] : [$ct.globalProfileMap[propKey]]
       }
       /**
        * checks for case sensitive inputs and filters the same ones
@@ -228,7 +228,7 @@ export default class ProfileHandler extends Array {
         } else if ((typeof propVal[i] === 'number' && array.includes(propVal[i])) || (typeof propVal[i] === 'string' && array.includes(propVal[i].toLowerCase()))) {
           console.error('Values already included')
         } else {
-          console.error('array supports only string or number type values')
+          console.error('Array supports only string or number type values')
         }
       }
       $ct.globalProfileMap[propKey] = array
@@ -300,7 +300,7 @@ export default class ProfileHandler extends Array {
       profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
     }
     data.profile = profileObj
-    data = this.#request.addSystemDataToProfileObject(data, undefined)
+    data = this.#request.addSystemDataToObject(data, undefined)
     this.#request.addFlags(data)
     const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
