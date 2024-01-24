@@ -5571,7 +5571,7 @@
     ERROR: 1,
     INFO: 2,
     DEBUG: 3,
-    ENABLE_PE: 4
+    DEBUG_PE: 4
   };
 
   var _logLevel = _classPrivateFieldLooseKey("logLevel");
@@ -5621,6 +5621,12 @@
     debug(message) {
       if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
         _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
+      }
+    }
+
+    debugPE(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
       }
     }
 
@@ -8057,7 +8063,11 @@
     }
 
     defineVariable(name, defaultValue) {
-      return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1]);
+      if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
+        return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1]);
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('App log level is not set to 4');
+      }
     }
 
     async syncVariables(onSyncSuccess, onSyncFailure) {

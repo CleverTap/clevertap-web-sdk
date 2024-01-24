@@ -810,22 +810,42 @@ export default class CleverTap {
   }
 
   defineVariable (name, defaultValue) {
-    return Variable.define(name, defaultValue, this.#variableStore)
+    if (this.#logger.logLevel === 4) {
+      return Variable.define(name, defaultValue, this.#variableStore)
+    } else {
+      this.#logger.error('App log level is not set to 4')
+    }
   }
 
   async syncVariables (onSyncSuccess, onSyncFailure) {
-    return this.#variableStore.syncVariables(onSyncSuccess, onSyncFailure)
+    if (this.#logger.logLevel === 4) {
+      return this.#variableStore.syncVariables(onSyncSuccess, onSyncFailure)
+    } else {
+      this.#logger.error('App log level is not set to 4')
+    }
   }
 
   async fetchVariables (onFetchSuccess) {
-    return this.#variableStore.fetchVariables(onFetchSuccess)
+    if (this.#logger.logLevel === 4) {
+      return this.#variableStore.fetchVariables(onFetchSuccess)
+    } else {
+      this.#logger.error('App log level is not set to 4')
+    }
   }
 
   addVariablesChangedCallback (callback) {
-    this.#variableStore.addVariablesChangedCallback(callback)
+    if (this.#logger.logLevel === 4) {
+      this.#variableStore.addVariablesChangedCallback(callback)
+    } else {
+      this.#logger.error('App log level is not set to 4')
+    }
   }
 
   addOneTimeVariablesChangedCallback (callback) {
-    this.#variableStore.addOneTimeVariablesChangedCallback(callback)
+    if (this.#logger.logLevel === 4) {
+      this.#variableStore.addOneTimeVariablesChangedCallback(callback)
+    } else {
+      this.#logger.error('App log level is not set to 4')
+    }
   }
 }

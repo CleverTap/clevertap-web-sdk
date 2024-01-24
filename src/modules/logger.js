@@ -7,7 +7,7 @@ export const logLevels = {
   ERROR: 1,
   INFO: 2,
   DEBUG: 3,
-  ENABLE_PE: 4
+  DEBUG_PE: 4
 }
 
 export class Logger {
@@ -41,6 +41,12 @@ export class Logger {
   debug (message) {
     if (this.#logLevel >= logLevels.DEBUG || this.#isLegacyDebug) {
       this.#log('debug', message)
+    }
+  }
+
+  debugPE (message) {
+    if (this.#logLevel >= logLevels.DEBUG_PE) {
+      this.#log('debug_pe', message)
     }
   }
 
