@@ -1,6 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.6.10] - 17 Jan, 2023
+- Fixes a bug related to Web Inbox rendering on mobile browser
+
+## [1.6.9] - 6 Dec, 2023
+- Adds public method markReadInboxMessagesForIds.
+- Adds public method setLibrary to set the Flutter version.
+- Fixes a bug related to Web Inbox scroll.
+- Triggers an event to manage inline script errors related to Content Security Policy.
+
 ## [1.6.8] - 9 Nov, 2023
 - Adds handling for email unsubscribe.
 

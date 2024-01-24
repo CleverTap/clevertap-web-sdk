@@ -387,6 +387,7 @@ const _tr = (msg, {
     if (document.getElementById(divId) != null) {
       return
     }
+
     $ct.campaignDivMap[campaignId] = divId
     const isBanner = displayObj.layout === 2
     const msgDiv = document.createElement('div')
@@ -724,6 +725,7 @@ const _tr = (msg, {
     if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
+
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     $ct.campaignDivMap[campaignId] = 'intentPreview'
     let legacy = false
