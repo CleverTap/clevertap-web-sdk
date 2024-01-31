@@ -943,6 +943,7 @@
   const VARIABLES = 'WZRK_PE';
   const PUSH_DELAY_MS = 1000;
   const MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
+  const WZRK_FETCH = 'wzrk_fetch';
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -2455,7 +2456,7 @@
      */
 
 
-    if (evtName && evtName === 'wzrk_fetch') {
+    if (evtName && evtName === WZRK_FETCH) {
       // New retry mechanism
       if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) {
         setTimeout(() => {
@@ -7724,14 +7725,14 @@
         vars: {}
       };
 
-      for (var name in _classPrivateFieldLooseBase(this, _variables)[_variables]) {
+      for (const name in _classPrivateFieldLooseBase(this, _variables)[_variables]) {
         payload.vars[name] = {
           defaultValue: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue,
           type: _classPrivateFieldLooseBase(this, _variables)[_variables][name].type
         };
       }
 
-      var meta = {};
+      let meta = {};
       meta = _classPrivateFieldLooseBase(this, _request$6)[_request$6].addSystemDataToObject(meta, undefined);
       meta.tk = _classPrivateFieldLooseBase(this, _account$5)[_account$5].token;
       meta.type = 'meta';
@@ -7768,7 +7769,7 @@
 
 
     async fetchVariables(onFetchComplete) {
-      _classPrivateFieldLooseBase(this, _event)[_event].push('wzrk_fetch', {
+      _classPrivateFieldLooseBase(this, _event)[_event].push(WZRK_FETCH, {
         t: 4
       });
 
@@ -8713,7 +8714,7 @@
       _classPrivateFieldLooseBase(this, _request$7)[_request$7].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
 
       if (parseInt(data.pg) === 1) {
-        this.event.push('wzrk_fetch', {
+        this.event.push(WZRK_FETCH, {
           t: 4
         });
       }
@@ -8846,11 +8847,11 @@
     this.notifications._processOldValues();
   };
 
-  var _debounce2 = function _debounce2(func, delay) {
+  var _debounce2 = function _debounce2(func) {
     let timeout;
     return function () {
       clearTimeout(timeout);
-      timeout = setTimeout(func, delay);
+      timeout = setTimeout(func, 300);
     };
   };
 
@@ -8859,7 +8860,7 @@
       if (_classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] !== location.href) {
         this.pageChanged();
       }
-    }, 300);
+    });
 
     debouncedPageChanged();
   };

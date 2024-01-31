@@ -27,7 +27,8 @@ import {
   COMMAND_ADD,
   COMMAND_REMOVE,
   COMMAND_DELETE,
-  EVT_PUSH
+  EVT_PUSH,
+  WZRK_FETCH
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -643,11 +644,11 @@ export default class CleverTap {
     this.notifications._processOldValues()
   }
 
-  #debounce (func, delay) {
+  #debounce (func) {
     let timeout
     return function () {
       clearTimeout(timeout)
-      timeout = setTimeout(func, delay)
+      timeout = setTimeout(func, 300)
     }
   }
 
@@ -656,7 +657,7 @@ export default class CleverTap {
       if (this.#previousUrl !== location.href) {
         this.pageChanged()
       }
-    }, 300)
+    })
     debouncedPageChanged()
   }
 
@@ -723,7 +724,7 @@ export default class CleverTap {
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
 
     if (parseInt(data.pg) === 1) {
-      this.event.push('wzrk_fetch', { t: 4 })
+      this.event.push(WZRK_FETCH, { t: 4 })
     }
 
     this.#previousUrl = currLocation

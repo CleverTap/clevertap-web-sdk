@@ -1,5 +1,5 @@
 
-import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY, MAX_DELAY_FREQUENCY, PUSH_DELAY_MS } from './constants'
+import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY, MAX_DELAY_FREQUENCY, PUSH_DELAY_MS, WZRK_FETCH } from './constants'
 import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
 import { StorageManager, $ct } from './storage'
@@ -31,7 +31,7 @@ export default class RequestDispatcher {
      * keep retrying
      */
 
-    if (evtName && evtName === 'wzrk_fetch') {
+    if (evtName && evtName === WZRK_FETCH) {
       // New retry mechanism
       if (!isValueValid(this.device.gcookie) && ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1)) {
         setTimeout(() => {

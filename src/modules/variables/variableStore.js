@@ -1,4 +1,4 @@
-import { VARIABLES } from '../../util/constants'
+import { VARIABLES, WZRK_FETCH } from '../../util/constants'
 import { StorageManager, $ct } from '../../util/storage'
 class VariableStore {
   #logger
@@ -66,14 +66,14 @@ class VariableStore {
       type: 'varsPayload',
       vars: {}
     }
-    for (var name in this.#variables) {
+    for (const name in this.#variables) {
       payload.vars[name] = {
         defaultValue: this.#variables[name].defaultValue,
         type: this.#variables[name].type
       }
     }
 
-    var meta = {}
+    let meta = {}
     meta = this.#request.addSystemDataToObject(meta, undefined)
     meta.tk = this.#account.token
 
@@ -106,7 +106,7 @@ class VariableStore {
    * @param {Function} onFetchComplete - Callback function on fetch completion.
    */
   async fetchVariables (onFetchComplete) {
-    this.#event.push('wzrk_fetch', { t: 4 })
+    this.#event.push(WZRK_FETCH, { t: 4 })
     if (onFetchComplete && typeof onFetchComplete === 'function') {
       this.#fetchCallback = onFetchComplete
     }
