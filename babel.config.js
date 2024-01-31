@@ -4,9 +4,11 @@ module.exports = {
       '@babel/preset-env',
       {
         targets: '> 0.25%, not dead',
-        modules: false
+        modules: false,
+        loose: true
       }
-    ]
+    ],
+    '@babel/preset-react'
   ],
   plugins: [
     ['@babel/plugin-proposal-class-properties', { loose: true }],
