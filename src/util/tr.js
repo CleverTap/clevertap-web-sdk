@@ -436,6 +436,9 @@ const _tr = (msg, {
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe'
+    if (targetingMsgJson.display.preview) {
+      iframe.sandbox = 'allow-scripts allow-same-origin allow-popups'
+    }
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
     if (onClick !== '' && onClick != null) {
@@ -499,20 +502,21 @@ const _tr = (msg, {
 
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
-    const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
-    const doc = ifrm.document
+    // const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
+    // const doc = ifrm.document
 
     // Dispatch event for popup box/banner close
     const closeCampaign = new Event('CT_campaign_rendered')
     document.dispatchEvent(closeCampaign)
 
-    doc.open()
-    doc.write(html)
-
+    // doc.open()
+    // doc.write(html)
     if (displayObj['custom-editor']) {
-      appendScriptForCustomEvent(targetingMsgJson, doc)
+      html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    doc.close()
+    iframe.srcdoc = html
+
+    // doc.close()
 
     const adjustIFrameHeight = () => {
       // adjust iframe and body height of html inside correctly
@@ -557,9 +561,8 @@ const _tr = (msg, {
     }
   }
 
-  const appendScriptForCustomEvent = (targetingMsgJson, doc) => {
-    const script = doc.createElement('script')
-    script.innerHTML = `
+  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
+    const script = `<script>
       const ct__camapignId = '${targetingMsgJson.wzrk_id}';
       const ct__formatVal = (v) => {
           return v && v.trim().substring(0, 20);
@@ -583,8 +586,10 @@ const _tr = (msg, {
             window.parent.clevertap.renderNotificationClicked(notifData);
         }
       });
+      </script>
     `
-    doc.body.appendChild(script)
+    return html.replace(/(<\s*\/\s*body)/, `${script}\n$1`)
+    // doc.body.appendChild(script)
   }
 
   let _callBackCalled = false
@@ -753,6 +758,10 @@ const _tr = (msg, {
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe-intent'
+    console.log('preview ', targetingMsgJson.display.preview)
+    if (targetingMsgJson.display.preview) {
+      iframe.sandbox = 'allow-scripts allow-same-origin allow-popups'
+    }
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
     if (onClick !== '' && onClick != null) {
@@ -815,19 +824,21 @@ const _tr = (msg, {
     }
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
-    const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
-    const doc = ifrm.document
+    // const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
+    // const doc = ifrm.document
 
     // Dispatch event for interstitial/exit intent close
     const closeCampaign = new Event('CT_campaign_rendered')
     document.dispatchEvent(closeCampaign)
 
-    doc.open()
-    doc.write(html)
+    // doc.open()
+    // doc.write(html)
     if (targetingMsgJson.display['custom-editor']) {
-      appendScriptForCustomEvent(targetingMsgJson, doc)
+      html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    doc.close()
+    iframe.srcdoc = html
+
+    // doc.close()
 
     const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
     setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)

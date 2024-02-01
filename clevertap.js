@@ -4877,6 +4877,11 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe';
+
+      if (targetingMsgJson.display.preview) {
+        iframe.sandbox = 'allow-scripts allow-same-origin allow-popups';
+      }
+
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -4924,20 +4929,19 @@
       }
 
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
-      msgDiv.appendChild(iframe);
-      const ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      const doc = ifrm.document; // Dispatch event for popup box/banner close
+      msgDiv.appendChild(iframe); // const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
+      // const doc = ifrm.document
+      // Dispatch event for popup box/banner close
 
       const closeCampaign = new Event('CT_campaign_rendered');
-      document.dispatchEvent(closeCampaign);
-      doc.open();
-      doc.write(html);
+      document.dispatchEvent(closeCampaign); // doc.open()
+      // doc.write(html)
 
       if (displayObj['custom-editor']) {
-        appendScriptForCustomEvent(targetingMsgJson, doc);
+        html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
-      doc.close();
+      iframe.srcdoc = html; // doc.close()
 
       const adjustIFrameHeight = () => {
         // adjust iframe and body height of html inside correctly
@@ -4986,10 +4990,9 @@
       }
     };
 
-    const appendScriptForCustomEvent = (targetingMsgJson, doc) => {
-      const script = doc.createElement('script');
-      script.innerHTML = "\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n    ");
-      doc.body.appendChild(script);
+    const appendScriptForCustomEvent = (targetingMsgJson, html) => {
+      const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
+      return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1")); // doc.body.appendChild(script)
     };
 
     let _callBackCalled = false;
@@ -5173,6 +5176,12 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe-intent';
+      console.log('preview ', targetingMsgJson.display.preview);
+
+      if (targetingMsgJson.display.preview) {
+        iframe.sandbox = 'allow-scripts allow-same-origin allow-popups';
+      }
+
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -5223,20 +5232,20 @@
       }
 
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
-      msgDiv.appendChild(iframe);
-      const ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      const doc = ifrm.document; // Dispatch event for interstitial/exit intent close
+      msgDiv.appendChild(iframe); // const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
+      // const doc = ifrm.document
+      // Dispatch event for interstitial/exit intent close
 
       const closeCampaign = new Event('CT_campaign_rendered');
-      document.dispatchEvent(closeCampaign);
-      doc.open();
-      doc.write(html);
+      document.dispatchEvent(closeCampaign); // doc.open()
+      // doc.write(html)
 
       if (targetingMsgJson.display['custom-editor']) {
-        appendScriptForCustomEvent(targetingMsgJson, doc);
+        html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
-      doc.close();
+      iframe.srcdoc = html; // doc.close()
+
       const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
     };
