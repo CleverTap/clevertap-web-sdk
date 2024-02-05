@@ -1,6 +1,18 @@
 export class Variable {
   #variableStore
 
+  /**
+   * Creates an instance of the Variable class.
+   *
+   * @constructor
+   * @param {VariableStore} options.variableStore - The VariableStore instance for registration.
+   * @param {string|null} options.name - The name of the variable.
+   * @param {*} options.defaultValue - The default value of the variable.
+   * @param {*} options.value - The current value of the variable.
+   * @param {string|null} options.type - The type of the variable (string, number, boolean).
+   * @param {boolean} options.hadStarted - A flag indicating whether the variable has started (used internally).
+   * @param {Function[]} options.valueChangedCallbacks - Array to store callbacks to be executed when the variable value changes.
+   */
   constructor ({ variableStore }) {
     this.name = null
     this.defaultValue = null
@@ -29,19 +41,24 @@ export class Variable {
    */
   static define (name, defaultValue, variableStore) {
     if (!name || typeof name !== 'string') {
-      this.log('Empty or invalid name parameter provided.')
+      console.error('Empty or invalid name parameter provided.')
       return null
     }
     if (name.startsWith('.') || name.endsWith('.')) {
-      this.log('Variable name starts or ends with a `.` which is not allowed: ' + name)
+      console.error('Variable name starts or ends with a `.` which is not allowed: ' + name)
       return null
     }
 
-    let type = 'string'
-    if (typeof defaultValue === 'number') {
+    let type
+    if (typeof defaultValue === 'string') {
+      type = 'string'
+    } else if (typeof defaultValue === 'number') {
       type = 'number'
     } else if (typeof defaultValue === 'boolean') {
       type = 'boolean'
+    } else {
+      console.error('Only primitive types (string, number, boolean) are accepted as value')
+      return
     }
 
     const existing = variableStore.getVariable(name)
@@ -63,6 +80,10 @@ export class Variable {
     return varInstance
   }
 
+  /**
+   * Updates the variable's value, triggering callbacks if hasVarsRequestCompleted is returned true.
+   * @param {*} newValue - The new value to be assigned to the variable.
+   */
   update (newValue) {
     const oldValue = this.value
     this.value = newValue
@@ -78,12 +99,19 @@ export class Variable {
     }
   }
 
+  /**
+   * Invokes all registered callbacks when the variable value changes.
+   */
   triggerValueChanged () {
     this.valueChangedCallbacks.forEach((onValueChanged) => {
       onValueChanged(this)
     })
   }
 
+  /**
+   * Adds a callback function to the array and triggers it immediately if variable requests have completed.
+   * @param {Function} onValueChanged - The callback function to be added.
+   */
   addValueChangedCallback (onValueChanged) {
     if (!onValueChanged) {
       console.log('Invalid callback parameter provided.')
@@ -96,6 +124,10 @@ export class Variable {
     }
   }
 
+  /**
+   * Removes a callback function from the array.
+   * @param {Function} onValueChanged - The callback function to be removed.
+   */
   removeValueChangedCallback (onValueChanged) {
     const index = this.valueChangedCallbacks.indexOf(onValueChanged)
     if (index !== -1) {
@@ -103,6 +135,9 @@ export class Variable {
     }
   }
 
+  /**
+   * Resets the `hadStarted` flag to false.
+   */
   clearStartFlag () {
     this.hadStarted = false
   }

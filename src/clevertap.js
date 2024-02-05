@@ -644,11 +644,11 @@ export default class CleverTap {
     this.notifications._processOldValues()
   }
 
-  #debounce (func) {
+  #debounce (func, delay = 300) {
     let timeout
     return function () {
       clearTimeout(timeout)
-      timeout = setTimeout(func, 300)
+      timeout = setTimeout(func, delay)
     }
   }
 
