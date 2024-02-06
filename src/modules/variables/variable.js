@@ -49,16 +49,10 @@ export class Variable {
       return null
     }
 
-    let type
-    if (typeof defaultValue === 'string') {
-      type = 'string'
-    } else if (typeof defaultValue === 'number') {
-      type = 'number'
-    } else if (typeof defaultValue === 'boolean') {
-      type = 'boolean'
-    } else {
+    const typeOfDefaultValue = typeof defaultValue
+    if (typeOfDefaultValue !== 'string' || typeOfDefaultValue !== 'number' || typeOfDefaultValue !== 'boolean') {
       console.error('Only primitive types (string, number, boolean) are accepted as value')
-      return
+      return null
     }
 
     const existing = variableStore.getVariable(name)
@@ -71,7 +65,7 @@ export class Variable {
       varInstance.name = name
       varInstance.defaultValue = defaultValue
       varInstance.value = defaultValue
-      varInstance.type = type
+      varInstance.type = typeOfDefaultValue
       variableStore.registerVariable(varInstance)
       varInstance.update(defaultValue)
     } catch (error) {
