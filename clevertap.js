@@ -5835,7 +5835,6 @@
       iframe.srcdoc = html;
 
       iframe.onload = function () {
-        console.log(document.getElementById('wiz-iframe-intent').contentDocument);
         var contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
         setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };

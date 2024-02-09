@@ -827,7 +827,6 @@ const _tr = (msg, {
     iframe.srcdoc = html
 
     iframe.onload = () => {
-      console.log(document.getElementById('wiz-iframe-intent').contentDocument)
       const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
     }
