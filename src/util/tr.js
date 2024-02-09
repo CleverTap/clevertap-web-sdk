@@ -751,9 +751,9 @@ const _tr = (msg, {
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe-intent'
-    if (targetingMsgJson.display.preview) {
-      iframe.sandbox = 'allow-scripts allow-popups'
-    }
+    // if (targetingMsgJson.display.preview) {
+    //   iframe.sandbox = 'allow-scripts'
+    // }
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
     if (onClick !== '' && onClick != null) {
@@ -827,6 +827,7 @@ const _tr = (msg, {
     iframe.srcdoc = html
 
     iframe.onload = () => {
+      console.log(document.getElementById('wiz-iframe-intent'))
       const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
     }

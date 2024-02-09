@@ -5767,11 +5767,9 @@
       iframe.marginheight = '0px';
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
-      iframe.id = 'wiz-iframe-intent';
-
-      if (targetingMsgJson.display.preview) {
-        iframe.sandbox = 'allow-scripts allow-popups';
-      }
+      iframe.id = 'wiz-iframe-intent'; // if (targetingMsgJson.display.preview) {
+      //   iframe.sandbox = 'allow-scripts'
+      // }
 
       var onClick = targetingMsgJson.display.onClick;
       var pointerCss = '';
@@ -5835,6 +5833,7 @@
       iframe.srcdoc = html;
 
       iframe.onload = function () {
+        console.log(document.getElementById('wiz-iframe-intent'));
         var contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
         setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
