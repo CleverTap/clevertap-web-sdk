@@ -753,6 +753,9 @@ const _tr = (msg, {
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe-intent'
+    // if (targetingMsgJson.display.preview) {
+    //   iframe.sandbox = 'allow-scripts'
+    // }
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
     if (onClick !== '' && onClick != null) {
@@ -815,22 +818,26 @@ const _tr = (msg, {
     }
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
-    const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
-    const doc = ifrm.document
+    // const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
+    // const doc = ifrm.document
 
     // Dispatch event for interstitial/exit intent close
     const closeCampaign = new Event('CT_campaign_rendered')
     document.dispatchEvent(closeCampaign)
 
-    doc.open()
-    doc.write(html)
+    // doc.open()
+    // doc.write(html)
     if (targetingMsgJson.display['custom-editor']) {
-      appendScriptForCustomEvent(targetingMsgJson, doc)
+      html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    doc.close()
+    iframe.srcdoc = html
 
-    const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
-    setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
+    // doc.close()
+
+    iframe.onload = () => {
+      const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
+      setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
+    }
   }
 
   if (!document.body) {
