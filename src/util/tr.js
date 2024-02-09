@@ -437,7 +437,7 @@ const _tr = (msg, {
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe'
     if (targetingMsgJson.display.preview) {
-      iframe.sandbox = 'allow-scripts allow-same-origin allow-popups'
+      iframe.sandbox = 'allow-scripts allow-popups'
     }
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
@@ -752,7 +752,7 @@ const _tr = (msg, {
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe-intent'
     if (targetingMsgJson.display.preview) {
-      iframe.sandbox = 'allow-scripts allow-same-origin allow-popups'
+      iframe.sandbox = 'allow-scripts allow-popups'
     }
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
