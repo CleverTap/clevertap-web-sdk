@@ -328,6 +328,27 @@ const _tr = (msg, {
     containerEl.appendChild(popupImageOnly)
   }
 
+  const renderVisualBuilder = (targetingMsgJson) => {
+    if (targetingMsgJson.msgContent.url === window.location.href) {
+      const details = targetingMsgJson.display.details[0]
+      const selectors = Object.keys(details)
+      selectors.forEach((selector) => {
+        if (document.querySelector(selector)) {
+          updateSelector(document.querySelector(selector), details[selector])
+        } else {
+          // log error element not found
+          console.log('Element not found selector used', selector)
+        }
+      })
+    }
+  }
+
+  const updateSelector = (element, updatedValues) => {
+    element.textContent = updatedValues.text
+    element.style.fontFamily = updatedValues.fontFamily
+    element.style.color = updatedValues.color
+  }
+
   const renderFooterNotification = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     const displayObj = targetingMsgJson.display
@@ -895,6 +916,8 @@ const _tr = (msg, {
           } else {
             arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
           }
+        } else if (targetNotif.msgContent.type === 4) {
+          renderVisualBuilder(targetNotif)
         } else {
           showFooterNotification(targetNotif)
         }

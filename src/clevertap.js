@@ -576,6 +576,13 @@ export default class CleverTap {
 
   // starts here
   init (accountId, region, targetDomain) {
+    const search = window.location.search
+    if (search === '?ctBuilder') {
+      // open in visual builder mode
+      console.log('open in visual builder mode')
+      initialiseCTBuilder()
+      return
+    }
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
