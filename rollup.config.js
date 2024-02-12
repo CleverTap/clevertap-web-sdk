@@ -20,6 +20,13 @@ export default {
       file: 'clevertap.min.js',
       format: 'umd',
       plugins: [terser()]
+    },
+    {
+      name: 'clevertap',
+      file: 'clevertap_cjs.js',
+      format: 'cjs',
+      exports: 'auto',
+      plugins: [terser()]
     }
   ],
   plugins: [
