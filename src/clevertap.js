@@ -563,14 +563,7 @@ export default class CleverTap {
       // The accountId is present so can init with empty values.
       // Needed to maintain backward compatability with legacy implementations.
       // Npm imports/require will need to call init explictly with accountId
-      const search = window.location.search
-      if (search === '?ctBuilder') {
-        // open in visual builder mode
-        console.log('open in visual builder mode')
-        initialiseCTBuilder()
-      } else {
-        this.init()
-      }
+      this.init()
     }
   }
 

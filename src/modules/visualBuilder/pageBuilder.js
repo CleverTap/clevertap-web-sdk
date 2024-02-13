@@ -3,15 +3,17 @@ const currSelectorValues = {
   color: '#000000',
   fontFamily: 'Arial, sans-serif',
   text: '',
+  replacements: '',
   fontSize: 0,
   margin: '',
   padding: ''
 }
 let currSelector = ''
 let profileProps
-let eventName
 let eventProps
 let container
+let lastRange = null
+const winRef = window.opener || document.referrer
 
 function rgbToHex (r, g, b) {
   // Ensure values are within valid range (0-255)
@@ -31,19 +33,19 @@ function rgbToHex (r, g, b) {
 }
 
 export const initialiseCTBuilder = () => {
-  const winRef = window.opener
-  var regex = /^.*\.dashboard\.clevertap\.com.*/
+  // const winRef = window.opener
+  var regex = /^(.*\.dashboard\.clevertap\.com.*)|localhost/
   function normalizeURL (url) {
     return url.replace(/\/+$/, '')
   }
   window.addEventListener('message', (event) => {
-    if (regex.test(normalizeURL(event.origin))) {
+    if (regex.test(normalizeURL(event.origin)) && event.data.evtProps) {
       eventProps = event.data.evtProps
-      eventName = event.data.evtName
       profileProps = event.data.profile
-      console.log('personalisation data', eventProps, eventName, profileProps)
+      console.log('personalisation data', eventProps, profileProps)
     }
   }, false)
+  console.log(winRef)
   winRef.postMessage('Builder Initialised', '*')
   const ctBuilderHeader = document.createElement('div')
   ctBuilderHeader.innerHTML = `
@@ -81,7 +83,7 @@ export const initialiseCTBuilder = () => {
   iframeContainer.id = 'iframe-container'
   const iframe = document.createElement('iframe')
   iframe.id = 'content-iframe'
-  iframe.sandbox = 'allow-scripts'
+  iframe.sandbox = 'allow-scripts allow-same-origin'
   container.appendChild(iframeContainer)
   iframeContainer.appendChild(iframe)
   iframe.src = window.location.href.split('?')[0]
@@ -109,6 +111,7 @@ function handleFormSumbmission (event) {
     padding
   }
   ctSelector[currSelector] = inlineStyle
+  printContent()
   updateUI()
 }
 
@@ -322,58 +325,50 @@ function createAndAddFormTextV2 () {
       font-size: 16px;
     }
     #mainform {
-  display: flex;
-}
-
-#content {
-  width: 250px;
-  border: 1px solid;
-  padding: 4px;
-}
-
-#persform {
-  display: none;
-  height: auto;
-  width: auto;
-  max-width: 500px;
-  background: pink;
-}
-
-#wrapper {
-  display: flex;
-}
-
-#left {
-  width: 30%;
-}
-
-#right {
-  flex-grow: 1;
-}
-
-#left div {
-  padding: 8px 12px;
-}
-
-#right div {
-  padding: 5px 12px;
-}
-
-#close {
-  width: 5%
-}
-
-.list-highlight {
-  background: skyblue
-}
-
-.sel {
-  background: lightgreen;
-}
-
-.replacement, .liquid {
-  background: aqua;
-}
+      display: flex;
+    }
+    #content {
+      width: 250px;
+      border: 1px solid;
+      padding: 4px;
+    }
+    #persform {
+      display: none;
+      height: auto;
+      width: auto;
+      max-width: 500px;
+      background: pink;
+    }
+    #wrapper {
+      display: flex;
+      height: 200px;
+    }
+    #left {
+      width: 30%;
+    }
+    #right {
+      flex-grow: 1;
+      height: 200px;
+      overflow: scroll;
+    }
+    #left div {
+      padding: 8px 12px;
+    }
+    #right div {
+      padding: 5px 12px;
+    }
+    #close {
+      width: 5%
+    }
+    .list-highlight {
+      background: skyblue
+    }
+    .sel {
+      background: lightgreen;
+    }
+    .replacement {
+      background: aqua;
+    }
   `
 
   const styleElement = document.createElement('style')
@@ -391,15 +386,136 @@ function createAndAddFormTextV2 () {
   document.getElementById('button1').addEventListener('click', (e) => {
     e.preventDefault()
     document.getElementById('persform').style.display = 'block'
-    // setInboxPosition(e)
-    // prepareList(profileProps, 0)
+    prepareList(profileProps, 0)
   })
 
+  document.getElementById('closePers').addEventListener('click', closePersForm)
+
   document.getElementById('colorFontForm').addEventListener('submit', handleFormSumbmission)
+
+  document.getElementById('right').addEventListener('click', (e) => {
+    const id = e.target.parentElement.getAttribute('id')
+    const token = e.target.parentElement.getAttribute('token')
+    const type = e.target.parentElement.getAttribute('_type')
+    const _t = parseInt(type) ? `@Event - ${id} | default: "` : `@Profile - ${id} | default: "`
+    if (id && token && type) {
+      const replacement = document.createElement('span')
+      replacement.classList.add('replacement')
+      replacement.setAttribute('contentEditable', false)
+      replacement.setAttribute('token', token)
+      replacement.appendChild(document.createTextNode(_t))
+      const replacementDefault = document.createElement('span')
+      replacementDefault.classList.add('replacement-default')
+      replacementDefault.setAttribute('contentEditable', true)
+      replacement.appendChild(replacementDefault)
+      replacement.appendChild(document.createTextNode('"'))
+      if (lastRange) {
+        lastRange.insertNode(replacement)
+        closePersForm(e)
+      }
+    }
+  })
+
+  document.getElementById('prof').addEventListener('click', e => {
+    leftClicked(e, 0)
+  })
+
+  document.getElementById('eve').addEventListener('click', e => {
+    leftClicked(e, 1)
+  })
+
+  document.getElementById('el-text').addEventListener('keydown', keyCheck)
 }
 
 function saveRes () {
-  const winRef = window.opener
+  // const winRef = window.opener
   winRef.postMessage(ctSelector, '*')
   window.close()
+}
+
+function createEl (type, id, token, _type) {
+  const _el = document.createElement(type)
+  _el.setAttribute('id', id)
+  _el.setAttribute('token', token)
+  _el.setAttribute('_type', _type)
+  return _el
+}
+
+function prepareList (items, type) {
+  document.getElementById('right').innerHTML = ''
+  items.forEach(i => {
+    const _el = createEl('div', i.name, i.token, type)
+    _el.innerHTML = `${i.name} <span class="list-highlight">${type ? 'Event' : '@Profile'} - ${i.name} | default: ""</span>`
+    document.getElementById('right').appendChild(_el)
+    document.getElementById('right').appendChild(_el)
+  })
+}
+
+function closePersForm (e) {
+  e.preventDefault()
+  document.getElementById('persform').style.display = 'none'
+}
+
+document.addEventListener('selectionchange', handleSelectionChange)
+
+function handleSelectionChange () {
+  if (document.activeElement !== document.getElementById('el-text')) {
+    return
+  }
+  const selection = window.getSelection()
+  if (selection) {
+    lastRange = selection.getRangeAt(0)
+  }
+}
+
+function keyCheck (event) {
+  var KeyID = event.keyCode
+  switch (KeyID) {
+    case 8: {
+      const selection = lastRange
+      if (selection.collapsed) {
+        if (selection.commonAncestorContainer.nodeName !== '#text') {
+          const elToDelete = selection.commonAncestorContainer.childNodes[selection.startOffset - 1]
+          if (elToDelete) {
+            selection.commonAncestorContainer.removeChild(elToDelete)
+            // hack - event.preventDefault() does not work correctly
+            lastRange.insertNode(document.createTextNode('.'))
+          }
+        }
+      }
+    }
+      break
+    case 46:
+      console.log('delete')
+      break
+    default:
+      break
+  }
+}
+
+function leftClicked (el, v) {
+  const p = document.getElementById('prof')
+  const ev = document.getElementById('eve')
+  if (v) {
+    ev.classList.add('sel')
+    p.classList.remove('sel')
+  } else {
+    p.classList.add('sel')
+    ev.classList.remove('sel')
+  }
+  const i = v ? eventProps : profileProps
+  prepareList(i, v)
+}
+
+function printContent () {
+  let res = ''
+  document.getElementById('el-text').childNodes.forEach((n, i) => {
+    if (n.nodeName === '#text') {
+      res += n.nodeValue
+    } else if (n.classList.contains('replacement')) {
+      const def = n.children[0].innerText
+      res = res + '$replacement$' + n.getAttribute('token') + '[' + def + ']$/replacement$'
+    }
+  })
+  ctSelector[currSelector].replacements = res
 }

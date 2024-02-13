@@ -344,7 +344,7 @@ const _tr = (msg, {
   }
 
   const updateSelector = (element, updatedValues) => {
-    element.textContent = updatedValues.text
+    element.textContent = updatedValues.replacements || updatedValues.text
     element.style.fontFamily = updatedValues.fontFamily
     element.style.color = updatedValues.color
   }
