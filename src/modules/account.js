@@ -60,7 +60,8 @@ export default class Account {
   }
 
   get dataPostURL () {
-    return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/a?t=96`
+    return 'http://localhost:8081/a?t=96'
+    // return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/a?t=96`
   }
 
   get recorderURL () {
