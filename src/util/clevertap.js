@@ -13,7 +13,8 @@ import {
   IS_OUL,
   categoryLongKey,
   CAMP_COOKIE_G,
-  GLOBAL
+  GLOBAL,
+  SHOPIFY_WEB_PIXEL
 } from './constants'
 import {
   GENDER_ERROR,
@@ -555,4 +556,12 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
     }
     RequestDispatcher.fireRequest(url)
   }
+}
+
+/**
+ * This function will return true if the SDK is being called inside Shopify app pixel
+ * @returns boolean
+ */
+export const isIntializedInsideShopify = () => {
+  return self instanceof DedicatedWorkerGlobalScope && self.name.includes(SHOPIFY_WEB_PIXEL)
 }

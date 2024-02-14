@@ -4,9 +4,8 @@ import { inboxContainerStyles, messageStyles } from './inboxStyles'
 import { getInboxPosition, determineTimeStampText, arrowSvg, getInboxMessages, saveInboxMessages } from './helper'
 import { WEBINBOX_CONFIG, MAX_INBOX_MSG } from '../../util/constants'
 
-export class Inbox extends HTMLElement {
+export class Inbox {
   constructor (logger) {
-    super()
     this.logger = logger
     this.shadow = this.attachShadow({ mode: 'open' })
   }

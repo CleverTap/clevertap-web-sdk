@@ -1,3 +1,4 @@
+import { isIntializedInsideShopify } from './clevertap'
 import {
   GCOOKIE_NAME,
   META_COOKIE,
@@ -10,7 +11,7 @@ export class StorageManager {
       return false
     }
     if (this._isLocalStorageSupported()) {
-      localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
+      (isIntializedInsideShopify() ? browser.localStorage : localStorage).setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
       return true
     }
   }
@@ -21,7 +22,7 @@ export class StorageManager {
     }
     let data = null
     if (this._isLocalStorageSupported()) {
-      data = localStorage.getItem(key)
+      data = (isIntializedInsideShopify() ? browser.localStorage : localStorage).getItem(key)
     }
     if (data != null) {
       try {
@@ -36,7 +37,7 @@ export class StorageManager {
       return false
     }
     if (this._isLocalStorageSupported()) {
-      localStorage.removeItem(key)
+      (isIntializedInsideShopify() ? browser.localStorage : localStorage).removeItem(key)
       return true
     }
   }
@@ -48,7 +49,7 @@ export class StorageManager {
       cookieStr = cookieStr + ' domain=' + domain + '; path=/'
     }
 
-    document.cookie = cookieStr
+    (isIntializedInsideShopify() ? browser : document).cookie = cookieStr
   }
 
   static createCookie (name, value, seconds, domain) {
@@ -67,7 +68,7 @@ export class StorageManager {
 
     value = encodeURIComponent(value)
 
-    document.cookie = name + '=' + value + expires + domainStr + '; path=/'
+    ((isIntializedInsideShopify() ? browser : document)).cookie = name + '=' + value + expires + domainStr + '; path=/'
   }
 
   static readCookie (name) {
@@ -87,6 +88,7 @@ export class StorageManager {
   }
 
   static _isLocalStorageSupported () {
+    if (isIntializedInsideShopify()) return true;
     return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function'
   }
 

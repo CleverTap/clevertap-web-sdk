@@ -32,7 +32,7 @@ import {
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
-import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe } from './util/clevertap'
+import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, isIntializedInsideShopify } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
@@ -556,7 +556,10 @@ export default class CleverTap {
         $ct.updatedCategoryLong = profile[categoryLongKey]
       }
     }
-    window.$CLTP_WR = window.$WZRK_WR = api
+
+    if (isIntializedInsideShopify()) {
+      window.$CLTP_WR = window.$WZRK_WR = api
+    }
 
     if (clevertap.account?.[0].id) {
       // The accountId is present so can init with empty values.

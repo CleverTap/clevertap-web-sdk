@@ -3,6 +3,7 @@ import { Inbox } from './WebInbox'
 import { Message } from './Message'
 import { WEBINBOX_CONFIG, GCOOKIE_NAME, WEBINBOX } from '../../util/constants'
 import { isValueValid } from '../../util/datatypes'
+import { isIntializedInsideShopify } from '../../util/clevertap'
 
 export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
   const _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
@@ -115,7 +116,7 @@ export const initializeWebInbox = (logger) => {
 }
 
 export const checkAndRegisterWebInboxElements = () => {
-  if (customElements.get('ct-web-inbox') === undefined) {
+  if (customElements.get('ct-web-inbox') === undefined && !isIntializedInsideShopify()) {
     customElements.define('ct-web-inbox', Inbox)
     customElements.define('ct-inbox-message', Message)
   }
