@@ -8347,7 +8347,7 @@
 
         var typeOfDefaultValue = _typeof(defaultValue);
 
-        if (typeOfDefaultValue !== 'string' || typeOfDefaultValue !== 'number' || typeOfDefaultValue !== 'boolean') {
+        if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean') {
           console.error('Only primitive types (string, number, boolean) are accepted as value');
           return null;
         }
