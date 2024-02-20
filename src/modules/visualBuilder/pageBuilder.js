@@ -13,7 +13,7 @@ let profileProps
 let eventProps
 let container
 let lastRange = null
-const winRef = window.opener || document.referrer
+const winRef = window.opener
 
 function rgbToHex (r, g, b) {
   // Ensure values are within valid range (0-255)
@@ -46,7 +46,7 @@ export const initialiseCTBuilder = () => {
     }
   }, false)
   console.log(winRef)
-  winRef.postMessage('Builder Initialised', '*')
+  winRef.postMessage('Builder Initialised', document.referrer)
   const ctBuilderHeader = document.createElement('div')
   ctBuilderHeader.innerHTML = `
     <div class="ct-builder-header" id="ct-builder-header">
@@ -83,7 +83,6 @@ export const initialiseCTBuilder = () => {
   iframeContainer.id = 'iframe-container'
   const iframe = document.createElement('iframe')
   iframe.id = 'content-iframe'
-  iframe.sandbox = 'allow-scripts allow-same-origin'
   container.appendChild(iframeContainer)
   iframeContainer.appendChild(iframe)
   iframe.src = window.location.href.split('?')[0]
@@ -127,6 +126,7 @@ function onIframeLoad (iframe) {
   const iframeWindow = iframe.contentWindow ?? (iframe.contentDocument?.document ?? iframe.contentDocument)
   const doc = iframeWindow.document
   doc.body.addEventListener('click', function (e) {
+    e.preventDefault()
     if (document.getElementById('popup').style.display !== 'block') {
       const el = e.target
       const selector = generateUniqueSelector(el, '', doc)

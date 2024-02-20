@@ -81,6 +81,13 @@ export default class CleverTap {
   }
 
   constructor (clevertap = {}) {
+    const search = window.location.search
+    if (search === '?ctBuilder') {
+      // open in visual builder mode
+      console.log('open in visual builder mode')
+      initialiseCTBuilder()
+      return
+    }
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.raiseNotificationClicked = () => { }

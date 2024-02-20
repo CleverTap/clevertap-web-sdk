@@ -7346,7 +7346,7 @@
   var eventProps;
   var container;
   var lastRange = null;
-  var winRef = window.opener || document.referrer;
+  var winRef = window.opener;
 
   function rgbToHex(r, g, b) {
     // Ensure values are within valid range (0-255)
@@ -7378,7 +7378,7 @@
       }
     }, false);
     console.log(winRef);
-    winRef.postMessage('Builder Initialised', '*');
+    winRef.postMessage('Builder Initialised', document.referrer);
     var ctBuilderHeader = document.createElement('div');
     ctBuilderHeader.innerHTML = "\n    <div class=\"ct-builder-header\" id=\"ct-builder-header\">\n      <span class=\"heading\">CT Visual Builder</span>\n      <button class=\"save\" id=\"ct_builder_save\">Save</button>\n    </div>\n    <style>\n    #iframe-container {\n        margin: 0 auto;\n        height: 100vh;\n        display: block;\n        box-shadow: 0 0.1em 1em 0 rgba(0, 0, 0, 0.15);\n        border-radius: 4px;\n        overflow: hidden;\n        transition: all 500ms;\n        width: 100%;\n    }\n    #content-iframe {\n        width: 100%;\n        height: 100%;\n        background-color: #fff;\n        border: none;\n        margin: 0;\n      }\n    </style>\n  ";
     document.body.innerHTML = '';
@@ -7392,7 +7392,6 @@
     iframeContainer.id = 'iframe-container';
     var iframe = document.createElement('iframe');
     iframe.id = 'content-iframe';
-    iframe.sandbox = 'allow-scripts allow-same-origin';
     container.appendChild(iframeContainer);
     iframeContainer.appendChild(iframe);
     iframe.src = window.location.href.split('?')[0];
@@ -7442,6 +7441,8 @@
     var iframeWindow = (_iframe$contentWindow = iframe.contentWindow) !== null && _iframe$contentWindow !== void 0 ? _iframe$contentWindow : (_iframe$contentDocume = (_iframe$contentDocume2 = iframe.contentDocument) === null || _iframe$contentDocume2 === void 0 ? void 0 : _iframe$contentDocume2.document) !== null && _iframe$contentDocume !== void 0 ? _iframe$contentDocume : iframe.contentDocument;
     var doc = iframeWindow.document;
     doc.body.addEventListener('click', function (e) {
+      e.preventDefault();
+
       if (document.getElementById('popup').style.display !== 'block') {
         var el = e.target;
         var selector = generateUniqueSelector(el, '', doc);
@@ -7832,7 +7833,15 @@
       this.enablePersonalization = void 0;
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
-      console.log('window.location', window.location);
+      var search = window.location.search;
+
+      if (search === '?ctBuilder') {
+        // open in visual builder mode
+        console.log('open in visual builder mode');
+        initialiseCTBuilder();
+        return;
+      }
+
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
 
@@ -8408,7 +8417,6 @@
       value: function init(accountId, region, targetDomain) {
         var _this2 = this;
 
-        console.log('window.location', window.location);
         var search = window.location.search;
 
         if (search === '?ctBuilder') {
