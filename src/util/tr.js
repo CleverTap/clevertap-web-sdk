@@ -3,7 +3,8 @@ import {
   arp,
   getCampaignObject,
   saveCampaignObject,
-  closeIframe
+  closeIframe,
+  isIntializedInsideShopify
 } from './clevertap'
 
 import {
@@ -902,7 +903,7 @@ const _tr = (msg, {
     }
     // Process banner or carousel campaign array
     if (Object.keys(arrInAppNotifs).length) {
-      if (document.readyState === 'complete') {
+      if (!isIntializedInsideShopify() && document.readyState === 'complete') {
         processNativeDisplayArr(arrInAppNotifs)
       } else {
         addLoadListener(arrInAppNotifs)

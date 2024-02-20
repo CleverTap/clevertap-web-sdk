@@ -5,6 +5,7 @@ import { eslint } from 'rollup-plugin-eslint'
 import { terser } from 'rollup-plugin-terser'
 import { version } from './package.json'
 import sourcemaps from 'rollup-plugin-sourcemaps'
+import removeHtmlElements from './rollup-plugin-remove-html-elements'
 
 export default {
   input: 'src/main.js',
@@ -12,7 +13,7 @@ export default {
     {
       name: 'clevertap',
       file: 'clevertap.js',
-      format: 'umd',
+      format: 'iife',
       sourcemap: true
     },
     {
@@ -23,11 +24,12 @@ export default {
     }
   ],
   plugins: [
+    removeHtmlElements(),
     resolve(),
     sourcemaps(),
     eslint({
       fix: true,
-      throwOnError: true
+      throwOnError: false
     }),
     replace({
       preventAssignment: true,

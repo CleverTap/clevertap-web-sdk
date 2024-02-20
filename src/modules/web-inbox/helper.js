@@ -71,7 +71,7 @@ export const saveInboxMessages = (messages) => {
 
 export const initializeWebInbox = (logger) => {
   return new Promise((resolve, reject) => {
-    if (document.readyState === 'complete') {
+    if (!isIntializedInsideShopify() && document.readyState === 'complete') {
       addWebInbox(logger)
       resolve()
     } else {
@@ -116,9 +116,11 @@ export const initializeWebInbox = (logger) => {
 }
 
 export const checkAndRegisterWebInboxElements = () => {
-  if (customElements.get('ct-web-inbox') === undefined && !isIntializedInsideShopify()) {
-    customElements.define('ct-web-inbox', Inbox)
-    customElements.define('ct-inbox-message', Message)
+  if (!isIntializedInsideShopify()) {
+    if (customElements.get('ct-web-inbox') === undefined) {
+      customElements.define('ct-web-inbox', Inbox)
+      customElements.define('ct-inbox-message', Message)
+    }
   }
 }
 

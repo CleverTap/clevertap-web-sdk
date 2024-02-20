@@ -5,13 +5,28 @@ import {
   KCOOKIE_NAME,
   LCOOKIE_NAME
 } from './constants'
+
 export class StorageManager {
+
+  static saveAsync (key, value) {
+    if (!key || !value) {
+      return false
+    }
+    if (this._isLocalStorageSupported()) {
+      browser.localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value)).then(value => {
+        return true;
+      }).catch((error) => {
+        console.error(error);
+      })
+    }
+  }
+
   static save (key, value) {
     if (!key || !value) {
       return false
     }
     if (this._isLocalStorageSupported()) {
-      (isIntializedInsideShopify() ? browser.localStorage : localStorage).setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
+      localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
       return true
     }
   }
@@ -32,13 +47,38 @@ export class StorageManager {
     return data
   }
 
+  static readAsync (key) {
+    if (!key) {
+      return false
+    }
+    let data = null
+    if (this._isLocalStorageSupported()) {
+      browser.localStorage.getItem(key).then(value => data = value);
+    }
+    if (data != null) {
+      try {
+        data = JSON.parse(data)
+      } catch (e) {}
+    }
+    return data
+  }
+
   static remove (key) {
     if (!key) {
       return false
     }
     if (this._isLocalStorageSupported()) {
-      (isIntializedInsideShopify() ? browser.localStorage : localStorage).removeItem(key)
+      localStorage.removeItem(key)
       return true
+    }
+  }
+
+  static removeAsync (key) {
+    if (!key) {
+      return false
+    }
+    if (this._isLocalStorageSupported()) {
+     browser.localStorage.removeItem(key).then(() => true)
     }
   }
 
@@ -68,7 +108,7 @@ export class StorageManager {
 
     value = encodeURIComponent(value)
 
-    ((isIntializedInsideShopify() ? browser : document)).cookie = name + '=' + value + expires + domainStr + '; path=/'
+    document.cookie = name + '=' + value + expires + domainStr + '; path=/'
   }
 
   static readCookie (name) {
@@ -88,17 +128,18 @@ export class StorageManager {
   }
 
   static _isLocalStorageSupported () {
-    if (isIntializedInsideShopify()) return true;
+    if (isIntializedInsideShopify()) return true
     return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function'
   }
 
-  static saveToLSorCookie (property, value) {
+  static async saveToLSorCookie (property, value) {
     if (value == null) {
       return
     }
     try {
       if (this._isLocalStorageSupported()) {
         this.save(property, encodeURIComponent(JSON.stringify(value)))
+        this.saveAsync(property, encodeURIComponent(JSON.stringify(value)))
       } else {
         if (property === GCOOKIE_NAME) {
           this.createCookie(property, encodeURIComponent(value), 0, window.location.hostname)
