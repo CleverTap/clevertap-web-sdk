@@ -7441,8 +7441,19 @@
     var _iframe$contentWindow, _iframe$contentDocume, _iframe$contentDocume2;
 
     var iframeWindow = (_iframe$contentWindow = iframe.contentWindow) !== null && _iframe$contentWindow !== void 0 ? _iframe$contentWindow : (_iframe$contentDocume = (_iframe$contentDocume2 = iframe.contentDocument) === null || _iframe$contentDocume2 === void 0 ? void 0 : _iframe$contentDocume2.document) !== null && _iframe$contentDocume !== void 0 ? _iframe$contentDocume : iframe.contentDocument;
-    var doc = iframeWindow.document; // const allButtons = doc.getElementsByTagName('button')
-
+    var doc = iframeWindow.document;
+    var allButtons = doc.querySelectorAll('button');
+    allButtons.forEach(function (button) {
+      button.addEventListener('click', function (e) {
+        e.preventDefault();
+      });
+    });
+    var allHyper = doc.querySelectorAll('a');
+    allHyper.forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+      });
+    });
     doc.body.addEventListener('click', function (e) {
       e.preventDefault();
 

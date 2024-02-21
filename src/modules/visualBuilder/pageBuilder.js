@@ -127,7 +127,18 @@ function updateUI () {
 function onIframeLoad (iframe) {
   const iframeWindow = iframe.contentWindow ?? (iframe.contentDocument?.document ?? iframe.contentDocument)
   const doc = iframeWindow.document
-  // const allButtons = doc.getElementsByTagName('button')
+  const allButtons = doc.querySelectorAll('button')
+  allButtons.forEach(button => {
+    button.addEventListener('click', e => {
+      e.preventDefault()
+    })
+  })
+  const allHyper = doc.querySelectorAll('a')
+  allHyper.forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault()
+    })
+  })
   doc.body.addEventListener('click', function (e) {
     e.preventDefault()
     if (document.getElementById('popup').style.display !== 'block') {
