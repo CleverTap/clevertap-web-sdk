@@ -33,7 +33,6 @@ function rgbToHex (r, g, b) {
 }
 
 export const initialiseCTBuilder = () => {
-  // const winRef = window.opener
   var regex = /^(.*\.dashboard\.clevertap\.com.*)|localhost/
   function normalizeURL (url) {
     return url.replace(/\/+$/, '')
@@ -45,8 +44,11 @@ export const initialiseCTBuilder = () => {
       console.log('personalisation data', eventProps, profileProps)
     }
   }, false)
-  console.log(winRef)
   winRef.postMessage('Builder Initialised', document.referrer)
+  document.addEventListener('DOMContentLoaded', onContentLoad)
+}
+
+function onContentLoad () {
   const ctBuilderHeader = document.createElement('div')
   ctBuilderHeader.innerHTML = `
     <div class="ct-builder-header" id="ct-builder-header">
@@ -125,6 +127,7 @@ function updateUI () {
 function onIframeLoad (iframe) {
   const iframeWindow = iframe.contentWindow ?? (iframe.contentDocument?.document ?? iframe.contentDocument)
   const doc = iframeWindow.document
+  // const allButtons = doc.getElementsByTagName('button')
   doc.body.addEventListener('click', function (e) {
     e.preventDefault()
     if (document.getElementById('popup').style.display !== 'block') {
