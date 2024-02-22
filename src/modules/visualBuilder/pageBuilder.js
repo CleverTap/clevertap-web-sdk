@@ -127,20 +127,9 @@ function updateUI () {
 function onIframeLoad (iframe) {
   const iframeWindow = iframe.contentWindow ?? (iframe.contentDocument?.document ?? iframe.contentDocument)
   const doc = iframeWindow.document
-  const allButtons = doc.querySelectorAll('button')
-  allButtons.forEach(button => {
-    button.addEventListener('click', e => {
-      e.preventDefault()
-    })
-  })
-  const allHyper = doc.querySelectorAll('a')
-  allHyper.forEach(a => {
-    a.addEventListener('click', e => {
-      e.preventDefault()
-    })
-  })
   doc.body.addEventListener('click', function (e) {
     e.preventDefault()
+    e.stopPropagation()
     if (document.getElementById('popup').style.display !== 'block') {
       const el = e.target
       const selector = generateUniqueSelector(el, '', doc)
@@ -160,7 +149,7 @@ function onIframeLoad (iframe) {
         document.getElementById('popup').style.display = 'block'
       }
     }
-  })
+  }, true)
   doc.body.addEventListener('mouseover', function (event) {
     event.target.style.outline = '2px solid red'
   })
