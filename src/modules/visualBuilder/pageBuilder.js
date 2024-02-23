@@ -14,6 +14,7 @@ let eventProps
 let container
 let lastRange = null
 const winRef = window.opener
+let doc = document
 
 function rgbToHex (r, g, b) {
   // Ensure values are within valid range (0-255)
@@ -54,6 +55,8 @@ function onContentLoad () {
     <div class="ct-builder-header" id="ct-builder-header">
       <span class="heading">CT Visual Builder</span>
       <button class="save" id="ct_builder_save">Save</button>
+      <button class="save" id="ct_builder_inter">Interactive</button>
+      <button class="save" id="ct_builder_build">Builder</button>      
     </div>
     <style>
     #iframe-container {
@@ -91,6 +94,8 @@ function onContentLoad () {
   createAndAddFormTextV2()
   iframe.onload = () => onIframeLoad(iframe)
   document.getElementById('ct_builder_save').addEventListener('click', saveRes)
+  document.getElementById('ct_builder_inter').addEventListener('click', () => makeInteractive(iframe))
+  document.getElementById('ct_builder_build').addEventListener('click', () => onIframeLoad(iframe))
 }
 
 function handleFormSumbmission (event) {
@@ -126,36 +131,34 @@ function updateUI () {
 
 function onIframeLoad (iframe) {
   const iframeWindow = iframe.contentWindow ?? (iframe.contentDocument?.document ?? iframe.contentDocument)
-  const doc = iframeWindow.document
-  doc.body.addEventListener('click', function (e) {
-    e.preventDefault()
-    e.stopPropagation()
-    if (document.getElementById('popup').style.display !== 'block') {
-      const el = e.target
-      const selector = generateUniqueSelector(el, '', doc)
-      if (selector) {
-        currSelectorValues.color = '#000000'
-        const rgbValues = el.style.color.match(/\d+/g)
-        if (rgbValues && rgbValues.length === 3) {
-          currSelectorValues.color = rgbToHex(Number(rgbValues[0]), Number(rgbValues[1]), Number(rgbValues[2]))
-        }
-        currSelectorValues.fontFamily = el.style.fontFamily
-        currSelectorValues.text = el.textContent
-        ctSelector[selector] = ''
-        currSelector = selector
-        document.getElementById('text-color').value = currSelectorValues.color
-        document.getElementById('font-family').value = currSelectorValues.fontFamily
-        document.getElementById('el-text').innerText = currSelectorValues.text
-        document.getElementById('popup').style.display = 'block'
+  doc = iframeWindow.document
+  doc.body.addEventListener('click', addBuilder, true)
+  doc.body.addEventListener('mouseover', addOutline)
+  doc.body.addEventListener('mouseout', removeOutline)
+}
+
+function addBuilder (e) {
+  e.preventDefault()
+  e.stopPropagation()
+  if (document.getElementById('popup').style.display !== 'block') {
+    const el = e.target
+    const selector = generateUniqueSelector(el, '', doc)
+    if (selector) {
+      currSelectorValues.color = '#000000'
+      const rgbValues = el.style.color.match(/\d+/g)
+      if (rgbValues && rgbValues.length === 3) {
+        currSelectorValues.color = rgbToHex(Number(rgbValues[0]), Number(rgbValues[1]), Number(rgbValues[2]))
       }
+      currSelectorValues.fontFamily = el.style.fontFamily
+      currSelectorValues.text = el.textContent
+      ctSelector[selector] = ''
+      currSelector = selector
+      document.getElementById('text-color').value = currSelectorValues.color
+      document.getElementById('font-family').value = currSelectorValues.fontFamily
+      document.getElementById('el-text').innerText = currSelectorValues.text
+      document.getElementById('popup').style.display = 'block'
     }
-  }, true)
-  doc.body.addEventListener('mouseover', function (event) {
-    event.target.style.outline = '2px solid red'
-  })
-  doc.body.addEventListener('mouseout', function (event) {
-    event.target.style.outline = 'none'
-  })
+  }
 }
 
 function generateUniqueSelector (element, childSelector = '', doc = document) {
@@ -521,4 +524,20 @@ function printContent () {
     }
   })
   ctSelector[currSelector].replacements = res
+}
+
+function makeInteractive (iframe) {
+  const iframeWindow = iframe.contentWindow ?? (iframe.contentDocument?.document ?? iframe.contentDocument)
+  doc = iframeWindow.document
+  doc.body.removeEventListener('click', addBuilder, true)
+  doc.body.removeEventListener('mouseover', addOutline)
+  doc.body.removeEventListener('mouseout', removeOutline)
+}
+
+function addOutline (event) {
+  event.target.style.outline = '2px solid red'
+}
+
+function removeOutline (event) {
+  event.target.style.outline = 'none'
 }

@@ -7347,6 +7347,7 @@
   var container;
   var lastRange = null;
   var winRef = window.opener;
+  var doc = document;
 
   function rgbToHex(r, g, b) {
     // Ensure values are within valid range (0-255)
@@ -7382,7 +7383,7 @@
 
   function onContentLoad() {
     var ctBuilderHeader = document.createElement('div');
-    ctBuilderHeader.innerHTML = "\n    <div class=\"ct-builder-header\" id=\"ct-builder-header\">\n      <span class=\"heading\">CT Visual Builder</span>\n      <button class=\"save\" id=\"ct_builder_save\">Save</button>\n    </div>\n    <style>\n    #iframe-container {\n        margin: 0 auto;\n        height: 100vh;\n        display: block;\n        box-shadow: 0 0.1em 1em 0 rgba(0, 0, 0, 0.15);\n        border-radius: 4px;\n        overflow: hidden;\n        transition: all 500ms;\n        width: 100%;\n    }\n    #content-iframe {\n        width: 100%;\n        height: 100%;\n        background-color: #fff;\n        border: none;\n        margin: 0;\n      }\n    </style>\n  ";
+    ctBuilderHeader.innerHTML = "\n    <div class=\"ct-builder-header\" id=\"ct-builder-header\">\n      <span class=\"heading\">CT Visual Builder</span>\n      <button class=\"save\" id=\"ct_builder_save\">Save</button>\n      <button class=\"save\" id=\"ct_builder_inter\">Interactive</button>\n      <button class=\"save\" id=\"ct_builder_build\">Builder</button>      \n    </div>\n    <style>\n    #iframe-container {\n        margin: 0 auto;\n        height: 100vh;\n        display: block;\n        box-shadow: 0 0.1em 1em 0 rgba(0, 0, 0, 0.15);\n        border-radius: 4px;\n        overflow: hidden;\n        transition: all 500ms;\n        width: 100%;\n    }\n    #content-iframe {\n        width: 100%;\n        height: 100%;\n        background-color: #fff;\n        border: none;\n        margin: 0;\n      }\n    </style>\n  ";
     document.body.innerHTML = '';
     document.body.appendChild(ctBuilderHeader);
     container = document.createElement('div');
@@ -7404,6 +7405,12 @@
     };
 
     document.getElementById('ct_builder_save').addEventListener('click', saveRes);
+    document.getElementById('ct_builder_inter').addEventListener('click', function () {
+      return makeInteractive(iframe);
+    });
+    document.getElementById('ct_builder_build').addEventListener('click', function () {
+      return onIframeLoad(iframe);
+    });
   }
 
   function handleFormSumbmission(event) {
@@ -7441,40 +7448,38 @@
     var _iframe$contentWindow, _iframe$contentDocume, _iframe$contentDocume2;
 
     var iframeWindow = (_iframe$contentWindow = iframe.contentWindow) !== null && _iframe$contentWindow !== void 0 ? _iframe$contentWindow : (_iframe$contentDocume = (_iframe$contentDocume2 = iframe.contentDocument) === null || _iframe$contentDocume2 === void 0 ? void 0 : _iframe$contentDocume2.document) !== null && _iframe$contentDocume !== void 0 ? _iframe$contentDocume : iframe.contentDocument;
-    var doc = iframeWindow.document;
-    doc.body.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
+    doc = iframeWindow.document;
+    doc.body.addEventListener('click', addBuilder, true);
+    doc.body.addEventListener('mouseover', addOutline);
+    doc.body.addEventListener('mouseout', removeOutline);
+  }
 
-      if (document.getElementById('popup').style.display !== 'block') {
-        var el = e.target;
-        var selector = generateUniqueSelector(el, '', doc);
+  function addBuilder(e) {
+    e.preventDefault();
+    e.stopPropagation();
 
-        if (selector) {
-          currSelectorValues.color = '#000000';
-          var rgbValues = el.style.color.match(/\d+/g);
+    if (document.getElementById('popup').style.display !== 'block') {
+      var el = e.target;
+      var selector = generateUniqueSelector(el, '', doc);
 
-          if (rgbValues && rgbValues.length === 3) {
-            currSelectorValues.color = rgbToHex(Number(rgbValues[0]), Number(rgbValues[1]), Number(rgbValues[2]));
-          }
+      if (selector) {
+        currSelectorValues.color = '#000000';
+        var rgbValues = el.style.color.match(/\d+/g);
 
-          currSelectorValues.fontFamily = el.style.fontFamily;
-          currSelectorValues.text = el.textContent;
-          ctSelector[selector] = '';
-          currSelector = selector;
-          document.getElementById('text-color').value = currSelectorValues.color;
-          document.getElementById('font-family').value = currSelectorValues.fontFamily;
-          document.getElementById('el-text').innerText = currSelectorValues.text;
-          document.getElementById('popup').style.display = 'block';
+        if (rgbValues && rgbValues.length === 3) {
+          currSelectorValues.color = rgbToHex(Number(rgbValues[0]), Number(rgbValues[1]), Number(rgbValues[2]));
         }
+
+        currSelectorValues.fontFamily = el.style.fontFamily;
+        currSelectorValues.text = el.textContent;
+        ctSelector[selector] = '';
+        currSelector = selector;
+        document.getElementById('text-color').value = currSelectorValues.color;
+        document.getElementById('font-family').value = currSelectorValues.fontFamily;
+        document.getElementById('el-text').innerText = currSelectorValues.text;
+        document.getElementById('popup').style.display = 'block';
       }
-    }, true);
-    doc.body.addEventListener('mouseover', function (event) {
-      event.target.style.outline = '2px solid red';
-    });
-    doc.body.addEventListener('mouseout', function (event) {
-      event.target.style.outline = 'none';
-    });
+    }
   }
 
   function generateUniqueSelector(element) {
@@ -7697,6 +7702,24 @@
       }
     });
     ctSelector[currSelector].replacements = res;
+  }
+
+  function makeInteractive(iframe) {
+    var _iframe$contentWindow2, _iframe$contentDocume3, _iframe$contentDocume4;
+
+    var iframeWindow = (_iframe$contentWindow2 = iframe.contentWindow) !== null && _iframe$contentWindow2 !== void 0 ? _iframe$contentWindow2 : (_iframe$contentDocume3 = (_iframe$contentDocume4 = iframe.contentDocument) === null || _iframe$contentDocume4 === void 0 ? void 0 : _iframe$contentDocume4.document) !== null && _iframe$contentDocume3 !== void 0 ? _iframe$contentDocume3 : iframe.contentDocument;
+    doc = iframeWindow.document;
+    doc.body.removeEventListener('click', addBuilder, true);
+    doc.body.removeEventListener('mouseover', addOutline);
+    doc.body.removeEventListener('mouseout', removeOutline);
+  }
+
+  function addOutline(event) {
+    event.target.style.outline = '2px solid red';
+  }
+
+  function removeOutline(event) {
+    event.target.style.outline = 'none';
   }
 
   var _logger$9 = _classPrivateFieldLooseKey("logger");
