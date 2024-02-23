@@ -135,6 +135,7 @@ function onIframeLoad (iframe) {
   doc.body.addEventListener('click', addBuilder, true)
   doc.body.addEventListener('mouseover', addOutline)
   doc.body.addEventListener('mouseout', removeOutline)
+  console.log(iframeWindow.location)
 }
 
 function addBuilder (e) {
