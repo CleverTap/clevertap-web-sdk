@@ -7474,6 +7474,7 @@
 
         currSelectorValues.fontFamily = el.style.fontFamily;
         currSelectorValues.text = el.textContent;
+        ctSelector[curURL] = {};
         ctSelector[curURL][selector] = '';
         currSelector = selector;
         document.getElementById('text-color').value = currSelectorValues.color;
