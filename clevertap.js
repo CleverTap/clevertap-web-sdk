@@ -7348,6 +7348,7 @@
   var lastRange = null;
   var winRef = window.opener;
   var doc = document;
+  var curURL = window.location.href;
 
   function rgbToHex(r, g, b) {
     // Ensure values are within valid range (0-255)
@@ -7431,7 +7432,7 @@
       margin: margin,
       padding: padding
     };
-    ctSelector[currSelector] = inlineStyle;
+    ctSelector[curURL][currSelector] = inlineStyle;
     printContent();
     updateUI();
   }
@@ -7439,9 +7440,9 @@
   function updateUI() {
     var iframe = document.querySelector('#content-iframe');
     var e = iframe.contentWindow.document.body.querySelector(currSelector);
-    e.style.color = ctSelector[currSelector].color;
-    e.style.fontFamily = ctSelector[currSelector]['font-family'];
-    e.textContent = ctSelector[currSelector].text;
+    e.style.color = ctSelector[curURL][currSelector].color;
+    e.style.fontFamily = ctSelector[curURL][currSelector]['font-family'];
+    e.textContent = ctSelector[curURL][currSelector].text;
   }
 
   function onIframeLoad(iframe) {
@@ -7452,7 +7453,7 @@
     doc.body.addEventListener('click', addBuilder, true);
     doc.body.addEventListener('mouseover', addOutline);
     doc.body.addEventListener('mouseout', removeOutline);
-    console.log(iframeWindow.location);
+    curURL = iframeWindow.location.href;
   }
 
   function addBuilder(e) {
@@ -7473,7 +7474,7 @@
 
         currSelectorValues.fontFamily = el.style.fontFamily;
         currSelectorValues.text = el.textContent;
-        ctSelector[selector] = '';
+        ctSelector[curURL][selector] = '';
         currSelector = selector;
         document.getElementById('text-color').value = currSelectorValues.color;
         document.getElementById('font-family').value = currSelectorValues.fontFamily;
@@ -7702,7 +7703,7 @@
         res = res + '$replacement$' + n.getAttribute('token') + '[' + def + ']$/replacement$';
       }
     });
-    ctSelector[currSelector].replacements = res;
+    ctSelector[curURL][currSelector].replacements = res;
   }
 
   function makeInteractive(iframe) {

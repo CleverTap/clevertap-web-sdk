@@ -15,6 +15,7 @@ let container
 let lastRange = null
 const winRef = window.opener
 let doc = document
+let curURL = window.location.href
 
 function rgbToHex (r, g, b) {
   // Ensure values are within valid range (0-255)
@@ -116,7 +117,7 @@ function handleFormSumbmission (event) {
     margin,
     padding
   }
-  ctSelector[currSelector] = inlineStyle
+  ctSelector[curURL][currSelector] = inlineStyle
   printContent()
   updateUI()
 }
@@ -124,9 +125,9 @@ function handleFormSumbmission (event) {
 function updateUI () {
   const iframe = document.querySelector('#content-iframe')
   const e = iframe.contentWindow.document.body.querySelector(currSelector)
-  e.style.color = ctSelector[currSelector].color
-  e.style.fontFamily = ctSelector[currSelector]['font-family']
-  e.textContent = ctSelector[currSelector].text
+  e.style.color = ctSelector[curURL][currSelector].color
+  e.style.fontFamily = ctSelector[curURL][currSelector]['font-family']
+  e.textContent = ctSelector[curURL][currSelector].text
 }
 
 function onIframeLoad (iframe) {
@@ -135,7 +136,7 @@ function onIframeLoad (iframe) {
   doc.body.addEventListener('click', addBuilder, true)
   doc.body.addEventListener('mouseover', addOutline)
   doc.body.addEventListener('mouseout', removeOutline)
-  console.log(iframeWindow.location)
+  curURL = iframeWindow.location.href
 }
 
 function addBuilder (e) {
@@ -152,7 +153,7 @@ function addBuilder (e) {
       }
       currSelectorValues.fontFamily = el.style.fontFamily
       currSelectorValues.text = el.textContent
-      ctSelector[selector] = ''
+      ctSelector[curURL][selector] = ''
       currSelector = selector
       document.getElementById('text-color').value = currSelectorValues.color
       document.getElementById('font-family').value = currSelectorValues.fontFamily
@@ -524,7 +525,7 @@ function printContent () {
       res = res + '$replacement$' + n.getAttribute('token') + '[' + def + ']$/replacement$'
     }
   })
-  ctSelector[currSelector].replacements = res
+  ctSelector[curURL][currSelector].replacements = res
 }
 
 function makeInteractive (iframe) {
