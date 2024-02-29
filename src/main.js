@@ -5,6 +5,8 @@ const clevertap = new Clevertap(isIntializedInsideShopify() ? {} : window.clever
 
 if (!isIntializedInsideShopify()) {
   window.clevertap = window.wizrocket = clevertap
+} else {
+  return (browser) => clevertap;
 }
 
 export default clevertap
