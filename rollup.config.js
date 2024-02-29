@@ -6,6 +6,10 @@ import { terser } from 'rollup-plugin-terser'
 import { version } from './package.json'
 import sourcemaps from 'rollup-plugin-sourcemaps'
 
+/**
+ * Returns the input file path
+ * @param {('SERVICE_WORKER' | 'WEB')} mode
+ */
 const getInput = (mode) => {
   if (mode === 'SERVICE_WORKER') {
     return 'sw_webpush.js'
@@ -14,6 +18,10 @@ const getInput = (mode) => {
   return 'src/main.js'
 }
 
+/**
+ * returns the output object of the build config
+ * @param {('SERVICE_WORKER' | 'WEB')} mode
+ */
 const getOutput = (mode) => {
   if (mode === 'SERVICE_WORKER') {
     return [
@@ -42,7 +50,10 @@ const getOutput = (mode) => {
   ]
 }
 
-const getPlugin = () => {
+/**
+ * returns the plugins array
+ */
+const getPlugins = () => {
   return [
     resolve(),
     sourcemaps(),
@@ -67,7 +78,7 @@ const config = () => {
   return {
     input: getInput(mode),
     output: getOutput(mode),
-    plugins: getPlugin()
+    plugins: getPlugins()
   }
 }
 
