@@ -1,4 +1,4 @@
-import { isIntializedInsideShopify } from '../util/clevertap'
+import { isWindowDefined } from '../util/clevertap'
 import {
   CLEVERTAP_ERROR_PREFIX
 } from '../util/messages'
@@ -51,7 +51,7 @@ export class Logger {
   }
 
   #log (level, message) {
-    if (!isIntializedInsideShopify() && window.console) {
+    if (isWindowDefined() && window.console) {
       try {
         const ts = new Date().getTime()
         console[level](`CleverTap [${ts}]: ${message}`)

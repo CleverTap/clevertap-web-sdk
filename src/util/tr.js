@@ -4,7 +4,7 @@ import {
   getCampaignObject,
   saveCampaignObject,
   closeIframe,
-  isIntializedInsideShopify
+  isWindowDefined
 } from './clevertap'
 
 import {
@@ -903,7 +903,7 @@ const _tr = (msg, {
     }
     // Process banner or carousel campaign array
     if (Object.keys(arrInAppNotifs).length) {
-      if (!isIntializedInsideShopify() && document.readyState === 'complete') {
+      if (isWindowDefined() && document.readyState === 'complete') {
         processNativeDisplayArr(arrInAppNotifs)
       } else {
         addLoadListener(arrInAppNotifs)

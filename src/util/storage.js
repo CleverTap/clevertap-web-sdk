@@ -1,4 +1,4 @@
-import { isIntializedInsideShopify } from './clevertap'
+import { isWindowDefined } from './clevertap'
 import {
   GCOOKIE_NAME,
   META_COOKIE,
@@ -37,7 +37,7 @@ export class StorageManager {
     }
     let data = null
     if (this._isLocalStorageSupported()) {
-      data = (isIntializedInsideShopify() ? browser.localStorage : localStorage).getItem(key)
+      data = (isWindowDefined() ? browser.localStorage : localStorage).getItem(key)
     }
     if (data != null) {
       try {
@@ -89,7 +89,7 @@ export class StorageManager {
       cookieStr = cookieStr + ' domain=' + domain + '; path=/'
     }
 
-    (isIntializedInsideShopify() ? browser : document).cookie = cookieStr
+    (isWindowDefined() ? browser : document).cookie = cookieStr
   }
 
   static createCookie (name, value, seconds, domain) {
@@ -128,7 +128,7 @@ export class StorageManager {
   }
 
   static _isLocalStorageSupported () {
-    if (isIntializedInsideShopify()) return true
+    if (isWindowDefined()) return true
     return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function'
   }
 

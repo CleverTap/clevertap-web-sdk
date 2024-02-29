@@ -32,7 +32,7 @@ import {
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
-import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, isIntializedInsideShopify } from './util/clevertap'
+import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, isWindowDefined } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
@@ -557,7 +557,7 @@ export default class CleverTap {
       }
     }
 
-    if (isIntializedInsideShopify()) {
+    if (isWindowDefined()) {
       window.$CLTP_WR = window.$WZRK_WR = api
     }
 

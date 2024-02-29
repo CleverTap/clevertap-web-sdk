@@ -559,9 +559,9 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
 }
 
 /**
- * This function will return true if the SDK is being called inside Shopify app pixel
+ * Checking for window object.
  * @returns boolean
  */
-export const isIntializedInsideShopify = () => {
-  return self instanceof DedicatedWorkerGlobalScope && self.name.includes(SHOPIFY_WEB_PIXEL)
+export const isWindowDefined = () => {
+  return typeof window !== 'undefined' && typeof window === 'object'
 }

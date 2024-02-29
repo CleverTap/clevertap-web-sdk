@@ -1,12 +1,12 @@
 import Clevertap from './clevertap'
-import { isIntializedInsideShopify } from './util/clevertap'
+import { isWindowDefined } from './util/clevertap'
 
-const clevertap = new Clevertap(isIntializedInsideShopify() ? {} : window.clevertap)
+const clevertap = new Clevertap(isWindowDefined() ? window.clevertap : {})
 
-if (!isIntializedInsideShopify()) {
+if (isWindowDefined()) {
   window.clevertap = window.wizrocket = clevertap
 } else {
-  return (browser) => clevertap;
+  return (browser) => clevertap
 }
 
 export default clevertap
