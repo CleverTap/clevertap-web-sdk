@@ -4,8 +4,8 @@
   "description": "",
   "main": "clevertap.js",
   "scripts": {
-    "build": "rollup --config rollup.config.js",
-    "build_sw": "rollup --config sw_rollup.config.js",
+    "build": "MODE=WEB rollup --config rollup.config.js",
+    "build_sw": "MODE=SERVICE_WORKER rollup --config rollup.config.js",
     "test": "eslint --fix test && jest",
     "test:coverage": "rm -rf coverage && jest --coverage"
   },
