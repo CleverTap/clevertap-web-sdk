@@ -7,9 +7,35 @@ import { version } from './package.json'
 import sourcemaps from 'rollup-plugin-sourcemaps'
 import removeHtmlElements from './rollup-plugin-remove-html-elements'
 
-export default {
-  input: 'src/main.js',
-  output: [
+/**
+ * Returns the input file path
+ * @param {('SERVICE_WORKER' | 'WEB' | 'SHOPIFY')} mode
+ */
+const getInput = (mode) => {
+  if (mode === 'SERVICE_WORKER') {
+    return 'sw_webpush.js'
+  }
+
+  return 'src/main.js'
+}
+
+/**
+ * returns the output object of the build config
+ * @param {('SERVICE_WORKER' | 'WEB' | 'SHOPIFY')} mode
+ */
+const getOutput = (mode) => {
+  if (mode === 'SERVICE_WORKER') {
+    return [
+      {
+        name: 'sw_webpush',
+        file: 'sw_webpush.min.js',
+        format: 'umd',
+        plugins: [terser()]
+      }
+    ]
+  }
+
+  return [
     {
       name: 'clevertap',
       file: 'clevertap.js',
@@ -22,9 +48,22 @@ export default {
       format: 'umd',
       plugins: [terser()]
     }
-  ],
-  plugins: [
-    removeHtmlElements(),
+  ]
+}
+
+/**
+ * returns the plugins array
+ * @param {('SERVICE_WORKER' | 'WEB' | 'SHOPIFY')} mode
+ */
+const getPlugins = (mode) => {
+  const plugins = []
+
+  if (mode === 'SHOPIFY') {
+    plugins.push(removeHtmlElements())
+  }
+
+  return [
+    ...plugins,
     resolve(),
     sourcemaps(),
     eslint({
@@ -41,3 +80,15 @@ export default {
     })
   ]
 }
+
+const config = () => {
+  const mode = process.env.MODE
+
+  return {
+    input: getInput(mode),
+    output: getOutput(mode),
+    plugins: getPlugins()
+  }
+}
+
+export default config()
