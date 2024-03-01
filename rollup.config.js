@@ -59,7 +59,7 @@ const getPlugins = () => {
     sourcemaps(),
     eslint({
       fix: true,
-      throwOnError: false
+      throwOnError: true
     }),
     replace({
       preventAssignment: true,
