@@ -436,21 +436,9 @@ const _tr = (msg, {
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe'
-    iframe.sandbox = 'allow-scripts'
-    const iframeWin = iframe.contentWindow || iframe
-    const iframeDoc = iframe.contentDocument || iframeWin.document
-    const script = iframeDoc.createElement('SCRIPT')
-    script.append(`const adjustIFrameHeight = () => {
-      console.log('height change')
-      // adjust iframe and body height of html inside correctly
-      contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
-      console.log('fucntion called from iframe')
-      if (displayObj['custom-editor'] !== true && !isBanner) {
-        contentHeight += 25
-      }
-      document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
-      document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
-    }`)
+    if (displayObj['custom-editor']) { // sandboxing the iframe only for custom html
+      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox' // allow popup to open url in new page
+    }
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
     if (onClick !== '' && onClick != null) {
@@ -511,8 +499,8 @@ const _tr = (msg, {
       const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>'
       html = css + title + body
     }
-
-    iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
+    // made height : 100% which will help in adjustIframe height
+    iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; height:100%; border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
 
     // Dispatch event for popup box/banner close
@@ -524,7 +512,7 @@ const _tr = (msg, {
     }
     iframe.srcdoc = html
 
-    // const adjustIFrameHeight = () => {
+    // const adjustIFrameHeight = () => { // old adjustIFrameHeight function before sandbox
     //   // adjust iframe and body height of html inside correctly
     //   contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
     //   if (displayObj['custom-editor'] !== true && !isBanner) {
@@ -538,29 +526,84 @@ const _tr = (msg, {
     if (ua.indexOf('safari') !== -1) {
       if (ua.indexOf('chrome') > -1) {
         iframe.onload = () => {
-          iframe.adjustIFrameHeight()
-          const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
-          setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
+          if (displayObj['custom-editor']) {
+            iframe.contentWindow.postMessage({
+              action: 'adjustIFrameHeight'
+            }, '*')
+            window.addEventListener('message', event => {
+              if (event.data.action === 'update height') {
+                const heightAdjust = document.getElementById(divId)
+                heightAdjust.style.margin = '0px'
+                heightAdjust.style.height = event.data.value + 'px'
+              }
+            })
+          }
+          const contentDivid = ''
+          setupClickUrl(onClick, targetingMsgJson, contentDivid, divId, legacy)
         }
       } else {
-        let inDoc = iframe.contentDocument || iframe.contentWindow
-        if (inDoc.document) inDoc = inDoc.document
         // safari iphone 7+ needs this.
-        iframe.adjustIFrameHeight()
-        const _timer = setInterval(() => {
-          if (inDoc.readyState === 'complete') {
-            clearInterval(_timer)
-            // adjust iframe and body height of html inside correctly
-            iframe.adjustIFrameHeight()
-            const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
-            setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
+        // let inDoc = iframe.contentDocument || iframe.contentWindow
+        // if (inDoc.document) inDoc = inDoc.document // we were using this to wait for iframe to load
+        iframe.onload = () => {
+          if (displayObj['custom-editor']) {
+            iframe.contentWindow.postMessage({
+              action: 'adjustIFrameHeight'
+            }, '*')
+            window.addEventListener('message', event => {
+              if (event.data.action === 'update height') {
+                const heightAdjust = document.getElementById(divId)
+                heightAdjust.style.margin = '0px'
+                heightAdjust.style.height = event.data.value + 'px'
+              }
+            })
           }
-        }, 10)
+          const contentDivid = ''
+          setupClickUrl(onClick, targetingMsgJson, contentDivid, divId, legacy)
+        }
+        // adjustIFrameHeight()
+        // const _timer = setInterval(() => {
+        //   if (inDoc.readyState === 'complete') { //we were using this to wait for iframe to load and retry after loading
+        //     clearInterval(_timer)
+        //     // adjust iframe and body height of html inside correctly
+        //     iframe.onload = () => {
+        //       if (displayObj['custom-editor']) {
+        //         iframe.contentWindow.postMessage({
+        //           action: 'adjustIFrameHeight'
+        //         }, '*')
+        //         window.addEventListener('message', event => {
+        //           if (event.data.action === 'update height') {
+        //             const heightAdjust = document.getElementById(divId)
+        //             heightAdjust.style.margin = '0px'
+        //             heightAdjust.style.height = event.data.value + 'px'
+        //           }
+        //         })
+        //       }
+        //       const contentDivid = ''
+        //       setupClickUrl(onClick, targetingMsgJson, contentDivid, divId, legacy)
+        //     }
+        //     // adjustIFrameHeight()
+        //     const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+        //     setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
+        //   }
+        // }, 10)
       }
     } else {
       iframe.onload = () => {
         // adjust iframe and body height of html inside correctly
-        iframe.adjustIFrameHeight()
+        if (displayObj['custom-editor']) {
+          iframe.contentWindow.postMessage({
+            action: 'adjustIFrameHeight'
+          }, '*')
+          window.addEventListener('message', event => {
+            if (event.data.action === 'update height') {
+              const heightAdjust = document.getElementById(divId)
+              heightAdjust.style.margin = '0px'
+              heightAdjust.style.height = event.data.value + 'px'
+            }
+          })
+        }
+        // iframe.adjustIFrameHeight()
         const contentDiv = ''
         setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
       }
@@ -573,7 +616,22 @@ const _tr = (msg, {
       const ct__formatVal = (v) => {
           return v && v.trim().substring(0, 20);
       }
-      const ct__parentOrigin =  window.parent.origin;
+      window.addEventListener('message', event => {
+        let contentHeight
+        if(event.data.action == 'adjustIFrameHeight'){ // check if adjustIFrameHeight function is called from parent window
+          contentDiv = document.getElementById('contentDiv')
+          let contentHeight = contentDiv.scrollHeight
+          contentDiv.style.height = '100%'
+          // if (displayObj['custom-editor'] !== true && !isBanner) { //It will always be custom-editor.
+          //           contentHeight += 25
+          //         } 
+          event.source.postMessage({ // sending message back to parent
+            action: 'update height',
+            value: contentHeight
+          }, event.origin)
+        }
+    })
+      // const ct__parentOrigin =  window.parent.origin;
       document.body.addEventListener('click', (event) => {
         const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');
         if (elem) {
@@ -589,7 +647,12 @@ const _tr = (msg, {
             if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }
             if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }
             const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '${targetingMsgJson.wzrk_pivot}' };
-            window.parent.clevertap.renderNotificationClicked(notifData);
+            //sending message to parent window to renderNotificationClicked.
+            window.parent.postMessage({
+              action: 'getnotifData',
+              value: notifData
+            }, '*')
+            
         }
       });
       </script>
@@ -758,15 +821,15 @@ const _tr = (msg, {
     document.body.appendChild(msgDiv)
     const iframe = document.createElement('iframe')
     const borderRadius = targetingMsgJson.display.br === false ? '0' : '8'
+    const displayObj = targetingMsgJson.display
     iframe.frameborder = '0px'
     iframe.marginheight = '0px'
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe-intent'
-    iframe.sandbox = 'allow-scripts'
-    // if (targetingMsgJson.display.preview) {
-    //   iframe.sandbox = 'allow-scripts'
-    // }
+    if (displayObj['custom-editor']) { // sanbox the iframe only for custom html
+      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox' // allow popup to open url in new page
+    }
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
     if (onClick !== '' && onClick != null) {
@@ -840,6 +903,11 @@ const _tr = (msg, {
     iframe.srcdoc = html
 
     iframe.onload = () => {
+      window.addEventListener('message', event => {
+        if (event.data.action === 'getnotifData') {
+          window.clevertap.renderNotificationClicked(event.data.value)
+        }
+      })
       const contentDiv = ''
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
     }
