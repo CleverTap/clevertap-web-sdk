@@ -512,16 +512,6 @@ const _tr = (msg, {
     }
     iframe.srcdoc = html
 
-    // const adjustIFrameHeight = () => { // old adjustIFrameHeight function before sandbox
-    //   // adjust iframe and body height of html inside correctly
-    //   contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
-    //   if (displayObj['custom-editor'] !== true && !isBanner) {
-    //     contentHeight += 25
-    //   }
-    //   document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
-    //   document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
-    // }
-
     const ua = navigator.userAgent.toLowerCase()
     if (ua.indexOf('safari') !== -1) {
       if (ua.indexOf('chrome') > -1) {
@@ -538,55 +528,24 @@ const _tr = (msg, {
               }
             })
           }
-          const contentDivid = ''
-          setupClickUrl(onClick, targetingMsgJson, contentDivid, divId, legacy)
+          setupClickUrl(onClick, targetingMsgJson, '', divId, legacy)
         }
       } else {
-        // safari iphone 7+ needs this.
-        // let inDoc = iframe.contentDocument || iframe.contentWindow
-        // if (inDoc.document) inDoc = inDoc.document // we were using this to wait for iframe to load
         iframe.onload = () => {
           if (displayObj['custom-editor']) {
             iframe.contentWindow.postMessage({
               action: 'adjustIFrameHeight'
             }, '*')
             window.addEventListener('message', event => {
-              if (event.data.action === 'update height') {
+              if (event?.data?.action === 'update height') {
                 const heightAdjust = document.getElementById(divId)
                 heightAdjust.style.margin = '0px'
                 heightAdjust.style.height = event.data.value + 'px'
               }
             })
           }
-          const contentDivid = ''
-          setupClickUrl(onClick, targetingMsgJson, contentDivid, divId, legacy)
+          setupClickUrl(onClick, targetingMsgJson, '', divId, legacy)
         }
-        // adjustIFrameHeight()
-        // const _timer = setInterval(() => {
-        //   if (inDoc.readyState === 'complete') { //we were using this to wait for iframe to load and retry after loading
-        //     clearInterval(_timer)
-        //     // adjust iframe and body height of html inside correctly
-        //     iframe.onload = () => {
-        //       if (displayObj['custom-editor']) {
-        //         iframe.contentWindow.postMessage({
-        //           action: 'adjustIFrameHeight'
-        //         }, '*')
-        //         window.addEventListener('message', event => {
-        //           if (event.data.action === 'update height') {
-        //             const heightAdjust = document.getElementById(divId)
-        //             heightAdjust.style.margin = '0px'
-        //             heightAdjust.style.height = event.data.value + 'px'
-        //           }
-        //         })
-        //       }
-        //       const contentDivid = ''
-        //       setupClickUrl(onClick, targetingMsgJson, contentDivid, divId, legacy)
-        //     }
-        //     // adjustIFrameHeight()
-        //     const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
-        //     setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
-        //   }
-        // }, 10)
       }
     } else {
       iframe.onload = () => {
@@ -603,9 +562,7 @@ const _tr = (msg, {
             }
           })
         }
-        // iframe.adjustIFrameHeight()
-        const contentDiv = ''
-        setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
+        setupClickUrl(onClick, targetingMsgJson, '', divId, legacy)
       }
     }
   }
@@ -618,7 +575,7 @@ const _tr = (msg, {
       }
       window.addEventListener('message', event => {
         let contentHeight
-        if(event.data.action == 'adjustIFrameHeight'){ // check if adjustIFrameHeight function is called from parent window
+        if(event?.data?.action == 'adjustIFrameHeight'){ // check if adjustIFrameHeight function is called from parent window
           contentDiv = document.getElementById('contentDiv')
           let contentHeight = contentDiv.scrollHeight
           contentDiv.style.height = '100%'
@@ -904,7 +861,7 @@ const _tr = (msg, {
 
     iframe.onload = () => {
       window.addEventListener('message', event => {
-        if (event.data.action === 'getnotifData') {
+        if (event?.data?.action === 'getnotifData') {
           window.clevertap.renderNotificationClicked(event.data.value)
         }
       })
