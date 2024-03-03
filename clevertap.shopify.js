@@ -1,8 +1,5 @@
-(function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.clevertap = factory());
-}(this, (function () { 'use strict';
+var clevertap = (function (browser) {
+  'use strict';
 
   function _typeof(obj) {
     "@babel/helpers - typeof";
@@ -8026,10 +8023,9 @@
     }
   }
 
-  var clevertap = new CleverTap(window.clevertap);
-  window.clevertap = window.wizrocket = clevertap;
+  var clevertap = new CleverTap({});
 
   return clevertap;
 
-})));
-//# sourceMappingURL=clevertap.js.map
+}(browser));
+//# sourceMappingURL=clevertap.shopify.js.map

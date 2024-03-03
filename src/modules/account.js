@@ -5,6 +5,7 @@ export default class Account {
   #region = ''
   #targetDomain = TARGET_DOMAIN
   #dcSdkversion = ''
+  #mode = 'web'
 
   constructor ({ id } = {}, region = '', targetDomain = TARGET_DOMAIN) {
     this.id = id
@@ -22,6 +23,14 @@ export default class Account {
 
   set id (accountId) {
     this.#accountId = accountId
+  }
+
+  get mode () {
+    return this.#mode
+  }
+
+  set mode (mode) {
+    this.#mode = mode
   }
 
   get region () {
@@ -59,8 +68,15 @@ export default class Account {
     }
   }
 
+  get endpoint () {
+    if (this.mode === 'shopify') {
+      return 'shopify'
+    }
+    return 'a'
+  }
+
   get dataPostURL () {
-    return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/a?t=96`
+    return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/${this.endpoint}?t=96`
   }
 
   get recorderURL () {

@@ -1,12 +1,7 @@
 import Clevertap from './clevertap'
-import { isWindowDefined } from './util/clevertap'
 
-const clevertap = new Clevertap(isWindowDefined() ? window.clevertap : {})
+const clevertap = new Clevertap(window.clevertap)
 
-if (isWindowDefined()) {
-  window.clevertap = window.wizrocket = clevertap
-} else {
-  return (browser) => clevertap
-}
+window.clevertap = window.wizrocket = clevertap
 
 export default clevertap

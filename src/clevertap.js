@@ -585,6 +585,11 @@ export default class CleverTap {
     }
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
 
+    if (!isWindowDefined() && typeof browser === 'object') {
+      this.#account.mode = 'shopify'
+      StorageManager.saveMode('async')
+    }
+
     if (region) {
       this.#account.region = region
     }

@@ -7,16 +7,25 @@ import {
 } from './constants'
 
 export class StorageManager {
+  saveMode = 'sync';
+  static set saveMode (mode) {
+    this.saveMode = mode
+  }
 
-  static saveAsync (key, value) {
+  static get saveMode () {
+    return this.saveMode
+  }
+
+  static #saveAsync (key, value) {
     if (!key || !value) {
       return false
     }
     if (this._isLocalStorageSupported()) {
+      // eslint-disable-next-line
       browser.localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value)).then(value => {
-        return true;
+        return true
       }).catch((error) => {
-        console.error(error);
+        console.error(error)
       })
     }
   }
@@ -37,7 +46,7 @@ export class StorageManager {
     }
     let data = null
     if (this._isLocalStorageSupported()) {
-      data = (isWindowDefined() ? browser.localStorage : localStorage).getItem(key)
+      data = localStorage.getItem(key)
     }
     if (data != null) {
       try {
@@ -53,7 +62,10 @@ export class StorageManager {
     }
     let data = null
     if (this._isLocalStorageSupported()) {
-      browser.localStorage.getItem(key).then(value => data = value);
+      // eslint-disable-next-line
+      browser.localStorage.getItem(key).then(value => {
+        data = value
+      })
     }
     if (data != null) {
       try {
@@ -78,7 +90,8 @@ export class StorageManager {
       return false
     }
     if (this._isLocalStorageSupported()) {
-     browser.localStorage.removeItem(key).then(() => true)
+      // eslint-disable-next-line
+      browser.localStorage.removeItem(key).then(() => true)
     }
   }
 
@@ -89,7 +102,7 @@ export class StorageManager {
       cookieStr = cookieStr + ' domain=' + domain + '; path=/'
     }
 
-    (isWindowDefined() ? browser : document).cookie = cookieStr
+    document.cookie = cookieStr
   }
 
   static createCookie (name, value, seconds, domain) {
@@ -138,8 +151,11 @@ export class StorageManager {
     }
     try {
       if (this._isLocalStorageSupported()) {
-        this.save(property, encodeURIComponent(JSON.stringify(value)))
-        this.saveAsync(property, encodeURIComponent(JSON.stringify(value)))
+        if (this.saveMode === 'sync') {
+          this.save(property, encodeURIComponent(JSON.stringify(value)))
+        } else {
+          this.#saveAsync(property, encodeURIComponent(JSON.stringify(value)))
+        }
       } else {
         if (property === GCOOKIE_NAME) {
           this.createCookie(property, encodeURIComponent(value), 0, window.location.hostname)

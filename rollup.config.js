@@ -5,7 +5,8 @@ import { eslint } from 'rollup-plugin-eslint'
 import { terser } from 'rollup-plugin-terser'
 import { version } from './package.json'
 import sourcemaps from 'rollup-plugin-sourcemaps'
-import removeHtmlElements from './rollup-plugin-remove-html-elements'
+import removeHtmlElements from './plugins/rollup-plugin-remove-html-elements'
+import iife from './plugins/rollup-plugin-add-browser-to-output'
 
 /**
  * Returns the input file path
@@ -14,6 +15,10 @@ import removeHtmlElements from './rollup-plugin-remove-html-elements'
 const getInput = (mode) => {
   if (mode === 'SERVICE_WORKER') {
     return 'sw_webpush.js'
+  }
+
+  if (mode === 'SHOPIFY') {
+    return 'src/shopify.js'
   }
 
   return 'src/main.js'
@@ -35,11 +40,22 @@ const getOutput = (mode) => {
     ]
   }
 
+  if (mode === 'SHOPIFY') {
+    return [
+      {
+        file: 'clevertap.shopify.js',
+        format: 'iife',
+        sourcemap: true,
+        name: 'clevertap'
+      }
+    ]
+  }
+
   return [
     {
       name: 'clevertap',
       file: 'clevertap.js',
-      format: 'iife',
+      format: 'umd',
       sourcemap: true
     },
     {
@@ -60,6 +76,7 @@ const getPlugins = (mode) => {
 
   if (mode === 'SHOPIFY') {
     plugins.push(removeHtmlElements())
+    plugins.push(iife())
   }
 
   return [
@@ -81,13 +98,16 @@ const getPlugins = (mode) => {
   ]
 }
 
+/**
+ * @returns {import('rollup').RollupOptions}
+ */
 const config = () => {
   const mode = process.env.MODE
 
   return {
     input: getInput(mode),
     output: getOutput(mode),
-    plugins: getPlugins()
+    plugins: getPlugins(mode)
   }
 }
 
