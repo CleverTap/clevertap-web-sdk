@@ -20,42 +20,6 @@
     return _typeof(obj);
   }
 
-  function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
-    try {
-      var info = gen[key](arg);
-      var value = info.value;
-    } catch (error) {
-      reject(error);
-      return;
-    }
-
-    if (info.done) {
-      resolve(value);
-    } else {
-      Promise.resolve(value).then(_next, _throw);
-    }
-  }
-
-  function _asyncToGenerator(fn) {
-    return function () {
-      var self = this,
-          args = arguments;
-      return new Promise(function (resolve, reject) {
-        var gen = fn.apply(self, args);
-
-        function _next(value) {
-          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
-        }
-
-        function _throw(err) {
-          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
-        }
-
-        _next(undefined);
-      });
-    };
-  }
-
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
@@ -369,6 +333,69 @@
   var TARGET_PROTOCOL = 'https:';
   var DEFAULT_REGION = 'eu1';
 
+  var unsupportedKeyCharRegex = new RegExp('^\\s+|\\\.|\:|\\\$|\'|\"|\\\\|\\s+$', 'g');
+  var unsupportedValueCharRegex = new RegExp("^\\s+|\'|\"|\\\\|\\s+$", 'g');
+  var singleQuoteRegex = new RegExp('\'', 'g');
+  var CLEAR = 'clear';
+  var CHARGED_ID = 'Charged ID';
+  var CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID';
+  var GCOOKIE_NAME = 'WZRK_G';
+  var KCOOKIE_NAME = 'WZRK_K';
+  var CAMP_COOKIE_NAME = 'WZRK_CAMP';
+  var CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
+
+  var SCOOKIE_PREFIX = 'WZRK_S';
+  var SCOOKIE_EXP_TIME_IN_SECS = 60 * 20; // 20 mins
+
+  var EV_COOKIE = 'WZRK_EV';
+  var META_COOKIE = 'WZRK_META';
+  var PR_COOKIE = 'WZRK_PR';
+  var ARP_COOKIE = 'WZRK_ARP';
+  var LCOOKIE_NAME = 'WZRK_L';
+  var GLOBAL = 'global'; // used for email unsubscribe also
+  var DISPLAY = 'display';
+  var WEBPUSH_LS_KEY = 'WZRK_WPR';
+  var OPTOUT_KEY = 'optOut';
+  var CT_OPTOUT_KEY = 'ct_optout';
+  var OPTOUT_COOKIE_ENDSWITH = ':OO';
+  var USEIP_KEY = 'useIP';
+  var LRU_CACHE = 'WZRK_X';
+  var LRU_CACHE_SIZE = 100;
+  var IS_OUL = 'isOUL';
+  var EVT_PUSH = 'push';
+  var EVT_PING = 'ping';
+  var COOKIE_EXPIRY = 86400 * 365; // 1 Year in seconds
+
+  var MAX_TRIES = 200; // API tries
+
+  var FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000; // 2 mins
+
+  var CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000; // 5 mins
+
+  var GROUP_SUBSCRIPTION_REQUEST_ID = '2';
+  var categoryLongKey = 'cUsY';
+  var WZRK_PREFIX = 'wzrk_';
+  var WZRK_ID = 'wzrk_id';
+  var NOTIFICATION_VIEWED = 'Notification Viewed';
+  var NOTIFICATION_CLICKED = 'Notification Clicked';
+  var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
+  var PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD'; // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
+
+  var COMMAND_INCREMENT = '$incr';
+  var COMMAND_DECREMENT = '$decr';
+  var COMMAND_SET = '$set';
+  var COMMAND_ADD = '$add';
+  var COMMAND_REMOVE = '$remove';
+  var COMMAND_DELETE = '$delete';
+  var WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG';
+  var WEBINBOX = 'WZRK_INBOX';
+  var MAX_INBOX_MSG = 15;
+  var MODE = {
+    WEB: 'WEB',
+    SHOPIFY: 'SHOPIFY'
+  };
+  var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
+
   var _accountId = /*#__PURE__*/_classPrivateFieldLooseKey("accountId");
 
   var _region = /*#__PURE__*/_classPrivateFieldLooseKey("region");
@@ -405,9 +432,13 @@
         writable: true,
         value: ''
       });
+
+      /**
+       * @type {('SHOPIFY' | 'WEB')} mode
+       */
       Object.defineProperty(this, _mode, {
         writable: true,
-        value: 'web'
+        value: 'WEB'
       });
       this.id = id;
 
@@ -476,7 +507,7 @@
     }, {
       key: "endpoint",
       get: function get() {
-        if (this.mode === 'shopify') {
+        if (this.mode === MODE.SHOPIFY) {
           return 'shopify';
         }
 
@@ -502,64 +533,541 @@
     return Account;
   }();
 
-  var unsupportedKeyCharRegex = new RegExp('^\\s+|\\\.|\:|\\\$|\'|\"|\\\\|\\s+$', 'g');
-  var unsupportedValueCharRegex = new RegExp("^\\s+|\'|\"|\\\\|\\s+$", 'g');
-  var singleQuoteRegex = new RegExp('\'', 'g');
-  var CLEAR = 'clear';
-  var CHARGED_ID = 'Charged ID';
-  var CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID';
-  var GCOOKIE_NAME = 'WZRK_G';
-  var KCOOKIE_NAME = 'WZRK_K';
-  var CAMP_COOKIE_NAME = 'WZRK_CAMP';
-  var CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
+  var getURLParams = function getURLParams(url) {
+    var urlParams = {};
+    var idx = url.indexOf('?');
 
-  var SCOOKIE_PREFIX = 'WZRK_S';
-  var SCOOKIE_EXP_TIME_IN_SECS = 60 * 20; // 20 mins
+    if (idx > 1) {
+      var uri = url.substring(idx + 1);
+      var match;
+      var pl = /\+/g; // Regex for replacing addition symbol with a space
 
-  var EV_COOKIE = 'WZRK_EV';
-  var META_COOKIE = 'WZRK_META';
-  var PR_COOKIE = 'WZRK_PR';
-  var ARP_COOKIE = 'WZRK_ARP';
-  var LCOOKIE_NAME = 'WZRK_L';
-  var GLOBAL = 'global'; // used for email unsubscribe also
-  var DISPLAY = 'display';
-  var WEBPUSH_LS_KEY = 'WZRK_WPR';
-  var OPTOUT_KEY = 'optOut';
-  var CT_OPTOUT_KEY = 'ct_optout';
-  var OPTOUT_COOKIE_ENDSWITH = ':OO';
-  var USEIP_KEY = 'useIP';
-  var LRU_CACHE = 'WZRK_X';
-  var LRU_CACHE_SIZE = 100;
-  var IS_OUL = 'isOUL';
-  var EVT_PUSH = 'push';
-  var EVT_PING = 'ping';
-  var COOKIE_EXPIRY = 86400 * 365; // 1 Year in seconds
+      var search = /([^&=]+)=?([^&]*)/g;
 
-  var MAX_TRIES = 200; // API tries
+      var decode = function decode(s) {
+        var replacement = s.replace(pl, ' ');
 
-  var FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000; // 2 mins
+        try {
+          replacement = decodeURIComponent(replacement);
+        } catch (e) {// eat
+        }
 
-  var CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000; // 5 mins
+        return replacement;
+      };
 
-  var GROUP_SUBSCRIPTION_REQUEST_ID = '2';
-  var categoryLongKey = 'cUsY';
-  var WZRK_PREFIX = 'wzrk_';
-  var WZRK_ID = 'wzrk_id';
-  var NOTIFICATION_VIEWED = 'Notification Viewed';
-  var NOTIFICATION_CLICKED = 'Notification Clicked';
-  var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
-  var PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD'; // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
+      match = search.exec(uri);
 
-  var COMMAND_INCREMENT = '$incr';
-  var COMMAND_DECREMENT = '$decr';
-  var COMMAND_SET = '$set';
-  var COMMAND_ADD = '$add';
-  var COMMAND_REMOVE = '$remove';
-  var COMMAND_DELETE = '$delete';
-  var WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG';
-  var WEBINBOX = 'WZRK_INBOX';
-  var MAX_INBOX_MSG = 15;
-  var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
+      while (match) {
+        urlParams[decode(match[1])] = decode(match[2]);
+        match = search.exec(uri);
+      }
+    }
+
+    return urlParams;
+  };
+  var getDomain = function getDomain(url) {
+    if (url === '') return '';
+    var a = document.createElement('a');
+    a.href = url;
+    return a.hostname;
+  };
+  var addToURL = function addToURL(url, k, v) {
+    return url + '&' + k + '=' + encodeURIComponent(v);
+  };
+  /**
+   * returns host name depending on the mode
+   * @param {('SHOPIFY' | 'WEB' | 'SERVICE_WORKER')} mode
+   */
+
+  var getHostName = function getHostName(mode) {
+    if (mode === 'SHOPIFY') {
+      // eslint-disable-next-line
+      return browser.window.location.hostname;
+    }
+
+    return window.location.hostname;
+  };
+
+  var _saveAsync = /*#__PURE__*/_classPrivateFieldLooseKey("saveAsync");
+
+  var _createCookieAsync = /*#__PURE__*/_classPrivateFieldLooseKey("createCookieAsync");
+
+  var StorageManager = /*#__PURE__*/function () {
+    function StorageManager() {
+      _classCallCheck(this, StorageManager);
+    }
+
+    _createClass(StorageManager, null, [{
+      key: "setSaveMode",
+
+      /**
+       * sets save mode
+       * @param {('sync' | 'async')} mode
+       */
+      value: function setSaveMode(mode) {
+        this.saveMode = mode;
+      }
+    }, {
+      key: "save",
+      value: function save(key, value) {
+        if (!key || !value) {
+          return false;
+        }
+
+        if (this._isLocalStorageSupported()) {
+          localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+          return true;
+        }
+      }
+    }, {
+      key: "read",
+      value: function read(key) {
+        if (!key) {
+          return false;
+        }
+
+        var data = null;
+
+        if (this._isLocalStorageSupported()) {
+          data = localStorage.getItem(key);
+        }
+
+        if (data != null) {
+          try {
+            data = JSON.parse(data);
+          } catch (e) {}
+        }
+
+        return data;
+      }
+    }, {
+      key: "readAsync",
+      value: function readAsync(key) {
+        if (!key) {
+          return false;
+        }
+
+        var data = null;
+
+        if (this._isLocalStorageSupported()) {
+          // eslint-disable-next-line
+          browser.localStorage.getItem(key).then(function (value) {
+            data = value;
+          });
+        }
+
+        if (data != null) {
+          try {
+            data = JSON.parse(data);
+          } catch (e) {}
+        }
+
+        return data;
+      }
+    }, {
+      key: "remove",
+      value: function remove(key) {
+        if (!key) {
+          return false;
+        }
+
+        if (this._isLocalStorageSupported()) {
+          localStorage.removeItem(key);
+          return true;
+        }
+      }
+    }, {
+      key: "removeAsync",
+      value: function removeAsync(key) {
+        if (!key) {
+          return false;
+        }
+
+        if (this._isLocalStorageSupported()) {
+          // eslint-disable-next-line
+          browser.localStorage.removeItem(key).then(function () {
+            return true;
+          });
+        }
+      }
+    }, {
+      key: "removeCookie",
+      value: function removeCookie(name, domain) {
+        var cookieStr = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+
+        if (domain) {
+          cookieStr = cookieStr + ' domain=' + domain + '; path=/';
+        }
+
+        document.cookie = cookieStr;
+      }
+    }, {
+      key: "createCookie",
+      value: function createCookie(name, value, seconds, domain) {
+        var expires = '';
+        var domainStr = '';
+
+        if (seconds) {
+          var date = new Date();
+          date.setTime(date.getTime() + seconds * 1000);
+          expires = '; expires=' + date.toGMTString();
+        }
+
+        if (domain) {
+          domainStr = '; domain=' + domain;
+        }
+
+        value = encodeURIComponent(value);
+        document.cookie = name + '=' + value + expires + domainStr + '; path=/';
+      }
+    }, {
+      key: "readCookie",
+      value: function readCookie(name) {
+        var nameEQ = name + '=';
+        var ca = document.cookie.split(';');
+
+        for (var idx = 0; idx < ca.length; idx++) {
+          var c = ca[idx];
+
+          while (c.charAt(0) === ' ') {
+            c = c.substring(1, c.length);
+          } // eslint-disable-next-line eqeqeq
+
+
+          if (c.indexOf(nameEQ) == 0) {
+            return decodeURIComponent(c.substring(nameEQ.length, c.length));
+          }
+        }
+
+        return null;
+      }
+    }, {
+      key: "readCookieAsync",
+      value: function readCookieAsync(name) {
+        var cookie = null; // eslint-disable-next-line
+
+        browser.cookie.get(name).then(function (value) {
+          cookie = decodeURIComponent(value);
+        });
+        return cookie;
+      }
+    }, {
+      key: "_isLocalStorageSupported",
+      value: function _isLocalStorageSupported() {
+        if (!isWindowDefined()) return true;
+        return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function';
+      }
+    }, {
+      key: "saveToLSorCookie",
+      value: function saveToLSorCookie(property, value) {
+        if (value == null) {
+          return;
+        }
+
+        try {
+          if (this._isLocalStorageSupported() && this.saveMode === 'sync') {
+            this.save(property, encodeURIComponent(JSON.stringify(value)));
+          } else {
+            this.createCookie(property, property === GCOOKIE_NAME ? encodeURIComponent(value) : encodeURIComponent(JSON.stringify(value)), 0, getHostName('WEB'));
+          }
+
+          if (this._isLocalStorageSupported() && this.saveMode === 'async') {
+            _classPrivateFieldLooseBase(this, _saveAsync)[_saveAsync](property, encodeURIComponent(JSON.stringify(value)));
+          } else {
+            _classPrivateFieldLooseBase(this, _createCookieAsync)[_createCookieAsync](property, property === GCOOKIE_NAME ? encodeURIComponent(value) : encodeURIComponent(JSON.stringify(value)), 0, getHostName('SHOPIFY'));
+          }
+
+          $ct.globalCache[property] = value;
+        } catch (e) {}
+      }
+    }, {
+      key: "readFromLSorCookie",
+      value: function readFromLSorCookie(property) {
+        var data;
+
+        if ($ct.globalCache.hasOwnProperty(property)) {
+          return $ct.globalCache[property];
+        }
+
+        if (this._isLocalStorageSupported()) {
+          if (this.saveMode === 'sync') {
+            data = this.read(property);
+          } else {
+            data = this.readAsync(property);
+          }
+        } else {
+          if (this.saveMode === 'sync') {
+            data = this.readCookie(property);
+          } else {
+            data = this.readCookieAsync(property);
+          }
+        }
+
+        if (data !== null && data !== undefined && !(typeof data.trim === 'function' && data.trim() === '')) {
+          var value;
+
+          try {
+            value = JSON.parse(decodeURIComponent(data));
+          } catch (err) {
+            value = decodeURIComponent(data);
+          }
+
+          $ct.globalCache[property] = value;
+          return value;
+        }
+      }
+    }, {
+      key: "createBroadCookie",
+      value: function createBroadCookie(name, value, seconds, domain) {
+        // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
+        // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
+        // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
+        // to find out which "broadest" domain the cookie was set on. Then delete the test cookie, and use that domain
+        // for updating the actual cookie.
+        if (domain) {
+          var broadDomain = $ct.broadDomain;
+
+          if (broadDomain == null) {
+            // if we don't know the broadDomain yet, then find out
+            var domainParts = domain.split('.');
+            var testBroadDomain = '';
+
+            for (var idx = domainParts.length - 1; idx >= 0; idx--) {
+              if (idx === 0) {
+                testBroadDomain = domainParts[idx] + testBroadDomain;
+              } else {
+                testBroadDomain = '.' + domainParts[idx] + testBroadDomain;
+              } // only needed if the cookie already exists and needs to be updated. See note above.
+
+
+              if (this.readCookie(name)) {
+                // no guarantee that browser will delete cookie, hence create short lived cookies
+                var testCookieName = 'test_' + name + idx;
+                this.createCookie(testCookieName, value, 10, testBroadDomain); // self-destruct after 10 seconds
+
+                if (!this.readCookie(testCookieName)) {
+                  // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
+                  continue;
+                } else {
+                  // else if cookie set, then delete the test and the original cookie
+                  this.removeCookie(testCookieName, testBroadDomain);
+                }
+              }
+
+              this.createCookie(name, value, seconds, testBroadDomain);
+              var tempCookie = this.readCookie(name); // eslint-disable-next-line eqeqeq
+
+              if (tempCookie == value) {
+                broadDomain = testBroadDomain;
+                $ct.broadDomain = broadDomain;
+                break;
+              }
+            }
+          } else {
+            this.createCookie(name, value, seconds, broadDomain);
+          }
+        } else {
+          this.createCookie(name, value, seconds, domain);
+        }
+      }
+    }, {
+      key: "getMetaProp",
+      value: function getMetaProp(property) {
+        var metaObj = this.readFromLSorCookie(META_COOKIE);
+
+        if (metaObj != null) {
+          return metaObj[property];
+        }
+      }
+    }, {
+      key: "setMetaProp",
+      value: function setMetaProp(property, value) {
+        if (this._isLocalStorageSupported()) {
+          var wzrkMetaObj = this.readFromLSorCookie(META_COOKIE);
+
+          if (wzrkMetaObj == null) {
+            wzrkMetaObj = {};
+          }
+
+          if (value === undefined) {
+            delete wzrkMetaObj[property];
+          } else {
+            wzrkMetaObj[property] = value;
+          }
+
+          this.saveToLSorCookie(META_COOKIE, wzrkMetaObj);
+        }
+      }
+    }, {
+      key: "getAndClearMetaProp",
+      value: function getAndClearMetaProp(property) {
+        var value = this.getMetaProp(property);
+        this.setMetaProp(property, undefined);
+        return value;
+      }
+    }, {
+      key: "setInstantDeleteFlagInK",
+      value: function setInstantDeleteFlagInK() {
+        var k = this.readFromLSorCookie(KCOOKIE_NAME);
+
+        if (k == null) {
+          k = {};
+        }
+
+        k.flag = true;
+        this.saveToLSorCookie(KCOOKIE_NAME, k);
+      }
+    }, {
+      key: "backupEvent",
+      value: function backupEvent(data, reqNo, logger) {
+        var backupArr = this.readFromLSorCookie(LCOOKIE_NAME);
+
+        if (typeof backupArr === 'undefined') {
+          backupArr = {};
+        }
+
+        backupArr[reqNo] = {
+          q: data
+        };
+        this.saveToLSorCookie(LCOOKIE_NAME, backupArr);
+        logger.debug("stored in ".concat(LCOOKIE_NAME, " reqNo : ").concat(reqNo, " -> ").concat(data));
+      }
+    }, {
+      key: "removeBackup",
+      value: function removeBackup(respNo, logger) {
+        var backupMap = this.readFromLSorCookie(LCOOKIE_NAME);
+
+        if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
+          logger.debug("del event: ".concat(respNo, " data-> ").concat(backupMap[respNo].q));
+          delete backupMap[respNo];
+          this.saveToLSorCookie(LCOOKIE_NAME, backupMap);
+        }
+      }
+    }]);
+
+    return StorageManager;
+  }();
+
+  function _saveAsync2(key, value) {
+    if (!key || !value) {
+      return false;
+    }
+
+    if (this._isLocalStorageSupported()) {
+      // eslint-disable-next-line
+      browser.localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value)).then(function (value) {
+        return true;
+      }).catch(function (error) {
+        console.error(error);
+      });
+    }
+  }
+
+  function _createCookieAsync2(name, value, seconds, domain) {
+    var expires = '';
+    var domainStr = '';
+
+    if (seconds) {
+      var date = new Date();
+      date.setTime(date.getTime() + seconds * 1000);
+      expires = '; expires=' + date.toGMTString();
+    }
+
+    if (domain) {
+      domainStr = '; domain=' + domain;
+    }
+
+    value = encodeURIComponent(value); // eslint-disable-next-line
+
+    browser.cookie.set(name, value + expires + domainStr + '; path=/');
+  }
+
+  Object.defineProperty(StorageManager, _createCookieAsync, {
+    value: _createCookieAsync2
+  });
+  Object.defineProperty(StorageManager, _saveAsync, {
+    value: _saveAsync2
+  });
+
+  /**
+   * @type {('sync' | 'async')} saveMode
+   */
+  StorageManager.saveMode = 'sync';
+  var $ct = {
+    globalCache: {
+      gcookie: null,
+      REQ_N: 0,
+      RESP_N: 0
+    },
+    LRU_CACHE: null,
+    globalProfileMap: undefined,
+    globalEventsMap: undefined,
+    blockRequest: false,
+    isOptInRequest: false,
+    broadDomain: null,
+    webPushEnabled: null,
+    campaignDivMap: {},
+    currentSessionId: null,
+    wiz_counter: 0,
+    // to keep track of number of times we load the body
+    notifApi: {
+      notifEnabledFromApi: false
+    },
+    // helper variable to handle race condition and check when notifications were called
+    unsubGroups: [],
+    updatedCategoryLong: null,
+    inbox: null,
+    isPrivacyArrPushed: false,
+    privacyArray: [],
+    offline: false,
+    location: null,
+    dismissSpamControl: false,
+    globalUnsubscribe: true,
+    flutterVersion: null // domain: window.location.hostname, url -> getHostName()
+    // gcookie: -> device
+
+  };
+
+  var DATA_NOT_SENT_TEXT = 'This property has been ignored.';
+  var CLEVERTAP_ERROR_PREFIX = 'CleverTap error:'; // Formerly wzrk_error_txt
+
+  var EMBED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Incorrect embed script.");
+  var EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
+  var GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should be either M or F. ").concat(DATA_NOT_SENT_TEXT);
+  var EMPLOYED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Employed value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
+  var MARRIED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Married value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
+  var EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
+  var AGE_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Age value should be a number. ").concat(DATA_NOT_SENT_TEXT);
+  var DOB_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " DOB value should be a Date Object");
+  var ENUM_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " setEnum(value). value should be a string or a number");
+  var PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
+
+  var getToday = function getToday() {
+    var today = new Date();
+    return today.getFullYear() + '' + today.getMonth() + '' + today.getDay();
+  };
+  var getNow = function getNow() {
+    return Math.floor(new Date().getTime() / 1000);
+  };
+  var convertToWZRKDate = function convertToWZRKDate(dateObj) {
+    return '$D_' + Math.round(dateObj.getTime() / 1000);
+  };
+  var setDate = function setDate(dt) {
+    // expecting  yyyymmdd format either as a number or a string
+    if (isDateValid(dt)) {
+      return '$D_' + dt;
+    }
+  };
+  var isDateValid = function isDateValid(date) {
+    var matches = /^(\d{4})(\d{2})(\d{2})$/.exec(date);
+    if (matches == null) return false;
+    var d = matches[3];
+    var m = matches[2] - 1;
+    var y = matches[1];
+    var composedDate = new Date(y, m, d); // eslint-disable-next-line eqeqeq
+
+    return composedDate.getDate() == d && composedDate.getMonth() == m && composedDate.getFullYear() == y;
+  };
 
   var isString = function isString(input) {
     return typeof input === 'string' || input instanceof String;
@@ -632,92 +1140,6 @@
   };
   var sanitize = function sanitize(input, regex) {
     return input.replace(regex, '');
-  };
-
-  var getToday = function getToday() {
-    var today = new Date();
-    return today.getFullYear() + '' + today.getMonth() + '' + today.getDay();
-  };
-  var getNow = function getNow() {
-    return Math.floor(new Date().getTime() / 1000);
-  };
-  var convertToWZRKDate = function convertToWZRKDate(dateObj) {
-    return '$D_' + Math.round(dateObj.getTime() / 1000);
-  };
-  var setDate = function setDate(dt) {
-    // expecting  yyyymmdd format either as a number or a string
-    if (isDateValid(dt)) {
-      return '$D_' + dt;
-    }
-  };
-  var isDateValid = function isDateValid(date) {
-    var matches = /^(\d{4})(\d{2})(\d{2})$/.exec(date);
-    if (matches == null) return false;
-    var d = matches[3];
-    var m = matches[2] - 1;
-    var y = matches[1];
-    var composedDate = new Date(y, m, d); // eslint-disable-next-line eqeqeq
-
-    return composedDate.getDate() == d && composedDate.getMonth() == m && composedDate.getFullYear() == y;
-  };
-
-  var DATA_NOT_SENT_TEXT = 'This property has been ignored.';
-  var CLEVERTAP_ERROR_PREFIX = 'CleverTap error:'; // Formerly wzrk_error_txt
-
-  var EMBED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Incorrect embed script.");
-  var EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
-  var GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should be either M or F. ").concat(DATA_NOT_SENT_TEXT);
-  var EMPLOYED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Employed value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
-  var MARRIED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Married value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
-  var EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
-  var AGE_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Age value should be a number. ").concat(DATA_NOT_SENT_TEXT);
-  var DOB_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " DOB value should be a Date Object");
-  var ENUM_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " setEnum(value). value should be a string or a number");
-  var PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
-
-  var getURLParams = function getURLParams(url) {
-    var urlParams = {};
-    var idx = url.indexOf('?');
-
-    if (idx > 1) {
-      var uri = url.substring(idx + 1);
-      var match;
-      var pl = /\+/g; // Regex for replacing addition symbol with a space
-
-      var search = /([^&=]+)=?([^&]*)/g;
-
-      var decode = function decode(s) {
-        var replacement = s.replace(pl, ' ');
-
-        try {
-          replacement = decodeURIComponent(replacement);
-        } catch (e) {// eat
-        }
-
-        return replacement;
-      };
-
-      match = search.exec(uri);
-
-      while (match) {
-        urlParams[decode(match[1])] = decode(match[2]);
-        match = search.exec(uri);
-      }
-    }
-
-    return urlParams;
-  };
-  var getDomain = function getDomain(url) {
-    if (url === '') return '';
-    var a = document.createElement('a');
-    a.href = url;
-    return a.hostname;
-  };
-  var addToURL = function addToURL(url, k, v) {
-    return url + '&' + k + '=' + encodeURIComponent(v);
-  };
-  var getHostName = function getHostName() {
-    return window.location.hostname;
   };
 
   /* eslint-disable */
@@ -1072,14 +1494,34 @@
     }
 
     _createClass(RequestDispatcher, null, [{
-      key: "fireRequest",
+      key: "processResponse",
 
+      /**
+       * processes the response of fired events and calls relevant methods
+       * @param {object} response
+       */
+      value: function processResponse(response) {
+        if (response.arp) {
+          arp(response.arp);
+        }
+
+        if (response.meta) {
+          this.api.s(response.meta.g, // cookie
+          response.meta.sid, // session id
+          response.meta.rf, // resume
+          response.meta.rn // response number for backuop manager
+          );
+        }
+      }
       /**
        *
        * @param {string} url
        * @param {*} skipARP
        * @param {boolean} sendOULFlag
        */
+
+    }, {
+      key: "fireRequest",
       value: function fireRequest(url, skipARP, sendOULFlag) {
         _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
       }
@@ -1090,9 +1532,7 @@
 
   // ANCHOR - Requests get fired from here
   function _fireRequest2(url, tries, skipARP, sendOULFlag) {
-    var _this = this,
-        _window$clevertap,
-        _window$wizrocket;
+    var _this = this;
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
@@ -1132,39 +1572,52 @@
 
       url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
     } else {
-      window.isOULInProgress = true;
+      if (isWindowDefined()) {
+        window.isOULInProgress = true;
+      }
     }
 
     url = addToURL(url, 'tries', tries); // Add tries to URL
 
     url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
-    // TODO: Figure out a better way to handle plugin check
 
-    if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
-      // used to add plugin name in request parameter
-      var plugin = window.clevertap.plugin || window.wizrocket.plugin;
-      url = addToURL(url, 'ct_pl', plugin);
+    if (isWindowDefined()) {
+      var _window$clevertap, _window$wizrocket;
+
+      // TODO: Figure out a better way to handle plugin check
+      if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
+        // used to add plugin name in request parameter
+        var plugin = window.clevertap.plugin || window.wizrocket.plugin;
+        url = addToURL(url, 'ct_pl', plugin);
+      }
     }
 
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:');
-    } // TODO: Try using Function constructor instead of appending script.
-
-
-    var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
-
-    while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
-      ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
     }
 
-    var s = document.createElement('script');
-    s.setAttribute('type', 'text/javascript');
-    s.setAttribute('src', url);
-    s.setAttribute('class', 'ct-jp-cb');
-    s.setAttribute('rel', 'nofollow');
-    s.async = true;
-    document.getElementsByTagName('head')[0].appendChild(s);
+    if (this.mode === 'WEB') {
+      // TODO: Try using Function constructor instead of appending script.
+      var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
+
+      while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+        ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
+      }
+
+      var s = document.createElement('script');
+      s.setAttribute('type', 'text/javascript');
+      s.setAttribute('src', url);
+      s.setAttribute('class', 'ct-jp-cb');
+      s.setAttribute('rel', 'nofollow');
+      s.async = true;
+      document.getElementsByTagName('head')[0].appendChild(s);
+    } else {
+      fetch(url).then(function (res) {
+        return res.json();
+      }).then(this.processResponse);
+    }
+
     this.logger.debug('req snt -> url: ' + url);
   }
 
@@ -1194,8 +1647,10 @@
       return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger));
     }
 
-    if (StorageManager._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
-      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE)), this.logger));
+    var arpValue = StorageManager.readFromLSorCookie(ARP_COOKIE);
+
+    if (typeof arpValue !== 'undefined' && arpValue !== null) {
+      return addToURL(url, 'arp', compressData(JSON.stringify(arpValue), this.logger));
     }
 
     return url;
@@ -1215,6 +1670,8 @@
   });
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
+  RequestDispatcher.mode = void 0;
+  RequestDispatcher.api = void 0;
 
   var getCampaignObject = function getCampaignObject() {
     var finalcampObj = {};
@@ -1737,403 +2194,6 @@
     return typeof window !== 'undefined' && (typeof window === "undefined" ? "undefined" : _typeof(window)) === 'object';
   };
 
-  var StorageManager = /*#__PURE__*/function () {
-    function StorageManager() {
-      _classCallCheck(this, StorageManager);
-    }
-
-    _createClass(StorageManager, null, [{
-      key: "saveAsync",
-      value: function saveAsync(key, value) {
-        if (!key || !value) {
-          return false;
-        }
-
-        if (this._isLocalStorageSupported()) {
-          browser.localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value)).then(function (value) {
-            return true;
-          }).catch(function (error) {
-            console.error(error);
-          });
-        }
-      }
-    }, {
-      key: "save",
-      value: function save(key, value) {
-        if (!key || !value) {
-          return false;
-        }
-
-        if (this._isLocalStorageSupported()) {
-          localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-          return true;
-        }
-      }
-    }, {
-      key: "read",
-      value: function read(key) {
-        if (!key) {
-          return false;
-        }
-
-        var data = null;
-
-        if (this._isLocalStorageSupported()) {
-          data = (isWindowDefined() ? browser.localStorage : localStorage).getItem(key);
-        }
-
-        if (data != null) {
-          try {
-            data = JSON.parse(data);
-          } catch (e) {}
-        }
-
-        return data;
-      }
-    }, {
-      key: "readAsync",
-      value: function readAsync(key) {
-        if (!key) {
-          return false;
-        }
-
-        var data = null;
-
-        if (this._isLocalStorageSupported()) {
-          browser.localStorage.getItem(key).then(function (value) {
-            return data = value;
-          });
-        }
-
-        if (data != null) {
-          try {
-            data = JSON.parse(data);
-          } catch (e) {}
-        }
-
-        return data;
-      }
-    }, {
-      key: "remove",
-      value: function remove(key) {
-        if (!key) {
-          return false;
-        }
-
-        if (this._isLocalStorageSupported()) {
-          localStorage.removeItem(key);
-          return true;
-        }
-      }
-    }, {
-      key: "removeAsync",
-      value: function removeAsync(key) {
-        if (!key) {
-          return false;
-        }
-
-        if (this._isLocalStorageSupported()) {
-          browser.localStorage.removeItem(key).then(function () {
-            return true;
-          });
-        }
-      }
-    }, {
-      key: "removeCookie",
-      value: function removeCookie(name, domain) {
-        var cookieStr = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-
-        if (domain) {
-          cookieStr = cookieStr + ' domain=' + domain + '; path=/';
-        }
-
-        (isWindowDefined() ? browser : document).cookie = cookieStr;
-      }
-    }, {
-      key: "createCookie",
-      value: function createCookie(name, value, seconds, domain) {
-        var expires = '';
-        var domainStr = '';
-
-        if (seconds) {
-          var date = new Date();
-          date.setTime(date.getTime() + seconds * 1000);
-          expires = '; expires=' + date.toGMTString();
-        }
-
-        if (domain) {
-          domainStr = '; domain=' + domain;
-        }
-
-        value = encodeURIComponent(value);
-        document.cookie = name + '=' + value + expires + domainStr + '; path=/';
-      }
-    }, {
-      key: "readCookie",
-      value: function readCookie(name) {
-        var nameEQ = name + '=';
-        var ca = document.cookie.split(';');
-
-        for (var idx = 0; idx < ca.length; idx++) {
-          var c = ca[idx];
-
-          while (c.charAt(0) === ' ') {
-            c = c.substring(1, c.length);
-          } // eslint-disable-next-line eqeqeq
-
-
-          if (c.indexOf(nameEQ) == 0) {
-            return decodeURIComponent(c.substring(nameEQ.length, c.length));
-          }
-        }
-
-        return null;
-      }
-    }, {
-      key: "_isLocalStorageSupported",
-      value: function _isLocalStorageSupported() {
-        if (isWindowDefined()) return true;
-        return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function';
-      }
-    }, {
-      key: "saveToLSorCookie",
-      value: function () {
-        var _saveToLSorCookie = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(property, value) {
-          return regeneratorRuntime.wrap(function _callee$(_context) {
-            while (1) {
-              switch (_context.prev = _context.next) {
-                case 0:
-                  if (!(value == null)) {
-                    _context.next = 2;
-                    break;
-                  }
-
-                  return _context.abrupt("return");
-
-                case 2:
-                  try {
-                    if (this._isLocalStorageSupported()) {
-                      this.save(property, encodeURIComponent(JSON.stringify(value)));
-                      this.saveAsync(property, encodeURIComponent(JSON.stringify(value)));
-                    } else {
-                      if (property === GCOOKIE_NAME) {
-                        this.createCookie(property, encodeURIComponent(value), 0, window.location.hostname);
-                      } else {
-                        this.createCookie(property, encodeURIComponent(JSON.stringify(value)), 0, window.location.hostname);
-                      }
-                    }
-
-                    $ct.globalCache[property] = value;
-                  } catch (e) {}
-
-                case 3:
-                case "end":
-                  return _context.stop();
-              }
-            }
-          }, _callee, this);
-        }));
-
-        function saveToLSorCookie(_x, _x2) {
-          return _saveToLSorCookie.apply(this, arguments);
-        }
-
-        return saveToLSorCookie;
-      }()
-    }, {
-      key: "readFromLSorCookie",
-      value: function readFromLSorCookie(property) {
-        var data;
-
-        if ($ct.globalCache.hasOwnProperty(property)) {
-          return $ct.globalCache[property];
-        }
-
-        if (this._isLocalStorageSupported()) {
-          data = this.read(property);
-        } else {
-          data = this.readCookie(property);
-        }
-
-        if (data !== null && data !== undefined && !(typeof data.trim === 'function' && data.trim() === '')) {
-          var value;
-
-          try {
-            value = JSON.parse(decodeURIComponent(data));
-          } catch (err) {
-            value = decodeURIComponent(data);
-          }
-
-          $ct.globalCache[property] = value;
-          return value;
-        }
-      }
-    }, {
-      key: "createBroadCookie",
-      value: function createBroadCookie(name, value, seconds, domain) {
-        // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
-        // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
-        // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
-        // to find out which "broadest" domain the cookie was set on. Then delete the test cookie, and use that domain
-        // for updating the actual cookie.
-        if (domain) {
-          var broadDomain = $ct.broadDomain;
-
-          if (broadDomain == null) {
-            // if we don't know the broadDomain yet, then find out
-            var domainParts = domain.split('.');
-            var testBroadDomain = '';
-
-            for (var idx = domainParts.length - 1; idx >= 0; idx--) {
-              if (idx === 0) {
-                testBroadDomain = domainParts[idx] + testBroadDomain;
-              } else {
-                testBroadDomain = '.' + domainParts[idx] + testBroadDomain;
-              } // only needed if the cookie already exists and needs to be updated. See note above.
-
-
-              if (this.readCookie(name)) {
-                // no guarantee that browser will delete cookie, hence create short lived cookies
-                var testCookieName = 'test_' + name + idx;
-                this.createCookie(testCookieName, value, 10, testBroadDomain); // self-destruct after 10 seconds
-
-                if (!this.readCookie(testCookieName)) {
-                  // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
-                  continue;
-                } else {
-                  // else if cookie set, then delete the test and the original cookie
-                  this.removeCookie(testCookieName, testBroadDomain);
-                }
-              }
-
-              this.createCookie(name, value, seconds, testBroadDomain);
-              var tempCookie = this.readCookie(name); // eslint-disable-next-line eqeqeq
-
-              if (tempCookie == value) {
-                broadDomain = testBroadDomain;
-                $ct.broadDomain = broadDomain;
-                break;
-              }
-            }
-          } else {
-            this.createCookie(name, value, seconds, broadDomain);
-          }
-        } else {
-          this.createCookie(name, value, seconds, domain);
-        }
-      }
-    }, {
-      key: "getMetaProp",
-      value: function getMetaProp(property) {
-        var metaObj = this.readFromLSorCookie(META_COOKIE);
-
-        if (metaObj != null) {
-          return metaObj[property];
-        }
-      }
-    }, {
-      key: "setMetaProp",
-      value: function setMetaProp(property, value) {
-        if (this._isLocalStorageSupported()) {
-          var wzrkMetaObj = this.readFromLSorCookie(META_COOKIE);
-
-          if (wzrkMetaObj == null) {
-            wzrkMetaObj = {};
-          }
-
-          if (value === undefined) {
-            delete wzrkMetaObj[property];
-          } else {
-            wzrkMetaObj[property] = value;
-          }
-
-          this.saveToLSorCookie(META_COOKIE, wzrkMetaObj);
-        }
-      }
-    }, {
-      key: "getAndClearMetaProp",
-      value: function getAndClearMetaProp(property) {
-        var value = this.getMetaProp(property);
-        this.setMetaProp(property, undefined);
-        return value;
-      }
-    }, {
-      key: "setInstantDeleteFlagInK",
-      value: function setInstantDeleteFlagInK() {
-        var k = this.readFromLSorCookie(KCOOKIE_NAME);
-
-        if (k == null) {
-          k = {};
-        }
-
-        k.flag = true;
-        this.saveToLSorCookie(KCOOKIE_NAME, k);
-      }
-    }, {
-      key: "backupEvent",
-      value: function backupEvent(data, reqNo, logger) {
-        var backupArr = this.readFromLSorCookie(LCOOKIE_NAME);
-
-        if (typeof backupArr === 'undefined') {
-          backupArr = {};
-        }
-
-        backupArr[reqNo] = {
-          q: data
-        };
-        this.saveToLSorCookie(LCOOKIE_NAME, backupArr);
-        logger.debug("stored in ".concat(LCOOKIE_NAME, " reqNo : ").concat(reqNo, " -> ").concat(data));
-      }
-    }, {
-      key: "removeBackup",
-      value: function removeBackup(respNo, logger) {
-        var backupMap = this.readFromLSorCookie(LCOOKIE_NAME);
-
-        if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
-          logger.debug("del event: ".concat(respNo, " data-> ").concat(backupMap[respNo].q));
-          delete backupMap[respNo];
-          this.saveToLSorCookie(LCOOKIE_NAME, backupMap);
-        }
-      }
-    }]);
-
-    return StorageManager;
-  }();
-  var $ct = {
-    globalCache: {
-      gcookie: null,
-      REQ_N: 0,
-      RESP_N: 0
-    },
-    LRU_CACHE: null,
-    globalProfileMap: undefined,
-    globalEventsMap: undefined,
-    blockRequest: false,
-    isOptInRequest: false,
-    broadDomain: null,
-    webPushEnabled: null,
-    campaignDivMap: {},
-    currentSessionId: null,
-    wiz_counter: 0,
-    // to keep track of number of times we load the body
-    notifApi: {
-      notifEnabledFromApi: false
-    },
-    // helper variable to handle race condition and check when notifications were called
-    unsubGroups: [],
-    updatedCategoryLong: null,
-    inbox: null,
-    isPrivacyArrPushed: false,
-    privacyArray: [],
-    offline: false,
-    location: null,
-    dismissSpamControl: false,
-    globalUnsubscribe: true,
-    flutterVersion: null // domain: window.location.hostname, url -> getHostName()
-    // gcookie: -> device
-
-  };
-
   var _keyOrder = /*#__PURE__*/_classPrivateFieldLooseKey("keyOrder");
 
   var _deleteFromObject = /*#__PURE__*/_classPrivateFieldLooseKey("deleteFromObject");
@@ -2300,12 +2360,15 @@
 
   var _session = /*#__PURE__*/_classPrivateFieldLooseKey("session");
 
+  var _mode$1 = /*#__PURE__*/_classPrivateFieldLooseKey("mode");
+
   var CleverTapAPI = /*#__PURE__*/function () {
     function CleverTapAPI(_ref) {
       var logger = _ref.logger,
           request = _ref.request,
           device = _ref.device,
-          session = _ref.session;
+          session = _ref.session,
+          mode = _ref.mode;
 
       _classCallCheck(this, CleverTapAPI);
 
@@ -2325,10 +2388,15 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _mode$1, {
+        writable: true,
+        value: void 0
+      });
       _classPrivateFieldLooseBase(this, _logger)[_logger] = logger;
       _classPrivateFieldLooseBase(this, _request)[_request] = request;
       _classPrivateFieldLooseBase(this, _device)[_device] = device;
       _classPrivateFieldLooseBase(this, _session)[_session] = session;
+      _classPrivateFieldLooseBase(this, _mode$1)[_mode$1] = mode;
     }
     /**
      *
@@ -2350,7 +2418,7 @@
         // we maintan a OulReqN var in the window object
         // and compare with respNumber to determine the response of an OUL request
 
-        if (window.isOULInProgress) {
+        if (isWindowDefined() && window.isOULInProgress) {
           if (resume || respNumber !== 'undefined' && respNumber === window.oulReqN) {
             window.isOULInProgress = false;
             oulReq = true;
@@ -2428,7 +2496,7 @@
             }
           }
 
-          StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
+          StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, getHostName(_classPrivateFieldLooseBase(this, _mode$1)[_mode$1]));
           StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
         }
 
@@ -2491,7 +2559,13 @@
         }
 
         if (StorageManager._isLocalStorageSupported()) {
-          var value = StorageManager.read(GCOOKIE_NAME);
+          var value;
+
+          if (StorageManager.saveMode === 'sync') {
+            value = StorageManager.read(GCOOKIE_NAME);
+          } else {
+            value = StorageManager.readAsync(GCOOKIE_NAME);
+          }
 
           if (isValueValid(value)) {
             try {
@@ -2519,7 +2593,11 @@
         }
 
         if (!isValueValid(guid)) {
-          guid = StorageManager.readCookie(GCOOKIE_NAME);
+          if (StorageManager.saveMode === 'sync') {
+            guid = StorageManager.readCookie(GCOOKIE_NAME);
+          } else {
+            guid = StorageManager.readCookieAsync(GCOOKIE_NAME);
+          }
 
           if (isValueValid(guid) && (guid.indexOf('%') === 0 || guid.indexOf('\'') === 0 || guid.indexOf('"') === 0)) {
             guid = null;
@@ -3549,30 +3627,466 @@
     }
   }
 
-  var CTWebPersonalisationBanner = function CTWebPersonalisationBanner() {
-    _classCallCheck(this, CTWebPersonalisationBanner);
-  };
+  var CTWebPersonalisationBanner = /*#__PURE__*/function (_HTMLElement) {
+    _inherits(CTWebPersonalisationBanner, _HTMLElement);
 
-  var CTWebPersonalisationCarousel = function CTWebPersonalisationCarousel() {
-    _classCallCheck(this, CTWebPersonalisationCarousel);
-  };
+    var _super = _createSuper(CTWebPersonalisationBanner);
 
-  var CTWebPopupImageOnly = function CTWebPopupImageOnly() {
-    _classCallCheck(this, CTWebPopupImageOnly);
-  };
+    function CTWebPersonalisationBanner() {
+      var _this;
 
-  var Message = /*#__PURE__*/function () {
-    function Message(config, message) {
-      _classCallCheck(this, Message);
+      _classCallCheck(this, CTWebPersonalisationBanner);
 
-      this.wrapper = null;
-      this.snackBar = null;
-      this.shadow = this.attachShadow({
+      _this = _super.call(this);
+      _this._details = null;
+      _this.shadow = null;
+      _this.shadow = _this.attachShadow({
         mode: 'open'
       });
-      this.config = config;
-      this.message = message;
-      this.renderMessage(message);
+      return _this;
+    }
+
+    _createClass(CTWebPersonalisationBanner, [{
+      key: "renderBanner",
+      value: function renderBanner() {
+        var _this2 = this;
+
+        this.shadow.innerHTML = this.getBannerContent();
+
+        if (this.trackClick !== false) {
+          this.addEventListener('click', function () {
+            var onClickUrl = _this2.details.onClick;
+
+            if (onClickUrl) {
+              _this2.details.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl;
+            }
+
+            window.clevertap.renderNotificationClicked({
+              msgId: _this2.msgId,
+              pivotId: _this2.pivotId
+            });
+          });
+        }
+
+        window.clevertap.renderNotificationViewed({
+          msgId: this.msgId,
+          pivotId: this.pivotId
+        });
+      }
+    }, {
+      key: "getBannerContent",
+      value: function getBannerContent() {
+        return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n          cursor: ".concat(this.details.onClick ? 'pointer' : '', "\n        }\n        img {\n          height: ").concat(this.divHeight ? this.divHeight : 'auto', ";\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ").concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:480px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\" part=\"banner__img\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
+      }
+    }, {
+      key: "details",
+      get: function get() {
+        return this._details || '';
+      },
+      set: function set(val) {
+        if (this._details === null) {
+          this._details = val;
+          this.renderBanner();
+        }
+      }
+    }]);
+
+    return CTWebPersonalisationBanner;
+  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
+
+  var CTWebPersonalisationCarousel = /*#__PURE__*/function (_HTMLElement) {
+    _inherits(CTWebPersonalisationCarousel, _HTMLElement);
+
+    var _super = _createSuper(CTWebPersonalisationCarousel);
+
+    function CTWebPersonalisationCarousel() {
+      var _this;
+
+      _classCallCheck(this, CTWebPersonalisationCarousel);
+
+      _this = _super.call(this);
+      _this._target = null;
+      _this._carousel = null;
+      _this.shadow = null;
+      _this.slides = 0;
+      _this.previouslySelectedItem = -1;
+      _this.selectedItem = 1;
+      _this.autoSlide = null;
+      _this.stopAutoSlideTimeout = null;
+      _this.shadow = _this.attachShadow({
+        mode: 'open'
+      });
+
+      if (customElements.get('ct-web-personalisation-banner') === undefined) {
+        customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
+      }
+
+      return _this;
+    }
+
+    _createClass(CTWebPersonalisationCarousel, [{
+      key: "renderCarousel",
+      value: function renderCarousel() {
+        this.slides = this.details.length;
+        this.shadow.innerHTML = this.getStyles();
+        var carousel = this.getCarouselContent();
+
+        if (this.display.showNavBtns) {
+          carousel.insertAdjacentHTML('beforeend', this.display.navBtnsHtml);
+        }
+
+        if (this.display.showNavArrows) {
+          carousel.insertAdjacentHTML('beforeend', this.display.leftNavArrowHtml);
+          carousel.insertAdjacentHTML('beforeend', this.display.rightNavArrowHtml);
+        }
+
+        this._carousel = carousel;
+        this.shadow.appendChild(carousel);
+        this.setupClick();
+        this.updateSelectedItem(); // TODO: enable conditionally
+
+        this.startAutoSlide();
+        this.setupOnHover();
+        window.clevertap.renderNotificationViewed({
+          msgId: this.target.wzrk_id,
+          pivotId: this.target.wzrk_pivot
+        });
+      }
+    }, {
+      key: "setupClick",
+      value: function setupClick() {
+        var _this2 = this;
+
+        this._carousel.addEventListener('click', function (event) {
+          var eventID = event.target.id;
+
+          if (eventID.startsWith('carousel__button')) {
+            var selected = +eventID.split('-')[1];
+
+            if (selected !== _this2.selectedItem) {
+              _this2.previouslySelectedItem = _this2.selectedItem;
+              _this2.selectedItem = selected;
+
+              _this2.updateSelectedItem();
+
+              _this2.startAutoSlide();
+            }
+          } else if (eventID.startsWith('carousel__arrow')) {
+            eventID.endsWith('right') ? _this2.goToNext() : _this2.goToPrev();
+
+            _this2.startAutoSlide();
+          } else if (eventID.indexOf('-') > -1) {
+            var item = +eventID.split('-')[1];
+            var index = item - 1;
+
+            if (window.parent.clevertap) {
+              // console.log('Raise notification clicked event for ', item)
+              window.clevertap.renderNotificationClicked({
+                msgId: _this2.target.wzrk_id,
+                pivotId: _this2.target.wzrk_pivot,
+                wzrk_slideNo: item
+              });
+            }
+
+            var url = _this2.details[index].onClick;
+
+            if (url !== '') {
+              _this2.details[index].window ? window.open(url, '_blank') : window.location.href = url;
+            }
+          }
+        });
+      }
+    }, {
+      key: "setupOnHover",
+      value: function setupOnHover() {
+        var _this3 = this;
+
+        this._carousel.addEventListener('mouseenter', function (event) {
+          _this3.stopAutoSlideTimeout = setTimeout(function () {
+            _this3.autoSlide = clearInterval(_this3.autoSlide);
+          }, 500);
+        });
+
+        this._carousel.addEventListener('mouseleave', function (event) {
+          clearTimeout(_this3.stopAutoSlideTimeout);
+
+          if (_this3.autoSlide === undefined) {
+            _this3.startAutoSlide();
+          }
+        });
+      }
+    }, {
+      key: "getCarouselContent",
+      value: function getCarouselContent() {
+        var carousel = document.createElement('div');
+        carousel.setAttribute('class', 'carousel');
+        this.details.forEach(function (detail, i) {
+          var banner = document.createElement('ct-web-personalisation-banner');
+          banner.classList.add('carousel__item');
+          banner.trackClick = false;
+          banner.setAttribute('id', "carousel__item-".concat(i + 1));
+          banner.details = detail;
+          carousel.appendChild(banner);
+        });
+        return carousel;
+      }
+    }, {
+      key: "getStyles",
+      value: function getStyles() {
+        var _this$target, _this$target$display;
+
+        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        background-color: grey;\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      ct-web-personalisation-banner::part(banner__img) {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
+      }
+    }, {
+      key: "updateSelectedItem",
+      value: function updateSelectedItem() {
+        if (this.previouslySelectedItem !== -1) {
+          var prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
+          var prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
+          prevItem.classList.remove('carousel__item--selected');
+          prevButton.classList.remove('carousel__button--selected');
+        }
+
+        var item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
+        var button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
+        item.classList.add('carousel__item--selected');
+        button.classList.add('carousel__button--selected');
+      }
+    }, {
+      key: "startAutoSlide",
+      value: function startAutoSlide() {
+        var _this4 = this;
+
+        clearInterval(this.autoSlide);
+        this.autoSlide = setInterval(function () {
+          _this4.goToNext();
+        }, this.display.sliderTime ? this.display.sliderTime * 1000 : 3000);
+      }
+    }, {
+      key: "goToNext",
+      value: function goToNext() {
+        this.goTo(this.selectedItem, (this.selectedItem + 1) % this.slides);
+      }
+    }, {
+      key: "goToPrev",
+      value: function goToPrev() {
+        this.goTo(this.selectedItem, this.selectedItem - 1);
+      }
+    }, {
+      key: "goTo",
+      value: function goTo(prev, cur) {
+        this.previouslySelectedItem = prev;
+        this.selectedItem = cur;
+
+        if (cur === 0) {
+          this.selectedItem = this.slides;
+        }
+
+        this.updateSelectedItem();
+      }
+    }, {
+      key: "target",
+      get: function get() {
+        return this._target || '';
+      },
+      set: function set(val) {
+        if (this._target === null) {
+          this._target = val;
+          this.renderCarousel();
+        }
+      }
+    }, {
+      key: "details",
+      get: function get() {
+        return this.target.display.details;
+      }
+    }, {
+      key: "display",
+      get: function get() {
+        return this.target.display;
+      }
+    }]);
+
+    return CTWebPersonalisationCarousel;
+  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
+
+  var CTWebPopupImageOnly = /*#__PURE__*/function (_HTMLElement) {
+    _inherits(CTWebPopupImageOnly, _HTMLElement);
+
+    var _super = _createSuper(CTWebPopupImageOnly);
+
+    function CTWebPopupImageOnly() {
+      var _this;
+
+      _classCallCheck(this, CTWebPopupImageOnly);
+
+      _this = _super.call(this);
+      _this._target = null;
+      _this._session = null;
+      _this.shadow = null;
+      _this.popup = null;
+      _this.container = null;
+      _this.resizeObserver = null;
+      _this.shadow = _this.attachShadow({
+        mode: 'open'
+      });
+      return _this;
+    }
+
+    _createClass(CTWebPopupImageOnly, [{
+      key: "renderImageOnlyPopup",
+      value: function renderImageOnlyPopup() {
+        var _this2 = this;
+
+        var campaignId = this.target.wzrk_id.split('_')[0];
+        var currentSessionId = this.session.sessionId;
+        this.shadow.innerHTML = this.getImageOnlyPopupContent();
+        this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
+        this.container = this.shadowRoot.getElementById('container');
+        this.closeIcon = this.shadowRoot.getElementById('close');
+        this.popup.addEventListener('load', this.updateImageAndContainerWidth());
+        this.resizeObserver = new ResizeObserver(function () {
+          return _this2.handleResize(_this2.popup, _this2.container);
+        });
+        this.resizeObserver.observe(this.popup);
+        this.closeIcon.addEventListener('click', function () {
+          _this2.resizeObserver.unobserve(_this2.popup);
+
+          document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
+
+          _this2.remove();
+
+          if (campaignId != null && campaignId !== '-1') {
+            if (StorageManager._isLocalStorageSupported()) {
+              var campaignObj = getCampaignObject();
+              var sessionCampaignObj = campaignObj.wp[currentSessionId];
+
+              if (sessionCampaignObj == null) {
+                sessionCampaignObj = {};
+                campaignObj[currentSessionId] = sessionCampaignObj;
+              }
+
+              sessionCampaignObj[campaignId] = 'dnd';
+              saveCampaignObject(campaignObj);
+            }
+          }
+        });
+        window.clevertap.renderNotificationViewed({
+          msgId: this.msgId,
+          pivotId: this.pivotId
+        });
+
+        if (this.onClickUrl) {
+          this.popup.addEventListener('click', function () {
+            _this2.target.display.window ? window.open(_this2.onClickUrl, '_blank') : window.parent.location.href = _this2.onClickUrl;
+            window.clevertap.renderNotificationClicked({
+              msgId: _this2.msgId,
+              pivotId: _this2.pivotId
+            });
+          });
+        }
+      }
+    }, {
+      key: "handleResize",
+      value: function handleResize(popup, container) {
+        var width = this.getRenderedImageWidth(popup);
+        container.style.setProperty('width', "".concat(width, "px"));
+      }
+    }, {
+      key: "getImageOnlyPopupContent",
+      value: function getImageOnlyPopupContent() {
+        return "\n        ".concat(this.target.msgContent.css, "\n        ").concat(this.target.msgContent.html, "\n      ");
+      }
+    }, {
+      key: "updateImageAndContainerWidth",
+      value: function updateImageAndContainerWidth() {
+        var _this3 = this;
+
+        return function () {
+          var width = _this3.getRenderedImageWidth(_this3.popup);
+
+          _this3.popup.style.setProperty('width', "".concat(width, "px"));
+
+          _this3.container.style.setProperty('width', "".concat(width, "px"));
+
+          _this3.container.style.setProperty('height', 'auto');
+
+          _this3.container.style.setProperty('position', 'fixed');
+
+          _this3.popup.style.setProperty('visibility', 'visible');
+
+          _this3.closeIcon.style.setProperty('visibility', 'visible');
+
+          document.getElementById('wzrkImageOnlyDiv').style.visibility = 'visible';
+        };
+      }
+    }, {
+      key: "getRenderedImageWidth",
+      value: function getRenderedImageWidth(img) {
+        var ratio = img.naturalWidth / img.naturalHeight;
+        return img.height * ratio;
+      }
+    }, {
+      key: "target",
+      get: function get() {
+        return this._target || '';
+      },
+      set: function set(val) {
+        if (this._target === null) {
+          this._target = val;
+          this.renderImageOnlyPopup();
+        }
+      }
+    }, {
+      key: "session",
+      get: function get() {
+        return this._session || '';
+      },
+      set: function set(val) {
+        this._session = val;
+      }
+    }, {
+      key: "msgId",
+      get: function get() {
+        return this.target.wzrk_id;
+      }
+    }, {
+      key: "pivotId",
+      get: function get() {
+        return this.target.wzrk_pivot;
+      }
+    }, {
+      key: "onClickUrl",
+      get: function get() {
+        return this.target.display.onClickUrl;
+      }
+    }]);
+
+    return CTWebPopupImageOnly;
+  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
+
+  var Message = /*#__PURE__*/function (_HTMLElement) {
+    _inherits(Message, _HTMLElement);
+
+    var _super = _createSuper(Message);
+
+    function Message(config, message) {
+      var _this;
+
+      _classCallCheck(this, Message);
+
+      _this = _super.call(this);
+      _this.wrapper = null;
+      _this.snackBar = null;
+      _this.shadow = _this.attachShadow({
+        mode: 'open'
+      });
+      _this.config = config;
+      _this.message = message;
+
+      _this.renderMessage(message);
+
+      return _this;
     }
 
     _createClass(Message, [{
@@ -3661,13 +4175,13 @@
     }, {
       key: "addButtons",
       value: function addButtons() {
-        var _this = this;
+        var _this2 = this;
 
         var buttons = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
         var buttonsContainer = this.createEl('div', 'buttonsContainer');
         var hasCopyAction = false;
         buttons.forEach(function (b, i) {
-          var button = _this.createEl('button', "button-".concat(i), 'button');
+          var button = _this2.createEl('button', "button-".concat(i), 'button');
 
           button.innerText = b.text;
 
@@ -3724,7 +4238,7 @@
     }, {
       key: "raiseClickedForBasicTemplates",
       value: function raiseClickedForBasicTemplates(path, isPreview) {
-        var _this2 = this;
+        var _this3 = this;
 
         var msg = this.message.msg[0];
         var payload = {
@@ -3746,7 +4260,7 @@
             navigator.clipboard.writeText(button.clipboardText);
             this.snackBar.style.setProperty('display', 'flex', 'important');
             setTimeout(function () {
-              _this2.snackBar.style.setProperty('display', 'none', 'important');
+              _this3.snackBar.style.setProperty('display', 'none', 'important');
             }, 2000);
           }
         } else if (path.tagName === 'CT-INBOX-MESSAGE' && msg.onClickUrl) {
@@ -3772,7 +4286,7 @@
     }]);
 
     return Message;
-  }();
+  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
 
   var messageStyles = function messageStyles(_ref) {
     var backgroundColor = _ref.backgroundColor,
@@ -3800,27 +4314,32 @@
     return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n        }\n\n        @media only screen and (min-width: 480px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
   };
 
-  var Inbox = /*#__PURE__*/function () {
+  var Inbox = /*#__PURE__*/function (_HTMLElement) {
+    _inherits(Inbox, _HTMLElement);
+
+    var _super = _createSuper(Inbox);
+
     function Inbox(logger) {
-      var _this = this;
+      var _this;
 
       _classCallCheck(this, Inbox);
 
-      this.isInboxOpen = false;
-      this.isInboxFromFlutter = false;
-      this.selectedCategory = null;
-      this.unviewedMessages = {};
-      this.unviewedCounter = 0;
-      this.isPreview = false;
-      this.inboxConfigForPreview = {};
+      _this = _super.call(this);
+      _this.isInboxOpen = false;
+      _this.isInboxFromFlutter = false;
+      _this.selectedCategory = null;
+      _this.unviewedMessages = {};
+      _this.unviewedCounter = 0;
+      _this.isPreview = false;
+      _this.inboxConfigForPreview = {};
       // dom references
-      this.inboxSelector = null;
-      this.inbox = null;
-      this.emptyInboxMsg = null;
-      this.inboxCard = null;
-      this.unviewedBadge = null;
-      this.observer = null;
-      this.selectedCategoryRef = null;
+      _this.inboxSelector = null;
+      _this.inbox = null;
+      _this.emptyInboxMsg = null;
+      _this.inboxCard = null;
+      _this.unviewedBadge = null;
+      _this.observer = null;
+      _this.selectedCategoryRef = null;
 
       /**
        * Adds a click listener on the document. For every click we check
@@ -3831,7 +4350,7 @@
        * 2. if the user has clicked on the inboxSelector, we toggle inbox
        * 3. if the click is anywhere else on the UI and the inbox is open, we simply close it
        */
-      this.addClickListenerOnDocument = function () {
+      _this.addClickListenerOnDocument = function () {
         return function (e) {
           if (e.composedPath().includes(_this.inbox)) {
             // path is not supported on FF. So we fallback to e.composedPath
@@ -3874,17 +4393,18 @@
        * Updates the UI with the number of unviewed messages
        * If there are more than 9 unviewed messages, we show the count as 9+
        */
-      this.setBadgeStyle = function (msgCount) {
+      _this.setBadgeStyle = function (msgCount) {
         if (_this.unviewedBadge !== null) {
           _this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount;
           _this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none';
         }
       };
 
-      this.logger = logger;
-      this.shadow = this.attachShadow({
+      _this.logger = logger;
+      _this.shadow = _this.attachShadow({
         mode: 'open'
       });
+      return _this;
     }
 
     _createClass(Inbox, [{
@@ -4450,7 +4970,7 @@
     }]);
 
     return Inbox;
-  }();
+  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
 
   var processWebInboxSettings = function processWebInboxSettings(webInboxSetting) {
     var isPreview = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
@@ -5901,7 +6421,8 @@
   var SessionManager = /*#__PURE__*/function () {
     function SessionManager(_ref) {
       var logger = _ref.logger,
-          isPersonalisationActive = _ref.isPersonalisationActive;
+          isPersonalisationActive = _ref.isPersonalisationActive,
+          mode = _ref.mode;
 
       _classCallCheck(this, SessionManager);
 
@@ -5920,15 +6441,24 @@
       this.cookieName = void 0;
       // SCOOKIE_NAME
       this.scookieObj = void 0;
+      this.mode = void 0;
       this.sessionId = StorageManager.getMetaProp('cs');
       _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3] = isPersonalisationActive;
+      this.mode = mode;
     }
 
     _createClass(SessionManager, [{
       key: "getSessionCookieObject",
       value: function getSessionCookieObject() {
-        var scookieStr = StorageManager.readCookie(this.cookieName);
+        var scookieStr;
+
+        if (this.mode === 'WEB') {
+          scookieStr = StorageManager.readCookie(this.cookieName);
+        } else {
+          scookieStr = StorageManager.readCookieAsync(this.cookieName);
+        }
+
         var obj = {};
 
         if (scookieStr != null) {
@@ -5961,7 +6491,10 @@
       key: "setSessionCookieObject",
       value: function setSessionCookieObject(obj) {
         var objStr = JSON.stringify(obj);
-        StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
+
+        if (this.mode === 'WEB') {
+          StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
+        }
       }
     }, {
       key: "manageSession",
@@ -6099,6 +6632,7 @@
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4] = isPersonalisationActive;
       RequestDispatcher.logger = logger;
       RequestDispatcher.device = device;
+      RequestDispatcher.mode = _classPrivateFieldLooseBase(this, _account$2)[_account$2].mode;
     }
 
     _createClass(RequestManager, [{
@@ -6156,7 +6690,7 @@
 
         dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
 
-        if (sessionStorage.hasOwnProperty('WZRK_D')) {
+        if (_classPrivateFieldLooseBase(this, _account$2)[_account$2].mode === 'WEB' && sessionStorage.hasOwnProperty('WZRK_D')) {
           dataObject.debug = true;
         }
 
@@ -6238,7 +6772,7 @@
         // else block the request
         // note - $ct.blockRequest should ideally be used for override
 
-        if ((!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) && !window.isOULInProgress) {
+        if ((!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) && (!isWindowDefined() || !window.isOULInProgress)) {
           if (now === requestTime) {
             seqNo++;
           } else {
@@ -6246,7 +6780,10 @@
             seqNo = 0;
           }
 
-          window.oulReqN = $ct.globalCache.REQ_N;
+          if (isWindowDefined()) {
+            window.oulReqN = $ct.globalCache.REQ_N;
+          }
+
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
           _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
@@ -6308,7 +6845,11 @@
 
         data = this.addSystemDataToObject(data, undefined);
         this.addFlags(data);
-        data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
+
+        if (_classPrivateFieldLooseBase(this, _account$2)[_account$2].mode === 'WEB') {
+          data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
+        }
+
         var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
 
         var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
@@ -7160,13 +7701,20 @@
 
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account$5)[_account$5] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]));
+
+      if (clevertap.mode === MODE.SHOPIFY) {
+        _classPrivateFieldLooseBase(this, _account$5)[_account$5].mode = clevertap.mode;
+        StorageManager.setSaveMode('async');
+      }
+
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        isPersonalisationActive: this._isPersonalisationActive
+        isPersonalisationActive: this._isPersonalisationActive,
+        mode: _classPrivateFieldLooseBase(this, _account$5)[_account$5].mode
       });
       _classPrivateFieldLooseBase(this, _request$6)[_request$6] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
@@ -7208,7 +7756,8 @@
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
         device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
-        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
+        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
+        mode: _classPrivateFieldLooseBase(this, _account$5)[_account$5].mode
       });
       this.spa = clevertap.spa;
       this.dismissSpamControl = clevertap.dismissSpamControl;
@@ -7716,6 +8265,10 @@
         window.$CLTP_WR = window.$WZRK_WR = api;
       }
 
+      if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === 'SHOPIFY') {
+        RequestDispatcher.api = api;
+      }
+
       if ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[0].id) {
         // The accountId is present so can init with empty values.
         // Needed to maintain backward compatability with legacy implementations.
@@ -7735,7 +8288,9 @@
           return;
         }
 
-        StorageManager.removeCookie('WZRK_P', window.location.hostname);
+        if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === MODE.WEB) {
+          StorageManager.removeCookie('WZRK_P', getHostName(_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode));
+        }
 
         if (!_classPrivateFieldLooseBase(this, _account$5)[_account$5].id) {
           if (!accountId) {
@@ -7749,10 +8304,6 @@
 
         _classPrivateFieldLooseBase(this, _session$3)[_session$3].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$5)[_account$5].id;
 
-        if (!isWindowDefined() && (typeof browser === "undefined" ? "undefined" : _typeof(browser)) === 'object') {
-          _classPrivateFieldLooseBase(this, _account$5)[_account$5].mode = 'shopify';
-        }
-
         if (region) {
           _classPrivateFieldLooseBase(this, _account$5)[_account$5].region = region;
         }
@@ -7761,7 +8312,15 @@
           _classPrivateFieldLooseBase(this, _account$5)[_account$5].targetDomain = targetDomain;
         }
 
-        var currLocation = location.href;
+        var currLocation;
+
+        if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === MODE.WEB) {
+          currLocation = location.href;
+        } else {
+          // eslint-disable-next-line
+          currLocation = browser.window.location.href;
+        }
+
         var urlParams = getURLParams(currLocation.toLowerCase()); // eslint-disable-next-line eqeqeq
 
         if (typeof urlParams.e !== 'undefined' && urlParams.wzrk_ex == '0') {
@@ -7776,7 +8335,10 @@
 
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
-        this.pageChanged();
+        if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === 'WEB') {
+          this.pageChanged();
+        }
+
         var backupInterval = setInterval(function () {
           if (_classPrivateFieldLooseBase(_this2, _device$3)[_device$3].gcookie) {
             clearInterval(backupInterval);
@@ -7789,8 +8351,10 @@
           // listen to click on the document and check if URL has changed.
           document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
         } else {
-          // remove existing click listeners if any
-          document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+          if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === MODE.WEB) {
+            // remove existing click listeners if any
+            document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+          }
         }
 
         _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 1;
@@ -7809,7 +8373,7 @@
       value: function pageChanged() {
         var _this3 = this;
 
-        var currLocation = window.location.href;
+        var currLocation = getHostName(_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode);
         var urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
 
         var obj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
@@ -7821,9 +8385,13 @@
 
 
         var data = {};
-        var referrerDomain = getDomain(document.referrer);
+        var referrerDomain = '';
 
-        if (window.location.hostname !== referrerDomain) {
+        if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === 'WEB') {
+          referrerDomain = getDomain(document.referrer);
+        }
+
+        if (getHostName(_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode) !== referrerDomain) {
           var maxLen = 120;
 
           if (referrerDomain !== '') {

@@ -1,4 +1,5 @@
 import { DEFAULT_REGION, TARGET_DOMAIN, TARGET_PROTOCOL } from '../options'
+import { MODE } from '../util/constants'
 
 export default class Account {
   #accountId
@@ -72,7 +73,7 @@ export default class Account {
   }
 
   get endpoint () {
-    if (this.mode === 'shopify') {
+    if (this.mode === MODE.SHOPIFY) {
       return 'shopify'
     }
     return 'a'

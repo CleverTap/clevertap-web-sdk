@@ -5,10 +5,18 @@ import {
   KCOOKIE_NAME,
   LCOOKIE_NAME
 } from './constants'
+import { getHostName } from './url'
 
 export class StorageManager {
+  /**
+   * @type {('sync' | 'async')} saveMode
+   */
   static saveMode = 'sync';
 
+  /**
+   * sets save mode
+   * @param {('sync' | 'async')} mode
+   */
   static setSaveMode (mode) {
     this.saveMode = mode
   }
@@ -121,7 +129,7 @@ export class StorageManager {
     document.cookie = name + '=' + value + expires + domainStr + '; path=/'
   }
 
-  static createCookieAsync (name, value, seconds, domain) {
+  static #createCookieAsync (name, value, seconds, domain) {
     let expires = ''
     let domainStr = ''
     if (seconds) {
@@ -137,9 +145,8 @@ export class StorageManager {
 
     value = encodeURIComponent(value)
 
-    const cookieValue = name + '=' + value + expires + domainStr + '; path=/'
     // eslint-disable-next-line
-    browser.cookie.set(cookieValue)
+    browser.cookie.set(name, value + expires + domainStr + '; path=/')
   }
 
   static readCookie (name) {
@@ -177,18 +184,24 @@ export class StorageManager {
       return
     }
     try {
-      if (this._isLocalStorageSupported()) {
-        if (this.storageSaveMode === 'sync') {
-          this.save(property, encodeURIComponent(JSON.stringify(value)))
-        } else {
-          this.#saveAsync(property, encodeURIComponent(JSON.stringify(value)))
-        }
+      if (this._isLocalStorageSupported() && this.saveMode === 'sync') {
+        this.save(property, encodeURIComponent(JSON.stringify(value)))
       } else {
-        if (property === GCOOKIE_NAME) {
-          this.createCookie(property, encodeURIComponent(value), 0, window.location.hostname)
-        } else {
-          this.createCookie(property, encodeURIComponent(JSON.stringify(value)), 0, window.location.hostname)
-        }
+        this.createCookie(
+          property,
+          property === GCOOKIE_NAME ? encodeURIComponent(value) : encodeURIComponent(JSON.stringify(value)),
+          0,
+          getHostName('WEB'))
+      }
+
+      if (this._isLocalStorageSupported() && this.saveMode === 'async') {
+        this.#saveAsync(property, encodeURIComponent(JSON.stringify(value)))
+      } else {
+        this.#createCookieAsync(
+          property,
+          property === GCOOKIE_NAME ? encodeURIComponent(value) : encodeURIComponent(JSON.stringify(value)),
+          0,
+          getHostName('SHOPIFY'))
       }
       $ct.globalCache[property] = value
     } catch (e) {}

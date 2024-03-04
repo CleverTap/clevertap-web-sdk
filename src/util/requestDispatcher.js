@@ -1,5 +1,5 @@
 
-import { isWindowDefined } from './clevertap'
+import { arp, isWindowDefined } from './clevertap'
 import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY } from './constants'
 import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
@@ -10,6 +10,7 @@ export default class RequestDispatcher {
   static logger
   static device
   static mode
+  static api
 
   // ANCHOR - Requests get fired from here
   static #fireRequest (url, tries, skipARP, sendOULFlag) {
@@ -85,11 +86,28 @@ export default class RequestDispatcher {
       s.async = true
       document.getElementsByTagName('head')[0].appendChild(s)
     } else {
-      fetch(url).then(value => {
-        console.log(value)
-      })
+      fetch(url).then(res => res.json()).then(this.processResponse)
     }
     this.logger.debug('req snt -> url: ' + url)
+  }
+
+  /**
+   * processes the response of fired events and calls relevant methods
+   * @param {object} response
+   */
+  static processResponse (response) {
+    if (response.arp) {
+      arp(response.arp)
+    }
+
+    if (response.meta) {
+      this.api.s(
+        response.meta.g, // cookie
+        response.meta.sid, // session id
+        response.meta.rf, // resume
+        response.meta.rn // response number for backuop manager
+      )
+    }
   }
 
   /**

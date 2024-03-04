@@ -27,7 +27,8 @@ import {
   COMMAND_ADD,
   COMMAND_REMOVE,
   COMMAND_DELETE,
-  EVT_PUSH
+  EVT_PUSH,
+  MODE
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -37,6 +38,7 @@ import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
+import RequestDispatcher from './util/requestDispatcher'
 
 export default class CleverTap {
   #logger
@@ -85,7 +87,7 @@ export default class CleverTap {
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2])
-    if (clevertap.mode === 'SHOPIFY') {
+    if (clevertap.mode === MODE.SHOPIFY) {
       this.#account.mode = clevertap.mode
       StorageManager.setSaveMode('async')
     }
@@ -567,6 +569,10 @@ export default class CleverTap {
       window.$CLTP_WR = window.$WZRK_WR = api
     }
 
+    if (this.#account.mode === 'SHOPIFY') {
+      RequestDispatcher.api = api
+    }
+
     if (clevertap.account?.[0].id) {
       // The accountId is present so can init with empty values.
       // Needed to maintain backward compatability with legacy implementations.
@@ -581,7 +587,7 @@ export default class CleverTap {
       // already initailsed
       return
     }
-    if (this.#account.mode === 'WEB') {
+    if (this.#account.mode === MODE.WEB) {
       StorageManager.removeCookie('WZRK_P', getHostName(this.#account.mode))
     }
 
@@ -602,7 +608,7 @@ export default class CleverTap {
     }
 
     let currLocation
-    if (this.#account.mode === 'WEB') {
+    if (this.#account.mode === MODE.WEB) {
       currLocation = location.href
     } else {
       // eslint-disable-next-line
@@ -635,7 +641,7 @@ export default class CleverTap {
       // listen to click on the document and check if URL has changed.
       document.addEventListener('click', this.#boundCheckPageChanged)
     } else {
-      if (this.#account.mode === 'WEB') {
+      if (this.#account.mode === MODE.WEB) {
         // remove existing click listeners if any
         document.removeEventListener('click', this.#boundCheckPageChanged)
       }

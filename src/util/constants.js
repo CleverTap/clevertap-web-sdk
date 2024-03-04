@@ -52,6 +52,10 @@ export const COMMAND_DELETE = '$delete'
 export const WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG'
 export const WEBINBOX = 'WZRK_INBOX'
 export const MAX_INBOX_MSG = 15
+export const MODE = {
+  WEB: 'WEB',
+  SHOPIFY: 'SHOPIFY'
+}
 
 export const SYSTEM_EVENTS = [
   'Stayed',

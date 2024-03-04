@@ -314,6 +314,68 @@ var clevertap = (function (browser) {
   var TARGET_PROTOCOL = 'https:';
   var DEFAULT_REGION = 'eu1';
 
+  var unsupportedKeyCharRegex = new RegExp('^\\s+|\\\.|\:|\\\$|\'|\"|\\\\|\\s+$', 'g');
+  var unsupportedValueCharRegex = new RegExp("^\\s+|\'|\"|\\\\|\\s+$", 'g');
+  var singleQuoteRegex = new RegExp('\'', 'g');
+  var CLEAR = 'clear';
+  var CHARGED_ID = 'Charged ID';
+  var CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID';
+  var GCOOKIE_NAME = 'WZRK_G';
+  var KCOOKIE_NAME = 'WZRK_K';
+  var CAMP_COOKIE_NAME = 'WZRK_CAMP';
+  var CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
+
+  var SCOOKIE_PREFIX = 'WZRK_S';
+  var SCOOKIE_EXP_TIME_IN_SECS = 60 * 20; // 20 mins
+
+  var EV_COOKIE = 'WZRK_EV';
+  var META_COOKIE = 'WZRK_META';
+  var PR_COOKIE = 'WZRK_PR';
+  var ARP_COOKIE = 'WZRK_ARP';
+  var LCOOKIE_NAME = 'WZRK_L';
+  var GLOBAL = 'global'; // used for email unsubscribe also
+  var DISPLAY = 'display';
+  var WEBPUSH_LS_KEY = 'WZRK_WPR';
+  var OPTOUT_KEY = 'optOut';
+  var CT_OPTOUT_KEY = 'ct_optout';
+  var OPTOUT_COOKIE_ENDSWITH = ':OO';
+  var USEIP_KEY = 'useIP';
+  var LRU_CACHE = 'WZRK_X';
+  var LRU_CACHE_SIZE = 100;
+  var IS_OUL = 'isOUL';
+  var EVT_PUSH = 'push';
+  var EVT_PING = 'ping';
+  var COOKIE_EXPIRY = 86400 * 365; // 1 Year in seconds
+
+  var MAX_TRIES = 200; // API tries
+
+  var FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000; // 2 mins
+
+  var CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000; // 5 mins
+
+  var GROUP_SUBSCRIPTION_REQUEST_ID = '2';
+  var categoryLongKey = 'cUsY';
+  var WZRK_PREFIX = 'wzrk_';
+  var WZRK_ID = 'wzrk_id';
+  var NOTIFICATION_VIEWED = 'Notification Viewed';
+  var NOTIFICATION_CLICKED = 'Notification Clicked';
+  var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
+  var PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD'; // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
+
+  var COMMAND_INCREMENT = '$incr';
+  var COMMAND_DECREMENT = '$decr';
+  var COMMAND_SET = '$set';
+  var COMMAND_ADD = '$add';
+  var COMMAND_REMOVE = '$remove';
+  var COMMAND_DELETE = '$delete';
+  var WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG';
+  var WEBINBOX = 'WZRK_INBOX';
+  var MODE = {
+    WEB: 'WEB',
+    SHOPIFY: 'SHOPIFY'
+  };
+  var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
+
   var _accountId = /*#__PURE__*/_classPrivateFieldLooseKey("accountId");
 
   var _region = /*#__PURE__*/_classPrivateFieldLooseKey("region");
@@ -425,7 +487,7 @@ var clevertap = (function (browser) {
     }, {
       key: "endpoint",
       get: function get() {
-        if (this.mode === 'shopify') {
+        if (this.mode === MODE.SHOPIFY) {
           return 'shopify';
         }
 
@@ -451,65 +513,64 @@ var clevertap = (function (browser) {
     return Account;
   }();
 
-  var unsupportedKeyCharRegex = new RegExp('^\\s+|\\\.|\:|\\\$|\'|\"|\\\\|\\s+$', 'g');
-  var unsupportedValueCharRegex = new RegExp("^\\s+|\'|\"|\\\\|\\s+$", 'g');
-  var singleQuoteRegex = new RegExp('\'', 'g');
-  var CLEAR = 'clear';
-  var CHARGED_ID = 'Charged ID';
-  var CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID';
-  var GCOOKIE_NAME = 'WZRK_G';
-  var KCOOKIE_NAME = 'WZRK_K';
-  var CAMP_COOKIE_NAME = 'WZRK_CAMP';
-  var CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
+  var getURLParams = function getURLParams(url) {
+    var urlParams = {};
+    var idx = url.indexOf('?');
 
-  var SCOOKIE_PREFIX = 'WZRK_S';
-  var SCOOKIE_EXP_TIME_IN_SECS = 60 * 20; // 20 mins
+    if (idx > 1) {
+      var uri = url.substring(idx + 1);
+      var match;
+      var pl = /\+/g; // Regex for replacing addition symbol with a space
 
-  var EV_COOKIE = 'WZRK_EV';
-  var META_COOKIE = 'WZRK_META';
-  var PR_COOKIE = 'WZRK_PR';
-  var ARP_COOKIE = 'WZRK_ARP';
-  var LCOOKIE_NAME = 'WZRK_L';
-  var GLOBAL = 'global'; // used for email unsubscribe also
-  var DISPLAY = 'display';
-  var WEBPUSH_LS_KEY = 'WZRK_WPR';
-  var OPTOUT_KEY = 'optOut';
-  var CT_OPTOUT_KEY = 'ct_optout';
-  var OPTOUT_COOKIE_ENDSWITH = ':OO';
-  var USEIP_KEY = 'useIP';
-  var LRU_CACHE = 'WZRK_X';
-  var LRU_CACHE_SIZE = 100;
-  var IS_OUL = 'isOUL';
-  var EVT_PUSH = 'push';
-  var EVT_PING = 'ping';
-  var COOKIE_EXPIRY = 86400 * 365; // 1 Year in seconds
+      var search = /([^&=]+)=?([^&]*)/g;
 
-  var MAX_TRIES = 200; // API tries
+      var decode = function decode(s) {
+        var replacement = s.replace(pl, ' ');
 
-  var FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000; // 2 mins
+        try {
+          replacement = decodeURIComponent(replacement);
+        } catch (e) {// eat
+        }
 
-  var CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000; // 5 mins
+        return replacement;
+      };
 
-  var GROUP_SUBSCRIPTION_REQUEST_ID = '2';
-  var categoryLongKey = 'cUsY';
-  var WZRK_PREFIX = 'wzrk_';
-  var WZRK_ID = 'wzrk_id';
-  var NOTIFICATION_VIEWED = 'Notification Viewed';
-  var NOTIFICATION_CLICKED = 'Notification Clicked';
-  var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
-  var PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD'; // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
+      match = search.exec(uri);
 
-  var COMMAND_INCREMENT = '$incr';
-  var COMMAND_DECREMENT = '$decr';
-  var COMMAND_SET = '$set';
-  var COMMAND_ADD = '$add';
-  var COMMAND_REMOVE = '$remove';
-  var COMMAND_DELETE = '$delete';
-  var WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG';
-  var WEBINBOX = 'WZRK_INBOX';
-  var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
+      while (match) {
+        urlParams[decode(match[1])] = decode(match[2]);
+        match = search.exec(uri);
+      }
+    }
+
+    return urlParams;
+  };
+  var getDomain = function getDomain(url) {
+    if (url === '') return '';
+    var a = document.createElement('a');
+    a.href = url;
+    return a.hostname;
+  };
+  var addToURL = function addToURL(url, k, v) {
+    return url + '&' + k + '=' + encodeURIComponent(v);
+  };
+  /**
+   * returns host name depending on the mode
+   * @param {('SHOPIFY' | 'WEB' | 'SERVICE_WORKER')} mode
+   */
+
+  var getHostName = function getHostName(mode) {
+    if (mode === 'SHOPIFY') {
+      // eslint-disable-next-line
+      return browser.window.location.hostname;
+    }
+
+    return window.location.hostname;
+  };
 
   var _saveAsync = /*#__PURE__*/_classPrivateFieldLooseKey("saveAsync");
+
+  var _createCookieAsync = /*#__PURE__*/_classPrivateFieldLooseKey("createCookieAsync");
 
   var StorageManager = /*#__PURE__*/function () {
     function StorageManager() {
@@ -518,6 +579,11 @@ var clevertap = (function (browser) {
 
     _createClass(StorageManager, null, [{
       key: "setSaveMode",
+
+      /**
+       * sets save mode
+       * @param {('sync' | 'async')} mode
+       */
       value: function setSaveMode(mode) {
         this.saveMode = mode;
       }
@@ -635,27 +701,6 @@ var clevertap = (function (browser) {
         document.cookie = name + '=' + value + expires + domainStr + '; path=/';
       }
     }, {
-      key: "createCookieAsync",
-      value: function createCookieAsync(name, value, seconds, domain) {
-        var expires = '';
-        var domainStr = '';
-
-        if (seconds) {
-          var date = new Date();
-          date.setTime(date.getTime() + seconds * 1000);
-          expires = '; expires=' + date.toGMTString();
-        }
-
-        if (domain) {
-          domainStr = '; domain=' + domain;
-        }
-
-        value = encodeURIComponent(value);
-        var cookieValue = name + '=' + value + expires + domainStr + '; path=/'; // eslint-disable-next-line
-
-        browser.cookie.set(cookieValue);
-      }
-    }, {
       key: "readCookie",
       value: function readCookie(name) {
         var nameEQ = name + '=';
@@ -700,18 +745,16 @@ var clevertap = (function (browser) {
         }
 
         try {
-          if (this._isLocalStorageSupported()) {
-            if (this.storageSaveMode === 'sync') {
-              this.save(property, encodeURIComponent(JSON.stringify(value)));
-            } else {
-              _classPrivateFieldLooseBase(this, _saveAsync)[_saveAsync](property, encodeURIComponent(JSON.stringify(value)));
-            }
+          if (this._isLocalStorageSupported() && this.saveMode === 'sync') {
+            this.save(property, encodeURIComponent(JSON.stringify(value)));
           } else {
-            if (property === GCOOKIE_NAME) {
-              this.createCookie(property, encodeURIComponent(value), 0, window.location.hostname);
-            } else {
-              this.createCookie(property, encodeURIComponent(JSON.stringify(value)), 0, window.location.hostname);
-            }
+            this.createCookie(property, property === GCOOKIE_NAME ? encodeURIComponent(value) : encodeURIComponent(JSON.stringify(value)), 0, getHostName('WEB'));
+          }
+
+          if (this._isLocalStorageSupported() && this.saveMode === 'async') {
+            _classPrivateFieldLooseBase(this, _saveAsync)[_saveAsync](property, encodeURIComponent(JSON.stringify(value)));
+          } else {
+            _classPrivateFieldLooseBase(this, _createCookieAsync)[_createCookieAsync](property, property === GCOOKIE_NAME ? encodeURIComponent(value) : encodeURIComponent(JSON.stringify(value)), 0, getHostName('SHOPIFY'));
           }
 
           $ct.globalCache[property] = value;
@@ -900,9 +943,35 @@ var clevertap = (function (browser) {
     }
   }
 
+  function _createCookieAsync2(name, value, seconds, domain) {
+    var expires = '';
+    var domainStr = '';
+
+    if (seconds) {
+      var date = new Date();
+      date.setTime(date.getTime() + seconds * 1000);
+      expires = '; expires=' + date.toGMTString();
+    }
+
+    if (domain) {
+      domainStr = '; domain=' + domain;
+    }
+
+    value = encodeURIComponent(value); // eslint-disable-next-line
+
+    browser.cookie.set(name, value + expires + domainStr + '; path=/');
+  }
+
+  Object.defineProperty(StorageManager, _createCookieAsync, {
+    value: _createCookieAsync2
+  });
   Object.defineProperty(StorageManager, _saveAsync, {
     value: _saveAsync2
   });
+
+  /**
+   * @type {('sync' | 'async')} saveMode
+   */
   StorageManager.saveMode = 'sync';
   var $ct = {
     globalCache: {
@@ -1051,61 +1120,6 @@ var clevertap = (function (browser) {
   };
   var sanitize = function sanitize(input, regex) {
     return input.replace(regex, '');
-  };
-
-  var getURLParams = function getURLParams(url) {
-    var urlParams = {};
-    var idx = url.indexOf('?');
-
-    if (idx > 1) {
-      var uri = url.substring(idx + 1);
-      var match;
-      var pl = /\+/g; // Regex for replacing addition symbol with a space
-
-      var search = /([^&=]+)=?([^&]*)/g;
-
-      var decode = function decode(s) {
-        var replacement = s.replace(pl, ' ');
-
-        try {
-          replacement = decodeURIComponent(replacement);
-        } catch (e) {// eat
-        }
-
-        return replacement;
-      };
-
-      match = search.exec(uri);
-
-      while (match) {
-        urlParams[decode(match[1])] = decode(match[2]);
-        match = search.exec(uri);
-      }
-    }
-
-    return urlParams;
-  };
-  var getDomain = function getDomain(url) {
-    if (url === '') return '';
-    var a = document.createElement('a');
-    a.href = url;
-    return a.hostname;
-  };
-  var addToURL = function addToURL(url, k, v) {
-    return url + '&' + k + '=' + encodeURIComponent(v);
-  };
-  /**
-   * returns host name depending on the mode
-   * @param {('SHOPIFY' | 'WEB' | 'SERVICE_WORKER')} mode
-   */
-
-  var getHostName = function getHostName(mode) {
-    if (mode === 'SHOPIFY') {
-      // eslint-disable-next-line
-      return browser.window.location.hostname;
-    }
-
-    return window.location.hostname;
   };
 
   /* eslint-disable */
@@ -1460,14 +1474,34 @@ var clevertap = (function (browser) {
     }
 
     _createClass(RequestDispatcher, null, [{
-      key: "fireRequest",
+      key: "processResponse",
 
+      /**
+       * processes the response of fired events and calls relevant methods
+       * @param {object} response
+       */
+      value: function processResponse(response) {
+        if (response.arp) {
+          arp(response.arp);
+        }
+
+        if (response.meta) {
+          this.api.s(response.meta.g, // cookie
+          response.meta.sid, // session id
+          response.meta.rf, // resume
+          response.meta.rn // response number for backuop manager
+          );
+        }
+      }
       /**
        *
        * @param {string} url
        * @param {*} skipARP
        * @param {boolean} sendOULFlag
        */
+
+    }, {
+      key: "fireRequest",
       value: function fireRequest(url, skipARP, sendOULFlag) {
         _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
       }
@@ -1559,9 +1593,9 @@ var clevertap = (function (browser) {
       s.async = true;
       document.getElementsByTagName('head')[0].appendChild(s);
     } else {
-      fetch(url).then(function (value) {
-        console.log(value);
-      });
+      fetch(url).then(function (res) {
+        return res.json();
+      }).then(this.processResponse);
     }
 
     this.logger.debug('req snt -> url: ' + url);
@@ -1617,6 +1651,7 @@ var clevertap = (function (browser) {
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
   RequestDispatcher.mode = void 0;
+  RequestDispatcher.api = void 0;
 
   var getCampaignObject = function getCampaignObject() {
     var finalcampObj = {};
@@ -6198,7 +6233,7 @@ var clevertap = (function (browser) {
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account$5)[_account$5] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]));
 
-      if (clevertap.mode === 'SHOPIFY') {
+      if (clevertap.mode === MODE.SHOPIFY) {
         _classPrivateFieldLooseBase(this, _account$5)[_account$5].mode = clevertap.mode;
         StorageManager.setSaveMode('async');
       }
@@ -6761,6 +6796,10 @@ var clevertap = (function (browser) {
         window.$CLTP_WR = window.$WZRK_WR = api;
       }
 
+      if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === 'SHOPIFY') {
+        RequestDispatcher.api = api;
+      }
+
       if ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[0].id) {
         // The accountId is present so can init with empty values.
         // Needed to maintain backward compatability with legacy implementations.
@@ -6780,7 +6819,7 @@ var clevertap = (function (browser) {
           return;
         }
 
-        if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === 'WEB') {
+        if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === MODE.WEB) {
           StorageManager.removeCookie('WZRK_P', getHostName(_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode));
         }
 
@@ -6806,7 +6845,7 @@ var clevertap = (function (browser) {
 
         var currLocation;
 
-        if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === 'WEB') {
+        if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === MODE.WEB) {
           currLocation = location.href;
         } else {
           // eslint-disable-next-line
@@ -6843,7 +6882,7 @@ var clevertap = (function (browser) {
           // listen to click on the document and check if URL has changed.
           document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
         } else {
-          if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === 'WEB') {
+          if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === MODE.WEB) {
             // remove existing click listeners if any
             document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
           }
