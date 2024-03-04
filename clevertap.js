@@ -7451,6 +7451,12 @@
     var iframeWindow = (_iframe$contentWindow = iframe.contentWindow) !== null && _iframe$contentWindow !== void 0 ? _iframe$contentWindow : (_iframe$contentDocume = (_iframe$contentDocume2 = iframe.contentDocument) === null || _iframe$contentDocume2 === void 0 ? void 0 : _iframe$contentDocume2.document) !== null && _iframe$contentDocume !== void 0 ? _iframe$contentDocume : iframe.contentDocument;
     doc = iframeWindow.document;
     doc.body.addEventListener('click', addBuilder, true);
+    doc.body.addEventListener('click', function (e) {
+      if (e.target.tagName.toLowerCase() === 'a') {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
     doc.body.addEventListener('mouseover', addOutline);
     doc.body.addEventListener('mouseout', removeOutline);
     curURL = iframeWindow.location.href;

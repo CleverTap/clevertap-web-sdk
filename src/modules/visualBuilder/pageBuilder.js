@@ -134,6 +134,12 @@ function onIframeLoad (iframe) {
   const iframeWindow = iframe.contentWindow ?? (iframe.contentDocument?.document ?? iframe.contentDocument)
   doc = iframeWindow.document
   doc.body.addEventListener('click', addBuilder, true)
+  doc.body.addEventListener('click', e => {
+    if (e.target.tagName.toLowerCase() === 'a') {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }, true)
   doc.body.addEventListener('mouseover', addOutline)
   doc.body.addEventListener('mouseout', removeOutline)
   curURL = iframeWindow.location.href
