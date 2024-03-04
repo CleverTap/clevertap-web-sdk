@@ -1,3 +1,4 @@
+import { isWindowDefined } from '../util/clevertap'
 import { COOKIE_EXPIRY, FIRE_PUSH_UNREGISTERED, GCOOKIE_NAME, KCOOKIE_NAME, LRU_CACHE_SIZE, USEIP_KEY } from '../util/constants'
 import { isValueValid } from '../util/datatypes'
 import { getNow } from '../util/datetime'
@@ -38,7 +39,7 @@ export default class CleverTapAPI {
     // but resume is returned as false from server end
     // we maintan a OulReqN var in the window object
     // and compare with respNumber to determine the response of an OUL request
-    if (window.isOULInProgress) {
+    if (isWindowDefined() && window.isOULInProgress) {
       if (resume || (respNumber !== 'undefined' && respNumber === window.oulReqN)) {
         window.isOULInProgress = false
         oulReq = true

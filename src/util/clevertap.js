@@ -13,8 +13,7 @@ import {
   IS_OUL,
   categoryLongKey,
   CAMP_COOKIE_G,
-  GLOBAL,
-  SHOPIFY_WEB_PIXEL
+  GLOBAL
 } from './constants'
 import {
   GENDER_ERROR,

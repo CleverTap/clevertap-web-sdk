@@ -1,6 +1,7 @@
 import { determineTimeStampText, greenTickSvg } from './helper'
-export class Message {
+export class Message extends HTMLElement {
   constructor (config, message) {
+    super()
     this.shadow = this.attachShadow({ mode: 'open' })
     this.config = config
     this.message = message
