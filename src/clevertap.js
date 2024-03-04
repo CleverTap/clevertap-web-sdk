@@ -606,7 +606,7 @@ export default class CleverTap {
       currLocation = location.href
     } else {
       // eslint-disable-next-line
-      currLocation = browser.location.href
+      currLocation = browser.window.location.href
     }
     const urlParams = getURLParams(currLocation.toLowerCase())
 

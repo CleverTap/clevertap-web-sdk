@@ -142,7 +142,7 @@ export default class RequestManager {
     // then process the request as it is
     // else block the request
     // note - $ct.blockRequest should ideally be used for override
-    if ((!override || (this.#clearCookie !== undefined && this.#clearCookie)) && !window.isOULInProgress) {
+    if ((!override || (this.#clearCookie !== undefined && this.#clearCookie)) && (!isWindowDefined() || !window.isOULInProgress)) {
       if (now === requestTime) {
         seqNo++
       } else {

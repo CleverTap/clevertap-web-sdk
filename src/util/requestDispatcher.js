@@ -58,21 +58,25 @@ export default class RequestDispatcher {
 
     url = this.#addUseIPToRequest(url)
     url = addToURL(url, 'r', new Date().getTime()) // add epoch to beat caching of the URL
-    // TODO: Figure out a better way to handle plugin check
-    if (window.clevertap?.hasOwnProperty('plugin') || window.wizrocket?.hasOwnProperty('plugin')) {
-      // used to add plugin name in request parameter
-      const plugin = window.clevertap.plugin || window.wizrocket.plugin
-      url = addToURL(url, 'ct_pl', plugin)
+    if (isWindowDefined()) {
+      // TODO: Figure out a better way to handle plugin check
+      if (window.clevertap?.hasOwnProperty('plugin') || window.wizrocket?.hasOwnProperty('plugin')) {
+        // used to add plugin name in request parameter
+        const plugin = window.clevertap.plugin || window.wizrocket.plugin
+        url = addToURL(url, 'ct_pl', plugin)
+      }
     }
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:')
     }
-    // TODO: Try using Function constructor instead of appending script.
-    var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
-    while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
-      ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
-    }
+
     if (this.mode === 'WEB') {
+      // TODO: Try using Function constructor instead of appending script.
+      var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
+      while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+        ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
+      }
+
       const s = document.createElement('script')
       s.setAttribute('type', 'text/javascript')
       s.setAttribute('src', url)
@@ -120,8 +124,9 @@ export default class RequestDispatcher {
       _arp.skipResARP = true
       return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger))
     }
-    if (StorageManager._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
-      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE)), this.logger))
+    const arpValue = StorageManager.readFromLSorCookie(ARP_COOKIE)
+    if (typeof arpValue !== 'undefined' && arpValue !== null) {
+      return addToURL(url, 'arp', compressData(JSON.stringify(arpValue), this.logger))
     }
     return url
   }

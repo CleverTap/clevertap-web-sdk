@@ -1478,9 +1478,7 @@ var clevertap = (function (browser) {
 
   // ANCHOR - Requests get fired from here
   function _fireRequest2(url, tries, skipARP, sendOULFlag) {
-    var _this = this,
-        _window$clevertap,
-        _window$wizrocket;
+    var _this = this;
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
@@ -1520,39 +1518,52 @@ var clevertap = (function (browser) {
 
       url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
     } else {
-      window.isOULInProgress = true;
+      if (isWindowDefined()) {
+        window.isOULInProgress = true;
+      }
     }
 
     url = addToURL(url, 'tries', tries); // Add tries to URL
 
     url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
-    // TODO: Figure out a better way to handle plugin check
 
-    if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
-      // used to add plugin name in request parameter
-      var plugin = window.clevertap.plugin || window.wizrocket.plugin;
-      url = addToURL(url, 'ct_pl', plugin);
+    if (isWindowDefined()) {
+      var _window$clevertap, _window$wizrocket;
+
+      // TODO: Figure out a better way to handle plugin check
+      if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
+        // used to add plugin name in request parameter
+        var plugin = window.clevertap.plugin || window.wizrocket.plugin;
+        url = addToURL(url, 'ct_pl', plugin);
+      }
     }
 
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:');
-    } // TODO: Try using Function constructor instead of appending script.
-
-
-    var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
-
-    while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
-      ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
     }
 
-    var s = document.createElement('script');
-    s.setAttribute('type', 'text/javascript');
-    s.setAttribute('src', url);
-    s.setAttribute('class', 'ct-jp-cb');
-    s.setAttribute('rel', 'nofollow');
-    s.async = true;
-    document.getElementsByTagName('head')[0].appendChild(s);
+    if (this.mode === 'WEB') {
+      // TODO: Try using Function constructor instead of appending script.
+      var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
+
+      while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+        ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
+      }
+
+      var s = document.createElement('script');
+      s.setAttribute('type', 'text/javascript');
+      s.setAttribute('src', url);
+      s.setAttribute('class', 'ct-jp-cb');
+      s.setAttribute('rel', 'nofollow');
+      s.async = true;
+      document.getElementsByTagName('head')[0].appendChild(s);
+    } else {
+      fetch(url).then(function (value) {
+        console.log(value);
+      });
+    }
+
     this.logger.debug('req snt -> url: ' + url);
   }
 
@@ -1582,8 +1593,10 @@ var clevertap = (function (browser) {
       return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger));
     }
 
-    if (StorageManager._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
-      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE)), this.logger));
+    var arpValue = StorageManager.readFromLSorCookie(ARP_COOKIE);
+
+    if (typeof arpValue !== 'undefined' && arpValue !== null) {
+      return addToURL(url, 'arp', compressData(JSON.stringify(arpValue), this.logger));
     }
 
     return url;
@@ -1603,6 +1616,7 @@ var clevertap = (function (browser) {
   });
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
+  RequestDispatcher.mode = void 0;
 
   var getCampaignObject = function getCampaignObject() {
     var finalcampObj = {};
@@ -5114,6 +5128,7 @@ var clevertap = (function (browser) {
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4] = isPersonalisationActive;
       RequestDispatcher.logger = logger;
       RequestDispatcher.device = device;
+      RequestDispatcher.mode = _classPrivateFieldLooseBase(this, _account$2)[_account$2].mode;
     }
 
     _createClass(RequestManager, [{
@@ -5253,7 +5268,7 @@ var clevertap = (function (browser) {
         // else block the request
         // note - $ct.blockRequest should ideally be used for override
 
-        if ((!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) && !window.isOULInProgress) {
+        if ((!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) && (!isWindowDefined() || !window.isOULInProgress)) {
           if (now === requestTime) {
             seqNo++;
           } else {
@@ -5261,7 +5276,10 @@ var clevertap = (function (browser) {
             seqNo = 0;
           }
 
-          window.oulReqN = $ct.globalCache.REQ_N;
+          if (isWindowDefined()) {
+            window.oulReqN = $ct.globalCache.REQ_N;
+          }
+
           RequestDispatcher.fireRequest(data, false, sendOULFlag);
         } else {
           _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
@@ -5323,7 +5341,11 @@ var clevertap = (function (browser) {
 
         data = this.addSystemDataToObject(data, undefined);
         this.addFlags(data);
-        data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
+
+        if (_classPrivateFieldLooseBase(this, _account$2)[_account$2].mode === 'WEB') {
+          data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
+        }
+
         var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
 
         var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
@@ -6782,7 +6804,15 @@ var clevertap = (function (browser) {
           _classPrivateFieldLooseBase(this, _account$5)[_account$5].targetDomain = targetDomain;
         }
 
-        var currLocation = location.href;
+        var currLocation;
+
+        if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === 'WEB') {
+          currLocation = location.href;
+        } else {
+          // eslint-disable-next-line
+          currLocation = browser.window.location.href;
+        }
+
         var urlParams = getURLParams(currLocation.toLowerCase()); // eslint-disable-next-line eqeqeq
 
         if (typeof urlParams.e !== 'undefined' && urlParams.wzrk_ex == '0') {
