@@ -36,6 +36,14 @@ export const addToURL = (url, k, v) => {
   return url + '&' + k + '=' + encodeURIComponent(v)
 }
 
-export const getHostName = () => {
+/**
+ * returns host name depending on the mode
+ * @param {('SHOPIFY' | 'WEB' | 'SERVICE_WORKER')} mode
+ */
+export const getHostName = (mode) => {
+  if (mode === 'SHOPIFY') {
+    // eslint-disable-next-line
+    return browser.window.location.hostname
+  }
   return window.location.hostname
 }

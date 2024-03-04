@@ -3,18 +3,21 @@ import { isValueValid } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import LRUCache from '../util/lruCache'
 import { StorageManager, $ct } from '../util/storage'
+import { getHostName } from '../util/url'
 
 export default class CleverTapAPI {
   #logger
   #request
   #device
   #session
+  #mode
 
-  constructor ({ logger, request, device, session }) {
+  constructor ({ logger, request, device, session, mode }) {
     this.#logger = logger
     this.#request = request
     this.#device = device
     this.#session = session
+    this.#mode = mode
   }
 
   /**
@@ -104,7 +107,7 @@ export default class CleverTapAPI {
           this.#request.unregisterTokenForGuid(lastGUID)
         }
       }
-      StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
+      StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, getHostName(this.#mode))
       StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
     }
 

@@ -31,7 +31,7 @@ import {
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
-import { addToURL, getDomain, getURLParams } from './util/url'
+import { addToURL, getDomain, getHostName, getURLParams } from './util/url'
 import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, isWindowDefined } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
@@ -136,7 +136,8 @@ export default class CleverTap {
       logger: this.#logger,
       request: this.#request,
       device: this.#device,
-      session: this.#session
+      session: this.#session,
+      mode: this.#account.mode
     })
 
     this.spa = clevertap.spa
@@ -575,7 +576,13 @@ export default class CleverTap {
       // already initailsed
       return
     }
-    StorageManager.removeCookie('WZRK_P', window.location.hostname)
+
+    if (!isWindowDefined() && typeof browser === 'object') {
+      this.#account.mode = 'SHOPIFY'
+      StorageManager.saveMode('async')
+    }
+
+    StorageManager.removeCookie('WZRK_P', getHostName(this.#account.mode))
     if (!this.#account.id) {
       if (!accountId) {
         this.#logger.error(EMBED_ERROR)
@@ -584,11 +591,6 @@ export default class CleverTap {
       this.#account.id = accountId
     }
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
-
-    if (!isWindowDefined() && typeof browser === 'object') {
-      this.#account.mode = 'shopify'
-      StorageManager.saveMode('async')
-    }
 
     if (region) {
       this.#account.region = region
@@ -668,7 +670,7 @@ export default class CleverTap {
     let data = {}
     let referrerDomain = getDomain(document.referrer)
 
-    if (window.location.hostname !== referrerDomain) {
+    if (getHostName(this.#account.mode) !== referrerDomain) {
       const maxLen = 120
       if (referrerDomain !== '') {
         referrerDomain = referrerDomain.length > maxLen ? referrerDomain.substring(0, maxLen) : referrerDomain

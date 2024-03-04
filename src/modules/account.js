@@ -5,7 +5,10 @@ export default class Account {
   #region = ''
   #targetDomain = TARGET_DOMAIN
   #dcSdkversion = ''
-  #mode = 'web'
+  /**
+   * @type {('SHOPIFY' | 'WEB')} mode
+   */
+  #mode = 'WEB'
 
   constructor ({ id } = {}, region = '', targetDomain = TARGET_DOMAIN) {
     this.id = id
