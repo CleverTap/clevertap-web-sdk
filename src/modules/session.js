@@ -10,14 +10,17 @@ export default class SessionManager {
   #isPersonalisationActive
   cookieName // SCOOKIE_NAME
   scookieObj
+  mode
 
   constructor ({
     logger,
-    isPersonalisationActive
+    isPersonalisationActive,
+    mode
   }) {
     this.sessionId = StorageManager.getMetaProp('cs')
     this.#logger = logger
     this.#isPersonalisationActive = isPersonalisationActive
+    this.mode = mode
   }
 
   get sessionId () {
@@ -29,7 +32,12 @@ export default class SessionManager {
   }
 
   getSessionCookieObject () {
-    let scookieStr = StorageManager.readCookie(this.cookieName)
+    let scookieStr
+    if (this.mode === 'WEB') {
+      scookieStr = StorageManager.readCookie(this.cookieName)
+    } else {
+      scookieStr = StorageManager.readCookieAsync(this.cookieName)
+    }
     let obj = {}
 
     if (scookieStr != null) {
@@ -58,7 +66,9 @@ export default class SessionManager {
 
   setSessionCookieObject (obj) {
     const objStr = JSON.stringify(obj)
-    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName())
+    if (this.mode === 'WEB') {
+      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName())
+    }
   }
 
   manageSession (session) {

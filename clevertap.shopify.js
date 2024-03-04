@@ -17,42 +17,6 @@ var clevertap = (function (browser) {
     return _typeof(obj);
   }
 
-  function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
-    try {
-      var info = gen[key](arg);
-      var value = info.value;
-    } catch (error) {
-      reject(error);
-      return;
-    }
-
-    if (info.done) {
-      resolve(value);
-    } else {
-      Promise.resolve(value).then(_next, _throw);
-    }
-  }
-
-  function _asyncToGenerator(fn) {
-    return function () {
-      var self = this,
-          args = arguments;
-      return new Promise(function (resolve, reject) {
-        var gen = fn.apply(self, args);
-
-        function _next(value) {
-          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
-        }
-
-        function _throw(err) {
-          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
-        }
-
-        _next(undefined);
-      });
-    };
-  }
-
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
@@ -258,18 +222,6 @@ var clevertap = (function (browser) {
     };
   }
 
-  function _toConsumableArray(arr) {
-    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
-  }
-
-  function _arrayWithoutHoles(arr) {
-    if (Array.isArray(arr)) return _arrayLikeToArray(arr);
-  }
-
-  function _iterableToArray(iter) {
-    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
-  }
-
   function _unsupportedIterableToArray(o, minLen) {
     if (!o) return;
     if (typeof o === "string") return _arrayLikeToArray(o, minLen);
@@ -285,10 +237,6 @@ var clevertap = (function (browser) {
     for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
 
     return arr2;
-  }
-
-  function _nonIterableSpread() {
-    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
   function _createForOfIteratorHelper(o, allowArrayLike) {
@@ -402,9 +350,13 @@ var clevertap = (function (browser) {
         writable: true,
         value: ''
       });
+
+      /**
+       * @type {('SHOPIFY' | 'WEB')} mode
+       */
       Object.defineProperty(this, _mode, {
         writable: true,
-        value: 'web'
+        value: 'WEB'
       });
       this.id = id;
 
@@ -555,8 +507,478 @@ var clevertap = (function (browser) {
   var COMMAND_DELETE = '$delete';
   var WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG';
   var WEBINBOX = 'WZRK_INBOX';
-  var MAX_INBOX_MSG = 15;
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
+
+  var _saveAsync = /*#__PURE__*/_classPrivateFieldLooseKey("saveAsync");
+
+  var StorageManager = /*#__PURE__*/function () {
+    function StorageManager() {
+      _classCallCheck(this, StorageManager);
+    }
+
+    _createClass(StorageManager, null, [{
+      key: "setSaveMode",
+      value: function setSaveMode(mode) {
+        this.saveMode = mode;
+      }
+    }, {
+      key: "save",
+      value: function save(key, value) {
+        if (!key || !value) {
+          return false;
+        }
+
+        if (this._isLocalStorageSupported()) {
+          localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+          return true;
+        }
+      }
+    }, {
+      key: "read",
+      value: function read(key) {
+        if (!key) {
+          return false;
+        }
+
+        var data = null;
+
+        if (this._isLocalStorageSupported()) {
+          data = localStorage.getItem(key);
+        }
+
+        if (data != null) {
+          try {
+            data = JSON.parse(data);
+          } catch (e) {}
+        }
+
+        return data;
+      }
+    }, {
+      key: "readAsync",
+      value: function readAsync(key) {
+        if (!key) {
+          return false;
+        }
+
+        var data = null;
+
+        if (this._isLocalStorageSupported()) {
+          // eslint-disable-next-line
+          browser.localStorage.getItem(key).then(function (value) {
+            data = value;
+          });
+        }
+
+        if (data != null) {
+          try {
+            data = JSON.parse(data);
+          } catch (e) {}
+        }
+
+        return data;
+      }
+    }, {
+      key: "remove",
+      value: function remove(key) {
+        if (!key) {
+          return false;
+        }
+
+        if (this._isLocalStorageSupported()) {
+          localStorage.removeItem(key);
+          return true;
+        }
+      }
+    }, {
+      key: "removeAsync",
+      value: function removeAsync(key) {
+        if (!key) {
+          return false;
+        }
+
+        if (this._isLocalStorageSupported()) {
+          // eslint-disable-next-line
+          browser.localStorage.removeItem(key).then(function () {
+            return true;
+          });
+        }
+      }
+    }, {
+      key: "removeCookie",
+      value: function removeCookie(name, domain) {
+        var cookieStr = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+
+        if (domain) {
+          cookieStr = cookieStr + ' domain=' + domain + '; path=/';
+        }
+
+        document.cookie = cookieStr;
+      }
+    }, {
+      key: "createCookie",
+      value: function createCookie(name, value, seconds, domain) {
+        var expires = '';
+        var domainStr = '';
+
+        if (seconds) {
+          var date = new Date();
+          date.setTime(date.getTime() + seconds * 1000);
+          expires = '; expires=' + date.toGMTString();
+        }
+
+        if (domain) {
+          domainStr = '; domain=' + domain;
+        }
+
+        value = encodeURIComponent(value);
+        document.cookie = name + '=' + value + expires + domainStr + '; path=/';
+      }
+    }, {
+      key: "createCookieAsync",
+      value: function createCookieAsync(name, value, seconds, domain) {
+        var expires = '';
+        var domainStr = '';
+
+        if (seconds) {
+          var date = new Date();
+          date.setTime(date.getTime() + seconds * 1000);
+          expires = '; expires=' + date.toGMTString();
+        }
+
+        if (domain) {
+          domainStr = '; domain=' + domain;
+        }
+
+        value = encodeURIComponent(value);
+        var cookieValue = name + '=' + value + expires + domainStr + '; path=/'; // eslint-disable-next-line
+
+        browser.cookie.set(cookieValue);
+      }
+    }, {
+      key: "readCookie",
+      value: function readCookie(name) {
+        var nameEQ = name + '=';
+        var ca = document.cookie.split(';');
+
+        for (var idx = 0; idx < ca.length; idx++) {
+          var c = ca[idx];
+
+          while (c.charAt(0) === ' ') {
+            c = c.substring(1, c.length);
+          } // eslint-disable-next-line eqeqeq
+
+
+          if (c.indexOf(nameEQ) == 0) {
+            return decodeURIComponent(c.substring(nameEQ.length, c.length));
+          }
+        }
+
+        return null;
+      }
+    }, {
+      key: "readCookieAsync",
+      value: function readCookieAsync(name) {
+        var cookie = null; // eslint-disable-next-line
+
+        browser.cookie.get(name).then(function (value) {
+          cookie = decodeURIComponent(value);
+        });
+        return cookie;
+      }
+    }, {
+      key: "_isLocalStorageSupported",
+      value: function _isLocalStorageSupported() {
+        if (!isWindowDefined()) return true;
+        return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function';
+      }
+    }, {
+      key: "saveToLSorCookie",
+      value: function saveToLSorCookie(property, value) {
+        if (value == null) {
+          return;
+        }
+
+        try {
+          if (this._isLocalStorageSupported()) {
+            if (this.storageSaveMode === 'sync') {
+              this.save(property, encodeURIComponent(JSON.stringify(value)));
+            } else {
+              _classPrivateFieldLooseBase(this, _saveAsync)[_saveAsync](property, encodeURIComponent(JSON.stringify(value)));
+            }
+          } else {
+            if (property === GCOOKIE_NAME) {
+              this.createCookie(property, encodeURIComponent(value), 0, window.location.hostname);
+            } else {
+              this.createCookie(property, encodeURIComponent(JSON.stringify(value)), 0, window.location.hostname);
+            }
+          }
+
+          $ct.globalCache[property] = value;
+        } catch (e) {}
+      }
+    }, {
+      key: "readFromLSorCookie",
+      value: function readFromLSorCookie(property) {
+        var data;
+
+        if ($ct.globalCache.hasOwnProperty(property)) {
+          return $ct.globalCache[property];
+        }
+
+        if (this._isLocalStorageSupported()) {
+          if (this.saveMode === 'sync') {
+            data = this.read(property);
+          } else {
+            data = this.readAsync(property);
+          }
+        } else {
+          if (this.saveMode === 'sync') {
+            data = this.readCookie(property);
+          } else {
+            data = this.readCookieAsync(property);
+          }
+        }
+
+        if (data !== null && data !== undefined && !(typeof data.trim === 'function' && data.trim() === '')) {
+          var value;
+
+          try {
+            value = JSON.parse(decodeURIComponent(data));
+          } catch (err) {
+            value = decodeURIComponent(data);
+          }
+
+          $ct.globalCache[property] = value;
+          return value;
+        }
+      }
+    }, {
+      key: "createBroadCookie",
+      value: function createBroadCookie(name, value, seconds, domain) {
+        // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
+        // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
+        // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
+        // to find out which "broadest" domain the cookie was set on. Then delete the test cookie, and use that domain
+        // for updating the actual cookie.
+        if (domain) {
+          var broadDomain = $ct.broadDomain;
+
+          if (broadDomain == null) {
+            // if we don't know the broadDomain yet, then find out
+            var domainParts = domain.split('.');
+            var testBroadDomain = '';
+
+            for (var idx = domainParts.length - 1; idx >= 0; idx--) {
+              if (idx === 0) {
+                testBroadDomain = domainParts[idx] + testBroadDomain;
+              } else {
+                testBroadDomain = '.' + domainParts[idx] + testBroadDomain;
+              } // only needed if the cookie already exists and needs to be updated. See note above.
+
+
+              if (this.readCookie(name)) {
+                // no guarantee that browser will delete cookie, hence create short lived cookies
+                var testCookieName = 'test_' + name + idx;
+                this.createCookie(testCookieName, value, 10, testBroadDomain); // self-destruct after 10 seconds
+
+                if (!this.readCookie(testCookieName)) {
+                  // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
+                  continue;
+                } else {
+                  // else if cookie set, then delete the test and the original cookie
+                  this.removeCookie(testCookieName, testBroadDomain);
+                }
+              }
+
+              this.createCookie(name, value, seconds, testBroadDomain);
+              var tempCookie = this.readCookie(name); // eslint-disable-next-line eqeqeq
+
+              if (tempCookie == value) {
+                broadDomain = testBroadDomain;
+                $ct.broadDomain = broadDomain;
+                break;
+              }
+            }
+          } else {
+            this.createCookie(name, value, seconds, broadDomain);
+          }
+        } else {
+          this.createCookie(name, value, seconds, domain);
+        }
+      }
+    }, {
+      key: "getMetaProp",
+      value: function getMetaProp(property) {
+        var metaObj = this.readFromLSorCookie(META_COOKIE);
+
+        if (metaObj != null) {
+          return metaObj[property];
+        }
+      }
+    }, {
+      key: "setMetaProp",
+      value: function setMetaProp(property, value) {
+        if (this._isLocalStorageSupported()) {
+          var wzrkMetaObj = this.readFromLSorCookie(META_COOKIE);
+
+          if (wzrkMetaObj == null) {
+            wzrkMetaObj = {};
+          }
+
+          if (value === undefined) {
+            delete wzrkMetaObj[property];
+          } else {
+            wzrkMetaObj[property] = value;
+          }
+
+          this.saveToLSorCookie(META_COOKIE, wzrkMetaObj);
+        }
+      }
+    }, {
+      key: "getAndClearMetaProp",
+      value: function getAndClearMetaProp(property) {
+        var value = this.getMetaProp(property);
+        this.setMetaProp(property, undefined);
+        return value;
+      }
+    }, {
+      key: "setInstantDeleteFlagInK",
+      value: function setInstantDeleteFlagInK() {
+        var k = this.readFromLSorCookie(KCOOKIE_NAME);
+
+        if (k == null) {
+          k = {};
+        }
+
+        k.flag = true;
+        this.saveToLSorCookie(KCOOKIE_NAME, k);
+      }
+    }, {
+      key: "backupEvent",
+      value: function backupEvent(data, reqNo, logger) {
+        var backupArr = this.readFromLSorCookie(LCOOKIE_NAME);
+
+        if (typeof backupArr === 'undefined') {
+          backupArr = {};
+        }
+
+        backupArr[reqNo] = {
+          q: data
+        };
+        this.saveToLSorCookie(LCOOKIE_NAME, backupArr);
+        logger.debug("stored in ".concat(LCOOKIE_NAME, " reqNo : ").concat(reqNo, " -> ").concat(data));
+      }
+    }, {
+      key: "removeBackup",
+      value: function removeBackup(respNo, logger) {
+        var backupMap = this.readFromLSorCookie(LCOOKIE_NAME);
+
+        if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
+          logger.debug("del event: ".concat(respNo, " data-> ").concat(backupMap[respNo].q));
+          delete backupMap[respNo];
+          this.saveToLSorCookie(LCOOKIE_NAME, backupMap);
+        }
+      }
+    }]);
+
+    return StorageManager;
+  }();
+
+  function _saveAsync2(key, value) {
+    if (!key || !value) {
+      return false;
+    }
+
+    if (this._isLocalStorageSupported()) {
+      // eslint-disable-next-line
+      browser.localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value)).then(function (value) {
+        return true;
+      }).catch(function (error) {
+        console.error(error);
+      });
+    }
+  }
+
+  Object.defineProperty(StorageManager, _saveAsync, {
+    value: _saveAsync2
+  });
+  StorageManager.saveMode = 'sync';
+  var $ct = {
+    globalCache: {
+      gcookie: null,
+      REQ_N: 0,
+      RESP_N: 0
+    },
+    LRU_CACHE: null,
+    globalProfileMap: undefined,
+    globalEventsMap: undefined,
+    blockRequest: false,
+    isOptInRequest: false,
+    broadDomain: null,
+    webPushEnabled: null,
+    campaignDivMap: {},
+    currentSessionId: null,
+    wiz_counter: 0,
+    // to keep track of number of times we load the body
+    notifApi: {
+      notifEnabledFromApi: false
+    },
+    // helper variable to handle race condition and check when notifications were called
+    unsubGroups: [],
+    updatedCategoryLong: null,
+    inbox: null,
+    isPrivacyArrPushed: false,
+    privacyArray: [],
+    offline: false,
+    location: null,
+    dismissSpamControl: false,
+    globalUnsubscribe: true,
+    flutterVersion: null // domain: window.location.hostname, url -> getHostName()
+    // gcookie: -> device
+
+  };
+
+  var DATA_NOT_SENT_TEXT = 'This property has been ignored.';
+  var CLEVERTAP_ERROR_PREFIX = 'CleverTap error:'; // Formerly wzrk_error_txt
+
+  var EMBED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Incorrect embed script.");
+  var EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
+  var GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should be either M or F. ").concat(DATA_NOT_SENT_TEXT);
+  var EMPLOYED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Employed value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
+  var MARRIED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Married value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
+  var EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
+  var AGE_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Age value should be a number. ").concat(DATA_NOT_SENT_TEXT);
+  var DOB_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " DOB value should be a Date Object");
+  var ENUM_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " setEnum(value). value should be a string or a number");
+  var PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
+
+  var getToday = function getToday() {
+    var today = new Date();
+    return today.getFullYear() + '' + today.getMonth() + '' + today.getDay();
+  };
+  var getNow = function getNow() {
+    return Math.floor(new Date().getTime() / 1000);
+  };
+  var convertToWZRKDate = function convertToWZRKDate(dateObj) {
+    return '$D_' + Math.round(dateObj.getTime() / 1000);
+  };
+  var setDate = function setDate(dt) {
+    // expecting  yyyymmdd format either as a number or a string
+    if (isDateValid(dt)) {
+      return '$D_' + dt;
+    }
+  };
+  var isDateValid = function isDateValid(date) {
+    var matches = /^(\d{4})(\d{2})(\d{2})$/.exec(date);
+    if (matches == null) return false;
+    var d = matches[3];
+    var m = matches[2] - 1;
+    var y = matches[1];
+    var composedDate = new Date(y, m, d); // eslint-disable-next-line eqeqeq
+
+    return composedDate.getDate() == d && composedDate.getMonth() == m && composedDate.getFullYear() == y;
+  };
 
   var isString = function isString(input) {
     return typeof input === 'string' || input instanceof String;
@@ -631,47 +1053,6 @@ var clevertap = (function (browser) {
     return input.replace(regex, '');
   };
 
-  var getToday = function getToday() {
-    var today = new Date();
-    return today.getFullYear() + '' + today.getMonth() + '' + today.getDay();
-  };
-  var getNow = function getNow() {
-    return Math.floor(new Date().getTime() / 1000);
-  };
-  var convertToWZRKDate = function convertToWZRKDate(dateObj) {
-    return '$D_' + Math.round(dateObj.getTime() / 1000);
-  };
-  var setDate = function setDate(dt) {
-    // expecting  yyyymmdd format either as a number or a string
-    if (isDateValid(dt)) {
-      return '$D_' + dt;
-    }
-  };
-  var isDateValid = function isDateValid(date) {
-    var matches = /^(\d{4})(\d{2})(\d{2})$/.exec(date);
-    if (matches == null) return false;
-    var d = matches[3];
-    var m = matches[2] - 1;
-    var y = matches[1];
-    var composedDate = new Date(y, m, d); // eslint-disable-next-line eqeqeq
-
-    return composedDate.getDate() == d && composedDate.getMonth() == m && composedDate.getFullYear() == y;
-  };
-
-  var DATA_NOT_SENT_TEXT = 'This property has been ignored.';
-  var CLEVERTAP_ERROR_PREFIX = 'CleverTap error:'; // Formerly wzrk_error_txt
-
-  var EMBED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Incorrect embed script.");
-  var EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
-  var GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should be either M or F. ").concat(DATA_NOT_SENT_TEXT);
-  var EMPLOYED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Employed value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
-  var MARRIED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Married value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
-  var EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
-  var AGE_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Age value should be a number. ").concat(DATA_NOT_SENT_TEXT);
-  var DOB_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " DOB value should be a Date Object");
-  var ENUM_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " setEnum(value). value should be a string or a number");
-  var PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
-
   var getURLParams = function getURLParams(url) {
     var urlParams = {};
     var idx = url.indexOf('?');
@@ -713,7 +1094,17 @@ var clevertap = (function (browser) {
   var addToURL = function addToURL(url, k, v) {
     return url + '&' + k + '=' + encodeURIComponent(v);
   };
-  var getHostName = function getHostName() {
+  /**
+   * returns host name depending on the mode
+   * @param {('SHOPIFY' | 'WEB' | 'SERVICE_WORKER')} mode
+   */
+
+  var getHostName = function getHostName(mode) {
+    if (mode === 'SHOPIFY') {
+      // eslint-disable-next-line
+      return browser.window.location.hostname;
+    }
+
     return window.location.hostname;
   };
 
@@ -1734,403 +2125,6 @@ var clevertap = (function (browser) {
     return typeof window !== 'undefined' && (typeof window === "undefined" ? "undefined" : _typeof(window)) === 'object';
   };
 
-  var StorageManager = /*#__PURE__*/function () {
-    function StorageManager() {
-      _classCallCheck(this, StorageManager);
-    }
-
-    _createClass(StorageManager, null, [{
-      key: "saveAsync",
-      value: function saveAsync(key, value) {
-        if (!key || !value) {
-          return false;
-        }
-
-        if (this._isLocalStorageSupported()) {
-          browser.localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value)).then(function (value) {
-            return true;
-          }).catch(function (error) {
-            console.error(error);
-          });
-        }
-      }
-    }, {
-      key: "save",
-      value: function save(key, value) {
-        if (!key || !value) {
-          return false;
-        }
-
-        if (this._isLocalStorageSupported()) {
-          localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-          return true;
-        }
-      }
-    }, {
-      key: "read",
-      value: function read(key) {
-        if (!key) {
-          return false;
-        }
-
-        var data = null;
-
-        if (this._isLocalStorageSupported()) {
-          data = (isWindowDefined() ? browser.localStorage : localStorage).getItem(key);
-        }
-
-        if (data != null) {
-          try {
-            data = JSON.parse(data);
-          } catch (e) {}
-        }
-
-        return data;
-      }
-    }, {
-      key: "readAsync",
-      value: function readAsync(key) {
-        if (!key) {
-          return false;
-        }
-
-        var data = null;
-
-        if (this._isLocalStorageSupported()) {
-          browser.localStorage.getItem(key).then(function (value) {
-            return data = value;
-          });
-        }
-
-        if (data != null) {
-          try {
-            data = JSON.parse(data);
-          } catch (e) {}
-        }
-
-        return data;
-      }
-    }, {
-      key: "remove",
-      value: function remove(key) {
-        if (!key) {
-          return false;
-        }
-
-        if (this._isLocalStorageSupported()) {
-          localStorage.removeItem(key);
-          return true;
-        }
-      }
-    }, {
-      key: "removeAsync",
-      value: function removeAsync(key) {
-        if (!key) {
-          return false;
-        }
-
-        if (this._isLocalStorageSupported()) {
-          browser.localStorage.removeItem(key).then(function () {
-            return true;
-          });
-        }
-      }
-    }, {
-      key: "removeCookie",
-      value: function removeCookie(name, domain) {
-        var cookieStr = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-
-        if (domain) {
-          cookieStr = cookieStr + ' domain=' + domain + '; path=/';
-        }
-
-        (isWindowDefined() ? browser : document).cookie = cookieStr;
-      }
-    }, {
-      key: "createCookie",
-      value: function createCookie(name, value, seconds, domain) {
-        var expires = '';
-        var domainStr = '';
-
-        if (seconds) {
-          var date = new Date();
-          date.setTime(date.getTime() + seconds * 1000);
-          expires = '; expires=' + date.toGMTString();
-        }
-
-        if (domain) {
-          domainStr = '; domain=' + domain;
-        }
-
-        value = encodeURIComponent(value);
-        document.cookie = name + '=' + value + expires + domainStr + '; path=/';
-      }
-    }, {
-      key: "readCookie",
-      value: function readCookie(name) {
-        var nameEQ = name + '=';
-        var ca = document.cookie.split(';');
-
-        for (var idx = 0; idx < ca.length; idx++) {
-          var c = ca[idx];
-
-          while (c.charAt(0) === ' ') {
-            c = c.substring(1, c.length);
-          } // eslint-disable-next-line eqeqeq
-
-
-          if (c.indexOf(nameEQ) == 0) {
-            return decodeURIComponent(c.substring(nameEQ.length, c.length));
-          }
-        }
-
-        return null;
-      }
-    }, {
-      key: "_isLocalStorageSupported",
-      value: function _isLocalStorageSupported() {
-        if (isWindowDefined()) return true;
-        return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function';
-      }
-    }, {
-      key: "saveToLSorCookie",
-      value: function () {
-        var _saveToLSorCookie = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(property, value) {
-          return regeneratorRuntime.wrap(function _callee$(_context) {
-            while (1) {
-              switch (_context.prev = _context.next) {
-                case 0:
-                  if (!(value == null)) {
-                    _context.next = 2;
-                    break;
-                  }
-
-                  return _context.abrupt("return");
-
-                case 2:
-                  try {
-                    if (this._isLocalStorageSupported()) {
-                      this.save(property, encodeURIComponent(JSON.stringify(value)));
-                      this.saveAsync(property, encodeURIComponent(JSON.stringify(value)));
-                    } else {
-                      if (property === GCOOKIE_NAME) {
-                        this.createCookie(property, encodeURIComponent(value), 0, window.location.hostname);
-                      } else {
-                        this.createCookie(property, encodeURIComponent(JSON.stringify(value)), 0, window.location.hostname);
-                      }
-                    }
-
-                    $ct.globalCache[property] = value;
-                  } catch (e) {}
-
-                case 3:
-                case "end":
-                  return _context.stop();
-              }
-            }
-          }, _callee, this);
-        }));
-
-        function saveToLSorCookie(_x, _x2) {
-          return _saveToLSorCookie.apply(this, arguments);
-        }
-
-        return saveToLSorCookie;
-      }()
-    }, {
-      key: "readFromLSorCookie",
-      value: function readFromLSorCookie(property) {
-        var data;
-
-        if ($ct.globalCache.hasOwnProperty(property)) {
-          return $ct.globalCache[property];
-        }
-
-        if (this._isLocalStorageSupported()) {
-          data = this.read(property);
-        } else {
-          data = this.readCookie(property);
-        }
-
-        if (data !== null && data !== undefined && !(typeof data.trim === 'function' && data.trim() === '')) {
-          var value;
-
-          try {
-            value = JSON.parse(decodeURIComponent(data));
-          } catch (err) {
-            value = decodeURIComponent(data);
-          }
-
-          $ct.globalCache[property] = value;
-          return value;
-        }
-      }
-    }, {
-      key: "createBroadCookie",
-      value: function createBroadCookie(name, value, seconds, domain) {
-        // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
-        // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
-        // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
-        // to find out which "broadest" domain the cookie was set on. Then delete the test cookie, and use that domain
-        // for updating the actual cookie.
-        if (domain) {
-          var broadDomain = $ct.broadDomain;
-
-          if (broadDomain == null) {
-            // if we don't know the broadDomain yet, then find out
-            var domainParts = domain.split('.');
-            var testBroadDomain = '';
-
-            for (var idx = domainParts.length - 1; idx >= 0; idx--) {
-              if (idx === 0) {
-                testBroadDomain = domainParts[idx] + testBroadDomain;
-              } else {
-                testBroadDomain = '.' + domainParts[idx] + testBroadDomain;
-              } // only needed if the cookie already exists and needs to be updated. See note above.
-
-
-              if (this.readCookie(name)) {
-                // no guarantee that browser will delete cookie, hence create short lived cookies
-                var testCookieName = 'test_' + name + idx;
-                this.createCookie(testCookieName, value, 10, testBroadDomain); // self-destruct after 10 seconds
-
-                if (!this.readCookie(testCookieName)) {
-                  // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
-                  continue;
-                } else {
-                  // else if cookie set, then delete the test and the original cookie
-                  this.removeCookie(testCookieName, testBroadDomain);
-                }
-              }
-
-              this.createCookie(name, value, seconds, testBroadDomain);
-              var tempCookie = this.readCookie(name); // eslint-disable-next-line eqeqeq
-
-              if (tempCookie == value) {
-                broadDomain = testBroadDomain;
-                $ct.broadDomain = broadDomain;
-                break;
-              }
-            }
-          } else {
-            this.createCookie(name, value, seconds, broadDomain);
-          }
-        } else {
-          this.createCookie(name, value, seconds, domain);
-        }
-      }
-    }, {
-      key: "getMetaProp",
-      value: function getMetaProp(property) {
-        var metaObj = this.readFromLSorCookie(META_COOKIE);
-
-        if (metaObj != null) {
-          return metaObj[property];
-        }
-      }
-    }, {
-      key: "setMetaProp",
-      value: function setMetaProp(property, value) {
-        if (this._isLocalStorageSupported()) {
-          var wzrkMetaObj = this.readFromLSorCookie(META_COOKIE);
-
-          if (wzrkMetaObj == null) {
-            wzrkMetaObj = {};
-          }
-
-          if (value === undefined) {
-            delete wzrkMetaObj[property];
-          } else {
-            wzrkMetaObj[property] = value;
-          }
-
-          this.saveToLSorCookie(META_COOKIE, wzrkMetaObj);
-        }
-      }
-    }, {
-      key: "getAndClearMetaProp",
-      value: function getAndClearMetaProp(property) {
-        var value = this.getMetaProp(property);
-        this.setMetaProp(property, undefined);
-        return value;
-      }
-    }, {
-      key: "setInstantDeleteFlagInK",
-      value: function setInstantDeleteFlagInK() {
-        var k = this.readFromLSorCookie(KCOOKIE_NAME);
-
-        if (k == null) {
-          k = {};
-        }
-
-        k.flag = true;
-        this.saveToLSorCookie(KCOOKIE_NAME, k);
-      }
-    }, {
-      key: "backupEvent",
-      value: function backupEvent(data, reqNo, logger) {
-        var backupArr = this.readFromLSorCookie(LCOOKIE_NAME);
-
-        if (typeof backupArr === 'undefined') {
-          backupArr = {};
-        }
-
-        backupArr[reqNo] = {
-          q: data
-        };
-        this.saveToLSorCookie(LCOOKIE_NAME, backupArr);
-        logger.debug("stored in ".concat(LCOOKIE_NAME, " reqNo : ").concat(reqNo, " -> ").concat(data));
-      }
-    }, {
-      key: "removeBackup",
-      value: function removeBackup(respNo, logger) {
-        var backupMap = this.readFromLSorCookie(LCOOKIE_NAME);
-
-        if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
-          logger.debug("del event: ".concat(respNo, " data-> ").concat(backupMap[respNo].q));
-          delete backupMap[respNo];
-          this.saveToLSorCookie(LCOOKIE_NAME, backupMap);
-        }
-      }
-    }]);
-
-    return StorageManager;
-  }();
-  var $ct = {
-    globalCache: {
-      gcookie: null,
-      REQ_N: 0,
-      RESP_N: 0
-    },
-    LRU_CACHE: null,
-    globalProfileMap: undefined,
-    globalEventsMap: undefined,
-    blockRequest: false,
-    isOptInRequest: false,
-    broadDomain: null,
-    webPushEnabled: null,
-    campaignDivMap: {},
-    currentSessionId: null,
-    wiz_counter: 0,
-    // to keep track of number of times we load the body
-    notifApi: {
-      notifEnabledFromApi: false
-    },
-    // helper variable to handle race condition and check when notifications were called
-    unsubGroups: [],
-    updatedCategoryLong: null,
-    inbox: null,
-    isPrivacyArrPushed: false,
-    privacyArray: [],
-    offline: false,
-    location: null,
-    dismissSpamControl: false,
-    globalUnsubscribe: true,
-    flutterVersion: null // domain: window.location.hostname, url -> getHostName()
-    // gcookie: -> device
-
-  };
-
   var _keyOrder = /*#__PURE__*/_classPrivateFieldLooseKey("keyOrder");
 
   var _deleteFromObject = /*#__PURE__*/_classPrivateFieldLooseKey("deleteFromObject");
@@ -2297,12 +2291,15 @@ var clevertap = (function (browser) {
 
   var _session = /*#__PURE__*/_classPrivateFieldLooseKey("session");
 
+  var _mode$1 = /*#__PURE__*/_classPrivateFieldLooseKey("mode");
+
   var CleverTapAPI = /*#__PURE__*/function () {
     function CleverTapAPI(_ref) {
       var logger = _ref.logger,
           request = _ref.request,
           device = _ref.device,
-          session = _ref.session;
+          session = _ref.session,
+          mode = _ref.mode;
 
       _classCallCheck(this, CleverTapAPI);
 
@@ -2322,10 +2319,15 @@ var clevertap = (function (browser) {
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _mode$1, {
+        writable: true,
+        value: void 0
+      });
       _classPrivateFieldLooseBase(this, _logger)[_logger] = logger;
       _classPrivateFieldLooseBase(this, _request)[_request] = request;
       _classPrivateFieldLooseBase(this, _device)[_device] = device;
       _classPrivateFieldLooseBase(this, _session)[_session] = session;
+      _classPrivateFieldLooseBase(this, _mode$1)[_mode$1] = mode;
     }
     /**
      *
@@ -2347,7 +2349,7 @@ var clevertap = (function (browser) {
         // we maintan a OulReqN var in the window object
         // and compare with respNumber to determine the response of an OUL request
 
-        if (window.isOULInProgress) {
+        if (isWindowDefined() && window.isOULInProgress) {
           if (resume || respNumber !== 'undefined' && respNumber === window.oulReqN) {
             window.isOULInProgress = false;
             oulReq = true;
@@ -2425,7 +2427,7 @@ var clevertap = (function (browser) {
             }
           }
 
-          StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
+          StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, getHostName(_classPrivateFieldLooseBase(this, _mode$1)[_mode$1]));
           StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
         }
 
@@ -2488,7 +2490,13 @@ var clevertap = (function (browser) {
         }
 
         if (StorageManager._isLocalStorageSupported()) {
-          var value = StorageManager.read(GCOOKIE_NAME);
+          var value;
+
+          if (StorageManager.saveMode === 'sync') {
+            value = StorageManager.read(GCOOKIE_NAME);
+          } else {
+            value = StorageManager.readAsync(GCOOKIE_NAME);
+          }
 
           if (isValueValid(value)) {
             try {
@@ -2516,7 +2524,11 @@ var clevertap = (function (browser) {
         }
 
         if (!isValueValid(guid)) {
-          guid = StorageManager.readCookie(GCOOKIE_NAME);
+          if (StorageManager.saveMode === 'sync') {
+            guid = StorageManager.readCookie(GCOOKIE_NAME);
+          } else {
+            guid = StorageManager.readCookieAsync(GCOOKIE_NAME);
+          }
 
           if (isValueValid(guid) && (guid.indexOf('%') === 0 || guid.indexOf('\'') === 0 || guid.indexOf('"') === 0)) {
             guid = null;
@@ -3558,896 +3570,13 @@ var clevertap = (function (browser) {
     _classCallCheck(this, CTWebPopupImageOnly);
   };
 
-  var Message = /*#__PURE__*/function () {
-    function Message(config, message) {
-      _classCallCheck(this, Message);
-
-      this.wrapper = null;
-      this.snackBar = null;
-      this.shadow = this.attachShadow({
-        mode: 'open'
-      });
-      this.config = config;
-      this.message = message;
-      this.renderMessage(message);
-    }
-
-    _createClass(Message, [{
-      key: "createEl",
-      value: function createEl(type, id, part) {
-        var _el = document.createElement(type);
-
-        _el.setAttribute('id', id);
-
-        _el.setAttribute('part', part || id);
-
-        return _el;
-      }
-    }, {
-      key: "renderMessage",
-      value: function renderMessage(msg) {
-        this.wrapper = this.createEl('div', 'messageWrapper');
-
-        switch (msg.templateType) {
-          case 'text-only':
-          case 'text-with-icon':
-          case 'text-with-icon-and-image':
-            {
-              var message = this.prepareBasicMessage(msg.msg[0]);
-              this.wrapper.appendChild(message);
-            }
-        }
-
-        var timeStamp = this.createEl('div', 'timeStamp');
-        timeStamp.innerHTML = "<span>".concat(determineTimeStampText(msg.id.split('_')[1]), "<span>");
-
-        if (!msg.viewed) {
-          var unreadMarker = this.createEl('span', 'unreadMarker');
-          timeStamp.appendChild(unreadMarker);
-        }
-
-        this.wrapper.appendChild(timeStamp);
-        this.shadow.appendChild(this.wrapper);
-      }
-    }, {
-      key: "prepareBasicMessage",
-      value: function prepareBasicMessage(msg) {
-        var message = this.createEl('div', 'message');
-
-        if (msg.imageUrl) {
-          var imageContainer = this.addImage(msg.imageUrl, 'mainImg');
-          message.appendChild(imageContainer);
-        }
-
-        var iconTitleDescWrapper = this.createEl('div', 'iconTitleDescWrapper');
-
-        if (msg.iconUrl) {
-          var iconContainer = this.addImage(msg.iconUrl, 'iconImg');
-          iconTitleDescWrapper.appendChild(iconContainer);
-        }
-
-        var titleDescWrapper = this.createEl('div', 'titleDescWrapper');
-
-        if (msg.title) {
-          var title = this.createEl('div', 'title');
-          title.innerText = msg.title;
-          titleDescWrapper.appendChild(title);
-        }
-
-        if (msg.description) {
-          var description = this.createEl('div', 'description');
-          description.innerText = msg.description;
-          titleDescWrapper.appendChild(description);
-        }
-
-        if (msg.title || msg.description) {
-          iconTitleDescWrapper.appendChild(titleDescWrapper);
-        }
-
-        if (msg.iconUrl || msg.title || msg.description) {
-          message.appendChild(iconTitleDescWrapper);
-        }
-
-        if (msg.buttons && msg.buttons.length) {
-          var buttonsContainer = this.addButtons(msg.buttons);
-          message.appendChild(buttonsContainer);
-        }
-
-        return message;
-      }
-    }, {
-      key: "addButtons",
-      value: function addButtons() {
-        var _this = this;
-
-        var buttons = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-        var buttonsContainer = this.createEl('div', 'buttonsContainer');
-        var hasCopyAction = false;
-        buttons.forEach(function (b, i) {
-          var button = _this.createEl('button', "button-".concat(i), 'button');
-
-          button.innerText = b.text;
-
-          if (i > 0) {
-            button.style.cssText += 'margin-left: 2px;';
-          }
-
-          if (b.action === 'copy') {
-            hasCopyAction = true;
-          }
-
-          buttonsContainer.appendChild(button);
-        });
-
-        if (hasCopyAction) {
-          this.addSnackbar(buttonsContainer);
-        }
-
-        return buttonsContainer;
-      }
-    }, {
-      key: "addSnackbar",
-      value: function addSnackbar(buttonsContainer) {
-        this.snackBar = this.createEl('div', "snackbar-".concat(this.campaignId), 'snackbar');
-        this.snackBar.innerHTML = greenTickSvg;
-        var clipboardMsg = this.createEl('span', "snackbar-msg-".concat(this.campaignId), 'snackbar-msg');
-        clipboardMsg.innerText = 'Copied to clipboard';
-        this.snackBar.appendChild(clipboardMsg);
-        buttonsContainer.appendChild(this.snackBar);
-      }
-    }, {
-      key: "addImage",
-      value: function addImage(url, type) {
-        var imageContainer = this.createEl('div', "".concat(type, "Container"));
-        var image = this.createEl('img', type);
-        image.setAttribute('src', url); // images will be fetched as and when the element comes into the viewport
-
-        image.setAttribute('loading', 'lazy');
-        imageContainer.appendChild(image);
-        return imageContainer;
-      }
-    }, {
-      key: "raiseClickedEvent",
-      value: function raiseClickedEvent(path, isPreview) {
-        switch (this.message.templateType) {
-          case 'text-only':
-          case 'text-with-icon':
-          case 'text-with-icon-and-image':
-            {
-              this.raiseClickedForBasicTemplates(path, isPreview);
-            }
-        }
-      }
-    }, {
-      key: "raiseClickedForBasicTemplates",
-      value: function raiseClickedForBasicTemplates(path, isPreview) {
-        var _this2 = this;
-
-        var msg = this.message.msg[0];
-        var payload = {
-          msgId: this.campaignId,
-          pivotId: this.pivotId
-        };
-
-        if (path.tagName === 'BUTTON') {
-          var id = path.id.split('-')[1];
-          var button = msg.buttons[id];
-          payload.kv = {
-            wzrk_c2a: button.text
-          };
-
-          if (button.action === 'url') {
-            button.openUrlInNewTab ? window.open(button.url, '_blank') : window.location = button.url;
-          } else if (button.action === 'copy') {
-            window.focus();
-            navigator.clipboard.writeText(button.clipboardText);
-            this.snackBar.style.setProperty('display', 'flex', 'important');
-            setTimeout(function () {
-              _this2.snackBar.style.setProperty('display', 'none', 'important');
-            }, 2000);
-          }
-        } else if (path.tagName === 'CT-INBOX-MESSAGE' && msg.onClickUrl) {
-          msg.openUrlInNewTab ? window.open(msg.onClickUrl, '_blank') : window.location = msg.onClickUrl;
-        }
-
-        if (isPreview) {
-          console.log('Notifiction clicked event will be raised at run time with payload ::', payload);
-        } else {
-          window.clevertap.renderNotificationClicked(payload);
-        }
-      }
-    }, {
-      key: "pivotId",
-      get: function get() {
-        return this.message.wzrk_pivot;
-      }
-    }, {
-      key: "campaignId",
-      get: function get() {
-        return this.message.wzrk_id;
-      }
-    }]);
-
-    return Message;
-  }();
-
-  var messageStyles = function messageStyles(_ref) {
-    var backgroundColor = _ref.backgroundColor,
-        borderColor = _ref.borderColor,
-        titleColor = _ref.titleColor,
-        descriptionColor = _ref.descriptionColor,
-        buttonColor = _ref.buttonColor,
-        buttonTextColor = _ref.buttonTextColor,
-        unreadMarkerColor = _ref.unreadMarkerColor;
-    return "\n    <style id=\"messageStyles\">\n      ct-inbox-message::part(messageWrapper) {\n        margin-bottom: 16px; \n      }\n      ct-inbox-message::part(message) {\n        background-color: ".concat(backgroundColor, "; \n        border: 1px solid ").concat(borderColor, ";\n        border-radius: 4px; \n        overflow: hidden;\n        min-height: 40px;\n      }\n      ct-inbox-message::part(message):hover {\n        box-shadow: 0px 4px 8px rgb(0 0 0 / 10%);\n        cursor: pointer;\n      }\n      ct-inbox-message::part(iconTitleDescWrapper) {\n        display: flex; \n        padding: 16px;\n      }\n      ct-inbox-message::part(titleDescWrapper) {\n        display: flex; \n        flex-direction: column;\n      }\n      ct-inbox-message::part(iconImgContainer) {\n        display: flex; \n        margin-right: 16px;\n      }\n      ct-inbox-message::part(mainImgContainer) {\n        line-height: 0;\n      }\n      ct-inbox-message::part(mainImg) {\n        width: 100%; \n        background: #b2b1ae;\n      }\n      ct-inbox-message::part(iconImg) {\n        height: 40px; \n        width: 40px;\n      }\n      ct-inbox-message::part(title) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 600; \n        color: ").concat(titleColor, "\n      }\n      ct-inbox-message::part(description) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 400; \n        color: ").concat(descriptionColor, "\n      }\n      ct-inbox-message::part(button) {\n        background-color: ").concat(buttonColor, "; \n        color: ").concat(buttonTextColor, "; \n        padding: 8px 16px; \n        font-size: 12px; \n        line-height: 16px; \n        font-weight: 600; \n        flex: 1; \n        border-radius: 0px; \n        text-transform: capitalize; \n        cursor: pointer; \n        border: none;\n      }\n      ct-inbox-message::part(buttonsContainer) {\n        display: flex;\n        position: relative;\n      }\n      ct-inbox-message::part(snackbar) {\n        position: absolute;\n        top: calc(-100% - 12px);\n        left: 50%;\n        transform: translate(-50%, 0px);\n        font-size: 14px;\n        font-weight: 400;\n        background: #FFFFFF;\n        border: 1px solid #ECEDF2;\n        box-shadow: 0px 4px 8px rgb(0 0 0 / 6%), 0px 0px 2px rgb(0 0 0 / 4%);\n        border-radius: 4px;\n        z-index: 2;\n        display: none;\n        width: max-content;\n        align-items: center;\n        padding: 8px 16px;\n        justify-content: center;\n      }\n\n      ct-inbox-message::part(snackbar-msg) {\n        color: black;\n        margin-left: 8px;\n      }\n\n      ct-inbox-message::part(timeStamp) {\n        display: flex; \n        justify-content: end; \n        align-items: center; \n        margin-top: 4px; \n        font-size: 12px !important; \n        line-height: 16px; \n        color: black;\n      }\n      ct-inbox-message::part(unreadMarker) {\n        height: 8px; \n        width: 8px; \n        border-radius: 50%; \n        background-color: ").concat(unreadMarkerColor, "; \n        margin-left: 8px;\n      }\n      @media only screen and (min-width: 420px) {\n        ct-inbox-message::part(mainImg) {\n          height: 180px;\n        }\n      }\n    </style>\n  ");
-  };
-  var inboxContainerStyles = function inboxContainerStyles(_ref2) {
-    var panelBackgroundColor = _ref2.panelBackgroundColor,
-        panelBorderColor = _ref2.panelBorderColor,
-        headerBackgroundColor = _ref2.headerBackgroundColor,
-        headerTitleColor = _ref2.headerTitleColor,
-        closeIconColor = _ref2.closeIconColor,
-        categoriesTabColor = _ref2.categoriesTabColor,
-        categoriesTitleColor = _ref2.categoriesTitleColor,
-        categoriesBorderColor = _ref2.categoriesBorderColor,
-        selectedCategoryTabColor = _ref2.selectedCategoryTabColor,
-        selectedCategoryTitleColor = _ref2.selectedCategoryTitleColor,
-        selectedCategoryBorderColor = _ref2.selectedCategoryBorderColor,
-        headerCategoryHeight = _ref2.headerCategoryHeight;
-    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n        }\n\n        @media only screen and (min-width: 480px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
+  var Inbox = function Inbox() {
+    _classCallCheck(this, Inbox);
   };
 
-  var Inbox = /*#__PURE__*/function () {
-    function Inbox(logger) {
-      var _this = this;
-
-      _classCallCheck(this, Inbox);
-
-      this.isInboxOpen = false;
-      this.isInboxFromFlutter = false;
-      this.selectedCategory = null;
-      this.unviewedMessages = {};
-      this.unviewedCounter = 0;
-      this.isPreview = false;
-      this.inboxConfigForPreview = {};
-      // dom references
-      this.inboxSelector = null;
-      this.inbox = null;
-      this.emptyInboxMsg = null;
-      this.inboxCard = null;
-      this.unviewedBadge = null;
-      this.observer = null;
-      this.selectedCategoryRef = null;
-
-      /**
-       * Adds a click listener on the document. For every click we check
-       * 1. if the click has happenned within the inbox
-       *    - on close button, we close the inbox
-       *    - on any of the category, we set that as the activeCategory
-       *    - on any of the message, we mark raise notification clicked event. To identify the clicks on a button, we have p.id.startsWith('button-')
-       * 2. if the user has clicked on the inboxSelector, we toggle inbox
-       * 3. if the click is anywhere else on the UI and the inbox is open, we simply close it
-       */
-      this.addClickListenerOnDocument = function () {
-        return function (e) {
-          if (e.composedPath().includes(_this.inbox)) {
-            // path is not supported on FF. So we fallback to e.composedPath
-            var path = e.path || e.composedPath && e.composedPath();
-
-            if (path.length) {
-              var id = path[0].id;
-
-              if (id === 'closeInbox') {
-                _this.toggleInbox();
-              } else if (id.startsWith('category-')) {
-                _this.prevCategoryRef = _this.selectedCategoryRef;
-                _this.selectedCategoryRef = path[0];
-
-                _this.updateActiveCategory(path[0].innerText);
-              } else {
-                var _path = path.filter(function (p) {
-                  var _p$id;
-
-                  return ((_p$id = p.id) === null || _p$id === void 0 ? void 0 : _p$id.startsWith('button-')) || p.tagName === 'CT-INBOX-MESSAGE';
-                });
-
-                if (_path.length) {
-                  var messageEl = _path[_path.length - 1];
-                  messageEl.raiseClickedEvent(_path[0], _this.isPreview);
-                }
-              }
-            }
-          } else if (_this.inboxSelector.contains(e.target) || _this.isInboxOpen) {
-            if (_this.isInboxFromFlutter) {
-              _this.isInboxFromFlutter = false;
-            } else {
-              _this.toggleInbox(e);
-            }
-          }
-        };
-      }();
-
-      /**
-       * Updates the UI with the number of unviewed messages
-       * If there are more than 9 unviewed messages, we show the count as 9+
-       */
-      this.setBadgeStyle = function (msgCount) {
-        if (_this.unviewedBadge !== null) {
-          _this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount;
-          _this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none';
-        }
-      };
-
-      this.logger = logger;
-      this.shadow = this.attachShadow({
-        mode: 'open'
-      });
-    }
-
-    _createClass(Inbox, [{
-      key: "connectedCallback",
-      value: function connectedCallback() {
-        this.init();
-      }
-    }, {
-      key: "init",
-      value: function init() {
-        this.config = this.isPreview ? this.inboxConfigForPreview : StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-
-        if (Object.keys(this.config).length === 0) {
-          return;
-        }
-
-        this.inboxSelector = document.getElementById(this.config.inboxSelector);
-
-        if (this.inboxSelector === null) {
-          return;
-        }
-
-        if (this.config.styles.notificationsBadge) {
-          this.addUnviewedBadge();
-        } else if (this.unviewedBadge) {
-          this.unviewedBadge.remove();
-        }
-
-        this.createinbox();
-        /**
-         * We need to remove the listener as there could be a scenario where init would be called when
-         * we get updated web inbox settings from LC after the inbox has been initialised.
-         * It can so happen that the inbox-selector would have changed.
-         */
-
-        document.removeEventListener('click', this.addClickListenerOnDocument);
-        document.addEventListener('click', this.addClickListenerOnDocument);
-        this.config.categories.length && this.updateActiveCategory(this.selectedCategoryRef.innerText);
-        this.shadow.innerHTML = this.getInboxStyles();
-        this.shadow.appendChild(this.inbox);
-      }
-    }, {
-      key: "addMsgsToInboxFromLS",
-      value: function addMsgsToInboxFromLS() {
-        var _this2 = this;
-
-        var messages = this.deleteExpiredAndGetUnexpiredMsgs(false);
-        var msgIds = messages ? Object.keys(messages) : [];
-
-        if (msgIds.length === 0) {
-          return;
-        }
-
-        msgIds.forEach(function (m) {
-          if (!messages[m].viewed) {
-            _this2.unviewedMessages[m] = messages[m];
-            _this2.unviewedCounter++;
-          }
-        });
-        this.buildUIForMessages(messages);
-        this.updateUnviewedBadgeCounter();
-      }
-      /**
-       * @param {*} deleteMsgsFromUI - If this param is true, then we'll have to check the UI and delete expired messages from the DOM
-       * It'll be false when you are building the inbox layout for the very first time.
-       *
-       * This method reads the inbox messages from LS,
-       * based on the deleteMsgsFromUI flag deletes the expired messages from UI and decrements the unviewed counter if the message was not viewed,
-       * sorts the messages based on the date,
-       * saves the unexpired messages to LS
-       * and returns the sorted unexpired messages
-       *
-       * Scenarios when we encounter expired messages -
-       * 1. building ui for the 1st time, no need to decrement the unviewed counter as the correct count will be set at the time of rendering
-       * 2. UI is already built (deleteMsgsFromUI = true) and you open the inbox
-       *    a. You'll find the expired msg in inbox
-       *    b. You'll not find the expired msg in inbox.
-       *       This happens when we receive new messages from LC, increment unviewed counter, save it in LS. (We build the UI only when the user opens inbox.)
-       *  In both the above scenarios, we'll still have to decrement the unviewed counter if the message was not viewed.
-       */
-
-    }, {
-      key: "deleteExpiredAndGetUnexpiredMsgs",
-      value: function deleteExpiredAndGetUnexpiredMsgs() {
-        var deleteMsgsFromUI = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
-        var messages = getInboxMessages();
-        var now = Math.floor(Date.now() / 1000);
-
-        for (var msg in messages) {
-          if (messages[msg].wzrk_ttl && messages[msg].wzrk_ttl > 0 && messages[msg].wzrk_ttl < now) {
-            if (deleteMsgsFromUI) {
-              var el = this.shadowRoot.getElementById(messages[msg].id);
-              el && el.remove();
-
-              if (!messages[msg].viewed) {
-                this.unviewedCounter--;
-                this.updateUnviewedBadgeCounter();
-              }
-            }
-
-            delete messages[msg];
-          }
-        }
-
-        if (messages && messages.length > 0) {
-          messages = Object.values(messages).sort(function (a, b) {
-            return b.date - a.date;
-          }).reduce(function (acc, m) {
-            acc[m.id] = m;
-            return acc;
-          }, {});
-        }
-
-        saveInboxMessages(messages);
-        return messages;
-      }
-    }, {
-      key: "updateInboxMessages",
-      value: function updateInboxMessages() {
-        var _this3 = this;
-
-        var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-        var inboxMsgs = this.deleteExpiredAndGetUnexpiredMsgs();
-        var date = Date.now();
-        var incomingMsgs = {};
-        msgs.forEach(function (m, i) {
-          var key = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
-          m.id = key; // We are doing this to preserve the order of the messages
-
-          m.date = date - i;
-          m.viewed = 0;
-          inboxMsgs[key] = m;
-          incomingMsgs[key] = m;
-          _this3.unviewedMessages[key] = m;
-          _this3.unviewedCounter++;
-        });
-        saveInboxMessages(inboxMsgs);
-        this.buildUIForMessages(incomingMsgs);
-        this.updateUnviewedBadgeCounter();
-      }
-    }, {
-      key: "createEl",
-      value: function createEl(type, id, part) {
-        var _el = document.createElement(type);
-
-        _el.setAttribute('id', id);
-
-        _el.setAttribute('part', part || id);
-
-        return _el;
-      }
-    }, {
-      key: "addUnviewedBadge",
-      value: function addUnviewedBadge() {
-        var _this4 = this;
-
-        if (!this.unviewedBadge) {
-          this.unviewedBadge = this.createEl('div', 'unviewedBadge'); // As this unviewedBadge element will be directly added to the DOM, we are defining inline styles
-
-          this.unviewedBadge.style.cssText = "display: none; position: absolute; height: 16px; width: 26px; border-radius: 8px; background-color: ".concat(this.config.styles.notificationsBadge.backgroundColor, "; font-size: 12px; color: ").concat(this.config.styles.notificationsBadge.textColor, "; font-weight: bold; align-items: center; justify-content: center;");
-          document.body.appendChild(this.unviewedBadge);
-        }
-
-        this.updateUnviewedBadgePosition(); // called when user switches b/w portrait and landscape mode.
-
-        window.addEventListener('resize', function () {
-          _this4.updateUnviewedBadgePosition();
-        });
-      }
-    }, {
-      key: "updateUnviewedBadgePosition",
-      value: function updateUnviewedBadgePosition() {
-        var _this$inboxSelector$g = this.inboxSelector.getBoundingClientRect(),
-            top = _this$inboxSelector$g.top,
-            right = _this$inboxSelector$g.right;
-
-        this.unviewedBadge.style.top = "".concat(top - 8, "px");
-        this.unviewedBadge.style.left = "".concat(right - 8, "px");
-      }
-    }, {
-      key: "createinbox",
-      value: function createinbox() {
-        var _this5 = this;
-
-        this.inbox = this.createEl('div', 'inbox');
-        var header = this.createEl('div', 'header');
-        var headerTitle = this.createEl('div', 'headerTitle');
-        headerTitle.innerText = this.config.title;
-        var closeIcon = this.createEl('div', 'closeInbox');
-        closeIcon.innerHTML = '&times';
-        header.appendChild(headerTitle);
-        header.appendChild(closeIcon);
-        this.inbox.appendChild(header);
-
-        if (this.config.categories.length) {
-          var categories = this.createCategories();
-          this.inbox.appendChild(categories);
-        }
-
-        this.inboxCard = this.createEl('div', 'inboxCard');
-        this.inbox.appendChild(this.inboxCard);
-        this.emptyInboxMsg = this.createEl('div', 'emptyInboxMsg');
-        this.emptyInboxMsg.innerText = 'All messages will be displayed here.';
-        this.inboxCard.appendChild(this.emptyInboxMsg); // Intersection observer for notification viewed
-
-        var options = {
-          root: this.inboxCard,
-          rootMargin: '0px',
-          threshold: 0.5
-        };
-        this.observer = new IntersectionObserver(function (entries, observer) {
-          _this5.handleMessageViewed(entries);
-        }, options);
-        this.addMsgsToInboxFromLS();
-      }
-    }, {
-      key: "createCategories",
-      value: function createCategories() {
-        var _this6 = this;
-
-        var categoriesContainer = this.createEl('div', 'categoriesContainer');
-        var leftArrow = this.createEl('div', 'leftArrow');
-        leftArrow.innerHTML = arrowSvg;
-        leftArrow.children[0].style = 'transform: rotate(180deg)';
-        leftArrow.addEventListener('click', function () {
-          _this6.shadowRoot.getElementById('categoriesWrapper').scrollBy(-70, 0);
-        });
-        categoriesContainer.appendChild(leftArrow);
-        var categoriesWrapper = this.createEl('div', 'categoriesWrapper');
-
-        var _categories = ['All'].concat(_toConsumableArray(this.config.categories));
-
-        _categories.forEach(function (c, i) {
-          var category = _this6.createEl('div', "category-".concat(i), 'category');
-
-          category.innerText = c;
-
-          if (i === 0) {
-            _this6.selectedCategoryRef = category;
-          }
-
-          categoriesWrapper.appendChild(category);
-        });
-
-        categoriesContainer.appendChild(categoriesWrapper);
-        var rightArrow = this.createEl('div', 'rightArrow');
-        rightArrow.innerHTML = arrowSvg;
-        rightArrow.addEventListener('click', function () {
-          _this6.shadowRoot.getElementById('categoriesWrapper').scrollBy(70, 0);
-        });
-        categoriesContainer.appendChild(rightArrow);
-        var options = {
-          root: categoriesContainer,
-          threshold: 0.9
-        };
-        var firstCategory = categoriesWrapper.children[0];
-        var lastCategory = categoriesWrapper.children[this.config.categories.length];
-        var firstCategoryObserver = new IntersectionObserver(function (e) {
-          _this6.categoryObserverCb(leftArrow, e[0].intersectionRatio >= 0.9);
-        }, options);
-        firstCategoryObserver.observe(firstCategory);
-        var lastCategoryObserver = new IntersectionObserver(function (e) {
-          _this6.categoryObserverCb(rightArrow, e[0].intersectionRatio >= 0.9);
-        }, options);
-        lastCategoryObserver.observe(lastCategory);
-        return categoriesContainer;
-      }
-    }, {
-      key: "categoryObserverCb",
-      value: function categoryObserverCb(el, hide) {
-        if (!el) {
-          return;
-        }
-
-        el.style.display = hide ? 'none' : 'flex';
-      }
-    }, {
-      key: "updateActiveCategory",
-      value: function updateActiveCategory(activeCategory) {
-        var _this7 = this;
-
-        this.selectedCategory = activeCategory;
-        this.inboxCard.scrollTop = 0;
-        var counter = 0;
-        this.prevCategoryRef && this.prevCategoryRef.setAttribute('selected', 'false');
-        this.selectedCategoryRef.setAttribute('selected', 'true');
-        this.inboxCard.childNodes.forEach(function (c) {
-          if (c.getAttribute('id') !== 'emptyInboxMsg') {
-            c.style.display = _this7.selectedCategory === 'All' || c.getAttribute('category') === _this7.selectedCategory ? 'block' : 'none';
-
-            if (c.style.display === 'block') {
-              counter++;
-            }
-          }
-        });
-
-        if (counter === 0) {
-          this.emptyInboxMsg.innerText = "".concat(activeCategory, " messages will be displayed here.");
-          this.emptyInboxMsg.style.display = 'block';
-        } else {
-          this.emptyInboxMsg.style.display = 'none';
-        }
-      }
-    }, {
-      key: "buildUIForMessages",
-      value: function buildUIForMessages() {
-        var _this$config$maxMsgsI;
-
-        var messages = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-        !this.isPreview && this.updateTSForRenderedMsgs();
-        this.inboxCard.scrollTop = 0;
-        var maxMsgsInInbox = (_this$config$maxMsgsI = this.config.maxMsgsInInbox) !== null && _this$config$maxMsgsI !== void 0 ? _this$config$maxMsgsI : MAX_INBOX_MSG;
-        var firstChild = this.inboxCard.firstChild;
-        var sortedMsgs = Object.values(messages).sort(function (a, b) {
-          return b.date - a.date;
-        }).map(function (m) {
-          return m.id;
-        });
-
-        var _iterator = _createForOfIteratorHelper(sortedMsgs),
-            _step;
-
-        try {
-          for (_iterator.s(); !(_step = _iterator.n()).done;) {
-            var m = _step.value;
-            var item = new Message(this.config, messages[m]);
-            item.setAttribute('id', messages[m].id);
-            item.setAttribute('pivot', messages[m].wzrk_pivot);
-            item.setAttribute('part', 'ct-inbox-message');
-
-            if (this.config.categories.length > 0) {
-              item.setAttribute('category', messages[m].tags[0] || '');
-              item.style.display = this.selectedCategory === 'All' || messages[m].category === this.selectedCategory ? 'block' : 'none';
-            } else {
-              item.style.display = 'block';
-            }
-
-            this.inboxCard.insertBefore(item, firstChild);
-            this.observer.observe(item);
-          }
-        } catch (err) {
-          _iterator.e(err);
-        } finally {
-          _iterator.f();
-        }
-
-        var msgTotalCount = this.inboxCard.querySelectorAll('ct-inbox-message').length;
-
-        while (msgTotalCount > maxMsgsInInbox) {
-          var ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message');
-
-          if (ctInboxMsgs.length > 0) {
-            ctInboxMsgs[ctInboxMsgs.length - 1].remove();
-          }
-
-          msgTotalCount--;
-        }
-
-        var hasMessages = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]').length;
-        this.emptyInboxMsg.style.display = hasMessages ? 'none' : 'block';
-      }
-    }, {
-      key: "handleMessageViewed",
-
-      /**
-       * This function will be called every time when a message comes into the inbox viewport and it's visibility increases to 50% or drops below 50%
-       * If a msg is 50% visible in the UI, we need to mark the message as viewed in LS and raise notification viewed event
-       */
-      value: function handleMessageViewed(entries) {
-        var _this8 = this;
-
-        var raiseViewedEvent = !this.isPreview;
-
-        if (this.isInboxOpen) {
-          entries.forEach(function (e) {
-            if (e.isIntersecting && _this8.unviewedMessages.hasOwnProperty(e.target.id) && e.target.message.viewed === 0) {
-              e.target.message.viewed = 1;
-
-              if (raiseViewedEvent) {
-                window.clevertap.renderNotificationViewed({
-                  msgId: e.target.campaignId,
-                  pivotId: e.target.pivotId
-                });
-
-                _this8.updateMessageInLS(e.target.id, _objectSpread2(_objectSpread2({}, e.target.message), {}, {
-                  viewed: 1
-                }));
-
-                setTimeout(function () {
-                  e.target.shadowRoot.getElementById('unreadMarker').style.display = 'none';
-                }, 1000);
-              } else {
-                console.log('Notifiction viewed event will be raised at run time with payload ::', {
-                  msgId: e.target.campaignId,
-                  pivotId: e.target.pivotId
-                });
-              }
-
-              _this8.unviewedCounter--;
-
-              _this8.updateUnviewedBadgeCounter();
-
-              delete _this8.unviewedMessages[e.target.id];
-            }
-          });
-        }
-      }
-    }, {
-      key: "updateMessageInLS",
-      value: function updateMessageInLS(key, value) {
-        if (!this.isPreview) {
-          var messages = getInboxMessages();
-          messages[key] = value;
-          saveInboxMessages(messages);
-        }
-      } // create a separte fn fro refactoring
-
-    }, {
-      key: "toggleInbox",
-      value: function toggleInbox(e) {
-        this.isInboxOpen = !this.isInboxOpen;
-        this.isInboxFromFlutter = !!(e === null || e === void 0 ? void 0 : e.rect);
-
-        if (this.isInboxOpen) {
-          this.inboxCard.scrollTop = 0;
-          !this.isPreview && this.deleteExpiredAndGetUnexpiredMsgs();
-          this.inbox.style.display = 'block';
-          this.inbox.style.zIndex = '2147483647'; // zIndex should be max for the inbox to be rendered on top of all elements
-
-          if (this.config.categories.length) {
-            this.selectedCategoryRef.setAttribute('selected', 'false');
-            this.selectedCategoryRef = this.shadowRoot.getElementById('category-0');
-            this.updateActiveCategory(this.selectedCategoryRef.innerText);
-            this.shadowRoot.getElementById('categoriesWrapper').scrollLeft -= this.shadowRoot.getElementById('categoriesWrapper').scrollWidth;
-          }
-
-          this.setInboxPosition(e);
-        } else {
-          this.inbox.style.display = 'none';
-        }
-      }
-    }, {
-      key: "setInboxPosition",
-      value: function setInboxPosition(e) {
-        var windowWidth = window.outerWidth;
-        var customInboxStyles = getComputedStyle($ct.inbox);
-        var top = customInboxStyles.getPropertyValue('--inbox-top');
-        var bottom = customInboxStyles.getPropertyValue('--inbox-bottom');
-        var left = customInboxStyles.getPropertyValue('--inbox-left');
-        var right = customInboxStyles.getPropertyValue('--inbox-right');
-        var hasPositionDefined = top || bottom || left || right;
-
-        if (windowWidth > 481 && !hasPositionDefined) {
-          var res = getInboxPosition(e, this.inbox.clientHeight, this.inbox.clientWidth);
-          var xPos = res.xPos;
-          var yPos = res.yPos;
-          this.inbox.style.top = yPos + 'px';
-          this.inbox.style.left = xPos + 'px';
-        }
-      }
-    }, {
-      key: "updateUnviewedBadgeCounter",
-      value: function updateUnviewedBadgeCounter() {
-        if (this.isPreview) {
-          this.setBadgeStyle(this.unviewedCounter);
-          return;
-        }
-
-        var counter = 0;
-        this.inboxCard.querySelectorAll('ct-inbox-message').forEach(function (m) {
-          var messages = getInboxMessages();
-
-          if (messages[m.id] && messages[m.id].viewed === 0) {
-            counter++;
-          }
-        });
-        this.setBadgeStyle(counter);
-      }
-    }, {
-      key: "updateTSForRenderedMsgs",
-      value: function updateTSForRenderedMsgs() {
-        this.inboxCard.querySelectorAll('ct-inbox-message').forEach(function (m) {
-          var ts = m.id.split('_')[1];
-          m.shadow.getElementById('timeStamp').firstChild.innerText = determineTimeStampText(ts);
-        });
-      }
-    }, {
-      key: "getInboxStyles",
-      value: function getInboxStyles() {
-        var headerHeight = 36;
-        var categoriesHeight = this.config.categories.length ? 64 : 16;
-        var styles = {
-          panelBackgroundColor: this.config.styles.panelBackgroundColor,
-          panelBorderColor: this.config.styles.panelBorderColor,
-          headerBackgroundColor: this.config.styles.header.backgroundColor,
-          headerTitleColor: this.config.styles.header.titleColor,
-          closeIconColor: this.config.styles.closeIconColor,
-          categoriesTabColor: this.config.styles.categories.tabColor,
-          categoriesTitleColor: this.config.styles.categories.titleColor,
-          selectedCategoryTabColor: this.config.styles.categories.selectedTab.tabColor,
-          selectedCategoryTitleColor: this.config.styles.categories.selectedTab.titleColor,
-          headerCategoryHeight: headerHeight + categoriesHeight
-        };
-
-        if (this.config.styles.categories.borderColor) {
-          styles.categoriesBorderColor = this.config.styles.categories.borderColor;
-        }
-
-        if (this.config.styles.categories.selectedTab.borderColor) {
-          styles.selectedCategoryBorderColor = this.config.styles.categories.selectedTab.borderColor;
-        }
-
-        var inboxStyles = inboxContainerStyles(styles);
-        var cardStyles = this.config.styles.cards;
-        var msgStyles = messageStyles({
-          backgroundColor: cardStyles.backgroundColor,
-          borderColor: cardStyles.borderColor,
-          titleColor: cardStyles.titleColor,
-          descriptionColor: cardStyles.descriptionColor,
-          buttonColor: cardStyles.buttonColor,
-          buttonTextColor: cardStyles.buttonTextColor,
-          unreadMarkerColor: cardStyles.unreadMarkerColor
-        });
-        return inboxStyles + msgStyles;
-      }
-    }, {
-      key: "incomingMessages",
-      get: function get() {
-        return [];
-      },
-      set: function set() {
-        var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-
-        if (msgs.length > 0 && this.inbox) {
-          this.updateInboxMessages(msgs);
-        }
-      }
-    }, {
-      key: "incomingMessagesForPreview",
-      get: function get() {
-        return [];
-      },
-      set: function set() {
-        var _this9 = this;
-
-        var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-        var previewMsgs = {};
-
-        if (msgs.length > 0 && this.inbox) {
-          this.isPreview = true;
-          this.unviewedCounter = 0;
-          msgs.forEach(function (m) {
-            var key = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
-            m.id = key;
-            previewMsgs[key] = m;
-            _this9.unviewedMessages[key] = m;
-            _this9.unviewedCounter++;
-          });
-          this.buildUIForMessages(previewMsgs);
-          this.updateUnviewedBadgeCounter();
-        }
-      }
-    }]);
-
-    return Inbox;
-  }();
+  var Message = function Message() {
+    _classCallCheck(this, Message);
+  };
 
   var processWebInboxSettings = function processWebInboxSettings(webInboxSetting) {
     var isPreview = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
@@ -4572,133 +3701,9 @@ var clevertap = (function (browser) {
       }
     }
   };
-  var getInboxPosition = function getInboxPosition(e, inboxHeight, inboxWidth) {
-    var horizontalScroll = document.scrollingElement.scrollLeft;
-    var verticalScroll = document.scrollingElement.scrollTop;
-    var windowWidth = window.innerWidth + horizontalScroll;
-    var windowHeight = window.innerHeight + verticalScroll;
-    var selectorRect = e.rect || e.target.getBoundingClientRect();
-    var selectorX = selectorRect.x + horizontalScroll;
-    var selectorY = selectorRect.y + verticalScroll;
-    var selectorLeft = selectorRect.left + horizontalScroll;
-    var selectorRight = selectorRect.right + horizontalScroll;
-    var selectorTop = selectorRect.top + verticalScroll; // const selectorBottom = selectorRect.bottom + verticalScroll
-
-    var selectorBottom = selectorRect.bottom;
-    var selectorHeight = selectorRect.height;
-    var selectorWidth = selectorRect.width;
-    var selectorCenter = {
-      x: selectorX + selectorWidth / 2,
-      y: selectorY + selectorHeight / 2
-    };
-    var halfOfInboxHeight = inboxHeight / 2;
-    var halfOfInboxWidth = inboxWidth / 2;
-    var inboxOnSide = false;
-    var xPos, yPos;
-    var padding = 16;
-    /**
-     * y co-ordinates:
-     * Try to push the card downwards
-     * if that's not possible, push it upwards
-     * if that too is not possible, then the card will be placed on the side. Add some padding.
-     *
-     * x co-ordinates:
-     * If the card is on the side,
-     *    try to place it to the right. If it's not possible,
-     *    place it to the left
-     * If the card is either on top/ bottom, set the x co-ordinate such that the selector center and the inbox card center become the same
-     * Now,
-     *  if the left of the inbox card is < 0,
-     *    try to get the left aligned to the selectorLeft.
-     *    if that's not possible, simply set left to 0
-     *  if the right of the inbox card > windowWidth,
-     *    try to get the right of rhe inbox card aligned with the selectorRight
-     *    if that's not possible, simply set the inbox right to the window Right
-     */
-
-    if (selectorBottom + inboxHeight <= windowHeight) {
-      // try to place the card down
-      var availableHeight = windowHeight - (selectorBottom + inboxHeight);
-      yPos = availableHeight >= padding ? selectorBottom + padding : selectorBottom + availableHeight;
-    } else if (selectorTop - inboxHeight >= verticalScroll) {
-      // try to place the card up
-      var _availableHeight = selectorTop - inboxHeight;
-
-      yPos = _availableHeight >= padding ? selectorTop - inboxHeight - padding : selectorTop - inboxHeight - _availableHeight;
-    } else {
-      inboxOnSide = true;
-      yPos = selectorCenter.y - halfOfInboxHeight; // with this the y co-ordinate of the selector center and the inbox card center become the same
-
-      if (yPos < verticalScroll) {
-        yPos = verticalScroll;
-      } else if (yPos + inboxHeight > windowHeight) {
-        yPos = windowHeight - inboxHeight;
-      }
-    }
-
-    if (inboxOnSide) {
-      // See if we can place the card to the right of the selector
-      var inboxRight = selectorRight + inboxWidth;
-
-      if (inboxRight <= windowWidth) {
-        var availableWidth = inboxRight + padding <= windowWidth ? padding : windowWidth - inboxRight;
-        xPos = selectorRight + availableWidth;
-      } else {
-        var inboxLeft = selectorLeft - inboxWidth;
-
-        var _availableWidth = inboxLeft - padding >= horizontalScroll ? padding : inboxLeft - horizontalScroll;
-
-        xPos = inboxLeft - _availableWidth;
-      }
-    } else {
-      xPos = selectorCenter.x - halfOfInboxWidth;
-
-      if (xPos < horizontalScroll) {
-        if (selectorLeft + inboxWidth <= windowWidth) {
-          xPos = selectorLeft;
-        } else {
-          xPos = horizontalScroll;
-        }
-      } else if (xPos + inboxWidth > windowWidth) {
-        if (selectorRight - inboxWidth >= horizontalScroll) {
-          xPos = selectorRight - inboxWidth;
-        } else {
-          xPos = windowWidth - inboxWidth;
-        }
-      }
-    }
-
-    return {
-      xPos: xPos,
-      yPos: yPos
-    };
-  };
-  var determineTimeStampText = function determineTimeStampText(ts) {
-    var now = Date.now();
-    var diff = Math.floor((now - ts) / 60000);
-
-    if (diff < 5) {
-      return 'Just now';
-    }
-
-    if (diff < 60) {
-      return "".concat(diff, " minute").concat(diff > 1 ? 's' : '', " ago");
-    }
-
-    diff = Math.floor(diff / 60);
-
-    if (diff < 24) {
-      return "".concat(diff, " hour").concat(diff > 1 ? 's' : '', " ago");
-    }
-
-    diff = Math.floor(diff / 24);
-    return "".concat(diff, " day").concat(diff > 1 ? 's' : '', " ago");
-  };
   var hasWebInboxSettingsInLS = function hasWebInboxSettingsInLS() {
     return Object.keys(StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}).length > 0;
   };
-  var arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
-  var greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
   var _tr = function _tr(msg, _ref) {
     var device = _ref.device,
@@ -5898,7 +4903,8 @@ var clevertap = (function (browser) {
   var SessionManager = /*#__PURE__*/function () {
     function SessionManager(_ref) {
       var logger = _ref.logger,
-          isPersonalisationActive = _ref.isPersonalisationActive;
+          isPersonalisationActive = _ref.isPersonalisationActive,
+          mode = _ref.mode;
 
       _classCallCheck(this, SessionManager);
 
@@ -5917,15 +4923,24 @@ var clevertap = (function (browser) {
       this.cookieName = void 0;
       // SCOOKIE_NAME
       this.scookieObj = void 0;
+      this.mode = void 0;
       this.sessionId = StorageManager.getMetaProp('cs');
       _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3] = isPersonalisationActive;
+      this.mode = mode;
     }
 
     _createClass(SessionManager, [{
       key: "getSessionCookieObject",
       value: function getSessionCookieObject() {
-        var scookieStr = StorageManager.readCookie(this.cookieName);
+        var scookieStr;
+
+        if (this.mode === 'WEB') {
+          scookieStr = StorageManager.readCookie(this.cookieName);
+        } else {
+          scookieStr = StorageManager.readCookieAsync(this.cookieName);
+        }
+
         var obj = {};
 
         if (scookieStr != null) {
@@ -5958,7 +4973,10 @@ var clevertap = (function (browser) {
       key: "setSessionCookieObject",
       value: function setSessionCookieObject(obj) {
         var objStr = JSON.stringify(obj);
-        StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
+
+        if (this.mode === 'WEB') {
+          StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
+        }
       }
     }, {
       key: "manageSession",
@@ -6153,7 +5171,7 @@ var clevertap = (function (browser) {
 
         dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
 
-        if (sessionStorage.hasOwnProperty('WZRK_D')) {
+        if (_classPrivateFieldLooseBase(this, _account$2)[_account$2].mode === 'WEB' && sessionStorage.hasOwnProperty('WZRK_D')) {
           dataObject.debug = true;
         }
 
@@ -7157,13 +6175,20 @@ var clevertap = (function (browser) {
 
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account$5)[_account$5] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]));
+
+      if (clevertap.mode === 'SHOPIFY') {
+        _classPrivateFieldLooseBase(this, _account$5)[_account$5].mode = clevertap.mode;
+        StorageManager.setSaveMode('async');
+      }
+
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        isPersonalisationActive: this._isPersonalisationActive
+        isPersonalisationActive: this._isPersonalisationActive,
+        mode: _classPrivateFieldLooseBase(this, _account$5)[_account$5].mode
       });
       _classPrivateFieldLooseBase(this, _request$6)[_request$6] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
@@ -7205,7 +6230,8 @@ var clevertap = (function (browser) {
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         request: _classPrivateFieldLooseBase(this, _request$6)[_request$6],
         device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
-        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
+        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
+        mode: _classPrivateFieldLooseBase(this, _account$5)[_account$5].mode
       });
       this.spa = clevertap.spa;
       this.dismissSpamControl = clevertap.dismissSpamControl;
@@ -7732,7 +6758,9 @@ var clevertap = (function (browser) {
           return;
         }
 
-        StorageManager.removeCookie('WZRK_P', window.location.hostname);
+        if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === 'WEB') {
+          StorageManager.removeCookie('WZRK_P', getHostName(_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode));
+        }
 
         if (!_classPrivateFieldLooseBase(this, _account$5)[_account$5].id) {
           if (!accountId) {
@@ -7745,10 +6773,6 @@ var clevertap = (function (browser) {
         }
 
         _classPrivateFieldLooseBase(this, _session$3)[_session$3].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$5)[_account$5].id;
-
-        if (!isWindowDefined() && (typeof browser === "undefined" ? "undefined" : _typeof(browser)) === 'object') {
-          _classPrivateFieldLooseBase(this, _account$5)[_account$5].mode = 'shopify';
-        }
 
         if (region) {
           _classPrivateFieldLooseBase(this, _account$5)[_account$5].region = region;
@@ -7773,7 +6797,10 @@ var clevertap = (function (browser) {
 
         _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
-        this.pageChanged();
+        if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === 'WEB') {
+          this.pageChanged();
+        }
+
         var backupInterval = setInterval(function () {
           if (_classPrivateFieldLooseBase(_this2, _device$3)[_device$3].gcookie) {
             clearInterval(backupInterval);
@@ -7786,8 +6813,10 @@ var clevertap = (function (browser) {
           // listen to click on the document and check if URL has changed.
           document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
         } else {
-          // remove existing click listeners if any
-          document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+          if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === 'WEB') {
+            // remove existing click listeners if any
+            document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+          }
         }
 
         _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 1;
@@ -7806,7 +6835,7 @@ var clevertap = (function (browser) {
       value: function pageChanged() {
         var _this3 = this;
 
-        var currLocation = window.location.href;
+        var currLocation = getHostName(_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode);
         var urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
 
         var obj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
@@ -7818,9 +6847,13 @@ var clevertap = (function (browser) {
 
 
         var data = {};
-        var referrerDomain = getDomain(document.referrer);
+        var referrerDomain = '';
 
-        if (window.location.hostname !== referrerDomain) {
+        if (_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode === 'WEB') {
+          referrerDomain = getDomain(document.referrer);
+        }
+
+        if (getHostName(_classPrivateFieldLooseBase(this, _account$5)[_account$5].mode) !== referrerDomain) {
           var maxLen = 120;
 
           if (referrerDomain !== '') {
@@ -8023,7 +7056,9 @@ var clevertap = (function (browser) {
     }
   }
 
-  var clevertap = new CleverTap({});
+  var clevertap = new CleverTap({
+    mode: 'SHOPIFY'
+  });
 
   return clevertap;
 

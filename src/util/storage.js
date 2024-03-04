@@ -7,13 +7,10 @@ import {
 } from './constants'
 
 export class StorageManager {
-  saveMode = 'sync';
-  static set saveMode (mode) {
-    this.saveMode = mode
-  }
+  static saveMode = 'sync';
 
-  static get saveMode () {
-    return this.saveMode
+  static setSaveMode (mode) {
+    this.saveMode = mode
   }
 
   static #saveAsync (key, value) {
@@ -124,6 +121,27 @@ export class StorageManager {
     document.cookie = name + '=' + value + expires + domainStr + '; path=/'
   }
 
+  static createCookieAsync (name, value, seconds, domain) {
+    let expires = ''
+    let domainStr = ''
+    if (seconds) {
+      const date = new Date()
+      date.setTime(date.getTime() + (seconds * 1000))
+
+      expires = '; expires=' + date.toGMTString()
+    }
+
+    if (domain) {
+      domainStr = '; domain=' + domain
+    }
+
+    value = encodeURIComponent(value)
+
+    const cookieValue = name + '=' + value + expires + domainStr + '; path=/'
+    // eslint-disable-next-line
+    browser.cookie.set(cookieValue)
+  }
+
   static readCookie (name) {
     const nameEQ = name + '='
     const ca = document.cookie.split(';')
@@ -140,18 +158,27 @@ export class StorageManager {
     return null
   }
 
+  static readCookieAsync (name) {
+    let cookie = null
+    // eslint-disable-next-line
+    browser.cookie.get(name).then(value => {
+      cookie = decodeURIComponent(value)
+    })
+    return cookie
+  }
+
   static _isLocalStorageSupported () {
-    if (isWindowDefined()) return true
+    if (!isWindowDefined()) return true
     return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function'
   }
 
-  static async saveToLSorCookie (property, value) {
+  static saveToLSorCookie (property, value) {
     if (value == null) {
       return
     }
     try {
       if (this._isLocalStorageSupported()) {
-        if (this.saveMode === 'sync') {
+        if (this.storageSaveMode === 'sync') {
           this.save(property, encodeURIComponent(JSON.stringify(value)))
         } else {
           this.#saveAsync(property, encodeURIComponent(JSON.stringify(value)))
@@ -173,9 +200,17 @@ export class StorageManager {
       return $ct.globalCache[property]
     }
     if (this._isLocalStorageSupported()) {
-      data = this.read(property)
+      if (this.saveMode === 'sync') {
+        data = this.read(property)
+      } else {
+        data = this.readAsync(property)
+      }
     } else {
-      data = this.readCookie(property)
+      if (this.saveMode === 'sync') {
+        data = this.readCookie(property)
+      } else {
+        data = this.readCookieAsync(property)
+      }
     }
 
     if (data !== null && data !== undefined && !(typeof data.trim === 'function' && data.trim() === '')) {

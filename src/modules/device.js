@@ -17,7 +17,12 @@ export default class DeviceManager {
       return this.gcookie
     }
     if (StorageManager._isLocalStorageSupported()) {
-      const value = StorageManager.read(GCOOKIE_NAME)
+      let value
+      if (StorageManager.saveMode === 'sync') {
+        value = StorageManager.read(GCOOKIE_NAME)
+      } else {
+        value = StorageManager.readAsync(GCOOKIE_NAME)
+      }
       if (isValueValid(value)) {
         try {
           guid = JSON.parse(decodeURIComponent(value))
@@ -43,7 +48,11 @@ export default class DeviceManager {
     }
 
     if (!isValueValid(guid)) {
-      guid = StorageManager.readCookie(GCOOKIE_NAME)
+      if (StorageManager.saveMode === 'sync') {
+        guid = StorageManager.readCookie(GCOOKIE_NAME)
+      } else {
+        guid = StorageManager.readCookieAsync(GCOOKIE_NAME)
+      }
       if (isValueValid(guid) && (guid.indexOf('%') === 0 || guid.indexOf('\'') === 0 || guid.indexOf('"') === 0)) {
         guid = null
       }

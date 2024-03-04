@@ -85,11 +85,16 @@ export default class CleverTap {
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2])
+    if (clevertap.mode === 'SHOPIFY') {
+      this.#account.mode = clevertap.mode
+      StorageManager.setSaveMode('async')
+    }
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.#session = new SessionManager({
       logger: this.#logger,
-      isPersonalisationActive: this._isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive,
+      mode: this.#account.mode
     })
     this.#request = new ReqestManager({
       logger: this.#logger,
@@ -576,13 +581,10 @@ export default class CleverTap {
       // already initailsed
       return
     }
-
-    if (!isWindowDefined() && typeof browser === 'object') {
-      this.#account.mode = 'SHOPIFY'
-      StorageManager.saveMode('async')
+    if (this.#account.mode === 'WEB') {
+      StorageManager.removeCookie('WZRK_P', getHostName(this.#account.mode))
     }
 
-    StorageManager.removeCookie('WZRK_P', getHostName(this.#account.mode))
     if (!this.#account.id) {
       if (!accountId) {
         this.#logger.error(EMBED_ERROR)
@@ -599,7 +601,13 @@ export default class CleverTap {
       this.#account.targetDomain = targetDomain
     }
 
-    const currLocation = location.href
+    let currLocation
+    if (this.#account.mode === 'WEB') {
+      currLocation = location.href
+    } else {
+      // eslint-disable-next-line
+      currLocation = browser.location.href
+    }
     const urlParams = getURLParams(currLocation.toLowerCase())
 
     // eslint-disable-next-line eqeqeq
@@ -613,7 +621,10 @@ export default class CleverTap {
     }
 
     this.#processOldValues()
-    this.pageChanged()
+    if (this.#account.mode === 'WEB') {
+      this.pageChanged()
+    }
+
     const backupInterval = setInterval(() => {
       if (this.#device.gcookie) {
         clearInterval(backupInterval)
@@ -624,8 +635,10 @@ export default class CleverTap {
       // listen to click on the document and check if URL has changed.
       document.addEventListener('click', this.#boundCheckPageChanged)
     } else {
-      // remove existing click listeners if any
-      document.removeEventListener('click', this.#boundCheckPageChanged)
+      if (this.#account.mode === 'WEB') {
+        // remove existing click listeners if any
+        document.removeEventListener('click', this.#boundCheckPageChanged)
+      }
     }
     this.#onloadcalled = 1
   }
@@ -658,7 +671,7 @@ export default class CleverTap {
   }
 
   pageChanged () {
-    const currLocation = window.location.href
+    const currLocation = getHostName(this.#account.mode)
     const urlParams = getURLParams(currLocation.toLowerCase())
     // -- update page count
     const obj = this.#session.getSessionCookieObject()
@@ -668,7 +681,10 @@ export default class CleverTap {
     // -- update page count
 
     let data = {}
-    let referrerDomain = getDomain(document.referrer)
+    let referrerDomain = ''
+    if (this.#account.mode === 'WEB') {
+      referrerDomain = getDomain(document.referrer)
+    }
 
     if (getHostName(this.#account.mode) !== referrerDomain) {
       const maxLen = 120

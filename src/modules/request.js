@@ -5,7 +5,7 @@ import { compressData } from '../util/encoder'
 import RequestDispatcher from '../util/requestDispatcher'
 import { StorageManager, $ct } from '../util/storage'
 import { addToURL } from '../util/url'
-import { getCampaignObjForLc } from '../util/clevertap'
+import { getCampaignObjForLc, isWindowDefined } from '../util/clevertap'
 
 let seqNo = 0
 let requestTime = 0
@@ -28,6 +28,7 @@ export default class RequestManager {
 
     RequestDispatcher.logger = logger
     RequestDispatcher.device = device
+    RequestDispatcher.mode = this.#account.mode
   }
 
   processBackupEvents () {
@@ -72,7 +73,7 @@ export default class RequestManager {
     const obj = this.#session.getSessionCookieObject()
     dataObject.s = obj.s // session cookie
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
-    if (sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
+    if (this.#account.mode === 'WEB' && sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
 
     return dataObject
   }
@@ -148,7 +149,9 @@ export default class RequestManager {
         requestTime = now
         seqNo = 0
       }
-      window.oulReqN = $ct.globalCache.REQ_N
+      if (isWindowDefined()) {
+        window.oulReqN = $ct.globalCache.REQ_N
+      }
       RequestDispatcher.fireRequest(data, false, sendOULFlag)
     } else {
       this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)
@@ -199,7 +202,9 @@ export default class RequestManager {
     this.#addToLocalEventMap(data.evtName)
     data = this.addSystemDataToObject(data, undefined)
     this.addFlags(data)
-    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    if (this.#account.mode === 'WEB') {
+      data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    }
     const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
