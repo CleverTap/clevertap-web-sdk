@@ -66,11 +66,18 @@ class VariableStore {
       type: 'varsPayload',
       vars: {}
     }
+
     for (const name in this.#variables) {
       payload.vars[name] = {
         defaultValue: this.#variables[name].defaultValue,
         type: this.#variables[name].type
       }
+    }
+
+    // Check if payload.vars is empty
+    if (Object.keys(payload.vars).length === 0) {
+      this.#logger.error('No variables are defined.')
+      return
     }
 
     let meta = {}
@@ -103,12 +110,12 @@ class VariableStore {
 
   /**
    * Fetches variables from the server.
-   * @param {Function} onFetchComplete - Callback function on fetch completion.
+   * @param {Function} onFetchCallback - Callback function on fetch completion.
    */
-  async fetchVariables (onFetchComplete) {
+  async fetchVariables (onFetchCallback) {
     this.#event.push(WZRK_FETCH, { t: 4 })
-    if (onFetchComplete && typeof onFetchComplete === 'function') {
-      this.#fetchCallback = onFetchComplete
+    if (onFetchCallback && typeof onFetchCallback === 'function') {
+      this.#fetchCallback = onFetchCallback
     }
   }
 

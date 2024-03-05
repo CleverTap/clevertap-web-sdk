@@ -839,8 +839,8 @@ export default class CleverTap {
     }
   }
 
-  async fetchVariables (onFetchSuccess) {
-    return this.#variableStore.fetchVariables(onFetchSuccess)
+  async fetchVariables (onFetchCallback) {
+    return this.#variableStore.fetchVariables(onFetchCallback)
   }
 
   addVariablesChangedCallback (callback) {

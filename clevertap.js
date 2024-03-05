@@ -8528,19 +8528,30 @@
                       defaultValue: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue,
                       type: _classPrivateFieldLooseBase(this, _variables)[_variables][name].type
                     };
+                  } // Check if payload.vars is empty
+
+
+                  if (!(Object.keys(payload.vars).length === 0)) {
+                    _context.next = 7;
+                    break;
                   }
 
+                  _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error('No variables are defined.');
+
+                  return _context.abrupt("return");
+
+                case 7:
                   meta = {};
                   meta = _classPrivateFieldLooseBase(this, _request$1)[_request$1].addSystemDataToObject(meta, undefined);
                   meta.tk = _classPrivateFieldLooseBase(this, _account$1)[_account$1].token;
                   meta.type = 'meta';
                   body = JSON.stringify([meta, payload]);
                   url = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostPEURL;
-                  _context.prev = 10;
-                  _context.next = 13;
+                  _context.prev = 13;
+                  _context.next = 16;
                   return _classPrivateFieldLooseBase(this, _request$1)[_request$1].post(url, body);
 
-                case 13:
+                case 16:
                   r = _context.sent;
 
                   if (onSyncSuccess && typeof onSyncSuccess === 'function') {
@@ -8549,9 +8560,9 @@
 
                   return _context.abrupt("return", r);
 
-                case 18:
-                  _context.prev = 18;
-                  _context.t0 = _context["catch"](10);
+                case 21:
+                  _context.prev = 21;
+                  _context.t0 = _context["catch"](13);
 
                   if (onSyncFailure && typeof onSyncFailure === 'function') {
                     onSyncFailure(_context.t0);
@@ -8565,12 +8576,12 @@
                     _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error('Sync variable failed');
                   }
 
-                case 22:
+                case 25:
                 case "end":
                   return _context.stop();
               }
             }
-          }, _callee, this, [[10, 18]]);
+          }, _callee, this, [[13, 21]]);
         }));
 
         function syncVariables(_x, _x2) {
@@ -8581,13 +8592,13 @@
       }()
       /**
        * Fetches variables from the server.
-       * @param {Function} onFetchComplete - Callback function on fetch completion.
+       * @param {Function} onFetchCallback - Callback function on fetch completion.
        */
 
     }, {
       key: "fetchVariables",
       value: function () {
-        var _fetchVariables = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(onFetchComplete) {
+        var _fetchVariables = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(onFetchCallback) {
           return regeneratorRuntime.wrap(function _callee2$(_context2) {
             while (1) {
               switch (_context2.prev = _context2.next) {
@@ -8596,8 +8607,8 @@
                     t: 4
                   });
 
-                  if (onFetchComplete && typeof onFetchComplete === 'function') {
-                    _classPrivateFieldLooseBase(this, _fetchCallback)[_fetchCallback] = onFetchComplete;
+                  if (onFetchCallback && typeof onFetchCallback === 'function') {
+                    _classPrivateFieldLooseBase(this, _fetchCallback)[_fetchCallback] = onFetchCallback;
                   }
 
                 case 2:
@@ -9717,12 +9728,12 @@
     }, {
       key: "fetchVariables",
       value: function () {
-        var _fetchVariables = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(onFetchSuccess) {
+        var _fetchVariables = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(onFetchCallback) {
           return regeneratorRuntime.wrap(function _callee2$(_context2) {
             while (1) {
               switch (_context2.prev = _context2.next) {
                 case 0:
-                  return _context2.abrupt("return", _classPrivateFieldLooseBase(this, _variableStore)[_variableStore].fetchVariables(onFetchSuccess));
+                  return _context2.abrupt("return", _classPrivateFieldLooseBase(this, _variableStore)[_variableStore].fetchVariables(onFetchCallback));
 
                 case 1:
                 case "end":
