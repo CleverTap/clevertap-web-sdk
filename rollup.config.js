@@ -6,9 +6,35 @@ import { terser } from 'rollup-plugin-terser'
 import { version } from './package.json'
 import sourcemaps from 'rollup-plugin-sourcemaps'
 
-export default {
-  input: 'src/main.js',
-  output: [
+/**
+ * Returns the input file path
+ * @param {('SERVICE_WORKER' | 'WEB')} mode
+ */
+const getInput = (mode) => {
+  if (mode === 'SERVICE_WORKER') {
+    return 'sw_webpush.js'
+  }
+
+  return 'src/main.js'
+}
+
+/**
+ * returns the output object of the build config
+ * @param {('SERVICE_WORKER' | 'WEB')} mode
+ */
+const getOutput = (mode) => {
+  if (mode === 'SERVICE_WORKER') {
+    return [
+      {
+        name: 'sw_webpush',
+        file: 'sw_webpush.min.js',
+        format: 'umd',
+        plugins: [terser()]
+      }
+    ]
+  }
+
+  return [
     {
       name: 'clevertap',
       file: 'clevertap.js',
@@ -21,8 +47,14 @@ export default {
       format: 'umd',
       plugins: [terser()]
     }
-  ],
-  plugins: [
+  ]
+}
+
+/**
+ * returns the plugins array
+ */
+const getPlugins = () => {
+  return [
     resolve(),
     sourcemaps(),
     eslint({
@@ -39,3 +71,15 @@ export default {
     })
   ]
 }
+
+const config = () => {
+  const mode = process.env.MODE
+
+  return {
+    input: getInput(mode),
+    output: getOutput(mode),
+    plugins: getPlugins()
+  }
+}
+
+export default config()
