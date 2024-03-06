@@ -499,7 +499,6 @@ const _tr = (msg, {
       const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>'
       html = css + title + body
     }
-    // made height : 100% which will help in adjustIframe height
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; height:100%; border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
 
@@ -512,59 +511,35 @@ const _tr = (msg, {
     }
     iframe.srcdoc = html
 
-    const ua = navigator.userAgent.toLowerCase()
-    if (ua.indexOf('safari') !== -1) {
-      if (ua.indexOf('chrome') > -1) {
-        iframe.onload = () => {
-          if (displayObj['custom-editor']) {
-            iframe.contentWindow.postMessage({
-              action: 'adjustIFrameHeight'
-            }, '*')
-            window.addEventListener('message', event => {
-              if (event.data.action === 'update height') {
-                const heightAdjust = document.getElementById(divId)
-                heightAdjust.style.margin = '0px'
-                heightAdjust.style.height = event.data.value + 'px'
-              }
-            })
+    // const ua = navigator.userAgent.toLowerCase()
+    let contentDiv
+
+    const handleIframeLoad = () => {
+      if (displayObj['custom-editor']) {
+        iframe.contentWindow.postMessage({ action: 'adjustIFrameHeight' }, '*')
+        window.addEventListener('message', (event) => {
+          if (event?.data?.action === 'update height') {
+            const heightAdjust = document.getElementById(divId)
+            heightAdjust.style.margin = '0px'
+            heightAdjust.style.height = `${event.data.value}px`
           }
-          setupClickUrl(onClick, targetingMsgJson, '', divId, legacy)
-        }
+        })
+        contentDiv = ''
       } else {
-        iframe.onload = () => {
-          if (displayObj['custom-editor']) {
-            iframe.contentWindow.postMessage({
-              action: 'adjustIFrameHeight'
-            }, '*')
-            window.addEventListener('message', event => {
-              if (event?.data?.action === 'update height') {
-                const heightAdjust = document.getElementById(divId)
-                heightAdjust.style.margin = '0px'
-                heightAdjust.style.height = event.data.value + 'px'
-              }
-            })
-          }
-          setupClickUrl(onClick, targetingMsgJson, '', divId, legacy)
-        }
-      }
-    } else {
-      iframe.onload = () => {
         // adjust iframe and body height of html inside correctly
-        if (displayObj['custom-editor']) {
-          iframe.contentWindow.postMessage({
-            action: 'adjustIFrameHeight'
-          }, '*')
-          window.addEventListener('message', event => {
-            if (event.data.action === 'update height') {
-              const heightAdjust = document.getElementById(divId)
-              heightAdjust.style.margin = '0px'
-              heightAdjust.style.height = event.data.value + 'px'
-            }
-          })
+        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
+        if (displayObj['custom-editor'] !== true && !isBanner) {
+          contentHeight += 25
         }
-        setupClickUrl(onClick, targetingMsgJson, '', divId, legacy)
+        document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
+        document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
+
+        contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
       }
+      setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
     }
+
+    iframe.onload = handleIframeLoad
   }
 
   const appendScriptForCustomEvent = (targetingMsgJson, html) => {
@@ -575,14 +550,11 @@ const _tr = (msg, {
       }
       window.addEventListener('message', event => {
         let contentHeight
-        if(event?.data?.action == 'adjustIFrameHeight'){ // check if adjustIFrameHeight function is called from parent window
+        if(event?.data?.action == 'adjustIFrameHeight'){ 
           contentDiv = document.getElementById('contentDiv')
           let contentHeight = contentDiv.scrollHeight
           contentDiv.style.height = '100%'
-          // if (displayObj['custom-editor'] !== true && !isBanner) { //It will always be custom-editor.
-          //           contentHeight += 25
-          //         } 
-          event.source.postMessage({ // sending message back to parent
+          event.source.postMessage({
             action: 'update height',
             value: contentHeight
           }, event.origin)
@@ -604,7 +576,6 @@ const _tr = (msg, {
             if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }
             if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }
             const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '${targetingMsgJson.wzrk_pivot}' };
-            //sending message to parent window to renderNotificationClicked.
             window.parent.postMessage({
               action: 'getnotifData',
               value: notifData
