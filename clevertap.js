@@ -7365,6 +7365,14 @@
   }
 
   var initialiseCTBuilder = function initialiseCTBuilder() {
+    import('https://kkyusuftk-clevertap.s3.amazonaws.com/sampleIndex.js').then(function (module) {
+      var isEven = module.isEven;
+      console.log(isEven(4)); // Output: true
+
+      console.log(isEven(5));
+    }).catch(function (error) {
+      console.error('Error fetching data:', error);
+    });
     var regex = /^(.*\.dashboard\.clevertap\.com.*)|localhost/;
 
     function normalizeURL(url) {
@@ -7378,7 +7386,7 @@
         console.log('personalisation data', eventProps, profileProps);
       }
     }, false);
-    winRef.postMessage('Builder Initialised', document.referrer);
+    winRef.postMessage('Builder Initialised', document.referrer || '*');
     document.addEventListener('DOMContentLoaded', onContentLoad);
   };
 

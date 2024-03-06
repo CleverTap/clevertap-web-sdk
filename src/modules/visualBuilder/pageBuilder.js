@@ -35,6 +35,15 @@ function rgbToHex (r, g, b) {
 }
 
 export const initialiseCTBuilder = () => {
+  import('https://kkyusuftk-clevertap.s3.amazonaws.com/sampleIndex.js')
+    .then(module => {
+      const { isEven } = module
+      console.log(isEven(4)) // Output: true
+      console.log(isEven(5))
+    })
+    .catch(error => {
+      console.error('Error fetching data:', error)
+    })
   var regex = /^(.*\.dashboard\.clevertap\.com.*)|localhost/
   function normalizeURL (url) {
     return url.replace(/\/+$/, '')
@@ -46,7 +55,7 @@ export const initialiseCTBuilder = () => {
       console.log('personalisation data', eventProps, profileProps)
     }
   }, false)
-  winRef.postMessage('Builder Initialised', document.referrer)
+  winRef.postMessage('Builder Initialised', document.referrer || '*')
   document.addEventListener('DOMContentLoaded', onContentLoad)
 }
 
