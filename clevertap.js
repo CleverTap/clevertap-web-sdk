@@ -5545,7 +5545,10 @@
               var heightAdjust = document.getElementById(divId);
               heightAdjust.style.margin = '0px';
               heightAdjust.style.height = "".concat(event.data.value, "px");
-            }
+            } // if (event?.data?.action === 'getnotifData') {
+            //   window.clevertap.renderNotificationClicked(event.data.value)
+            // }
+
           });
           contentDiv = '';
         } else {
@@ -5822,19 +5825,31 @@
 
       if (targetingMsgJson.display['custom-editor']) {
         html = appendScriptForCustomEvent(targetingMsgJson, html);
+        iframe.srcdoc = html;
+      } else {
+        var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
+        var doc = ifrm.document;
+        doc.open();
+        doc.write(html);
+        doc.close();
       }
 
-      iframe.srcdoc = html;
+      var contentDiv;
 
       iframe.onload = function () {
-        window.addEventListener('message', function (event) {
-          var _event$data2;
+        if (targetingMsgJson.display['custom-editor']) {
+          window.addEventListener('message', function (event) {
+            var _event$data2;
 
-          if ((event === null || event === void 0 ? void 0 : (_event$data2 = event.data) === null || _event$data2 === void 0 ? void 0 : _event$data2.action) === 'getnotifData') {
-            window.clevertap.renderNotificationClicked(event.data.value);
-          }
-        });
-        var contentDiv = '';
+            if ((event === null || event === void 0 ? void 0 : (_event$data2 = event.data) === null || _event$data2 === void 0 ? void 0 : _event$data2.action) === 'getnotifData') {
+              window.clevertap.renderNotificationClicked(event.data.value);
+            }
+          });
+          contentDiv = '';
+        } else {
+          contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
+        }
+
         setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
     };

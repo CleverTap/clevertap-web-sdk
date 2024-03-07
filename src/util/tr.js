@@ -523,6 +523,9 @@ const _tr = (msg, {
             heightAdjust.style.margin = '0px'
             heightAdjust.style.height = `${event.data.value}px`
           }
+          if (event?.data?.action === 'getnotifData') {
+            window.clevertap.renderNotificationClicked(event.data.value)
+          }
         })
         contentDiv = ''
       } else {
@@ -827,16 +830,26 @@ const _tr = (msg, {
 
     if (targetingMsgJson.display['custom-editor']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
+      iframe.srcdoc = html
+    } else {
+      const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
+      const doc = ifrm.document
+      doc.open()
+      doc.write(html)
+      doc.close()
     }
-    iframe.srcdoc = html
-
+    let contentDiv
     iframe.onload = () => {
-      window.addEventListener('message', event => {
-        if (event?.data?.action === 'getnotifData') {
-          window.clevertap.renderNotificationClicked(event.data.value)
-        }
-      })
-      const contentDiv = ''
+      if (targetingMsgJson.display['custom-editor']) {
+        window.addEventListener('message', event => {
+          if (event?.data?.action === 'getnotifData') {
+            window.clevertap.renderNotificationClicked(event.data.value)
+          }
+        })
+        contentDiv = ''
+      } else {
+        contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
+      }
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
     }
   }
