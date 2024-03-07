@@ -5539,16 +5539,17 @@
             action: 'adjustIFrameHeight'
           }, '*');
           window.addEventListener('message', function (event) {
-            var _event$data;
+            var _event$data, _event$data2;
 
             if ((event === null || event === void 0 ? void 0 : (_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.action) === 'update height') {
               var heightAdjust = document.getElementById(divId);
               heightAdjust.style.margin = '0px';
               heightAdjust.style.height = "".concat(event.data.value, "px");
-            } // if (event?.data?.action === 'getnotifData') {
-            //   window.clevertap.renderNotificationClicked(event.data.value)
-            // }
+            }
 
+            if ((event === null || event === void 0 ? void 0 : (_event$data2 = event.data) === null || _event$data2 === void 0 ? void 0 : _event$data2.action) === 'getnotifData') {
+              window.clevertap.renderNotificationClicked(event.data.value);
+            }
           });
           contentDiv = '';
         } else {
@@ -5839,9 +5840,9 @@
       iframe.onload = function () {
         if (targetingMsgJson.display['custom-editor']) {
           window.addEventListener('message', function (event) {
-            var _event$data2;
+            var _event$data3;
 
-            if ((event === null || event === void 0 ? void 0 : (_event$data2 = event.data) === null || _event$data2 === void 0 ? void 0 : _event$data2.action) === 'getnotifData') {
+            if ((event === null || event === void 0 ? void 0 : (_event$data3 = event.data) === null || _event$data3 === void 0 ? void 0 : _event$data3.action) === 'getnotifData') {
               window.clevertap.renderNotificationClicked(event.data.value);
             }
           });
