@@ -436,7 +436,7 @@ const _tr = (msg, {
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe'
-    if (displayObj['custom-editor']) { // sandboxing the iframe only for custom html
+    if (displayObj['custom-editor'] && !displayObj['bee-editor']) { // sandboxing the iframe only for custom html
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox' // allow popup to open url in new page
     }
     const onClick = targetingMsgJson.display.onClick
@@ -758,7 +758,7 @@ const _tr = (msg, {
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe-intent'
-    if (displayObj['custom-editor']) { // sanbox the iframe only for custom html
+    if (displayObj['custom-editor'] && !displayObj['bee-editor']) { // sanbox the iframe only for custom html
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox' // allow popup to open url in new page
     }
     const onClick = targetingMsgJson.display.onClick
@@ -830,14 +830,10 @@ const _tr = (msg, {
 
     if (targetingMsgJson.display['custom-editor']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
-      iframe.srcdoc = html
-    } else {
-      const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
-      const doc = ifrm.document
-      doc.open()
-      doc.write(html)
-      doc.close()
     }
+
+    iframe.srcdoc = html
+
     let contentDiv
     iframe.onload = () => {
       if (targetingMsgJson.display['custom-editor']) {
