@@ -85,7 +85,7 @@ export default class RequestDispatcher {
       s.async = true
       document.getElementsByTagName('head')[0].appendChild(s)
     } else {
-      fetch(url).then(res => res.json()).then(this.processResponse)
+      fetch(url, { headers: { accept: 'application/json' } }).then(res => res.json()).then(this.processResponse)
     }
     this.logger.debug('req snt -> url: ' + url)
   }

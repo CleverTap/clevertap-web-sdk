@@ -3,6 +3,7 @@ import { isValueValid } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import LRUCache from '../util/lruCache'
 import { StorageManager, $ct } from '../util/storage'
+import { getHostName } from '../util/url'
 import globalWindow from './window'
 
 export default class CleverTapAPI {
@@ -66,7 +67,7 @@ export default class CleverTapAPI {
     }
 
     if (!isValueValid(this.#device.gcookie) || resume || typeof optOutResponse === 'boolean') {
-      const sessionObj = this.#session.getSessionCookieObject()
+      const sessionObj = await this.#session.getSessionCookieObject()
 
       /*  If the received session is less than the session in the cookie,
           then don't update guid as it will be response for old request
@@ -109,7 +110,7 @@ export default class CleverTapAPI {
           this.#request.unregisterTokenForGuid(lastGUID)
         }
       }
-      await StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
+      await StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, getHostName())
       await StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
     }
 

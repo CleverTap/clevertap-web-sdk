@@ -128,7 +128,7 @@ export default class UserLoginHandler extends Array {
           }
         } else {
           if (!anonymousUser) {
-            this.clear()
+            await this.clear()
           } else {
             if ((g) != null) {
               this.#device.gcookie = g

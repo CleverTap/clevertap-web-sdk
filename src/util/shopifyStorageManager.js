@@ -104,7 +104,7 @@ export default class ShopifyStorageManager {
       return null
     }
 
-    return cookie
+    return decodeURIComponent(cookie)
   }
 
   /**

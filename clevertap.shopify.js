@@ -155,10 +155,10 @@ var clevertapShopify = (function () {
 
     get endpoint() {
       if (mode.mode === 'SHOPIFY') {
-        return '/shopify';
+        return 'shopify';
       }
 
-      return '/a';
+      return 'a';
     }
 
     get dataPostURL() {
@@ -397,7 +397,7 @@ var clevertapShopify = (function () {
         return null;
       }
 
-      return cookie;
+      return decodeURIComponent(cookie);
     }
     /**
      * removes the cookie
@@ -756,7 +756,7 @@ var clevertapShopify = (function () {
             if (mode.mode === 'WEB') {
               this.createCookie(name, value, seconds, domain);
             } else {
-              await this.readCookieAsync(name, value, seconds, domain);
+              await this.createCookieAsync(name, value, seconds, domain);
             }
 
             break;
@@ -1693,11 +1693,10 @@ var clevertapShopify = (function () {
       }
 
       if (!isValueValid(_classPrivateFieldLooseBase(this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
-        const sessionObj = _classPrivateFieldLooseBase(this, _session)[_session].getSessionCookieObject();
+        const sessionObj = await _classPrivateFieldLooseBase(this, _session)[_session].getSessionCookieObject();
         /*  If the received session is less than the session in the cookie,
             then don't update guid as it will be response for old request
         */
-
 
         if (globalWindow.isOULInProgress || sessionObj.s && session < sessionObj.s) {
           return;
@@ -1745,7 +1744,7 @@ var clevertapShopify = (function () {
           }
         }
 
-        await StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
+        await StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, getHostName());
         await StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
       }
 
@@ -2314,7 +2313,11 @@ var clevertapShopify = (function () {
       s.async = true;
       document.getElementsByTagName('head')[0].appendChild(s);
     } else {
-      fetch(url).then(res => res.json()).then(this.processResponse);
+      fetch(url, {
+        headers: {
+          accept: 'application/json'
+        }
+      }).then(res => res.json()).then(this.processResponse);
     }
 
     this.logger.debug('req snt -> url: ' + url);
@@ -3029,7 +3032,7 @@ var clevertapShopify = (function () {
           }
         } else {
           if (!anonymousUser) {
-            this.clear();
+            await this.clear();
           } else {
             if (g != null) {
               _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = g;

@@ -62,9 +62,9 @@ export default class Account {
 
   get endpoint () {
     if (ModeManager.mode === 'SHOPIFY') {
-      return '/shopify'
+      return 'shopify'
     }
-    return '/a'
+    return 'a'
   }
 
   get dataPostURL () {

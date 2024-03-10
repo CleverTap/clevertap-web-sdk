@@ -289,7 +289,7 @@ export class StorageManager extends ShopifyStorageManager {
         if (ModeManager.mode === 'WEB') {
           this.createCookie(name, value, seconds, domain)
         } else {
-          await this.readCookieAsync(name, value, seconds, domain)
+          await this.createCookieAsync(name, value, seconds, domain)
         }
         break
       }
