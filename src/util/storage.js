@@ -214,13 +214,13 @@ export class StorageManager extends ShopifyStorageManager {
     return value
   }
 
-  static setInstantDeleteFlagInK () {
-    let k = this.readFromLSorCookie(KCOOKIE_NAME)
+  static async setInstantDeleteFlagInK () {
+    let k = await this.readFromLSorCookie(KCOOKIE_NAME)
     if (k == null) {
       k = {}
     }
     k.flag = true
-    this.saveToLSorCookie(KCOOKIE_NAME, k)
+    await this.saveToLSorCookie(KCOOKIE_NAME, k)
   }
 
   static async backupEvent (data, reqNo, logger) {

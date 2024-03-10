@@ -62,12 +62,12 @@ export default class UserLoginHandler extends Array {
   }
 
   // On User Login
-  #processOUL (profileArr) {
+  async #processOUL (profileArr) {
     let sendOULFlag = true
-    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
-    const addToK = (ids) => {
-      let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME)
-      const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME)
+    await StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
+    const addToK = async (ids) => {
+      let k = await StorageManager.readFromLSorCookie(KCOOKIE_NAME)
+      const g = await StorageManager.readFromLSorCookie(GCOOKIE_NAME)
       let kId
       if (k == null) {
         k = {}
@@ -110,21 +110,21 @@ export default class UserLoginHandler extends Array {
           if (kId !== $ct.LRU_CACHE.getLastKey()) {
             // New User found
             // remove the entire cache
-            this.#handleCookieFromCache()
+            await this.#handleCookieFromCache()
           } else {
             sendOULFlag = false
-            StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
+            await StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
           }
           const gFromCache = $ct.LRU_CACHE.get(kId)
           $ct.LRU_CACHE.set(kId, gFromCache)
-          StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache)
+          await StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache)
           this.#device.gcookie = gFromCache
 
           const lastK = $ct.LRU_CACHE.getSecondLastKey()
-          if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+          if (await StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
             // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
             const lastGUID = $ct.LRU_CACHE.cache[lastK]
-            this.#request.unregisterTokenForGuid(lastGUID)
+            await this.#request.unregisterTokenForGuid(lastGUID)
           }
         } else {
           if (!anonymousUser) {
@@ -132,16 +132,16 @@ export default class UserLoginHandler extends Array {
           } else {
             if ((g) != null) {
               this.#device.gcookie = g
-              StorageManager.saveToLSorCookie(GCOOKIE_NAME, g)
+              await StorageManager.saveToLSorCookie(GCOOKIE_NAME, g)
               sendOULFlag = false
             }
           }
-          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
+          await StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
           kId = ids[0]
         }
       }
       k.id = kId
-      StorageManager.saveToLSorCookie(KCOOKIE_NAME, k)
+      await StorageManager.saveToLSorCookie(KCOOKIE_NAME, k)
     }
 
     if (Array.isArray(profileArr) && profileArr.length > 0) {
@@ -193,11 +193,11 @@ export default class UserLoginHandler extends Array {
                 ids.push('FB:' + profileObj.FBID)
               }
               if (ids.length > 0) {
-                addToK(ids)
+                await addToK(ids)
               }
             }
-            addToLocalProfileMap(profileObj, true)
-            data = this.#request.addSystemDataToObject(data, undefined)
+            await addToLocalProfileMap(profileObj, true)
+            data = await this.#request.addSystemDataToObject(data, undefined)
 
             this.#request.addFlags(data)
             // Adding 'isOUL' flag in true for OUL cases which.
@@ -215,37 +215,34 @@ export default class UserLoginHandler extends Array {
             // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
             // stored in the cache and replace it with the response arp.
 
-            this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag)
+            await this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag)
           }
         }
       }
     }
   }
 
-  clear () {
+  async clear () {
     this.#logger.debug('clear called. Reset flag has been set.')
-    this.#deleteUser()
-    StorageManager.setMetaProp(CLEAR, true)
+    await this.#deleteUser()
+    await StorageManager.setMetaProp(CLEAR, true)
   }
 
-  #handleCookieFromCache () {
+  async #handleCookieFromCache () {
     $ct.blockRequest = false
     console.debug('Block request is false')
     if (StorageManager._isLocalStorageSupported()) {
-      delete localStorage[PR_COOKIE]
-      delete localStorage[EV_COOKIE]
-      delete localStorage[META_COOKIE]
-      delete localStorage[ARP_COOKIE]
-      delete localStorage[CAMP_COOKIE_NAME]
-      delete localStorage[CHARGEDID_COOKIE_NAME]
+      [PR_COOKIE, EV_COOKIE, META_COOKIE, ARP_COOKIE, CAMP_COOKIE_NAME, CHARGEDID_COOKIE_NAME].forEach(async (cookie) => {
+        await StorageManager.deleteData('localStorage', cookie)
+      })
     }
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName())
-    StorageManager.removeCookie(this.#session.cookieName, $ct.broadDomain)
-    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain)
-    this.#session.setSessionCookieObject('')
+    await StorageManager.deleteData('cookie', CAMP_COOKIE_NAME, getHostName())
+    await StorageManager.deleteData('cookie', this.#session.cookieName, $ct.broadDomain)
+    await StorageManager.deleteData('cookie', ARP_COOKIE, $ct.broadDomain)
+    await this.#session.setSessionCookieObject('')
   }
 
-  #deleteUser () {
+  async #deleteUser () {
     $ct.blockRequest = true
     this.#logger.debug('Block request is true')
     $ct.globalCache = {
@@ -254,25 +251,20 @@ export default class UserLoginHandler extends Array {
       RESP_N: 0
     }
     if (StorageManager._isLocalStorageSupported()) {
-      delete localStorage[GCOOKIE_NAME]
-      delete localStorage[KCOOKIE_NAME]
-      delete localStorage[PR_COOKIE]
-      delete localStorage[EV_COOKIE]
-      delete localStorage[META_COOKIE]
-      delete localStorage[ARP_COOKIE]
-      delete localStorage[CAMP_COOKIE_NAME]
-      delete localStorage[CHARGEDID_COOKIE_NAME]
+      [GCOOKIE_NAME, KCOOKIE_NAME, PR_COOKIE, EV_COOKIE, META_COOKIE, ARP_COOKIE, CAMP_COOKIE_NAME, CHARGEDID_COOKIE_NAME].forEach(async (cookie) => {
+        await StorageManager.deleteData('localStorage', cookie)
+      })
     }
-    StorageManager.removeCookie(GCOOKIE_NAME, $ct.broadDomain)
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName())
-    StorageManager.removeCookie(KCOOKIE_NAME, getHostName())
-    StorageManager.removeCookie(this.#session.cookieName, $ct.broadDomain)
-    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain)
+    await StorageManager.retrieveData('cookie', GCOOKIE_NAME, $ct.broadDomain)
+    await StorageManager.retrieveData('cookie', CAMP_COOKIE_NAME, getHostName())
+    await StorageManager.retrieveData('cookie', KCOOKIE_NAME, getHostName())
+    await StorageManager.retrieveData('cookie', this.#session.cookieName, $ct.broadDomain)
+    await StorageManager.retrieveData('cookie', ARP_COOKIE, $ct.broadDomain)
     this.#device.gcookie = null
-    this.#session.setSessionCookieObject('')
+    await this.#session.setSessionCookieObject('')
   }
 
-  #processLoginArray (loginArr) {
+  async #processLoginArray (loginArr) {
     if (Array.isArray(loginArr) && loginArr.length > 0) {
       const profileObj = loginArr.pop()
       const processProfile = profileObj != null && isObject(profileObj) &&
@@ -280,9 +272,9 @@ export default class UserLoginHandler extends Array {
               (profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0) ||
               (profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0))
       if (processProfile) {
-        StorageManager.setInstantDeleteFlagInK()
+        await StorageManager.setInstantDeleteFlagInK()
         try {
-          this.#processOUL([profileObj])
+          await this.#processOUL([profileObj])
         } catch (e) {
           this.#logger.debug(e)
         }
@@ -292,8 +284,8 @@ export default class UserLoginHandler extends Array {
     }
   }
 
-  push (...profilesArr) {
-    this.#processLoginArray(profilesArr)
+  async push (...profilesArr) {
+    await this.#processLoginArray(profilesArr)
     return 0
   }
 

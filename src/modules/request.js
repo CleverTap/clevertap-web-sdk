@@ -73,7 +73,9 @@ export default class RequestManager {
     const obj = await this.#session.getSessionCookieObject()
     dataObject.s = obj.s // session cookie
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
-    if (sessionStorage?.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
+    if (typeof sessionStorage === 'object') {
+      if (sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
+    }
 
     return dataObject
   }
@@ -150,7 +152,7 @@ export default class RequestManager {
         requestTime = now
         seqNo = 0
       }
-      globalWindow.oulReqN($ct.globalCache.REQ_N)
+      globalWindow.oulReqN = $ct.globalCache.REQ_N
       await RequestDispatcher.fireRequest(data, false, sendOULFlag)
     } else {
       this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${globalWindow.isOULInProgress}`)

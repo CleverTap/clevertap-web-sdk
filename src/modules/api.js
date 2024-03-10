@@ -42,7 +42,7 @@ export default class CleverTapAPI {
     // and compare with respNumber to determine the response of an OUL request
     if (globalWindow.isOULInProgress) {
       if (resume || (respNumber !== 'undefined' && respNumber === globalWindow.oulReqN)) {
-        globalWindow.isOULInProgress(false)
+        globalWindow.isOULInProgress = false
         oulReq = true
       }
     }

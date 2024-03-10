@@ -53,24 +53,24 @@ export default class RequestDispatcher {
       }
       url = await this.#addARPToRequest(url, skipARP)
     } else {
-      globalWindow.isOULInProgress(true)
+      globalWindow.isOULInProgress = true
     }
 
     url = addToURL(url, 'tries', tries) // Add tries to URL
 
     url = await this.#addUseIPToRequest(url)
     url = addToURL(url, 'r', new Date().getTime()) // add epoch to beat caching of the URL
-    // TODO: Figure out a better way to handle plugin check
-    if (window?.clevertap?.hasOwnProperty('plugin') || window?.wizrocket?.hasOwnProperty('plugin')) {
-      // used to add plugin name in request parameter
-      const plugin = window.clevertap.plugin || window.wizrocket.plugin
-      url = addToURL(url, 'ct_pl', plugin)
-    }
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:')
     }
 
     if (ModeManager.mode === 'WEB') {
+      // TODO: Figure out a better way to handle plugin check
+      if (window.clevertap?.hasOwnProperty('plugin') || window.wizrocket?.hasOwnProperty('plugin')) {
+        // used to add plugin name in request parameter
+        const plugin = window.clevertap.plugin || window.wizrocket.plugin
+        url = addToURL(url, 'ct_pl', plugin)
+      }
       // TODO: Try using Function constructor instead of appending script.
       var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
       while (ctCbScripts[0] && ctCbScripts[0].parentNode) {

@@ -43,7 +43,13 @@ const getOutput = (mode) => {
       {
         name: 'clevertapShopify',
         file: 'clevertap.shopify.js',
-        format: 'umd'
+        format: 'iife'
+      },
+      {
+        name: 'clevertapShopify',
+        file: 'clevertap.shopify.min.js',
+        format: 'iife',
+        plugins: [terser()]
       }
     ]
   }

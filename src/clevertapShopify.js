@@ -96,10 +96,10 @@ class ClevertapShopify {
   #request
 
   constructor ({ browser, accountId, region }) {
-    ModeManager.browser(browser)
-    ModeManager.mode('SHOPIFY')
+    ModeManager.browser = browser
+    ModeManager.mode = 'SHOPIFY'
     this.#logger = new Logger(logLevels.INFO)
-    this.#account = new Account(accountId, region)
+    this.#account = new Account({ id: accountId }, region)
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#session = new SessionManager({
       logger: this.#logger,
@@ -133,6 +133,7 @@ class ClevertapShopify {
   }
 
   async init () {
+    this.#device.gcookie = await this.#device.getGuid()
     // @todo implement AsyncStorageManager
     await StorageManager.removeCookieAsync('WZRK_P', getHostName())
     if (!this.#account.id) {
@@ -150,10 +151,10 @@ class ClevertapShopify {
     const obj = await this.#session.getSessionCookieObject()
     let pgCount = (typeof obj.p === 'undefined') ? 0 : obj.p
     obj.p = ++pgCount
-    this.#session.setSessionCookieObject(obj)
+    await this.#session.setSessionCookieObject(obj)
 
     let data = {}
-    data = this.#request.addSystemDataToObject(data, undefined)
+    data = await this.#request.addSystemDataToObject(data, undefined)
     data.cpg = currentLocation
 
     let pageLoadUrl = this.#account.dataPostURL

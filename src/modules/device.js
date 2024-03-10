@@ -9,7 +9,6 @@ export default class DeviceManager {
 
   constructor ({ logger }) {
     this.#logger = logger
-    this.gcookie = this.getGuid()
   }
 
   async getGuid () {
@@ -18,7 +17,7 @@ export default class DeviceManager {
       return this.gcookie
     }
     if (StorageManager._isLocalStorageSupported()) {
-      const value = await StorageManager.retrieveData('cookie', GCOOKIE_NAME)
+      const value = await StorageManager.retrieveData('localStorage', GCOOKIE_NAME)
       if (isValueValid(value)) {
         try {
           guid = JSON.parse(decodeURIComponent(value))

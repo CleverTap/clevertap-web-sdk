@@ -51,12 +51,10 @@ export class Logger {
   }
 
   #log (level, message) {
-    if (window?.console || ModeManager.mode === 'SHOPIFY') {
-      try {
-        const ts = new Date().getTime()
-        console[level](`CleverTap [${ts}]: ${message}`)
-      } catch (e) {}
-    }
+    try {
+      const ts = new Date().getTime()
+      console[level](`CleverTap [${ts}]: ${message}`)
+    } catch (e) {}
   }
 
   get #isLegacyDebug () {

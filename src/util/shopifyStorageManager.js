@@ -22,20 +22,20 @@ export default class ShopifyStorageManager {
   /**
    * reads from localStorage
    * @param {string} key
-   * @returns {Promise<any>}
+   * @returns {Promise<string | null>}
    */
   static async readAsync (key) {
     if (!key) {
       return false
     }
-
+    let data
     try {
-      const data = await ModeManager.browser.localStorage.getItem(key)
-      const parsedData = JSON.parse(data)
-      return parsedData
+      data = await ModeManager.browser.localStorage.getItem(key)
+      data = JSON.parse(data)
     } catch (e) {
-      return false
+      data = null
     }
+    return data
   }
 
   /**
@@ -100,6 +100,10 @@ export default class ShopifyStorageManager {
     } catch (e) {
       cookie = null
     }
+    if (cookie === '') {
+      return null
+    }
+
     return cookie
   }
 

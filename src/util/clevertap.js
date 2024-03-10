@@ -375,10 +375,10 @@ export const processGPlusUserObj = (user, { logger }) => {
   return profileData
 }
 
-export const addToLocalProfileMap = (profileObj, override) => {
+export const addToLocalProfileMap = async (profileObj, override) => {
   if (StorageManager._isLocalStorageSupported()) {
     if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
+      $ct.globalProfileMap = await StorageManager.readFromLSorCookie(PR_COOKIE)
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = {}
       }
@@ -406,7 +406,7 @@ export const addToLocalProfileMap = (profileObj, override) => {
     if ($ct.globalProfileMap._custom != null) {
       delete $ct.globalProfileMap._custom
     }
-    StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+    await StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
   }
 }
 
