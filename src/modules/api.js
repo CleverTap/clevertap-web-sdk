@@ -3,6 +3,7 @@ import { isValueValid } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import LRUCache from '../util/lruCache'
 import { StorageManager, $ct } from '../util/storage'
+import globalWindow from './window'
 
 export default class CleverTapAPI {
   #logger
@@ -35,9 +36,9 @@ export default class CleverTapAPI {
     // but resume is returned as false from server end
     // we maintan a OulReqN var in the window object
     // and compare with respNumber to determine the response of an OUL request
-    if (window.isOULInProgress) {
-      if (resume || (respNumber !== 'undefined' && respNumber === window.oulReqN)) {
-        window.isOULInProgress = false
+    if (globalWindow.isOULInProgress) {
+      if (resume || (respNumber !== 'undefined' && respNumber === globalWindow.oulReqN)) {
+        globalWindow.isOULInProgress(false)
         oulReq = true
       }
     }
@@ -66,7 +67,7 @@ export default class CleverTapAPI {
       /*  If the received session is less than the session in the cookie,
           then don't update guid as it will be response for old request
       */
-      if (window.isOULInProgress || (sessionObj.s && (session < sessionObj.s))) {
+      if (globalWindow.isOULInProgress || (sessionObj.s && (session < sessionObj.s))) {
         return
       }
       this.#logger.debug(`Cookie was ${this.#device.gcookie} set to ${global}`)

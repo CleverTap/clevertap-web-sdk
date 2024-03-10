@@ -6,6 +6,7 @@ import RequestDispatcher from '../util/requestDispatcher'
 import { StorageManager, $ct } from '../util/storage'
 import { addToURL } from '../util/url'
 import { getCampaignObjForLc } from '../util/clevertap'
+import globalWindow from './window'
 
 let seqNo = 0
 let requestTime = 0
@@ -97,7 +98,7 @@ export default class RequestManager {
     return dataObject
   }
 
-  addFlags (data) {
+  async addFlags (data) {
     // check if cookie should be cleared.
     this.#clearCookie = StorageManager.getAndClearMetaProp(CLEAR)
     if (this.#clearCookie !== undefined && this.#clearCookie) {
@@ -132,7 +133,8 @@ export default class RequestManager {
     const now = getNow()
     url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N)
     const data = url + '&i=' + now + '&sn=' + seqNo
-    StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.#logger)
+    // TODO: Enable this
+    // StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.#logger)
 
     // if offline is set to true, save the request in backup and return
     if ($ct.offline) return
@@ -141,17 +143,17 @@ export default class RequestManager {
     // then process the request as it is
     // else block the request
     // note - $ct.blockRequest should ideally be used for override
-    if ((!override || (this.#clearCookie !== undefined && this.#clearCookie)) && !window.isOULInProgress) {
+    if ((!override || (this.#clearCookie !== undefined && this.#clearCookie)) && !globalWindow.isOULInProgress) {
       if (now === requestTime) {
         seqNo++
       } else {
         requestTime = now
         seqNo = 0
       }
-      window.oulReqN = $ct.globalCache.REQ_N
+      globalWindow.oulReqN($ct.globalCache.REQ_N)
       RequestDispatcher.fireRequest(data, false, sendOULFlag)
     } else {
-      this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)
+      this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${globalWindow.isOULInProgress}`)
     }
   }
 

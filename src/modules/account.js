@@ -1,4 +1,5 @@
 import { DEFAULT_REGION, TARGET_DOMAIN, TARGET_PROTOCOL } from '../options'
+import ModeManager from './mode'
 
 export default class Account {
   #accountId
@@ -59,8 +60,15 @@ export default class Account {
     }
   }
 
+  get endpoint () {
+    if (ModeManager.mode === 'SHOPIFY') {
+      return '/shopify'
+    }
+    return '/a'
+  }
+
   get dataPostURL () {
-    return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/a?t=96`
+    return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/${this.endpoint}?t=96`
   }
 
   get recorderURL () {

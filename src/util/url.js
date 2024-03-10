@@ -1,3 +1,5 @@
+import ModeManager from '../modules/mode'
+
 export const getURLParams = (url) => {
   const urlParams = {}
   const idx = url.indexOf('?')
@@ -37,5 +39,8 @@ export const addToURL = (url, k, v) => {
 }
 
 export const getHostName = () => {
+  if (ModeManager.mode === 'SHOPIFY') {
+    return ModeManager.browser.document.location.hostname
+  }
   return window.location.hostname
 }
