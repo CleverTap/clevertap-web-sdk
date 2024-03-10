@@ -1,6 +1,7 @@
 import {
   CLEVERTAP_ERROR_PREFIX
 } from '../util/messages'
+import ModeManager from './mode'
 
 export const logLevels = {
   DISABLE: 0,
@@ -50,7 +51,7 @@ export class Logger {
   }
 
   #log (level, message) {
-    if (window.console) {
+    if (window?.console || ModeManager.mode === 'SHOPIFY') {
       try {
         const ts = new Date().getTime()
         console[level](`CleverTap [${ts}]: ${message}`)

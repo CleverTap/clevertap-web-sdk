@@ -11,7 +11,11 @@ export default class CleverTapAPI {
   #device
   #session
 
-  constructor ({ logger, request, device, session }) {
+  constructor (props) {
+    this.setPrivateProperties(props)
+  }
+
+  setPrivateProperties ({ logger, request, device, session }) {
     this.#logger = logger
     this.#request = request
     this.#device = device
@@ -28,7 +32,7 @@ export default class CleverTapAPI {
    * @returns
    */
 
-  s (global, session, resume, respNumber, optOutResponse) {
+  async s (global, session, resume, respNumber, optOutResponse) {
     let oulReq = false
     let newGuid = false
 
@@ -48,7 +52,7 @@ export default class CleverTapAPI {
       respNumber = 0
     }
 
-    StorageManager.removeBackup(respNumber, this.#logger)
+    await StorageManager.removeBackup(respNumber, this.#logger)
 
     if (respNumber > $ct.globalCache.REQ_N) {
       // request for some other user so ignore
@@ -74,20 +78,20 @@ export default class CleverTapAPI {
       this.#device.gcookie = global
       if (!isValueValid(this.#device.gcookie)) {
         // clear useIP meta prop
-        StorageManager.getAndClearMetaProp(USEIP_KEY)
+        await StorageManager.getAndClearMetaProp(USEIP_KEY)
       }
       if (global && StorageManager._isLocalStorageSupported()) {
         if ($ct.LRU_CACHE == null) {
           $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
         }
 
-        const kIdFromLS = StorageManager.readFromLSorCookie(KCOOKIE_NAME)
+        const kIdFromLS = await StorageManager.readFromLSorCookie(KCOOKIE_NAME)
         let guidFromLRUCache
         if (kIdFromLS != null && kIdFromLS.id) {
           guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id]
           if (resume) {
             if (!guidFromLRUCache) {
-              StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true)
+              await StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true)
               // replace login identity in OUL request
               // with the gcookie returned in exchange
               $ct.LRU_CACHE.set(kIdFromLS.id, global)
@@ -95,18 +99,18 @@ export default class CleverTapAPI {
           }
         }
 
-        StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
+        await StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
         // lastk provides the guid
         const lastK = $ct.LRU_CACHE.getSecondLastKey()
-        if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+        if (await StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
           const lastGUID = $ct.LRU_CACHE.cache[lastK]
           // fire the request directly via fireRequest to unregister the token
           // then other requests with the updated guid should follow
           this.#request.unregisterTokenForGuid(lastGUID)
         }
       }
-      StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
-      StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
+      await StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
+      await StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
     }
 
     if (StorageManager._isLocalStorageSupported()) {
@@ -136,3 +140,11 @@ export default class CleverTapAPI {
     $ct.globalCache.RESP_N = respNumber
   }
 }
+
+const clevertapApi = new CleverTapAPI({
+  logger: '',
+  request: '',
+  device: '',
+  session: ''
+})
+export { clevertapApi }

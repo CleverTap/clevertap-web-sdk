@@ -3,7 +3,6 @@ import { isObject } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { StorageManager } from '../util/storage'
 import { getHostName } from '../util/url'
-import ModeManager from '../modules/mode'
 
 export default class SessionManager {
   #logger
@@ -57,11 +56,9 @@ export default class SessionManager {
     return obj
   }
 
-  setSessionCookieObject (obj) {
+  async setSessionCookieObject (obj) {
     const objStr = JSON.stringify(obj)
-    if (ModeManager.mode === 'WEB') {
-      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName())
-    }
+    await StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName())
   }
 
   manageSession (session) {

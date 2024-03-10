@@ -38,7 +38,7 @@ export default class DeviceManager {
 
         // Persist to cookie storage if not present there.
         if (isValueValid(guid)) {
-          StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, getHostName())
+          await StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, getHostName())
         }
       }
     }

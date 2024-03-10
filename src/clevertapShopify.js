@@ -59,6 +59,7 @@ import { SCOOKIE_PREFIX } from './util/constants'
 import { StorageManager, $ct } from './util/storage'
 import { addToURL, getHostName } from './util/url'
 import { compressData } from './util/encoder'
+import { clevertapApi } from './modules/api'
 
 /**
  * The new class for shopify.
@@ -123,6 +124,12 @@ class ClevertapShopify {
       logger: this.#logger,
       device: this.#device
     })
+    clevertapApi.setPrivateProperties({
+      logger: this.#logger,
+      request: this.#request,
+      session: this.#session,
+      device: this.#device
+    })
   }
 
   async init () {
@@ -159,7 +166,7 @@ class ClevertapShopify {
 
     await this.#request.addFlags(data)
 
-    this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+    await this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
   }
 }
 

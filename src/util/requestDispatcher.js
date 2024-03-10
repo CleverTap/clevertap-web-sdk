@@ -1,7 +1,8 @@
 
+import { clevertapApi } from '../modules/api'
 import ModeManager from '../modules/mode'
 import globalWindow from '../modules/window'
-import { arp, isWindowDefined } from './clevertap'
+import { arp } from './clevertap'
 import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY } from './constants'
 import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
@@ -15,7 +16,7 @@ export default class RequestDispatcher {
   static api
 
   // ANCHOR - Requests get fired from here
-  static #fireRequest (url, tries, skipARP, sendOULFlag) {
+  static async #fireRequest (url, tries, skipARP, sendOULFlag) {
     if (this.#dropRequestDueToOptOut()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
@@ -36,9 +37,9 @@ export default class RequestDispatcher {
       ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
       tries < MAX_TRIES) {
       // if ongoing First Request is in progress, initiate retry
-      setTimeout(() => {
+      setTimeout(async () => {
         this.logger.debug(`retrying fire request for url: ${url}, tries: ${tries}`)
-        this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
+        await this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
       }, 50)
       return
     }
@@ -50,14 +51,14 @@ export default class RequestDispatcher {
         // add gcookie to url
         url = addToURL(url, 'gc', this.device.gcookie)
       }
-      url = this.#addARPToRequest(url, skipARP)
+      url = await this.#addARPToRequest(url, skipARP)
     } else {
       globalWindow.isOULInProgress(true)
     }
 
     url = addToURL(url, 'tries', tries) // Add tries to URL
 
-    url = this.#addUseIPToRequest(url)
+    url = await this.#addUseIPToRequest(url)
     url = addToURL(url, 'r', new Date().getTime()) // add epoch to beat caching of the URL
     // TODO: Figure out a better way to handle plugin check
     if (window?.clevertap?.hasOwnProperty('plugin') || window?.wizrocket?.hasOwnProperty('plugin')) {
@@ -93,17 +94,17 @@ export default class RequestDispatcher {
    * processes the response of fired events and calls relevant methods
    * @param {object} response
    */
-  static processResponse (response) {
+  static async processResponse (response) {
     if (response.arp) {
-      arp(response.arp)
+      await arp(response.arp)
     }
 
     if (response.meta) {
-      this.api.s(
+      await clevertapApi.s(
         response.meta.g, // cookie
         response.meta.sid, // session id
         response.meta.rf, // resume
-        response.meta.rn // response number for backuop manager
+        response.meta.rn // response number for backup manager
       )
     }
   }
@@ -114,8 +115,8 @@ export default class RequestDispatcher {
    * @param {*} skipARP
    * @param {boolean} sendOULFlag
    */
-  static fireRequest (url, skipARP, sendOULFlag) {
-    this.#fireRequest(url, 1, skipARP, sendOULFlag)
+  static async fireRequest (url, skipARP, sendOULFlag) {
+    await this.#fireRequest(url, 1, skipARP, sendOULFlag)
   }
 
   static #dropRequestDueToOptOut () {
@@ -126,21 +127,21 @@ export default class RequestDispatcher {
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH
   }
 
-  static #addUseIPToRequest (pageLoadUrl) {
-    var useIP = StorageManager.getMetaProp(USEIP_KEY)
+  static async #addUseIPToRequest (pageLoadUrl) {
+    var useIP = await StorageManager.getMetaProp(USEIP_KEY)
     if (typeof useIP !== 'boolean') {
       useIP = false
     }
     return addToURL(pageLoadUrl, USEIP_KEY, useIP ? 'true' : 'false')
   };
 
-  static #addARPToRequest (url, skipResARP) {
+  static async #addARPToRequest (url, skipResARP) {
     if (skipResARP === true) {
       const _arp = {}
       _arp.skipResARP = true
       return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger))
     }
-    const arpValue = StorageManager.readFromLSorCookie(ARP_COOKIE)
+    const arpValue = await StorageManager.readFromLSorCookie(ARP_COOKIE)
     if (typeof arpValue !== 'undefined' && arpValue !== null) {
       return addToURL(url, 'arp', compressData(JSON.stringify(arpValue), this.logger))
     }

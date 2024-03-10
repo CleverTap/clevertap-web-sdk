@@ -437,7 +437,7 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
   }
 }
 
-export const arp = (jsonMap) => {
+export const arp = async (jsonMap) => {
   // For unregister calls dont set arp in LS
   if (jsonMap.skipResARP != null && jsonMap.skipResARP) {
     console.debug('Update ARP Request rejected', jsonMap)
@@ -449,7 +449,7 @@ export const arp = (jsonMap) => {
   if (StorageManager._isLocalStorageSupported()) {
     // Update arp only if it is null or an oul request
     try {
-      let arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE)
+      let arpFromStorage = await StorageManager.readFromLSorCookie(ARP_COOKIE)
       if (arpFromStorage == null || isOULARP) {
         arpFromStorage = {}
         for (const key in jsonMap) {
@@ -461,7 +461,7 @@ export const arp = (jsonMap) => {
             }
           }
         }
-        StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage)
+        await StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage)
       }
     } catch (e) {
       console.error('Unable to parse ARP JSON: ' + e)
