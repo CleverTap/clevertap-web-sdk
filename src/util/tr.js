@@ -516,14 +516,14 @@ const _tr = (msg, {
 
     const handleIframeLoad = () => {
       if (displayObj['custom-editor']) {
-        iframe.contentWindow.postMessage({ action: 'adjustIFrameHeight' }, '*')
+        iframe.contentWindow.postMessage({ action: 'adjustIFrameHeight' + displayObj.layout, value: displayObj.layout }, '*')
         window.addEventListener('message', (event) => {
-          if (event?.data?.action === 'update height') {
+          if (event?.data?.action === 'update height' + displayObj.layout) {
             const heightAdjust = document.getElementById(divId)
             heightAdjust.style.margin = '0px'
             heightAdjust.style.height = `${event.data.value}px`
           }
-          if (event?.data?.action === 'getnotifData') {
+          if (event?.data?.action === 'getnotif' + displayObj.layout) {
             window.clevertap.renderNotificationClicked(event.data.value)
           }
         })
@@ -551,14 +551,16 @@ const _tr = (msg, {
       const ct__formatVal = (v) => {
           return v && v.trim().substring(0, 20);
       }
+      let msgEvent
       window.addEventListener('message', event => {
         let contentHeight
-        if(event?.data?.action == 'adjustIFrameHeight'){ 
+        msgEvent = event
+        if(event?.data?.action == 'adjustIFrameHeight'+ event?.data?.value){ 
           contentDiv = document.getElementById('contentDiv')
           let contentHeight = contentDiv.scrollHeight
           contentDiv.style.height = '100%'
           event.source.postMessage({
-            action: 'update height',
+            action: 'update height' + event?.data?.value ,
             value: contentHeight
           }, event.origin)
         }
@@ -579,10 +581,17 @@ const _tr = (msg, {
             if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }
             if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }
             const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '${targetingMsgJson.wzrk_pivot}' };
-            window.parent.postMessage({
-              action: 'getnotifData',
-              value: notifData
-            }, '*')
+            if(msgEvent){
+              msgEvent.source.postMessage({
+                action: 'getnotif' + msgEvent?.data?.value ,
+                value: notifData
+              }, msgEvent.origin)
+            }else{
+              window.parent.postMessage({
+                action: 'getnotifData',
+                value: notifData
+              }, '*')
+            }
             
         }
       });
