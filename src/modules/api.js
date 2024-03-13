@@ -42,7 +42,7 @@ export default class CleverTapAPI {
     // we maintan a OulReqN var in the window object
     // and compare with respNumber to determine the response of an OUL request
     if (globalWindow.isOULInProgress) {
-      if (resume || (respNumber !== 'undefined' && respNumber === globalWindow.oulReqN)) {
+      if (resume || (respNumber !== 'undefined' && Number(respNumber) === globalWindow.oulReqN)) {
         globalWindow.isOULInProgress = false
         oulReq = true
       }
@@ -53,9 +53,9 @@ export default class CleverTapAPI {
       respNumber = 0
     }
 
-    await StorageManager.removeBackup(respNumber, this.#logger)
+    await StorageManager.removeBackup(Number(respNumber), this.#logger)
 
-    if (respNumber > $ct.globalCache.REQ_N) {
+    if (Number(respNumber) > $ct.globalCache.REQ_N) {
       // request for some other user so ignore
       return
     }
@@ -84,6 +84,7 @@ export default class CleverTapAPI {
       if (global && StorageManager._isLocalStorageSupported()) {
         if ($ct.LRU_CACHE == null) {
           $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
+          await $ct.LRU_CACHE.init()
         }
 
         const kIdFromLS = await StorageManager.readFromLSorCookie(KCOOKIE_NAME)
@@ -138,7 +139,7 @@ export default class CleverTapAPI {
       this.#request.processBackupEvents()
     }
 
-    $ct.globalCache.RESP_N = respNumber
+    $ct.globalCache.RESP_N = Number(respNumber)
   }
 }
 

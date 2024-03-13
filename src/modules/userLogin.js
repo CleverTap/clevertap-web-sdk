@@ -83,6 +83,7 @@ export default class UserLoginHandler extends Array {
         }
         if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
           $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
+          await $ct.LRU_CACHE.init()
         }
 
         if (anonymousUser) {
@@ -115,8 +116,8 @@ export default class UserLoginHandler extends Array {
             sendOULFlag = false
             await StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
           }
-          const gFromCache = $ct.LRU_CACHE.get(kId)
-          $ct.LRU_CACHE.set(kId, gFromCache)
+          const gFromCache = await $ct.LRU_CACHE.get(kId)
+          await $ct.LRU_CACHE.set(kId, gFromCache)
           await StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache)
           this.#device.gcookie = gFromCache
 

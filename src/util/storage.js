@@ -162,7 +162,8 @@ export class StorageManager extends ShopifyStorageManager {
             // no guarantee that browser will delete cookie, hence create short lived cookies
             var testCookieName = 'test_' + name + idx
             await this.addData('cookie', testCookieName, value, 10, testBroadDomain) // self-destruct after 10 seconds
-            if (await !this.retrieveData('cookie', testCookieName)) { // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
+            const testCookie = await this.retrieveData('cookie', testCookieName)
+            if (!testCookie) { // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
               continue
             } else { // else if cookie set, then delete the test and the original cookie
               await this.deleteData('cookie', testCookieName, testBroadDomain)

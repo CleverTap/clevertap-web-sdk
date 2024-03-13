@@ -314,13 +314,16 @@ var clevertapShopify = (function () {
         return false;
       }
 
-      let data;
+      let data = null;
 
       try {
         data = await mode.browser.localStorage.getItem(key);
-        data = JSON.parse(data);
-      } catch (e) {
-        data = null;
+      } catch (e) {}
+
+      if (data != null) {
+        try {
+          data = JSON.parse(data);
+        } catch (e) {}
       }
 
       return data;
@@ -607,7 +610,9 @@ var clevertapShopify = (function () {
               var testCookieName = 'test_' + name + idx;
               await this.addData('cookie', testCookieName, value, 10, testBroadDomain); // self-destruct after 10 seconds
 
-              if (await !this.retrieveData('cookie', testCookieName)) {
+              const testCookie = await this.retrieveData('cookie', testCookieName);
+
+              if (!testCookie) {
                 // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
                 continue;
               } else {
@@ -1415,7 +1420,10 @@ var clevertapShopify = (function () {
         value: void 0
       });
       this.max = max;
-      let lruCache = StorageManager.readFromLSorCookie(LRU_CACHE);
+    }
+
+    async init() {
+      let lruCache = await StorageManager.readFromLSorCookie(LRU_CACHE);
 
       if (lruCache) {
         const tempLruCache = {};
@@ -1437,7 +1445,7 @@ var clevertapShopify = (function () {
       }
     }
 
-    get(key) {
+    async get(key) {
       const item = this.cache[key];
 
       if (item) {
@@ -1447,11 +1455,11 @@ var clevertapShopify = (function () {
         _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder].push(key);
       }
 
-      this.saveCacheToLS(this.cache);
+      await this.saveCacheToLS(this.cache);
       return item;
     }
 
-    set(key, value) {
+    async set(key, value) {
       const item = this.cache[key];
 
       const allKeys = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder];
@@ -1468,10 +1476,10 @@ var clevertapShopify = (function () {
         _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder].push(key);
       }
 
-      this.saveCacheToLS(this.cache);
+      await this.saveCacheToLS(this.cache);
     }
 
-    saveCacheToLS(cache) {
+    async saveCacheToLS(cache) {
       const objToArray = [];
 
       const allKeys = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder];
@@ -1485,7 +1493,7 @@ var clevertapShopify = (function () {
         }
       }
 
-      StorageManager.saveToLSorCookie(LRU_CACHE, {
+      await StorageManager.saveToLSorCookie(LRU_CACHE, {
         cache: objToArray
       });
     }
@@ -1668,7 +1676,7 @@ var clevertapShopify = (function () {
       // and compare with respNumber to determine the response of an OUL request
 
       if (globalWindow.isOULInProgress) {
-        if (resume || respNumber !== 'undefined' && respNumber === globalWindow.oulReqN) {
+        if (resume || respNumber !== 'undefined' && Number(respNumber) === globalWindow.oulReqN) {
           globalWindow.isOULInProgress = false;
           oulReq = true;
         }
@@ -1679,9 +1687,9 @@ var clevertapShopify = (function () {
         respNumber = 0;
       }
 
-      await StorageManager.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger$2)[_logger$2]);
+      await StorageManager.removeBackup(Number(respNumber), _classPrivateFieldLooseBase(this, _logger$2)[_logger$2]);
 
-      if (respNumber > $ct.globalCache.REQ_N) {
+      if (Number(respNumber) > $ct.globalCache.REQ_N) {
         // request for some other user so ignore
         return;
       }
@@ -1714,6 +1722,7 @@ var clevertapShopify = (function () {
         if (global && StorageManager._isLocalStorageSupported()) {
           if ($ct.LRU_CACHE == null) {
             $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
+            await $ct.LRU_CACHE.init();
           }
 
           const kIdFromLS = await StorageManager.readFromLSorCookie(KCOOKIE_NAME);
@@ -1773,7 +1782,7 @@ var clevertapShopify = (function () {
         _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
       }
 
-      $ct.globalCache.RESP_N = respNumber;
+      $ct.globalCache.RESP_N = Number(respNumber);
     }
 
   }
@@ -2985,6 +2994,7 @@ var clevertapShopify = (function () {
 
         if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
           $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
+          await $ct.LRU_CACHE.init();
         }
 
         if (anonymousUser) {
@@ -3019,8 +3029,8 @@ var clevertapShopify = (function () {
             await StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
           }
 
-          const gFromCache = $ct.LRU_CACHE.get(kId);
-          $ct.LRU_CACHE.set(kId, gFromCache);
+          const gFromCache = await $ct.LRU_CACHE.get(kId);
+          await $ct.LRU_CACHE.set(kId, gFromCache);
           await StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
           _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = gFromCache;
           const lastK = $ct.LRU_CACHE.getSecondLastKey();
@@ -3349,7 +3359,7 @@ var clevertapShopify = (function () {
       });
       mode.browser = browser;
       mode.mode = 'SHOPIFY';
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = new Logger(logLevels.INFO);
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = new Logger(logLevels.DEBUG);
       _classPrivateFieldLooseBase(this, _account$2)[_account$2] = new Account({
         id: accountId
       }, region);

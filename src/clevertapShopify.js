@@ -98,7 +98,7 @@ class ClevertapShopify {
   constructor ({ browser, accountId, region }) {
     ModeManager.browser = browser
     ModeManager.mode = 'SHOPIFY'
-    this.#logger = new Logger(logLevels.INFO)
+    this.#logger = new Logger(logLevels.DEBUG)
     this.#account = new Account({ id: accountId }, region)
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#session = new SessionManager({

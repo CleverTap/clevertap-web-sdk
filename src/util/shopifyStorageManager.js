@@ -28,13 +28,17 @@ export default class ShopifyStorageManager {
     if (!key) {
       return false
     }
-    let data
+    let data = null
     try {
       data = await ModeManager.browser.localStorage.getItem(key)
-      data = JSON.parse(data)
-    } catch (e) {
-      data = null
+    } catch (e) {}
+
+    if (data != null) {
+      try {
+        data = JSON.parse(data)
+      } catch (e) {}
     }
+
     return data
   }
 
