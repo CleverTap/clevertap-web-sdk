@@ -515,6 +515,13 @@ const _tr = (msg, {
     let contentDiv
 
     const handleIframeLoad = () => {
+      const match = iframe.srcdoc.match(/clevertap\.event\.push\((['"])(.*?)\1\)/)
+      if (match) {
+        const eventName = match[2]
+        console.log('Event Name: on iframe load', eventName)
+      } else {
+        console.log('No event found in the script. iframe load')
+      }
       if (displayObj['custom-editor']) {
         iframe.contentWindow.postMessage({ action: 'adjustIFrameHeight' + displayObj.layout, value: displayObj.layout }, '*')
         window.addEventListener('message', (event) => {
@@ -845,6 +852,13 @@ const _tr = (msg, {
 
     let contentDiv
     iframe.onload = () => {
+      const match = iframe.srcdoc.match(/clevertap\.event\.push\((['"])(.*?)\1\)/)
+      if (match) {
+        const eventName = match[2]
+        console.log('Event Name: on iframe load', eventName)
+      } else {
+        console.log('No event found in the script. iframe load')
+      }
       if (targetingMsgJson.display['custom-editor']) {
         window.addEventListener('message', event => {
           if (event?.data?.action === 'getnotifData') {

@@ -5534,6 +5534,15 @@
       var contentDiv;
 
       var handleIframeLoad = function handleIframeLoad() {
+        var match = iframe.srcdoc.match(/clevertap\.event\.push\((['"])(.*?)\1\)/);
+
+        if (match) {
+          var eventName = match[2];
+          console.log('Event Name: on iframe load', eventName);
+        } else {
+          console.log('No event found in the script. iframe load');
+        }
+
         if (displayObj['custom-editor']) {
           iframe.contentWindow.postMessage({
             action: 'adjustIFrameHeight' + displayObj.layout,
@@ -5833,6 +5842,15 @@
       var contentDiv;
 
       iframe.onload = function () {
+        var match = iframe.srcdoc.match(/clevertap\.event\.push\((['"])(.*?)\1\)/);
+
+        if (match) {
+          var eventName = match[2];
+          console.log('Event Name: on iframe load', eventName);
+        } else {
+          console.log('No event found in the script. iframe load');
+        }
+
         if (targetingMsgJson.display['custom-editor']) {
           window.addEventListener('message', function (event) {
             var _event$data3;
