@@ -5467,10 +5467,34 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe';
+      var eventName;
+      var match = false;
+      var flag = false;
 
       if (displayObj['custom-editor'] && !displayObj['bee-editor']) {
         // sandboxing the iframe only for custom html
-        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'; // allow popup to open url in new page
+        if (targetingMsgJson.display['custom-html'].match(/clevertap\.profile\.push\((\{[^]*?\})\)/)) {
+          match = targetingMsgJson.display['custom-html'].match(/clevertap\.profile\.push\((\{[^]*?\})\)/);
+        } else if (targetingMsgJson.display['custom-html'].match(/clevertap\.event\.push\((['"])(.*?)\1\)/)) {
+          flag = true;
+          match = targetingMsgJson.display['custom-html'].match(/clevertap\.event\.push\((['"])(.*?)\1\)/);
+        } else if (targetingMsgJson.display['custom-html'].match(/clevertap\.onUserLogin\.push\((\{[^]*?\})\)/)) {
+          match = targetingMsgJson.display['custom-html'].match(/clevertap\.onUserLogin\.push\((\{[^]*?\})\)/);
+        }
+
+        console.log('check match', match, flag);
+
+        if (match) {
+          if (flag) {
+            eventName = match[2];
+          } else {
+            eventName = match[1];
+          }
+        } else {
+          console.log('No event found in the script. iframe load');
+        }
+
+        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms'; // allow popup to open url in new page
       }
 
       var onClick = targetingMsgJson.display.onClick;
@@ -5526,7 +5550,7 @@
       document.dispatchEvent(closeCampaign);
 
       if (displayObj['custom-editor']) {
-        html = appendScriptForCustomEvent(targetingMsgJson, html);
+        html = appendScriptForCustomEvent(targetingMsgJson, html, eventName);
       }
 
       iframe.srcdoc = html; // const ua = navigator.userAgent.toLowerCase()
@@ -5534,30 +5558,33 @@
       var contentDiv;
 
       var handleIframeLoad = function handleIframeLoad() {
-        var match = iframe.srcdoc.match(/clevertap\.event\.push\((['"])(.*?)\1\)/);
-
-        if (match) {
-          var eventName = match[2];
-          console.log('Event Name: on iframe load', eventName);
-        } else {
-          console.log('No event found in the script. iframe load');
-        }
-
         if (displayObj['custom-editor']) {
           iframe.contentWindow.postMessage({
             action: 'adjustIFrameHeight' + displayObj.layout,
             value: displayObj.layout
           }, '*');
           window.addEventListener('message', function (event) {
-            var _event$data, _event$data2;
+            var _event$data, _event$data2, _event$data3, _event$data4, _event$data5;
 
-            if ((event === null || event === void 0 ? void 0 : (_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.action) === 'update height' + displayObj.layout) {
+            if ((event === null || event === void 0 ? void 0 : (_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.action) === 'Event') {
+              window.clevertap.event.push(event.data.value);
+            }
+
+            if ((event === null || event === void 0 ? void 0 : (_event$data2 = event.data) === null || _event$data2 === void 0 ? void 0 : _event$data2.action) === 'Profile') {
+              window.clevertap.profile.push(JSON.parse(event.data.value));
+            }
+
+            if ((event === null || event === void 0 ? void 0 : (_event$data3 = event.data) === null || _event$data3 === void 0 ? void 0 : _event$data3.action) === 'OUL') {
+              window.clevertap.onUserLogin.push(JSON.parse(event.data.value));
+            }
+
+            if ((event === null || event === void 0 ? void 0 : (_event$data4 = event.data) === null || _event$data4 === void 0 ? void 0 : _event$data4.action) === 'update height' + displayObj.layout) {
               var heightAdjust = document.getElementById(divId);
               heightAdjust.style.margin = '0px';
               heightAdjust.style.height = "".concat(event.data.value, "px");
             }
 
-            if ((event === null || event === void 0 ? void 0 : (_event$data2 = event.data) === null || _event$data2 === void 0 ? void 0 : _event$data2.action) === 'getnotif' + displayObj.layout) {
+            if ((event === null || event === void 0 ? void 0 : (_event$data5 = event.data) === null || _event$data5 === void 0 ? void 0 : _event$data5.action) === 'getnotif' + displayObj.layout) {
               window.clevertap.renderNotificationClicked(event.data.value);
             }
           });
@@ -5581,8 +5608,8 @@
       iframe.onload = handleIframeLoad;
     };
 
-    var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, html) {
-      var script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      let msgEvent\n      window.addEventListener('message', event => {\n        let contentHeight\n        msgEvent = event\n        if(event?.data?.action == 'adjustIFrameHeight'+ event?.data?.value){ \n          contentDiv = document.getElementById('contentDiv')\n          let contentHeight = contentDiv.scrollHeight\n          contentDiv.style.height = '100%'\n          event.source.postMessage({\n            action: 'update height' + event?.data?.value ,\n            value: contentHeight\n          }, event.origin)\n        }\n    })\n      // const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            if(msgEvent){\n              msgEvent.source.postMessage({\n                action: 'getnotif' + msgEvent?.data?.value ,\n                value: notifData\n              }, msgEvent.origin)\n            }else{\n              window.parent.postMessage({\n                action: 'getnotifData',\n                value: notifData\n              }, '*')\n            }\n            \n        }\n      });\n      </script>\n    ");
+    var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, html, eventName) {
+      var script = "<script>\n    const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n    const ct__formatVal = (v) => {\n        return v && v.trim().substring(0, 20);\n    }\n    let msgEvent\n    window.addEventListener('message', event => {\n      let contentHeight\n      msgEvent = event\n      if(event?.data?.action == 'adjustIFrameHeight'+ event?.data?.value){ \n        contentDiv = document.getElementById('contentDiv')\n        let contentHeight = contentDiv.scrollHeight\n        contentDiv.style.height = '100%'\n        event.source.postMessage({\n          action: 'update height' + event?.data?.value ,\n          value: contentHeight\n        }, event.origin)\n      }\n  })\n    // const ct__parentOrigin =  window.parent.origin;\n    document.body.addEventListener('click', (event) => {\n      const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n      if (elem) {\n        const scriptTags = document.querySelectorAll('script');\n        let clevertapEventPushCount = 0;\n        for (const script of scriptTags) {\n            const scriptContent = script.textContent;\n            if (scriptContent.includes('clevertap.event.push')) {\n                clevertapEventPushCount++;\n                if (clevertapEventPushCount > 1) {\n                    window.parent.postMessage({\n                      action: 'Event',\n                      value: '").concat(eventName, "'\n                    }, '*')\n                    return; // Exit the function early\n                }\n            }   \n          else if (scriptContent.includes('clevertap.profile.push')){\n            window.parent.postMessage({\n              action: 'Profile',\n              value: '").concat(eventName, "'\n            }, '*')\n\n          }else if(scriptContent.includes('clevertap.onUserLogin.push')){\n            window.parent.postMessage({\n              action: 'OUL',\n              value: '").concat(eventName, "'\n            }, '*')\n          }\n        }\n        const {innerText, id, name, value, href} = elem;\n        const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n        const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n        const props = {innerText, id, name, value};\n        let msgCTkv = Object.keys(props).reduce((acc, c) => {\n            const formattedVal = ct__formatVal(props[c]);\n            formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n            return acc;\n        }, {});\n        if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n        if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n        const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n        if(msgEvent){\n          msgEvent.source.postMessage({\n            action: 'getnotif' + msgEvent?.data?.value ,\n            value: notifData\n          }, msgEvent.origin)\n        }else{\n          window.parent.postMessage({\n            action: 'getnotifData',\n            value: notifData\n          }, '*')\n        }\n\n\n      }\n    });\n    </script>\n    ");
       return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
     };
 
@@ -5773,10 +5800,23 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe-intent';
+      var eventName;
 
       if (displayObj['custom-editor'] && !displayObj['bee-editor']) {
         // sanbox the iframe only for custom html
-        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'; // allow popup to open url in new page
+        var match = targetingMsgJson.display['custom-html'].match(/clevertap\.event\.push\((['"])(.*?)\1\)/);
+
+        if (match) {
+          {
+            eventName = match[1];
+          }
+
+          eventName = match[2];
+        } else {
+          console.log('No event found in the script. iframe load');
+        }
+
+        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms'; // allow popup to open url in new page
       }
 
       var onClick = targetingMsgJson.display.onClick;
@@ -5835,27 +5875,32 @@
       document.dispatchEvent(closeCampaign);
 
       if (targetingMsgJson.display['custom-editor']) {
-        html = appendScriptForCustomEvent(targetingMsgJson, html);
+        html = appendScriptForCustomEvent(targetingMsgJson, html, eventName);
       }
 
       iframe.srcdoc = html;
       var contentDiv;
 
       iframe.onload = function () {
-        var match = iframe.srcdoc.match(/clevertap\.event\.push\((['"])(.*?)\1\)/);
-
-        if (match) {
-          var eventName = match[2];
-          console.log('Event Name: on iframe load', eventName);
-        } else {
-          console.log('No event found in the script. iframe load');
-        }
-
         if (targetingMsgJson.display['custom-editor']) {
           window.addEventListener('message', function (event) {
-            var _event$data3;
+            var _event$data6, _event$data7, _event$data8, _event$data9;
 
-            if ((event === null || event === void 0 ? void 0 : (_event$data3 = event.data) === null || _event$data3 === void 0 ? void 0 : _event$data3.action) === 'getnotifData') {
+            if ((event === null || event === void 0 ? void 0 : (_event$data6 = event.data) === null || _event$data6 === void 0 ? void 0 : _event$data6.action) === 'Event') {
+              window.clevertap.event.push(event.data.value);
+            }
+
+            if ((event === null || event === void 0 ? void 0 : (_event$data7 = event.data) === null || _event$data7 === void 0 ? void 0 : _event$data7.action) === 'Profile') {
+              console.log('profile test1', event.data.value);
+              window.clevertap.profile.push(event.data.value);
+            }
+
+            if ((event === null || event === void 0 ? void 0 : (_event$data8 = event.data) === null || _event$data8 === void 0 ? void 0 : _event$data8.action) === 'OUL') {
+              console.log('OUL', event.data.value);
+              window.clevertap.onUserLogin.push(event.data.value);
+            }
+
+            if ((event === null || event === void 0 ? void 0 : (_event$data9 = event.data) === null || _event$data9 === void 0 ? void 0 : _event$data9.action) === 'getnotifData') {
               window.clevertap.renderNotificationClicked(event.data.value);
             }
           });
