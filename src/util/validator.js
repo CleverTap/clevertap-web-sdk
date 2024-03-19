@@ -22,7 +22,7 @@ export const isEventStructureFlat = (eventObj) => {
   return false
 }
 
-export const isChargedEventStructureValid = (chargedObj, logger) => {
+export const isChargedEventStructureValid = async (chargedObj, logger) => {
   if (isObject(chargedObj)) {
     for (var key in chargedObj) {
       if (chargedObj.hasOwnProperty(key)) {
@@ -57,7 +57,7 @@ export const isChargedEventStructureValid = (chargedObj, logger) => {
       const chargedId = chargedObj[CHARGED_ID] + '' // casting chargedId to string
 
       if (typeof _globalChargedId === 'undefined') {
-        _globalChargedId = StorageManager.readFromLSorCookie(CHARGEDID_COOKIE_NAME)
+        _globalChargedId = await StorageManager.readFromLSorCookie(CHARGEDID_COOKIE_NAME)
       }
       if (typeof _globalChargedId !== 'undefined' && _globalChargedId.trim() === chargedId.trim()) {
         // drop event- duplicate charged id
@@ -65,7 +65,7 @@ export const isChargedEventStructureValid = (chargedObj, logger) => {
         return false
       }
       _globalChargedId = chargedId
-      StorageManager.saveToLSorCookie(CHARGEDID_COOKIE_NAME, chargedId)
+      await StorageManager.saveToLSorCookie(CHARGEDID_COOKIE_NAME, chargedId)
     }
     return true
   } // if object (chargedObject)

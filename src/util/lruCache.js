@@ -6,7 +6,10 @@ export default class LRUCache {
 
   constructor (max) {
     this.max = max
-    let lruCache = StorageManager.readFromLSorCookie(LRU_CACHE)
+  }
+
+  async init () {
+    let lruCache = await StorageManager.readFromLSorCookie(LRU_CACHE)
     if (lruCache) {
       const tempLruCache = {}
       this.#keyOrder = []
@@ -24,18 +27,18 @@ export default class LRUCache {
     }
   }
 
-  get (key) {
+  async get (key) {
     const item = this.cache[key]
     if (item) {
       this.cache = this.#deleteFromObject(key, this.cache)
       this.cache[key] = item
       this.#keyOrder.push(key)
     }
-    this.saveCacheToLS(this.cache)
+    await this.saveCacheToLS(this.cache)
     return item
   }
 
-  set (key, value) {
+  async set (key, value) {
     const item = this.cache[key]
     const allKeys = this.#keyOrder
     if (item != null) {
@@ -47,10 +50,10 @@ export default class LRUCache {
     if (this.#keyOrder[this.#keyOrder - 1] !== key) {
       this.#keyOrder.push(key)
     }
-    this.saveCacheToLS(this.cache)
+    await this.saveCacheToLS(this.cache)
   }
 
-  saveCacheToLS (cache) {
+  async saveCacheToLS (cache) {
     const objToArray = []
     const allKeys = this.#keyOrder
     for (const index in allKeys) {
@@ -61,7 +64,7 @@ export default class LRUCache {
         objToArray.push(temp)
       }
     }
-    StorageManager.saveToLSorCookie(LRU_CACHE, { cache: objToArray })
+    await StorageManager.saveToLSorCookie(LRU_CACHE, { cache: objToArray })
   }
 
   getKey (value) {

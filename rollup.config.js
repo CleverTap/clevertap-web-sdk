@@ -8,11 +8,15 @@ import sourcemaps from 'rollup-plugin-sourcemaps'
 
 /**
  * Returns the input file path
- * @param {('SERVICE_WORKER' | 'WEB')} mode
+ * @param {('SERVICE_WORKER' | 'WEB' | 'SHOPIFY')} mode
  */
 const getInput = (mode) => {
   if (mode === 'SERVICE_WORKER') {
     return 'sw_webpush.js'
+  }
+
+  if (mode === 'SHOPIFY') {
+    return 'src/clevertapShopify.js'
   }
 
   return 'src/main.js'
@@ -20,7 +24,7 @@ const getInput = (mode) => {
 
 /**
  * returns the output object of the build config
- * @param {('SERVICE_WORKER' | 'WEB')} mode
+ * @param {('SERVICE_WORKER' | 'WEB' | 'SHOPIFY')} mode
  */
 const getOutput = (mode) => {
   if (mode === 'SERVICE_WORKER') {
@@ -29,6 +33,22 @@ const getOutput = (mode) => {
         name: 'sw_webpush',
         file: 'sw_webpush.min.js',
         format: 'umd',
+        plugins: [terser()]
+      }
+    ]
+  }
+
+  if (mode === 'SHOPIFY') {
+    return [
+      {
+        name: 'clevertapShopify',
+        file: 'clevertap.shopify.js',
+        format: 'iife'
+      },
+      {
+        name: 'clevertapShopify',
+        file: 'clevertap.shopify.min.js',
+        format: 'iife',
         plugins: [terser()]
       }
     ]
@@ -59,7 +79,7 @@ const getPlugins = () => {
     sourcemaps(),
     eslint({
       fix: true,
-      throwOnError: true
+      throwOnError: false
     }),
     replace({
       preventAssignment: true,

@@ -28,8 +28,8 @@ export default class SessionManager {
     this.#sessionId = sessionId
   }
 
-  getSessionCookieObject () {
-    let scookieStr = StorageManager.readCookie(this.cookieName)
+  async getSessionCookieObject () {
+    let scookieStr = await StorageManager.retrieveData('cookie', this.cookieName)
     let obj = {}
 
     if (scookieStr != null) {
@@ -56,9 +56,9 @@ export default class SessionManager {
     return obj
   }
 
-  setSessionCookieObject (obj) {
+  async setSessionCookieObject (obj) {
     const objStr = JSON.stringify(obj)
-    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName())
+    await StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName())
   }
 
   manageSession (session) {

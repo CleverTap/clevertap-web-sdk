@@ -39,6 +39,9 @@ import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 
 export default class CleverTap {
+  /**
+   * The logger Object
+   */
   #logger
   #api
   #onloadcalled
