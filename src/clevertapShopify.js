@@ -55,7 +55,7 @@ import EventHandler from './modules/event'
 import UserLoginHandler from './modules/userLogin'
 import ModeManager from './modules/mode'
 import { Logger, logLevels } from './modules/logger'
-import { SCOOKIE_PREFIX } from './util/constants'
+import { SCOOKIE_PREFIX, SHOPIFY_DEBUG } from './util/constants'
 import { StorageManager, $ct } from './util/storage'
 import { addToURL, getHostName } from './util/url'
 import { compressData } from './util/encoder'
@@ -95,11 +95,11 @@ class ClevertapShopify {
    */
   #request
 
-  constructor ({ browser, accountId, region }) {
+  constructor ({ browser, accountId, region, targetDomain }) {
     ModeManager.browser = browser
     ModeManager.mode = 'SHOPIFY'
-    this.#logger = new Logger(logLevels.DEBUG)
-    this.#account = new Account({ id: accountId }, region)
+    this.#logger = new Logger(logLevels.INFO)
+    this.#account = new Account({ id: accountId }, region, targetDomain)
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#session = new SessionManager({
       logger: this.#logger,
@@ -133,6 +133,7 @@ class ClevertapShopify {
   }
 
   async init () {
+    this.#logger.debug('init called')
     this.#device.gcookie = await this.#device.getGuid()
     // @todo implement AsyncStorageManager
     await StorageManager.removeCookieAsync('WZRK_P', getHostName())
@@ -141,8 +142,22 @@ class ClevertapShopify {
     }
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
 
+    // get log level from localStorage
+    const logLevel = await StorageManager.retrieveData('localStorage', SHOPIFY_DEBUG)
+    if (logLevel) {
+      this.#logger.logLevelValue = logLevel
+    }
+
     // @todo make a decision whether we want to directly send privacy as true
     await this.pageChanged()
+  }
+
+  /**
+   * A helper method to log shopify events
+   * @param {Object} event
+   */
+  logShopifyEvents (event) {
+    this.#logger.debugShopify(event)
   }
 
   async pageChanged () {

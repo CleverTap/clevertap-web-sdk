@@ -17,6 +17,7 @@ export const PR_COOKIE = 'WZRK_PR'
 export const ARP_COOKIE = 'WZRK_ARP'
 export const LCOOKIE_NAME = 'WZRK_L'
 export const NOTIF_COOKIE_NAME = 'WZRK_N'
+export const SHOPIFY_DEBUG = 'WZRK_LOG_LEVEL'
 export const GLOBAL = 'global' // used for email unsubscribe also
 export const TOTAL_COUNT = 'tc'
 export const DISPLAY = 'display'
