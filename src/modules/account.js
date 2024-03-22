@@ -5,14 +5,18 @@ export default class Account {
   #region = ''
   #targetDomain = TARGET_DOMAIN
   #dcSdkversion = ''
+  #token = ''
 
-  constructor ({ id } = {}, region = '', targetDomain = TARGET_DOMAIN) {
+  constructor ({ id } = {}, region = '', targetDomain = TARGET_DOMAIN, token = '') {
     this.id = id
     if (region) {
       this.region = region
     }
     if (targetDomain) {
       this.targetDomain = targetDomain
+    }
+    if (token) {
+      this.token = token
     }
   }
 
@@ -48,6 +52,14 @@ export default class Account {
     this.#targetDomain = targetDomain
   }
 
+  get token () {
+    return this.#token
+  }
+
+  set token (token) {
+    this.#token = token
+  }
+
   get finalTargetDomain () {
     if (this.region) {
       return `${this.region}.${this.targetDomain}`
@@ -57,6 +69,10 @@ export default class Account {
       }
       return this.targetDomain
     }
+  }
+
+  get dataPostPEURL () {
+    return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/defineVars`
   }
 
   get dataPostURL () {

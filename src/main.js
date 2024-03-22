@@ -1,3 +1,4 @@
+import 'regenerator-runtime/runtime.js'
 import Clevertap from './clevertap'
 
 const clevertap = new Clevertap(window.clevertap)
