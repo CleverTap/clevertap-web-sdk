@@ -5480,9 +5480,7 @@
         // sandboxing the iframe only for custom html
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'; // allow popup to open url in new page
 
-        var ctScript = "\n       var clevertap = {\n        event: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'Event',\n              value: eventName\n            },'*');\n          }\n        },\n        profile: {\n          push: (eventName) => {\n            console.log('test profile')\n            window.parent.postMessage({\n              action: 'Profile',\n              value: eventName\n            },'*');\n          }\n        },\n        onUserLogin: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'OUL',\n              value: eventName\n            },'*');\n          }\n        }\n      }\n      ";
-        var insertPosition = html.indexOf('<script>');
-        html = [html.slice(0, insertPosition + '<script>'.length), ctScript, html.slice(insertPosition + '<script>'.length)].join('');
+        html = ctEventhandler(html);
       }
 
       var onClick = targetingMsgJson.display.onClick;
@@ -5591,6 +5589,13 @@
       };
 
       iframe.onload = handleIframeLoad;
+    };
+
+    var ctEventhandler = function ctEventhandler(html) {
+      var ctScript = "\n     var clevertap = {\n      event: {\n        push: (eventName) => {\n          window.parent.postMessage({\n            action: 'Event',\n            value: eventName\n          },'*');\n        }\n      },\n      profile: {\n        push: (eventName) => {\n          console.log('test profile')\n          window.parent.postMessage({\n            action: 'Profile',\n            value: eventName\n          },'*');\n        }\n      },\n      onUserLogin: {\n        push: (eventName) => {\n          window.parent.postMessage({\n            action: 'OUL',\n            value: eventName\n          },'*');\n        }\n      }\n    }\n    ";
+      var insertPosition = html.indexOf('<script>');
+      html = [html.slice(0, insertPosition + '<script>'.length), ctScript, html.slice(insertPosition + '<script>'.length)].join('');
+      return html;
     };
 
     var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, html, sandboxFlag) {
@@ -5791,9 +5796,7 @@
         // sanbox the iframe only for custom html
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'; // allow popup to open url in new page
 
-        var ctScript = "\n       var clevertap = {\n        event: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'Event',\n              value: eventName\n            },'*');\n          }\n        },\n        profile: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'Profile',\n              value: eventName\n            },'*');\n          }\n        },\n        onUserLogin: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'OUL',\n              value: eventName\n            },'*');\n          }\n        }\n      }\n      ";
-        var insertPosition = html.indexOf('<script>');
-        html = [html.slice(0, insertPosition + '<script>'.length), ctScript, html.slice(insertPosition + '<script>'.length)].join('');
+        html = ctEventhandler(html);
       }
 
       var onClick = targetingMsgJson.display.onClick;

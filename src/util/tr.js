@@ -439,37 +439,7 @@ const _tr = (msg, {
     let html = targetingMsgJson.msgContent.html
     if (displayObj['custom-editor'] && !displayObj['bee-editor'] && sandboxFlag) { // sandboxing the iframe only for custom html
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox' // allow popup to open url in new page
-      const ctScript = `
-       var clevertap = {
-        event: {
-          push: (eventName) => {
-            window.parent.postMessage({
-              action: 'Event',
-              value: eventName
-            },'*');
-          }
-        },
-        profile: {
-          push: (eventName) => {
-            console.log('test profile')
-            window.parent.postMessage({
-              action: 'Profile',
-              value: eventName
-            },'*');
-          }
-        },
-        onUserLogin: {
-          push: (eventName) => {
-            window.parent.postMessage({
-              action: 'OUL',
-              value: eventName
-            },'*');
-          }
-        }
-      }
-      `
-      const insertPosition = html.indexOf('<script>')
-      html = [html.slice(0, insertPosition + '<script>'.length), ctScript, html.slice(insertPosition + '<script>'.length)].join('')
+      html = ctEventhandler(html)
     }
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
@@ -586,6 +556,40 @@ const _tr = (msg, {
     }
 
     iframe.onload = handleIframeLoad
+  }
+
+  const ctEventhandler = (html) => {
+    const ctScript = `
+     var clevertap = {
+      event: {
+        push: (eventName) => {
+          window.parent.postMessage({
+            action: 'Event',
+            value: eventName
+          },'*');
+        }
+      },
+      profile: {
+        push: (eventName) => {
+          window.parent.postMessage({
+            action: 'Profile',
+            value: eventName
+          },'*');
+        }
+      },
+      onUserLogin: {
+        push: (eventName) => {
+          window.parent.postMessage({
+            action: 'OUL',
+            value: eventName
+          },'*');
+        }
+      }
+    }
+    `
+    const insertPosition = html.indexOf('<script>')
+    html = [html.slice(0, insertPosition + '<script>'.length), ctScript, html.slice(insertPosition + '<script>'.length)].join('')
+    return html
   }
 
   const appendScriptForCustomEvent = (targetingMsgJson, html, sandboxFlag) => {
@@ -823,36 +827,7 @@ const _tr = (msg, {
     let html = targetingMsgJson.msgContent.html
     if (displayObj['custom-editor'] && !displayObj['bee-editor'] && sandboxFlag) { // sanbox the iframe only for custom html
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox' // allow popup to open url in new page
-      const ctScript = `
-       var clevertap = {
-        event: {
-          push: (eventName) => {
-            window.parent.postMessage({
-              action: 'Event',
-              value: eventName
-            },'*');
-          }
-        },
-        profile: {
-          push: (eventName) => {
-            window.parent.postMessage({
-              action: 'Profile',
-              value: eventName
-            },'*');
-          }
-        },
-        onUserLogin: {
-          push: (eventName) => {
-            window.parent.postMessage({
-              action: 'OUL',
-              value: eventName
-            },'*');
-          }
-        }
-      }
-      `
-      const insertPosition = html.indexOf('<script>')
-      html = [html.slice(0, insertPosition + '<script>'.length), ctScript, html.slice(insertPosition + '<script>'.length)].join('')
+      html = ctEventhandler(html)
     }
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
