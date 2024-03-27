@@ -28,6 +28,7 @@ export default class RequestManager {
 
     RequestDispatcher.logger = logger
     RequestDispatcher.device = device
+    RequestDispatcher.account = account
   }
 
   processBackupEvents () {
@@ -72,26 +73,9 @@ export default class RequestManager {
     const obj = this.#session.getSessionCookieObject()
     dataObject.s = obj.s // session cookie
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
-    if (sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
-
-    return dataObject
-  }
-
-  addSystemDataToProfileObject (dataObject, ignoreTrim) {
-    if (!isObjectEmpty(this.#logger.wzrkError)) {
-      dataObject.wzrk_error = this.#logger.wzrkError
-      this.#logger.wzrkError = {}
-    }
-
-    dataObject.id = this.#account.id
-
-    if (isValueValid(this.#device.gcookie)) {
-      dataObject.g = this.#device.gcookie
-    }
-
-    const obj = this.#session.getSessionCookieObject()
-    dataObject.s = obj.s // session cookie
-    dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
+    let proto = document.location.protocol
+    proto = proto.replace(':', '')
+    dataObject.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...$ct.flutterVersion } // app fields
     if (sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
 
     return dataObject
@@ -128,7 +112,7 @@ export default class RequestManager {
    * @param {boolean} override whether the request can go through or not
    * @param {Boolean} sendOULFlag - true in case of a On User Login request
    */
-  saveAndFireRequest (url, override, sendOULFlag) {
+  saveAndFireRequest (url, override, sendOULFlag, evtName) {
     const now = getNow()
     url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N)
     const data = url + '&i=' + now + '&sn=' + seqNo
@@ -149,7 +133,7 @@ export default class RequestManager {
         seqNo = 0
       }
       window.oulReqN = $ct.globalCache.REQ_N
-      RequestDispatcher.fireRequest(data, false, sendOULFlag)
+      RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName)
     } else {
       this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)
     }
@@ -205,7 +189,7 @@ export default class RequestManager {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-    this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+    this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
   }
 
   #addToLocalEventMap (evtName) {
@@ -230,6 +214,26 @@ export default class RequestManager {
       }
       $ct.globalEventsMap[evtName] = evtDetail
       StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap)
+    }
+  }
+
+  async post (url, body) {
+    try {
+      const response = await fetch(url, {
+        method: 'post',
+        headers: { 'Content-Type': 'application/json' },
+        body: body
+      })
+      if (response.ok) {
+        const data = await response.json()
+        this.#logger.debug('Sync data successful', data)
+        return data
+      } else {
+        throw response
+      }
+    } catch (e) {
+      this.#logger.debug('Error in syncing variables', e)
+      throw e
     }
   }
 }

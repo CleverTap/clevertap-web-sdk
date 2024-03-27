@@ -1,7 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.6.10] - 17 Jan, 2023
+## [1.7.0] - 27 Mar, 2024
+- Product experiences in Web SDK
+- Carousel preview bug fix
+
+## [1.6.10] - 17 Jan, 2024
 - Fixes a bug related to Web Inbox rendering on mobile browser
 
 ## [1.6.9] - 6 Dec, 2023
