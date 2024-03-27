@@ -37,6 +37,11 @@ self.addEventListener('activate', function (event) {
 })
 
 self.addEventListener('push', function (event) {
+  var now = new Date()
+  var currentHour = now.getHours()
+  var currentMinute = now.getMinutes()
+  var currentSecond = now.getSeconds()
+  const formattedTime = currentHour + '_' + currentMinute + '_' + currentSecond
   console.log('Push event: ', event)
   // get all the notification data
   var notificationData = JSON.parse(event.data.text())
@@ -44,6 +49,7 @@ self.addEventListener('push', function (event) {
   var notificationOptions = notificationData.notificationOptions
   var data = notificationOptions.data
   var key
+  data.wzrk_id = data.wzrk_id + formattedTime
   if (typeof data !== 'undefined') {
     key = data.wzrk_id
   }
