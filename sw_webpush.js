@@ -37,6 +37,7 @@ self.addEventListener('activate', function (event) {
 })
 
 self.addEventListener('push', function (event) {
+  console.log('Push event: ', event)
   // get all the notification data
   var notificationData = JSON.parse(event.data.text())
   var title = notificationData.title
