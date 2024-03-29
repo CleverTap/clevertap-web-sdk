@@ -46,7 +46,6 @@ const _tr = (msg, {
   const _request = request
   const _logger = logger
   let _wizCounter = 0
-  const sandboxFlag = true
   // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
@@ -437,7 +436,7 @@ const _tr = (msg, {
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe'
     let html = targetingMsgJson.msgContent.html
-    if (displayObj['custom-editor'] && !displayObj['bee-editor'] && sandboxFlag) { // sandboxing the iframe only for custom html
+    if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) { // sandboxing the iframe only for custom html
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox' // allow popup to open url in new page
       html = ctEventhandler(html)
     }
@@ -499,7 +498,7 @@ const _tr = (msg, {
       const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>'
       html = css + title + body
     }
-    if (sandboxFlag) {
+    if (displayObj['custom-html-sandbox']) {
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; height:100%; border:0px !important; border-color:none !important;')
     } else {
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
@@ -512,7 +511,7 @@ const _tr = (msg, {
     document.dispatchEvent(closeCampaign)
 
     if (displayObj['custom-editor']) {
-      html = appendScriptForCustomEvent(targetingMsgJson, html, sandboxFlag)
+      html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
     iframe.srcdoc = html
 
@@ -520,7 +519,7 @@ const _tr = (msg, {
     let contentDiv
 
     const handleIframeLoad = () => {
-      if (displayObj['custom-editor'] && sandboxFlag) {
+      if (displayObj['custom-editor'] && displayObj['custom-html-sandbox']) {
         iframe.contentWindow.postMessage({ action: 'adjustIFrameHeight' + displayObj.layout, value: displayObj.layout }, '*')
         window.addEventListener('message', (event) => {
           if (event?.data?.action === 'update height' + displayObj.layout) {
@@ -592,7 +591,7 @@ const _tr = (msg, {
     return html
   }
 
-  const appendScriptForCustomEvent = (targetingMsgJson, html, sandboxFlag) => {
+  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
     const script = `<script>
     
       
@@ -601,7 +600,7 @@ const _tr = (msg, {
           return v && v.trim().substring(0, 20);
       }
       let msgEvent
-      if('${sandboxFlag}'){
+      if('${targetingMsgJson.display['custom-html-sandbox']}'){
         
       window.addEventListener('message', event => {
           let contentHeight
@@ -635,7 +634,7 @@ const _tr = (msg, {
             if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }
             if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }
             const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '${targetingMsgJson.wzrk_pivot}' };
-            if(${sandboxFlag}){
+            if(${targetingMsgJson.display['custom-html-sandbox']}){
               if(msgEvent){
                 msgEvent.source.postMessage({
                   action: 'getnotif' + msgEvent?.data?.value ,
@@ -825,7 +824,7 @@ const _tr = (msg, {
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe-intent'
     let html = targetingMsgJson.msgContent.html
-    if (displayObj['custom-editor'] && !displayObj['bee-editor'] && sandboxFlag) { // sanbox the iframe only for custom html
+    if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) { // sanbox the iframe only for custom html
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox' // allow popup to open url in new page
       html = ctEventhandler(html)
     }
@@ -895,13 +894,13 @@ const _tr = (msg, {
     document.dispatchEvent(closeCampaign)
 
     if (targetingMsgJson.display['custom-editor']) {
-      html = appendScriptForCustomEvent(targetingMsgJson, html, sandboxFlag)
+      html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
     iframe.srcdoc = html
 
     let contentDiv
     iframe.onload = () => {
-      if (targetingMsgJson.display['custom-editor'] && sandboxFlag) {
+      if (targetingMsgJson.display['custom-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
         window.addEventListener('message', event => {
           if (event?.data?.action === 'getnotifData') {
             window.clevertap.renderNotificationClicked(event.data.value)
