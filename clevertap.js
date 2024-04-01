@@ -5926,7 +5926,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = {
-        lib: 'web-sdk-v1.7.0',
+        lib: 'web-sdk-v1.7.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
