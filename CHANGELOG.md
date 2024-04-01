@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.7.1] - 1 Apr, 2024
+- Fixes a bug where clevertap script was not working due to dependency added for PE
+- Fixes a bug where setMultiValue was not working
+
 ## [1.7.0] - 27 Mar, 2024
 - Product experiences in Web SDK
 - Carousel preview bug fix
