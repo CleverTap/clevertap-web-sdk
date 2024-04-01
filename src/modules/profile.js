@@ -154,7 +154,7 @@ export default class ProfileHandler extends Array {
         profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
       }
       data.profile = profileObj
-      data = this.#request.addSystemDataToObject(data, undefined)
+      data = this.#request.addSystemDataToObject(data, true)
 
       this.#request.addFlags(data)
       const compressedData = compressData(JSON.stringify(data), this.#logger)
@@ -309,7 +309,7 @@ export default class ProfileHandler extends Array {
       profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
     }
     data.profile = profileObj
-    data = this.#request.addSystemDataToObject(data, undefined)
+    data = this.#request.addSystemDataToObject(data, true)
     this.#request.addFlags(data)
     const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL

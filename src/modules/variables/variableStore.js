@@ -57,9 +57,11 @@ class VariableStore {
    * @throws Will throw an error if the account token is missing.
    * @returns {Promise} - The result of the synchronization request.
    */
-  async syncVariables (onSyncSuccess, onSyncFailure) {
+  syncVariables (onSyncSuccess, onSyncFailure) {
     if (!this.#account.token) {
-      throw new Error('Account token is missing')
+      const m = 'Account token is missing.'
+      this.#logger.error(m)
+      return Promise.reject(new Error(m))
     }
 
     const payload = {
@@ -76,8 +78,9 @@ class VariableStore {
 
     // Check if payload.vars is empty
     if (Object.keys(payload.vars).length === 0) {
-      this.#logger.error('No variables are defined.')
-      return
+      const m = 'No variables are defined.'
+      this.#logger.error(m)
+      return Promise.reject(new Error(m))
     }
 
     let meta = {}
@@ -88,31 +91,33 @@ class VariableStore {
     const body = JSON.stringify([meta, payload])
     const url = this.#account.dataPostPEURL
 
-    try {
-      const r = await this.#request.post(url, body)
-      if (onSyncSuccess && typeof onSyncSuccess === 'function') {
-        onSyncSuccess(r)
-      }
-      return r
-    } catch (e) {
-      if (onSyncFailure && typeof onSyncFailure === 'function') {
-        onSyncFailure(e)
-      }
-      if (e.status === 400) {
-        this.#logger.error('Invalid sync payload or clear the existing draft')
-      } else if (e.status === 401) {
-        this.#logger.error('This is not a test profile')
-      } else {
-        this.#logger.error('Sync variable failed')
-      }
-    }
+    return this.#request.post(url, body)
+      .then((r) => {
+        if (onSyncSuccess && typeof onSyncSuccess === 'function') {
+          onSyncSuccess(r)
+        }
+        return r
+      })
+      .catch((e) => {
+        if (onSyncFailure && typeof onSyncFailure === 'function') {
+          onSyncFailure(e)
+        }
+        if (e.status === 400) {
+          this.#logger.error('Invalid sync payload or clear the existing draft')
+        } else if (e.status === 401) {
+          this.#logger.error('This is not a test profile')
+        } else {
+          this.#logger.error('Sync variable failed')
+        }
+        throw e
+      })
   }
 
   /**
    * Fetches variables from the server.
    * @param {Function} onFetchCallback - Callback function on fetch completion.
    */
-  async fetchVariables (onFetchCallback) {
+  fetchVariables (onFetchCallback) {
     this.#event.push(WZRK_FETCH, { t: 4 })
     if (onFetchCallback && typeof onFetchCallback === 'function') {
       this.#fetchCallback = onFetchCallback
