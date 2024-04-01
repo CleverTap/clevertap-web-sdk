@@ -43,9 +43,9 @@ export class Logger {
     }
   }
 
-  debugShopify (message) {
+  debugShopify (message, type = 'web') {
     if (this.logLevelValue >= logLevels.DEBUG || this.#isLegacyDebug) {
-      this.#log('debug', message, 'shopify_standard_event')
+      this.#log('debug', message, type)
     }
   }
 

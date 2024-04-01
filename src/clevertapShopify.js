@@ -155,9 +155,10 @@ class ClevertapShopify {
   /**
    * A helper method to log shopify events
    * @param {Object} event
+   * @param {('shopify_standard_event' | 'web')} type
    */
-  logShopifyEvents (event) {
-    this.#logger.debugShopify(event)
+  logShopifyEvents (event, type) {
+    this.#logger.debugShopify(event, type)
   }
 
   async pageChanged () {

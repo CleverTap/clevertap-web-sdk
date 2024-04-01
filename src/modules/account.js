@@ -62,7 +62,7 @@ export default class Account {
 
   get endpoint () {
     if (ModeManager.mode === 'SHOPIFY') {
-      return 'shopify'
+      return 'shopifyAppPixel'
     }
     return 'a'
   }

@@ -191,7 +191,7 @@ var clevertapShopify = (function () {
 
     get endpoint() {
       if (mode.mode === 'SHOPIFY') {
-        return 'shopify';
+        return 'shopifyAppPixel';
       }
 
       return 'a';
@@ -3560,8 +3560,10 @@ var clevertapShopify = (function () {
     }
 
     debugShopify(message) {
+      var type = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'web';
+
       if (this.logLevelValue >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message, 'shopify_standard_event');
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message, type);
       }
     }
 
@@ -3727,11 +3729,12 @@ var clevertapShopify = (function () {
     /**
      * A helper method to log shopify events
      * @param {Object} event
+     * @param {('shopify_standard_event' | 'web')} type
      */
 
 
-    logShopifyEvents(event) {
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debugShopify(event);
+    logShopifyEvents(event, type) {
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debugShopify(event, type);
     }
 
     pageChanged() {
