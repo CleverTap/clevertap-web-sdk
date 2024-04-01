@@ -797,7 +797,7 @@ export default class CleverTap {
     if ($ct.location) {
       data.af = { ...data.af, ...$ct.location }
     }
-    data = this.#request.addSystemDataToObject(data, undefined)
+    data = this.#request.addSystemDataToObject(data, true)
     this.#request.addFlags(data)
     const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
@@ -831,16 +831,18 @@ export default class CleverTap {
     return Variable.define(name, defaultValue, this.#variableStore)
   }
 
-  async syncVariables (onSyncSuccess, onSyncFailure) {
+  syncVariables (onSyncSuccess, onSyncFailure) {
     if (this.#logger.logLevel === 4) {
       return this.#variableStore.syncVariables(onSyncSuccess, onSyncFailure)
     } else {
-      this.#logger.error('App log level is not set to 4')
+      const m = 'App log level is not set to 4'
+      this.#logger.error(m)
+      return Promise.reject(new Error(m))
     }
   }
 
-  async fetchVariables (onFetchCallback) {
-    return this.#variableStore.fetchVariables(onFetchCallback)
+  fetchVariables (onFetchCallback) {
+    this.#variableStore.fetchVariables(onFetchCallback)
   }
 
   addVariablesChangedCallback (callback) {
