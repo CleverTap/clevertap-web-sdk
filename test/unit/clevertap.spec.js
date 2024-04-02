@@ -1,4 +1,3 @@
-import 'regenerator-runtime/runtime.js'
 import Clevertap from '../../src/clevertap'
 import Account from '../../src/modules/account'
 import DeviceManager from '../../src/modules/device'

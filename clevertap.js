@@ -1,6 +1,6 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('regenerator-runtime/runtime.js')) :
-  typeof define === 'function' && define.amd ? define(['regenerator-runtime/runtime.js'], factory) :
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+  typeof define === 'function' && define.amd ? define(factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.clevertap = factory());
 }(this, (function () { 'use strict';
 
