@@ -33,4 +33,5 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Copy file to S3
         run: |
-          aws s3 cp sw_webpush.min.js s3://${{ secrets.S3_BUCKET_PATH }} 
+          aws s3 cp sw_webpush.min.js s3://${{ secrets.S3_BUCKET_PATH }}/sw_webpush.js
+
