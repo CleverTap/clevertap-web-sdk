@@ -1,7 +1,21 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.6.10] - 17 Jan, 2023
+## [1.7.3] - 3 Apr, 2024
+- Fixes a issue in release pipeline of Service worker.
+
+## [1.7.2] - 2 Apr, 2024
+- Fixes a bug in service worker file having deeplink issue
+
+## [1.7.1] - 1 Apr, 2024
+- Fixes a bug where clevertap script was not working due to dependency added for PE
+- Fixes a bug where setMultiValue was not working
+
+## [1.7.0] - 27 Mar, 2024
+- Product experiences in Web SDK
+- Carousel preview bug fix
+
+## [1.6.10] - 17 Jan, 2024
 - Fixes a bug related to Web Inbox rendering on mobile browser
 
 ## [1.6.9] - 6 Dec, 2023
