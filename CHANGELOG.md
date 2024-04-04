@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.7.3] - 3 Apr, 2024
+- Fixes a issue in release pipeline of Service worker.
+
 ## [1.7.2] - 2 Apr, 2024
 - Fixes a bug in service worker file having deeplink issue
 
