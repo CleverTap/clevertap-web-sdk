@@ -5552,7 +5552,7 @@
             value: displayObj.layout
           }, '*');
           window.addEventListener('message', function (event) {
-            var _event$data, _event$data2, _event$data3, _event$data4, _event$data5;
+            var _event$data, _event$data2, _event$data3, _event$data4, _event$data5, _event$data6, _event$data7;
 
             if ((event === null || event === void 0 ? void 0 : (_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.action) === 'update height' + displayObj.layout) {
               var heightAdjust = document.getElementById(divId);
@@ -5570,6 +5570,16 @@
               window.clevertap.profile.push(event.data.value);
             } else if ((event === null || event === void 0 ? void 0 : (_event$data5 = event.data) === null || _event$data5 === void 0 ? void 0 : _event$data5.action) === 'OUL') {
               window.clevertap.onUserLogin.push(event.data.value);
+            } else if ((event === null || event === void 0 ? void 0 : (_event$data6 = event.data) === null || _event$data6 === void 0 ? void 0 : _event$data6.action) === 'closeBoxPopUp') {
+              var boxWrapper = window.document.getElementById('wizParDiv0');
+              setTimeout(function () {
+                boxWrapper.remove();
+              }, 0);
+            } else if ((event === null || event === void 0 ? void 0 : (_event$data7 = event.data) === null || _event$data7 === void 0 ? void 0 : _event$data7.action) === 'closeBannerPopUp') {
+              var bannerWrapper = window.document.getElementById('wizParDiv2');
+              setTimeout(function () {
+                bannerWrapper.remove();
+              }, 0);
             }
           });
           contentDiv = '';
@@ -5593,7 +5603,7 @@
     };
 
     var ctEventhandler = function ctEventhandler(html) {
-      var ctScript = "\n     var clevertap = {\n      event: {\n        push: (eventName) => {\n          window.parent.postMessage({\n            action: 'Event',\n            value: eventName\n          },'*');\n        }\n      },\n      profile: {\n        push: (eventName) => {\n          window.parent.postMessage({\n            action: 'Profile',\n            value: eventName\n          },'*');\n        }\n      },\n      onUserLogin: {\n        push: (eventName) => {\n          window.parent.postMessage({\n            action: 'OUL',\n            value: eventName\n          },'*');\n        }\n      }\n    }\n    ";
+      var ctScript = "\n     var clevertap = {\n      event: {\n        push: (eventName) => {\n          window.parent.postMessage({\n            action: 'Event',\n            value: eventName\n          },'*');\n        }\n      },\n      profile: {\n        push: (eventName) => {\n          window.parent.postMessage({\n            action: 'Profile',\n            value: eventName\n          },'*');\n        }\n      },\n      onUserLogin: {\n        push: (eventName) => {\n          window.parent.postMessage({\n            action: 'OUL',\n            value: eventName\n          },'*');\n        }\n      },\n      closeBoxPopUp: () => {\n        window.parent.postMessage({\n          action: 'closeBoxPopUp',\n          value: 'closeBoxPopUp'\n        },'*');\n      },\n      closeBannerPopUp: () => {\n        window.parent.postMessage({\n          action: 'closeBannerPopUp',\n          value: 'closeBannerPopUp'\n        },'*');\n      },\n      closeInterstitialPopUp: () => {\n        window.parent.postMessage({\n          action: 'closeInterstitialPopUp',\n          value: 'closeInterstitialPopUp'\n        },'*');\n      }\n    }\n    ";
       var insertPosition = html.indexOf('<script>');
       html = [html.slice(0, insertPosition + '<script>'.length), ctScript, html.slice(insertPosition + '<script>'.length)].join('');
       return html;
@@ -5863,18 +5873,25 @@
       iframe.onload = function () {
         if (targetingMsgJson.display['custom-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
           window.addEventListener('message', function (event) {
-            var _event$data6, _event$data7, _event$data8, _event$data9;
+            var _event$data8, _event$data9, _event$data10, _event$data11, _event$data12;
 
-            if ((event === null || event === void 0 ? void 0 : (_event$data6 = event.data) === null || _event$data6 === void 0 ? void 0 : _event$data6.action) === 'getnotifData') {
+            if ((event === null || event === void 0 ? void 0 : (_event$data8 = event.data) === null || _event$data8 === void 0 ? void 0 : _event$data8.action) === 'getnotifData') {
               window.clevertap.renderNotificationClicked(event.data.value);
             }
 
-            if ((event === null || event === void 0 ? void 0 : (_event$data7 = event.data) === null || _event$data7 === void 0 ? void 0 : _event$data7.action) === 'Event') {
+            if ((event === null || event === void 0 ? void 0 : (_event$data9 = event.data) === null || _event$data9 === void 0 ? void 0 : _event$data9.action) === 'Event') {
               window.clevertap.event.push(event.data.value);
-            } else if ((event === null || event === void 0 ? void 0 : (_event$data8 = event.data) === null || _event$data8 === void 0 ? void 0 : _event$data8.action) === 'Profile') {
+            } else if ((event === null || event === void 0 ? void 0 : (_event$data10 = event.data) === null || _event$data10 === void 0 ? void 0 : _event$data10.action) === 'Profile') {
               window.clevertap.profile.push(event.data.value);
-            } else if ((event === null || event === void 0 ? void 0 : (_event$data9 = event.data) === null || _event$data9 === void 0 ? void 0 : _event$data9.action) === 'OUL') {
+            } else if ((event === null || event === void 0 ? void 0 : (_event$data11 = event.data) === null || _event$data11 === void 0 ? void 0 : _event$data11.action) === 'OUL') {
               window.clevertap.onUserLogin.push(event.data.value);
+            } else if ((event === null || event === void 0 ? void 0 : (_event$data12 = event.data) === null || _event$data12 === void 0 ? void 0 : _event$data12.action) === 'closeInterstitialPopUp') {
+              var interstitialWrapper = window.document.getElementById('intentPreview');
+              var interstitialOverlay = window.document.getElementById('intentOpacityDiv');
+              setTimeout(function () {
+                interstitialOverlay.remove();
+                interstitialWrapper.remove();
+              }, 0);
             }
           });
           contentDiv = '';

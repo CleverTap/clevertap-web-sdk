@@ -537,6 +537,12 @@ const _tr = (msg, {
             window.clevertap.profile.push(event.data.value)
           } else if (event?.data?.action === 'OUL') {
             window.clevertap.onUserLogin.push(event.data.value)
+          } else if (event?.data?.action === 'closeBoxPopUp') {
+            var boxWrapper = window.document.getElementById('wizParDiv0')
+            setTimeout(() => { boxWrapper.remove() }, 0)
+          } else if (event?.data?.action === 'closeBannerPopUp') {
+            var bannerWrapper = window.document.getElementById('wizParDiv2')
+            setTimeout(() => { bannerWrapper.remove() }, 0)
           }
         })
         contentDiv = ''
@@ -583,6 +589,24 @@ const _tr = (msg, {
             value: eventName
           },'*');
         }
+      },
+      closeBoxPopUp: () => {
+        window.parent.postMessage({
+          action: 'closeBoxPopUp',
+          value: 'closeBoxPopUp'
+        },'*');
+      },
+      closeBannerPopUp: () => {
+        window.parent.postMessage({
+          action: 'closeBannerPopUp',
+          value: 'closeBannerPopUp'
+        },'*');
+      },
+      closeInterstitialPopUp: () => {
+        window.parent.postMessage({
+          action: 'closeInterstitialPopUp',
+          value: 'closeInterstitialPopUp'
+        },'*');
       }
     }
     `
@@ -911,6 +935,13 @@ const _tr = (msg, {
             window.clevertap.profile.push(event.data.value)
           } else if (event?.data?.action === 'OUL') {
             window.clevertap.onUserLogin.push(event.data.value)
+          } else if (event?.data?.action === 'closeInterstitialPopUp') {
+            var interstitialWrapper = window.document.getElementById('intentPreview')
+            var interstitialOverlay = window.document.getElementById('intentOpacityDiv')
+            setTimeout(() => {
+              interstitialOverlay.remove()
+              interstitialWrapper.remove()
+            }, 0)
           }
         })
         contentDiv = ''
