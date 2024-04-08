@@ -154,7 +154,7 @@ export default class ProfileHandler extends Array {
         profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
       }
       data.profile = profileObj
-      data = this.#request.addSystemDataToProfileObject(data, undefined)
+      data = this.#request.addSystemDataToObject(data, true)
 
       this.#request.addFlags(data)
       const compressedData = compressData(JSON.stringify(data), this.#logger)
@@ -212,7 +212,6 @@ export default class ProfileHandler extends Array {
     if (typeof propVal === 'string' || typeof propVal === 'number') {
       if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
         array = $ct.globalProfileMap[propKey]
-        // Push the value to the array in a more concise way
         array.push(typeof propVal === 'number' ? propVal : propVal.toLowerCase())
       } else {
         $ct.globalProfileMap[propKey] = propVal
@@ -310,7 +309,7 @@ export default class ProfileHandler extends Array {
       profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
     }
     data.profile = profileObj
-    data = this.#request.addSystemDataToProfileObject(data, undefined)
+    data = this.#request.addSystemDataToObject(data, true)
     this.#request.addFlags(data)
     const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL

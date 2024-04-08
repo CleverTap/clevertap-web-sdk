@@ -1,6 +1,6 @@
 {
   "name": "clevertap-web-sdk",
-  "version": "1.6.10",
+  "version": "1.7.3",
   "description": "",
   "main": "clevertap.js",
   "scripts": {
@@ -28,6 +28,7 @@
     "@babel/eslint-parser": "^7.12.1",
     "@babel/plugin-proposal-class-properties": "^7.10.4",
     "@babel/plugin-proposal-private-methods": "^7.12.1",
+    "@babel/plugin-transform-runtime": "^7.23.7",
     "@babel/preset-env": "^7.11.0",
     "@rollup/plugin-babel": "^5.2.0",
     "@rollup/plugin-node-resolve": "^9.0.0",

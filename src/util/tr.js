@@ -1090,6 +1090,11 @@ const _tr = (msg, {
     }
   }
 
+  if (msg.vars) {
+    $ct.variableStore.mergeVariables(msg.vars)
+    return
+  }
+
   const staleDataUpdate = (staledata, campType) => {
     const campObj = getCampaignObject()
     const globalObj = campObj[campType].global

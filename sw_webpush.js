@@ -45,6 +45,7 @@ self.addEventListener('push', function (event) {
   var data = notificationOptions.data
   var key
   if (typeof data !== 'undefined') {
+    data.wzrk_id += `_${new Date().getTime()}`
     key = data.wzrk_id
   }
   if (typeof key === 'undefined') {
