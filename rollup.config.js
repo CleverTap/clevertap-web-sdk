@@ -37,20 +37,41 @@ const getOutput = (mode) => {
   return [
     {
       name: 'clevertap',
-      file: 'clevertap.js',
+      file: './dist/clevertap.js',
       format: 'umd',
       sourcemap: true
     },
     {
       name: 'clevertap',
-      file: 'clevertap.min.js',
-      format: 'umd',
+      file: './dist/clevertap.min.js',
+      format: 'umd', // Universal Module Definition, works as amd, cjs and iife all in one
       plugins: [terser()]
     },
     {
       name: 'clevertap',
-      file: 'clevertap_cjs.js',
-      format: 'cjs',
+      file: './dist/clevertap_cjs.js',
+      format: 'cjs', // CommonJS, suitable for Node and other bundlers
+      exports: 'auto',
+      plugins: [terser()]
+    },
+    {
+      name: 'clevertap',
+      file: './dist/clevertap_es.js',
+      format: 'es',
+      exports: 'auto',
+      plugins: [terser()]
+    },
+    {
+      name: 'clevertap',
+      file: './dist/clevertap_amd.js', // Asynchronous Module Definition, used with module loaders like RequireJS
+      format: 'amd',
+      exports: 'auto',
+      plugins: [terser()]
+    },
+    {
+      name: 'clevertap',
+      file: './dist/clevertap_iife.js', // A self-executing function, suitable for inclusion as a <script> tag.
+      format: 'iife',
       exports: 'auto',
       plugins: [terser()]
     }
