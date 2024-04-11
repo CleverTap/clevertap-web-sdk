@@ -5344,7 +5344,7 @@
 
     var renderVisualBuilder = function renderVisualBuilder(targetingMsgJson) {
       if (targetingMsgJson.msgContent.url === window.location.href) {
-        var details = targetingMsgJson.display.details[0];
+        var details = targetingMsgJson.display.details[0][targetingMsgJson.msgContent.url];
         var selectors = Object.keys(details);
         selectors.forEach(function (selector) {
           if (document.querySelector(selector)) {
