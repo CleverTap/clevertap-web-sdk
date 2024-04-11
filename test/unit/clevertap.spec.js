@@ -21,6 +21,7 @@ const accountId = 'WWW'
 const region = 'in'
 const targetDomain = 'foo.com'
 const dataPostURL = 'data.post.url'
+const token = undefined
 let mockLogger, mockDevice, mockSessionObject, mockRequestObject, mockOUL
 
 describe('clevertap.js', function () {
@@ -82,8 +83,8 @@ describe('clevertap.js', function () {
       getURLParams.mockReturnValue({})
       getDomain.mockReturnValue(location.hostname)
       // eslint-disable-next-line no-new
-      new Clevertap({ account: [accountObj], region, targetDomain })
-      expect(Account).toHaveBeenCalledWith(accountObj, region, targetDomain)
+      new Clevertap({ account: [accountObj], region, targetDomain, token })
+      expect(Account).toHaveBeenCalledWith(accountObj, region, targetDomain, token)
       expect(mockRequestObject.saveAndFireRequest).toHaveBeenCalled()
     })
   })

@@ -27,7 +27,8 @@ import {
   COMMAND_ADD,
   COMMAND_REMOVE,
   COMMAND_DELETE,
-  EVT_PUSH
+  EVT_PUSH,
+  WZRK_FETCH
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -37,6 +38,8 @@ import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
+import { Variable } from './modules/variables/variable'
+import VariableStore from './modules/variables/variableStore'
 import { initialiseCTBuilder } from './modules/visualBuilder/pageBuilder'
 
 export default class CleverTap {
@@ -47,6 +50,7 @@ export default class CleverTap {
   #session
   #account
   #request
+  #variableStore
   #isSpa
   #previousUrl
   #boundCheckPageChanged = this.#checkPageChanged.bind(this)
@@ -92,7 +96,7 @@ export default class CleverTap {
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
-    this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2])
+    this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.#session = new SessionManager({
@@ -139,6 +143,13 @@ export default class CleverTap {
       request: this.#request,
       account: this.#account
     }, clevertap.notifications)
+
+    this.#variableStore = new VariableStore({
+      logger: this.#logger,
+      request: this.#request,
+      account: this.#account,
+      event: this.event
+    })
 
     this.#api = new CleverTapAPI({
       logger: this.#logger,
@@ -575,7 +586,7 @@ export default class CleverTap {
   }
 
   // starts here
-  init (accountId, region, targetDomain) {
+  init (accountId, region, targetDomain, token) {
     const search = window.location.search
     if (search === '?ctBuilder') {
       // open in visual builder mode
@@ -602,6 +613,9 @@ export default class CleverTap {
     }
     if (targetDomain) {
       this.#account.targetDomain = targetDomain
+    }
+    if (token) {
+      this.#account.token = token
     }
 
     const currLocation = location.href
@@ -645,7 +659,7 @@ export default class CleverTap {
     this.notifications._processOldValues()
   }
 
-  debounce (func, delay) {
+  #debounce (func, delay = 300) {
     let timeout
     return function () {
       clearTimeout(timeout)
@@ -654,11 +668,11 @@ export default class CleverTap {
   }
 
   #checkPageChanged () {
-    const debouncedPageChanged = this.debounce(() => {
+    const debouncedPageChanged = this.#debounce(() => {
       if (this.#previousUrl !== location.href) {
         this.pageChanged()
       }
-    }, 300)
+    })
     debouncedPageChanged()
   }
 
@@ -719,13 +733,14 @@ export default class CleverTap {
     if (parseInt(data.pg) === 1) {
       this.#overrideDSyncFlag(data)
     }
-    let proto = document.location.protocol
-    proto = proto.replace(':', '')
-    data.af = { lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...$ct.flutterVersion }
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+
+    if (parseInt(data.pg) === 1) {
+      this.event.push(WZRK_FETCH, { t: 4 })
+    }
 
     this.#previousUrl = currLocation
     setTimeout(() => {
@@ -797,7 +812,7 @@ export default class CleverTap {
     if ($ct.location) {
       data.af = { ...data.af, ...$ct.location }
     }
-    data = this.#request.addSystemDataToProfileObject(data, undefined)
+    data = this.#request.addSystemDataToObject(data, true)
     this.#request.addFlags(data)
     const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
@@ -825,5 +840,31 @@ export default class CleverTap {
     if (!arg) {
       this.#request.processBackupEvents()
     }
+  }
+
+  defineVariable (name, defaultValue) {
+    return Variable.define(name, defaultValue, this.#variableStore)
+  }
+
+  syncVariables (onSyncSuccess, onSyncFailure) {
+    if (this.#logger.logLevel === 4) {
+      return this.#variableStore.syncVariables(onSyncSuccess, onSyncFailure)
+    } else {
+      const m = 'App log level is not set to 4'
+      this.#logger.error(m)
+      return Promise.reject(new Error(m))
+    }
+  }
+
+  fetchVariables (onFetchCallback) {
+    this.#variableStore.fetchVariables(onFetchCallback)
+  }
+
+  addVariablesChangedCallback (callback) {
+    this.#variableStore.addVariablesChangedCallback(callback)
+  }
+
+  addOneTimeVariablesChangedCallback (callback) {
+    this.#variableStore.addOneTimeVariablesChangedCallback(callback)
   }
 }
