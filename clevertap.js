@@ -5422,6 +5422,27 @@
       containerEl.appendChild(popupImageOnly);
     };
 
+    var renderVisualBuilder = function renderVisualBuilder(targetingMsgJson) {
+      if (targetingMsgJson.msgContent.url === window.location.href) {
+        var details = targetingMsgJson.display.details[0][targetingMsgJson.msgContent.url];
+        var selectors = Object.keys(details);
+        selectors.forEach(function (selector) {
+          if (document.querySelector(selector)) {
+            updateSelector(document.querySelector(selector), details[selector]);
+          } else {
+            // log error element not found
+            console.log('Element not found selector used', selector);
+          }
+        });
+      }
+    };
+
+    var updateSelector = function updateSelector(element, updatedValues) {
+      element.textContent = updatedValues.replacements || updatedValues.text;
+      element.style.fontFamily = updatedValues.fontFamily;
+      element.style.color = updatedValues.color;
+    };
+
     var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       var displayObj = targetingMsgJson.display;
@@ -5991,6 +6012,8 @@
             } else {
               arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
             }
+          } else if (targetNotif.msgContent.type === 4) {
+            renderVisualBuilder(targetNotif);
           } else {
             showFooterNotification(targetNotif);
           }
@@ -7889,6 +7912,414 @@
     _classPrivateFieldLooseBase(this, _oneTimeVariablesChangedCallbacks)[_oneTimeVariablesChangedCallbacks].length = 0;
   };
 
+  var ctSelector = {};
+  var currSelectorValues = {
+    color: '#000000',
+    fontFamily: 'Arial, sans-serif',
+    text: '',
+    replacements: '',
+    fontSize: 0,
+    margin: '',
+    padding: ''
+  };
+  var currSelector = '';
+  var profileProps;
+  var eventProps;
+  var container;
+  var lastRange = null;
+  var winRef = window.opener;
+  var doc = document;
+  var curURL = window.location.href;
+
+  function rgbToHex(r, g, b) {
+    // Ensure values are within valid range (0-255)
+    r = Math.max(0, Math.min(255, r));
+    g = Math.max(0, Math.min(255, g));
+    b = Math.max(0, Math.min(255, b)); // Convert decimal to hex
+
+    var hexR = r.toString(16).padStart(2, '0');
+    var hexG = g.toString(16).padStart(2, '0');
+    var hexB = b.toString(16).padStart(2, '0'); // Concatenate the hex values
+
+    var hexColor = "#".concat(hexR).concat(hexG).concat(hexB);
+    return hexColor;
+  }
+
+  var initialiseCTBuilder = function initialiseCTBuilder() {
+    import('https://kkyusuftk-clevertap.s3.amazonaws.com/sampleIndex.js').then(function (module) {
+      var isEven = module.isEven;
+      console.log(isEven(4)); // Output: true
+
+      console.log(isEven(5));
+    }).catch(function (error) {
+      console.error('Error fetching data:', error);
+    });
+    var regex = /^(.*\.dashboard\.clevertap\.com.*)|localhost/;
+
+    function normalizeURL(url) {
+      return url.replace(/\/+$/, '');
+    }
+
+    window.addEventListener('message', function (event) {
+      if (regex.test(normalizeURL(event.origin)) && event.data.evtProps) {
+        eventProps = event.data.evtProps;
+        profileProps = event.data.profile;
+        console.log('personalisation data', eventProps, profileProps);
+      }
+    }, false);
+    winRef.postMessage('Builder Initialised', document.referrer || '*');
+    document.addEventListener('DOMContentLoaded', onContentLoad);
+  };
+
+  function onContentLoad() {
+    var ctBuilderHeader = document.createElement('div');
+    ctBuilderHeader.innerHTML = "\n    <div class=\"ct-builder-header\" id=\"ct-builder-header\">\n      <span class=\"heading\">CT Visual Builder</span>\n      <button class=\"save\" id=\"ct_builder_save\">Save</button>\n      <button class=\"save\" id=\"ct_builder_inter\">Interactive</button>\n      <button class=\"save\" id=\"ct_builder_build\">Builder</button>      \n    </div>\n    <style>\n    #iframe-container {\n        margin: 0 auto;\n        height: 100vh;\n        display: block;\n        box-shadow: 0 0.1em 1em 0 rgba(0, 0, 0, 0.15);\n        border-radius: 4px;\n        overflow: hidden;\n        transition: all 500ms;\n        width: 100%;\n    }\n    #content-iframe {\n        width: 100%;\n        height: 100%;\n        background-color: #fff;\n        border: none;\n        margin: 0;\n      }\n    </style>\n  ";
+    document.body.innerHTML = '';
+    document.body.appendChild(ctBuilderHeader);
+    container = document.createElement('div');
+    container.style.position = 'relative'; // Ensure relative positioning for absolute positioning of form
+
+    container.style.display = 'flex';
+    document.body.appendChild(container);
+    var iframeContainer = document.createElement('div');
+    iframeContainer.id = 'iframe-container';
+    var iframe = document.createElement('iframe');
+    iframe.id = 'content-iframe';
+    container.appendChild(iframeContainer);
+    iframeContainer.appendChild(iframe);
+    iframe.src = window.location.href.split('?')[0];
+    createAndAddFormTextV2();
+
+    iframe.onload = function () {
+      return onIframeLoad(iframe);
+    };
+
+    document.getElementById('ct_builder_save').addEventListener('click', saveRes);
+    document.getElementById('ct_builder_inter').addEventListener('click', function () {
+      return makeInteractive(iframe);
+    });
+    document.getElementById('ct_builder_build').addEventListener('click', function () {
+      return onIframeLoad(iframe);
+    });
+  }
+
+  function handleFormSumbmission(event) {
+    event.preventDefault();
+    var selectedColor = document.getElementById('text-color').value;
+    var selectedFont = document.getElementById('font-family').value;
+    var selectedText = document.getElementById('el-text').innerText;
+    var selectedSize = document.getElementById('font-size').value;
+    var margin = document.getElementById('margin').value;
+    var padding = document.getElementById('padding').value;
+    document.getElementById('popup').style.display = 'none'; // Create the inline style string
+
+    var inlineStyle = {
+      color: selectedColor,
+      'font-family': selectedFont,
+      text: selectedText,
+      fontSize: selectedSize,
+      margin: margin,
+      padding: padding
+    };
+    ctSelector[curURL][currSelector] = inlineStyle;
+    printContent();
+    updateUI();
+  }
+
+  function updateUI() {
+    var iframe = document.querySelector('#content-iframe');
+    var e = iframe.contentWindow.document.body.querySelector(currSelector);
+    e.style.color = ctSelector[curURL][currSelector].color;
+    e.style.fontFamily = ctSelector[curURL][currSelector]['font-family'];
+    e.textContent = ctSelector[curURL][currSelector].text;
+  }
+
+  function onIframeLoad(iframe) {
+    var _iframe$contentWindow, _iframe$contentDocume, _iframe$contentDocume2;
+
+    var iframeWindow = (_iframe$contentWindow = iframe.contentWindow) !== null && _iframe$contentWindow !== void 0 ? _iframe$contentWindow : (_iframe$contentDocume = (_iframe$contentDocume2 = iframe.contentDocument) === null || _iframe$contentDocume2 === void 0 ? void 0 : _iframe$contentDocume2.document) !== null && _iframe$contentDocume !== void 0 ? _iframe$contentDocume : iframe.contentDocument;
+    doc = iframeWindow.document;
+    doc.body.addEventListener('click', addBuilder, true);
+    doc.body.addEventListener('click', function (e) {
+      if (e.target.tagName.toLowerCase() === 'a') {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+    doc.body.addEventListener('mouseover', addOutline);
+    doc.body.addEventListener('mouseout', removeOutline);
+    curURL = iframeWindow.location.href;
+  }
+
+  function addBuilder(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (document.getElementById('popup').style.display !== 'block') {
+      var el = e.target;
+      var selector = generateUniqueSelector(el, '', doc);
+
+      if (selector) {
+        currSelectorValues.color = '#000000';
+        var rgbValues = el.style.color.match(/\d+/g);
+
+        if (rgbValues && rgbValues.length === 3) {
+          currSelectorValues.color = rgbToHex(Number(rgbValues[0]), Number(rgbValues[1]), Number(rgbValues[2]));
+        }
+
+        currSelectorValues.fontFamily = el.style.fontFamily;
+        currSelectorValues.text = el.textContent;
+        ctSelector[curURL] = {};
+        ctSelector[curURL][selector] = '';
+        currSelector = selector;
+        document.getElementById('text-color').value = currSelectorValues.color;
+        document.getElementById('font-family').value = currSelectorValues.fontFamily;
+        document.getElementById('el-text').innerText = currSelectorValues.text;
+        document.getElementById('popup').style.display = 'block';
+      }
+    }
+  }
+
+  function generateUniqueSelector(element) {
+    var childSelector = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+    var doc = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : document;
+    var tag = element.tagName.toLowerCase();
+    var id = element.id;
+
+    if (id) {
+      var uniqueID = doc.querySelectorAll("#".concat(id));
+
+      if (uniqueID.length === 1) {
+        return "#".concat(id);
+      }
+    }
+
+    var classes = Array.from(element.classList).join('.');
+    var selector = '';
+
+    if (tag) {
+      selector = tag;
+
+      if (id) {
+        selector += "#".concat(id);
+      }
+
+      if (classes) {
+        selector += ".".concat(classes);
+      }
+
+      var _uniqueElement = doc.querySelectorAll(selector);
+
+      if (_uniqueElement.length === 1) {
+        return selector;
+      }
+    } else {
+      return null;
+    }
+
+    if (element.parentNode) {
+      var siblings = Array.from(element.parentNode.children);
+      var index = siblings.indexOf(element) + 1;
+
+      if (index > 0) {
+        selector += ":nth-child(".concat(index, ")");
+      }
+    }
+
+    if (childSelector !== '') {
+      selector += " > ".concat(childSelector);
+    }
+
+    var uniqueElement = doc.querySelectorAll(selector);
+
+    if (uniqueElement.length === 1) {
+      return selector;
+    }
+
+    if (element.parentNode && element.parentNode !== doc.body) {
+      return generateUniqueSelector(element.parentNode, selector, doc);
+    }
+
+    return selector;
+  }
+
+  function createAndAddFormTextV2() {
+    var wr = document.createElement('div');
+    wr.id = 'popup';
+    wr.innerHTML = "\n      <button id=\"closeBtn\">&times;</button>\n      <form id=\"colorFontForm\">\n        <label for=\"el-text\">Update Text:</label>\n        <div>\n            <div style=\"display: flex;width: 300px;height:150px;margin-bottom: 30px\">\n                <div id=\"el-text\" contentEditable=\"true\"></div>\n                <button id=\"button1\" style=\"height: 30px;\">@</button>\n            </div>\n            <div id=\"persform\">\n                <div id=\"wrapper\">\n                    <div id=\"left\">\n                        <div id=\"prof\" class=\"sel\">Profile</div>\n                        <div id=\"eve\">Event</div>\n                    </div>\n                    <div id=\"right\"></div>\n                    <div id=\"closePers\">&times;</div>\n                </div>\n            </div>\n        </div>\n\n        <label for=\"font-family\">Font Family:</label>\n        <select id=\"font-family\" name=\"font-family\">\n          <option value=\"Arial, sans-serif\">Arial</option>\n          <option value=\"Helvetica, sans-serif\">Helvetica</option>\n          <option value=\"Georgia, serif\">Georgia</option>\n          <option value=\"Times New Roman, serif\">Times New Roman</option>\n          <option value=\"Courier New, monospace\">Courier New</option>\n        </select>\n\n        <label for=\"font-size\">Font Size:</label>\n        <input type=\"text\" id=\"font-size\" name=\"font-size\" placeholder=\"e.g., 16px\">\n\n        <label for=\"text-color\">Text Color:</label>\n        <input type=\"color\" id=\"text-color\" name=\"text-color\">\n        \n        <label for=\"margin\">All Margin:</label>\n        <input type=\"text\" id=\"margin\" name=\"margin\">\n        \n        <label for=\"padding\">All Padding:</label>\n        <input type=\"text\" id=\"padding\" name=\"padding\">\n\n        <input type=\"submit\" value=\"Submit\">\n      </form>\n  ";
+    var formStyles = "\n  #popup {\n    width: 400px;\n    background-color: white;\n    overflow: auto;\n    padding: 20px;\n    background-color: #fff;\n    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);\n    border-radius: 8px;\n    display: none;\n   }\n\n    #closeBtn {\n      position: absolute;\n      top: 23px;\n      right: 10px;\n      cursor: pointer;\n      background: none;\n      border: none;\n      font-size: 18px;\n      color: #555;\n    }\n\n    #colorFontForm {\n      display: flex;\n      flex-direction: column;\n      align-items: center;\n    }\n\n    #colorFontForm label {\n      margin-bottom: 8px;\n      font-size: 14px;\n      font-weight: bold;\n      color: #333;\n    }\n\n    #el-text,\n    #font-family,\n    #font-size,\n    #text-color \n    #margin\n    #padding {\n      width: 100%;\n      padding: 8px;\n      margin-bottom: 16px;\n      border: 1px solid #ccc;\n      border-radius: 4px;\n      box-sizing: border-box;\n    }\n    \n    #el-text {\n      overflow: auto;\n    }\n    \n\n    #text-color {\n      padding: 0;\n      width: 20%;\n    }\n\n    #font-family {\n      width: 100%;\n    }\n\n    #colorFontForm input[type=\"submit\"] {\n      margin-top: 16px;\n      background-color: #4CAF50;\n      color: #fff;\n      padding: 10px;\n      cursor: pointer;\n      border: none;\n      border-radius: 4px;\n      font-size: 16px;\n    }\n    #mainform {\n      display: flex;\n    }\n    #content {\n      width: 250px;\n      border: 1px solid;\n      padding: 4px;\n    }\n    #persform {\n      display: none;\n      height: auto;\n      width: auto;\n      max-width: 500px;\n      background: pink;\n    }\n    #wrapper {\n      display: flex;\n      height: 200px;\n    }\n    #left {\n      width: 30%;\n    }\n    #right {\n      flex-grow: 1;\n      height: 200px;\n      overflow: scroll;\n    }\n    #left div {\n      padding: 8px 12px;\n    }\n    #right div {\n      padding: 5px 12px;\n    }\n    #close {\n      width: 5%\n    }\n    .list-highlight {\n      background: skyblue\n    }\n    .sel {\n      background: lightgreen;\n    }\n    .replacement {\n      background: aqua;\n    }\n  ";
+    var styleElement = document.createElement('style');
+    styleElement.textContent = formStyles;
+    wr.appendChild(styleElement);
+    container.appendChild(wr);
+    var closeBtn = wr.querySelector('#closeBtn');
+    closeBtn.addEventListener('click', function () {
+      document.getElementById('popup').style.display = 'none';
+    });
+    document.getElementById('button1').addEventListener('click', function (e) {
+      e.preventDefault();
+      document.getElementById('persform').style.display = 'block';
+      prepareList(profileProps, 0);
+    });
+    document.getElementById('closePers').addEventListener('click', closePersForm);
+    document.getElementById('colorFontForm').addEventListener('submit', handleFormSumbmission);
+    document.getElementById('right').addEventListener('click', function (e) {
+      var id = e.target.parentElement.getAttribute('id');
+      var token = e.target.parentElement.getAttribute('token');
+      var type = e.target.parentElement.getAttribute('_type');
+
+      var _t = parseInt(type) ? "@Event - ".concat(id, " | default: \"") : "@Profile - ".concat(id, " | default: \"");
+
+      if (id && token && type) {
+        var replacement = document.createElement('span');
+        replacement.classList.add('replacement');
+        replacement.setAttribute('contentEditable', false);
+        replacement.setAttribute('token', token);
+        replacement.appendChild(document.createTextNode(_t));
+        var replacementDefault = document.createElement('span');
+        replacementDefault.classList.add('replacement-default');
+        replacementDefault.setAttribute('contentEditable', true);
+        replacement.appendChild(replacementDefault);
+        replacement.appendChild(document.createTextNode('"'));
+
+        if (lastRange) {
+          lastRange.insertNode(replacement);
+          closePersForm(e);
+        }
+      }
+    });
+    document.getElementById('prof').addEventListener('click', function (e) {
+      leftClicked(e, 0);
+    });
+    document.getElementById('eve').addEventListener('click', function (e) {
+      leftClicked(e, 1);
+    });
+    document.getElementById('el-text').addEventListener('keydown', keyCheck);
+  }
+
+  function saveRes() {
+    // const winRef = window.opener
+    winRef.postMessage(ctSelector, '*');
+    window.close();
+  }
+
+  function createEl(type, id, token, _type) {
+    var _el = document.createElement(type);
+
+    _el.setAttribute('id', id);
+
+    _el.setAttribute('token', token);
+
+    _el.setAttribute('_type', _type);
+
+    return _el;
+  }
+
+  function prepareList(items, type) {
+    document.getElementById('right').innerHTML = '';
+    items.forEach(function (i) {
+      var _el = createEl('div', i.name, i.token, type);
+
+      _el.innerHTML = "".concat(i.name, " <span class=\"list-highlight\">").concat(type ? 'Event' : '@Profile', " - ").concat(i.name, " | default: \"\"</span>");
+      document.getElementById('right').appendChild(_el);
+      document.getElementById('right').appendChild(_el);
+    });
+  }
+
+  function closePersForm(e) {
+    e.preventDefault();
+    document.getElementById('persform').style.display = 'none';
+  }
+
+  document.addEventListener('selectionchange', handleSelectionChange);
+
+  function handleSelectionChange() {
+    if (document.activeElement !== document.getElementById('el-text')) {
+      return;
+    }
+
+    var selection = window.getSelection();
+
+    if (selection) {
+      lastRange = selection.getRangeAt(0);
+    }
+  }
+
+  function keyCheck(event) {
+    var KeyID = event.keyCode;
+
+    switch (KeyID) {
+      case 8:
+        {
+          var selection = lastRange;
+
+          if (selection.collapsed) {
+            if (selection.commonAncestorContainer.nodeName !== '#text') {
+              var elToDelete = selection.commonAncestorContainer.childNodes[selection.startOffset - 1];
+
+              if (elToDelete) {
+                selection.commonAncestorContainer.removeChild(elToDelete); // hack - event.preventDefault() does not work correctly
+
+                lastRange.insertNode(document.createTextNode('.'));
+              }
+            }
+          }
+        }
+        break;
+
+      case 46:
+        console.log('delete');
+        break;
+    }
+  }
+
+  function leftClicked(el, v) {
+    var p = document.getElementById('prof');
+    var ev = document.getElementById('eve');
+
+    if (v) {
+      ev.classList.add('sel');
+      p.classList.remove('sel');
+    } else {
+      p.classList.add('sel');
+      ev.classList.remove('sel');
+    }
+
+    var i = v ? eventProps : profileProps;
+    prepareList(i, v);
+  }
+
+  function printContent() {
+    var res = '';
+    document.getElementById('el-text').childNodes.forEach(function (n, i) {
+      if (n.nodeName === '#text') {
+        res += n.nodeValue;
+      } else if (n.classList.contains('replacement')) {
+        var def = n.children[0].innerText;
+        res = res + '$replacement$' + n.getAttribute('token') + '[' + def + ']$/replacement$';
+      }
+    });
+    ctSelector[curURL][currSelector].replacements = res;
+  }
+
+  function makeInteractive(iframe) {
+    var _iframe$contentWindow2, _iframe$contentDocume3, _iframe$contentDocume4;
+
+    var iframeWindow = (_iframe$contentWindow2 = iframe.contentWindow) !== null && _iframe$contentWindow2 !== void 0 ? _iframe$contentWindow2 : (_iframe$contentDocume3 = (_iframe$contentDocume4 = iframe.contentDocument) === null || _iframe$contentDocume4 === void 0 ? void 0 : _iframe$contentDocume4.document) !== null && _iframe$contentDocume3 !== void 0 ? _iframe$contentDocume3 : iframe.contentDocument;
+    doc = iframeWindow.document;
+    doc.body.removeEventListener('click', addBuilder, true);
+    doc.body.removeEventListener('mouseover', addOutline);
+    doc.body.removeEventListener('mouseout', removeOutline);
+  }
+
+  function addOutline(event) {
+    event.target.style.outline = '2px solid red';
+  }
+
+  function removeOutline(event) {
+    event.target.style.outline = 'none';
+  }
+
   var _logger$a = _classPrivateFieldLooseKey("logger");
 
   var _api = _classPrivateFieldLooseKey("api");
@@ -8038,6 +8469,15 @@
       this.enablePersonalization = void 0;
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
+      var search = window.location.search;
+
+      if (search === '?ctBuilder') {
+        // open in visual builder mode
+        console.log('open in visual builder mode');
+        initialiseCTBuilder();
+        return;
+      }
+
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
 
@@ -8375,9 +8815,9 @@
         }
       };
       /**
-      * @param {} key
-      * @param {*} value
-      */
+       * @param {} key
+       * @param {*} value
+       */
 
 
       this.handleIncrementValue = function (key, value) {
@@ -8441,7 +8881,7 @@
        * @param {number} lng
        * @param {callback function} handleCoordinates
        * @returns
-      */
+       */
 
 
       this.getLocation = function (lat, lng) {
@@ -8618,6 +9058,15 @@
       key: "init",
       value: function init(accountId, region, targetDomain, token) {
         var _this2 = this;
+
+        var search = window.location.search;
+
+        if (search === '?ctBuilder') {
+          // open in visual builder mode
+          console.log('open in visual builder mode');
+          initialiseCTBuilder();
+          return;
+        }
 
         if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
           // already initailsed
