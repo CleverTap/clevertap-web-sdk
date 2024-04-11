@@ -330,7 +330,7 @@ const _tr = (msg, {
 
   const renderVisualBuilder = (targetingMsgJson) => {
     if (targetingMsgJson.msgContent.url === window.location.href) {
-      const details = targetingMsgJson.display.details[0]
+      const details = targetingMsgJson.display.details[0][targetingMsgJson.msgContent.url]
       const selectors = Object.keys(details)
       selectors.forEach((selector) => {
         if (document.querySelector(selector)) {
