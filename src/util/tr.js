@@ -849,7 +849,7 @@ const _tr = (msg, {
     iframe.id = 'wiz-iframe-intent'
     let html = targetingMsgJson.msgContent.html
     if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) { // sanbox the iframe only for custom html
-      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox' // allow popup to open url in new page
+      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms' // allow popup to open url in new page
       html = ctEventhandler(html)
     }
     const onClick = targetingMsgJson.display.onClick
