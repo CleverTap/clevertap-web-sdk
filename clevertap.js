@@ -7930,6 +7930,7 @@
   var winRef = window.opener;
   var doc = document;
   var curURL = window.location.href;
+  var secretKey = 'PointAndClick';
 
   function rgbToHex(r, g, b) {
     // Ensure values are within valid range (0-255)
@@ -8198,9 +8199,22 @@
   }
 
   function saveRes() {
-    // const winRef = window.opener
-    winRef.postMessage(ctSelector, '*');
+    var jsonData = JSON.stringify(ctSelector);
+    var concatenatedString = jsonData + secretKey;
+    var hash = createHash(concatenatedString);
+    winRef.postMessage({
+      details: jsonData,
+      hash: hash
+    }, '*');
     window.close();
+  }
+
+  function createHash(str) {
+    var crypto = require('crypto');
+
+    var hash = crypto.createHash('sha256');
+    hash.update(str);
+    return hash.digest('hex');
   }
 
   function createEl(type, id, token, _type) {

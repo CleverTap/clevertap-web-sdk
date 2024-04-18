@@ -16,6 +16,7 @@ let lastRange = null
 const winRef = window.opener
 let doc = document
 let curURL = window.location.href
+const secretKey = 'PointAndClick'
 
 function rgbToHex (r, g, b) {
   // Ensure values are within valid range (0-255)
@@ -452,9 +453,18 @@ function createAndAddFormTextV2 () {
 }
 
 function saveRes () {
-  // const winRef = window.opener
-  winRef.postMessage(ctSelector, '*')
+  const jsonData = JSON.stringify(ctSelector)
+  const concatenatedString = jsonData + secretKey
+  const hash = createHash(concatenatedString)
+  winRef.postMessage({ details: jsonData, hash }, '*')
   window.close()
+}
+
+function createHash (str) {
+  const crypto = require('crypto')
+  const hash = crypto.createHash('sha256')
+  hash.update(str)
+  return hash.digest('hex')
 }
 
 function createEl (type, id, token, _type) {
