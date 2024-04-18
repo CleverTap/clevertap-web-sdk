@@ -40,6 +40,7 @@ import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
+import { initialiseCTBuilder } from './modules/visualBuilder/pageBuilder'
 
 export default class CleverTap {
   #logger
@@ -84,6 +85,13 @@ export default class CleverTap {
   }
 
   constructor (clevertap = {}) {
+    const search = window.location.search
+    if (search === '?ctBuilder') {
+      // open in visual builder mode
+      console.log('open in visual builder mode')
+      initialiseCTBuilder()
+      return
+    }
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.raiseNotificationClicked = () => { }
@@ -382,9 +390,9 @@ export default class CleverTap {
       }
     }
     /**
- * @param {} key
- * @param {*} value
- */
+     * @param {} key
+     * @param {*} value
+     */
     this.handleIncrementValue = (key, value) => {
       this.profile._handleIncrementDecrementValue(key, value, COMMAND_INCREMENT)
     }
@@ -447,7 +455,7 @@ export default class CleverTap {
      * @param {number} lng
      * @param {callback function} handleCoordinates
      * @returns
-    */
+     */
     this.getLocation = function (lat, lng) {
       // latitude and longitude should be number type
       if ((lat && typeof lat !== 'number') || (lng && typeof lng !== 'number')) {
@@ -579,6 +587,13 @@ export default class CleverTap {
 
   // starts here
   init (accountId, region, targetDomain, token) {
+    const search = window.location.search
+    if (search === '?ctBuilder') {
+      // open in visual builder mode
+      console.log('open in visual builder mode')
+      initialiseCTBuilder()
+      return
+    }
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
