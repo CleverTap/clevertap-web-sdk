@@ -200,7 +200,7 @@ export default class UserLoginHandler extends Array {
             await addToLocalProfileMap(profileObj, true)
             data = await this.#request.addSystemDataToObject(data, undefined)
 
-            this.#request.addFlags(data)
+            await this.#request.addFlags(data)
             // Adding 'isOUL' flag in true for OUL cases which.
             // This flag tells LC to create a new arp object.
             // Also we will receive the same flag in response arp which tells to delete existing arp object.

@@ -116,11 +116,11 @@ export default class CleverTapAPI {
     }
 
     if (StorageManager._isLocalStorageSupported()) {
-      this.#session.manageSession(session)
+      await this.#session.manageSession(session)
     }
 
     // session cookie
-    const obj = this.#session.getSessionCookieObject()
+    const obj = await this.#session.getSessionCookieObject()
 
     // for the race-condition where two responses come back with different session ids. don't write the older session id.
     if (typeof obj.s === 'undefined' || obj.s <= session) {

@@ -1130,61 +1130,73 @@ var clevertapShopify = (function () {
     }
 
     manageSession(session) {
-      // first time. check if current session id in localstorage is same
-      // if not same then prev = current and current = this new session
-      if (typeof this.sessionId === 'undefined' || this.sessionId !== session) {
-        var currentSessionInLS = StorageManager.getMetaProp('cs'); // if sessionId in meta is undefined - set current to both
+      var _this3 = this;
 
-        if (typeof currentSessionInLS === 'undefined') {
-          StorageManager.setMetaProp('ps', session);
-          StorageManager.setMetaProp('cs', session);
-          StorageManager.setMetaProp('sc', 1);
-        } else if (currentSessionInLS !== session) {
-          // not same as session in local storage. new session
-          StorageManager.setMetaProp('ps', currentSessionInLS);
-          StorageManager.setMetaProp('cs', session);
-          var sessionCount = StorageManager.getMetaProp('sc');
+      return _asyncToGenerator(function* () {
+        // first time. check if current session id in localstorage is same
+        // if not same then prev = current and current = this new session
+        if (typeof _this3.sessionId === 'undefined' || _this3.sessionId !== session) {
+          var currentSessionInLS = StorageManager.getMetaProp('cs'); // if sessionId in meta is undefined - set current to both
 
-          if (typeof sessionCount === 'undefined') {
-            sessionCount = 0;
+          if (typeof currentSessionInLS === 'undefined') {
+            yield StorageManager.setMetaProp('ps', session);
+            yield StorageManager.setMetaProp('cs', session);
+            yield StorageManager.setMetaProp('sc', 1);
+          } else if (currentSessionInLS !== session) {
+            // not same as session in local storage. new session
+            yield StorageManager.setMetaProp('ps', currentSessionInLS);
+            yield StorageManager.setMetaProp('cs', session);
+            var sessionCount = StorageManager.getMetaProp('sc');
+
+            if (typeof sessionCount === 'undefined') {
+              sessionCount = 0;
+            }
+
+            yield StorageManager.setMetaProp('sc', sessionCount + 1);
           }
 
-          StorageManager.setMetaProp('sc', sessionCount + 1);
+          _this3.sessionId = session;
         }
-
-        this.sessionId = session;
-      }
+      })();
     }
 
     getTimeElapsed() {
-      if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive]()) {
-        return;
-      }
+      var _this4 = this;
 
-      if (this.scookieObj != null) {
-        // TODO: check logic?
-        this.scookieObj = this.getSessionCookieObject();
-      }
+      return _asyncToGenerator(function* () {
+        if (!_classPrivateFieldLooseBase(_this4, _isPersonalisationActive)[_isPersonalisationActive]()) {
+          return;
+        }
 
-      var sessionStart = this.scookieObj.s;
+        if (_this4.scookieObj != null) {
+          // TODO: check logic?
+          _this4.scookieObj = yield _this4.getSessionCookieObject();
+        }
 
-      if (sessionStart != null) {
-        var ts = getNow();
-        return Math.floor(ts - sessionStart);
-      }
+        var sessionStart = _this4.scookieObj.s;
+
+        if (sessionStart != null) {
+          var ts = getNow();
+          return Math.floor(ts - sessionStart);
+        }
+      })();
     }
 
     getPageCount() {
-      if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive]()) {
-        return;
-      }
+      var _this5 = this;
 
-      if (this.scookieObj != null) {
-        // TODO: check logic
-        this.scookieObj = this.getSessionCookieObject();
-      }
+      return _asyncToGenerator(function* () {
+        if (!_classPrivateFieldLooseBase(_this5, _isPersonalisationActive)[_isPersonalisationActive]()) {
+          return;
+        }
 
-      return this.scookieObj.p;
+        if (_this5.scookieObj != null) {
+          // TODO: check logic
+          _this5.scookieObj = yield _this5.getSessionCookieObject();
+        }
+
+        return _this5.scookieObj.p;
+      })();
     }
 
   }
@@ -1886,12 +1898,11 @@ var clevertapShopify = (function () {
         }
 
         if (StorageManager._isLocalStorageSupported()) {
-          _classPrivateFieldLooseBase(_this, _session)[_session].manageSession(session);
+          yield _classPrivateFieldLooseBase(_this, _session)[_session].manageSession(session);
         } // session cookie
 
 
-        var obj = _classPrivateFieldLooseBase(_this, _session)[_session].getSessionCookieObject(); // for the race-condition where two responses come back with different session ids. don't write the older session id.
-
+        var obj = yield _classPrivateFieldLooseBase(_this, _session)[_session].getSessionCookieObject(); // for the race-condition where two responses come back with different session ids. don't write the older session id.
 
         if (typeof obj.s === 'undefined' || obj.s <= session) {
           obj.s = session;
@@ -3377,11 +3388,9 @@ var clevertapShopify = (function () {
 
               yield addToLocalProfileMap(profileObj, true);
               data = yield _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
-
-              _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data); // Adding 'isOUL' flag in true for OUL cases which.
+              yield _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data); // Adding 'isOUL' flag in true for OUL cases which.
               // This flag tells LC to create a new arp object.
               // Also we will receive the same flag in response arp which tells to delete existing arp object.
-
 
               if (sendOULFlag) {
                 data[IS_OUL] = true;

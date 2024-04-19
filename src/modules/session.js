@@ -61,36 +61,36 @@ export default class SessionManager {
     await StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName())
   }
 
-  manageSession (session) {
+  async manageSession (session) {
     // first time. check if current session id in localstorage is same
     // if not same then prev = current and current = this new session
     if (typeof this.sessionId === 'undefined' || this.sessionId !== session) {
       const currentSessionInLS = StorageManager.getMetaProp('cs')
       // if sessionId in meta is undefined - set current to both
       if (typeof currentSessionInLS === 'undefined') {
-        StorageManager.setMetaProp('ps', session)
-        StorageManager.setMetaProp('cs', session)
-        StorageManager.setMetaProp('sc', 1)
+        await StorageManager.setMetaProp('ps', session)
+        await StorageManager.setMetaProp('cs', session)
+        await StorageManager.setMetaProp('sc', 1)
       } else if (currentSessionInLS !== session) {
         // not same as session in local storage. new session
-        StorageManager.setMetaProp('ps', currentSessionInLS)
-        StorageManager.setMetaProp('cs', session)
+        await StorageManager.setMetaProp('ps', currentSessionInLS)
+        await StorageManager.setMetaProp('cs', session)
         let sessionCount = StorageManager.getMetaProp('sc')
         if (typeof sessionCount === 'undefined') {
           sessionCount = 0
         }
-        StorageManager.setMetaProp('sc', sessionCount + 1)
+        await StorageManager.setMetaProp('sc', sessionCount + 1)
       }
       this.sessionId = session
     }
   }
 
-  getTimeElapsed () {
+  async getTimeElapsed () {
     if (!this.#isPersonalisationActive()) {
       return
     }
     if (this.scookieObj != null) { // TODO: check logic?
-      this.scookieObj = this.getSessionCookieObject()
+      this.scookieObj = await this.getSessionCookieObject()
     }
     const sessionStart = this.scookieObj.s
     if (sessionStart != null) {
@@ -99,13 +99,13 @@ export default class SessionManager {
     }
   }
 
-  getPageCount () {
+  async getPageCount () {
     if (!this.#isPersonalisationActive()) {
       return
     }
 
     if (this.scookieObj != null) { // TODO: check logic
-      this.scookieObj = this.getSessionCookieObject()
+      this.scookieObj = await this.getSessionCookieObject()
     }
     return this.scookieObj.p
   }
