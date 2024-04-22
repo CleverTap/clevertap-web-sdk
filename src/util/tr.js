@@ -34,6 +34,7 @@ import { CTWebPersonalisationBanner } from './web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
+import ctEventhandler from './clevertap-handler.js'
 
 const _tr = (msg, {
   device,
@@ -518,32 +519,63 @@ const _tr = (msg, {
     // const ua = navigator.userAgent.toLowerCase()
     let contentDiv
 
-    const handleIframeLoad = () => {
-      if (displayObj['custom-editor'] && displayObj['custom-html-sandbox']) {
-        iframe.contentWindow.postMessage({ action: 'adjustIFrameHeight' + displayObj.layout, value: displayObj.layout }, '*')
-        window.addEventListener('message', (event) => {
-          if (event?.data?.action === 'update height' + displayObj.layout) {
-            const heightAdjust = document.getElementById(divId)
+    const ActionType = {
+      ADJUST_IFRAME_HEIGHT: 'adjustIFrameHeight',
+      UPDATE_HEIGHT: 'update height',
+      GET_NOTIFICATION: 'getnotif',
+      EVENT: 'Event',
+      PROFILE: 'Profile',
+      OUL: 'OUL',
+      CLOSE_BOX_POPUP: 'closeBoxPopUp',
+      CLOSE_BANNER_POPUP: 'closeBannerPopUp'
+    }
+
+    const handleMessage = (event, displayObj, divId) => {
+      let heightAdjust, boxWrapper, bannerWrapper // Declare variables outside of switch
+
+      switch (event?.data?.action) {
+        case ActionType.UPDATE_HEIGHT + displayObj.layout:
+          heightAdjust = document.getElementById(divId)
+          if (heightAdjust) {
             heightAdjust.style.margin = '0px'
             heightAdjust.style.height = `${event.data.value}px`
           }
-          if (event?.data?.action === 'getnotif' + displayObj.layout) {
-            window.clevertap.renderNotificationClicked(event.data.value)
-          }
+          break
+        case ActionType.GET_NOTIFICATION + displayObj.layout:
+          window.clevertap.renderNotificationClicked(event.data.value)
+          break
+        case ActionType.EVENT:
+          window.clevertap.event.push(event.data.value)
+          break
+        case ActionType.PROFILE:
+          window.clevertap.profile.push(event.data.value)
+          break
+        case ActionType.OUL:
+          window.clevertap.onUserLogin.push(event.data.value)
+          break
+        case ActionType.CLOSE_BOX_POPUP:
+          setTimeout(() => {
+            boxWrapper = window.document.getElementById('wizParDiv0')
+            boxWrapper && boxWrapper.remove()
+          }, 0)
+          break
+        case ActionType.CLOSE_BANNER_POPUP:
+          setTimeout(() => {
+            bannerWrapper = window.document.getElementById('wizParDiv2')
+            bannerWrapper && bannerWrapper.remove()
+          }, 0)
+          break
+        default:
+          // Handle unknown action
+          break
+      }
+    }
 
-          if (event?.data?.action === 'Event') {
-            window.clevertap.event.push(event.data.value)
-          } else if (event?.data?.action === 'Profile') {
-            window.clevertap.profile.push(event.data.value)
-          } else if (event?.data?.action === 'OUL') {
-            window.clevertap.onUserLogin.push(event.data.value)
-          } else if (event?.data?.action === 'closeBoxPopUp') {
-            var boxWrapper = window.document.getElementById('wizParDiv0')
-            setTimeout(() => { boxWrapper.remove() }, 0)
-          } else if (event?.data?.action === 'closeBannerPopUp') {
-            var bannerWrapper = window.document.getElementById('wizParDiv2')
-            setTimeout(() => { bannerWrapper.remove() }, 0)
-          }
+    const handleIframeLoad = () => {
+      if (displayObj['custom-editor']) {
+        iframe.contentWindow.postMessage({ action: ActionType.ADJUST_IFRAME_HEIGHT + displayObj.layout, value: displayObj.layout }, '*')
+        window.addEventListener('message', (event) => {
+          handleMessage(event, displayObj, divId)
         })
         contentDiv = ''
       } else {
@@ -561,58 +593,6 @@ const _tr = (msg, {
     }
 
     iframe.onload = handleIframeLoad
-  }
-
-  const ctEventhandler = (html) => {
-    const ctScript = `
-     var clevertap = {
-      event: {
-        push: (eventName) => {
-          window.parent.postMessage({
-            action: 'Event',
-            value: eventName
-          },'*');
-        }
-      },
-      profile: {
-        push: (eventName) => {
-          window.parent.postMessage({
-            action: 'Profile',
-            value: eventName
-          },'*');
-        }
-      },
-      onUserLogin: {
-        push: (eventName) => {
-          window.parent.postMessage({
-            action: 'OUL',
-            value: eventName
-          },'*');
-        }
-      },
-      closeBoxPopUp: () => {
-        window.parent.postMessage({
-          action: 'closeBoxPopUp',
-          value: 'closeBoxPopUp'
-        },'*');
-      },
-      closeBannerPopUp: () => {
-        window.parent.postMessage({
-          action: 'closeBannerPopUp',
-          value: 'closeBannerPopUp'
-        },'*');
-      },
-      closeInterstitialPopUp: () => {
-        window.parent.postMessage({
-          action: 'closeInterstitialPopUp',
-          value: 'closeInterstitialPopUp'
-        },'*');
-      }
-    }
-    `
-    const insertPosition = html.indexOf('<script>')
-    html = [html.slice(0, insertPosition + '<script>'.length), ctScript, html.slice(insertPosition + '<script>'.length)].join('')
-    return html
   }
 
   const appendScriptForCustomEvent = (targetingMsgJson, html) => {
@@ -923,25 +903,40 @@ const _tr = (msg, {
     iframe.srcdoc = html
 
     let contentDiv
+    const ActionType = {
+      GET_NOTIFICATION_DATA: 'getnotifData',
+      EVENT: 'Event',
+      PROFILE: 'Profile',
+      OUL: 'OUL',
+      CLOSE_INTERSTITIAL_POPUP: 'closeInterstitialPopUp'
+    }
     iframe.onload = () => {
-      if (targetingMsgJson.display['custom-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
+      if (targetingMsgJson.display['custom-editor']) {
         window.addEventListener('message', event => {
-          if (event?.data?.action === 'getnotifData') {
-            window.clevertap.renderNotificationClicked(event.data.value)
-          }
-          if (event?.data?.action === 'Event') {
-            window.clevertap.event.push(event.data.value)
-          } else if (event?.data?.action === 'Profile') {
-            window.clevertap.profile.push(event.data.value)
-          } else if (event?.data?.action === 'OUL') {
-            window.clevertap.onUserLogin.push(event.data.value)
-          } else if (event?.data?.action === 'closeInterstitialPopUp') {
-            var interstitialWrapper = window.document.getElementById('intentPreview')
-            var interstitialOverlay = window.document.getElementById('intentOpacityDiv')
-            setTimeout(() => {
-              interstitialOverlay.remove()
-              interstitialWrapper.remove()
-            }, 0)
+          switch (event?.data?.action) {
+            case ActionType.GET_NOTIFICATION_DATA:
+              window.clevertap.renderNotificationClicked(event.data.value)
+              break
+            case ActionType.EVENT:
+              window.clevertap.event.push(event.data.value)
+              break
+            case ActionType.PROFILE:
+              window.clevertap.profile.push(event.data.value)
+              break
+            case ActionType.OUL:
+              window.clevertap.onUserLogin.push(event.data.value)
+              break
+            case ActionType.CLOSE_INTERSTITIAL_POPUP:
+              setTimeout(() => {
+                const interstitialWrapper = window.document.getElementById('intentPreview')
+                const interstitialOverlay = window.document.getElementById('intentOpacityDiv')
+                interstitialOverlay && interstitialOverlay.remove()
+                interstitialWrapper && interstitialWrapper.remove()
+              }, 0)
+              break
+            default:
+              // Handle unknown action
+              break
           }
         })
         contentDiv = ''

@@ -5081,6 +5081,14 @@
   var arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
   var greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
+  // clevertap-handler.js
+  var ctEventhandler = function ctEventhandler(html) {
+    var ctScript = "\n      var clevertap = {\n        event: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'Event',\n              value: eventName\n            },'*');\n          }\n        },\n        profile: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'Profile',\n              value: eventName\n            },'*');\n          }\n        },\n        onUserLogin: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'OUL',\n              value: eventName\n            },'*');\n          }\n        },\n        closeBoxPopUp: () => {\n          window.parent.postMessage({\n            action: 'closeBoxPopUp',\n            value: 'closeBoxPopUp'\n          },'*');\n        },\n        closeBannerPopUp: () => {\n          window.parent.postMessage({\n            action: 'closeBannerPopUp',\n            value: 'closeBannerPopUp'\n          },'*');\n        },\n        closeInterstitialPopUp: () => {\n          window.parent.postMessage({\n            action: 'closeInterstitialPopUp',\n            value: 'closeInterstitialPopUp'\n          },'*');\n        }\n      }\n    ";
+    var insertPosition = html.indexOf('<script>');
+    html = [html.slice(0, insertPosition + '<script>'.length), ctScript, html.slice(insertPosition + '<script>'.length)].join('');
+    return html;
+  };
+
   var _tr = function _tr(msg, _ref) {
     var device = _ref.device,
         session = _ref.session,
@@ -5618,43 +5626,73 @@
       iframe.srcdoc = html; // const ua = navigator.userAgent.toLowerCase()
 
       var contentDiv;
+      var ActionType = {
+        ADJUST_IFRAME_HEIGHT: 'adjustIFrameHeight',
+        UPDATE_HEIGHT: 'update height',
+        GET_NOTIFICATION: 'getnotif',
+        EVENT: 'Event',
+        PROFILE: 'Profile',
+        OUL: 'OUL',
+        CLOSE_BOX_POPUP: 'closeBoxPopUp',
+        CLOSE_BANNER_POPUP: 'closeBannerPopUp'
+      };
 
-      var handleIframeLoad = function handleIframeLoad() {
-        if (displayObj['custom-editor'] && displayObj['custom-html-sandbox']) {
-          iframe.contentWindow.postMessage({
-            action: 'adjustIFrameHeight' + displayObj.layout,
-            value: displayObj.layout
-          }, '*');
-          window.addEventListener('message', function (event) {
-            var _event$data, _event$data2, _event$data3, _event$data4, _event$data5, _event$data6, _event$data7;
+      var handleMessage = function handleMessage(event, displayObj, divId) {
+        var _event$data;
 
-            if ((event === null || event === void 0 ? void 0 : (_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.action) === 'update height' + displayObj.layout) {
-              var heightAdjust = document.getElementById(divId);
+        var heightAdjust, boxWrapper, bannerWrapper; // Declare variables outside of switch
+
+        switch (event === null || event === void 0 ? void 0 : (_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.action) {
+          case ActionType.UPDATE_HEIGHT + displayObj.layout:
+            heightAdjust = document.getElementById(divId);
+
+            if (heightAdjust) {
               heightAdjust.style.margin = '0px';
               heightAdjust.style.height = "".concat(event.data.value, "px");
             }
 
-            if ((event === null || event === void 0 ? void 0 : (_event$data2 = event.data) === null || _event$data2 === void 0 ? void 0 : _event$data2.action) === 'getnotif' + displayObj.layout) {
-              window.clevertap.renderNotificationClicked(event.data.value);
-            }
+            break;
 
-            if ((event === null || event === void 0 ? void 0 : (_event$data3 = event.data) === null || _event$data3 === void 0 ? void 0 : _event$data3.action) === 'Event') {
-              window.clevertap.event.push(event.data.value);
-            } else if ((event === null || event === void 0 ? void 0 : (_event$data4 = event.data) === null || _event$data4 === void 0 ? void 0 : _event$data4.action) === 'Profile') {
-              window.clevertap.profile.push(event.data.value);
-            } else if ((event === null || event === void 0 ? void 0 : (_event$data5 = event.data) === null || _event$data5 === void 0 ? void 0 : _event$data5.action) === 'OUL') {
-              window.clevertap.onUserLogin.push(event.data.value);
-            } else if ((event === null || event === void 0 ? void 0 : (_event$data6 = event.data) === null || _event$data6 === void 0 ? void 0 : _event$data6.action) === 'closeBoxPopUp') {
-              var boxWrapper = window.document.getElementById('wizParDiv0');
-              setTimeout(function () {
-                boxWrapper.remove();
-              }, 0);
-            } else if ((event === null || event === void 0 ? void 0 : (_event$data7 = event.data) === null || _event$data7 === void 0 ? void 0 : _event$data7.action) === 'closeBannerPopUp') {
-              var bannerWrapper = window.document.getElementById('wizParDiv2');
-              setTimeout(function () {
-                bannerWrapper.remove();
-              }, 0);
-            }
+          case ActionType.GET_NOTIFICATION + displayObj.layout:
+            window.clevertap.renderNotificationClicked(event.data.value);
+            break;
+
+          case ActionType.EVENT:
+            window.clevertap.event.push(event.data.value);
+            break;
+
+          case ActionType.PROFILE:
+            window.clevertap.profile.push(event.data.value);
+            break;
+
+          case ActionType.OUL:
+            window.clevertap.onUserLogin.push(event.data.value);
+            break;
+
+          case ActionType.CLOSE_BOX_POPUP:
+            setTimeout(function () {
+              boxWrapper = window.document.getElementById('wizParDiv0');
+              boxWrapper && boxWrapper.remove();
+            }, 0);
+            break;
+
+          case ActionType.CLOSE_BANNER_POPUP:
+            setTimeout(function () {
+              bannerWrapper = window.document.getElementById('wizParDiv2');
+              bannerWrapper && bannerWrapper.remove();
+            }, 0);
+            break;
+        }
+      };
+
+      var handleIframeLoad = function handleIframeLoad() {
+        if (displayObj['custom-editor']) {
+          iframe.contentWindow.postMessage({
+            action: ActionType.ADJUST_IFRAME_HEIGHT + displayObj.layout,
+            value: displayObj.layout
+          }, '*');
+          window.addEventListener('message', function (event) {
+            handleMessage(event, displayObj, divId);
           });
           contentDiv = '';
         } else {
@@ -5674,13 +5712,6 @@
       };
 
       iframe.onload = handleIframeLoad;
-    };
-
-    var ctEventhandler = function ctEventhandler(html) {
-      var ctScript = "\n     var clevertap = {\n      event: {\n        push: (eventName) => {\n          window.parent.postMessage({\n            action: 'Event',\n            value: eventName\n          },'*');\n        }\n      },\n      profile: {\n        push: (eventName) => {\n          window.parent.postMessage({\n            action: 'Profile',\n            value: eventName\n          },'*');\n        }\n      },\n      onUserLogin: {\n        push: (eventName) => {\n          window.parent.postMessage({\n            action: 'OUL',\n            value: eventName\n          },'*');\n        }\n      },\n      closeBoxPopUp: () => {\n        window.parent.postMessage({\n          action: 'closeBoxPopUp',\n          value: 'closeBoxPopUp'\n        },'*');\n      },\n      closeBannerPopUp: () => {\n        window.parent.postMessage({\n          action: 'closeBannerPopUp',\n          value: 'closeBannerPopUp'\n        },'*');\n      },\n      closeInterstitialPopUp: () => {\n        window.parent.postMessage({\n          action: 'closeInterstitialPopUp',\n          value: 'closeInterstitialPopUp'\n        },'*');\n      }\n    }\n    ";
-      var insertPosition = html.indexOf('<script>');
-      html = [html.slice(0, insertPosition + '<script>'.length), ctScript, html.slice(insertPosition + '<script>'.length)].join('');
-      return html;
     };
 
     var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, html) {
@@ -5943,29 +5974,44 @@
 
       iframe.srcdoc = html;
       var contentDiv;
+      var ActionType = {
+        GET_NOTIFICATION_DATA: 'getnotifData',
+        EVENT: 'Event',
+        PROFILE: 'Profile',
+        OUL: 'OUL',
+        CLOSE_INTERSTITIAL_POPUP: 'closeInterstitialPopUp'
+      };
 
       iframe.onload = function () {
-        if (targetingMsgJson.display['custom-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
+        if (targetingMsgJson.display['custom-editor']) {
           window.addEventListener('message', function (event) {
-            var _event$data8, _event$data9, _event$data10, _event$data11, _event$data12;
+            var _event$data2;
 
-            if ((event === null || event === void 0 ? void 0 : (_event$data8 = event.data) === null || _event$data8 === void 0 ? void 0 : _event$data8.action) === 'getnotifData') {
-              window.clevertap.renderNotificationClicked(event.data.value);
-            }
+            switch (event === null || event === void 0 ? void 0 : (_event$data2 = event.data) === null || _event$data2 === void 0 ? void 0 : _event$data2.action) {
+              case ActionType.GET_NOTIFICATION_DATA:
+                window.clevertap.renderNotificationClicked(event.data.value);
+                break;
 
-            if ((event === null || event === void 0 ? void 0 : (_event$data9 = event.data) === null || _event$data9 === void 0 ? void 0 : _event$data9.action) === 'Event') {
-              window.clevertap.event.push(event.data.value);
-            } else if ((event === null || event === void 0 ? void 0 : (_event$data10 = event.data) === null || _event$data10 === void 0 ? void 0 : _event$data10.action) === 'Profile') {
-              window.clevertap.profile.push(event.data.value);
-            } else if ((event === null || event === void 0 ? void 0 : (_event$data11 = event.data) === null || _event$data11 === void 0 ? void 0 : _event$data11.action) === 'OUL') {
-              window.clevertap.onUserLogin.push(event.data.value);
-            } else if ((event === null || event === void 0 ? void 0 : (_event$data12 = event.data) === null || _event$data12 === void 0 ? void 0 : _event$data12.action) === 'closeInterstitialPopUp') {
-              var interstitialWrapper = window.document.getElementById('intentPreview');
-              var interstitialOverlay = window.document.getElementById('intentOpacityDiv');
-              setTimeout(function () {
-                interstitialOverlay.remove();
-                interstitialWrapper.remove();
-              }, 0);
+              case ActionType.EVENT:
+                window.clevertap.event.push(event.data.value);
+                break;
+
+              case ActionType.PROFILE:
+                window.clevertap.profile.push(event.data.value);
+                break;
+
+              case ActionType.OUL:
+                window.clevertap.onUserLogin.push(event.data.value);
+                break;
+
+              case ActionType.CLOSE_INTERSTITIAL_POPUP:
+                setTimeout(function () {
+                  var interstitialWrapper = window.document.getElementById('intentPreview');
+                  var interstitialOverlay = window.document.getElementById('intentOpacityDiv');
+                  interstitialOverlay && interstitialOverlay.remove();
+                  interstitialWrapper && interstitialWrapper.remove();
+                }, 0);
+                break;
             }
           });
           contentDiv = '';
