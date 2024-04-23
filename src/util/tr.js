@@ -449,7 +449,7 @@ const _tr = (msg, {
     iframe.scrolling = 'no'
     iframe.id = WIZ_IFRAME
     let html = targetingMsgJson.msgContent.html
-    if (displayObj['custom-editor'] && !displayObj['bee-editor']) { // sandboxing the iframe only for custom html
+    if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) { // sandboxing the iframe only for custom html
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox' // allow popup to open url in new page
       html = ctEventhandler(html)
     }
@@ -523,7 +523,7 @@ const _tr = (msg, {
     const closeCampaign = new Event('CT_campaign_rendered')
     document.dispatchEvent(closeCampaign)
 
-    if (displayObj['custom-editor']) {
+    if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
     iframe.srcdoc = html
@@ -574,7 +574,7 @@ const _tr = (msg, {
     }
 
     const handleIframeLoad = () => {
-      if (displayObj['custom-editor']) {
+      if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
         iframe.contentWindow.postMessage({ action: ADJUST_IFRAME_HEIGHT + displayObj.layout, value: displayObj.layout }, '*')
         window.addEventListener('message', (event) => {
           handleMessage(event, displayObj, divId)
@@ -640,7 +640,7 @@ const _tr = (msg, {
             if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }
             if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }
             const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '${targetingMsgJson.wzrk_pivot}' };
-            if(${targetingMsgJson.display['custom-html-sandbox']}){
+            if(${targetingMsgJson.display['custom-html-sandbox']} ){
               if(msgEvent){
                 msgEvent.source.postMessage({
                   action: 'getnotif' + msgEvent?.data?.value ,
@@ -830,7 +830,7 @@ const _tr = (msg, {
     iframe.scrolling = 'no'
     iframe.id = WIZ_IFRAME_INTENT
     let html = targetingMsgJson.msgContent.html
-    if (displayObj['custom-editor'] && !displayObj['bee-editor']) { // sandbox the iframe only for custom html
+    if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) { // sandbox the iframe only for custom html
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms' // allow popup to open url in new page
       html = ctEventhandler(html)
     }
@@ -899,14 +899,14 @@ const _tr = (msg, {
     const closeCampaign = new Event('CT_campaign_rendered')
     document.dispatchEvent(closeCampaign)
 
-    if (targetingMsgJson.display['custom-editor']) {
+    if (targetingMsgJson.display['custom-editor'] && !targetingMsgJson.display['bee-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
     iframe.srcdoc = html
 
     let contentDiv
     iframe.onload = () => {
-      if (targetingMsgJson.display['custom-editor']) {
+      if (targetingMsgJson.display['custom-editor'] && !targetingMsgJson.display['bee-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
         window.addEventListener('message', event => {
           switch (event?.data?.action) {
             case GET_NOTIFICATION_DATA:

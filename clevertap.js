@@ -5569,7 +5569,7 @@
       iframe.id = WIZ_IFRAME;
       var html = targetingMsgJson.msgContent.html;
 
-      if (displayObj['custom-editor'] && !displayObj['bee-editor']) {
+      if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
         // sandboxing the iframe only for custom html
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'; // allow popup to open url in new page
 
@@ -5631,7 +5631,7 @@
       var closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
 
-      if (displayObj['custom-editor']) {
+      if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
@@ -5693,7 +5693,7 @@
       };
 
       var handleIframeLoad = function handleIframeLoad() {
-        if (displayObj['custom-editor']) {
+        if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
           iframe.contentWindow.postMessage({
             action: ADJUST_IFRAME_HEIGHT + displayObj.layout,
             value: displayObj.layout
@@ -5722,7 +5722,7 @@
     };
 
     var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, html) {
-      var script = "<script>\n    \n      \n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      let msgEvent\n      if('").concat(targetingMsgJson.display['custom-html-sandbox'], "'){\n        \n      window.addEventListener('message', event => {\n          let contentHeight\n          msgEvent = event\n          if(event?.data?.action == 'adjustIFrameHeight'+ event?.data?.value){ \n            contentDiv = document.getElementById('contentDiv')\n            let contentHeight = contentDiv.scrollHeight\n            contentDiv.style.height = '100%'\n            event.source.postMessage({\n              action: 'update height' + event?.data?.value ,\n              value: contentHeight\n            }, event.origin)\n            }\n        })\n      }else{\n        const ct__parentOrigin = window.parent.origin;\n      }\n      \n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            if(").concat(targetingMsgJson.display['custom-html-sandbox'], "){\n              if(msgEvent){\n                msgEvent.source.postMessage({\n                  action: 'getnotif' + msgEvent?.data?.value ,\n                  value: notifData\n                }, msgEvent.origin)\n              }else{\n                window.parent.postMessage({\n                  action: 'getnotifData',\n                  value: notifData\n                }, '*')\n              }\n            }else{\n              window.parent.clevertap.renderNotificationClicked(notifData);\n            }\n        }\n      });\n      </script>\n    ");
+      var script = "<script>\n    \n      \n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      let msgEvent\n      if('").concat(targetingMsgJson.display['custom-html-sandbox'], "'){\n        \n      window.addEventListener('message', event => {\n          let contentHeight\n          msgEvent = event\n          if(event?.data?.action == 'adjustIFrameHeight'+ event?.data?.value){ \n            contentDiv = document.getElementById('contentDiv')\n            let contentHeight = contentDiv.scrollHeight\n            contentDiv.style.height = '100%'\n            event.source.postMessage({\n              action: 'update height' + event?.data?.value ,\n              value: contentHeight\n            }, event.origin)\n            }\n        })\n      }else{\n        const ct__parentOrigin = window.parent.origin;\n      }\n      \n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            if(").concat(targetingMsgJson.display['custom-html-sandbox'], " ){\n              if(msgEvent){\n                msgEvent.source.postMessage({\n                  action: 'getnotif' + msgEvent?.data?.value ,\n                  value: notifData\n                }, msgEvent.origin)\n              }else{\n                window.parent.postMessage({\n                  action: 'getnotifData',\n                  value: notifData\n                }, '*')\n              }\n            }else{\n              window.parent.clevertap.renderNotificationClicked(notifData);\n            }\n        }\n      });\n      </script>\n    ");
       return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
     };
 
@@ -5915,7 +5915,7 @@
       iframe.id = WIZ_IFRAME_INTENT;
       var html = targetingMsgJson.msgContent.html;
 
-      if (displayObj['custom-editor'] && !displayObj['bee-editor']) {
+      if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
         // sandbox the iframe only for custom html
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms'; // allow popup to open url in new page
 
@@ -5975,7 +5975,7 @@
       var closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
 
-      if (targetingMsgJson.display['custom-editor']) {
+      if (targetingMsgJson.display['custom-editor'] && !targetingMsgJson.display['bee-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
@@ -5983,7 +5983,7 @@
       var contentDiv;
 
       iframe.onload = function () {
-        if (targetingMsgJson.display['custom-editor']) {
+        if (targetingMsgJson.display['custom-editor'] && !targetingMsgJson.display['bee-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
           window.addEventListener('message', function (event) {
             var _event$data3;
 
