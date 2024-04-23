@@ -10,72 +10,71 @@ import sourcemaps from 'rollup-plugin-sourcemaps'
  * Returns the input file path
  * @param {('SERVICE_WORKER' | 'WEB')} mode
  */
-const getInput = (mode) => {
-  if (mode === 'SERVICE_WORKER') {
-    return 'sw_webpush.js'
-  }
-
-  return 'src/main.js'
-}
+const getInput = (mode) => (mode === 'SERVICE_WORKER' ? 'sw_webpush.js' : 'src/main.js')
 
 /**
  * returns the output object of the build config
  * @param {('SERVICE_WORKER' | 'WEB')} mode
  */
 const getOutput = (mode) => {
+  const baseOutput = {
+    name: 'clevertap',
+    plugins: [terser()]
+  }
+
   if (mode === 'SERVICE_WORKER') {
     return [
       {
+        ...baseOutput,
         name: 'sw_webpush',
         file: 'sw_webpush.min.js',
-        format: 'umd',
-        plugins: [terser()]
+        format: 'umd'
       }
     ]
   }
 
-  return [
+  const outputs = [
     {
-      name: 'clevertap',
+      ...baseOutput,
       file: './dist/clevertap.js',
       format: 'umd',
       sourcemap: true
     },
     {
-      name: 'clevertap',
+      ...baseOutput,
       file: './dist/clevertap.min.js',
-      format: 'umd', // Universal Module Definition, works as amd, cjs and iife all in one
-      plugins: [terser()]
+      format: 'umd',
+      exports: 'auto'
     },
     {
-      name: 'clevertap',
-      file: './dist/clevertap_cjs.js',
-      format: 'cjs', // CommonJS, suitable for Node and other bundlers
-      exports: 'auto',
-      plugins: [terser()]
+      ...baseOutput,
+      file: './dist/clevertap_cjs.min.js',
+      format: 'cjs',
+      exports: 'auto'
     },
     {
-      name: 'clevertap',
-      file: './dist/clevertap_es.js',
-      format: 'es',
-      exports: 'auto',
-      plugins: [terser()]
+      ...baseOutput,
+      file: './dist/clevertap_es.min.js',
+      format: 'es'
     },
     {
-      name: 'clevertap',
-      file: './dist/clevertap_amd.js', // Asynchronous Module Definition, used with module loaders like RequireJS
-      format: 'amd',
-      exports: 'auto',
-      plugins: [terser()]
+      ...baseOutput,
+      file: './dist/clevertap_amd.min.js',
+      format: 'amd'
     },
     {
-      name: 'clevertap',
-      file: './dist/clevertap_iife.js', // A self-executing function, suitable for inclusion as a <script> tag.
-      format: 'iife',
-      exports: 'auto',
-      plugins: [terser()]
+      ...baseOutput,
+      file: './dist/clevertap_iife.min.js',
+      format: 'iife'
+    },
+    {
+      ...baseOutput,
+      file: './dist/clevertap_system.min.js',
+      format: 'system'
     }
   ]
+
+  return outputs
 }
 
 /**
