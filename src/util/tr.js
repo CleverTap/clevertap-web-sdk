@@ -16,7 +16,19 @@ import {
   WZRK_PREFIX,
   WZRK_ID,
   CAMP_COOKIE_G,
-  GCOOKIE_NAME
+  GCOOKIE_NAME,
+  WIZ_IFRAME,
+  WIZ_IFRAME_INTENT,
+  ADJUST_IFRAME_HEIGHT,
+  UPDATE_HEIGHT,
+  GET_NOTIFICATION,
+  EVENT,
+  PROFILE,
+  OUL,
+  CLOSE_BOX_POPUP,
+  CLOSE_BANNER_POPUP,
+  GET_NOTIFICATION_DATA,
+  CLOSE_INTERSTITIAL_POPUP
 } from './constants'
 
 import {
@@ -435,9 +447,9 @@ const _tr = (msg, {
     iframe.marginheight = '0px'
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
-    iframe.id = 'wiz-iframe'
+    iframe.id = WIZ_IFRAME
     let html = targetingMsgJson.msgContent.html
-    if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) { // sandboxing the iframe only for custom html
+    if (displayObj['custom-editor'] && !displayObj['bee-editor']) { // sandboxing the iframe only for custom html
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox' // allow popup to open url in new page
       html = ctEventhandler(html)
     }
@@ -519,47 +531,36 @@ const _tr = (msg, {
     // const ua = navigator.userAgent.toLowerCase()
     let contentDiv
 
-    const ActionType = {
-      ADJUST_IFRAME_HEIGHT: 'adjustIFrameHeight',
-      UPDATE_HEIGHT: 'update height',
-      GET_NOTIFICATION: 'getnotif',
-      EVENT: 'Event',
-      PROFILE: 'Profile',
-      OUL: 'OUL',
-      CLOSE_BOX_POPUP: 'closeBoxPopUp',
-      CLOSE_BANNER_POPUP: 'closeBannerPopUp'
-    }
-
     const handleMessage = (event, displayObj, divId) => {
       let heightAdjust, boxWrapper, bannerWrapper // Declare variables outside of switch
 
       switch (event?.data?.action) {
-        case ActionType.UPDATE_HEIGHT + displayObj.layout:
+        case UPDATE_HEIGHT + displayObj.layout:
           heightAdjust = document.getElementById(divId)
           if (heightAdjust) {
             heightAdjust.style.margin = '0px'
             heightAdjust.style.height = `${event.data.value}px`
           }
           break
-        case ActionType.GET_NOTIFICATION + displayObj.layout:
+        case GET_NOTIFICATION + displayObj.layout:
           window.clevertap.renderNotificationClicked(event.data.value)
           break
-        case ActionType.EVENT:
+        case EVENT:
           window.clevertap.event.push(event.data.value)
           break
-        case ActionType.PROFILE:
+        case PROFILE:
           window.clevertap.profile.push(event.data.value)
           break
-        case ActionType.OUL:
+        case OUL:
           window.clevertap.onUserLogin.push(event.data.value)
           break
-        case ActionType.CLOSE_BOX_POPUP:
+        case CLOSE_BOX_POPUP:
           setTimeout(() => {
             boxWrapper = window.document.getElementById('wizParDiv0')
             boxWrapper && boxWrapper.remove()
           }, 0)
           break
-        case ActionType.CLOSE_BANNER_POPUP:
+        case CLOSE_BANNER_POPUP:
           setTimeout(() => {
             bannerWrapper = window.document.getElementById('wizParDiv2')
             bannerWrapper && bannerWrapper.remove()
@@ -567,27 +568,28 @@ const _tr = (msg, {
           break
         default:
           // Handle unknown action
+          console.log('Unknown Action', event?.data?.action)
           break
       }
     }
 
     const handleIframeLoad = () => {
       if (displayObj['custom-editor']) {
-        iframe.contentWindow.postMessage({ action: ActionType.ADJUST_IFRAME_HEIGHT + displayObj.layout, value: displayObj.layout }, '*')
+        iframe.contentWindow.postMessage({ action: ADJUST_IFRAME_HEIGHT + displayObj.layout, value: displayObj.layout }, '*')
         window.addEventListener('message', (event) => {
           handleMessage(event, displayObj, divId)
         })
         contentDiv = ''
       } else {
         // adjust iframe and body height of html inside correctly
-        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
+        contentHeight = document.getElementById(WIZ_IFRAME).contentDocument.getElementById('contentDiv').scrollHeight
         if (displayObj['custom-editor'] !== true && !isBanner) {
           contentHeight += 25
         }
-        document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
-        document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
+        document.getElementById(WIZ_IFRAME).contentDocument.body.style.margin = '0px'
+        document.getElementById(WIZ_IFRAME).style.height = contentHeight + 'px'
 
-        contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+        contentDiv = document.getElementById(WIZ_IFRAME).contentDocument.getElementById('contentDiv')
       }
       setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
     }
@@ -826,9 +828,9 @@ const _tr = (msg, {
     iframe.marginheight = '0px'
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
-    iframe.id = 'wiz-iframe-intent'
+    iframe.id = WIZ_IFRAME_INTENT
     let html = targetingMsgJson.msgContent.html
-    if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) { // sanbox the iframe only for custom html
+    if (displayObj['custom-editor'] && !displayObj['bee-editor']) { // sandbox the iframe only for custom html
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms' // allow popup to open url in new page
       html = ctEventhandler(html)
     }
@@ -903,30 +905,23 @@ const _tr = (msg, {
     iframe.srcdoc = html
 
     let contentDiv
-    const ActionType = {
-      GET_NOTIFICATION_DATA: 'getnotifData',
-      EVENT: 'Event',
-      PROFILE: 'Profile',
-      OUL: 'OUL',
-      CLOSE_INTERSTITIAL_POPUP: 'closeInterstitialPopUp'
-    }
     iframe.onload = () => {
       if (targetingMsgJson.display['custom-editor']) {
         window.addEventListener('message', event => {
           switch (event?.data?.action) {
-            case ActionType.GET_NOTIFICATION_DATA:
+            case GET_NOTIFICATION_DATA:
               window.clevertap.renderNotificationClicked(event.data.value)
               break
-            case ActionType.EVENT:
+            case EVENT:
               window.clevertap.event.push(event.data.value)
               break
-            case ActionType.PROFILE:
+            case PROFILE:
               window.clevertap.profile.push(event.data.value)
               break
-            case ActionType.OUL:
+            case OUL:
               window.clevertap.onUserLogin.push(event.data.value)
               break
-            case ActionType.CLOSE_INTERSTITIAL_POPUP:
+            case CLOSE_INTERSTITIAL_POPUP:
               setTimeout(() => {
                 const interstitialWrapper = window.document.getElementById('intentPreview')
                 const interstitialOverlay = window.document.getElementById('intentOpacityDiv')
@@ -941,7 +936,7 @@ const _tr = (msg, {
         })
         contentDiv = ''
       } else {
-        contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
+        contentDiv = document.getElementById(WIZ_IFRAME_INTENT).contentDocument.getElementById('contentDiv')
       }
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
     }

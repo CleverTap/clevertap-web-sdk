@@ -56,6 +56,18 @@ export const VARIABLES = 'WZRK_PE'
 export const PUSH_DELAY_MS = 1000
 export const MAX_DELAY_FREQUENCY = 1000 * 60 * 10
 export const WZRK_FETCH = 'wzrk_fetch'
+export const WIZ_IFRAME = 'wiz-iframe'
+export const WIZ_IFRAME_INTENT = 'wiz-iframe-intent'
+export const ADJUST_IFRAME_HEIGHT = 'adjustIFrameHeight'
+export const UPDATE_HEIGHT = 'update height'
+export const GET_NOTIFICATION = 'getnotif'
+export const EVENT = 'Event'
+export const PROFILE = 'Profile'
+export const OUL = 'OUL'
+export const CLOSE_BOX_POPUP = 'closeBoxPopUp'
+export const CLOSE_BANNER_POPUP = 'closeBannerPopUp'
+export const GET_NOTIFICATION_DATA = 'getnotifData'
+export const CLOSE_INTERSTITIAL_POPUP = 'closeInterstitialPopUp'
 
 export const SYSTEM_EVENTS = [
   'Stayed',
