@@ -10,44 +10,71 @@ import sourcemaps from 'rollup-plugin-sourcemaps'
  * Returns the input file path
  * @param {('SERVICE_WORKER' | 'WEB')} mode
  */
-const getInput = (mode) => {
-  if (mode === 'SERVICE_WORKER') {
-    return 'sw_webpush.js'
-  }
-
-  return 'src/main.js'
-}
+const getInput = (mode) => (mode === 'SERVICE_WORKER' ? 'sw_webpush.js' : 'src/main.js')
 
 /**
  * returns the output object of the build config
  * @param {('SERVICE_WORKER' | 'WEB')} mode
  */
 const getOutput = (mode) => {
+  const baseOutput = {
+    name: 'clevertap',
+    plugins: [terser()]
+  }
+
   if (mode === 'SERVICE_WORKER') {
     return [
       {
+        ...baseOutput,
         name: 'sw_webpush',
         file: 'sw_webpush.min.js',
-        format: 'umd',
-        plugins: [terser()]
+        format: 'umd'
       }
     ]
   }
 
-  return [
+  const outputs = [
     {
-      name: 'clevertap',
-      file: 'clevertap.js',
+      ...baseOutput,
+      file: './dist/clevertap.js',
       format: 'umd',
       sourcemap: true
     },
     {
-      name: 'clevertap',
-      file: 'clevertap.min.js',
+      ...baseOutput,
+      file: './dist/clevertap.min.js',
       format: 'umd',
-      plugins: [terser()]
+      exports: 'auto'
+    },
+    {
+      ...baseOutput,
+      file: './dist/clevertap_cjs.min.js',
+      format: 'cjs',
+      exports: 'auto'
+    },
+    {
+      ...baseOutput,
+      file: './dist/clevertap_es.min.js',
+      format: 'es'
+    },
+    {
+      ...baseOutput,
+      file: './dist/clevertap_amd.min.js',
+      format: 'amd'
+    },
+    {
+      ...baseOutput,
+      file: './dist/clevertap_iife.min.js',
+      format: 'iife'
+    },
+    {
+      ...baseOutput,
+      file: './dist/clevertap_system.min.js',
+      format: 'system'
     }
   ]
+
+  return outputs
 }
 
 /**
