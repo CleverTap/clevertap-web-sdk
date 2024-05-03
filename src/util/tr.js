@@ -16,7 +16,19 @@ import {
   WZRK_PREFIX,
   WZRK_ID,
   CAMP_COOKIE_G,
-  GCOOKIE_NAME
+  GCOOKIE_NAME,
+  WIZ_IFRAME,
+  WIZ_IFRAME_INTENT,
+  ADJUST_IFRAME_HEIGHT,
+  UPDATE_HEIGHT,
+  GET_NOTIFICATION,
+  EVENT,
+  PROFILE,
+  OUL,
+  CLOSE_BOX_POPUP,
+  CLOSE_BANNER_POPUP,
+  GET_NOTIFICATION_DATA,
+  CLOSE_INTERSTITIAL_POPUP
 } from './constants'
 
 import {
@@ -34,6 +46,7 @@ import { CTWebPersonalisationBanner } from './web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
+import ctEventhandler from './clevertap-handler.js'
 
 const _tr = (msg, {
   device,
@@ -46,7 +59,6 @@ const _tr = (msg, {
   const _request = request
   const _logger = logger
   let _wizCounter = 0
-
   // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
@@ -435,17 +447,20 @@ const _tr = (msg, {
     iframe.marginheight = '0px'
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
-    iframe.id = 'wiz-iframe'
+    iframe.id = WIZ_IFRAME
+    let html = targetingMsgJson.msgContent.html
+    if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) { // sandboxing the iframe only for custom html
+      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox' // allow popup to open url in new page
+      html = ctEventhandler(html)
+    }
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
 
-    let html
     // direct html
     if (targetingMsgJson.msgContent.type === 1) {
-      html = targetingMsgJson.msgContent.html
       html = html.replace(/##campaignId##/g, campaignId)
       html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id)
     } else {
@@ -496,75 +511,120 @@ const _tr = (msg, {
       const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>'
       html = css + title + body
     }
+    if (displayObj['custom-html-sandbox']) {
+      iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; height:100%; border:0px !important; border-color:none !important;')
+    } else {
+      iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
+    }
 
-    iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
-    const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
-    const doc = ifrm.document
 
     // Dispatch event for popup box/banner close
     const closeCampaign = new Event('CT_campaign_rendered')
     document.dispatchEvent(closeCampaign)
 
-    doc.open()
-    doc.write(html)
-
-    if (displayObj['custom-editor']) {
-      appendScriptForCustomEvent(targetingMsgJson, doc)
+    if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
+      html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    doc.close()
+    iframe.srcdoc = html
 
-    const adjustIFrameHeight = () => {
-      // adjust iframe and body height of html inside correctly
-      contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
-      if (displayObj['custom-editor'] !== true && !isBanner) {
-        contentHeight += 25
-      }
-      document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
-      document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
-    }
+    // const ua = navigator.userAgent.toLowerCase()
+    let contentDiv
 
-    const ua = navigator.userAgent.toLowerCase()
-    if (ua.indexOf('safari') !== -1) {
-      if (ua.indexOf('chrome') > -1) {
-        iframe.onload = () => {
-          adjustIFrameHeight()
-          const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
-          setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
-        }
-      } else {
-        let inDoc = iframe.contentDocument || iframe.contentWindow
-        if (inDoc.document) inDoc = inDoc.document
-        // safari iphone 7+ needs this.
-        adjustIFrameHeight()
-        const _timer = setInterval(() => {
-          if (inDoc.readyState === 'complete') {
-            clearInterval(_timer)
-            // adjust iframe and body height of html inside correctly
-            adjustIFrameHeight()
-            const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
-            setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
+    const handleMessage = (event, displayObj, divId) => {
+      let heightAdjust, boxWrapper, bannerWrapper // Declare variables outside of switch
+
+      switch (event?.data?.action) {
+        case UPDATE_HEIGHT + displayObj.layout:
+          heightAdjust = document.getElementById(divId)
+          if (heightAdjust) {
+            heightAdjust.style.margin = '0px'
+            heightAdjust.style.height = `${event.data.value}px`
           }
-        }, 10)
-      }
-    } else {
-      iframe.onload = () => {
-        // adjust iframe and body height of html inside correctly
-        adjustIFrameHeight()
-        const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
-        setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
+          break
+        case GET_NOTIFICATION + displayObj.layout:
+          window.clevertap.renderNotificationClicked(event.data.value)
+          break
+        case EVENT:
+          window.clevertap.event.push(event.data.value)
+          break
+        case PROFILE:
+          window.clevertap.profile.push(event.data.value)
+          break
+        case OUL:
+          window.clevertap.onUserLogin.push(event.data.value)
+          break
+        case CLOSE_BOX_POPUP:
+          setTimeout(() => {
+            boxWrapper = window.document.getElementById('wizParDiv0')
+            boxWrapper && boxWrapper.remove()
+          }, 0)
+          break
+        case CLOSE_BANNER_POPUP:
+          setTimeout(() => {
+            bannerWrapper = window.document.getElementById('wizParDiv2')
+            bannerWrapper && bannerWrapper.remove()
+          }, 0)
+          break
+        default:
+          // Handle unknown action
+          console.log('Unknown Action', event?.data?.action)
+          break
       }
     }
+
+    const handleIframeLoad = () => {
+      if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
+        iframe.contentWindow.postMessage({ action: ADJUST_IFRAME_HEIGHT + displayObj.layout, value: displayObj.layout }, '*')
+        window.addEventListener('message', (event) => {
+          handleMessage(event, displayObj, divId)
+        })
+        contentDiv = ''
+      } else {
+        // adjust iframe and body height of html inside correctly
+        contentHeight = document.getElementById(WIZ_IFRAME).contentDocument.getElementById('contentDiv').scrollHeight
+        if (displayObj['custom-editor'] !== true && !isBanner) {
+          contentHeight += 25
+        }
+        document.getElementById(WIZ_IFRAME).contentDocument.body.style.margin = '0px'
+        document.getElementById(WIZ_IFRAME).style.height = contentHeight + 'px'
+
+        contentDiv = document.getElementById(WIZ_IFRAME).contentDocument.getElementById('contentDiv')
+      }
+      setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
+    }
+
+    iframe.onload = handleIframeLoad
   }
 
-  const appendScriptForCustomEvent = (targetingMsgJson, doc) => {
-    const script = doc.createElement('script')
-    script.innerHTML = `
+  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
+    const script = `<script>
+    
+      
       const ct__camapignId = '${targetingMsgJson.wzrk_id}';
       const ct__formatVal = (v) => {
           return v && v.trim().substring(0, 20);
       }
-      const ct__parentOrigin =  window.parent.origin;
+      let msgEvent
+      if('${targetingMsgJson.display['custom-html-sandbox']}'){
+        
+      window.addEventListener('message', event => {
+          let contentHeight
+          msgEvent = event
+          if(event?.data?.action == 'adjustIFrameHeight'+ event?.data?.value){ 
+            contentDiv = document.getElementById('contentDiv')
+            let contentHeight = contentDiv.scrollHeight
+            contentDiv.style.height = '100%'
+            event.source.postMessage({
+              action: 'update height' + event?.data?.value ,
+              value: contentHeight
+            }, event.origin)
+            }
+        })
+      }else{
+        const ct__parentOrigin = window.parent.origin;
+      }
+      
       document.body.addEventListener('click', (event) => {
         const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');
         if (elem) {
@@ -580,11 +640,26 @@ const _tr = (msg, {
             if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }
             if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }
             const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '${targetingMsgJson.wzrk_pivot}' };
-            window.parent.clevertap.renderNotificationClicked(notifData);
+            if(${targetingMsgJson.display['custom-html-sandbox']} ){
+              if(msgEvent){
+                msgEvent.source.postMessage({
+                  action: 'getnotif' + msgEvent?.data?.value ,
+                  value: notifData
+                }, msgEvent.origin)
+              }else{
+                window.parent.postMessage({
+                  action: 'getnotifData',
+                  value: notifData
+                }, '*')
+              }
+            }else{
+              window.parent.clevertap.renderNotificationClicked(notifData);
+            }
         }
       });
+      </script>
     `
-    doc.body.appendChild(script)
+    return html.replace(/(<\s*\/\s*body)/, `${script}\n$1`)
   }
 
   let _callBackCalled = false
@@ -748,20 +823,24 @@ const _tr = (msg, {
     document.body.appendChild(msgDiv)
     const iframe = document.createElement('iframe')
     const borderRadius = targetingMsgJson.display.br === false ? '0' : '8'
+    const displayObj = targetingMsgJson.display
     iframe.frameborder = '0px'
     iframe.marginheight = '0px'
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
-    iframe.id = 'wiz-iframe-intent'
+    iframe.id = WIZ_IFRAME_INTENT
+    let html = targetingMsgJson.msgContent.html
+    if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) { // sandbox the iframe only for custom html
+      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms' // allow popup to open url in new page
+      html = ctEventhandler(html)
+    }
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    let html
     // direct html
     if (targetingMsgJson.msgContent.type === 1) {
-      html = targetingMsgJson.msgContent.html
       html = html.replace(/##campaignId##/g, campaignId)
       html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id)
     } else {
@@ -815,22 +894,52 @@ const _tr = (msg, {
     }
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
-    const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
-    const doc = ifrm.document
 
     // Dispatch event for interstitial/exit intent close
     const closeCampaign = new Event('CT_campaign_rendered')
     document.dispatchEvent(closeCampaign)
 
-    doc.open()
-    doc.write(html)
-    if (targetingMsgJson.display['custom-editor']) {
-      appendScriptForCustomEvent(targetingMsgJson, doc)
+    if (targetingMsgJson.display['custom-editor'] && !targetingMsgJson.display['bee-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
+      html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    doc.close()
+    iframe.srcdoc = html
 
-    const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
-    setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
+    let contentDiv
+    iframe.onload = () => {
+      if (targetingMsgJson.display['custom-editor'] && !targetingMsgJson.display['bee-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
+        window.addEventListener('message', event => {
+          switch (event?.data?.action) {
+            case GET_NOTIFICATION_DATA:
+              window.clevertap.renderNotificationClicked(event.data.value)
+              break
+            case EVENT:
+              window.clevertap.event.push(event.data.value)
+              break
+            case PROFILE:
+              window.clevertap.profile.push(event.data.value)
+              break
+            case OUL:
+              window.clevertap.onUserLogin.push(event.data.value)
+              break
+            case CLOSE_INTERSTITIAL_POPUP:
+              setTimeout(() => {
+                const interstitialWrapper = window.document.getElementById('intentPreview')
+                const interstitialOverlay = window.document.getElementById('intentOpacityDiv')
+                interstitialOverlay && interstitialOverlay.remove()
+                interstitialWrapper && interstitialWrapper.remove()
+              }, 0)
+              break
+            default:
+              // Handle unknown action
+              break
+          }
+        })
+        contentDiv = ''
+      } else {
+        contentDiv = document.getElementById(WIZ_IFRAME_INTENT).contentDocument.getElementById('contentDiv')
+      }
+      setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
+    }
   }
 
   if (!document.body) {
