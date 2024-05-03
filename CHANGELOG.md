@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.7.4] - 3 May, 2024
+- Cross-site scripting (XSS) bugfix.
+
 ## [1.7.3] - 3 Apr, 2024
 - Fixes a issue in release pipeline of Service worker.
 
