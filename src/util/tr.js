@@ -48,47 +48,53 @@ const _tr = (msg, {
   const _logger = logger
   let _wizCounter = 0
 
-  msg = {
-    arp: {
-      j_n: 'Zw==',
-      i_n: 'Y2NmewICAw==',
-      d_ts: 0,
-      dh: 0,
-      v: 1,
-      j_s: '{ }',
-      id: 'WWW-WWW-WWRZ',
-      e_ts: 0,
-      r_ts: 1649748826,
-      rc_w: 60,
-      rc_n: 5
-    },
-    inapp_notifs: [
-      {
-        msgContent: {
-          templateType: 'point-and-click',
-          type: 4
-        },
-        display: {
-          divId: 'hero-banner',
-          details: [{
-            'http://localhost:3000/': {
-              '.heroDi1v': {
-                html: '<span class="selector_1">Hello Sonam</span>'
-              },
-              '#selector_2': {
-                html: '<p class="selector_2">Hello Sonam</p>'
-              }
-            }
-          }],
-          wtarget_type: 2,
-          wmc: 1,
-          ff: 'Desktop'
-        },
-        wzrk_id: '1655316906_20220620',
-        wzrk_pivot: 'wzrk_default'
-      }
-    ]
-  }
+  // msg = {
+  //   arp: {
+  //     j_n: 'Zw==',
+  //     i_n: 'Y2NmewICAw==',
+  //     d_ts: 0,
+  //     dh: 0,
+  //     v: 1,
+  //     j_s: '{ }',
+  //     id: 'WWW-WWW-WWRZ',
+  //     e_ts: 0,
+  //     r_ts: 1649748826,
+  //     rc_w: 60,
+  //     rc_n: 5
+  //   },
+  //   inapp_notifs: [
+  //     {
+  //       msgContent: {
+  //         templateType: 'point-and-click',
+  //         type: 4
+  //       },
+  //       display: {
+  //         divId: 'hero-banner',
+  //         details: [{
+  //           'http://localhost:3000/': {
+  //             '.heroDi1v': {
+  //               html: '<span class="selector_1">Hello Sonam</span>'
+  //             },
+  //             '#selector_2': {
+  //               html: '<p class="selector_2">Hello Sonam</p>'
+  //             },
+  //             '.heroDiv2': {
+  //               json: {
+  //                 name: 'Sonam',
+  //                 identity: 1234
+  //               }
+  //             }
+  //           }
+  //         }],
+  //         wtarget_type: 2,
+  //         wmc: 1,
+  //         ff: 'Desktop'
+  //       },
+  //       wzrk_id: '1655316906_20220620',
+  //       wzrk_pivot: 'wzrk_default'
+  //     }
+  //   ]
+  // }
   // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
@@ -919,38 +925,6 @@ const _tr = (msg, {
       }
     })
   }
-
-  // const renderVisualBuilder = (targetingMsgJson) => {
-  //   const details = targetingMsgJson.display.details[0]
-  //   const siteUrl = Object.keys(details)[0]
-  //   const selectors = details[siteUrl]
-
-  //   if (siteUrl === window.location.href) {
-  //     for (const selector in selectors) {
-  //       const element = document.querySelector(selector)
-  //       if (element) {
-  //         element.outerHTML = selectors[selector].html
-  //         window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
-  //       } else {
-  //         let count = 0
-  //         const intervalId = setInterval(() => {
-  //           const retryElement = document.querySelector(selector)
-  //           if (retryElement) {
-  //             retryElement.outerHTML = selectors[selector].html
-  //             window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
-  //             clearInterval(intervalId)
-  //           } else {
-  //             count++
-  //             if (count >= 20) {
-  //               console.log(`No element present on DOM with selector '${selector}'.`)
-  //               clearInterval(intervalId)
-  //             }
-  //           }
-  //         }, 500)
-  //       }
-  //     }
-  //   }
-  // }
 
   if (msg.inapp_notifs != null) {
     const arrInAppNotifs = {}

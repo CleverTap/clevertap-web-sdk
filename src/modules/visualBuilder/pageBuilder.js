@@ -1,17 +1,4 @@
 export const initialiseCTBuilder = () => {
-//   const overlayPath = 'https://kkyusuftk-clevertap.s3.amazonaws.com/sampleIndex.js'
-
-  //   addOverlayScript(overlayPath).onload = async function () {
-  //     try {
-  //       const module = await import(overlayPath)
-  //       const { default: isEven } = module
-
-  //       console.log(isEven(4))
-  //       console.log(isEven(5))
-  //     } catch (error) {
-  //       console.error('Error fetching data:', error)
-  //     }
-  //   }
   document.addEventListener('DOMContentLoaded', onContentLoad)
 }
 
@@ -108,7 +95,11 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     for (const selector in selectors) {
       const element = document.querySelector(selector)
       if (element) {
-        element.outerHTML = selectors[selector].html
+        if (selectors[selector].html) {
+          element.outerHTML = selectors[selector].html
+        } else {
+          // Update json data
+        }
         if (!isPreview) {
           window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
         }
@@ -117,7 +108,11 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
         const intervalId = setInterval(() => {
           const retryElement = document.querySelector(selector)
           if (retryElement) {
-            retryElement.outerHTML = selectors[selector].html
+            if (selectors[selector].html) {
+              retryElement.outerHTML = selectors[selector].html
+            } else {
+              // Update json data
+            }
             if (!isPreview) {
               window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
             }

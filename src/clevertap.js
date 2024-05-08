@@ -40,8 +40,8 @@ import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
-import { initialiseCTBuilder } from './modules/visualBuilder/pageBuilder'
-// import { initialiseCTBuilder, renderVisualBuilder } from './modules/visualBuilder/pageBuilder'
+// import { initialiseCTBuilder } from './modules/visualBuilder/pageBuilder'
+import { initialiseCTBuilder, renderVisualBuilder } from './modules/visualBuilder/pageBuilder'
 
 export default class CleverTap {
   #logger
@@ -672,9 +672,12 @@ export default class CleverTap {
       return
     }
     if (search === '?ctBuilderPreview') {
-      // open preview
-      console.log('open in visual builder mode')
-      // renderVisualBuilder(targetingMsgJson, true)
+      window.addEventListener('message', (event) => {
+        if (event.data && event.data.message && event.data.message === 'Overlay') {
+          renderVisualBuilder(event.data, true)
+        }
+      }, false)
+      window.postMessage('preview')
       return
     }
 
