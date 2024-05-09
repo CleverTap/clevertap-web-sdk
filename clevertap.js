@@ -4486,32 +4486,21 @@
   const arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
   const greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
-  const initialiseCTBuilder = () => {
-    //   const overlayPath = 'https://kkyusuftk-clevertap.s3.amazonaws.com/sampleIndex.js'
-    //   addOverlayScript(overlayPath).onload = async function () {
-    //     try {
-    //       const module = await import(overlayPath)
-    //       const { default: isEven } = module
-    //       console.log(isEven(4))
-    //       console.log(isEven(5))
-    //     } catch (error) {
-    //       console.error('Error fetching data:', error)
-    //     }
-    //   }
-    document.addEventListener('DOMContentLoaded', onContentLoad);
+  const initialiseCTBuilder = (url, variant) => {
+    document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant));
   };
   let container;
 
-  function onContentLoad() {
+  function onContentLoad(url, variant) {
     document.body.innerHTML = '';
     container = document.createElement('div');
-    container.id = 'app2';
+    container.id = 'overlayDiv';
     container.style.position = 'relative'; // Ensure relative positioning for absolute positioning of form
 
     container.style.display = 'flex';
     document.body.appendChild(container);
     const overlayPath = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/overlay.js';
-    loadOverlayScript(overlayPath).then(() => {
+    loadOverlayScript(overlayPath, url, variant).then(() => {
       console.log('Overlay script loaded successfully.');
     }).catch(error => {
       console.error('Error loading overlay script:', error);
@@ -4528,7 +4517,7 @@
     document.head.appendChild(link);
   }
 
-  function loadOverlayScript(overlayPath) {
+  function loadOverlayScript(overlayPath, url, variant) {
     return new Promise((resolve, reject) => {
       var script = document.createElement('script');
       script.type = 'module';
@@ -4536,7 +4525,7 @@
 
       script.onload = function () {
         if (typeof window.Overlay === 'function') {
-          window.Overlay('#app2', 'http://localhost:8080/randomPage');
+          window.Overlay('#overlayDiv', url, variant);
           resolve();
         } else {
           reject(new Error('ContentLayout not found in overlay.js'));
@@ -4595,7 +4584,9 @@
         const element = document.querySelector(selector);
 
         if (element) {
-          element.outerHTML = selectors[selector].html;
+          if (selectors[selector].html) {
+            element.outerHTML = selectors[selector].html;
+          }
 
           if (!isPreview) {
             window.clevertap.renderNotificationViewed({
@@ -4609,7 +4600,9 @@
             const retryElement = document.querySelector(selector);
 
             if (retryElement) {
-              retryElement.outerHTML = selectors[selector].html;
+              if (selectors[selector].html) {
+                retryElement.outerHTML = selectors[selector].html;
+              }
 
               if (!isPreview) {
                 window.clevertap.renderNotificationViewed({
@@ -4651,46 +4644,54 @@
     const _session = session;
     const _request = request;
     const _logger = logger;
-    let _wizCounter = 0;
-    msg = {
-      arp: {
-        j_n: 'Zw==',
-        i_n: 'Y2NmewICAw==',
-        d_ts: 0,
-        dh: 0,
-        v: 1,
-        j_s: '{ }',
-        id: 'WWW-WWW-WWRZ',
-        e_ts: 0,
-        r_ts: 1649748826,
-        rc_w: 60,
-        rc_n: 5
-      },
-      inapp_notifs: [{
-        msgContent: {
-          templateType: 'point-and-click',
-          type: 4
-        },
-        display: {
-          divId: 'hero-banner',
-          details: [{
-            'http://localhost:3000/': {
-              '.heroDi1v': {
-                html: '<span class="selector_1">Hello Sonam</span>'
-              },
-              '#selector_2': {
-                html: '<p class="selector_2">Hello Sonam</p>'
-              }
-            }
-          }],
-          wtarget_type: 2,
-          wmc: 1,
-          ff: 'Desktop'
-        },
-        wzrk_id: '1655316906_20220620',
-        wzrk_pivot: 'wzrk_default'
-      }]
-    }; // Campaign House keeping
+    let _wizCounter = 0; // msg = {
+    //   arp: {
+    //     j_n: 'Zw==',
+    //     i_n: 'Y2NmewICAw==',
+    //     d_ts: 0,
+    //     dh: 0,
+    //     v: 1,
+    //     j_s: '{ }',
+    //     id: 'WWW-WWW-WWRZ',
+    //     e_ts: 0,
+    //     r_ts: 1649748826,
+    //     rc_w: 60,
+    //     rc_n: 5
+    //   },
+    //   inapp_notifs: [
+    //     {
+    //       msgContent: {
+    //         templateType: 'point-and-click',
+    //         type: 4
+    //       },
+    //       display: {
+    //         divId: 'hero-banner',
+    //         details: [{
+    //           'http://localhost:3000/': {
+    //             '.heroDi1v': {
+    //               html: '<span class="selector_1">Hello Sonam</span>'
+    //             },
+    //             '#selector_2': {
+    //               html: '<p class="selector_2">Hello Sonam</p>'
+    //             },
+    //             '.heroDiv2': {
+    //               json: {
+    //                 name: 'Sonam',
+    //                 identity: 1234
+    //               }
+    //             }
+    //           }
+    //         }],
+    //         wtarget_type: 2,
+    //         wmc: 1,
+    //         ff: 'Desktop'
+    //       },
+    //       wzrk_id: '1655316906_20220620',
+    //       wzrk_pivot: 'wzrk_default'
+    //     }
+    //   ]
+    // }
+    // Campaign House keeping
 
     const doCampHouseKeeping = targetingMsgJson => {
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
@@ -5563,37 +5564,7 @@
           }, 500);
         }
       });
-    }; // const renderVisualBuilder = (targetingMsgJson) => {
-    //   const details = targetingMsgJson.display.details[0]
-    //   const siteUrl = Object.keys(details)[0]
-    //   const selectors = details[siteUrl]
-    //   if (siteUrl === window.location.href) {
-    //     for (const selector in selectors) {
-    //       const element = document.querySelector(selector)
-    //       if (element) {
-    //         element.outerHTML = selectors[selector].html
-    //         window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
-    //       } else {
-    //         let count = 0
-    //         const intervalId = setInterval(() => {
-    //           const retryElement = document.querySelector(selector)
-    //           if (retryElement) {
-    //             retryElement.outerHTML = selectors[selector].html
-    //             window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
-    //             clearInterval(intervalId)
-    //           } else {
-    //             count++
-    //             if (count >= 20) {
-    //               console.log(`No element present on DOM with selector '${selector}'.`)
-    //               clearInterval(intervalId)
-    //             }
-    //           }
-    //         }, 500)
-    //       }
-    //     }
-    //   }
-    // }
-
+    };
 
     if (msg.inapp_notifs != null) {
       const arrInAppNotifs = {};
@@ -7417,6 +7388,8 @@
 
   var _checkPageChanged = _classPrivateFieldLooseKey("checkPageChanged");
 
+  var _handleMessageEvent = _classPrivateFieldLooseKey("handleMessageEvent");
+
   var _pingRequest = _classPrivateFieldLooseKey("pingRequest");
 
   var _isPingContinuous = _classPrivateFieldLooseKey("isPingContinuous");
@@ -7465,6 +7438,9 @@
       });
       Object.defineProperty(this, _pingRequest, {
         value: _pingRequest2
+      });
+      Object.defineProperty(this, _handleMessageEvent, {
+        value: _handleMessageEvent2
       });
       Object.defineProperty(this, _checkPageChanged, {
         value: _checkPageChanged2
@@ -8185,14 +8161,14 @@
       if (search === '?ctBuilder') {
         // open in visual builder mode
         console.log('open in visual builder mode');
-        initialiseCTBuilder();
+        window.addEventListener('message', _classPrivateFieldLooseBase(this, _handleMessageEvent)[_handleMessageEvent], false);
+        window.postMessage('builder');
         return;
       }
 
       if (search === '?ctBuilderPreview') {
-        // open preview
-        console.log('open in visual builder mode'); // renderVisualBuilder(targetingMsgJson, true)
-
+        window.addEventListener('message', _classPrivateFieldLooseBase(this, _handleMessageEvent)[_handleMessageEvent], false);
+        window.postMessage('preview');
         return;
       }
 
@@ -8422,6 +8398,18 @@
     });
 
     debouncedPageChanged();
+  };
+
+  var _handleMessageEvent2 = function _handleMessageEvent2(event) {
+    if (event.data && event.data.message) {
+      if (event.data.message === 'Dashboard' && event.data.url) {
+        var _event$data$variant;
+
+        initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null);
+      } else if (event.data.message === 'Overlay') {
+        renderVisualBuilder(event.data, true);
+      }
+    }
   };
 
   var _pingRequest2 = function _pingRequest2() {

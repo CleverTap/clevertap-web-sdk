@@ -1,18 +1,18 @@
-export const initialiseCTBuilder = () => {
-  document.addEventListener('DOMContentLoaded', onContentLoad)
+export const initialiseCTBuilder = (url, variant) => {
+  document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant))
 }
 
 let container
 
-function onContentLoad () {
+function onContentLoad (url, variant) {
   document.body.innerHTML = ''
   container = document.createElement('div')
-  container.id = 'app2'
+  container.id = 'overlayDiv'
   container.style.position = 'relative' // Ensure relative positioning for absolute positioning of form
   container.style.display = 'flex'
   document.body.appendChild(container)
   const overlayPath = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/overlay.js'
-  loadOverlayScript(overlayPath)
+  loadOverlayScript(overlayPath, url, variant)
     .then(() => {
       console.log('Overlay script loaded successfully.')
     })
@@ -31,14 +31,14 @@ function loadCSS () {
   document.head.appendChild(link)
 }
 
-function loadOverlayScript (overlayPath) {
+function loadOverlayScript (overlayPath, url, variant) {
   return new Promise((resolve, reject) => {
     var script = document.createElement('script')
     script.type = 'module'
     script.src = overlayPath
     script.onload = function () {
       if (typeof window.Overlay === 'function') {
-        window.Overlay('#app2', 'http://localhost:8080/randomPage')
+        window.Overlay('#overlayDiv', url, variant)
         resolve()
       } else {
         reject(new Error('ContentLayout not found in overlay.js'))

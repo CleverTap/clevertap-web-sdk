@@ -663,20 +663,27 @@ export default class CleverTap {
     debouncedPageChanged()
   }
 
+  #handleMessageEvent (event) {
+    if (event.data && event.data.message) {
+      if (event.data.message === 'Dashboard' && event.data.url) {
+        initialiseCTBuilder(event.data.url, event.data.variant ?? null)
+      } else if (event.data.message === 'Overlay') {
+        renderVisualBuilder(event.data, true)
+      }
+    }
+  }
+
   pageChanged () {
     const search = window.location.search
     if (search === '?ctBuilder') {
       // open in visual builder mode
       console.log('open in visual builder mode')
-      initialiseCTBuilder()
+      window.addEventListener('message', this.#handleMessageEvent, false)
+      window.postMessage('builder')
       return
     }
     if (search === '?ctBuilderPreview') {
-      window.addEventListener('message', (event) => {
-        if (event.data && event.data.message && event.data.message === 'Overlay') {
-          renderVisualBuilder(event.data, true)
-        }
-      }, false)
+      window.addEventListener('message', this.#handleMessageEvent, false)
       window.postMessage('preview')
       return
     }
