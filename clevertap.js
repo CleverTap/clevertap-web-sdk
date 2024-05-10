@@ -8157,18 +8157,27 @@
 
     pageChanged() {
       const search = window.location.search;
+      const parentWindow = window.opener;
 
       if (search === '?ctBuilder') {
         // open in visual builder mode
         console.log('open in visual builder mode');
         window.addEventListener('message', _classPrivateFieldLooseBase(this, _handleMessageEvent)[_handleMessageEvent], false);
-        window.postMessage('builder', '*');
+
+        if (parentWindow) {
+          parentWindow.postMessage('builder', '*');
+        }
+
         return;
       }
 
       if (search === '?ctBuilderPreview') {
         window.addEventListener('message', _classPrivateFieldLooseBase(this, _handleMessageEvent)[_handleMessageEvent], false);
-        window.postMessage('preview', '*');
+
+        if (parentWindow) {
+          parentWindow.postMessage('preview', '*');
+        }
+
         return;
       }
 
