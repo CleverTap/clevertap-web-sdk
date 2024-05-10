@@ -8162,13 +8162,13 @@
         // open in visual builder mode
         console.log('open in visual builder mode');
         window.addEventListener('message', _classPrivateFieldLooseBase(this, _handleMessageEvent)[_handleMessageEvent], false);
-        window.postMessage('builder');
+        window.postMessage('builder', '*');
         return;
       }
 
       if (search === '?ctBuilderPreview') {
         window.addEventListener('message', _classPrivateFieldLooseBase(this, _handleMessageEvent)[_handleMessageEvent], false);
-        window.postMessage('preview');
+        window.postMessage('preview', '*');
         return;
       }
 
