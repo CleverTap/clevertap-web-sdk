@@ -4575,7 +4575,7 @@
   }
 
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
-    const details = targetingMsgJson.display.details[0];
+    const details = isPreview ? targetingMsgJson[0] : targetingMsgJson.display.details[0];
     const siteUrl = Object.keys(details)[0];
     const selectors = details[siteUrl];
 
