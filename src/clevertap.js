@@ -666,7 +666,7 @@ export default class CleverTap {
   #handleMessageEvent (event) {
     if (event.data && event.data.message) {
       if (event.data.message === 'Dashboard' && event.data.url) {
-        initialiseCTBuilder(event.data.url, event.data.variant ?? null)
+        initialiseCTBuilder(event.data.url, event.data.variant ?? null, event.data.details ?? {})
       } else if (event.data.message === 'Overlay') {
         renderVisualBuilder(event.data, true)
       }

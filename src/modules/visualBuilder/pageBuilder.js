@@ -1,10 +1,10 @@
-export const initialiseCTBuilder = (url, variant) => {
-  document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant))
+export const initialiseCTBuilder = (url, variant, details) => {
+  document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details))
 }
 
 let container
 
-function onContentLoad (url, variant) {
+function onContentLoad (url, variant, details) {
   document.body.innerHTML = ''
   container = document.createElement('div')
   container.id = 'overlayDiv'
@@ -12,7 +12,7 @@ function onContentLoad (url, variant) {
   container.style.display = 'flex'
   document.body.appendChild(container)
   const overlayPath = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/overlay.js'
-  loadOverlayScript(overlayPath, url, variant)
+  loadOverlayScript(overlayPath, url, variant, details)
     .then(() => {
       console.log('Overlay script loaded successfully.')
     })
@@ -31,14 +31,14 @@ function loadCSS () {
   document.head.appendChild(link)
 }
 
-function loadOverlayScript (overlayPath, url, variant) {
+function loadOverlayScript (overlayPath, url, variant, details) {
   return new Promise((resolve, reject) => {
     var script = document.createElement('script')
     script.type = 'module'
     script.src = overlayPath
     script.onload = function () {
       if (typeof window.Overlay === 'function') {
-        window.Overlay('#overlayDiv', url, variant)
+        window.Overlay('#overlayDiv', url, variant, details)
         resolve()
       } else {
         reject(new Error('ContentLayout not found in overlay.js'))
@@ -87,11 +87,11 @@ function loadTypeKit () {
 }
 
 export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
-  const details = isPreview ? targetingMsgJson[0] : targetingMsgJson.display.details[0]
+  const details = isPreview ? targetingMsgJson.details[0] : targetingMsgJson.display.details[0]
   const siteUrl = Object.keys(details)[0]
   const selectors = details[siteUrl]
 
-  if (siteUrl === window.location.href) {
+  if (siteUrl === window.location.href.split('?')[0]) {
     for (const selector in selectors) {
       const element = document.querySelector(selector)
       if (element) {
@@ -99,6 +99,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
           element.outerHTML = selectors[selector].html
         } else {
           // Update json data
+          dispatchJsonData(targetingMsgJson, selectors[selector])
         }
         if (!isPreview) {
           window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
@@ -112,6 +113,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
               retryElement.outerHTML = selectors[selector].html
             } else {
               // Update json data
+              dispatchJsonData(targetingMsgJson, selectors[selector])
             }
             if (!isPreview) {
               window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
@@ -129,11 +131,16 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     }
   }
 }
-// function addOverlayScript (overlayPath) {
-//   const scriptTag = document.createElement('script')
-//   scriptTag.setAttribute('type', 'text/javascript')
-//   scriptTag.setAttribute('id', 'wzrk-alert-js')
-//   scriptTag.setAttribute('src', overlayPath)
-//   document.getElementsByTagName('body')[0].appendChild(scriptTag)
-//   return scriptTag
-// }
+
+function dispatchJsonData (targetingMsgJson, selector) {
+  const inaObj = {}
+  inaObj.msgId = targetingMsgJson.wzrk_id
+  if (targetingMsgJson.wzrk_pivot) {
+    inaObj.pivotId = targetingMsgJson.wzrk_pivot
+  }
+  if (selector.json != null) {
+    inaObj.json = selector.json
+  }
+  const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', { detail: inaObj })
+  document.dispatchEvent(kvPairsEvent)
+}
