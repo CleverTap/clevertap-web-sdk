@@ -1,9 +1,19 @@
+import { CSS_PATH, OVERLAY_PATH } from './builder_constants'
+
+/**
+ * Initializes the Clevertap builder.
+ * @param {string} url - The URL to initialize the builder.
+ * @param {string} variant - The variant of the builder.
+ * @param {Object} details - The details object.
+ */
 export const initialiseCTBuilder = (url, variant, details) => {
   document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details))
 }
 
 let container
-
+/**
+ * Handles content load for Clevertap builder.
+ */
 function onContentLoad (url, variant, details) {
   document.body.innerHTML = ''
   container = document.createElement('div')
@@ -11,7 +21,7 @@ function onContentLoad (url, variant, details) {
   container.style.position = 'relative' // Ensure relative positioning for absolute positioning of form
   container.style.display = 'flex'
   document.body.appendChild(container)
-  const overlayPath = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/overlay.js'
+  const overlayPath = OVERLAY_PATH
   loadOverlayScript(overlayPath, url, variant, details)
     .then(() => {
       console.log('Overlay script loaded successfully.')
@@ -23,14 +33,25 @@ function onContentLoad (url, variant, details) {
   loadTypeKit()
 }
 
+/**
+ * Loads CSS file.
+ */
 function loadCSS () {
   var link = document.createElement('link')
   link.rel = 'stylesheet'
   link.type = 'text/css'
-  link.href = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/style.css'
+  link.href = CSS_PATH
   document.head.appendChild(link)
 }
 
+/**
+ * Loads the overlay script.
+ * @param {string} overlayPath - The path to overlay script.
+ * @param {string} url - The URL.
+ * @param {string} variant - The variant.
+ * @param {Object} details - The details object.
+ * @returns {Promise} A promise.
+ */
 function loadOverlayScript (overlayPath, url, variant, details) {
   return new Promise((resolve, reject) => {
     var script = document.createElement('script')
@@ -51,41 +72,47 @@ function loadOverlayScript (overlayPath, url, variant, details) {
   })
 }
 
+/**
+ * Loads TypeKit script.
+ */
 function loadTypeKit () {
-  var config = {
+  const config = {
     kitId: 'eqj6nom',
     scriptTimeout: 3000,
     async: true
   }
 
-  var d = document
-  var h = d.documentElement
-  var t = setTimeout(function () {
-    h.className = h.className.replace(/\bwf-loading\b/g, '') + ' wf-inactive'
-    // $(document).trigger("TypeKitReady");
+  const docElement = document.documentElement
+  const timeoutId = setTimeout(function () {
+    docElement.className = docElement.className.replace(/\bwf-loading\b/g, '') + ' wf-inactive'
   }, config.scriptTimeout)
-  var tk = d.createElement('script')
-  var f = false
-  var s = d.getElementsByTagName('script')[0]
-  var a
+  const typeKitScript = document.createElement('script')
+  let scriptLoaded = false
+  const firstScript = document.getElementsByTagName('script')[0]
+  let scriptReadyState
 
-  h.className += ' wf-loading'
-  tk.src = 'https://use.typekit.net/' + config.kitId + '.js'
-  tk.async = true
-  tk.onload = tk.onreadystatechange = function () {
-    a = this.readyState
-    if (f || (a && a !== 'complete' && a !== 'loaded')) return
-    f = true
-    clearTimeout(t)
+  docElement.className += ' wf-loading'
+  typeKitScript.src = 'https://use.typekit.net/' + config.kitId + '.js'
+  typeKitScript.async = true
+  typeKitScript.onload = typeKitScript.onreadystatechange = function () {
+    scriptReadyState = this.readyState
+    if (scriptLoaded || (scriptReadyState && scriptReadyState !== 'complete' && scriptReadyState !== 'loaded')) return
+    scriptLoaded = true
+    clearTimeout(timeoutId)
     try {
       // eslint-disable-next-line no-undef
       Typekit.load(config)
     } catch (e) {}
   }
 
-  s.parentNode.insertBefore(tk, s)
+  firstScript.parentNode.insertBefore(typeKitScript, firstScript)
 }
 
+/**
+ * Renders the visual builder.
+ * @param {Object} targetingMsgJson - The point and click campaign JSON object.
+ * @param {boolean} isPreview - Indicates if it's a preview.
+ */
 export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
   const details = isPreview ? targetingMsgJson.details[0] : targetingMsgJson.display.details[0]
   const siteUrl = Object.keys(details)[0]
@@ -132,6 +159,11 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
   }
 }
 
+/**
+ * Dispatches JSON data.
+ * @param {Object} targetingMsgJson - The point and click campaign JSON object.
+ * @param {Object} selector - The selector object.
+ */
 function dispatchJsonData (targetingMsgJson, selector) {
   const inaObj = {}
   inaObj.msgId = targetingMsgJson.wzrk_id

@@ -4498,10 +4498,23 @@
   const arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
   const greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
+  const OVERLAY_PATH = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/overlay.js';
+  const CSS_PATH = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/style.css';
+
+  /**
+   * Initializes the Clevertap builder.
+   * @param {string} url - The URL to initialize the builder.
+   * @param {string} variant - The variant of the builder.
+   * @param {Object} details - The details object.
+   */
+
   const initialiseCTBuilder = (url, variant, details) => {
     document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details));
   };
   let container;
+  /**
+   * Handles content load for Clevertap builder.
+   */
 
   function onContentLoad(url, variant, details) {
     document.body.innerHTML = '';
@@ -4511,7 +4524,7 @@
 
     container.style.display = 'flex';
     document.body.appendChild(container);
-    const overlayPath = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/overlay.js';
+    const overlayPath = OVERLAY_PATH;
     loadOverlayScript(overlayPath, url, variant, details).then(() => {
       console.log('Overlay script loaded successfully.');
     }).catch(error => {
@@ -4520,14 +4533,27 @@
     loadCSS();
     loadTypeKit();
   }
+  /**
+   * Loads CSS file.
+   */
+
 
   function loadCSS() {
     var link = document.createElement('link');
     link.rel = 'stylesheet';
     link.type = 'text/css';
-    link.href = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/style.css';
+    link.href = CSS_PATH;
     document.head.appendChild(link);
   }
+  /**
+   * Loads the overlay script.
+   * @param {string} overlayPath - The path to overlay script.
+   * @param {string} url - The URL.
+   * @param {string} variant - The variant.
+   * @param {Object} details - The details object.
+   * @returns {Promise} A promise.
+   */
+
 
   function loadOverlayScript(overlayPath, url, variant, details) {
     return new Promise((resolve, reject) => {
@@ -4551,31 +4577,34 @@
       document.head.appendChild(script);
     });
   }
+  /**
+   * Loads TypeKit script.
+   */
+
 
   function loadTypeKit() {
-    var config = {
+    const config = {
       kitId: 'eqj6nom',
       scriptTimeout: 3000,
       async: true
     };
-    var d = document;
-    var h = d.documentElement;
-    var t = setTimeout(function () {
-      h.className = h.className.replace(/\bwf-loading\b/g, '') + ' wf-inactive'; // $(document).trigger("TypeKitReady");
+    const docElement = document.documentElement;
+    const timeoutId = setTimeout(function () {
+      docElement.className = docElement.className.replace(/\bwf-loading\b/g, '') + ' wf-inactive';
     }, config.scriptTimeout);
-    var tk = d.createElement('script');
-    var f = false;
-    var s = d.getElementsByTagName('script')[0];
-    var a;
-    h.className += ' wf-loading';
-    tk.src = 'https://use.typekit.net/' + config.kitId + '.js';
-    tk.async = true;
+    const typeKitScript = document.createElement('script');
+    let scriptLoaded = false;
+    const firstScript = document.getElementsByTagName('script')[0];
+    let scriptReadyState;
+    docElement.className += ' wf-loading';
+    typeKitScript.src = 'https://use.typekit.net/' + config.kitId + '.js';
+    typeKitScript.async = true;
 
-    tk.onload = tk.onreadystatechange = function () {
-      a = this.readyState;
-      if (f || a && a !== 'complete' && a !== 'loaded') return;
-      f = true;
-      clearTimeout(t);
+    typeKitScript.onload = typeKitScript.onreadystatechange = function () {
+      scriptReadyState = this.readyState;
+      if (scriptLoaded || scriptReadyState && scriptReadyState !== 'complete' && scriptReadyState !== 'loaded') return;
+      scriptLoaded = true;
+      clearTimeout(timeoutId);
 
       try {
         // eslint-disable-next-line no-undef
@@ -4583,8 +4612,14 @@
       } catch (e) {}
     };
 
-    s.parentNode.insertBefore(tk, s);
+    firstScript.parentNode.insertBefore(typeKitScript, firstScript);
   }
+  /**
+   * Renders the visual builder.
+   * @param {Object} targetingMsgJson - The point and click campaign JSON object.
+   * @param {boolean} isPreview - Indicates if it's a preview.
+   */
+
 
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     const details = isPreview ? targetingMsgJson.details[0] : targetingMsgJson.display.details[0];
@@ -4643,6 +4678,11 @@
       }
     }
   };
+  /**
+   * Dispatches JSON data.
+   * @param {Object} targetingMsgJson - The point and click campaign JSON object.
+   * @param {Object} selector - The selector object.
+   */
 
   function dispatchJsonData(targetingMsgJson, selector) {
     const inaObj = {};
