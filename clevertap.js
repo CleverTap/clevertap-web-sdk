@@ -206,6 +206,18 @@
   const PUSH_DELAY_MS = 1000;
   const MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
   const WZRK_FETCH = 'wzrk_fetch';
+  const WIZ_IFRAME = 'wiz-iframe';
+  const WIZ_IFRAME_INTENT = 'wiz-iframe-intent';
+  const ADJUST_IFRAME_HEIGHT = 'adjustIFrameHeight';
+  const UPDATE_HEIGHT = 'update height';
+  const GET_NOTIFICATION = 'getnotif';
+  const EVENT = 'Event';
+  const PROFILE = 'Profile';
+  const OUL = 'OUL';
+  const CLOSE_BOX_POPUP = 'closeBoxPopUp';
+  const CLOSE_BANNER_POPUP = 'closeBannerPopUp';
+  const GET_NOTIFICATION_DATA = 'getnotifData';
+  const CLOSE_INTERSTITIAL_POPUP = 'closeInterstitialPopUp';
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -4650,6 +4662,14 @@
     document.dispatchEvent(kvPairsEvent);
   }
 
+  // clevertap-handler.js
+  const ctEventhandler = html => {
+    const ctScript = "\n      var clevertap = {\n        event: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'Event',\n              value: eventName\n            },'*');\n          }\n        },\n        profile: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'Profile',\n              value: eventName\n            },'*');\n          }\n        },\n        onUserLogin: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'OUL',\n              value: eventName\n            },'*');\n          }\n        },\n        closeBoxPopUp: () => {\n          window.parent.postMessage({\n            action: 'closeBoxPopUp',\n            value: 'closeBoxPopUp'\n          },'*');\n        },\n        closeBannerPopUp: () => {\n          window.parent.postMessage({\n            action: 'closeBannerPopUp',\n            value: 'closeBannerPopUp'\n          },'*');\n        },\n        closeInterstitialPopUp: () => {\n          window.parent.postMessage({\n            action: 'closeInterstitialPopUp',\n            value: 'closeInterstitialPopUp'\n          },'*');\n        }\n      }\n    ";
+    const insertPosition = html.indexOf('<script>');
+    html = [html.slice(0, insertPosition + '<script>'.length), ctScript, html.slice(insertPosition + '<script>'.length)].join('');
+    return html;
+  };
+
   const _tr = (msg, _ref) => {
     let {
       device,
@@ -5119,18 +5139,25 @@
       iframe.marginheight = '0px';
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
-      iframe.id = 'wiz-iframe';
+      iframe.id = WIZ_IFRAME;
+      let html = targetingMsgJson.msgContent.html;
+
+      if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
+        // sandboxing the iframe only for custom html
+        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'; // allow popup to open url in new page
+
+        html = ctEventhandler(html);
+      }
+
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
       if (onClick !== '' && onClick != null) {
         pointerCss = 'cursor:pointer;';
-      }
+      } // direct html
 
-      let html; // direct html
 
       if (targetingMsgJson.msgContent.type === 1) {
-        html = targetingMsgJson.msgContent.html;
         html = html.replace(/##campaignId##/g, campaignId);
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
@@ -5166,73 +5193,110 @@
         html = css + title + body;
       }
 
-      iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
-      msgDiv.appendChild(iframe);
-      const ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      const doc = ifrm.document; // Dispatch event for popup box/banner close
+      if (displayObj['custom-html-sandbox']) {
+        iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; height:100%; border:0px !important; border-color:none !important;');
+      } else {
+        iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
+      }
+
+      msgDiv.appendChild(iframe); // Dispatch event for popup box/banner close
 
       const closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
-      doc.open();
-      doc.write(html);
 
-      if (displayObj['custom-editor']) {
-        appendScriptForCustomEvent(targetingMsgJson, doc);
+      if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
+        html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
-      doc.close();
+      iframe.srcdoc = html; // const ua = navigator.userAgent.toLowerCase()
 
-      const adjustIFrameHeight = () => {
-        // adjust iframe and body height of html inside correctly
-        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
+      let contentDiv;
 
-        if (displayObj['custom-editor'] !== true && !isBanner) {
-          contentHeight += 25;
+      const handleMessage = (event, displayObj, divId) => {
+        var _event$data, _event$data2;
+
+        let heightAdjust, boxWrapper, bannerWrapper; // Declare variables outside of switch
+
+        switch (event === null || event === void 0 ? void 0 : (_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.action) {
+          case UPDATE_HEIGHT + displayObj.layout:
+            heightAdjust = document.getElementById(divId);
+
+            if (heightAdjust) {
+              heightAdjust.style.margin = '0px';
+              heightAdjust.style.height = "".concat(event.data.value, "px");
+            }
+
+            break;
+
+          case GET_NOTIFICATION + displayObj.layout:
+            window.clevertap.renderNotificationClicked(event.data.value);
+            break;
+
+          case EVENT:
+            window.clevertap.event.push(event.data.value);
+            break;
+
+          case PROFILE:
+            window.clevertap.profile.push(event.data.value);
+            break;
+
+          case OUL:
+            window.clevertap.onUserLogin.push(event.data.value);
+            break;
+
+          case CLOSE_BOX_POPUP:
+            setTimeout(() => {
+              boxWrapper = window.document.getElementById('wizParDiv0');
+              boxWrapper && boxWrapper.remove();
+            }, 0);
+            break;
+
+          case CLOSE_BANNER_POPUP:
+            setTimeout(() => {
+              bannerWrapper = window.document.getElementById('wizParDiv2');
+              bannerWrapper && bannerWrapper.remove();
+            }, 0);
+            break;
+
+          default:
+            // Handle unknown action
+            console.log('Unknown Action', event === null || event === void 0 ? void 0 : (_event$data2 = event.data) === null || _event$data2 === void 0 ? void 0 : _event$data2.action);
+            break;
         }
-
-        document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px';
-        document.getElementById('wiz-iframe').style.height = contentHeight + 'px';
       };
 
-      const ua = navigator.userAgent.toLowerCase();
-
-      if (ua.indexOf('safari') !== -1) {
-        if (ua.indexOf('chrome') > -1) {
-          iframe.onload = () => {
-            adjustIFrameHeight();
-            const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-            setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
-          };
+      const handleIframeLoad = () => {
+        if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
+          iframe.contentWindow.postMessage({
+            action: ADJUST_IFRAME_HEIGHT + displayObj.layout,
+            value: displayObj.layout
+          }, '*');
+          window.addEventListener('message', event => {
+            handleMessage(event, displayObj, divId);
+          });
+          contentDiv = '';
         } else {
-          let inDoc = iframe.contentDocument || iframe.contentWindow;
-          if (inDoc.document) inDoc = inDoc.document; // safari iphone 7+ needs this.
-
-          adjustIFrameHeight();
-
-          const _timer = setInterval(() => {
-            if (inDoc.readyState === 'complete') {
-              clearInterval(_timer); // adjust iframe and body height of html inside correctly
-
-              adjustIFrameHeight();
-              const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-              setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
-            }
-          }, 10);
-        }
-      } else {
-        iframe.onload = () => {
           // adjust iframe and body height of html inside correctly
-          adjustIFrameHeight();
-          const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-          setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
-        };
-      }
+          contentHeight = document.getElementById(WIZ_IFRAME).contentDocument.getElementById('contentDiv').scrollHeight;
+
+          if (displayObj['custom-editor'] !== true && !isBanner) {
+            contentHeight += 25;
+          }
+
+          document.getElementById(WIZ_IFRAME).contentDocument.body.style.margin = '0px';
+          document.getElementById(WIZ_IFRAME).style.height = contentHeight + 'px';
+          contentDiv = document.getElementById(WIZ_IFRAME).contentDocument.getElementById('contentDiv');
+        }
+
+        setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+      };
+
+      iframe.onload = handleIframeLoad;
     };
 
-    const appendScriptForCustomEvent = (targetingMsgJson, doc) => {
-      const script = doc.createElement('script');
-      script.innerHTML = "\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n    ");
-      doc.body.appendChild(script);
+    const appendScriptForCustomEvent = (targetingMsgJson, html) => {
+      const script = "<script>\n    \n      \n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      let msgEvent\n      if('").concat(targetingMsgJson.display['custom-html-sandbox'], "'){\n        \n      window.addEventListener('message', event => {\n          let contentHeight\n          msgEvent = event\n          if(event?.data?.action == 'adjustIFrameHeight'+ event?.data?.value){ \n            contentDiv = document.getElementById('contentDiv')\n            let contentHeight = contentDiv.scrollHeight\n            contentDiv.style.height = '100%'\n            event.source.postMessage({\n              action: 'update height' + event?.data?.value ,\n              value: contentHeight\n            }, event.origin)\n            }\n        })\n      }else{\n        const ct__parentOrigin = window.parent.origin;\n      }\n      \n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            if(").concat(targetingMsgJson.display['custom-html-sandbox'], " ){\n              if(msgEvent){\n                msgEvent.source.postMessage({\n                  action: 'getnotif' + msgEvent?.data?.value ,\n                  value: notifData\n                }, msgEvent.origin)\n              }else{\n                window.parent.postMessage({\n                  action: 'getnotifData',\n                  value: notifData\n                }, '*')\n              }\n            }else{\n              window.parent.clevertap.renderNotificationClicked(notifData);\n            }\n        }\n      });\n      </script>\n    ");
+      return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
     };
 
     let _callBackCalled = false;
@@ -5411,22 +5475,30 @@
       document.body.appendChild(msgDiv);
       const iframe = document.createElement('iframe');
       const borderRadius = targetingMsgJson.display.br === false ? '0' : '8';
+      const displayObj = targetingMsgJson.display;
       iframe.frameborder = '0px';
       iframe.marginheight = '0px';
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
-      iframe.id = 'wiz-iframe-intent';
+      iframe.id = WIZ_IFRAME_INTENT;
+      let html = targetingMsgJson.msgContent.html;
+
+      if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
+        // sandbox the iframe only for custom html
+        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms'; // allow popup to open url in new page
+
+        html = ctEventhandler(html);
+      }
+
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
       if (onClick !== '' && onClick != null) {
         pointerCss = 'cursor:pointer;';
-      }
+      } // direct html
 
-      let html; // direct html
 
       if (targetingMsgJson.msgContent.type === 1) {
-        html = targetingMsgJson.msgContent.html;
         html = html.replace(/##campaignId##/g, campaignId);
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
@@ -5466,22 +5538,57 @@
       }
 
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
-      msgDiv.appendChild(iframe);
-      const ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
-      const doc = ifrm.document; // Dispatch event for interstitial/exit intent close
+      msgDiv.appendChild(iframe); // Dispatch event for interstitial/exit intent close
 
       const closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
-      doc.open();
-      doc.write(html);
 
-      if (targetingMsgJson.display['custom-editor']) {
-        appendScriptForCustomEvent(targetingMsgJson, doc);
+      if (targetingMsgJson.display['custom-editor'] && !targetingMsgJson.display['bee-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
+        html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
-      doc.close();
-      const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
-      setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
+      iframe.srcdoc = html;
+      let contentDiv;
+
+      iframe.onload = () => {
+        if (targetingMsgJson.display['custom-editor'] && !targetingMsgJson.display['bee-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
+          window.addEventListener('message', event => {
+            var _event$data3;
+
+            switch (event === null || event === void 0 ? void 0 : (_event$data3 = event.data) === null || _event$data3 === void 0 ? void 0 : _event$data3.action) {
+              case GET_NOTIFICATION_DATA:
+                window.clevertap.renderNotificationClicked(event.data.value);
+                break;
+
+              case EVENT:
+                window.clevertap.event.push(event.data.value);
+                break;
+
+              case PROFILE:
+                window.clevertap.profile.push(event.data.value);
+                break;
+
+              case OUL:
+                window.clevertap.onUserLogin.push(event.data.value);
+                break;
+
+              case CLOSE_INTERSTITIAL_POPUP:
+                setTimeout(() => {
+                  const interstitialWrapper = window.document.getElementById('intentPreview');
+                  const interstitialOverlay = window.document.getElementById('intentOpacityDiv');
+                  interstitialOverlay && interstitialOverlay.remove();
+                  interstitialWrapper && interstitialWrapper.remove();
+                }, 0);
+                break;
+            }
+          });
+          contentDiv = '';
+        } else {
+          contentDiv = document.getElementById(WIZ_IFRAME_INTENT).contentDocument.getElementById('contentDiv');
+        }
+
+        setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
+      };
     };
 
     if (!document.body) {
@@ -6092,7 +6199,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = {
-        lib: 'web-sdk-v1.7.3',
+        lib: 'web-sdk-v1.7.4',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
