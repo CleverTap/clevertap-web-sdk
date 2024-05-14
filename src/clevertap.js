@@ -40,7 +40,6 @@ import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
-// import { initialiseCTBuilder } from './modules/visualBuilder/pageBuilder'
 import { initialiseCTBuilder, renderVisualBuilder } from './modules/visualBuilder/pageBuilder'
 
 export default class CleverTap {

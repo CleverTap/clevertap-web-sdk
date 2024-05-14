@@ -48,53 +48,6 @@ const _tr = (msg, {
   const _logger = logger
   let _wizCounter = 0
 
-  // msg = {
-  //   arp: {
-  //     j_n: 'Zw==',
-  //     i_n: 'Y2NmewICAw==',
-  //     d_ts: 0,
-  //     dh: 0,
-  //     v: 1,
-  //     j_s: '{ }',
-  //     id: 'WWW-WWW-WWRZ',
-  //     e_ts: 0,
-  //     r_ts: 1649748826,
-  //     rc_w: 60,
-  //     rc_n: 5
-  //   },
-  //   inapp_notifs: [
-  //     {
-  //       msgContent: {
-  //         templateType: 'point-and-click',
-  //         type: 4
-  //       },
-  //       display: {
-  //         divId: 'hero-banner',
-  //         details: [{
-  //           'http://localhost:3000/': {
-  //             '.heroDi1v': {
-  //               html: '<span class="selector_1">Hello Sonam</span>'
-  //             },
-  //             '#selector_2': {
-  //               html: '<p class="selector_2">Hello Sonam</p>'
-  //             },
-  //             '.heroDiv2': {
-  //               json: {
-  //                 name: 'Sonam',
-  //                 identity: 1234
-  //               }
-  //             }
-  //           }
-  //         }],
-  //         wtarget_type: 2,
-  //         wmc: 1,
-  //         ff: 'Desktop'
-  //       },
-  //       wzrk_id: '1655316906_20220620',
-  //       wzrk_pivot: 'wzrk_default'
-  //     }
-  //   ]
-  // }
   // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
