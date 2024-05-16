@@ -440,7 +440,7 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    if (displayObj['custom-editor']) {
+    if (displayObj.preview) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
     }
 
@@ -754,7 +754,7 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    if (targetingMsgJson.display['custom-editor']) {
+    if (targetingMsgJson.display.preview) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
     }
     let html
