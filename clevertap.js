@@ -8156,6 +8156,7 @@
         logger: _classPrivateFieldLooseBase(this, _logger$a)[_logger$a]
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
+      this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger$a)[_logger$a],
         isPersonalisationActive: this._isPersonalisationActive
