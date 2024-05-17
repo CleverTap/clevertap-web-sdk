@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.7.5] - 17 May, 2024
+- Adds Iframe sandboxing for enhanced security against cross-site scripting (XSS) vulnerabilities.
+
 ## [1.7.4] - 17 May, 2024
 - Fixes a issue in path for installation of Service worker for shopify.
 
