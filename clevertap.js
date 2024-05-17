@@ -528,18 +528,6 @@
   var PUSH_DELAY_MS = 1000;
   var MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
   var WZRK_FETCH = 'wzrk_fetch';
-  var WIZ_IFRAME = 'wiz-iframe';
-  var WIZ_IFRAME_INTENT = 'wiz-iframe-intent';
-  var ADJUST_IFRAME_HEIGHT = 'adjustIFrameHeight';
-  var UPDATE_HEIGHT = 'update height';
-  var GET_NOTIFICATION = 'getnotif';
-  var EVENT = 'Event';
-  var PROFILE = 'Profile';
-  var OUL = 'OUL';
-  var CLOSE_BOX_POPUP = 'closeBoxPopUp';
-  var CLOSE_BANNER_POPUP = 'closeBannerPopUp';
-  var GET_NOTIFICATION_DATA = 'getnotifData';
-  var CLOSE_INTERSTITIAL_POPUP = 'closeInterstitialPopUp';
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
@@ -5093,14 +5081,6 @@
   var arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
   var greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
-  // clevertap-handler.js
-  var ctEventhandler = function ctEventhandler(html) {
-    var ctScript = "\n      var clevertap = {\n        event: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'Event',\n              value: eventName\n            },'*');\n          }\n        },\n        profile: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'Profile',\n              value: eventName\n            },'*');\n          }\n        },\n        onUserLogin: {\n          push: (eventName) => {\n            window.parent.postMessage({\n              action: 'OUL',\n              value: eventName\n            },'*');\n          }\n        },\n        closeBoxPopUp: () => {\n          window.parent.postMessage({\n            action: 'closeBoxPopUp',\n            value: 'closeBoxPopUp'\n          },'*');\n        },\n        closeBannerPopUp: () => {\n          window.parent.postMessage({\n            action: 'closeBannerPopUp',\n            value: 'closeBannerPopUp'\n          },'*');\n        },\n        closeInterstitialPopUp: () => {\n          window.parent.postMessage({\n            action: 'closeInterstitialPopUp',\n            value: 'closeInterstitialPopUp'\n          },'*');\n        }\n      }\n    ";
-    var insertPosition = html.indexOf('<script>');
-    html = [html.slice(0, insertPosition + '<script>'.length), ctScript, html.slice(insertPosition + '<script>'.length)].join('');
-    return html;
-  };
-
   var _tr = function _tr(msg, _ref) {
     var device = _ref.device,
         session = _ref.session,
@@ -5566,25 +5546,18 @@
       iframe.marginheight = '0px';
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
-      iframe.id = WIZ_IFRAME;
-      var html = targetingMsgJson.msgContent.html;
-
-      if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
-        // sandboxing the iframe only for custom html
-        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'; // allow popup to open url in new page
-
-        html = ctEventhandler(html);
-      }
-
+      iframe.id = 'wiz-iframe';
       var onClick = targetingMsgJson.display.onClick;
       var pointerCss = '';
 
       if (onClick !== '' && onClick != null) {
         pointerCss = 'cursor:pointer;';
-      } // direct html
+      }
 
+      var html; // direct html
 
       if (targetingMsgJson.msgContent.type === 1) {
+        html = targetingMsgJson.msgContent.html;
         html = html.replace(/##campaignId##/g, campaignId);
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
@@ -5620,110 +5593,73 @@
         html = css + title + body;
       }
 
-      if (displayObj['custom-html-sandbox']) {
-        iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; height:100%; border:0px !important; border-color:none !important;');
-      } else {
-        iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
-      }
-
-      msgDiv.appendChild(iframe); // Dispatch event for popup box/banner close
+      iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
+      msgDiv.appendChild(iframe);
+      var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
+      var doc = ifrm.document; // Dispatch event for popup box/banner close
 
       var closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
+      doc.open();
+      doc.write(html);
 
-      if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
-        html = appendScriptForCustomEvent(targetingMsgJson, html);
+      if (displayObj['custom-editor']) {
+        appendScriptForCustomEvent(targetingMsgJson, doc);
       }
 
-      iframe.srcdoc = html; // const ua = navigator.userAgent.toLowerCase()
+      doc.close();
 
-      var contentDiv;
+      var adjustIFrameHeight = function adjustIFrameHeight() {
+        // adjust iframe and body height of html inside correctly
+        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
 
-      var handleMessage = function handleMessage(event, displayObj, divId) {
-        var _event$data, _event$data2;
-
-        var heightAdjust, boxWrapper, bannerWrapper; // Declare variables outside of switch
-
-        switch (event === null || event === void 0 ? void 0 : (_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.action) {
-          case UPDATE_HEIGHT + displayObj.layout:
-            heightAdjust = document.getElementById(divId);
-
-            if (heightAdjust) {
-              heightAdjust.style.margin = '0px';
-              heightAdjust.style.height = "".concat(event.data.value, "px");
-            }
-
-            break;
-
-          case GET_NOTIFICATION + displayObj.layout:
-            window.clevertap.renderNotificationClicked(event.data.value);
-            break;
-
-          case EVENT:
-            window.clevertap.event.push(event.data.value);
-            break;
-
-          case PROFILE:
-            window.clevertap.profile.push(event.data.value);
-            break;
-
-          case OUL:
-            window.clevertap.onUserLogin.push(event.data.value);
-            break;
-
-          case CLOSE_BOX_POPUP:
-            setTimeout(function () {
-              boxWrapper = window.document.getElementById('wizParDiv0');
-              boxWrapper && boxWrapper.remove();
-            }, 0);
-            break;
-
-          case CLOSE_BANNER_POPUP:
-            setTimeout(function () {
-              bannerWrapper = window.document.getElementById('wizParDiv2');
-              bannerWrapper && bannerWrapper.remove();
-            }, 0);
-            break;
-
-          default:
-            // Handle unknown action
-            console.log('Unknown Action', event === null || event === void 0 ? void 0 : (_event$data2 = event.data) === null || _event$data2 === void 0 ? void 0 : _event$data2.action);
-            break;
+        if (displayObj['custom-editor'] !== true && !isBanner) {
+          contentHeight += 25;
         }
+
+        document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px';
+        document.getElementById('wiz-iframe').style.height = contentHeight + 'px';
       };
 
-      var handleIframeLoad = function handleIframeLoad() {
-        if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
-          iframe.contentWindow.postMessage({
-            action: ADJUST_IFRAME_HEIGHT + displayObj.layout,
-            value: displayObj.layout
-          }, '*');
-          window.addEventListener('message', function (event) {
-            handleMessage(event, displayObj, divId);
-          });
-          contentDiv = '';
+      var ua = navigator.userAgent.toLowerCase();
+
+      if (ua.indexOf('safari') !== -1) {
+        if (ua.indexOf('chrome') > -1) {
+          iframe.onload = function () {
+            adjustIFrameHeight();
+            var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+            setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+          };
         } else {
-          // adjust iframe and body height of html inside correctly
-          contentHeight = document.getElementById(WIZ_IFRAME).contentDocument.getElementById('contentDiv').scrollHeight;
+          var inDoc = iframe.contentDocument || iframe.contentWindow;
+          if (inDoc.document) inDoc = inDoc.document; // safari iphone 7+ needs this.
 
-          if (displayObj['custom-editor'] !== true && !isBanner) {
-            contentHeight += 25;
-          }
+          adjustIFrameHeight();
 
-          document.getElementById(WIZ_IFRAME).contentDocument.body.style.margin = '0px';
-          document.getElementById(WIZ_IFRAME).style.height = contentHeight + 'px';
-          contentDiv = document.getElementById(WIZ_IFRAME).contentDocument.getElementById('contentDiv');
+          var _timer = setInterval(function () {
+            if (inDoc.readyState === 'complete') {
+              clearInterval(_timer); // adjust iframe and body height of html inside correctly
+
+              adjustIFrameHeight();
+              var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+              setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+            }
+          }, 10);
         }
-
-        setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
-      };
-
-      iframe.onload = handleIframeLoad;
+      } else {
+        iframe.onload = function () {
+          // adjust iframe and body height of html inside correctly
+          adjustIFrameHeight();
+          var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+          setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+        };
+      }
     };
 
-    var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, html) {
-      var script = "<script>\n    \n      \n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      let msgEvent\n      if('").concat(targetingMsgJson.display['custom-html-sandbox'], "'){\n        \n      window.addEventListener('message', event => {\n          let contentHeight\n          msgEvent = event\n          if(event?.data?.action == 'adjustIFrameHeight'+ event?.data?.value){ \n            contentDiv = document.getElementById('contentDiv')\n            let contentHeight = contentDiv.scrollHeight\n            contentDiv.style.height = '100%'\n            event.source.postMessage({\n              action: 'update height' + event?.data?.value ,\n              value: contentHeight\n            }, event.origin)\n            }\n        })\n      }else{\n        const ct__parentOrigin = window.parent.origin;\n      }\n      \n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            if(").concat(targetingMsgJson.display['custom-html-sandbox'], " ){\n              if(msgEvent){\n                msgEvent.source.postMessage({\n                  action: 'getnotif' + msgEvent?.data?.value ,\n                  value: notifData\n                }, msgEvent.origin)\n              }else{\n                window.parent.postMessage({\n                  action: 'getnotifData',\n                  value: notifData\n                }, '*')\n              }\n            }else{\n              window.parent.clevertap.renderNotificationClicked(notifData);\n            }\n        }\n      });\n      </script>\n    ");
-      return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
+    var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, doc) {
+      var script = doc.createElement('script');
+      script.innerHTML = "\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n    ");
+      doc.body.appendChild(script);
     };
 
     var _callBackCalled = false;
@@ -5907,30 +5843,22 @@
       document.body.appendChild(msgDiv);
       var iframe = document.createElement('iframe');
       var borderRadius = targetingMsgJson.display.br === false ? '0' : '8';
-      var displayObj = targetingMsgJson.display;
       iframe.frameborder = '0px';
       iframe.marginheight = '0px';
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
-      iframe.id = WIZ_IFRAME_INTENT;
-      var html = targetingMsgJson.msgContent.html;
-
-      if (displayObj['custom-editor'] && !displayObj['bee-editor'] && displayObj['custom-html-sandbox']) {
-        // sandbox the iframe only for custom html
-        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms'; // allow popup to open url in new page
-
-        html = ctEventhandler(html);
-      }
-
+      iframe.id = 'wiz-iframe-intent';
       var onClick = targetingMsgJson.display.onClick;
       var pointerCss = '';
 
       if (onClick !== '' && onClick != null) {
         pointerCss = 'cursor:pointer;';
-      } // direct html
+      }
 
+      var html; // direct html
 
       if (targetingMsgJson.msgContent.type === 1) {
+        html = targetingMsgJson.msgContent.html;
         html = html.replace(/##campaignId##/g, campaignId);
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
@@ -5970,57 +5898,22 @@
       }
 
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
-      msgDiv.appendChild(iframe); // Dispatch event for interstitial/exit intent close
+      msgDiv.appendChild(iframe);
+      var ifrm = iframe.contentWindow ? iframe.contentWindow : iframe.contentDocument.document ? iframe.contentDocument.document : iframe.contentDocument;
+      var doc = ifrm.document; // Dispatch event for interstitial/exit intent close
 
       var closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
+      doc.open();
+      doc.write(html);
 
-      if (targetingMsgJson.display['custom-editor'] && !targetingMsgJson.display['bee-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
-        html = appendScriptForCustomEvent(targetingMsgJson, html);
+      if (targetingMsgJson.display['custom-editor']) {
+        appendScriptForCustomEvent(targetingMsgJson, doc);
       }
 
-      iframe.srcdoc = html;
-      var contentDiv;
-
-      iframe.onload = function () {
-        if (targetingMsgJson.display['custom-editor'] && !targetingMsgJson.display['bee-editor'] && targetingMsgJson.display['custom-html-sandbox']) {
-          window.addEventListener('message', function (event) {
-            var _event$data3;
-
-            switch (event === null || event === void 0 ? void 0 : (_event$data3 = event.data) === null || _event$data3 === void 0 ? void 0 : _event$data3.action) {
-              case GET_NOTIFICATION_DATA:
-                window.clevertap.renderNotificationClicked(event.data.value);
-                break;
-
-              case EVENT:
-                window.clevertap.event.push(event.data.value);
-                break;
-
-              case PROFILE:
-                window.clevertap.profile.push(event.data.value);
-                break;
-
-              case OUL:
-                window.clevertap.onUserLogin.push(event.data.value);
-                break;
-
-              case CLOSE_INTERSTITIAL_POPUP:
-                setTimeout(function () {
-                  var interstitialWrapper = window.document.getElementById('intentPreview');
-                  var interstitialOverlay = window.document.getElementById('intentOpacityDiv');
-                  interstitialOverlay && interstitialOverlay.remove();
-                  interstitialWrapper && interstitialWrapper.remove();
-                }, 0);
-                break;
-            }
-          });
-          contentDiv = '';
-        } else {
-          contentDiv = document.getElementById(WIZ_IFRAME_INTENT).contentDocument.getElementById('contentDiv');
-        }
-
-        setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
-      };
+      doc.close();
+      var contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
+      setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
     };
 
     if (!document.body) {
