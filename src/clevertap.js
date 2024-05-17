@@ -91,6 +91,7 @@ export default class CleverTap {
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
+    this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#session = new SessionManager({
       logger: this.#logger,
       isPersonalisationActive: this._isPersonalisationActive

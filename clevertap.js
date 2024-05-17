@@ -6551,7 +6551,7 @@
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
         dataObject.af = _objectSpread2({
-          lib: 'web-sdk-v1.7.3',
+          lib: 'web-sdk-v1.7.4',
           protocol: proto
         }, $ct.flutterVersion); // app fields
 
@@ -8049,6 +8049,7 @@
         logger: _classPrivateFieldLooseBase(this, _logger$a)[_logger$a]
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
+      this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger$a)[_logger$a],
         isPersonalisationActive: this._isPersonalisationActive
