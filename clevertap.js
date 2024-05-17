@@ -4509,11 +4509,7 @@
    */
 
   const initialiseCTBuilder = (url, variant, details) => {
-    if (document.readyState === 'complete') {
-      onContentLoad(url, variant, details);
-    } else {
-      document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details));
-    }
+    document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details));
   };
   let container;
   /**
