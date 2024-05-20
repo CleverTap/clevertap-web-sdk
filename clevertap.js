@@ -8278,7 +8278,8 @@
 
       if (search === '?ctBuilder') {
         // open in visual builder mode
-        console.log('open in visual builder mode');
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('open in visual builder mode');
+
         window.addEventListener('message', _classPrivateFieldLooseBase(this, _handleMessageEvent)[_handleMessageEvent], false);
 
         if (parentWindow) {

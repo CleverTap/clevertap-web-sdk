@@ -678,7 +678,7 @@ export default class CleverTap {
 
     if (search === '?ctBuilder') {
       // open in visual builder mode
-      console.log('open in visual builder mode')
+      this.#logger.debug('open in visual builder mode')
       window.addEventListener('message', this.#handleMessageEvent, false)
       if (parentWindow) {
         parentWindow.postMessage('builder', '*')
