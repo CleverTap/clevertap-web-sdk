@@ -186,11 +186,8 @@ export default class UserLoginHandler extends Array {
               if (profileObj.Email) {
                 ids.push(profileObj.Email)
               }
-              if (profileObj.GPID) {
-                ids.push('GP:' + profileObj.GPID)
-              }
-              if (profileObj.FBID) {
-                ids.push('FB:' + profileObj.FBID)
+              if (profileObj.Phone) {
+                ids.push(profileObj.Phone)
               }
               if (ids.length > 0) {
                 addToK(ids)
