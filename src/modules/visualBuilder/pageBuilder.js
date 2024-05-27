@@ -59,7 +59,7 @@ function loadOverlayScript (overlayPath, url, variant, details) {
     script.src = overlayPath
     script.onload = function () {
       if (typeof window.Overlay === 'function') {
-        window.Overlay('#overlayDiv', url, variant, details)
+        window.Overlay({ id: '#overlayDiv', url, variant, details })
         resolve()
       } else {
         reject(new Error('ContentLayout not found in overlay.js'))
