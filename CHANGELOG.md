@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.7.5] - 28 May, 2024
+- Fixes a issue Banner and carousel templates regarding background color.
+
 ## [1.7.4] - 17 May, 2024
 - Fixes a issue in path for installation of Service worker for shopify.
 
