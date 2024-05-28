@@ -125,7 +125,6 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
       }
 
       .carousel__item {
-        background-color: grey;
         display: none;
         background-repeat: no-repeat;
         background-size: cover;
