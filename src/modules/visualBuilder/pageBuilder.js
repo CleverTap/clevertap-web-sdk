@@ -1,12 +1,21 @@
 import { CSS_PATH, OVERLAY_PATH } from './builder_constants'
 
+export const handleMessageEvent = (event) => {
+  if (event.data && event.data.message) {
+    if (event.data.message === 'Dashboard' && event.data.url) {
+      initialiseCTBuilder(event.data.url, event.data.variant ?? null, event.data.details ?? {})
+    } else if (event.data.message === 'Overlay') {
+      renderVisualBuilder(event.data, true)
+    }
+  }
+}
 /**
  * Initializes the Clevertap builder.
  * @param {string} url - The URL to initialize the builder.
  * @param {string} variant - The variant of the builder.
  * @param {Object} details - The details object.
  */
-export const initialiseCTBuilder = (url, variant, details) => {
+const initialiseCTBuilder = (url, variant, details) => {
   document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details))
 }
 

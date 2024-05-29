@@ -40,7 +40,7 @@ import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
-import { initialiseCTBuilder, renderVisualBuilder } from './modules/visualBuilder/pageBuilder'
+import { handleMessageEvent } from './modules/visualBuilder/pageBuilder'
 
 export default class CleverTap {
   #logger
@@ -584,6 +584,7 @@ export default class CleverTap {
       // already initailsed
       return
     }
+    this.#checkBuilder()
     StorageManager.removeCookie('WZRK_P', window.location.hostname)
     if (!this.#account.id) {
       if (!accountId) {
@@ -662,37 +663,28 @@ export default class CleverTap {
     debouncedPageChanged()
   }
 
-  #handleMessageEvent (event) {
-    if (event.data && event.data.message) {
-      if (event.data.message === 'Dashboard' && event.data.url) {
-        initialiseCTBuilder(event.data.url, event.data.variant ?? null, event.data.details ?? {})
-      } else if (event.data.message === 'Overlay') {
-        renderVisualBuilder(event.data, true)
-      }
-    }
-  }
-
-  pageChanged () {
+  #checkBuilder () {
     const search = window.location.search
     const parentWindow = window.opener
 
     if (search === '?ctBuilder') {
       // open in visual builder mode
       this.#logger.debug('open in visual builder mode')
-      window.addEventListener('message', this.#handleMessageEvent, false)
+      window.addEventListener('message', handleMessageEvent, false)
       if (parentWindow) {
         parentWindow.postMessage('builder', '*')
       }
       return
     }
     if (search === '?ctBuilderPreview') {
-      window.addEventListener('message', this.#handleMessageEvent, false)
+      window.addEventListener('message', handleMessageEvent, false)
       if (parentWindow) {
         parentWindow.postMessage('preview', '*')
       }
-      return
     }
+  }
 
+  pageChanged () {
     const currLocation = window.location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
     // -- update page count

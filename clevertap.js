@@ -4501,6 +4501,17 @@
   const OVERLAY_PATH = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/overlay.js';
   const CSS_PATH = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/style.css';
 
+  const handleMessageEvent = event => {
+    if (event.data && event.data.message) {
+      if (event.data.message === 'Dashboard' && event.data.url) {
+        var _event$data$variant, _event$data$details;
+
+        initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null, (_event$data$details = event.data.details) !== null && _event$data$details !== void 0 ? _event$data$details : {});
+      } else if (event.data.message === 'Overlay') {
+        renderVisualBuilder(event.data, true);
+      }
+    }
+  };
   /**
    * Initializes the Clevertap builder.
    * @param {string} url - The URL to initialize the builder.
@@ -4511,6 +4522,7 @@
   const initialiseCTBuilder = (url, variant, details) => {
     document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details));
   };
+
   let container;
   /**
    * Handles content load for Clevertap builder.
@@ -7510,7 +7522,7 @@
 
   var _checkPageChanged = _classPrivateFieldLooseKey("checkPageChanged");
 
-  var _handleMessageEvent = _classPrivateFieldLooseKey("handleMessageEvent");
+  var _checkBuilder = _classPrivateFieldLooseKey("checkBuilder");
 
   var _pingRequest = _classPrivateFieldLooseKey("pingRequest");
 
@@ -7561,8 +7573,8 @@
       Object.defineProperty(this, _pingRequest, {
         value: _pingRequest2
       });
-      Object.defineProperty(this, _handleMessageEvent, {
-        value: _handleMessageEvent2
+      Object.defineProperty(this, _checkBuilder, {
+        value: _checkBuilder2
       });
       Object.defineProperty(this, _checkPageChanged, {
         value: _checkPageChanged2
@@ -8214,6 +8226,8 @@
         return;
       }
 
+      _classPrivateFieldLooseBase(this, _checkBuilder)[_checkBuilder]();
+
       StorageManager.removeCookie('WZRK_P', window.location.hostname);
 
       if (!_classPrivateFieldLooseBase(this, _account$6)[_account$6].id) {
@@ -8278,32 +8292,6 @@
 
 
     pageChanged() {
-      const search = window.location.search;
-      const parentWindow = window.opener;
-
-      if (search === '?ctBuilder') {
-        // open in visual builder mode
-        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('open in visual builder mode');
-
-        window.addEventListener('message', _classPrivateFieldLooseBase(this, _handleMessageEvent)[_handleMessageEvent], false);
-
-        if (parentWindow) {
-          parentWindow.postMessage('builder', '*');
-        }
-
-        return;
-      }
-
-      if (search === '?ctBuilderPreview') {
-        window.addEventListener('message', _classPrivateFieldLooseBase(this, _handleMessageEvent)[_handleMessageEvent], false);
-
-        if (parentWindow) {
-          parentWindow.postMessage('preview', '*');
-        }
-
-        return;
-      }
-
       const currLocation = window.location.href;
       const urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
 
@@ -8532,14 +8520,28 @@
     debouncedPageChanged();
   };
 
-  var _handleMessageEvent2 = function _handleMessageEvent2(event) {
-    if (event.data && event.data.message) {
-      if (event.data.message === 'Dashboard' && event.data.url) {
-        var _event$data$variant, _event$data$details;
+  var _checkBuilder2 = function _checkBuilder2() {
+    const search = window.location.search;
+    const parentWindow = window.opener;
 
-        initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null, (_event$data$details = event.data.details) !== null && _event$data$details !== void 0 ? _event$data$details : {});
-      } else if (event.data.message === 'Overlay') {
-        renderVisualBuilder(event.data, true);
+    if (search === '?ctBuilder') {
+      // open in visual builder mode
+      _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('open in visual builder mode');
+
+      window.addEventListener('message', handleMessageEvent, false);
+
+      if (parentWindow) {
+        parentWindow.postMessage('builder', '*');
+      }
+
+      return;
+    }
+
+    if (search === '?ctBuilderPreview') {
+      window.addEventListener('message', handleMessageEvent, false);
+
+      if (parentWindow) {
+        parentWindow.postMessage('preview', '*');
       }
     }
   };
