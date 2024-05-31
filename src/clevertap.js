@@ -40,7 +40,7 @@ import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
-import { handleMessageEvent } from './modules/visualBuilder/pageBuilder'
+import { checkBuilder } from './modules/visualBuilder/pageBuilder'
 
 export default class CleverTap {
   #logger
@@ -584,7 +584,7 @@ export default class CleverTap {
       // already initailsed
       return
     }
-    this.#checkBuilder()
+    checkBuilder(this.#logger)
     StorageManager.removeCookie('WZRK_P', window.location.hostname)
     if (!this.#account.id) {
       if (!accountId) {
@@ -661,27 +661,6 @@ export default class CleverTap {
       }
     })
     debouncedPageChanged()
-  }
-
-  #checkBuilder () {
-    const search = window.location.search
-    const parentWindow = window.opener
-
-    if (search === '?ctBuilder') {
-      // open in visual builder mode
-      this.#logger.debug('open in visual builder mode')
-      window.addEventListener('message', handleMessageEvent, false)
-      if (parentWindow) {
-        parentWindow.postMessage('builder', '*')
-      }
-      return
-    }
-    if (search === '?ctBuilderPreview') {
-      window.addEventListener('message', handleMessageEvent, false)
-      if (parentWindow) {
-        parentWindow.postMessage('preview', '*')
-      }
-    }
   }
 
   pageChanged () {

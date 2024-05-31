@@ -1,6 +1,27 @@
 import { CSS_PATH, OVERLAY_PATH } from './builder_constants'
 
-export const handleMessageEvent = (event) => {
+export const checkBuilder = (logger) => {
+  const search = window.location.search
+  const parentWindow = window.opener
+
+  if (search === '?ctBuilder') {
+    // open in visual builder mode
+    logger.debug('open in visual builder mode')
+    window.addEventListener('message', handleMessageEvent, false)
+    if (parentWindow) {
+      parentWindow.postMessage('builder', '*')
+    }
+    return
+  }
+  if (search === '?ctBuilderPreview') {
+    window.addEventListener('message', handleMessageEvent, false)
+    if (parentWindow) {
+      parentWindow.postMessage('preview', '*')
+    }
+  }
+}
+
+const handleMessageEvent = (event) => {
   if (event.data && event.data.message) {
     if (event.data.message === 'Dashboard' && event.data.url) {
       initialiseCTBuilder(event.data.url, event.data.variant ?? null, event.data.details ?? {})

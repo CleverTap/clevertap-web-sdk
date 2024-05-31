@@ -4501,6 +4501,31 @@
   const OVERLAY_PATH = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/overlay.js';
   const CSS_PATH = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/style.css';
 
+  const checkBuilder = logger => {
+    const search = window.location.search;
+    const parentWindow = window.opener;
+
+    if (search === '?ctBuilder') {
+      // open in visual builder mode
+      logger.debug('open in visual builder mode');
+      window.addEventListener('message', handleMessageEvent, false);
+
+      if (parentWindow) {
+        parentWindow.postMessage('builder', '*');
+      }
+
+      return;
+    }
+
+    if (search === '?ctBuilderPreview') {
+      window.addEventListener('message', handleMessageEvent, false);
+
+      if (parentWindow) {
+        parentWindow.postMessage('preview', '*');
+      }
+    }
+  };
+
   const handleMessageEvent = event => {
     if (event.data && event.data.message) {
       if (event.data.message === 'Dashboard' && event.data.url) {
@@ -4518,6 +4543,7 @@
    * @param {string} variant - The variant of the builder.
    * @param {Object} details - The details object.
    */
+
 
   const initialiseCTBuilder = (url, variant, details) => {
     document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details));
@@ -7522,8 +7548,6 @@
 
   var _checkPageChanged = _classPrivateFieldLooseKey("checkPageChanged");
 
-  var _checkBuilder = _classPrivateFieldLooseKey("checkBuilder");
-
   var _pingRequest = _classPrivateFieldLooseKey("pingRequest");
 
   var _isPingContinuous = _classPrivateFieldLooseKey("isPingContinuous");
@@ -7572,9 +7596,6 @@
       });
       Object.defineProperty(this, _pingRequest, {
         value: _pingRequest2
-      });
-      Object.defineProperty(this, _checkBuilder, {
-        value: _checkBuilder2
       });
       Object.defineProperty(this, _checkPageChanged, {
         value: _checkPageChanged2
@@ -8226,8 +8247,7 @@
         return;
       }
 
-      _classPrivateFieldLooseBase(this, _checkBuilder)[_checkBuilder]();
-
+      checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a]);
       StorageManager.removeCookie('WZRK_P', window.location.hostname);
 
       if (!_classPrivateFieldLooseBase(this, _account$6)[_account$6].id) {
@@ -8518,32 +8538,6 @@
     });
 
     debouncedPageChanged();
-  };
-
-  var _checkBuilder2 = function _checkBuilder2() {
-    const search = window.location.search;
-    const parentWindow = window.opener;
-
-    if (search === '?ctBuilder') {
-      // open in visual builder mode
-      _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('open in visual builder mode');
-
-      window.addEventListener('message', handleMessageEvent, false);
-
-      if (parentWindow) {
-        parentWindow.postMessage('builder', '*');
-      }
-
-      return;
-    }
-
-    if (search === '?ctBuilderPreview') {
-      window.addEventListener('message', handleMessageEvent, false);
-
-      if (parentWindow) {
-        parentWindow.postMessage('preview', '*');
-      }
-    }
   };
 
   var _pingRequest2 = function _pingRequest2() {
