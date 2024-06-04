@@ -37,30 +37,38 @@ const handleMessageEvent = (event) => {
  * @param {Object} details - The details object.
  */
 const initialiseCTBuilder = (url, variant, details) => {
-  document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details))
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details))
+  } else {
+    onContentLoad(url, variant, details)
+  }
 }
 
 let container
+let contentLoaded = false
 /**
  * Handles content load for Clevertap builder.
  */
 function onContentLoad (url, variant, details) {
-  document.body.innerHTML = ''
-  container = document.createElement('div')
-  container.id = 'overlayDiv'
-  container.style.position = 'relative' // Ensure relative positioning for absolute positioning of form
-  container.style.display = 'flex'
-  document.body.appendChild(container)
-  const overlayPath = OVERLAY_PATH
-  loadOverlayScript(overlayPath, url, variant, details)
-    .then(() => {
-      console.log('Overlay script loaded successfully.')
-    })
-    .catch((error) => {
-      console.error('Error loading overlay script:', error)
-    })
-  loadCSS()
-  loadTypeKit()
+  if (!contentLoaded) {
+    document.body.innerHTML = ''
+    container = document.createElement('div')
+    container.id = 'overlayDiv'
+    container.style.position = 'relative' // Ensure relative positioning for absolute positioning of form
+    container.style.display = 'flex'
+    document.body.appendChild(container)
+    const overlayPath = OVERLAY_PATH
+    loadOverlayScript(overlayPath, url, variant, details)
+      .then(() => {
+        console.log('Overlay script loaded successfully.')
+        contentLoaded = true
+      })
+      .catch((error) => {
+        console.error('Error loading overlay script:', error)
+      })
+    loadCSS()
+    loadTypeKit()
+  }
 }
 
 /**
