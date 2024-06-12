@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.8.0] - 11 June, 2024
+## [1.8.0] - 12 June, 2024
 - Introduces the new templates 'In Page Customisation' in 'Web Native Display'.
 
 ## [1.7.6] - 11 June, 2024
