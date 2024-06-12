@@ -47,7 +47,6 @@ const _tr = (msg, {
   const _request = request
   const _logger = logger
   let _wizCounter = 0
-
   // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
@@ -442,6 +441,9 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
+    if (displayObj.preview) {
+      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
+    }
 
     let html
     // direct html
@@ -500,20 +502,15 @@ const _tr = (msg, {
 
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
-    const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
-    const doc = ifrm.document
 
     // Dispatch event for popup box/banner close
     const closeCampaign = new Event('CT_campaign_rendered')
     document.dispatchEvent(closeCampaign)
 
-    doc.open()
-    doc.write(html)
-
     if (displayObj['custom-editor']) {
-      appendScriptForCustomEvent(targetingMsgJson, doc)
+      html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    doc.close()
+    iframe.srcdoc = html
 
     const adjustIFrameHeight = () => {
       // adjust iframe and body height of html inside correctly
@@ -558,9 +555,8 @@ const _tr = (msg, {
     }
   }
 
-  const appendScriptForCustomEvent = (targetingMsgJson, doc) => {
-    const script = doc.createElement('script')
-    script.innerHTML = `
+  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
+    const script = `<script>
       const ct__camapignId = '${targetingMsgJson.wzrk_id}';
       const ct__formatVal = (v) => {
           return v && v.trim().substring(0, 20);
@@ -585,7 +581,7 @@ const _tr = (msg, {
         }
       });
     `
-    doc.body.appendChild(script)
+    return html.replace(/(<\s*\/\s*body)/, `${script}\n$1`)
   }
 
   let _callBackCalled = false
@@ -759,6 +755,9 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
+    if (targetingMsgJson.display.preview) {
+      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
+    }
     let html
     // direct html
     if (targetingMsgJson.msgContent.type === 1) {
@@ -816,22 +815,20 @@ const _tr = (msg, {
     }
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
-    const ifrm = (iframe.contentWindow) ? iframe.contentWindow : (iframe.contentDocument.document) ? iframe.contentDocument.document : iframe.contentDocument
-    const doc = ifrm.document
 
     // Dispatch event for interstitial/exit intent close
     const closeCampaign = new Event('CT_campaign_rendered')
     document.dispatchEvent(closeCampaign)
 
-    doc.open()
-    doc.write(html)
     if (targetingMsgJson.display['custom-editor']) {
-      appendScriptForCustomEvent(targetingMsgJson, doc)
+      html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    doc.close()
+    iframe.srcdoc = html
 
-    const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
-    setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
+    iframe.onload = () => {
+      const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
+      setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
+    }
   }
 
   if (!document.body) {
