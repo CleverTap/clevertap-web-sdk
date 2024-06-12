@@ -155,6 +155,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
   const details = isPreview ? targetingMsgJson.details[0] : targetingMsgJson.display.details[0]
   const siteUrl = Object.keys(details)[0]
   const selectors = details[siteUrl]
+  let elementDisplayed = false
 
   if (siteUrl === window.location.href.split('?')[0]) {
     for (const selector in selectors) {
@@ -166,9 +167,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
           // Update json data
           dispatchJsonData(targetingMsgJson, selectors[selector])
         }
-        if (!isPreview) {
-          window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
-        }
+        elementDisplayed = true
       } else {
         let count = 0
         const intervalId = setInterval(() => {
@@ -180,9 +179,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
               // Update json data
               dispatchJsonData(targetingMsgJson, selectors[selector])
             }
-            if (!isPreview) {
-              window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
-            }
+            elementDisplayed = true
             clearInterval(intervalId)
           } else {
             count++
@@ -193,6 +190,9 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
           }
         }, 500)
       }
+    }
+    if (elementDisplayed && !isPreview) {
+      window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
     }
   }
 }
