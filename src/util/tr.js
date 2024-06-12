@@ -440,8 +440,8 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    if (displayObj.preview) {
-      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin'
+    if (displayObj.preview && displayObj['custom-editor']) {
+      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
     }
 
     let html
@@ -513,12 +513,15 @@ const _tr = (msg, {
 
     const adjustIFrameHeight = () => {
       // adjust iframe and body height of html inside correctly
-      contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
-      if (displayObj['custom-editor'] !== true && !isBanner) {
-        contentHeight += 25
+
+      if (displayObj['custom-editor'] !== true) {
+        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
+        if (!isBanner) {
+          contentHeight += 25
+        }
+        document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
+        document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
       }
-      document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
-      document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
     }
 
     const ua = navigator.userAgent.toLowerCase()
@@ -754,8 +757,8 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    if (targetingMsgJson.display.preview) {
-      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin'
+    if (targetingMsgJson.display.preview && targetingMsgJson.display['custom-editor']) {
+      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
     }
     let html
     // direct html
