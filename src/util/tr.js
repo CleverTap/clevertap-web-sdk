@@ -601,6 +601,7 @@ const _tr = (msg, {
             window.parent.clevertap.renderNotificationClicked(notifData);
         }
       });
+      </script>
     `
     return html.replace(/(<\s*\/\s*body)/, `${script}\n$1`)
   }
@@ -780,7 +781,6 @@ const _tr = (msg, {
     }
     if (targetingMsgJson.display.preview && targetingMsgJson.display['custom-editor']) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
-      iframe.srcdoc = opacityDiv
     }
     let html
     // direct html
@@ -847,7 +847,11 @@ const _tr = (msg, {
     if (targetingMsgJson.display['custom-editor']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    iframe.srcdoc = html
+    if (targetingMsgJson.display.preview) {
+      iframe.srcdoc = opacityDiv + html
+    } else {
+      iframe.srcdoc = html
+    }
 
     iframe.onload = () => {
       let contentDiv
@@ -857,6 +861,7 @@ const _tr = (msg, {
         contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
       }
       // const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
+      console.log('click event step 1')
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
     }
   }
