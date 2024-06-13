@@ -5038,7 +5038,14 @@
         if (ua.indexOf('chrome') > -1) {
           iframe.onload = () => {
             adjustIFrameHeight();
-            const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+            let contentDiv;
+
+            if (displayObj.preview) {
+              contentDiv = null;
+            } else {
+              contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+            }
+
             setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
           };
         } else {
@@ -5052,7 +5059,15 @@
               clearInterval(_timer); // adjust iframe and body height of html inside correctly
 
               adjustIFrameHeight();
-              const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+              let contentDiv;
+
+              if (displayObj.preview) {
+                contentDiv = null;
+              } else {
+                contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+              } // const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+
+
               setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
             }
           }, 10);
@@ -5061,7 +5076,15 @@
         iframe.onload = () => {
           // adjust iframe and body height of html inside correctly
           adjustIFrameHeight();
-          const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+          let contentDiv;
+
+          if (displayObj.preview) {
+            contentDiv = null;
+          } else {
+            contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+          } // const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+
+
           setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
         };
       }
@@ -5319,7 +5342,15 @@
       iframe.srcdoc = html;
 
       iframe.onload = () => {
-        const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
+        let contentDiv;
+
+        if (targetingMsgJson.display.preview) {
+          contentDiv = null;
+        } else {
+          contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+        } // const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
+
+
         setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
     };
