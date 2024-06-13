@@ -34,6 +34,7 @@ import { CTWebPersonalisationBanner } from './web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
+import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
 
 const _tr = (msg, {
   device,
@@ -919,6 +920,8 @@ const _tr = (msg, {
           } else {
             arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
           }
+        } else if (targetNotif.msgContent.type === 4) {
+          renderVisualBuilder(targetNotif, false)
         } else {
           showFooterNotification(targetNotif)
         }

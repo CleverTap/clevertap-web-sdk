@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.8.0] - 12 June, 2024
-- Fixes a bug in Web Popup preview where URL was not opening.
+- Introduces the new templates 'In Page Customisation' in 'Web Native Display'.
 
 ## [1.7.6] - 11 June, 2024
 - Adds Iframe sandboxing for enhanced security against cross-site scripting (XSS) vulnerabilities.
