@@ -752,7 +752,9 @@ const _tr = (msg, {
     const opacity = targetingMsgJson.display.opacity || 0.7
     const rgbaColor = `rgba(0,0,0,${opacity})`
     opacityDiv.setAttribute('style', `position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ${rgbaColor};`)
-    document.body.appendChild(opacityDiv)
+    if (!targetingMsgJson.display.preview) {
+      document.body.appendChild(opacityDiv)
+    }
 
     const msgDiv = document.createElement('div')
     msgDiv.id = 'intentPreview'
@@ -778,6 +780,7 @@ const _tr = (msg, {
     }
     if (targetingMsgJson.display.preview && targetingMsgJson.display['custom-editor']) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
+      iframe.srcdoc = opacityDiv
     }
     let html
     // direct html
@@ -851,7 +854,7 @@ const _tr = (msg, {
       if (targetingMsgJson.display.preview) {
         contentDiv = null
       } else {
-        contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+        contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
       }
       // const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
