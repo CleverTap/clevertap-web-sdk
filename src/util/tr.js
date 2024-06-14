@@ -441,7 +441,7 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    if (displayObj.preview) {
+    if (displayObj.preview && displayObj['custom-editor']) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
     }
 
@@ -580,6 +580,7 @@ const _tr = (msg, {
             window.parent.clevertap.renderNotificationClicked(notifData);
         }
       });
+      </script>
     `
     return html.replace(/(<\s*\/\s*body)/, `${script}\n$1`)
   }
@@ -755,7 +756,7 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    if (targetingMsgJson.display.preview) {
+    if (targetingMsgJson.display.preview && targetingMsgJson.display['custom-editor']) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
     }
     let html

@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.8.1] - 14 June, 2024
+- Fixes an issue with Preview of webpopups related XSS changes.
+
 ## [1.8.0] - 12 June, 2024
 - Introduces the new templates 'In Page Customisation' in 'Web Native Display'.
 
