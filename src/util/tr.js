@@ -441,7 +441,7 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    if (displayObj.preview) {
+    if (displayObj.preview && displayObj['custom-editor']) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
     }
 
@@ -514,12 +514,15 @@ const _tr = (msg, {
 
     const adjustIFrameHeight = () => {
       // adjust iframe and body height of html inside correctly
-      contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
-      if (displayObj['custom-editor'] !== true && !isBanner) {
-        contentHeight += 25
+
+      if (displayObj['custom-editor'] !== true) {
+        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
+        if (!isBanner) {
+          contentHeight += 25
+        }
+        document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
+        document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
       }
-      document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
-      document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
     }
 
     const ua = navigator.userAgent.toLowerCase()
@@ -527,7 +530,13 @@ const _tr = (msg, {
       if (ua.indexOf('chrome') > -1) {
         iframe.onload = () => {
           adjustIFrameHeight()
-          const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+          let contentDiv
+          if (displayObj.preview) {
+            contentDiv = null
+          } else {
+            contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+          }
+
           setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
         }
       } else {
@@ -540,7 +549,13 @@ const _tr = (msg, {
             clearInterval(_timer)
             // adjust iframe and body height of html inside correctly
             adjustIFrameHeight()
-            const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+            let contentDiv
+            if (displayObj.preview) {
+              contentDiv = null
+            } else {
+              contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+            }
+            // const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
             setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
           }
         }, 10)
@@ -549,7 +564,13 @@ const _tr = (msg, {
       iframe.onload = () => {
         // adjust iframe and body height of html inside correctly
         adjustIFrameHeight()
-        const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+        let contentDiv
+        if (displayObj.preview) {
+          contentDiv = null
+        } else {
+          contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+        }
+        // const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
         setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
       }
     }
@@ -580,6 +601,7 @@ const _tr = (msg, {
             window.parent.clevertap.renderNotificationClicked(notifData);
         }
       });
+      </script>
     `
     return html.replace(/(<\s*\/\s*body)/, `${script}\n$1`)
   }
@@ -731,7 +753,9 @@ const _tr = (msg, {
     const opacity = targetingMsgJson.display.opacity || 0.7
     const rgbaColor = `rgba(0,0,0,${opacity})`
     opacityDiv.setAttribute('style', `position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ${rgbaColor};`)
-    document.body.appendChild(opacityDiv)
+    if (!targetingMsgJson.display.preview) {
+      document.body.appendChild(opacityDiv)
+    }
 
     const msgDiv = document.createElement('div')
     msgDiv.id = 'intentPreview'
@@ -755,7 +779,7 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    if (targetingMsgJson.display.preview) {
+    if (targetingMsgJson.display.preview && targetingMsgJson.display['custom-editor']) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
     }
     let html
@@ -823,10 +847,21 @@ const _tr = (msg, {
     if (targetingMsgJson.display['custom-editor']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    iframe.srcdoc = html
+    if (targetingMsgJson.display.preview) {
+      iframe.srcdoc = opacityDiv + html
+    } else {
+      iframe.srcdoc = html
+    }
 
     iframe.onload = () => {
-      const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
+      let contentDiv
+      if (targetingMsgJson.display.preview) {
+        contentDiv = null
+      } else {
+        contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
+      }
+      // const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
+      console.log('click event step 1')
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
     }
   }
