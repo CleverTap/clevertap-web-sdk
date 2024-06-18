@@ -468,7 +468,7 @@ export default class CleverTap {
           return
         }
         $ct.location = { Latitude: lat, Longitude: lng }
-        this.sendLocationData({ Latitude: lat, Longitude: lng })
+        this.#sendLocationData({ Latitude: lat, Longitude: lng })
       } else {
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError)
@@ -482,7 +482,7 @@ export default class CleverTap {
       var lat = position.coords.latitude
       var lng = position.coords.longitude
       $ct.location = { Latitude: lat, Longitude: lng }
-      this.sendLocationData({ Latitude: lat, Longitude: lng })
+      this.#sendLocationData({ Latitude: lat, Longitude: lng })
     }
 
     function showError (error) {
@@ -781,7 +781,7 @@ export default class CleverTap {
    *
    * @param {object} payload
    */
-  sendLocationData (payload) {
+  #sendLocationData (payload) {
     // Send the updated value to LC
     let data = {}
     data.af = {}
@@ -828,6 +828,10 @@ export default class CleverTap {
     if (!arg) {
       this.#request.processBackupEvents()
     }
+  }
+
+  getSDKVersion () {
+    return 'web-sdk-v$$PACKAGE_VERSION$$'
   }
 
   defineVariable (name, defaultValue) {
