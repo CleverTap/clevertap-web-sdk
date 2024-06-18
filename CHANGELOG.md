@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.8.2] - 18 June, 2024
+- Fixes an issue in getLocation function where the location data was not sent in requests.
+- Exposes a method getSDKVersion
+
 ## [1.8.1] - 14 June, 2024
 - Fixes an issue with Preview of webpopups related XSS changes.
 
