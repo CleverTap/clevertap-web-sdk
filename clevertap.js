@@ -6181,8 +6181,8 @@
 
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
-      dataObject.af = {
-        lib: 'web-sdk-v1.8.1',
+      dataObject.af = { ...dataObject.af,
+        lib: 'web-sdk-v1.8.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -7454,6 +7454,8 @@
 
   var _overrideDSyncFlag = _classPrivateFieldLooseKey("overrideDSyncFlag");
 
+  var _sendLocationData = _classPrivateFieldLooseKey("sendLocationData");
+
   class CleverTap {
     get spa() {
       return _classPrivateFieldLooseBase(this, _isSpa)[_isSpa];
@@ -7488,6 +7490,9 @@
       var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      Object.defineProperty(this, _sendLocationData, {
+        value: _sendLocationData2
+      });
       Object.defineProperty(this, _overrideDSyncFlag, {
         value: _overrideDSyncFlag2
       });
@@ -7996,7 +8001,8 @@
             Latitude: lat,
             Longitude: lng
           };
-          this.sendLocationData({
+
+          _classPrivateFieldLooseBase(this, _sendLocationData)[_sendLocationData]({
             Latitude: lat,
             Longitude: lng
           });
@@ -8016,7 +8022,8 @@
           Latitude: lat,
           Longitude: lng
         };
-        this.sendLocationData({
+
+        _classPrivateFieldLooseBase(this, _sendLocationData)[_sendLocationData]({
           Latitude: lat,
           Longitude: lng
         });
@@ -8319,53 +8326,13 @@
      */
 
 
-    sendLocationData(payload) {
-      // Send the updated value to LC
-      let data = {};
-      data.af = {};
-      const profileObj = {};
-      data.type = 'profile';
-
-      if (profileObj.tz == null) {
-        profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
-      }
-
-      data.profile = profileObj;
-
-      if (payload) {
-        const keys = Object.keys(payload);
-        keys.forEach(key => {
-          data.af[key] = payload[key];
-        });
-      }
-
-      if ($ct.location) {
-        data.af = { ...data.af,
-          ...$ct.location
-        };
-      }
-
-      data = _classPrivateFieldLooseBase(this, _request$7)[_request$7].addSystemDataToObject(data, true);
-
-      _classPrivateFieldLooseBase(this, _request$7)[_request$7].addFlags(data);
-
-      const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$a)[_logger$a]);
-
-      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
-
-      pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-
-      _classPrivateFieldLooseBase(this, _request$7)[_request$7].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
-    } // offline mode
+    // offline mode
 
     /**
      * events will be recorded and queued locally when passed with true
      * but will not be sent to the server until offline is disabled by passing false
      * @param {boolean} arg
      */
-
-
     setOffline(arg) {
       if (typeof arg !== 'boolean') {
         console.error('setOffline should be called with a value of type boolean');
@@ -8378,6 +8345,10 @@
       if (!arg) {
         _classPrivateFieldLooseBase(this, _request$7)[_request$7].processBackupEvents();
       }
+    }
+
+    getSDKVersion() {
+      return 'web-sdk-v1.8.2';
     }
 
     defineVariable(name, defaultValue) {
@@ -8460,6 +8431,46 @@
     if (this._isPersonalisationActive()) {
       data.dsync = true;
     }
+  };
+
+  var _sendLocationData2 = function _sendLocationData2(payload) {
+    // Send the updated value to LC
+    let data = {};
+    data.af = {};
+    const profileObj = {};
+    data.type = 'profile';
+
+    if (profileObj.tz == null) {
+      profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+    }
+
+    data.profile = profileObj;
+
+    if (payload) {
+      const keys = Object.keys(payload);
+      keys.forEach(key => {
+        data.af[key] = payload[key];
+      });
+    }
+
+    if ($ct.location) {
+      data.af = { ...data.af,
+        ...$ct.location
+      };
+    }
+
+    data = _classPrivateFieldLooseBase(this, _request$7)[_request$7].addSystemDataToObject(data, true);
+
+    _classPrivateFieldLooseBase(this, _request$7)[_request$7].addFlags(data);
+
+    const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$a)[_logger$a]);
+
+    let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
+
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+
+    _classPrivateFieldLooseBase(this, _request$7)[_request$7].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
   };
 
   const clevertap = new CleverTap(window.clevertap);
