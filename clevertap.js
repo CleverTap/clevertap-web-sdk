@@ -5144,7 +5144,11 @@
         }
 
         return renderPopUpImageOnly(targetingMsgJson);
-      }
+      } // if (displayObj.layout === 1) { // Handling Web Exit Intent
+      //   return triggeredByInactivity(undefined, targetingMsgJson)
+      // }else{
+      // }
+
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
@@ -5633,7 +5637,9 @@
         const targetNotif = msg.inapp_notifs[index];
 
         if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
-          showFooterNotification(targetNotif);
+          {
+            showFooterNotification(targetNotif);
+          }
         } else if (targetNotif.display.wtarget_type === 1) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;

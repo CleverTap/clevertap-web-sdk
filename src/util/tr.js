@@ -352,6 +352,7 @@ const _tr = (msg, {
     if (displayObj.layout === 1) { // Handling Web Exit Intent
       return showExitIntent(undefined, targetingMsgJson)
     }
+
     if (displayObj.layout === 3) { // Handling Web Popup Image Only
       const divId = 'wzrkImageOnlyDiv'
       if (doCampHouseKeeping(targetingMsgJson) === false) {
@@ -373,6 +374,11 @@ const _tr = (msg, {
       }
       return renderPopUpImageOnly(targetingMsgJson)
     }
+    // if (displayObj.layout === 1) { // Handling Web Exit Intent
+    //   return triggeredByInactivity(undefined, targetingMsgJson)
+    // }else{
+
+    // }
 
     if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
@@ -877,12 +883,87 @@ const _tr = (msg, {
     })
   }
 
+  const triggerByInactivity = (targetNotif) => {
+    const IDLE_TIME_THRESHOLD = 15000 // 5 seconds
+    let idleTimer
+
+    function removeEventListeners () {
+      window.removeEventListener('mousemove', resetIdleTimer)
+      window.removeEventListener('keypress', resetIdleTimer)
+      window.removeEventListener('scroll', resetIdleTimer)
+      window.removeEventListener('mousedown', resetIdleTimer)
+      window.removeEventListener('touchmove', resetIdleTimer)
+      window.removeEventListener('click', resetIdleTimer)
+    }
+
+    window.addEventListener('mousemove', resetIdleTimer)
+    window.addEventListener('keypress', resetIdleTimer)
+    window.addEventListener('scroll', resetIdleTimer)
+    window.addEventListener('mousedown', resetIdleTimer)
+    window.addEventListener('touchmove', resetIdleTimer)
+    window.addEventListener('click', resetIdleTimer)
+
+    resetIdleTimer()
+
+    // Function to reset the idle timer
+    function resetIdleTimer () {
+      clearTimeout(idleTimer)
+      idleTimer = setTimeout(function () {
+        console.log('User is idle for 5 seconds', idleTimer, window)
+        showFooterNotification(targetNotif)
+        removeEventListeners()
+        // Perform actions here when user is idle for 10 seconds
+      }, IDLE_TIME_THRESHOLD)
+    }
+  }
+
+  const triggerByScroll = (targetNotif) => {
+    function calculateScrollPercentage () {
+      const fullHeight = document.documentElement.scrollHeight
+
+      const scrollPosition = window.scrollY || window.pageYOffset || document.documentElement.scrollTop
+
+      const scrollPercentage = (scrollPosition / (fullHeight - window.innerHeight)) * 100
+
+      return scrollPercentage
+    }
+
+    function scrollCallback () {
+      showFooterNotification(targetNotif)
+
+      window.removeEventListener('scroll', scrollListener)
+    }
+
+    function scrollListener () {
+      const scrollPercentage = calculateScrollPercentage()
+
+      if (scrollPercentage >= 20) {
+        scrollCallback()
+      }
+    }
+
+    window.addEventListener('scroll', scrollListener)
+  }
+  let someCondition, someCondition1, someCondition2
   if (msg.inapp_notifs != null) {
     const arrInAppNotifs = {}
     for (let index = 0; index < msg.inapp_notifs.length; index++) {
       const targetNotif = msg.inapp_notifs[index]
       if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
-        showFooterNotification(targetNotif)
+        if (someCondition || someCondition1 || someCondition2) {
+          if (someCondition) {
+            triggerByInactivity(targetNotif)
+          }
+          if (someCondition1) {
+            triggerByScroll(targetNotif)
+          }
+          if (someCondition2) {
+            exitintentObj = targetNotif
+            window.document.body.onmouseleave = showExitIntent
+          }
+        } else {
+          showFooterNotification(targetNotif)
+        }
       } else if (targetNotif.display.wtarget_type === 1) { // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif
         window.document.body.onmouseleave = showExitIntent
