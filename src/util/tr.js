@@ -255,6 +255,15 @@ const _tr = (msg, {
           // pass on the gcookie|page|scookieId for capturing the click event
           if (targetingMsgJson.display.window === 1) {
             window.open(onClick, '_blank')
+            // Click Action - Open a URL and Close Notification
+            if (targetingMsgJson.display.closeNotification) {
+              const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
+              closeIframe(campaignId, divId, _session.sessionId)
+            } else if (targetingMsgJson.display.pushprompt) { // Enable browser web push prompt
+              window.clevertap.notifications.push({
+                skipDialog: true
+              })
+            }
           } else {
             window.location = onClick
           }
