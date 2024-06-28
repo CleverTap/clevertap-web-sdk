@@ -641,7 +641,20 @@ const _tr = (msg, {
       }
     } else {
       window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id
-      renderFooterNotification(targetingMsgJson)
+      if (targetingMsgJson.display.inactive || targetingMsgJson.display.scroll || targetingMsgJson.display.isExitIntent) {
+        if (targetingMsgJson.display.inactive) {
+          triggerByInactivity(targetingMsgJson)
+        }
+        if (targetingMsgJson.display.scroll) {
+          triggerByScroll(targetingMsgJson)
+        }
+        if (targetingMsgJson.display.isExitIntent) {
+          exitintentObj = targetingMsgJson
+          window.document.body.onmouseleave = showExitIntent
+        }
+      } else {
+        renderFooterNotification(targetingMsgJson)
+      }
 
       if (window.clevertap.hasOwnProperty('popupCallbacks') &&
         typeof window.clevertap.popupCallbacks !== 'undefined' &&
@@ -884,7 +897,7 @@ const _tr = (msg, {
   }
 
   const triggerByInactivity = (targetNotif) => {
-    const IDLE_TIME_THRESHOLD = 15000 // 5 seconds
+    const IDLE_TIME_THRESHOLD = targetNotif.display.inactive * 1000 // 5 seconds
     let idleTimer
 
     function removeEventListeners () {
@@ -910,7 +923,7 @@ const _tr = (msg, {
       clearTimeout(idleTimer)
       idleTimer = setTimeout(function () {
         console.log('User is idle for 5 seconds', idleTimer, window)
-        showFooterNotification(targetNotif)
+        renderFooterNotification(targetNotif)
         removeEventListeners()
         // Perform actions here when user is idle for 10 seconds
       }, IDLE_TIME_THRESHOLD)
@@ -929,7 +942,7 @@ const _tr = (msg, {
     }
 
     function scrollCallback () {
-      showFooterNotification(targetNotif)
+      renderFooterNotification(targetNotif)
 
       window.removeEventListener('scroll', scrollListener)
     }
@@ -937,33 +950,19 @@ const _tr = (msg, {
     function scrollListener () {
       const scrollPercentage = calculateScrollPercentage()
 
-      if (scrollPercentage >= 20) {
+      if (scrollPercentage >= targetNotif.display.scroll) {
         scrollCallback()
       }
     }
 
     window.addEventListener('scroll', scrollListener)
   }
-  let someCondition, someCondition1, someCondition2
   if (msg.inapp_notifs != null) {
     const arrInAppNotifs = {}
     for (let index = 0; index < msg.inapp_notifs.length; index++) {
       const targetNotif = msg.inapp_notifs[index]
       if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
-        if (someCondition || someCondition1 || someCondition2) {
-          if (someCondition) {
-            triggerByInactivity(targetNotif)
-          }
-          if (someCondition1) {
-            triggerByScroll(targetNotif)
-          }
-          if (someCondition2) {
-            exitintentObj = targetNotif
-            window.document.body.onmouseleave = showExitIntent
-          }
-        } else {
-          showFooterNotification(targetNotif)
-        }
+        showFooterNotification(targetNotif)
       } else if (targetNotif.display.wtarget_type === 1) { // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif
         window.document.body.onmouseleave = showExitIntent
