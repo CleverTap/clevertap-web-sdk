@@ -374,11 +374,6 @@ const _tr = (msg, {
       }
       return renderPopUpImageOnly(targetingMsgJson)
     }
-    // if (displayObj.layout === 1) { // Handling Web Exit Intent
-    //   return triggeredByInactivity(undefined, targetingMsgJson)
-    // }else{
-
-    // }
 
     if (doCampHouseKeeping(targetingMsgJson) === false) {
       return

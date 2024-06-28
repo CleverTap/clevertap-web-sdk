@@ -4745,50 +4745,6 @@
       request,
       logger
     } = _ref;
-    msg = {
-      arp: {
-        j_n: 'Zw==',
-        i_n: 'ZWtkegs=',
-        d_ts: 0,
-        dh: 0,
-        v: 2,
-        j_s: '{}',
-        id: 'W9R-486-4W5Z',
-        r_ts: 1719557983
-      },
-      inapp_notifs: [{
-        msgContent: {
-          html: "<style type=\"text/css\">body{font-family: -apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Oxygen,Ubuntu,Cantarell,\"Open Sans\",\"Helvetica Neue\",sans-serif;margin:0;padding:0;}#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;border-radius: 8px;}#contentDiv.wzrk td{padding:15px 10px;}.wzrkPPtitle{font-weight: bold;font-size: 16px;word-break: break-word;}.wzrkPPdscr{font-size: 14px;line-height:16px;padding-top:10px;word-break: break-word;display:inline-block;white-space: pre-wrap;}.PL15{padding-left:15px;}.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: 8px;}a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-weight:bold;text-decoration: none;width: 25px;height: 25px;line-height: 23px;text-align: center; -webkit-appearance: none; line-height: 22px;background: #353535;border: #fff 2px solid;border-radius: 100%;color:#fff;}a:hover.wzrkClose{color:#fff !important; -webkit-appearance: none;}td{vertical-align:top;}td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}</style><div class='wzrkPPwarp' style='color:#474747;background-color:#FFFFFF;'><a href='javascript:void(0);' onclick=parent.$WZRK_WR.closeIframe('##campaignId##','wizParDiv'); class='wzrkClose' style='background-color:#353535;color:#ffffff;'>&times;</a><div id='contentDiv' style='width:100%;' class='wzrk'><div class='jsCT_CTA'><table cellpadding='0' cellspacing='0' border='0'><tbody><tr><td style='vertical-align:middle;'><div class='wzrkPPtitle' style='color:#474747'>Hello Sonam</div><div class='wzrkPPdscr' style='color:#474747'>This is delay test campaign</div></td></tr></tbody></table></div></div>",
-          type: 1,
-          templateType: 'box',
-          title: 'Hello Sonam',
-          description: 'This is delay test campaign'
-        },
-        display: {
-          layout: 0,
-          title: 'Hello Sonam',
-          description: 'This is delay test campaign',
-          'image-picker': '',
-          'show-close': true,
-          'background-colour-picker': '#FFFFFF',
-          'text-colour-picker': '#474747',
-          'position-tblr': 'top-right',
-          br: true,
-          imageUrl: '',
-          proto: 'template',
-          iFrameStyle: 'display:block;overflow:hidden;position:fixed;z-index:2147483647;top:5%;right:5%;',
-          delay: '3',
-          wtarget_type: 0,
-          efc: 1,
-          mdc: '1000',
-          wmc: 12,
-          ff: 'Desktop'
-        },
-        wzrk_id: '1693823948_20240628',
-        wzrk_pivot: 'wzrk_default'
-      }],
-      inapp_stale: []
-    };
     const _device = device;
     const _session = session;
     const _request = request;
@@ -5188,11 +5144,7 @@
         }
 
         return renderPopUpImageOnly(targetingMsgJson);
-      } // if (displayObj.layout === 1) { // Handling Web Exit Intent
-      //   return triggeredByInactivity(undefined, targetingMsgJson)
-      // }else{
-      // }
-
+      }
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
