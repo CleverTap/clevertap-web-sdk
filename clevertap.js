@@ -5003,7 +5003,7 @@
               if (targetingMsgJson.display.closeNotification) {
                 const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
                 closeIframe(campaignId, divId, _session.sessionId);
-              } else if (targetingMsgJson.display.pushprompt) {
+              } else if (targetingMsgJson.display.pushPrompt) {
                 // Enable browser web push prompt
                 window.clevertap.notifications.push({
                   skipDialog: true
