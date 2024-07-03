@@ -5118,7 +5118,9 @@
       }
 
       if (displayObj.layout === 3) {
-        // Handling Web Popup Image Only
+        // Handling Web Popup Image Only And ImageInterstitial
+        targetingMsgJson.msgContent.html = targetingMsgJson.msgContent.html.replace(/##pivotId##/g, targetingMsgJson.wzrk_pivot);
+        targetingMsgJson.msgContent.html = targetingMsgJson.msgContent.html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
         const divId = 'wzrkImageOnlyDiv';
 
         if (doCampHouseKeeping(targetingMsgJson) === false) {
