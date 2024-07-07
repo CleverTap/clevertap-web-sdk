@@ -4489,6 +4489,47 @@
   const OVERLAY_PATH = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/overlay.js';
   const CSS_PATH = 'https://d2r1yp2w7bby2u.cloudfront.net/js/lib-overlay/style.css';
 
+  const updateFormData = (selector, formStyle) => {
+    const element = document.querySelector(selector);
+
+    if (formStyle.styles !== undefined) {
+      element.style = formStyle.styles;
+    } // if (formStyle.italics !== undefined) {
+    //   element.style.fontStyle = formStyle.italics ? 'italic' : 'normal'
+    // }
+    // if (formStyle.underline !== undefined) {
+    //   const curTextDecoration = element.style.textDecoration;
+    //   if (formStyle.underline) {
+    //     element.style.textDecoration = `${curTextDecoration} underline`.trim();
+    //   } else {
+    //     element.style.textDecoration = curTextDecoration.replace('underline', '').trim();
+    //   }
+    // }
+    // if (formStyle['text-align']) {
+    //   element.style.textAlign = formStyle['text-align']
+    // }
+    // Handle element onClick
+
+
+    if (formStyle.clickDetails) {
+      const url = formStyle.clickDetails.clickUrl;
+      element.onclick = formStyle.clickDetails.newTab ? () => window.open(url, '_blank').focus() : () => {
+        window.location.href = url;
+      };
+    } // Set the image source
+
+
+    if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
+      element.src = formStyle.imgURL;
+    } // Handle elementCss
+
+
+    if (formStyle.elementCss !== undefined) {
+      const style = document.createElement('style');
+      document.head.appendChild(style);
+    }
+  };
+
   const checkBuilder = logger => {
     const search = window.location.search;
     const parentWindow = window.opener;
@@ -4665,53 +4706,49 @@
     const siteUrl = Object.keys(details)[0];
     const selectors = details[siteUrl];
     let elementDisplayed = false;
+    if (siteUrl !== window.location.href.split('?')[0]) return;
 
-    if (siteUrl === window.location.href.split('?')[0]) {
-      for (const selector in selectors) {
-        const element = document.querySelector(selector);
+    const processElement = (element, selector) => {
+      if (selectors[selector].html) {
+        element.outerHTML = selectors[selector].html;
+      } else if (selectors[selector].json) {
+        dispatchJsonData(targetingMsgJson, selectors[selector]);
+      } else {
+        updateFormData(selectors[selector], selectors[selector].form);
+      }
+    };
 
-        if (element) {
-          if (selectors[selector].html) {
-            element.outerHTML = selectors[selector].html;
-          } else {
-            // Update json data
-            dispatchJsonData(targetingMsgJson, selectors[selector]);
-          }
+    const tryFindingElement = selector => {
+      let count = 0;
+      const intervalId = setInterval(() => {
+        const retryElement = document.querySelector(selector);
 
-          elementDisplayed = true;
-        } else {
-          let count = 0;
-          const intervalId = setInterval(() => {
-            const retryElement = document.querySelector(selector);
-
-            if (retryElement) {
-              if (selectors[selector].html) {
-                retryElement.outerHTML = selectors[selector].html;
-              } else {
-                // Update json data
-                dispatchJsonData(targetingMsgJson, selectors[selector]);
-              }
-
-              elementDisplayed = true;
-              clearInterval(intervalId);
-            } else {
-              count++;
-
-              if (count >= 20) {
-                console.log("No element present on DOM with selector '".concat(selector, "'."));
-                clearInterval(intervalId);
-              }
-            }
-          }, 500);
+        if (retryElement) {
+          processElement(retryElement, selector);
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          console.log("No element present on DOM with selector '".concat(selector, "'."));
+          clearInterval(intervalId);
         }
-      }
+      }, 500);
+    };
 
-      if (elementDisplayed && !isPreview) {
-        window.clevertap.renderNotificationViewed({
-          msgId: targetingMsgJson.wzrk_id,
-          pivotId: targetingMsgJson.wzrk_pivot
-        });
+    Object.keys(selectors).forEach(selector => {
+      const element = document.querySelector(selector);
+
+      if (element) {
+        processElement(element, selector);
+        elementDisplayed = true;
+      } else {
+        tryFindingElement(selector);
       }
+    });
+
+    if (elementDisplayed && !isPreview) {
+      window.clevertap.renderNotificationViewed({
+        msgId: targetingMsgJson.wzrk_id,
+        pivotId: targetingMsgJson.wzrk_pivot
+      });
     }
   };
   /**
