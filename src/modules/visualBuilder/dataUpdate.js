@@ -37,6 +37,7 @@ export const updateFormData = (element, formStyle) => {
   // Handle elementCss
   if (formStyle.elementCss !== undefined) {
     const style = document.createElement('style')
+    style.innerHTML = formStyle.elementCss
     document.head.appendChild(style)
   }
 }
