@@ -4491,9 +4491,8 @@
   const OVERLAY_PATH = 'https://raw.githubusercontent.com/ThisIsRaghavGupta/shiny-pancake/main/overlay.js';
   const CSS_PATH = 'https://raw.githubusercontent.com/ThisIsRaghavGupta/shiny-pancake/main/style.css';
 
-  const updateFormData = (selector, formStyle) => {
-    const element = document.querySelector(selector); // Update the element style
-
+  const updateFormData = (element, formStyle) => {
+    // Update the element style
     if (formStyle.style !== undefined) {
       Object.keys(formStyle.style).forEach(property => {
         element.style.setProperty(property, formStyle.style[property]);
@@ -4720,7 +4719,7 @@
       } else if (selectors[selector].json) {
         dispatchJsonData(targetingMsgJson, selectors[selector]);
       } else {
-        updateFormData(selector, selectors[selector].form);
+        updateFormData(element, selectors[selector].form);
       }
     };
 

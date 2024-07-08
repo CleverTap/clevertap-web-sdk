@@ -1,6 +1,4 @@
-export const updateFormData = (selector, formStyle) => {
-  const element = document.querySelector(selector)
-
+export const updateFormData = (element, formStyle) => {
   // Update the element style
   if (formStyle.style !== undefined) {
     Object.keys(formStyle.style).forEach((property) => {
