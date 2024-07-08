@@ -1,28 +1,29 @@
 export const updateFormData = (selector, formStyle) => {
   const element = document.querySelector(selector)
 
-  if (formStyle.styles !== undefined) {
-    element.style = formStyle.styles
+  if (formStyle.style !== undefined) {
+    Object.keys(formStyle.style).forEach((property) => {
+      element.style.setProperty(property, formStyle.style[property])
+    })
   }
-  // if (formStyle.italics !== undefined) {
-  //   element.style.fontStyle = formStyle.italics ? 'italic' : 'normal'
-  // }
 
-  // if (formStyle.underline !== undefined) {
-  //   const curTextDecoration = element.style.textDecoration;
-  //   if (formStyle.underline) {
-  //     element.style.textDecoration = `${curTextDecoration} underline`.trim();
-  //   } else {
-  //     element.style.textDecoration = curTextDecoration.replace('underline', '').trim();
-  //   }
-  // }
+  // Update underline for element
+  if (formStyle.underline !== undefined) {
+    const curTextDecoration = element.style.textDecoration
+    if (formStyle.underline) {
+      element.style.textDecoration = `${curTextDecoration} underline`.trim()
+    } else {
+      element.style.textDecoration = curTextDecoration.replace('underline', '').trim()
+    }
+  }
 
-  // if (formStyle['text-align']) {
-  //   element.style.textAlign = formStyle['text-align']
-  // }
+  // Update element text
+  if (formStyle.text !== undefined) {
+    element.innerText = formStyle.text
+  }
 
   // Handle element onClick
-  if (formStyle.clickDetails) {
+  if (formStyle.clickDetails !== undefined) {
     const url = formStyle.clickDetails.clickUrl
     element.onclick = formStyle.clickDetails.newTab
       ? () => window.open(url, '_blank').focus()
