@@ -4492,7 +4492,7 @@
   const CSS_PATH = 'https://raw.githubusercontent.com/ThisIsRaghavGupta/shiny-pancake/main/style.css';
 
   const updateFormData = (selector, formStyle) => {
-    const element = document.querySelector(selector);
+    const element = document.querySelector(selector); // Update the element style
 
     if (formStyle.style !== undefined) {
       Object.keys(formStyle.style).forEach(property => {
@@ -4720,7 +4720,7 @@
       } else if (selectors[selector].json) {
         dispatchJsonData(targetingMsgJson, selectors[selector]);
       } else {
-        updateFormData(selectors[selector], selectors[selector].form);
+        updateFormData(selector, selectors[selector].form);
       }
     };
 
