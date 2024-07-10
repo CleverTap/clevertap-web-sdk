@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.8.3] - 10 July, 2024
+- Fixes an issue where contentDocument was not getting accessed for Web Popups as iframe wasn't ready.
+
 ## [1.8.2] - 18 June, 2024
 - Fixes an issue in getLocation function where the location data was not sent in requests.
 - Exposes a method getSDKVersion
