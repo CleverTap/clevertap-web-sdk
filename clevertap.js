@@ -5295,8 +5295,6 @@
           let inDoc = iframe.contentDocument || iframe.contentWindow;
           if (inDoc.document) inDoc = inDoc.document; // safari iphone 7+ needs this.
 
-          adjustIFrameHeight();
-
           const _timer = setInterval(() => {
             if (inDoc.readyState === 'complete') {
               clearInterval(_timer); // adjust iframe and body height of html inside correctly
@@ -5305,7 +5303,7 @@
               const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
               setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
             }
-          }, 10);
+          }, 300);
         }
       } else {
         iframe.onload = () => {
@@ -6182,7 +6180,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.8.2',
+        lib: 'web-sdk-v1.8.3',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8348,7 +8346,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.8.2';
+      return 'web-sdk-v1.8.3';
     }
 
     defineVariable(name, defaultValue) {
