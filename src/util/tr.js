@@ -534,7 +534,6 @@ const _tr = (msg, {
         let inDoc = iframe.contentDocument || iframe.contentWindow
         if (inDoc.document) inDoc = inDoc.document
         // safari iphone 7+ needs this.
-        adjustIFrameHeight()
         const _timer = setInterval(() => {
           if (inDoc.readyState === 'complete') {
             clearInterval(_timer)
@@ -543,7 +542,7 @@ const _tr = (msg, {
             const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
             setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
           }
-        }, 10)
+        }, 300)
       }
     } else {
       iframe.onload = () => {
