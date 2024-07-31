@@ -1,4 +1,5 @@
 import { CSS_PATH, OVERLAY_PATH } from './builder_constants'
+import { updateFormData } from './dataUpdate'
 
 export const checkBuilder = (logger) => {
   const search = window.location.search
@@ -157,43 +158,47 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
   const selectors = details[siteUrl]
   let elementDisplayed = false
 
-  if (siteUrl === window.location.href.split('?')[0]) {
-    for (const selector in selectors) {
-      const element = document.querySelector(selector)
-      if (element) {
-        if (selectors[selector].html) {
-          element.outerHTML = selectors[selector].html
-        } else {
-          // Update json data
-          dispatchJsonData(targetingMsgJson, selectors[selector])
-        }
-        elementDisplayed = true
-      } else {
-        let count = 0
-        const intervalId = setInterval(() => {
-          const retryElement = document.querySelector(selector)
-          if (retryElement) {
-            if (selectors[selector].html) {
-              retryElement.outerHTML = selectors[selector].html
-            } else {
-              // Update json data
-              dispatchJsonData(targetingMsgJson, selectors[selector])
-            }
-            elementDisplayed = true
-            clearInterval(intervalId)
-          } else {
-            count++
-            if (count >= 20) {
-              console.log(`No element present on DOM with selector '${selector}'.`)
-              clearInterval(intervalId)
-            }
-          }
-        }, 500)
+  if (siteUrl !== window.location.href.split('?')[0]) return
+
+  const processElement = (element, selector) => {
+    if (selectors[selector].html) {
+      element.outerHTML = selectors[selector].html
+    } else if (selectors[selector].json) {
+      dispatchJsonData(targetingMsgJson, selectors[selector])
+    } else {
+      updateFormData(element, selectors[selector].form)
+    }
+  }
+
+  const tryFindingElement = (selector) => {
+    let count = 0
+    const intervalId = setInterval(() => {
+      const retryElement = document.querySelector(selector)
+      if (retryElement) {
+        processElement(retryElement, selector)
+        clearInterval(intervalId)
+      } else if (++count >= 20) {
+        console.log(`No element present on DOM with selector '${selector}'.`)
+        clearInterval(intervalId)
       }
+    }, 500)
+  }
+
+  Object.keys(selectors).forEach(selector => {
+    const element = document.querySelector(selector)
+    if (element) {
+      processElement(element, selector)
+      elementDisplayed = true
+    } else {
+      tryFindingElement(selector)
     }
-    if (elementDisplayed && !isPreview) {
-      window.clevertap.renderNotificationViewed({ msgId: targetingMsgJson.wzrk_id, pivotId: targetingMsgJson.wzrk_pivot })
-    }
+  })
+
+  if (elementDisplayed && !isPreview) {
+    window.clevertap.renderNotificationViewed({
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot
+    })
   }
 }
 
