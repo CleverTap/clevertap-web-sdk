@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 31 July, 2024
+- Renamed the template 'In Page Customisation' to 'Visual Editor'.
+- Introduces Basic(Form) editor in 'Visual Editor'.
+
 ## [1.8.3] - 10 July, 2024
 - Fixes an issue where contentDocument was not getting accessed for Web Popups as iframe wasn't ready.
 

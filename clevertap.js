@@ -6221,7 +6221,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.8.3',
+        lib: 'web-sdk-v1.9.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8387,7 +8387,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.8.3';
+      return 'web-sdk-v1.9.0';
     }
 
     defineVariable(name, defaultValue) {
