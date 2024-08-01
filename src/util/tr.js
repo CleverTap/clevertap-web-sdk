@@ -441,11 +441,9 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    if (displayObj.preview && displayObj['custom-editor']) {
-      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
-    }
 
     let html
+    let lastHeightValue = null
     // direct html
     if (targetingMsgJson.msgContent.type === 1) {
       html = targetingMsgJson.msgContent.html
@@ -499,6 +497,17 @@ const _tr = (msg, {
       const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>'
       html = css + title + body
     }
+    if (displayObj.preview && displayObj['custom-editor']) {
+      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
+      const heightRegex = /height\s*:\s*(\d+px)/g
+
+      let match
+
+      // Iterate through all matches and keep the last one
+      while ((match = heightRegex.exec(html)) !== null) {
+        lastHeightValue = match[1]
+      }
+    }
 
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
@@ -514,12 +523,16 @@ const _tr = (msg, {
 
     const adjustIFrameHeight = () => {
       // adjust iframe and body height of html inside correctly
-      contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
-      if (displayObj['custom-editor'] !== true && !isBanner) {
-        contentHeight += 25
+      if (displayObj.preview && displayObj['custom-editor']) {
+        document.getElementById('wiz-iframe').style.height = lastHeightValue
+      } else {
+        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
+        if (displayObj['custom-editor'] !== true && !isBanner) {
+          contentHeight += 25
+        }
+        document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
+        document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
       }
-      document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
-      document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
     }
 
     const ua = navigator.userAgent.toLowerCase()
