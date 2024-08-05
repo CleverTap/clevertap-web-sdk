@@ -443,7 +443,6 @@ const _tr = (msg, {
     }
 
     let html
-    let lastHeightValue = null
     // direct html
     if (targetingMsgJson.msgContent.type === 1) {
       html = targetingMsgJson.msgContent.html
@@ -499,14 +498,11 @@ const _tr = (msg, {
     }
     if (displayObj.preview && displayObj['custom-editor']) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
-      const heightRegex = /height\s*:\s*(\d+px)/g
-
-      let match
-
-      // Iterate through all matches and keep the last one
-      while ((match = heightRegex.exec(html)) !== null) {
-        lastHeightValue = match[1]
-      }
+      /* eslint-disable no-cond-assign */
+      var regex = /([\w-]*)\s*:\s*([^;]*)/g
+      var match; var properties = {}
+      while (match = regex.exec(html)) properties[match[1]] = match[2].trim()
+      /* eslint-enable no-cond-assign */
     }
 
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
@@ -524,7 +520,7 @@ const _tr = (msg, {
     const adjustIFrameHeight = () => {
       // adjust iframe and body height of html inside correctly
       if (displayObj.preview && displayObj['custom-editor']) {
-        document.getElementById('wiz-iframe').style.height = lastHeightValue
+        document.getElementById('wiz-iframe').style.height = properties.height
       } else {
         contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
         if (displayObj['custom-editor'] !== true && !isBanner) {
