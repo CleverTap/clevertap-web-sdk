@@ -5299,11 +5299,22 @@
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
         /* eslint-disable no-cond-assign */
 
-        var regex = /([\w-]*)\s*:\s*([^;]*)/g;
-        var match;
         var properties = {};
+        var styleRegex = /<style[^>]*>([^<]*)<\/style>/g;
+        var ctBoxRegex = /\.CT_Box\s*{([^}]*)}/g;
+        var cssRegex = /([\w-]+)\s*:\s*([^;}\s]+)(?:;|$)/g; // Updated regex to handle optional semicolon and end of block
 
-        while (match = regex.exec(html)) properties[match[1]] = match[2].trim();
+        var styleContent, cssBlock, cssMatch; // Extract style blocks
+
+        while (styleContent = styleRegex.exec(html)) {
+          // Extract the .CT_Box CSS block
+          while (cssBlock = ctBoxRegex.exec(styleContent[1])) {
+            // Extract property-value pairs from the .CT_Box CSS block
+            while (cssMatch = cssRegex.exec(cssBlock[1])) {
+              properties[cssMatch[1]] = cssMatch[2].trim();
+            }
+          }
+        }
         /* eslint-enable no-cond-assign */
 
       }
