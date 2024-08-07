@@ -5301,17 +5301,20 @@
 
         var properties = {};
         var styleRegex = /<style[^>]*>([^<]*)<\/style>/g;
-        var ctBoxRegex = /\.CT_Box\s*{([^}]*)}/g;
-        var cssRegex = /([\w-]+)\s*:\s*([^;}\s]+)(?:;|$)/g; // Updated regex to handle optional semicolon and end of block
+        var ctClassRegex = /\.CT_(?:Box|Banner)\s*{([^}]*)}/g; // Regex to match either .CT_Box or .CT_Banner
+
+        var cssRegex = /([\w-]+)\s*:\s*([^;}\s]+)(?:;|$)/g; // Regex to extract property-value pairs
 
         var styleContent, cssBlock, cssMatch; // Extract style blocks
 
         while (styleContent = styleRegex.exec(html)) {
-          // Extract the .CT_Box CSS block
-          while (cssBlock = ctBoxRegex.exec(styleContent[1])) {
-            // Extract property-value pairs from the .CT_Box CSS block
+          // Extract the .CT_Box or .CT_Banner CSS block
+          while (cssBlock = ctClassRegex.exec(styleContent[1])) {
+            // Extract property-value pairs
             while (cssMatch = cssRegex.exec(cssBlock[1])) {
-              properties[cssMatch[1]] = cssMatch[2].trim();
+              if (cssMatch[1] === 'height') {
+                properties[cssMatch[1]] = cssMatch[2].trim();
+              }
             }
           }
         }
