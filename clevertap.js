@@ -4738,6 +4738,10 @@
     document.dispatchEvent(kvPairsEvent);
   }
 
+  var alreadyRenderedBox = false;
+  var alreadyRenderedBanner = false;
+  var alreadyRenderedExitIntent = false;
+
   const _tr = (msg, _ref) => {
     let {
       device,
@@ -4917,19 +4921,6 @@
           globalObj = {};
           campTypeObj[GLOBAL] = globalObj;
         }
-      } // delay
-
-
-      if (targetingMsgJson[DISPLAY].delay != null && targetingMsgJson[DISPLAY].delay > 0) {
-        const delay = targetingMsgJson[DISPLAY].delay;
-        targetingMsgJson[DISPLAY].delay = 0;
-        setTimeout(_tr, delay * 1000, msg, {
-          device: _device,
-          session: _session,
-          request: _request,
-          logger: _logger
-        });
-        return false;
       }
 
       incrCount(sessionObj, campaignId, excludeFromFreqCaps);
@@ -4998,7 +4989,18 @@
 
 
             if (targetingMsgJson.display.window === 1) {
-              window.open(onClick, '_blank');
+              window.open(onClick, '_blank'); // Click Action - Open a URL and Close Notification
+
+              if (targetingMsgJson.display['close-popup']) {
+                const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+                closeIframe(campaignId, divId, _session.sessionId);
+              }
+            } else if (targetingMsgJson.display.onClick.includes('pushPropmt')) {
+              // Enable browser web push prompt
+              window.clevertap.notifications.push({
+                skipDialog: true,
+                serviceWorkerPath: './firebase-messaging-sw.js'
+              });
             } else {
               window.location = onClick;
             }
@@ -5170,6 +5172,11 @@
       let legacy = false;
 
       if (!isBanner) {
+        if (alreadyRenderedBox) {
+          return;
+        }
+
+        alreadyRenderedBox = true;
         const marginBottom = viewHeight * 5 / 100;
         var contentHeight = 10;
         let right = viewWidth * 5 / 100;
@@ -5197,6 +5204,11 @@
           msgDiv.setAttribute('style', widthPerct + displayObj.iFrameStyle);
         }
       } else {
+        if (alreadyRenderedBanner) {
+          return;
+        }
+
+        alreadyRenderedBanner = true;
         msgDiv.setAttribute('style', displayObj.iFrameStyle);
       }
 
@@ -5374,18 +5386,33 @@
       } else {
         window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id;
 
-        if (targetingMsgJson.display.inactive || targetingMsgJson.display.scroll || targetingMsgJson.display.isExitIntent) {
-          if (targetingMsgJson.display.inactive) {
+        if (targetingMsgJson.display.deliveryTrigger.inactive > 0 || targetingMsgJson.display.deliveryTrigger.scroll > 0 || targetingMsgJson.display.deliveryTrigger.isExitIntent || targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed > 0) {
+          if (targetingMsgJson.display.deliveryTrigger.inactive) {
             triggerByInactivity(targetingMsgJson);
           }
 
-          if (targetingMsgJson.display.scroll) {
+          if (targetingMsgJson.display.deliveryTrigger.scroll) {
             triggerByScroll(targetingMsgJson);
           }
 
-          if (targetingMsgJson.display.isExitIntent) {
+          if (targetingMsgJson.display.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
             window.document.body.onmouseleave = showExitIntent;
+          } // delay
+
+
+          if (targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed != null && targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed > 0) {
+            const delay = targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed;
+            targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed = 0;
+            targetingMsgJson[DISPLAY].deliveryTrigger.inactive = 0;
+            targetingMsgJson[DISPLAY].deliveryTrigger.isExitIntent = false;
+            setTimeout(_tr, delay * 1000, msg, {
+              device: _device,
+              session: _session,
+              request: _request,
+              logger: _logger
+            });
+            return false;
           }
         } else {
           renderFooterNotification(targetingMsgJson);
@@ -5471,6 +5498,14 @@
       } else {
         targetingMsgJson = targetObj;
       }
+
+      console.log('check the type first', targetingMsgJson);
+
+      if (alreadyRenderedExitIntent) {
+        return;
+      }
+
+      alreadyRenderedExitIntent = true;
 
       if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
         const element = document.getElementById('intentPreview');
@@ -5588,6 +5623,14 @@
         const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
         setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
+
+      if (targetingMsgJson.msgContent.templateType === 'banner') {
+        alreadyRenderedBanner = true;
+      }
+
+      if (targetingMsgJson.msgContent.templateType === 'box') {
+        alreadyRenderedBox = true;
+      }
     };
 
     if (!document.body) {
@@ -5643,7 +5686,7 @@
     };
 
     const triggerByInactivity = targetNotif => {
-      const IDLE_TIME_THRESHOLD = targetNotif.display.inactive * 1000; // 5 seconds
+      const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // 5 seconds
 
       let idleTimer;
 
@@ -5667,7 +5710,6 @@
       function resetIdleTimer() {
         clearTimeout(idleTimer);
         idleTimer = setTimeout(function () {
-          console.log('User is idle for 5 seconds', idleTimer, window);
           renderFooterNotification(targetNotif);
           removeEventListeners(); // Perform actions here when user is idle for 10 seconds
         }, IDLE_TIME_THRESHOLD);
@@ -5690,7 +5732,7 @@
       function scrollListener() {
         const scrollPercentage = calculateScrollPercentage();
 
-        if (scrollPercentage >= targetNotif.display.scroll) {
+        if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
           scrollCallback();
         }
       }
