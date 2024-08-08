@@ -4738,9 +4738,8 @@
     document.dispatchEvent(kvPairsEvent);
   }
 
-  var alreadyRenderedBox = false;
-  var alreadyRenderedBanner = false;
-  var alreadyRenderedExitIntent = false;
+  var alreadyRenderedIntentPreview = false;
+  var alreadyRenderedCampaign = [];
 
   const _tr = (msg, _ref) => {
     let {
@@ -5154,6 +5153,12 @@
 
       const divId = 'wizParDiv' + displayObj.layout;
 
+      if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
+        return;
+      } else {
+        alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id);
+      }
+
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         const element = document.getElementById(divId);
         element.remove();
@@ -5172,11 +5177,6 @@
       let legacy = false;
 
       if (!isBanner) {
-        if (alreadyRenderedBox) {
-          return;
-        }
-
-        alreadyRenderedBox = true;
         const marginBottom = viewHeight * 5 / 100;
         var contentHeight = 10;
         let right = viewWidth * 5 / 100;
@@ -5204,11 +5204,6 @@
           msgDiv.setAttribute('style', widthPerct + displayObj.iFrameStyle);
         }
       } else {
-        if (alreadyRenderedBanner) {
-          return;
-        }
-
-        alreadyRenderedBanner = true;
         msgDiv.setAttribute('style', displayObj.iFrameStyle);
       }
 
@@ -5403,16 +5398,9 @@
 
           if (targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed != null && targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed > 0) {
             const delay = targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed;
-            targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed = 0;
-            targetingMsgJson[DISPLAY].deliveryTrigger.inactive = 0;
-            targetingMsgJson[DISPLAY].deliveryTrigger.isExitIntent = false;
-            setTimeout(_tr, delay * 1000, msg, {
-              device: _device,
-              session: _session,
-              request: _request,
-              logger: _logger
-            });
-            return false;
+            setTimeout(() => {
+              renderFooterNotification(targetingMsgJson);
+            }, delay * 1000);
           }
         } else {
           renderFooterNotification(targetingMsgJson);
@@ -5499,13 +5487,17 @@
         targetingMsgJson = targetObj;
       }
 
-      console.log('check the type first', targetingMsgJson);
-
-      if (alreadyRenderedExitIntent) {
+      if (alreadyRenderedIntentPreview) {
         return;
       }
 
-      alreadyRenderedExitIntent = true;
+      alreadyRenderedIntentPreview = true;
+
+      if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
+        return;
+      } else {
+        alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id);
+      }
 
       if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
         const element = document.getElementById('intentPreview');
@@ -5623,14 +5615,6 @@
         const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
         setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
-
-      if (targetingMsgJson.msgContent.templateType === 'banner') {
-        alreadyRenderedBanner = true;
-      }
-
-      if (targetingMsgJson.msgContent.templateType === 'box') {
-        alreadyRenderedBox = true;
-      }
     };
 
     if (!document.body) {

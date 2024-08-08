@@ -35,9 +35,8 @@ import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
-var alreadyRenderedBox = false
-var alreadyRenderedBanner = false
-var alreadyRenderedExitIntent = false
+var alreadyRenderedIntentPreview = false
+var alreadyRenderedCampaign = []
 const _tr = (msg, {
   device,
   session,
@@ -380,7 +379,11 @@ const _tr = (msg, {
     }
 
     const divId = 'wizParDiv' + displayObj.layout
-
+    if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
+      return
+    } else {
+      alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id)
+    }
     if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
       const element = document.getElementById(divId)
       element.remove()
@@ -398,10 +401,6 @@ const _tr = (msg, {
     let legacy = false
 
     if (!isBanner) {
-      if (alreadyRenderedBox) {
-        return
-      }
-      alreadyRenderedBox = true
       const marginBottom = viewHeight * 5 / 100
       var contentHeight = 10
       let right = viewWidth * 5 / 100
@@ -429,10 +428,6 @@ const _tr = (msg, {
         msgDiv.setAttribute('style', widthPerct + displayObj.iFrameStyle)
       }
     } else {
-      if (alreadyRenderedBanner) {
-        return
-      }
-      alreadyRenderedBanner = true
       msgDiv.setAttribute('style', displayObj.iFrameStyle)
     }
     document.body.appendChild(msgDiv)
@@ -658,16 +653,9 @@ const _tr = (msg, {
         // delay
         if (targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed != null && targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed > 0) {
           const delay = targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed
-          targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed = 0
-          targetingMsgJson[DISPLAY].deliveryTrigger.inactive = 0
-          targetingMsgJson[DISPLAY].deliveryTrigger.isExitIntent = false
-          setTimeout(_tr, delay * 1000, msg, {
-            device: _device,
-            session: _session,
-            request: _request,
-            logger: _logger
-          })
-          return false
+          setTimeout(() => {
+            renderFooterNotification(targetingMsgJson)
+          }, delay * 1000)
         }
       } else {
         renderFooterNotification(targetingMsgJson)
@@ -739,11 +727,16 @@ const _tr = (msg, {
     } else {
       targetingMsgJson = targetObj
     }
-    console.log('check the type first', targetingMsgJson)
-    if (alreadyRenderedExitIntent) {
+    if (alreadyRenderedIntentPreview) {
       return
     }
-    alreadyRenderedExitIntent = true
+    alreadyRenderedIntentPreview = true
+    if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
+      return
+    } else {
+      alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id)
+    }
+
     if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
       const element = document.getElementById('intentPreview')
       element.remove()
@@ -869,12 +862,6 @@ const _tr = (msg, {
     iframe.onload = () => {
       const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
-    }
-    if (targetingMsgJson.msgContent.templateType === 'banner') {
-      alreadyRenderedBanner = true
-    }
-    if (targetingMsgJson.msgContent.templateType === 'box') {
-      alreadyRenderedBox = true
     }
   }
 
