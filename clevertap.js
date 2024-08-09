@@ -4994,6 +4994,9 @@
                 const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
                 closeIframe(campaignId, divId, _session.sessionId);
               }
+            } else if (targetingMsgJson.display['close-popup']) {
+              const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+              closeIframe(campaignId, divId, _session.sessionId);
             } else if (targetingMsgJson.display.onClick.includes('pushPropmt')) {
               // Enable browser web push prompt
               window.clevertap.notifications.push({
