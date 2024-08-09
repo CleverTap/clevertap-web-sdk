@@ -5384,7 +5384,7 @@
       } else {
         window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id;
 
-        if (targetingMsgJson.display.deliveryTrigger && (targetingMsgJson.display.deliveryTrigger.inactive > 0 || targetingMsgJson.display.deliveryTrigger.scroll > 0 || targetingMsgJson.display.deliveryTrigger.isExitIntent || targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed > 0)) {
+        if (targetingMsgJson.display.deliveryTrigger) {
           if (targetingMsgJson.display.deliveryTrigger.inactive) {
             triggerByInactivity(targetingMsgJson);
           }
@@ -5399,8 +5399,8 @@
           } // delay
 
 
-          if (targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed != null && targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed > 0) {
-            const delay = targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed;
+          if (targetingMsgJson[DISPLAY].delay != null && targetingMsgJson[DISPLAY].delay > 0 || targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed != null && targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed > 0) {
+            const delay = targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed ? targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed : targetingMsgJson[DISPLAY].delay;
             setTimeout(() => {
               renderFooterNotification(targetingMsgJson);
             }, delay * 1000);
