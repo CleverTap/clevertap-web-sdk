@@ -5256,10 +5256,6 @@
         pointerCss = 'cursor:pointer;';
       }
 
-      if (displayObj.preview && displayObj['custom-editor']) {
-        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
-      }
-
       let html; // direct html
 
       if (targetingMsgJson.msgContent.type === 1) {
@@ -5299,6 +5295,33 @@
         html = css + title + body;
       }
 
+      if (displayObj.preview && displayObj['custom-editor']) {
+        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
+        /* eslint-disable no-cond-assign */
+
+        var properties = {};
+        var styleRegex = /<style[^>]*>([^<]*)<\/style>/g;
+        var ctClassRegex = /\.CT_(?:Box|Banner)\s*{([^}]*)}/g; // Regex to match either .CT_Box or .CT_Banner
+
+        var cssRegex = /([\w-]+)\s*:\s*([^;}\s]+)(?:;|$)/g; // Regex to extract property-value pairs
+
+        var styleContent, cssBlock, cssMatch; // Extract style blocks
+
+        while (styleContent = styleRegex.exec(html)) {
+          // Extract the .CT_Box or .CT_Banner CSS block
+          while (cssBlock = ctClassRegex.exec(styleContent[1])) {
+            // Extract property-value pairs
+            while (cssMatch = cssRegex.exec(cssBlock[1])) {
+              if (cssMatch[1] === 'height') {
+                properties[cssMatch[1]] = cssMatch[2].trim();
+              }
+            }
+          }
+        }
+        /* eslint-enable no-cond-assign */
+
+      }
+
       iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe); // Dispatch event for popup box/banner close
 
@@ -5313,14 +5336,18 @@
 
       const adjustIFrameHeight = () => {
         // adjust iframe and body height of html inside correctly
-        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
+        if (displayObj.preview && displayObj['custom-editor']) {
+          document.getElementById('wiz-iframe').style.height = properties.height;
+        } else {
+          contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
 
-        if (displayObj['custom-editor'] !== true && !isBanner) {
-          contentHeight += 25;
+          if (displayObj['custom-editor'] !== true && !isBanner) {
+            contentHeight += 25;
+          }
+
+          document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px';
+          document.getElementById('wiz-iframe').style.height = contentHeight + 'px';
         }
-
-        document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px';
-        document.getElementById('wiz-iframe').style.height = contentHeight + 'px';
       };
 
       const ua = navigator.userAgent.toLowerCase();
