@@ -35,7 +35,8 @@ import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
-var alreadyRenderedIntentPreview = false
+var alreadyRenderedInterstitial = false
+var alreadyRenderedExitIntent = false
 var alreadyRenderedCampaign = []
 const _tr = (msg, {
   device,
@@ -730,14 +731,16 @@ const _tr = (msg, {
     } else {
       targetingMsgJson = targetObj
     }
-    if (alreadyRenderedIntentPreview) {
-      return
-    }
-    alreadyRenderedIntentPreview = true
-    if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
-      return
-    } else {
-      alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id)
+    if (targetingMsgJson.display.layout === 1) {
+      if (alreadyRenderedInterstitial) {
+        return
+      }
+      alreadyRenderedInterstitial = true
+    } else if (targetingMsgJson.display.layout === 2 || targetingMsgJson.display.layout === 0) {
+      if (alreadyRenderedExitIntent) {
+        return
+      }
+      alreadyRenderedExitIntent = true
     }
 
     if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
@@ -746,9 +749,16 @@ const _tr = (msg, {
       document.getElementById('intentOpacityDiv').remove()
     }
     // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
-    if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
+    if (document.getElementById('wzrkImageOnlyDiv') != null) {
       return
     }
+
+    if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
+      return
+    } else {
+      alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id)
+    }
+
     // dont show exit intent on tablet/mobile - only on desktop
     if (targetingMsgJson.display.layout == null &&
       ((/mobile/i.test(navigator.userAgent)) || (/mini/i.test(navigator.userAgent)) || (/iPad/i.test(navigator.userAgent)) ||

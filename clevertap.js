@@ -4738,7 +4738,8 @@
     document.dispatchEvent(kvPairsEvent);
   }
 
-  var alreadyRenderedIntentPreview = false;
+  var alreadyRenderedInterstitial = false;
+  var alreadyRenderedExitIntent = false;
   var alreadyRenderedCampaign = [];
 
   const _tr = (msg, _ref) => {
@@ -5490,16 +5491,18 @@
         targetingMsgJson = targetObj;
       }
 
-      if (alreadyRenderedIntentPreview) {
-        return;
-      }
+      if (targetingMsgJson.display.layout === 1) {
+        if (alreadyRenderedInterstitial) {
+          return;
+        }
 
-      alreadyRenderedIntentPreview = true;
+        alreadyRenderedInterstitial = true;
+      } else if (targetingMsgJson.display.layout === 2 || targetingMsgJson.display.layout === 0) {
+        if (alreadyRenderedExitIntent) {
+          return;
+        }
 
-      if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
-        return;
-      } else {
-        alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id);
+        alreadyRenderedExitIntent = true;
       }
 
       if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
@@ -5509,8 +5512,14 @@
       } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
 
 
-      if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
+      if (document.getElementById('wzrkImageOnlyDiv') != null) {
         return;
+      }
+
+      if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
+        return;
+      } else {
+        alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id);
       } // dont show exit intent on tablet/mobile - only on desktop
 
 
