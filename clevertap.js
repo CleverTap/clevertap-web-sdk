@@ -4779,6 +4779,106 @@
     document.dispatchEvent(kvPairsEvent);
   }
 
+  function addAntiFlicker(antiFlicker) {
+    const {
+      personalizedSelectors = [],
+      delayTime = 2000
+    } = antiFlicker;
+    const retryElements = {}; // Track selectors that need retry
+
+    let retryCount = 0; // Counter for retries
+
+    let retryInterval;
+
+    function isInViewport(element) {
+      const rect = element.getBoundingClientRect();
+      const {
+        innerHeight: windowHeight,
+        innerWidth: windowWidth
+      } = window;
+      return rect.bottom > 0 && rect.right > 0 && rect.top < windowHeight && rect.left < windowWidth && (element.complete || element.readyState === 4);
+    }
+
+    (function () {
+      const styleContent = "\n      .anti-flicker-hide {\n        opacity: 0 !important\n      }\n      .anti-flicker-show {\n        transition: opacity 0.5s, filter 0.5s !important\n      }\n    "; // Create and append the style element if it doesn't exist
+
+      const styleId = 'flicker-style';
+
+      if (!document.getElementById(styleId)) {
+        const styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        styleElement.textContent = styleContent;
+        document.head.appendChild(styleElement);
+      }
+    })();
+
+    function applyAntiFlicker(selectors) {
+      function processSelectors(selectorElements) {
+        const elements = [];
+        selectorElements.forEach(selector => {
+          const matchedElements = document.querySelectorAll(selector);
+
+          if (matchedElements.length) {
+            matchedElements.forEach(el => {
+              if (!isInViewport(el)) {
+                elements.push(el);
+              }
+            });
+            delete retryElements[selector]; // Successfully processed, remove from retry list
+          } else {
+            retryElements[selector] = false; // Add to retry list if not found
+          }
+        });
+        applyStyles(elements);
+      }
+
+      function retryProcessing() {
+        processSelectors(Object.keys(retryElements));
+        retryCount++;
+
+        if (Object.keys(retryElements).length === 0 || retryCount > 20) {
+          retryCount = 0;
+          clearInterval(retryInterval);
+        }
+      }
+
+      processSelectors(selectors);
+
+      if (Object.keys(retryElements).length) {
+        retryInterval = setInterval(retryProcessing, 100);
+      }
+    }
+
+    function applyStyles(elements) {
+      elements.forEach(el => el.classList.add('anti-flicker-hide'));
+      setTimeout(() => {
+        elements.forEach(el => {
+          el.classList.remove('anti-flicker-hide');
+          el.classList.add('anti-flicker-show');
+        });
+      }, delayTime); // Apply styles after maxRenderTime
+    }
+
+    function observeUrlChange() {
+      let previousHref = document.location.href;
+      const observer = new MutationObserver(() => {
+        if (previousHref !== document.location.href) {
+          previousHref = document.location.href;
+          applyAntiFlicker(personalizedSelectors);
+        }
+      });
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    window.addEventListener('load', () => {
+      observeUrlChange();
+      applyAntiFlicker(personalizedSelectors);
+    });
+  }
+
   const _tr = (msg, _ref) => {
     let {
       device,
@@ -8189,6 +8289,12 @@
 
 
     init(accountId, region, targetDomain, token) {
+      let antiFlicker = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
+
+      if (Object.keys(antiFlicker).length > 0) {
+        addAntiFlicker(antiFlicker);
+      }
+
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
         // already initailsed
         return;
