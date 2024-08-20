@@ -5300,12 +5300,12 @@
         /* eslint-disable no-cond-assign */
 
         var properties = {};
-        var styleRegex = /<style[^>]*>([^<]*)<\/style>/g;
-        var ctClassRegex = /\.CT_(?:Box|Banner)\s*{([^}]*)}/g; // Regex to match either .CT_Box or .CT_Banner
+        let styleRegex = /<style[^>]*>([^<]*)<\/style>/g;
+        let ctClassRegex = /\.CT_(?:Box|Banner)\s*{([^}]*)}/g; // Regex to match either .CT_Box or .CT_Banner
 
-        var cssRegex = /([\w-]+)\s*:\s*([^;}\s]+)(?:;|$)/g; // Regex to extract property-value pairs
+        let cssRegex = /([\w-]+)\s*:\s*([^;}\s]+)(?:;|$)/g; // Regex to extract property-value pairs
 
-        var styleContent, cssBlock, cssMatch; // Extract style blocks
+        let styleContent, cssBlock, cssMatch; // Extract style blocks
 
         while (styleContent = styleRegex.exec(html)) {
           // Extract the .CT_Box or .CT_Banner CSS block
