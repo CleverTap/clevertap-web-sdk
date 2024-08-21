@@ -496,10 +496,11 @@ const _tr = (msg, {
       const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>'
       html = css + title + body
     }
+    const properties = {}
     if (displayObj.preview && displayObj['custom-editor']) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
       /* eslint-disable no-cond-assign */
-      var properties = {}
+
       const styleRegex = /<style[^>]*>([^<]*)<\/style>/g
       const ctClassRegex = /\.CT_(?:Box|Banner)\s*{([^}]*)}/g // Regex to match either .CT_Box or .CT_Banner
       const cssRegex = /([\w-]+)\s*:\s*([^;}\s]+)(?:;|$)/g // Regex to extract property-value pairs

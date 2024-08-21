@@ -5295,15 +5295,16 @@
         html = css + title + body;
       }
 
+      const properties = {};
+
       if (displayObj.preview && displayObj['custom-editor']) {
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
         /* eslint-disable no-cond-assign */
 
-        var properties = {};
-        let styleRegex = /<style[^>]*>([^<]*)<\/style>/g;
-        let ctClassRegex = /\.CT_(?:Box|Banner)\s*{([^}]*)}/g; // Regex to match either .CT_Box or .CT_Banner
+        const styleRegex = /<style[^>]*>([^<]*)<\/style>/g;
+        const ctClassRegex = /\.CT_(?:Box|Banner)\s*{([^}]*)}/g; // Regex to match either .CT_Box or .CT_Banner
 
-        let cssRegex = /([\w-]+)\s*:\s*([^;}\s]+)(?:;|$)/g; // Regex to extract property-value pairs
+        const cssRegex = /([\w-]+)\s*:\s*([^;}\s]+)(?:;|$)/g; // Regex to extract property-value pairs
 
         let styleContent, cssBlock, cssMatch; // Extract style blocks
 
