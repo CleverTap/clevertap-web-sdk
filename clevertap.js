@@ -4795,8 +4795,8 @@
 
   function isValidUrl(string) {
     try {
-      URL(string);
-      return true;
+      const url = new URL(string);
+      return Boolean(url);
     } catch (_err) {
       return false;
     }
