@@ -10,25 +10,31 @@ export const checkBuilder = (logger) => {
     logger.debug('open in visual builder mode')
     window.addEventListener('message', handleMessageEvent, false)
     if (parentWindow) {
-      parentWindow.postMessage('builder', '*')
+      parentWindow.postMessage({ message: 'builder', originUrl: window.location.href }, '*')
     }
     return
   }
   if (search === '?ctBuilderPreview') {
     window.addEventListener('message', handleMessageEvent, false)
     if (parentWindow) {
-      parentWindow.postMessage('preview', '*')
+      parentWindow.postMessage({ message: 'preview', originUrl: window.location.href }, '*')
     }
   }
 }
 
 const handleMessageEvent = (event) => {
-  if (event.data && event.data.message) {
-    if (event.data.message === 'Dashboard' && event.data.url) {
-      initialiseCTBuilder(event.data.url, event.data.variant ?? null, event.data.details ?? {})
-    } else if (event.data.message === 'Overlay') {
-      renderVisualBuilder(event.data, true)
+  if (event.data && isValidUrl(event.data.originUrl)) {
+    const msgOrigin = new URL(event.data.originUrl).origin
+    if (event.origin !== msgOrigin) {
+      return
     }
+  } else {
+    return
+  }
+  if (event.data.message === 'Dashboard') {
+    initialiseCTBuilder(event.data.url, event.data.variant ?? null, event.data.details ?? {})
+  } else if (event.data.message === 'Overlay') {
+    renderVisualBuilder(event.data, true)
   }
 }
 /**
@@ -218,4 +224,13 @@ function dispatchJsonData (targetingMsgJson, selector) {
   }
   const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', { detail: inaObj })
   document.dispatchEvent(kvPairsEvent)
+}
+
+function isValidUrl (string) {
+  try {
+    URL(string)
+    return true
+  } catch (_err) {
+    return false
+  }
 }

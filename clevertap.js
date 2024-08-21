@@ -4486,8 +4486,8 @@
   const arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
   const greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
-  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
-  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
+  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/staging/lib-overlay/overlay.js';
+  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/staging/lib-overlay/style.css';
 
   const updateFormData = (element, formStyle) => {
     // Update the element style
@@ -4544,7 +4544,10 @@
       window.addEventListener('message', handleMessageEvent, false);
 
       if (parentWindow) {
-        parentWindow.postMessage('builder', '*');
+        parentWindow.postMessage({
+          message: 'builder',
+          originUrl: window.location.href
+        }, '*');
       }
 
       return;
@@ -4554,20 +4557,31 @@
       window.addEventListener('message', handleMessageEvent, false);
 
       if (parentWindow) {
-        parentWindow.postMessage('preview', '*');
+        parentWindow.postMessage({
+          message: 'preview',
+          originUrl: window.location.href
+        }, '*');
       }
     }
   };
 
   const handleMessageEvent = event => {
-    if (event.data && event.data.message) {
-      if (event.data.message === 'Dashboard' && event.data.url) {
-        var _event$data$variant, _event$data$details;
+    if (event.data && isValidUrl(event.data.originUrl)) {
+      const msgOrigin = new URL(event.data.originUrl).origin;
 
-        initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null, (_event$data$details = event.data.details) !== null && _event$data$details !== void 0 ? _event$data$details : {});
-      } else if (event.data.message === 'Overlay') {
-        renderVisualBuilder(event.data, true);
+      if (event.origin !== msgOrigin) {
+        return;
       }
+    } else {
+      return;
+    }
+
+    if (event.data.message === 'Dashboard') {
+      var _event$data$variant, _event$data$details;
+
+      initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null, (_event$data$details = event.data.details) !== null && _event$data$details !== void 0 ? _event$data$details : {});
+    } else if (event.data.message === 'Overlay') {
+      renderVisualBuilder(event.data, true);
     }
   };
   /**
@@ -4777,6 +4791,15 @@
       detail: inaObj
     });
     document.dispatchEvent(kvPairsEvent);
+  }
+
+  function isValidUrl(string) {
+    try {
+      URL(string);
+      return true;
+    } catch (_err) {
+      return false;
+    }
   }
 
   const _tr = (msg, _ref) => {
