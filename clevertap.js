@@ -5124,31 +5124,7 @@
 
       if (displayObj.layout === 3) {
         // Handling Web Popup Image Only
-        const divId = 'wzrkImageOnlyDiv';
-
-        if (doCampHouseKeeping(targetingMsgJson) === false) {
-          return;
-        }
-
-        if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
-          const element = document.getElementById(divId);
-          element.remove();
-        } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
-
-
-        if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
-          return;
-        }
-
-        const msgDiv = document.createElement('div');
-        msgDiv.id = divId;
-        document.body.appendChild(msgDiv);
-
-        if (customElements.get('ct-web-popup-imageonly') === undefined) {
-          customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
-        }
-
-        return renderPopUpImageOnly(targetingMsgJson);
+        return showImageOnly(undefined, targetingMsgJson);
       }
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
@@ -5476,6 +5452,40 @@
       }
     };
 
+    const showImageOnly = (event, targetObj) => {
+      const divId = 'wzrkImageOnlyDiv';
+
+      if (doCampHouseKeeping(targetObj) === false) {
+        return;
+      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+
+
+      if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
+        return;
+      }
+
+      if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
+        const element = document.getElementById(divId);
+        element.remove();
+      }
+
+      if (alreadyRenderedCampaign.includes(targetObj.wzrk_id)) {
+        return;
+      } else {
+        alreadyRenderedCampaign.push(targetObj.wzrk_id);
+      }
+
+      const msgDiv = document.createElement('div');
+      msgDiv.id = divId;
+      document.body.appendChild(msgDiv);
+
+      if (customElements.get('ct-web-popup-imageonly') === undefined) {
+        customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
+      }
+
+      return renderPopUpImageOnly(targetObj);
+    };
+
     let exitintentObj;
 
     const showExitIntent = (event, targetObj) => {
@@ -5489,6 +5499,10 @@
         targetingMsgJson = exitintentObj;
       } else {
         targetingMsgJson = targetObj;
+      }
+
+      if (targetingMsgJson.display.layout === 3) {
+        return showImageOnly(undefined, targetingMsgJson);
       }
 
       if (targetingMsgJson.display.layout === 1) {
