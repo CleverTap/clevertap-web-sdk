@@ -441,9 +441,6 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    if (displayObj.preview && displayObj['custom-editor']) {
-      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
-    }
 
     let html
     // direct html
@@ -499,6 +496,28 @@ const _tr = (msg, {
       const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>'
       html = css + title + body
     }
+    const properties = {}
+    if (displayObj.preview && displayObj['custom-editor']) {
+      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
+      const styleRegex = /<style[^>]*>([^<]*)<\/style>/g
+      const ctClassRegex = /\.CT_(?:Box|Banner)\s*{([^}]*)}/g // Regex to match either .CT_Box or .CT_Banner
+      const cssRegex = /([\w-]+)\s*:\s*([^;}\s]+)(?:;|$)/g // Regex to extract property-value pairs
+      let styleContent = styleRegex.exec(html)
+      while (styleContent) {
+        let cssBlock = ctClassRegex.exec(styleContent[1])
+        while (cssBlock) {
+          let cssMatch = cssRegex.exec(cssBlock[1])
+          while (cssMatch) {
+            if (cssMatch[1] === 'height') {
+              properties[cssMatch[1]] = cssMatch[2].trim()
+            }
+            cssMatch = cssRegex.exec(cssBlock[1]) // Move to the next match
+          }
+          cssBlock = ctClassRegex.exec(styleContent[1]) // Move to the next block
+        }
+        styleContent = styleRegex.exec(html) // Move to the next style block
+      }
+    }
 
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
@@ -514,12 +533,16 @@ const _tr = (msg, {
 
     const adjustIFrameHeight = () => {
       // adjust iframe and body height of html inside correctly
-      contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
-      if (displayObj['custom-editor'] !== true && !isBanner) {
-        contentHeight += 25
+      if (displayObj.preview && displayObj['custom-editor']) {
+        document.getElementById('wiz-iframe').style.height = properties.height
+      } else {
+        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight
+        if (displayObj['custom-editor'] !== true && !isBanner) {
+          contentHeight += 25
+        }
+        document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
+        document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
       }
-      document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px'
-      document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
     }
 
     const ua = navigator.userAgent.toLowerCase()

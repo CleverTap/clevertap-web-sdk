@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.9.1] - 20 August, 2024
+- Fixes an issue with the height in the preview of custom HTML web popups.
+
 ## [1.9.0] - 31 July, 2024
 - Renamed the template 'In Page Customisation' to 'Visual Editor'.
 - Introduces Basic(Form) editor in 'Visual Editor'.
