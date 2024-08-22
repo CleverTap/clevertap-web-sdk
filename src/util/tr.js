@@ -499,26 +499,24 @@ const _tr = (msg, {
     const properties = {}
     if (displayObj.preview && displayObj['custom-editor']) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
-      /* eslint-disable no-cond-assign */
-
       const styleRegex = /<style[^>]*>([^<]*)<\/style>/g
       const ctClassRegex = /\.CT_(?:Box|Banner)\s*{([^}]*)}/g // Regex to match either .CT_Box or .CT_Banner
       const cssRegex = /([\w-]+)\s*:\s*([^;}\s]+)(?:;|$)/g // Regex to extract property-value pairs
-      let styleContent, cssBlock, cssMatch
-
-      // Extract style blocks
-      while (styleContent = styleRegex.exec(html)) {
-        // Extract the .CT_Box or .CT_Banner CSS block
-        while (cssBlock = ctClassRegex.exec(styleContent[1])) {
-          // Extract property-value pairs
-          while (cssMatch = cssRegex.exec(cssBlock[1])) {
+      let styleContent = styleRegex.exec(html)
+      while (styleContent) {
+        let cssBlock = ctClassRegex.exec(styleContent[1])
+        while (cssBlock) {
+          let cssMatch = cssRegex.exec(cssBlock[1])
+          while (cssMatch) {
             if (cssMatch[1] === 'height') {
               properties[cssMatch[1]] = cssMatch[2].trim()
             }
+            cssMatch = cssRegex.exec(cssBlock[1]) // Move to the next match
           }
+          cssBlock = ctClassRegex.exec(styleContent[1]) // Move to the next block
         }
+        styleContent = styleRegex.exec(html) // Move to the next style block
       }
-      /* eslint-enable no-cond-assign */
     }
 
     iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
