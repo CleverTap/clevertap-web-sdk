@@ -5001,8 +5001,7 @@
             } else if (targetingMsgJson.display.onClick.includes('pushPrompt')) {
               // Enable browser web push prompt
               window.clevertap.notifications.push({
-                skipDialog: true,
-                serviceWorkerPath: './firebase-messaging-sw.js'
+                skipDialog: true
               });
             } else {
               window.location = onClick;
