@@ -578,6 +578,7 @@ const _tr = (msg, {
 
   const showFooterNotification = (targetingMsgJson) => {
     let onClick = targetingMsgJson.display.onClick
+    const displayObject = targetingMsgJson.display
 
     // TODO: Needs wizrocket as a global variable
     if (window.clevertap.hasOwnProperty('notificationCallback') &&
@@ -624,20 +625,20 @@ const _tr = (msg, {
       }
     } else {
       window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id
-      if (targetingMsgJson.display.deliveryTrigger) {
-        if (targetingMsgJson.display.deliveryTrigger.inactive) {
+      if (displayObject.deliveryTrigger) {
+        if (displayObject.deliveryTrigger.inactive) {
           triggerByInactivity(targetingMsgJson)
         }
-        if (targetingMsgJson.display.deliveryTrigger.scroll) {
+        if (displayObject.deliveryTrigger.scroll) {
           triggerByScroll(targetingMsgJson)
         }
-        if (targetingMsgJson.display.deliveryTrigger.isExitIntent) {
+        if (displayObject.deliveryTrigger.isExitIntent) {
           exitintentObj = targetingMsgJson
           window.document.body.onmouseleave = showExitIntent
         }
         // delay
-        if ((targetingMsgJson[DISPLAY].delay != null && targetingMsgJson[DISPLAY].delay > 0) || (targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed != null && targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed > 0)) {
-          const delay = targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed ? targetingMsgJson[DISPLAY].deliveryTrigger.deliveryDelayed : targetingMsgJson[DISPLAY].delay
+        if ((displayObject.delay != null && displayObject.delay > 0) || (displayObject.deliveryTrigger.deliveryDelayed != null && displayObject.deliveryTrigger.deliveryDelayed > 0)) {
+          const delay = displayObject.deliveryTrigger.deliveryDelayed ? displayObject.deliveryTrigger.deliveryDelayed : displayObject.delay
           setTimeout(() => {
             renderFooterNotification(targetingMsgJson)
           }, delay * 1000)
@@ -671,8 +672,11 @@ const _tr = (msg, {
         if (msgCTkv.length > 0) {
           inaObj.msgCTkv = msgCTkv
         }
-        if (targetingMsgJson.display.kv != null) {
-          inaObj.kv = targetingMsgJson.display.kv
+
+        console.log('targetingMsgJson.display', displayObject, displayObject.js)
+
+        if (displayObject.kv != null) {
+          inaObj.kv = displayObject.kv
         }
 
         // PUBLIC API TO RECORD CLICKED EVENT
