@@ -4756,7 +4756,6 @@
     let _wizCounter = 0; // Campaign House keeping
 
     const doCampHouseKeeping = targetingMsgJson => {
-      console.log('2 times');
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       const today = getToday();
 
@@ -5127,19 +5126,17 @@
         return showImageOnly(undefined, targetingMsgJson);
       }
 
-      console.log('twice or once');
+      if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
+        return;
+      } else {
+        alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id);
+      }
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       }
 
       const divId = 'wizParDiv' + displayObj.layout;
-
-      if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
-        return;
-      } else {
-        alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id);
-      }
 
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         const element = document.getElementById(divId);

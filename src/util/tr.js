@@ -358,8 +358,8 @@ const _tr = (msg, {
     if (displayObj.layout === 3) { // Handling Web Popup Image Only
       return showImageOnly(undefined, targetingMsgJson)
     }
-    
-     if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
+
+    if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
       return
     } else {
       alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id)
@@ -370,7 +370,7 @@ const _tr = (msg, {
     }
 
     const divId = 'wizParDiv' + displayObj.layout
-   
+
     if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
       const element = document.getElementById(divId)
       element.remove()
