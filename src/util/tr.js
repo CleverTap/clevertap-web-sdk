@@ -976,30 +976,23 @@ const _tr = (msg, {
   const triggerByScroll = (targetNotif) => {
     function calculateScrollPercentage () {
       const fullHeight = document.documentElement.scrollHeight
-
       const scrollPosition = window.scrollY || window.pageYOffset || document.documentElement.scrollTop
-
       const scrollPercentage = (scrollPosition / (fullHeight - window.innerHeight)) * 100
-
       return scrollPercentage
     }
-
     function scrollCallback () {
       renderFooterNotification(targetNotif)
-
       window.removeEventListener('scroll', scrollListener)
     }
-
     function scrollListener () {
       const scrollPercentage = calculateScrollPercentage()
-
       if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
         scrollCallback()
       }
     }
-
     window.addEventListener('scroll', scrollListener)
   }
+
   if (msg.inapp_notifs != null) {
     const arrInAppNotifs = {}
     for (let index = 0; index < msg.inapp_notifs.length; index++) {
