@@ -637,8 +637,8 @@ const _tr = (msg, {
           window.document.body.onmouseleave = showExitIntent
         }
         // delay
-        if ((displayObject.delay != null && displayObject.delay > 0) || (displayObject.deliveryTrigger.deliveryDelayed != null && displayObject.deliveryTrigger.deliveryDelayed > 0)) {
-          const delay = displayObject.deliveryTrigger.deliveryDelayed ? displayObject.deliveryTrigger.deliveryDelayed : displayObject.delay
+        const delay = displayObject.delay || displayObject.deliveryTrigger.deliveryDelayed
+        if (delay != null && delay > 0) {
           setTimeout(() => {
             renderFooterNotification(targetingMsgJson)
           }, delay * 1000)
@@ -944,36 +944,33 @@ const _tr = (msg, {
   }
 
   const triggerByInactivity = (targetNotif) => {
-    const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000 // 5 seconds
+    const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000 // Convert to milliseconds
     let idleTimer
 
-    function removeEventListeners () {
-      window.removeEventListener('mousemove', resetIdleTimer)
-      window.removeEventListener('keypress', resetIdleTimer)
-      window.removeEventListener('scroll', resetIdleTimer)
-      window.removeEventListener('mousedown', resetIdleTimer)
-      window.removeEventListener('touchmove', resetIdleTimer)
-      window.removeEventListener('click', resetIdleTimer)
+    const events = ['mousemove', 'keypress', 'scroll', 'mousedown', 'touchmove', 'click']
+
+    function setupEventListeners () {
+      events.forEach(eventType => {
+        window.addEventListener(eventType, resetIdleTimer)
+      })
     }
 
-    window.addEventListener('mousemove', resetIdleTimer)
-    window.addEventListener('keypress', resetIdleTimer)
-    window.addEventListener('scroll', resetIdleTimer)
-    window.addEventListener('mousedown', resetIdleTimer)
-    window.addEventListener('touchmove', resetIdleTimer)
-    window.addEventListener('click', resetIdleTimer)
+    function removeEventListeners () {
+      events.forEach(eventType => {
+        window.removeEventListener(eventType, resetIdleTimer)
+      })
+    }
 
-    resetIdleTimer()
-
-    // Function to reset the idle timer
     function resetIdleTimer () {
       clearTimeout(idleTimer)
-      idleTimer = setTimeout(function () {
+      idleTimer = setTimeout(() => {
         renderFooterNotification(targetNotif)
         removeEventListeners()
-        // Perform actions here when user is idle for 10 seconds
       }, IDLE_TIME_THRESHOLD)
     }
+
+    setupEventListeners()
+    resetIdleTimer()
   }
 
   const triggerByScroll = (targetNotif) => {
