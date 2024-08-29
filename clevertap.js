@@ -2536,7 +2536,6 @@
       }
 
       $ct.globalProfileMap[propKey] = array;
-      console.log('add ', $ct.globalProfileMap);
       StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
       this.sendMultiValueData(propKey, propVal, command);
     }
@@ -2583,7 +2582,6 @@
         delete $ct.globalProfileMap[propKey];
       }
 
-      console.log('remove ', $ct.globalProfileMap);
       StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
       this.sendMultiValueData(propKey, propVal, command);
     }
@@ -2603,12 +2601,11 @@
       }
 
       if (!($ct === null || $ct === void 0 ? void 0 : (_$ct$globalProfileMap2 = $ct.globalProfileMap) === null || _$ct$globalProfileMap2 === void 0 ? void 0 : _$ct$globalProfileMap2.hasOwnProperty(propKey))) {
-        console.error("The property ".concat(propKey, " does not exist."));
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error("The property ".concat(propKey, " does not exist."));
       } else {
         delete $ct.globalProfileMap[propKey];
       }
 
-      console.log('delete ', $ct.globalProfileMap);
       StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
       this.sendMultiValueData(propKey, null, command);
     }

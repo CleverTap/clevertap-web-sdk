@@ -230,7 +230,6 @@ export default class ProfileHandler extends Array {
     }
 
     $ct.globalProfileMap[propKey] = array
-    console.log('add ', $ct.globalProfileMap)
     StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
     this.sendMultiValueData(propKey, propVal, command)
   }
@@ -272,7 +271,6 @@ export default class ProfileHandler extends Array {
     if ($ct.globalProfileMap[propKey].length === 0) {
       delete $ct.globalProfileMap[propKey]
     }
-    console.log('remove ', $ct.globalProfileMap)
     StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
     this.sendMultiValueData(propKey, propVal, command)
   }
@@ -288,11 +286,10 @@ export default class ProfileHandler extends Array {
       $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
     }
     if (!$ct?.globalProfileMap?.hasOwnProperty(propKey)) {
-      console.error(`The property ${propKey} does not exist.`)
+      this.#logger.error(`The property ${propKey} does not exist.`)
     } else {
       delete $ct.globalProfileMap[propKey]
     }
-    console.log('delete ', $ct.globalProfileMap)
     StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
     this.sendMultiValueData(propKey, null, command)
   }
