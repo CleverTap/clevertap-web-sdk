@@ -358,17 +358,19 @@ const _tr = (msg, {
     if (displayObj.layout === 3) { // Handling Web Popup Image Only
       return showImageOnly(undefined, targetingMsgJson)
     }
+    
+     if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
+      return
+    } else {
+      alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id)
+    }
 
     if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
 
     const divId = 'wizParDiv' + displayObj.layout
-    if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
-      return
-    } else {
-      alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id)
-    }
+   
     if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
       const element = document.getElementById(divId)
       element.remove()

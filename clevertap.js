@@ -4756,6 +4756,7 @@
     let _wizCounter = 0; // Campaign House keeping
 
     const doCampHouseKeeping = targetingMsgJson => {
+      console.log('2 times');
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       const today = getToday();
 
@@ -5125,6 +5126,8 @@
         // Handling Web Popup Image Only
         return showImageOnly(undefined, targetingMsgJson);
       }
+
+      console.log('twice or once');
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
