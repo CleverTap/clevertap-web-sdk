@@ -710,6 +710,12 @@ const _tr = (msg, {
   const showImageOnly = (event, targetObj) => {
     const divId = 'wzrkImageOnlyDiv'
 
+    if (alreadyRenderedCampaign.includes(targetObj.wzrk_id)) {
+      return
+    } else {
+      alreadyRenderedCampaign.push(targetObj.wzrk_id)
+    }
+
     if (doCampHouseKeeping(targetObj) === false) {
       return
     }
@@ -722,12 +728,6 @@ const _tr = (msg, {
     if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
       const element = document.getElementById(divId)
       element.remove()
-    }
-
-    if (alreadyRenderedCampaign.includes(targetObj.wzrk_id)) {
-      return
-    } else {
-      alreadyRenderedCampaign.push(targetObj.wzrk_id)
     }
 
     const msgDiv = document.createElement('div')
