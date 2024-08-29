@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.9.1] - 29 Aug, 2024
+- Added origin check in Visual Editor template.
+
 ## [1.9.0] - 31 July, 2024
 - Renamed the template 'In Page Customisation' to 'Visual Editor'.
 - Introduces Basic(Form) editor in 'Visual Editor'.
