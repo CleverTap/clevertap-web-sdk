@@ -443,10 +443,6 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
       } else {
         document.getElementById(divId).style.display = 'none'
       }
-
-      if (divId === 'intentPreview') {
-
-      }
     }
   }
 }
