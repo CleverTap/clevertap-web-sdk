@@ -5008,6 +5008,13 @@
                 closeIframe(campaignId, divId, _session.sessionId);
               }
             } else if (targetingMsgJson.display['close-popup']) {
+              const urlObj = new URL(targetingMsgJson.display.onClick);
+              const rValue = urlObj.searchParams.get('r');
+
+              if (rValue !== 'none') {
+                window.location = onClick;
+              }
+
               const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
               closeIframe(campaignId, divId, _session.sessionId);
             } else if (targetingMsgJson.display.onClick.includes('pushPrompt')) {
