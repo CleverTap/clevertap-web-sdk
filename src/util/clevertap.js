@@ -427,10 +427,18 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
   if ($ct.campaignDivMap != null) {
     const divId = $ct.campaignDivMap[campaignId]
     if (divId != null) {
-      document.getElementById(divId).style.display = 'none'
+      const intentPreviews = document.querySelectorAll('#' + divId)
+      if (intentPreviews.length > 0) {
+        const lastIntentPreview = intentPreviews[intentPreviews.length - 1]
+        lastIntentPreview.remove()
+      }
       if (divId === 'intentPreview') {
         if (document.getElementById('intentOpacityDiv') != null) {
-          document.getElementById('intentOpacityDiv').style.display = 'none'
+          const intentOpacities = document.querySelectorAll('#intentOpacityDiv')
+          if (intentOpacities.length > 0) {
+            const lastIntentOpacity = intentOpacities[intentOpacities.length - 1]
+            lastIntentOpacity.remove()
+          }
         }
       }
     }
