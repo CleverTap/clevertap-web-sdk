@@ -4738,8 +4738,8 @@
     document.dispatchEvent(kvPairsEvent);
   }
 
-  var alreadyRenderedInterstitial = false;
   var alreadyRenderedExitIntent = false;
+  var lastRenderedType;
   var alreadyRenderedCampaign = [];
 
   const _tr = (msg, _ref) => {
@@ -5508,13 +5508,13 @@
         return showImageOnly(undefined, targetingMsgJson);
       }
 
-      if (targetingMsgJson.display.layout === 1) {
-        if (alreadyRenderedInterstitial) {
-          return;
-        }
+      if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
+        return;
+      } else {
+        alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id);
+      }
 
-        alreadyRenderedInterstitial = true;
-      } else if (targetingMsgJson.display.layout === 2 || targetingMsgJson.display.layout === 0) {
+      if (targetingMsgJson.display.layout === 2 || targetingMsgJson.display.layout === 0) {
         if (alreadyRenderedExitIntent) {
           return;
         }
@@ -5523,20 +5523,16 @@
       }
 
       if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
-        const element = document.getElementById('intentPreview');
-        element.remove();
-        document.getElementById('intentOpacityDiv').remove();
+        if (lastRenderedType === targetingMsgJson.display.layout) {
+          const element = document.getElementById('intentPreview');
+          element.remove();
+          document.getElementById('intentOpacityDiv').remove();
+        }
       } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
 
 
       if (document.getElementById('wzrkImageOnlyDiv') != null) {
         return;
-      }
-
-      if (alreadyRenderedCampaign.includes(targetingMsgJson.wzrk_id)) {
-        return;
-      } else {
-        alreadyRenderedCampaign.push(targetingMsgJson.wzrk_id);
       } // dont show exit intent on tablet/mobile - only on desktop
 
 
@@ -5644,6 +5640,8 @@
         const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
         setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
+
+      lastRenderedType = targetingMsgJson.display.layout;
     };
 
     if (!document.body) {
