@@ -4563,6 +4563,16 @@
         }, '*');
       }
     }
+
+    if (search === '?ctBuilderSDKCheck') {
+      if (parentWindow) {
+        parentWindow.postMessage({
+          message: 'SDKVersion',
+          originUrl: window.location.href,
+          sdkVersion: "1.9.1"
+        }, '*');
+      }
+    }
   };
 
   const handleMessageEvent = event => {

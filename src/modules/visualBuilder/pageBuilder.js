@@ -20,6 +20,12 @@ export const checkBuilder = (logger) => {
       parentWindow.postMessage({ message: 'preview', originUrl: window.location.href }, '*')
     }
   }
+
+  if (search === '?ctBuilderSDKCheck') {
+    if (parentWindow) {
+      parentWindow.postMessage({ message: 'SDKVersion', originUrl: window.location.href, sdkVersion: '$$PACKAGE_VERSION$$' }, '*')
+    }
+  }
 }
 
 const handleMessageEvent = (event) => {
