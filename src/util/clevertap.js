@@ -427,12 +427,12 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
   if ($ct.campaignDivMap != null) {
     const divId = $ct.campaignDivMap[campaignId]
     if (divId != null) {
-      const intentPreviews = document.querySelectorAll('#' + divId)
-      if (intentPreviews.length > 0) {
-        const lastIntentPreview = intentPreviews[intentPreviews.length - 1]
-        lastIntentPreview.remove()
-      }
       if (divId === 'intentPreview') {
+        const intentPreviews = document.querySelectorAll('#' + divId)
+        if (intentPreviews.length > 0) {
+          const lastIntentPreview = intentPreviews[intentPreviews.length - 1]
+          lastIntentPreview.remove()
+        }
         if (document.getElementById('intentOpacityDiv') != null) {
           const intentOpacities = document.querySelectorAll('#intentOpacityDiv')
           if (intentOpacities.length > 0) {
@@ -440,6 +440,12 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
             lastIntentOpacity.remove()
           }
         }
+      } else {
+        document.getElementById(divId).style.display = 'none'
+      }
+
+      if (divId === 'intentPreview') {
+
       }
     }
   }

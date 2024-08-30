@@ -2224,14 +2224,14 @@
       const divId = $ct.campaignDivMap[campaignId];
 
       if (divId != null) {
-        const intentPreviews = document.querySelectorAll('#' + divId);
-
-        if (intentPreviews.length > 0) {
-          const lastIntentPreview = intentPreviews[intentPreviews.length - 1];
-          lastIntentPreview.remove();
-        }
-
         if (divId === 'intentPreview') {
+          const intentPreviews = document.querySelectorAll('#' + divId);
+
+          if (intentPreviews.length > 0) {
+            const lastIntentPreview = intentPreviews[intentPreviews.length - 1];
+            lastIntentPreview.remove();
+          }
+
           if (document.getElementById('intentOpacityDiv') != null) {
             const intentOpacities = document.querySelectorAll('#intentOpacityDiv');
 
@@ -2240,6 +2240,8 @@
               lastIntentOpacity.remove();
             }
           }
+        } else {
+          document.getElementById(divId).style.display = 'none';
         }
       }
     }
