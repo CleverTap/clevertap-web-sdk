@@ -5296,7 +5296,6 @@
             const wizIframe = document.querySelectorAll('#wiz-iframe');
             const lastWizIframe = wizIframe[wizIframe.length - 1];
             const contentDiv = lastWizIframe.contentDocument.getElementById('contentDiv');
-            console.log('check1', contentDiv);
             setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
           };
         } else {
@@ -5313,7 +5312,6 @@
               const wizIframe = document.querySelectorAll('#wiz-iframe');
               const lastWizIframe = wizIframe[wizIframe.length - 1];
               const contentDiv = lastWizIframe.contentDocument.getElementById('contentDiv');
-              console.log('check2', contentDiv);
               setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
             }
           }, 10);
@@ -5325,7 +5323,6 @@
           const wizIframe = document.querySelectorAll('#wiz-iframe');
           const lastWizIframe = wizIframe[wizIframe.length - 1];
           const contentDiv = lastWizIframe.contentDocument.getElementById('contentDiv');
-          console.log('check3', contentDiv);
           setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
         };
       }
@@ -5440,8 +5437,6 @@
           if (msgCTkv.length > 0) {
             inaObj.msgCTkv = msgCTkv;
           }
-
-          console.log('targetingMsgJson.display', displayObject, displayObject.js);
 
           if (displayObject.kv != null) {
             inaObj.kv = displayObject.kv;
@@ -5668,7 +5663,6 @@
         const iframeIntent = document.querySelectorAll('#wiz-iframe-intent');
         const lastIframeIntent = iframeIntent[iframeIntent.length - 1];
         const contentDiv = lastIframeIntent.contentDocument.getElementById('contentDiv');
-        console.log('check4', contentDiv);
         setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
 
