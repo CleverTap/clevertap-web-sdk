@@ -523,7 +523,9 @@ const _tr = (msg, {
       if (ua.indexOf('chrome') > -1) {
         iframe.onload = () => {
           adjustIFrameHeight()
-          const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+          const wizIframe = document.querySelectorAll('#wiz-iframe')
+          const lastWizIframe = wizIframe[wizIframe.length - 1]
+          const contentDiv = lastWizIframe.contentDocument.getElementById('contentDiv')
           setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
         }
       } else {
@@ -536,7 +538,9 @@ const _tr = (msg, {
             clearInterval(_timer)
             // adjust iframe and body height of html inside correctly
             adjustIFrameHeight()
-            const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+            const wizIframe = document.querySelectorAll('#wiz-iframe')
+            const lastWizIframe = wizIframe[wizIframe.length - 1]
+            const contentDiv = lastWizIframe.contentDocument.getElementById('contentDiv')
             setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
           }
         }, 10)
@@ -545,7 +549,9 @@ const _tr = (msg, {
       iframe.onload = () => {
         // adjust iframe and body height of html inside correctly
         adjustIFrameHeight()
-        const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv')
+        const wizIframe = document.querySelectorAll('#wiz-iframe')
+        const lastWizIframe = wizIframe[wizIframe.length - 1]
+        const contentDiv = lastWizIframe.contentDocument.getElementById('contentDiv')
         setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
       }
     }
@@ -679,8 +685,6 @@ const _tr = (msg, {
         if (msgCTkv.length > 0) {
           inaObj.msgCTkv = msgCTkv
         }
-
-        console.log('targetingMsgJson.display', displayObject, displayObject.js)
 
         if (displayObject.kv != null) {
           inaObj.kv = displayObject.kv
@@ -899,7 +903,9 @@ const _tr = (msg, {
     iframe.srcdoc = html
 
     iframe.onload = () => {
-      const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv')
+      const iframeIntent = document.querySelectorAll('#wiz-iframe-intent')
+      const lastIframeIntent = iframeIntent[iframeIntent.length - 1]
+      const contentDiv = lastIframeIntent.contentDocument.getElementById('contentDiv')
       setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy)
     }
     lastRenderedType = targetingMsgJson.display.layout

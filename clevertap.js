@@ -5293,7 +5293,10 @@
         if (ua.indexOf('chrome') > -1) {
           iframe.onload = () => {
             adjustIFrameHeight();
-            const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+            const wizIframe = document.querySelectorAll('#wiz-iframe');
+            const lastWizIframe = wizIframe[wizIframe.length - 1];
+            const contentDiv = lastWizIframe.contentDocument.getElementById('contentDiv');
+            console.log('check1', contentDiv);
             setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
           };
         } else {
@@ -5307,7 +5310,10 @@
               clearInterval(_timer); // adjust iframe and body height of html inside correctly
 
               adjustIFrameHeight();
-              const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+              const wizIframe = document.querySelectorAll('#wiz-iframe');
+              const lastWizIframe = wizIframe[wizIframe.length - 1];
+              const contentDiv = lastWizIframe.contentDocument.getElementById('contentDiv');
+              console.log('check2', contentDiv);
               setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
             }
           }, 10);
@@ -5316,7 +5322,10 @@
         iframe.onload = () => {
           // adjust iframe and body height of html inside correctly
           adjustIFrameHeight();
-          const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+          const wizIframe = document.querySelectorAll('#wiz-iframe');
+          const lastWizIframe = wizIframe[wizIframe.length - 1];
+          const contentDiv = lastWizIframe.contentDocument.getElementById('contentDiv');
+          console.log('check3', contentDiv);
           setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
         };
       }
@@ -5656,7 +5665,10 @@
       iframe.srcdoc = html;
 
       iframe.onload = () => {
-        const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
+        const iframeIntent = document.querySelectorAll('#wiz-iframe-intent');
+        const lastIframeIntent = iframeIntent[iframeIntent.length - 1];
+        const contentDiv = lastIframeIntent.contentDocument.getElementById('contentDiv');
+        console.log('check4', contentDiv);
         setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
 
