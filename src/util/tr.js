@@ -265,6 +265,9 @@ const _tr = (msg, {
             const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
             closeIframe(campaignId, divId, _session.sessionId)
           } else if (targetingMsgJson.display.onClick.includes('pushPrompt')) { // Enable browser web push prompt
+            if (isPreview == null) {
+              RequestDispatcher.fireRequest(onClick)
+            }
             window.clevertap.notifications.push({
               skipDialog: true
             })
