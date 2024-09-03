@@ -731,12 +731,12 @@ const _tr = (msg, {
       alreadyRenderedCampaign.push(targetObj.wzrk_id)
     }
 
-    if (doCampHouseKeeping(targetObj) === false) {
+    // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+    if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
       return
     }
 
-    // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
-    if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
+    if (doCampHouseKeeping(targetObj) === false) {
       return
     }
 

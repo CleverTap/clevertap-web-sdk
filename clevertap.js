@@ -5491,14 +5491,14 @@
         return;
       } else {
         alreadyRenderedCampaign.push(targetObj.wzrk_id);
-      }
-
-      if (doCampHouseKeeping(targetObj) === false) {
-        return;
       } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
 
 
       if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
+        return;
+      }
+
+      if (doCampHouseKeeping(targetObj) === false) {
         return;
       }
 
