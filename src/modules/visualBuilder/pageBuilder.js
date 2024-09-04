@@ -1,7 +1,7 @@
 import { CSS_PATH, OVERLAY_PATH } from './builder_constants'
 import { updateFormData } from './dataUpdate'
 
-export const checkBuilder = (logger) => {
+export const checkBuilder = (logger, accountId) => {
   const search = window.location.search
   const parentWindow = window.opener
 
@@ -23,7 +23,14 @@ export const checkBuilder = (logger) => {
 
   if (search === '?ctBuilderSDKCheck') {
     if (parentWindow) {
-      parentWindow.postMessage({ message: 'SDKVersion', originUrl: window.location.href, sdkVersion: '$$PACKAGE_VERSION$$' }, '*')
+      parentWindow.postMessage({
+        message: 'SDKVersion',
+        accountId,
+        originUrl: window.location.href,
+        sdkVersion: '$$PACKAGE_VERSION$$'
+      },
+      '*'
+      )
     }
   }
 }

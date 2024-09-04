@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.9.2] - 4 Sept, 2024
+- Sending SDK and account ID via post message
+
 ## [1.9.1] - 29 Aug, 2024
 - Added origin check in Visual Editor template.
 
