@@ -4534,7 +4534,7 @@
     }
   };
 
-  const checkBuilder = logger => {
+  const checkBuilder = (logger, accountId) => {
     const search = window.location.search;
     const parentWindow = window.opener;
 
@@ -4560,6 +4560,17 @@
         parentWindow.postMessage({
           message: 'preview',
           originUrl: window.location.href
+        }, '*');
+      }
+    }
+
+    if (search === '?ctBuilderSDKCheck') {
+      if (parentWindow) {
+        parentWindow.postMessage({
+          message: 'SDKVersion',
+          accountId,
+          originUrl: window.location.href,
+          sdkVersion: '1.9.2'
         }, '*');
       }
     }
@@ -6244,7 +6255,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.9.1',
+        lib: 'web-sdk-v1.9.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8217,7 +8228,7 @@
         return;
       }
 
-      checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a]);
+      checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], accountId);
       StorageManager.removeCookie('WZRK_P', window.location.hostname);
 
       if (!_classPrivateFieldLooseBase(this, _account$6)[_account$6].id) {
@@ -8410,7 +8421,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.9.1';
+      return 'web-sdk-v1.9.2';
     }
 
     defineVariable(name, defaultValue) {
