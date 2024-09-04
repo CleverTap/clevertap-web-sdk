@@ -5771,7 +5771,7 @@
 
       function scrollCallback() {
         renderFooterNotification(targetNotif);
-        window.removeEventListener('scroll', scrollListener);
+        window.removeEventListener('scroll', throttledScrollListener);
       }
 
       function scrollListener() {
@@ -5782,7 +5782,31 @@
         }
       }
 
-      window.addEventListener('scroll', scrollListener);
+      function throttleWithTrailing(func, limit) {
+        let inThrottle, lastFunc;
+        return function () {
+          const context = this;
+          const args = arguments;
+
+          if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(function () {
+              inThrottle = false;
+
+              if (lastFunc) {
+                lastFunc.apply(context, args);
+                lastFunc = null;
+              }
+            }, limit);
+          } else {
+            lastFunc = func;
+          }
+        };
+      }
+
+      const throttledScrollListener = throttleWithTrailing(scrollListener, 1000);
+      window.addEventListener('scroll', throttledScrollListener);
     };
 
     if (msg.inapp_notifs != null) {
