@@ -428,7 +428,7 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     const divId = $ct.campaignDivMap[campaignId]
     if (divId != null) {
       if (divId === 'intentPreview') {
-        const intentPreviews = document.querySelectorAll('#' + divId)
+        const intentPreviews = document.querySelectorAll('#intentPreview')
         if (intentPreviews.length > 0) {
           const lastIntentPreview = intentPreviews[intentPreviews.length - 1]
           lastIntentPreview.remove()
