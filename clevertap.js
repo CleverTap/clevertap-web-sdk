@@ -4986,7 +4986,7 @@
 
             closeIframe('-1', divId, _session.sessionId);
           } else {
-            const rValue = new URL(targetingMsgJson.display.onClick).searchParams.get('r');
+            const rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
             const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
 
             if (rValue === 'pushPrompt') {
