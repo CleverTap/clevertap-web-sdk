@@ -232,21 +232,20 @@ export function addAntiFlicker (antiFlicker) {
       rect.bottom > 0 &&
       rect.right > 0 &&
       rect.top < windowHeight &&
-      rect.left < windowWidth &&
-      (element.complete || element.readyState === 4)
+      rect.left < windowWidth
     )
   }
   (function () {
     const styleContent = `
-      .anti-flicker-hide {
+      .wve-anti-flicker-hide {
         opacity: 0 !important
       }
-      .anti-flicker-show {
+      .wve-anti-flicker-show {
         transition: opacity 0.5s, filter 0.5s !important
       }
     `
     // Create and append the style element if it doesn't exist
-    const styleId = 'flicker-style'
+    const styleId = 'wve-flicker-style'
     if (!document.getElementById(styleId)) {
       const styleElement = document.createElement('style')
       styleElement.id = styleId
@@ -286,11 +285,11 @@ export function addAntiFlicker (antiFlicker) {
     }
   }
   function applyStyles (elements) {
-    elements.forEach(el => el.classList.add('anti-flicker-hide'))
+    elements.forEach(el => el.classList.add('wve-anti-flicker-hide'))
     setTimeout(() => {
       elements.forEach(el => {
-        el.classList.remove('anti-flicker-hide')
-        el.classList.add('anti-flicker-show')
+        el.classList.remove('wve-anti-flicker-hide')
+        el.classList.add('wve-anti-flicker-show')
       })
     }, delayTime) // Apply styles after maxRenderTime
   }
