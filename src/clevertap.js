@@ -588,7 +588,7 @@ export default class CleverTap {
       // already initailsed
       return
     }
-    checkBuilder(this.#logger)
+    checkBuilder(this.#logger, accountId)
     StorageManager.removeCookie('WZRK_P', window.location.hostname)
     if (!this.#account.id) {
       if (!accountId) {
