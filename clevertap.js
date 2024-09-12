@@ -4796,13 +4796,13 @@
         innerHeight: windowHeight,
         innerWidth: windowWidth
       } = window;
-      return rect.bottom > 0 && rect.right > 0 && rect.top < windowHeight && rect.left < windowWidth && (element.complete || element.readyState === 4);
+      return rect.bottom > 0 && rect.right > 0 && rect.top < windowHeight && rect.left < windowWidth;
     }
 
     (function () {
-      const styleContent = "\n      .anti-flicker-hide {\n        opacity: 0 !important\n      }\n      .anti-flicker-show {\n        transition: opacity 0.5s, filter 0.5s !important\n      }\n    "; // Create and append the style element if it doesn't exist
+      const styleContent = "\n      .wve-anti-flicker-hide {\n        opacity: 0 !important\n      }\n      .wve-anti-flicker-show {\n        transition: opacity 0.5s, filter 0.5s !important\n      }\n    "; // Create and append the style element if it doesn't exist
 
-      const styleId = 'flicker-style';
+      const styleId = 'wve-flicker-style';
 
       if (!document.getElementById(styleId)) {
         const styleElement = document.createElement('style');
@@ -4850,11 +4850,11 @@
     }
 
     function applyStyles(elements) {
-      elements.forEach(el => el.classList.add('anti-flicker-hide'));
+      elements.forEach(el => el.classList.add('wve-anti-flicker-hide'));
       setTimeout(() => {
         elements.forEach(el => {
-          el.classList.remove('anti-flicker-hide');
-          el.classList.add('anti-flicker-show');
+          el.classList.remove('wve-anti-flicker-hide');
+          el.classList.add('wve-anti-flicker-show');
         });
       }, delayTime); // Apply styles after maxRenderTime
     }
