@@ -255,18 +255,26 @@ const _tr = (msg, {
       handleImageOnlyPopup(targetingMsgJson)
       return
     }
-    if (isExistingCampaign(campaignId)) return
 
     if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
 
     const divId = 'wizParDiv' + displayObj.layout
+    const opacityDivId = 'intentOpacityDiv' + displayObj.layout
 
     if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
       const element = document.getElementById(divId)
-      element.remove()
+      const opacityElement = document.getElementById(opacityDivId)
+      if (element) {
+        element.remove()
+      }
+      if (opacityElement) {
+        opacityElement.remove()
+      }
     }
+    if (isExistingCampaign(campaignId)) return
+
     if (document.getElementById(divId) != null) {
       return
     }
@@ -275,7 +283,7 @@ const _tr = (msg, {
     const isBanner = displayObj.layout === 2
     if (isExitIntent) {
       const opacityDiv = document.createElement('div')
-      opacityDiv.id = 'intentOpacityDiv' + displayObj.layout
+      opacityDiv.id = opacityDivId
       const opacity = targetingMsgJson.display.opacity || 0.7
       const rgbaColor = `rgba(0,0,0,${opacity})`
       opacityDiv.setAttribute('style', `position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ${rgbaColor};`)
@@ -645,13 +653,20 @@ const _tr = (msg, {
       createTemplate(targetingMsgJson, true)
       return
     }
-
-    if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
-      const element = document.getElementById('intentPreview')
-      element.remove()
-      document.getElementById('intentOpacityDiv').remove()
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
+      return
     }
-    // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+
+    if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0) {
+      const intentPreview = document.getElementById('intentPreview')
+      const intentOpacityDiv = document.getElementById('intentOpacityDiv')
+      if (intentPreview && intentOpacityDiv) {
+        intentPreview.remove()
+        intentOpacityDiv.remove()
+      }
+    }
+
+    // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist`
     if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
       return
     }
@@ -659,10 +674,6 @@ const _tr = (msg, {
     if (targetingMsgJson.display.layout == null &&
       ((/mobile/i.test(navigator.userAgent)) || (/mini/i.test(navigator.userAgent)) || (/iPad/i.test(navigator.userAgent)) ||
         ('ontouchstart' in window) || (/tablet/i.test(navigator.userAgent)))) {
-      return
-    }
-
-    if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
 
