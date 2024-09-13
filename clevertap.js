@@ -4630,7 +4630,7 @@
 
       document.body.innerHTML = '';
       document.head.innerHTML = '';
-      window.document = new Document();
+      document.documentElement.innerHTML = '';
       container = document.createElement('div');
       container.id = 'overlayDiv';
       container.style.position = 'relative'; // Ensure relative positioning for absolute positioning of form
