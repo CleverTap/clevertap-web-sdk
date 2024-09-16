@@ -4340,7 +4340,7 @@
           message: 'SDKVersion',
           accountId,
           originUrl: window.location.href,
-          sdkVersion: '1.9.2'
+          sdkVersion: '1.9.3'
         }, '*');
       }
     }
@@ -5228,18 +5228,21 @@
           campTypeObj[GLOBAL] = globalObj;
         }
       } // delay
-      // if (targetingMsgJson[DISPLAY].delay != null && targetingMsgJson[DISPLAY].delay > 0) {
-      //   const delay = targetingMsgJson[DISPLAY].delay
-      //   targetingMsgJson[DISPLAY].delay = 0
-      //   setTimeout(_tr, delay * 1000, msg, {
-      //     device: _device,
-      //     session: _session,
-      //     request: _request,
-      //     logger: _logger
-      //   })
-      //   return false
-      // }
 
+
+      const displayObj = targetingMsgJson.display;
+
+      if (displayObj.wtarget_type === 1 && displayObj.delay != null && displayObj.delay > 0) {
+        const delay = displayObj.delay;
+        displayObj.delay = 0;
+        setTimeout(_tr, delay * 1000, msg, {
+          device: _device,
+          session: _session,
+          request: _request,
+          logger: _logger
+        });
+        return false;
+      }
 
       incrCount(sessionObj, campaignId, excludeFromFreqCaps);
       incrCount(dailyObj, campaignId, excludeFromFreqCaps);
@@ -6430,7 +6433,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.9.2',
+        lib: 'web-sdk-v1.9.3',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8596,7 +8599,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.9.2';
+      return 'web-sdk-v1.9.3';
     }
 
     defineVariable(name, defaultValue) {
