@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.9.3] - 16 Sept, 2024
+- Fixes a bug where multivalue feature was giving error.
+
 ## [1.9.2] - 4 Sept, 2024
 - Sending SDK and account ID via post message
 
