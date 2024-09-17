@@ -4854,7 +4854,7 @@
 
           if (matchedElements.length) {
             matchedElements.forEach(el => {
-              if (!isInViewport(el)) {
+              if (isInViewport(el)) {
                 elements.push(el);
               }
             });
