@@ -2504,47 +2504,39 @@
 
 
     _handleMultiValueAdd(propKey, propVal, command) {
-      // Initialize array
-      var array = []; // Check if globalProfileMap is null, initialize if needed
-
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
-      } // Check if the value to be set is either string or number
+      }
 
+      const existingValue = $ct.globalProfileMap[propKey];
+      const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : [];
 
-      if (typeof propVal === 'string' || typeof propVal === 'number') {
-        if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-          array = $ct.globalProfileMap[propKey];
-          array.push(typeof propVal === 'number' ? propVal : propVal.toLowerCase());
-        } else {
-          $ct.globalProfileMap[propKey] = propVal;
+      const addValue = value => {
+        const normalizedValue = typeof value === 'number' ? value : value.toLowerCase();
+
+        if (!array.includes(normalizedValue)) {
+          array.push(normalizedValue);
         }
-      } else {
-        // Check if propVal is an array
-        if ($ct.globalProfileMap.hasOwnProperty(propKey)) {
-          array = Array.isArray($ct.globalProfileMap[propKey]) ? $ct.globalProfileMap[propKey] : [$ct.globalProfileMap[propKey]];
-        } // Check for case-sensitive inputs and filter the same ones
+      };
 
-
-        for (var i = 0; i < propVal.length; i++) {
-          if (typeof propVal[i] === 'number' && !array.includes(propVal[i])) {
-            array.push(propVal[i]);
-          } else if (typeof propVal[i] === 'string' && !array.includes(propVal[i].toLowerCase())) {
-            array.push(propVal[i].toLowerCase());
-          } else if (typeof propVal[i] === 'number' && array.includes(propVal[i]) || typeof propVal[i] === 'string' && array.includes(propVal[i].toLowerCase())) {
-            console.error('Values already included');
+      if (Array.isArray(propVal)) {
+        propVal.forEach(value => {
+          if (typeof value === 'string' || typeof value === 'number') {
+            addValue(value);
           } else {
-            console.error('Array supports only string or number type values');
+            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error('Array supports only string or number type values');
           }
-        } // Update globalProfileMap with the array
+        });
+      } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+        addValue(propVal);
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error('Unsupported value type');
 
+        return;
+      }
 
-        $ct.globalProfileMap[propKey] = array;
-      } // Save to local storage or cookie
-
-
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Call the sendMultiValueData function
-
+      $ct.globalProfileMap[propKey] = array;
+      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
       this.sendMultiValueData(propKey, propVal, command);
     }
     /**
@@ -2557,30 +2549,37 @@
 
 
     _handleMultiValueRemove(propKey, propVal, command) {
-      var _$ct$globalProfileMap2;
-
       if ($ct.globalProfileMap == null) {
-        $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
+        $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
       }
 
-      if (!($ct === null || $ct === void 0 ? void 0 : (_$ct$globalProfileMap2 = $ct.globalProfileMap) === null || _$ct$globalProfileMap2 === void 0 ? void 0 : _$ct$globalProfileMap2.hasOwnProperty(propKey))) {
-        console.error("The property ".concat(propKey, " does not exist."));
-      } else {
-        if (typeof propVal === 'string' || typeof propVal === 'number') {
-          var index = $ct.globalProfileMap[propKey].indexOf(propVal);
+      if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error("The property ".concat(propKey, " does not exist."));
 
-          if (index !== -1) {
-            $ct.globalProfileMap[propKey].splice(index, 1);
-          }
-        } else {
-          for (var k = 0; k < propVal.length; k++) {
-            var idx = $ct.globalProfileMap[propKey].indexOf(propVal[k]);
+        return;
+      }
 
-            if (idx !== -1) {
-              $ct.globalProfileMap[propKey].splice(idx, 1);
-            }
-          }
+      const removeValue = value => {
+        const index = $ct.globalProfileMap[propKey].indexOf(value);
+
+        if (index !== -1) {
+          $ct.globalProfileMap[propKey].splice(index, 1);
         }
+      };
+
+      if (Array.isArray(propVal)) {
+        propVal.forEach(removeValue);
+      } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+        removeValue(propVal);
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error('Unsupported propVal type');
+
+        return;
+      } // Remove the key if the array is empty
+
+
+      if ($ct.globalProfileMap[propKey].length === 0) {
+        delete $ct.globalProfileMap[propKey];
       }
 
       StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
@@ -2595,14 +2594,14 @@
 
 
     _handleMultiValueDelete(propKey, command) {
-      var _$ct$globalProfileMap3;
+      var _$ct$globalProfileMap2;
 
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
       }
 
-      if (!($ct === null || $ct === void 0 ? void 0 : (_$ct$globalProfileMap3 = $ct.globalProfileMap) === null || _$ct$globalProfileMap3 === void 0 ? void 0 : _$ct$globalProfileMap3.hasOwnProperty(propKey))) {
-        console.error("The property ".concat(propKey, " does not exist."));
+      if (!($ct === null || $ct === void 0 ? void 0 : (_$ct$globalProfileMap2 = $ct.globalProfileMap) === null || _$ct$globalProfileMap2 === void 0 ? void 0 : _$ct$globalProfileMap2.hasOwnProperty(propKey))) {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error("The property ".concat(propKey, " does not exist."));
       } else {
         delete $ct.globalProfileMap[propKey];
       }
@@ -4570,7 +4569,7 @@
           message: 'SDKVersion',
           accountId,
           originUrl: window.location.href,
-          sdkVersion: '1.9.2'
+          sdkVersion: '1.9.3'
         }, '*');
       }
     }
@@ -6355,7 +6354,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.9.2',
+        lib: 'web-sdk-v1.9.3',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8527,7 +8526,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.9.2';
+      return 'web-sdk-v1.9.3';
     }
 
     defineVariable(name, defaultValue) {
