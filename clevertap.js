@@ -6902,20 +6902,24 @@
             subscriptionCallback();
           }
         }).catch(error => {
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error subscribing: ' + error); // unsubscribe from webpush if error
-
-
+          // unsubscribe from webpush if error
           serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
             if (subscription !== null) {
               subscription.unsubscribe().then(successful => {
                 // You've successfully unsubscribed
                 _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].info('Unsubscription successful');
+
+                window.clevertap.notifications.push({
+                  skipDialog: true
+                });
               }).catch(e => {
                 // Unsubscription failed
                 _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error unsubscribing: ' + e);
               });
             }
           });
+
+          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error subscribing: ' + error);
         });
       }).catch(err => {
         _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('error registering service worker: ' + err);
