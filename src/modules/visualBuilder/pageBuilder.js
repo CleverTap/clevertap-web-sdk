@@ -1,4 +1,4 @@
-import { CSS_PATH, OVERLAY_PATH } from './builder_constants'
+import { CSS_PATH, OVERLAY_PATH, WVE_CLASS } from './builder_constants'
 import { updateFormData } from './dataUpdate'
 
 export const checkBuilder = (logger, accountId) => {
@@ -273,7 +273,7 @@ export function addAntiFlicker (antiFlicker) {
       }
     `
     // Create and append the style element if it doesn't exist
-    const styleId = 'wve-flicker-style'
+    const styleId = WVE_CLASS.FLICKER_ID
     if (!document.getElementById(styleId)) {
       const styleElement = document.createElement('style')
       styleElement.id = styleId
@@ -313,11 +313,11 @@ export function addAntiFlicker (antiFlicker) {
     }
   }
   function applyStyles (elements) {
-    elements.forEach(el => el.classList.add('wve-anti-flicker-hide'))
+    elements.forEach(el => el.classList.add(WVE_CLASS.FLICKER_HIDE))
     setTimeout(() => {
       elements.forEach(el => {
-        el.classList.remove('wve-anti-flicker-hide')
-        el.classList.add('wve-anti-flicker-show')
+        el.classList.remove(WVE_CLASS.FLICKER_HIDE)
+        el.classList.add(WVE_CLASS.FLICKER_SHOW)
       })
     }, delayTime) // Apply styles after maxRenderTime
   }

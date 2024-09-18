@@ -4487,6 +4487,11 @@
 
   const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
   const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
+  const WVE_CLASS = {
+    FLICKER_SHOW: 'wve-anti-flicker-show',
+    FLICKER_HIDE: 'wve-anti-flicker-hide',
+    FLICKER_ID: 'wve-flicker-style'
+  };
 
   const updateFormData = (element, formStyle) => {
     // Update the element style
@@ -4835,7 +4840,7 @@
     (function () {
       const styleContent = "\n      .wve-anti-flicker-hide {\n        opacity: 0 !important\n      }\n      .wve-anti-flicker-show {\n        transition: opacity 0.5s, filter 0.5s !important\n      }\n    "; // Create and append the style element if it doesn't exist
 
-      const styleId = 'wve-flicker-style';
+      const styleId = WVE_CLASS.FLICKER_ID;
 
       if (!document.getElementById(styleId)) {
         const styleElement = document.createElement('style');
@@ -4883,11 +4888,11 @@
     }
 
     function applyStyles(elements) {
-      elements.forEach(el => el.classList.add('wve-anti-flicker-hide'));
+      elements.forEach(el => el.classList.add(WVE_CLASS.FLICKER_HIDE));
       setTimeout(() => {
         elements.forEach(el => {
-          el.classList.remove('wve-anti-flicker-hide');
-          el.classList.add('wve-anti-flicker-show');
+          el.classList.remove(WVE_CLASS.FLICKER_HIDE);
+          el.classList.add(WVE_CLASS.FLICKER_SHOW);
         });
       }, delayTime); // Apply styles after maxRenderTime
     }
