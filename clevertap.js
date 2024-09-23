@@ -4574,7 +4574,7 @@
           message: 'SDKVersion',
           accountId,
           originUrl: window.location.href,
-          sdkVersion: '1.9.4'
+          sdkVersion: '1.9.5'
         }, '*');
       }
     }
@@ -6359,7 +6359,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.9.4',
+        lib: 'web-sdk-v1.9.5',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -6902,20 +6902,24 @@
             subscriptionCallback();
           }
         }).catch(error => {
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error subscribing: ' + error); // unsubscribe from webpush if error
-
-
+          // unsubscribe from webpush if error
           serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
             if (subscription !== null) {
               subscription.unsubscribe().then(successful => {
                 // You've successfully unsubscribed
                 _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].info('Unsubscription successful');
+
+                window.clevertap.notifications.push({
+                  skipDialog: true
+                });
               }).catch(e => {
                 // Unsubscription failed
                 _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error unsubscribing: ' + e);
               });
             }
           });
+
+          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error subscribing: ' + error);
         });
       }).catch(err => {
         _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('error registering service worker: ' + err);
@@ -8531,7 +8535,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.9.4';
+      return 'web-sdk-v1.9.5';
     }
 
     defineVariable(name, defaultValue) {

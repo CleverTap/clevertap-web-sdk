@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.9.5] - 23 Sept, 2024
+- Elimninates the use for migration service worker.
+
 ## [1.9.4] - 18 Sept, 2024
 - Added anti flicker solution for visual editor
 

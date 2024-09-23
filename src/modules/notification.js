@@ -154,19 +154,22 @@ export default class NotificationHandler extends Array {
               subscriptionCallback()
             }
           }).catch((error) => {
-            this.#logger.error('Error subscribing: ' + error)
             // unsubscribe from webpush if error
             serviceWorkerRegistration.pushManager.getSubscription().then((subscription) => {
               if (subscription !== null) {
                 subscription.unsubscribe().then((successful) => {
                   // You've successfully unsubscribed
                   this.#logger.info('Unsubscription successful')
+                  window.clevertap.notifications.push({
+                    skipDialog: true
+                  })
                 }).catch((e) => {
                   // Unsubscription failed
                   this.#logger.error('Error unsubscribing: ' + e)
                 })
               }
             })
+            this.#logger.error('Error subscribing: ' + error)
           })
       }).catch((err) => {
         this.#logger.error('error registering service worker: ' + err)
