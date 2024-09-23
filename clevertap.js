@@ -4574,7 +4574,7 @@
           message: 'SDKVersion',
           accountId,
           originUrl: window.location.href,
-          sdkVersion: '1.9.4'
+          sdkVersion: '1.9.5'
         }, '*');
       }
     }
@@ -6359,7 +6359,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.9.4',
+        lib: 'web-sdk-v1.9.5',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8535,7 +8535,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.9.4';
+      return 'web-sdk-v1.9.5';
     }
 
     defineVariable(name, defaultValue) {
