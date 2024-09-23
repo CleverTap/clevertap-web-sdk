@@ -40,7 +40,7 @@ import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
-import { checkBuilder } from './modules/visualBuilder/pageBuilder'
+import { checkBuilder, addAntiFlicker } from './modules/visualBuilder/pageBuilder'
 
 export default class CleverTap {
   #logger
@@ -580,7 +580,10 @@ export default class CleverTap {
   }
 
   // starts here
-  init (accountId, region, targetDomain, token) {
+  init (accountId, region, targetDomain, token, antiFlicker = {}) {
+    if (Object.keys(antiFlicker).length > 0) {
+      addAntiFlicker(antiFlicker)
+    }
     if (this.#onloadcalled === 1) {
       // already initailsed
       return

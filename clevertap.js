@@ -4485,8 +4485,13 @@
   const arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
   const greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
-  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/staging/lib-overlay/overlay.js';
-  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/staging/lib-overlay/style.css';
+  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
+  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
+  const WVE_CLASS = {
+    FLICKER_SHOW: 'wve-anti-flicker-show',
+    FLICKER_HIDE: 'wve-anti-flicker-hide',
+    FLICKER_ID: 'wve-flicker-style'
+  };
 
   const updateFormData = (element, formStyle) => {
     // Update the element style
@@ -4569,7 +4574,7 @@
           message: 'SDKVersion',
           accountId,
           originUrl: window.location.href,
-          sdkVersion: '1.9.3'
+          sdkVersion: '1.9.5'
         }, '*');
       }
     }
@@ -4603,33 +4608,22 @@
 
 
   const initialiseCTBuilder = (url, variant, details) => {
-    if (document.readyState === 'complete') {
-      onContentLoad(url, variant, details);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details));
     } else {
-      document.addEventListener('readystatechange', () => {
-        if (document.readyState === 'complete') {
-          onContentLoad(url, variant, details);
-        }
-      });
+      onContentLoad(url, variant, details);
     }
   };
 
   let container;
   let contentLoaded = false;
-  let isShopify = false;
   /**
    * Handles content load for Clevertap builder.
    */
 
   function onContentLoad(url, variant, details) {
     if (!contentLoaded) {
-      if (window.Shopify) {
-        isShopify = true;
-      }
-
       document.body.innerHTML = '';
-      document.head.innerHTML = '';
-      document.documentElement.innerHTML = '';
       container = document.createElement('div');
       container.id = 'overlayDiv';
       container.style.position = 'relative'; // Ensure relative positioning for absolute positioning of form
@@ -4644,6 +4638,7 @@
         console.error('Error loading overlay script:', error);
       });
       loadCSS();
+      loadTypeKit();
     }
   }
   /**
@@ -4680,8 +4675,7 @@
             id: '#overlayDiv',
             url,
             variant,
-            details,
-            isShopify
+            details
           });
           resolve();
         } else {
@@ -4695,6 +4689,43 @@
 
       document.head.appendChild(script);
     });
+  }
+  /**
+   * Loads TypeKit script.
+   */
+
+
+  function loadTypeKit() {
+    const config = {
+      kitId: 'eqj6nom',
+      scriptTimeout: 3000,
+      async: true
+    };
+    const docElement = document.documentElement;
+    const timeoutId = setTimeout(function () {
+      docElement.className = docElement.className.replace(/\bwf-loading\b/g, '') + ' wf-inactive';
+    }, config.scriptTimeout);
+    const typeKitScript = document.createElement('script');
+    let scriptLoaded = false;
+    const firstScript = document.getElementsByTagName('script')[0];
+    let scriptReadyState;
+    docElement.className += ' wf-loading';
+    typeKitScript.src = 'https://use.typekit.net/' + config.kitId + '.js';
+    typeKitScript.async = true;
+
+    typeKitScript.onload = typeKitScript.onreadystatechange = function () {
+      scriptReadyState = this.readyState;
+      if (scriptLoaded || scriptReadyState && scriptReadyState !== 'complete' && scriptReadyState !== 'loaded') return;
+      scriptLoaded = true;
+      clearTimeout(timeoutId);
+
+      try {
+        // eslint-disable-next-line no-undef
+        Typekit.load(config);
+      } catch (e) {}
+    };
+
+    firstScript.parentNode.insertBefore(typeKitScript, firstScript);
   }
   /**
    * Renders the visual builder.
@@ -4784,6 +4815,106 @@
     } catch (_err) {
       return false;
     }
+  }
+
+  function addAntiFlicker(antiFlicker) {
+    const {
+      personalizedSelectors = [],
+      delayTime = 2000
+    } = antiFlicker;
+    const retryElements = {}; // Track selectors that need retry
+
+    let retryCount = 0; // Counter for retries
+
+    let retryInterval;
+
+    function isInViewport(element) {
+      const rect = element.getBoundingClientRect();
+      const {
+        innerHeight: windowHeight,
+        innerWidth: windowWidth
+      } = window;
+      return rect.bottom > 0 && rect.right > 0 && rect.top < windowHeight && rect.left < windowWidth;
+    }
+
+    (function () {
+      const styleContent = "\n      .wve-anti-flicker-hide {\n        opacity: 0 !important\n      }\n      .wve-anti-flicker-show {\n        transition: opacity 0.5s, filter 0.5s !important\n      }\n    "; // Create and append the style element if it doesn't exist
+
+      const styleId = WVE_CLASS.FLICKER_ID;
+
+      if (!document.getElementById(styleId)) {
+        const styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        styleElement.textContent = styleContent;
+        document.head.appendChild(styleElement);
+      }
+    })();
+
+    function applyAntiFlicker(selectors) {
+      function processSelectors(selectorElements) {
+        const elements = [];
+        selectorElements.forEach(selector => {
+          const matchedElements = document.querySelectorAll(selector);
+
+          if (matchedElements.length) {
+            matchedElements.forEach(el => {
+              if (isInViewport(el)) {
+                elements.push(el);
+              }
+            });
+            delete retryElements[selector]; // Successfully processed, remove from retry list
+          } else {
+            retryElements[selector] = false; // Add to retry list if not found
+          }
+        });
+        applyStyles(elements);
+      }
+
+      function retryProcessing() {
+        processSelectors(Object.keys(retryElements));
+        retryCount++;
+
+        if (Object.keys(retryElements).length === 0 || retryCount > 20) {
+          retryCount = 0;
+          clearInterval(retryInterval);
+        }
+      }
+
+      processSelectors(selectors);
+
+      if (Object.keys(retryElements).length) {
+        retryInterval = setInterval(retryProcessing, 100);
+      }
+    }
+
+    function applyStyles(elements) {
+      elements.forEach(el => el.classList.add(WVE_CLASS.FLICKER_HIDE));
+      setTimeout(() => {
+        elements.forEach(el => {
+          el.classList.remove(WVE_CLASS.FLICKER_HIDE);
+          el.classList.add(WVE_CLASS.FLICKER_SHOW);
+        });
+      }, delayTime); // Apply styles after maxRenderTime
+    }
+
+    function observeUrlChange() {
+      let previousHref = document.location.href;
+      const observer = new MutationObserver(() => {
+        if (previousHref !== document.location.href) {
+          previousHref = document.location.href;
+          applyAntiFlicker(personalizedSelectors);
+        }
+      });
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    window.addEventListener('load', () => {
+      observeUrlChange();
+      applyAntiFlicker(personalizedSelectors);
+    });
   }
 
   const _tr = (msg, _ref) => {
@@ -6228,7 +6359,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.9.3',
+        lib: 'web-sdk-v1.9.5',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -6771,20 +6902,24 @@
             subscriptionCallback();
           }
         }).catch(error => {
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error subscribing: ' + error); // unsubscribe from webpush if error
-
-
+          // unsubscribe from webpush if error
           serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
             if (subscription !== null) {
               subscription.unsubscribe().then(successful => {
                 // You've successfully unsubscribed
                 _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].info('Unsubscription successful');
+
+                window.clevertap.notifications.push({
+                  skipDialog: true
+                });
               }).catch(e => {
                 // Unsubscription failed
                 _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error unsubscribing: ' + e);
               });
             }
           });
+
+          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error subscribing: ' + error);
         });
       }).catch(err => {
         _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('error registering service worker: ' + err);
@@ -8196,6 +8331,12 @@
 
 
     init(accountId, region, targetDomain, token) {
+      let antiFlicker = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
+
+      if (Object.keys(antiFlicker).length > 0) {
+        addAntiFlicker(antiFlicker);
+      }
+
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
         // already initailsed
         return;
@@ -8394,7 +8535,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.9.3';
+      return 'web-sdk-v1.9.5';
     }
 
     defineVariable(name, defaultValue) {
