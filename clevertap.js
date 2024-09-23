@@ -4594,7 +4594,9 @@
     if (event.data.message === 'Dashboard') {
       var _event$data$variant, _event$data$details;
 
-      initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null, (_event$data$details = event.data.details) !== null && _event$data$details !== void 0 ? _event$data$details : {});
+      // handle personalisation
+      window.evtMaster = event.data.personalisation.evtMaster;
+      initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null, (_event$data$details = event.data.details) !== null && _event$data$details !== void 0 ? _event$data$details : {}, event.data.personalisation);
     } else if (event.data.message === 'Overlay') {
       renderVisualBuilder(event.data, true);
     }
@@ -4604,12 +4606,13 @@
    * @param {string} url - The URL to initialize the builder.
    * @param {string} variant - The variant of the builder.
    * @param {Object} details - The details object.
+   * @param {Object} personalisation - The personalisation object
    */
 
 
-  const initialiseCTBuilder = (url, variant, details) => {
+  const initialiseCTBuilder = (url, variant, details, personalisation) => {
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details));
+      document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details, personalisation));
     } else {
       onContentLoad(url, variant, details);
     }
@@ -4621,7 +4624,7 @@
    * Handles content load for Clevertap builder.
    */
 
-  function onContentLoad(url, variant, details) {
+  function onContentLoad(url, variant, details, personalisation) {
     if (!contentLoaded) {
       document.body.innerHTML = '';
       container = document.createElement('div');
@@ -4631,7 +4634,7 @@
       container.style.display = 'flex';
       document.body.appendChild(container);
       const overlayPath = OVERLAY_PATH;
-      loadOverlayScript(overlayPath, url, variant, details).then(() => {
+      loadOverlayScript(overlayPath, url, variant, details, personalisation).then(() => {
         console.log('Overlay script loaded successfully.');
         contentLoaded = true;
       }).catch(error => {
@@ -4663,7 +4666,7 @@
    */
 
 
-  function loadOverlayScript(overlayPath, url, variant, details) {
+  function loadOverlayScript(overlayPath, url, variant, details, personalisation) {
     return new Promise((resolve, reject) => {
       var script = document.createElement('script');
       script.type = 'module';
@@ -4675,7 +4678,8 @@
             id: '#overlayDiv',
             url,
             variant,
-            details
+            details,
+            personalisation
           });
           resolve();
         } else {
