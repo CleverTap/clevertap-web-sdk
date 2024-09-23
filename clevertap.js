@@ -4574,7 +4574,7 @@
           message: 'SDKVersion',
           accountId,
           originUrl: window.location.href,
-          sdkVersion: '1.9.5'
+          sdkVersion: '1.9.6'
         }, '*');
       }
     }
@@ -4608,22 +4608,33 @@
 
 
   const initialiseCTBuilder = (url, variant, details) => {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details));
-    } else {
+    if (document.readyState === 'complete') {
       onContentLoad(url, variant, details);
+    } else {
+      document.addEventListener('readystatechange', () => {
+        if (document.readyState === 'complete') {
+          onContentLoad(url, variant, details);
+        }
+      });
     }
   };
 
   let container;
   let contentLoaded = false;
+  let isShopify = false;
   /**
    * Handles content load for Clevertap builder.
    */
 
   function onContentLoad(url, variant, details) {
     if (!contentLoaded) {
+      if (window.Shopify) {
+        isShopify = true;
+      }
+
       document.body.innerHTML = '';
+      document.head.innerHTML = '';
+      document.documentElement.innerHTML = '';
       container = document.createElement('div');
       container.id = 'overlayDiv';
       container.style.position = 'relative'; // Ensure relative positioning for absolute positioning of form
@@ -4638,7 +4649,6 @@
         console.error('Error loading overlay script:', error);
       });
       loadCSS();
-      loadTypeKit();
     }
   }
   /**
@@ -4675,7 +4685,8 @@
             id: '#overlayDiv',
             url,
             variant,
-            details
+            details,
+            isShopify
           });
           resolve();
         } else {
@@ -4689,43 +4700,6 @@
 
       document.head.appendChild(script);
     });
-  }
-  /**
-   * Loads TypeKit script.
-   */
-
-
-  function loadTypeKit() {
-    const config = {
-      kitId: 'eqj6nom',
-      scriptTimeout: 3000,
-      async: true
-    };
-    const docElement = document.documentElement;
-    const timeoutId = setTimeout(function () {
-      docElement.className = docElement.className.replace(/\bwf-loading\b/g, '') + ' wf-inactive';
-    }, config.scriptTimeout);
-    const typeKitScript = document.createElement('script');
-    let scriptLoaded = false;
-    const firstScript = document.getElementsByTagName('script')[0];
-    let scriptReadyState;
-    docElement.className += ' wf-loading';
-    typeKitScript.src = 'https://use.typekit.net/' + config.kitId + '.js';
-    typeKitScript.async = true;
-
-    typeKitScript.onload = typeKitScript.onreadystatechange = function () {
-      scriptReadyState = this.readyState;
-      if (scriptLoaded || scriptReadyState && scriptReadyState !== 'complete' && scriptReadyState !== 'loaded') return;
-      scriptLoaded = true;
-      clearTimeout(timeoutId);
-
-      try {
-        // eslint-disable-next-line no-undef
-        Typekit.load(config);
-      } catch (e) {}
-    };
-
-    firstScript.parentNode.insertBefore(typeKitScript, firstScript);
   }
   /**
    * Renders the visual builder.
@@ -6359,7 +6333,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.9.5',
+        lib: 'web-sdk-v1.9.6',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8535,7 +8509,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.9.5';
+      return 'web-sdk-v1.9.6';
     }
 
     defineVariable(name, defaultValue) {
