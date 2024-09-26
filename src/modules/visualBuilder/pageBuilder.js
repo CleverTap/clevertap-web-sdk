@@ -96,7 +96,7 @@ function onContentLoad (url, variant, details, personalisation) {
     container.style.display = 'flex'
     document.body.appendChild(container)
     const overlayPath = OVERLAY_PATH
-    loadOverlayScript(overlayPath, url, variant, details, isShopify, personalisation)
+    loadOverlayScript(overlayPath, url, variant, details, personalisation)
       .then(() => {
         console.log('Overlay script loaded successfully.')
         contentLoaded = true
@@ -125,11 +125,10 @@ function loadCSS () {
  * @param {string} url - The URL.
  * @param {string} variant - The variant.
  * @param {Object} details - The details object.
- * @param {boolean} isShopify
  * @param {Object} personalisation
  * @returns {Promise} A promise.
  */
-function loadOverlayScript (overlayPath, url, variant, details, isShopify, personalisation) {
+function loadOverlayScript (overlayPath, url, variant, details, personalisation) {
   return new Promise((resolve, reject) => {
     var script = document.createElement('script')
     script.type = 'module'
