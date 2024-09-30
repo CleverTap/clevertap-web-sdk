@@ -35,6 +35,7 @@ import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
+import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 
 const _tr = (msg, {
   device,
@@ -42,6 +43,100 @@ const _tr = (msg, {
   request,
   logger
 }) => {
+  // msg = {
+  //   g: '504c56e44bee4ff5a120cb4ac7361a73',
+  //   arp: {
+  //     j_n: 'Zw==',
+  //     i_n: 'bm1neQsE',
+  //     d_ts: 0,
+  //     dh: 0,
+  //     v: 2,
+  //     j_s: '{}',
+  //     id: 'WRK-485-456Z',
+  //     r_ts: 1726848614
+  //   },
+  //   webPushConfig: {
+  //     showBox: true,
+  //     showBellIcon: false,
+  //     boxType: 'new',
+  //     boxConfig: {
+  //       content: {
+  //         title: 'Turn On Notifications?',
+  //         description: 'We will only send you relevant and useful updates',
+  //         icon: {
+  //           type: 'default',
+  //           url: 'https://cdn-icons-png.flaticon.com/512/9790/9790364.png'
+  //         },
+  //         buttons: {
+  //           primaryButtonText: 'Allow',
+  //           secondaryButtonText: 'I’ll do it later'
+  //         },
+  //         popupFrequency: 3
+  //       }
+  //     },
+  //     style: {
+  //       card: {
+  //         position: 'top-right',
+  //         color: '#FFFFFF',
+  //         borderRadius: 24,
+  //         borderEnabled: true,
+  //         border: {
+  //           borderWidth: 1,
+  //           borderColor: '#00AEB9'
+  //         }
+  //       },
+  //       text: {
+  //         titleColor: '#4A4C4C',
+  //         descriptionColor: '#4A4C4C'
+  //       },
+  //       buttons: {
+  //         primaryButton: {
+  //           textColor: '#FFFFFF',
+  //           buttonColor: '#00AEB9',
+  //           borderRadius: 16,
+  //           borderEnabled: true,
+  //           border: {
+  //             borderWidth: 1,
+  //             borderColor: '#00AEB9'
+  //           }
+  //         },
+  //         secondaryButton: {
+  //           textColor: '#00AEB9',
+  //           buttonColor: '#FFFFFF',
+  //           borderRadius: 16,
+  //           borderEnabled: true,
+  //           border: {
+  //             borderWidth: 1,
+  //             borderColor: '#00AEB9'
+  //           }
+  //         }
+  //       },
+  //       overlay: {
+  //         enabled: false,
+  //         color: 'rgba(2, 3, 4, .15)'
+  //       }
+  //     },
+  //     bellIconConfig: {
+  //       content: {
+  //         icon: {
+  //           type: 'default',
+  //           url: 'https://cdn-icons-png.flaticon.com/512/9790/9790364.png'
+  //         },
+  //         hoverText: {
+  //           enabled: true,
+  //           text: 'Subscribe to Notiifcations'
+  //         }
+  //       },
+  //       style: {
+  //         card: {
+  //           position: 'bottom-left',
+  //           color: '#00AEB9'
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+
   const _device = device
   const _session = session
   const _request = request
@@ -955,7 +1050,7 @@ const _tr = (msg, {
      * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
      * as we would not have any entry related to webInboxSettings in the LS
      */
-
+    console.log('in tr.js ', $ct.inbox)
     if (hasWebInboxSettingsInLS()) {
       checkAndRegisterWebInboxElements()
     }
@@ -969,6 +1064,10 @@ const _tr = (msg, {
     } else {
       handleInboxNotifications()
     }
+  }
+
+  if (msg.webPushConfig) {
+    processWebPushConfig(msg.webPushConfig)
   }
 
   if (msg.vars) {

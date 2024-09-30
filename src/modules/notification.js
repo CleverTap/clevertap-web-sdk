@@ -53,7 +53,7 @@ export default class NotificationHandler extends Array {
     }
   }
 
-  #setUpWebPushNotifications (subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
+  setUpWebPushNotifications (subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
     if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
       this.#setUpChromeFirefoxNotifications(subscriptionCallback, serviceWorkerPath)
     } else if (navigator.userAgent.indexOf('Safari') !== -1) {
@@ -61,7 +61,7 @@ export default class NotificationHandler extends Array {
     }
   }
 
-  #setApplicationServerKey (applicationServerKey) {
+  setApplicationServerKey (applicationServerKey) {
     this.#fcmPublicKey = applicationServerKey
   }
 
@@ -282,7 +282,7 @@ export default class NotificationHandler extends Array {
       // handle migrations from other services -> chrome notifications may have already been asked for before
       if (Notification.permission === 'granted') {
         // skip the dialog and register
-        this.#setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
         return
       } else if (Notification.permission === 'denied') {
         // we've lost this profile :'(
@@ -290,7 +290,7 @@ export default class NotificationHandler extends Array {
       }
 
       if (skipDialog) {
-        this.#setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
         return
       }
     }
@@ -384,7 +384,7 @@ export default class NotificationHandler extends Array {
             if (typeof okCallback === 'function') {
               okCallback()
             }
-            this.#setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
+            this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
           } else {
             if (typeof rejectCallback === 'function') {
               rejectCallback()
@@ -399,7 +399,7 @@ export default class NotificationHandler extends Array {
   _enableWebPush (enabled, applicationServerKey) {
     $ct.webPushEnabled = enabled
     if (applicationServerKey != null) {
-      this.#setApplicationServerKey(applicationServerKey)
+      this.setApplicationServerKey(applicationServerKey)
     }
     if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
       this.#handleNotificationRegistration($ct.notifApi.displayArgs)
