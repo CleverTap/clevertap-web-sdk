@@ -4923,7 +4923,7 @@
     return "\n    #pnWrapper {\n    }\n\n    #pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: 360px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 4px;\n    }\n\n    #iconContainer {\n      margin-right: 16px;\n    }\n\n    #imgElement {\n      width: 64px;\n      height: 64px;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n    }\n\n    #title {\n      font-size: 18px;\n      font-weight: bold;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n    }\n\n    #description {\n      font-size: 14px;\n      color: ").concat(style.text.descriptionColor, ";\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      height: 32px;\n      gap: 8px;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 16px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n        border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n        border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n        border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n        border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
   };
   const getBellIconStyles = style => {
-    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.color, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n    }\n\n    #bell_icon {\n      display: block;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: rgba(43, 46, 62, .9);\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: #9999992F;\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
+    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.color, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n    }\n\n    #bell_icon {\n      display: block;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: rgba(43, 46, 62, .9);\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: #9999992F;\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
   };
 
   var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
@@ -5552,10 +5552,6 @@
     const bellIcon = createElementWithAttributes('img', {
       id: 'bell_icon',
       src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(bellBase64) : content.icon.url
-    });
-    const tooltip = createElementWithAttributes('div', {
-      id: 'bell_tooltip',
-      textContent: content.hoverText.text
     }); // For playing gif
 
     const gifModal = createElementWithAttributes('div', {
@@ -5573,8 +5569,16 @@
     gifModal.appendChild(gifImage);
     gifModal.appendChild(closeModal);
     bellWrapper.appendChild(bellIcon);
-    bellWrapper.appendChild(tooltip);
     bellWrapper.appendChild(gifModal);
+
+    if (content.hoverText.enabled) {
+      const tooltip = createElementWithAttributes('div', {
+        id: 'bell_tooltip',
+        textContent: content.hoverText.text
+      });
+      bellWrapper.appendChild(tooltip);
+    }
+
     setElementPosition(bellWrapper, bellIconConfig.style.card.position); // Apply styles
 
     const styleElement = createElementWithAttributes('style', {
@@ -5666,7 +5670,11 @@
     }
 
     const tooltip = bellWrapper.querySelector('#bell_tooltip');
-    tooltip.style.display = 'flex';
+
+    if (tooltip) {
+      tooltip.style.display = 'flex';
+    }
+
     const bellIcon = bellWrapper.querySelector('#bell_icon');
     const bellRect = bellIcon.getBoundingClientRect();
     var midX = window.innerWidth / 2;
@@ -5676,7 +5684,11 @@
   };
 
   const clearTooltip = bellWrapper => {
-    bellWrapper.querySelector('#bell_tooltip').style.display = 'none';
+    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+
+    if (tooltip) {
+      tooltip.style.display = 'none';
+    }
   };
 
   const toggleGifModal = bellWrapper => {
@@ -5708,8 +5720,8 @@
     //     r_ts: 1726848614
     //   },
     //   webPushConfig: {
-    //     showBox: true,
-    //     showBellIcon: false,
+    //     showBox: false,
+    //     showBellIcon: true,
     //     boxType: 'new',
     //     boxConfig: {
     //       content: {
@@ -5781,7 +5793,7 @@
     //       },
     //       style: {
     //         card: {
-    //           position: 'bottom-left',
+    //           position: 'bottom-right',
     //           color: '#00AEB9'
     //         }
     //       }

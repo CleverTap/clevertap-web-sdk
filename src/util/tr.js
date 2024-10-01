@@ -56,8 +56,8 @@ const _tr = (msg, {
   //     r_ts: 1726848614
   //   },
   //   webPushConfig: {
-  //     showBox: true,
-  //     showBellIcon: false,
+  //     showBox: false,
+  //     showBellIcon: true,
   //     boxType: 'new',
   //     boxConfig: {
   //       content: {
@@ -129,7 +129,7 @@ const _tr = (msg, {
   //       },
   //       style: {
   //         card: {
-  //           position: 'bottom-left',
+  //           position: 'bottom-right',
   //           color: '#00AEB9'
   //         }
   //       }

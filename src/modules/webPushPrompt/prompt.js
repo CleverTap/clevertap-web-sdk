@@ -112,10 +112,6 @@ export const createBellIcon = (configData, notificationhandler) => {
     id: 'bell_icon',
     src: content.icon.type === 'default' ? `data:image/svg+xml;base64,${bellBase64}` : content.icon.url
   })
-  const tooltip = createElementWithAttributes('div', {
-    id: 'bell_tooltip',
-    textContent: content.hoverText.text
-  })
 
   // For playing gif
   const gifModal = createElementWithAttributes('div', { id: 'gif_modal', style: 'display: none;' })
@@ -129,8 +125,14 @@ export const createBellIcon = (configData, notificationhandler) => {
   gifModal.appendChild(closeModal)
 
   bellWrapper.appendChild(bellIcon)
-  bellWrapper.appendChild(tooltip)
   bellWrapper.appendChild(gifModal)
+  if (content.hoverText.enabled) {
+    const tooltip = createElementWithAttributes('div', {
+      id: 'bell_tooltip',
+      textContent: content.hoverText.text
+    })
+    bellWrapper.appendChild(tooltip)
+  }
 
   setElementPosition(bellWrapper, bellIconConfig.style.card.position)
   // Apply styles
@@ -180,7 +182,6 @@ export const addBellEventListeners = (bellWrapper, notificationhandler) => {
 
   bellIcon.addEventListener('mouseenter', () => displayTooltip(bellWrapper))
   bellIcon.addEventListener('mouseleave', () => clearTooltip(bellWrapper))
-
   bellWrapper.querySelector('#close_modal').addEventListener('click', () => toggleGifModal(bellWrapper))
 }
 
@@ -209,7 +210,10 @@ const displayTooltip = (bellWrapper) => {
     return
   }
   const tooltip = bellWrapper.querySelector('#bell_tooltip')
-  tooltip.style.display = 'flex'
+  if (tooltip) {
+    tooltip.style.display = 'flex'
+  }
+
   const bellIcon = bellWrapper.querySelector('#bell_icon')
   const bellRect = bellIcon.getBoundingClientRect()
   var midX = window.innerWidth / 2
@@ -219,7 +223,10 @@ const displayTooltip = (bellWrapper) => {
 }
 
 const clearTooltip = (bellWrapper) => {
-  bellWrapper.querySelector('#bell_tooltip').style.display = 'none'
+  const tooltip = bellWrapper.querySelector('#bell_tooltip')
+  if (tooltip) {
+    tooltip.style.display = 'none'
+  }
 }
 
 const toggleGifModal = (bellWrapper) => {
