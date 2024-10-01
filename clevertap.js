@@ -5444,6 +5444,10 @@
       showBellIcon
     } = $ct.pushConfig;
 
+    if ($ct.pushConfig.isPreview) {
+      createNotificationBox($ct.pushConfig);
+    }
+
     if (showBox && boxType === 'new') {
       createNotificationBox($ct.pushConfig, notificationHandler);
     }
@@ -5466,11 +5470,11 @@
   const createNotificationBox = (configData, notificationhandler) => {
     if (document.getElementById('pnWrapper')) return;
     const {
-      boxConfig,
-      style
+      boxConfig
     } = configData;
     const {
-      content
+      content,
+      style
     } = boxConfig; // Create the wrapper div
 
     const wrapper = createElementWithAttributes('div', {
@@ -5535,7 +5539,10 @@
 
     if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
       document.body.appendChild(wrapper);
-      addEventListeners(wrapper, notificationhandler);
+
+      if (!configData.isPreview) {
+        addEventListeners(wrapper, notificationhandler);
+      }
     }
   };
   const createBellIcon = (configData, notificationhandler) => {
@@ -5544,7 +5551,8 @@
       bellIconConfig
     } = configData;
     const {
-      content
+      content,
+      style
     } = bellIconConfig;
     const bellWrapper = createElementWithAttributes('div', {
       id: 'bell_wrapper'
@@ -5582,7 +5590,7 @@
     setElementPosition(bellWrapper, bellIconConfig.style.card.position); // Apply styles
 
     const styleElement = createElementWithAttributes('style', {
-      textContent: getBellIconStyles(bellIconConfig.style)
+      textContent: getBellIconStyles(style)
     });
     document.head.appendChild(styleElement);
     document.body.appendChild(bellWrapper);
@@ -5720,9 +5728,10 @@
     //     r_ts: 1726848614
     //   },
     //   webPushConfig: {
-    //     showBox: false,
+    //     showBox: true,
     //     showBellIcon: true,
     //     boxType: 'new',
+    //     isPreview: true,
     //     boxConfig: {
     //       content: {
     //         title: 'Turn On Notifications?',
@@ -5736,48 +5745,48 @@
     //           secondaryButtonText: 'I’ll do it later'
     //         },
     //         popupFrequency: 3
-    //       }
-    //     },
-    //     style: {
-    //       card: {
-    //         position: 'top-right',
-    //         color: '#FFFFFF',
-    //         borderRadius: 24,
-    //         borderEnabled: true,
-    //         border: {
-    //           borderWidth: 1,
-    //           borderColor: '#00AEB9'
-    //         }
     //       },
-    //       text: {
-    //         titleColor: '#4A4C4C',
-    //         descriptionColor: '#4A4C4C'
-    //       },
-    //       buttons: {
-    //         primaryButton: {
-    //           textColor: '#FFFFFF',
-    //           buttonColor: '#00AEB9',
-    //           borderRadius: 16,
+    //       style: {
+    //         card: {
+    //           position: 'top-right',
+    //           color: '#FFFFFF',
+    //           borderRadius: 24,
     //           borderEnabled: true,
     //           border: {
     //             borderWidth: 1,
     //             borderColor: '#00AEB9'
     //           }
     //         },
-    //         secondaryButton: {
-    //           textColor: '#00AEB9',
-    //           buttonColor: '#FFFFFF',
-    //           borderRadius: 16,
-    //           borderEnabled: true,
-    //           border: {
-    //             borderWidth: 1,
-    //             borderColor: '#00AEB9'
+    //         text: {
+    //           titleColor: '#4A4C4C',
+    //           descriptionColor: '#4A4C4C'
+    //         },
+    //         buttons: {
+    //           primaryButton: {
+    //             textColor: '#FFFFFF',
+    //             buttonColor: '#00AEB9',
+    //             borderRadius: 16,
+    //             borderEnabled: true,
+    //             border: {
+    //               borderWidth: 1,
+    //               borderColor: '#00AEB9'
+    //             }
+    //           },
+    //           secondaryButton: {
+    //             textColor: '#00AEB9',
+    //             buttonColor: '#FFFFFF',
+    //             borderRadius: 16,
+    //             borderEnabled: true,
+    //             border: {
+    //               borderWidth: 1,
+    //               borderColor: '#00AEB9'
+    //             }
     //           }
+    //         },
+    //         overlay: {
+    //           enabled: false,
+    //           color: 'rgba(2, 3, 4, .15)'
     //         }
-    //       },
-    //       overlay: {
-    //         enabled: false,
-    //         color: 'rgba(2, 3, 4, .15)'
     //       }
     //     },
     //     bellIconConfig: {

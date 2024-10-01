@@ -23,6 +23,9 @@ export const enablePush = (logger, account, request) => {
   const notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
   const { showBox, boxType, showBellIcon } = $ct.pushConfig
 
+  if ($ct.pushConfig.isPreview) {
+    createNotificationBox($ct.pushConfig)
+  }
   if (showBox && boxType === 'new') {
     createNotificationBox($ct.pushConfig, notificationHandler)
   }
@@ -42,8 +45,8 @@ const createElementWithAttributes = (tag, attributes = {}) => {
 export const createNotificationBox = (configData, notificationhandler) => {
   if (document.getElementById('pnWrapper')) return
 
-  const { boxConfig, style } = configData
-  const { content } = boxConfig
+  const { boxConfig } = configData
+  const { content, style } = boxConfig
 
   // Create the wrapper div
   const wrapper = createElementWithAttributes('div', { id: 'pnWrapper' })
@@ -97,7 +100,7 @@ export const createNotificationBox = (configData, notificationhandler) => {
 
   if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
     document.body.appendChild(wrapper)
-    addEventListeners(wrapper, notificationhandler)
+    if (!configData.isPreview) { addEventListeners(wrapper, notificationhandler) }
   }
 }
 
@@ -105,7 +108,7 @@ export const createBellIcon = (configData, notificationhandler) => {
   if (document.getElementById('bell_wrapper')) return
 
   const { bellIconConfig } = configData
-  const { content } = bellIconConfig
+  const { content, style } = bellIconConfig
 
   const bellWrapper = createElementWithAttributes('div', { id: 'bell_wrapper' })
   const bellIcon = createElementWithAttributes('img', {
@@ -136,7 +139,7 @@ export const createBellIcon = (configData, notificationhandler) => {
 
   setElementPosition(bellWrapper, bellIconConfig.style.card.position)
   // Apply styles
-  const styleElement = createElementWithAttributes('style', { textContent: getBellIconStyles(bellIconConfig.style) })
+  const styleElement = createElementWithAttributes('style', { textContent: getBellIconStyles(style) })
 
   document.head.appendChild(styleElement)
   document.body.appendChild(bellWrapper)
