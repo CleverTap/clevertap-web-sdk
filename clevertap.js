@@ -4923,7 +4923,7 @@
     return "\n    #pnWrapper {\n    }\n\n    #pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: 360px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 4px;\n    }\n\n    #iconContainer {\n      margin-right: 16px;\n    }\n\n    #imgElement {\n      width: 64px;\n      height: 64px;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n    }\n\n    #title {\n      font-size: 18px;\n      font-weight: bold;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n    }\n\n    #description {\n      font-size: 14px;\n      color: ").concat(style.text.descriptionColor, ";\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      height: 32px;\n      gap: 8px;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 16px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n        border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n        border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n        border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n        border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
   };
   const getBellIconStyles = style => {
-    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.color, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n    }\n\n    #bell_icon {\n      display: block;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: rgba(43, 46, 62, .9);\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: #9999992F;\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
+    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.color, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: rgba(43, 46, 62, .9);\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: #9999992F;\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
   };
 
   var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
@@ -5017,6 +5017,10 @@
       _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
 
       return 0;
+    }
+
+    enable() {
+      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4]);
     }
 
     _processOldValues() {
@@ -5423,18 +5427,16 @@
 
     if (webPushConfig.isPreview) {
       $ct.pushConfig = webPushConfig;
-      console.log('preview data is ', $ct.pushConfig);
     } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
-      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
       $ct.pushConfig = webPushConfig;
-    } // console.log('prompt data is ', _pushConfig)
-    // Todo: Check the existing data is present. Do not write the data if no change exist
-    // if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
-    // $ct.pushConfig = webPushConfig
-    // StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
-
+      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
+    }
   };
   const enablePush = (logger, account, request) => {
+    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+
+    $ct.pushConfig = _pushConfig;
+
     if (!$ct.pushConfig) {
       logger.error('Web Push config data not present');
       return;
@@ -5555,6 +5557,11 @@
   };
   const createBellIcon = (configData, notificationhandler) => {
     if (document.getElementById('bell_wrapper')) return;
+
+    if (Notification.permission === 'granted') {
+      return;
+    }
+
     const {
       bellIconConfig
     } = configData;
@@ -5650,27 +5657,27 @@
       transform: 'none'
     });
     const positions = {
-      'top-right': {
+      'Top Right': {
         inset: '16px 16px auto auto'
       },
-      'top-left': {
+      'Top Left': {
         inset: '16px auto auto 16px'
       },
-      'bottom-right': {
+      'Bottom Right': {
         inset: 'auto 16px 16px auto'
       },
-      'bottom-left': {
+      'Bottom Left': {
         inset: 'auto auto 16px 16px'
       },
-      center: {
+      Center: {
         inset: '50%',
         transform: 'translate(-50%, -50%)'
       },
-      top: {
+      Top: {
         inset: '16px auto auto 50%',
         transform: 'translateX(-50%)'
       },
-      bottom: {
+      Bottom: {
         inset: 'auto auto 16px 50%',
         transform: 'translateX(-50%)'
       }
@@ -5723,100 +5730,6 @@
       request,
       logger
     } = _ref;
-    // msg = {
-    //   g: '504c56e44bee4ff5a120cb4ac7361a73',
-    //   arp: {
-    //     j_n: 'Zw==',
-    //     i_n: 'bm1neQsE',
-    //     d_ts: 0,
-    //     dh: 0,
-    //     v: 2,
-    //     j_s: '{}',
-    //     id: 'WRK-485-456Z',
-    //     r_ts: 1726848614
-    //   },
-    //   webPushConfig: {
-    //     showBox: true,
-    //     showBellIcon: true,
-    //     boxType: 'new',
-    //     isPreview: true,
-    //     boxConfig: {
-    //       content: {
-    //         title: 'Turn On Notifications?',
-    //         description: 'We will only send you relevant and useful updates',
-    //         icon: {
-    //           type: 'default',
-    //           url: 'https://cdn-icons-png.flaticon.com/512/9790/9790364.png'
-    //         },
-    //         buttons: {
-    //           primaryButtonText: 'Allow',
-    //           secondaryButtonText: 'I’ll do it later'
-    //         },
-    //         popupFrequency: 3
-    //       },
-    //       style: {
-    //         card: {
-    //           position: 'top-right',
-    //           color: '#FFFFFF',
-    //           borderRadius: 24,
-    //           borderEnabled: true,
-    //           border: {
-    //             borderWidth: 1,
-    //             borderColor: '#00AEB9'
-    //           }
-    //         },
-    //         text: {
-    //           titleColor: '#4A4C4C',
-    //           descriptionColor: '#4A4C4C'
-    //         },
-    //         buttons: {
-    //           primaryButton: {
-    //             textColor: '#FFFFFF',
-    //             buttonColor: '#00AEB9',
-    //             borderRadius: 16,
-    //             borderEnabled: true,
-    //             border: {
-    //               borderWidth: 1,
-    //               borderColor: '#00AEB9'
-    //             }
-    //           },
-    //           secondaryButton: {
-    //             textColor: '#00AEB9',
-    //             buttonColor: '#FFFFFF',
-    //             borderRadius: 16,
-    //             borderEnabled: true,
-    //             border: {
-    //               borderWidth: 1,
-    //               borderColor: '#00AEB9'
-    //             }
-    //           }
-    //         },
-    //         overlay: {
-    //           enabled: false,
-    //           color: 'rgba(2, 3, 4, .15)'
-    //         }
-    //       }
-    //     },
-    //     bellIconConfig: {
-    //       content: {
-    //         icon: {
-    //           type: 'default',
-    //           url: 'https://cdn-icons-png.flaticon.com/512/9790/9790364.png'
-    //         },
-    //         hoverText: {
-    //           enabled: true,
-    //           text: 'Subscribe to Notiifcations'
-    //         }
-    //       },
-    //       style: {
-    //         card: {
-    //           position: 'bottom-right',
-    //           color: '#00AEB9'
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
     const _device = device;
     const _session = session;
     const _request = request;
@@ -8931,11 +8844,10 @@
 
     defineVariable(name, defaultValue) {
       return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1]);
-    }
+    } // enableWebPushNotifications () {
+    //   enablePush(this.#logger, this.#account, this.#request)
+    // }
 
-    enableWebPushNotifications() {
-      enablePush(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], _classPrivateFieldLooseBase(this, _account$6)[_account$6], _classPrivateFieldLooseBase(this, _request$7)[_request$7]);
-    }
 
     syncVariables(onSyncSuccess, onSyncFailure) {
       if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {

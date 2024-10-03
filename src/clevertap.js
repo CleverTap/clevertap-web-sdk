@@ -41,7 +41,7 @@ import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWe
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
 import { checkBuilder, addAntiFlicker } from './modules/visualBuilder/pageBuilder'
-import { enablePush, setServerKey } from './modules/webPushPrompt/prompt'
+import { setServerKey } from './modules/webPushPrompt/prompt'
 
 export default class CleverTap {
   #logger
@@ -843,9 +843,9 @@ export default class CleverTap {
     return Variable.define(name, defaultValue, this.#variableStore)
   }
 
-  enableWebPushNotifications () {
-    enablePush(this.#logger, this.#account, this.#request)
-  }
+  // enableWebPushNotifications () {
+  //   enablePush(this.#logger, this.#account, this.#request)
+  // }
 
   syncVariables (onSyncSuccess, onSyncFailure) {
     if (this.#logger.logLevel === 4) {

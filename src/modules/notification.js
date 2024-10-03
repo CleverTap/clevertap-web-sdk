@@ -6,6 +6,7 @@ import {
 import {
   urlBase64ToUint8Array
 } from '../util/encoder'
+import { enablePush } from './webPushPrompt/prompt'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -33,6 +34,10 @@ export default class NotificationHandler extends Array {
   push (...displayArgs) {
     this.#setUpWebPush(displayArgs)
     return 0
+  }
+
+  enable () {
+    enablePush(this.#logger, this.#account, this.#request)
   }
 
   _processOldValues () {

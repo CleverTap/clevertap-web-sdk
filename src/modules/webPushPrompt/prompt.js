@@ -7,21 +7,15 @@ export const processWebPushConfig = (webPushConfig) => {
   const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
   if (webPushConfig.isPreview) {
     $ct.pushConfig = webPushConfig
-    console.log('preview data is ', $ct.pushConfig)
   } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
-    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
     $ct.pushConfig = webPushConfig
+    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
   }
-  // console.log('prompt data is ', _pushConfig)
-
-  // Todo: Check the existing data is present. Do not write the data if no change exist
-
-  // if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
-  // $ct.pushConfig = webPushConfig
-  // StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
 }
 
 export const enablePush = (logger, account, request) => {
+  const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
+  $ct.pushConfig = _pushConfig
   if (!$ct.pushConfig) {
     logger.error('Web Push config data not present')
     return
@@ -114,6 +108,9 @@ export const createNotificationBox = (configData, notificationhandler) => {
 export const createBellIcon = (configData, notificationhandler) => {
   if (document.getElementById('bell_wrapper')) return
 
+  if (Notification.permission === 'granted') {
+    return
+  }
   const { bellIconConfig } = configData
   const { content, style } = bellIconConfig
 
@@ -189,7 +186,6 @@ export const addBellEventListeners = (bellWrapper, notificationhandler) => {
       notificationhandler.setUpWebPushNotifications(null, '/clevertap_sw.js', null, null)
     }
   })
-
   bellIcon.addEventListener('mouseenter', () => displayTooltip(bellWrapper))
   bellIcon.addEventListener('mouseleave', () => clearTooltip(bellWrapper))
   bellWrapper.querySelector('#close_modal').addEventListener('click', () => toggleGifModal(bellWrapper))
@@ -202,13 +198,13 @@ export const setElementPosition = (element, position) => {
   })
 
   const positions = {
-    'top-right': { inset: '16px 16px auto auto' },
-    'top-left': { inset: '16px auto auto 16px' },
-    'bottom-right': { inset: 'auto 16px 16px auto' },
-    'bottom-left': { inset: 'auto auto 16px 16px' },
-    center: { inset: '50%', transform: 'translate(-50%, -50%)' },
-    top: { inset: '16px auto auto 50%', transform: 'translateX(-50%)' },
-    bottom: { inset: 'auto auto 16px 50%', transform: 'translateX(-50%)' }
+    'Top Right': { inset: '16px 16px auto auto' },
+    'Top Left': { inset: '16px auto auto 16px' },
+    'Bottom Right': { inset: 'auto 16px 16px auto' },
+    'Bottom Left': { inset: 'auto auto 16px 16px' },
+    Center: { inset: '50%', transform: 'translate(-50%, -50%)' },
+    Top: { inset: '16px auto auto 50%', transform: 'translateX(-50%)' },
+    Bottom: { inset: 'auto auto 16px 50%', transform: 'translateX(-50%)' }
   }
 
   Object.assign(element.style, positions[position] || positions['top-right'])

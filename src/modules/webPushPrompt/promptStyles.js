@@ -122,6 +122,8 @@ export const getBellIconStyles = (style) => {
 
     #bell_icon {
       display: block;
+      width: 48px;
+      height: 48px;
     }
 
     #bell_wrapper:hover {
