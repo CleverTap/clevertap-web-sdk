@@ -118,6 +118,7 @@ export const getBellIconStyles = (style) => {
       display: flex;
       flex-direction: column;
       gap: 8px;
+      z-index: 999999;
     }
 
     #bell_icon {
