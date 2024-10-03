@@ -1051,7 +1051,6 @@ const _tr = (msg, {
      * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
      * as we would not have any entry related to webInboxSettings in the LS
      */
-    console.log('in tr.js ', $ct.inbox)
     if (hasWebInboxSettingsInLS()) {
       checkAndRegisterWebInboxElements()
     }

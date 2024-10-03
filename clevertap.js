@@ -5419,12 +5419,20 @@
   };
 
   const processWebPushConfig = webPushConfig => {
-    // const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
-    // console.log('prompt data is ', _pushConfig)
+    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+
+    if (webPushConfig.isPreview) {
+      $ct.pushConfig = webPushConfig;
+      console.log('preview data is ', $ct.pushConfig);
+    } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
+      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
+      $ct.pushConfig = webPushConfig;
+    } // console.log('prompt data is ', _pushConfig)
     // Todo: Check the existing data is present. Do not write the data if no change exist
     // if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
-    $ct.pushConfig = webPushConfig;
-    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
+    // $ct.pushConfig = webPushConfig
+    // StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
+
   };
   const enablePush = (logger, account, request) => {
     if (!$ct.pushConfig) {
@@ -6780,8 +6788,6 @@
        * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
        * as we would not have any entry related to webInboxSettings in the LS
        */
-      console.log('in tr.js ', $ct.inbox);
-
       if (hasWebInboxSettingsInLS()) {
         checkAndRegisterWebInboxElements();
       }

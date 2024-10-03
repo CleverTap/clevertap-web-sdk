@@ -4,14 +4,21 @@ import { StorageManager, $ct } from '../../util/storage.js'
 import NotificationHandler from '../notification.js'
 
 export const processWebPushConfig = (webPushConfig) => {
-  // const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
+  const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
+  if (webPushConfig.isPreview) {
+    $ct.pushConfig = webPushConfig
+    console.log('preview data is ', $ct.pushConfig)
+  } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
+    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
+    $ct.pushConfig = webPushConfig
+  }
   // console.log('prompt data is ', _pushConfig)
 
   // Todo: Check the existing data is present. Do not write the data if no change exist
 
   // if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
-  $ct.pushConfig = webPushConfig
-  StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
+  // $ct.pushConfig = webPushConfig
+  // StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
 }
 
 export const enablePush = (logger, account, request) => {
