@@ -158,6 +158,10 @@ export default class NotificationHandler extends Array {
             if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
               subscriptionCallback()
             }
+            const existingBellWrapper = document.getElementById('bell_wrapper')
+            if (existingBellWrapper) {
+              existingBellWrapper.parentNode.removeChild(existingBellWrapper)
+            }
           }).catch((error) => {
             this.#logger.error('Error subscribing: ' + error)
             // unsubscribe from webpush if error

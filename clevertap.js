@@ -5161,6 +5161,12 @@
           if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
             subscriptionCallback();
           }
+
+          const existingWrapper = document.getElementById('bell_wrapper');
+
+          if (existingWrapper) {
+            existingWrapper.parentNode.removeChild(existingWrapper);
+          }
         }).catch(error => {
           _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error subscribing: ' + error); // unsubscribe from webpush if error
 
@@ -5638,6 +5644,12 @@
     });
   };
   const addBellEventListeners = (bellWrapper, notificationhandler) => {
+    const removeBellWrapper = () => {
+      var _bellWrapper$parentNo;
+
+      return (_bellWrapper$parentNo = bellWrapper.parentNode) === null || _bellWrapper$parentNo === void 0 ? void 0 : _bellWrapper$parentNo.removeChild(bellWrapper);
+    };
+
     const bellIcon = bellWrapper.querySelector('#bell_icon');
     bellIcon.addEventListener('click', () => {
       if (Notification.permission === 'denied') {
@@ -5645,6 +5657,11 @@
       } else {
         notificationhandler.setApplicationServerKey(appServerKey);
         notificationhandler.setUpWebPushNotifications(null, '/clevertap_sw.js', null, null);
+
+        if (Notification.permission === 'granted') {
+          console.log('Granted');
+          removeBellWrapper();
+        }
       }
     });
     bellIcon.addEventListener('mouseenter', () => displayTooltip(bellWrapper));

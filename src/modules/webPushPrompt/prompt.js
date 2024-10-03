@@ -177,6 +177,8 @@ export const addEventListeners = (wrapper, notificationhandler) => {
 }
 
 export const addBellEventListeners = (bellWrapper, notificationhandler) => {
+  const removeBellWrapper = () => bellWrapper.parentNode?.removeChild(bellWrapper)
+
   const bellIcon = bellWrapper.querySelector('#bell_icon')
   bellIcon.addEventListener('click', () => {
     if (Notification.permission === 'denied') {
@@ -184,6 +186,10 @@ export const addBellEventListeners = (bellWrapper, notificationhandler) => {
     } else {
       notificationhandler.setApplicationServerKey(appServerKey)
       notificationhandler.setUpWebPushNotifications(null, '/clevertap_sw.js', null, null)
+      if (Notification.permission === 'granted') {
+        console.log('Granted')
+        removeBellWrapper()
+      }
     }
   })
   bellIcon.addEventListener('mouseenter', () => displayTooltip(bellWrapper))
