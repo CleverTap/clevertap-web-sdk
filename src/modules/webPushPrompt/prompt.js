@@ -7,6 +7,7 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
   const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
   if (webPushConfig.isPreview) {
     $ct.pushConfig = webPushConfig
+    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
     enablePush(logger, null, request)
   } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
     $ct.pushConfig = webPushConfig
@@ -26,13 +27,19 @@ export const enablePush = (logger, account, request) => {
   const { showBox, boxType, showBellIcon } = $ct.pushConfig
 
   if ($ct.pushConfig.isPreview) {
-    createNotificationBox($ct.pushConfig)
-  }
-  if (showBox && boxType === 'new') {
-    createNotificationBox($ct.pushConfig, notificationHandler)
-  }
-  if (showBellIcon) {
-    createBellIcon($ct.pushConfig, notificationHandler)
+    if ($ct.pushConfig.boxConfig) {
+      createNotificationBox($ct.pushConfig)
+    }
+    if ($ct.pushConfig.bellIconConfig) {
+      createBellIcon($ct.pushConfig)
+    }
+  } else {
+    if (showBox && boxType === 'new') {
+      createNotificationBox($ct.pushConfig, notificationHandler)
+    }
+    if (showBellIcon) {
+      createBellIcon($ct.pushConfig, notificationHandler)
+    }
   }
 }
 
@@ -149,7 +156,9 @@ export const createBellIcon = (configData, notificationhandler) => {
   document.head.appendChild(styleElement)
   document.body.appendChild(bellWrapper)
 
-  addBellEventListeners(bellWrapper, notificationhandler)
+  if (!configData.isPreview) {
+    addBellEventListeners(bellWrapper, notificationhandler)
+  }
   return bellWrapper
 }
 

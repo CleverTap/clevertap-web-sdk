@@ -5433,6 +5433,7 @@
 
     if (webPushConfig.isPreview) {
       $ct.pushConfig = webPushConfig;
+      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
       enablePush(logger, null, request);
     } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
       $ct.pushConfig = webPushConfig;
@@ -5462,15 +5463,21 @@
     } = $ct.pushConfig;
 
     if ($ct.pushConfig.isPreview) {
-      createNotificationBox($ct.pushConfig);
-    }
+      if ($ct.pushConfig.boxConfig) {
+        createNotificationBox($ct.pushConfig);
+      }
 
-    if (showBox && boxType === 'new') {
-      createNotificationBox($ct.pushConfig, notificationHandler);
-    }
+      if ($ct.pushConfig.bellIconConfig) {
+        createBellIcon($ct.pushConfig);
+      }
+    } else {
+      if (showBox && boxType === 'new') {
+        createNotificationBox($ct.pushConfig, notificationHandler);
+      }
 
-    if (showBellIcon) {
-      createBellIcon($ct.pushConfig, notificationHandler);
+      if (showBellIcon) {
+        createBellIcon($ct.pushConfig, notificationHandler);
+      }
     }
   };
 
@@ -5616,7 +5623,11 @@
     });
     document.head.appendChild(styleElement);
     document.body.appendChild(bellWrapper);
-    addBellEventListeners(bellWrapper, notificationhandler);
+
+    if (!configData.isPreview) {
+      addBellEventListeners(bellWrapper, notificationhandler);
+    }
+
     return bellWrapper;
   };
   let appServerKey = null;
@@ -5748,6 +5759,80 @@
       request,
       logger
     } = _ref;
+    msg = {
+      g: '504c56e44bee4ff5a120cb4ac7361a73',
+      arp: {
+        j_n: 'Zw==',
+        i_n: 'bm1neQsE',
+        d_ts: 0,
+        dh: 0,
+        v: 2,
+        j_s: '{}',
+        id: 'WRK-485-456Z',
+        r_ts: 1726848614
+      },
+      webPushConfig: {
+        isPreview: true,
+        boxConfig: {
+          content: {
+            title: 'Turn On Notifications ?',
+            description: 'We will only send you relevant and useful updates.',
+            icon: {
+              type: 'URL',
+              url: 'https://lh3.googleusercontent.com/EbXw8rOdYxOGdXEFjgNP8lh-YAuUxwhOAe2jhrz3sgqvPeMac6a6tHvT35V6YMbyNvkZL4R_a2hcYBrtfUhLvhf-N2X3OB9cvH4uMw=w1064-v0',
+              fileName: ''
+            },
+            buttons: {
+              primaryButtonText: 'Allow',
+              secondaryButtonText: "I'll do it later"
+            },
+            popupFrequency: 7
+          },
+          style: {
+            card: {
+              position: 'Top Right',
+              color: 'rgba(255, 255, 255, 1)',
+              borderRadius: 24,
+              borderEnabled: false,
+              border: {
+                borderWidth: 1,
+                borderColor: 'rgba(25, 25, 25, 1)'
+              }
+            },
+            text: {
+              titleColor: 'rgba(25, 25, 25, 1)',
+              descriptionColor: 'rgba(25, 25, 25, 1)'
+            },
+            buttons: {
+              primaryButton: {
+                textColor: 'rgba(255, 255, 255, 1)',
+                buttonColor: 'rgba(0, 174, 185, 1)',
+                borderRadius: 16,
+                borderEnabled: false,
+                border: {
+                  borderWidth: 1,
+                  borderColor: 'rgba(0, 174, 185, 1)'
+                }
+              },
+              secondaryButton: {
+                textColor: 'rgba(0, 174, 185, 1)',
+                buttonColor: 'rgba(255, 255, 255, 1)',
+                borderRadius: 16,
+                borderEnabled: true,
+                border: {
+                  borderWidth: 1,
+                  borderColor: 'rgba(0, 174, 185, 1)'
+                }
+              }
+            },
+            overlay: {
+              color: 'rgba(236, 137, 137, 1)',
+              enabled: false
+            }
+          }
+        }
+      }
+    };
     const _device = device;
     const _session = session;
     const _request = request;
