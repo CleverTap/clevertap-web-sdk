@@ -972,7 +972,7 @@ const _tr = (msg, {
   }
 
   if (msg.webPushConfig) {
-    processWebPushConfig(msg.webPushConfig)
+    processWebPushConfig(msg.webPushConfig, logger, request)
   }
 
   if (msg.vars) {

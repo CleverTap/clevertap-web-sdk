@@ -3,10 +3,11 @@ import { WEBPUSH_CONFIG } from '../../util/constants.js'
 import { StorageManager, $ct } from '../../util/storage.js'
 import NotificationHandler from '../notification.js'
 
-export const processWebPushConfig = (webPushConfig) => {
+export const processWebPushConfig = (webPushConfig, logger, request) => {
   const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
   if (webPushConfig.isPreview) {
     $ct.pushConfig = webPushConfig
+    enablePush(logger, null, request)
   } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
     $ct.pushConfig = webPushConfig
     StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)

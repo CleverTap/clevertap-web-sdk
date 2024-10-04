@@ -5428,11 +5428,12 @@
     }
   };
 
-  const processWebPushConfig = webPushConfig => {
+  const processWebPushConfig = (webPushConfig, logger, request) => {
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     if (webPushConfig.isPreview) {
       $ct.pushConfig = webPushConfig;
+      enablePush(logger, null, request);
     } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
       $ct.pushConfig = webPushConfig;
       StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
@@ -6733,7 +6734,7 @@
     }
 
     if (msg.webPushConfig) {
-      processWebPushConfig(msg.webPushConfig);
+      processWebPushConfig(msg.webPushConfig, logger, request);
     }
 
     if (msg.vars) {
