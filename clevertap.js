@@ -5020,7 +5020,11 @@
     }
 
     enable() {
-      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4]);
+      let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      const {
+        swPath
+      } = options;
+      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath);
     }
 
     _processOldValues() {
@@ -5440,7 +5444,7 @@
       StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
     }
   };
-  const enablePush = (logger, account, request) => {
+  const enablePush = (logger, account, request, swPath) => {
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     $ct.pushConfig = _pushConfig;
@@ -5448,6 +5452,10 @@
     if (!$ct.pushConfig) {
       logger.error('Web Push config data not present');
       return;
+    }
+
+    if (swPath === undefined) {
+      swPath = '/clevertap_sw.js';
     }
 
     const notificationHandler = new NotificationHandler({
@@ -5472,11 +5480,11 @@
       }
     } else {
       if (showBox && boxType === 'new') {
-        createNotificationBox($ct.pushConfig, notificationHandler);
+        createNotificationBox($ct.pushConfig, notificationHandler, swPath);
       }
 
       if (showBellIcon) {
-        createBellIcon($ct.pushConfig, notificationHandler);
+        createBellIcon($ct.pushConfig, notificationHandler, swPath);
       }
     }
   };
@@ -5491,7 +5499,7 @@
     return element;
   };
 
-  const createNotificationBox = (configData, notificationhandler) => {
+  const createNotificationBox = (configData, notificationhandler, swPath) => {
     if (document.getElementById('pnWrapper')) return;
     const {
       boxConfig
@@ -5565,11 +5573,11 @@
       document.body.appendChild(wrapper);
 
       if (!configData.isPreview) {
-        addEventListeners(wrapper, notificationhandler);
+        addEventListeners(wrapper, notificationhandler, swPath);
       }
     }
   };
-  const createBellIcon = (configData, notificationhandler) => {
+  const createBellIcon = (configData, notificationhandler, swPath) => {
     if (document.getElementById('bell_wrapper')) return;
 
     if (Notification.permission === 'granted') {
@@ -5625,7 +5633,7 @@
     document.body.appendChild(bellWrapper);
 
     if (!configData.isPreview) {
-      addBellEventListeners(bellWrapper, notificationhandler);
+      addBellEventListeners(bellWrapper, notificationhandler, swPath);
     }
 
     return bellWrapper;
@@ -5634,7 +5642,7 @@
   const setServerKey = serverKey => {
     appServerKey = serverKey;
   };
-  const addEventListeners = (wrapper, notificationhandler) => {
+  const addEventListeners = (wrapper, notificationhandler, swPath) => {
     const primaryButton = wrapper.querySelector('#primaryButton');
     const secondaryButton = wrapper.querySelector('#secondaryButton');
 
@@ -5647,7 +5655,7 @@
     primaryButton.addEventListener('click', () => {
       removeWrapper();
       notificationhandler.setApplicationServerKey(appServerKey);
-      notificationhandler.setUpWebPushNotifications(null, '/clevertap_sw.js', null, null);
+      notificationhandler.setUpWebPushNotifications(null, swPath, null, null);
     });
     secondaryButton.addEventListener('click', () => {
       const now = new Date().getTime() / 1000;
@@ -5655,7 +5663,7 @@
       removeWrapper();
     });
   };
-  const addBellEventListeners = (bellWrapper, notificationhandler) => {
+  const addBellEventListeners = (bellWrapper, notificationhandler, swPath) => {
     const removeBellWrapper = () => {
       var _bellWrapper$parentNo;
 
@@ -5668,7 +5676,7 @@
         toggleGifModal(bellWrapper);
       } else {
         notificationhandler.setApplicationServerKey(appServerKey);
-        notificationhandler.setUpWebPushNotifications(null, '/clevertap_sw.js', null, null);
+        notificationhandler.setUpWebPushNotifications(null, swPath, null, null);
 
         if (Notification.permission === 'granted') {
           console.log('Granted');

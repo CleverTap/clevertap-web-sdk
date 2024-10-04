@@ -36,8 +36,9 @@ export default class NotificationHandler extends Array {
     return 0
   }
 
-  enable () {
-    enablePush(this.#logger, this.#account, this.#request)
+  enable (options = {}) {
+    const { swPath } = options
+    enablePush(this.#logger, this.#account, this.#request, swPath)
   }
 
   _processOldValues () {

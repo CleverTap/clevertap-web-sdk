@@ -3,19 +3,27 @@ import { WEBPUSH_CONFIG } from '../../util/constants.js'
 import { StorageManager, $ct } from '../../util/storage.js'
 import NotificationHandler from '../notification.js'
 
+let appServerKey = null
+let swPath = '/clevertap_sw.js'
+let notificationHandler = null
+
 export const processWebPushConfig = (webPushConfig, logger, request) => {
   const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
-  if (webPushConfig.isPreview) {
-    $ct.pushConfig = webPushConfig
-    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
-    enablePush(logger, null, request)
-  } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
+
+  const updatePushConfig = () => {
     $ct.pushConfig = webPushConfig
     StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
   }
+
+  if (webPushConfig.isPreview) {
+    updatePushConfig()
+    enablePush(logger, null, request)
+  } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
+    updatePushConfig()
+  }
 }
 
-export const enablePush = (logger, account, request) => {
+export const enablePush = (logger, account, request, customSwPath) => {
   const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
   $ct.pushConfig = _pushConfig
   if (!$ct.pushConfig) {
@@ -23,23 +31,17 @@ export const enablePush = (logger, account, request) => {
     return
   }
 
-  const notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
-  const { showBox, boxType, showBellIcon } = $ct.pushConfig
+  if (customSwPath) { swPath = customSwPath }
 
-  if ($ct.pushConfig.isPreview) {
-    if ($ct.pushConfig.boxConfig) {
-      createNotificationBox($ct.pushConfig)
-    }
-    if ($ct.pushConfig.bellIconConfig) {
-      createBellIcon($ct.pushConfig)
-    }
+  notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
+  const { showBox, boxType, showBellIcon, isPreview } = $ct.pushConfig
+
+  if (isPreview) {
+    if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig)
+    if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig)
   } else {
-    if (showBox && boxType === 'new') {
-      createNotificationBox($ct.pushConfig, notificationHandler)
-    }
-    if (showBellIcon) {
-      createBellIcon($ct.pushConfig, notificationHandler)
-    }
+    if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig)
+    if (showBellIcon) createBellIcon($ct.pushConfig)
   }
 }
 
@@ -51,11 +53,10 @@ const createElementWithAttributes = (tag, attributes = {}) => {
   return element
 }
 
-export const createNotificationBox = (configData, notificationhandler) => {
+export const createNotificationBox = (configData) => {
   if (document.getElementById('pnWrapper')) return
 
-  const { boxConfig } = configData
-  const { content, style } = boxConfig
+  const { boxConfig: { content, style } } = configData
 
   // Create the wrapper div
   const wrapper = createElementWithAttributes('div', { id: 'pnWrapper' })
@@ -109,18 +110,14 @@ export const createNotificationBox = (configData, notificationhandler) => {
 
   if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
     document.body.appendChild(wrapper)
-    if (!configData.isPreview) { addEventListeners(wrapper, notificationhandler) }
+    if (!configData.isPreview) { addEventListeners(wrapper) }
   }
 }
 
-export const createBellIcon = (configData, notificationhandler) => {
-  if (document.getElementById('bell_wrapper')) return
+export const createBellIcon = (configData) => {
+  if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return
 
-  if (Notification.permission === 'granted') {
-    return
-  }
-  const { bellIconConfig } = configData
-  const { content, style } = bellIconConfig
+  const { bellIconConfig: { content, style } } = configData
 
   const bellWrapper = createElementWithAttributes('div', { id: 'bell_wrapper' })
   const bellIcon = createElementWithAttributes('img', {
@@ -149,7 +146,7 @@ export const createBellIcon = (configData, notificationhandler) => {
     bellWrapper.appendChild(tooltip)
   }
 
-  setElementPosition(bellWrapper, bellIconConfig.style.card.position)
+  setElementPosition(bellWrapper, style.card.position)
   // Apply styles
   const styleElement = createElementWithAttributes('style', { textContent: getBellIconStyles(style) })
 
@@ -157,17 +154,16 @@ export const createBellIcon = (configData, notificationhandler) => {
   document.body.appendChild(bellWrapper)
 
   if (!configData.isPreview) {
-    addBellEventListeners(bellWrapper, notificationhandler)
+    addBellEventListeners(bellWrapper)
   }
   return bellWrapper
 }
 
-let appServerKey = null
 export const setServerKey = (serverKey) => {
   appServerKey = serverKey
 }
 
-export const addEventListeners = (wrapper, notificationhandler) => {
+export const addEventListeners = (wrapper) => {
   const primaryButton = wrapper.querySelector('#primaryButton')
   const secondaryButton = wrapper.querySelector('#secondaryButton')
 
@@ -175,30 +171,26 @@ export const addEventListeners = (wrapper, notificationhandler) => {
 
   primaryButton.addEventListener('click', () => {
     removeWrapper()
-    notificationhandler.setApplicationServerKey(appServerKey)
-    notificationhandler.setUpWebPushNotifications(null, '/clevertap_sw.js', null, null)
+    notificationHandler.setApplicationServerKey(appServerKey)
+    notificationHandler.setUpWebPushNotifications(null, swPath, null, null)
   })
 
   secondaryButton.addEventListener('click', () => {
-    const now = new Date().getTime() / 1000
-    StorageManager.setMetaProp('webpush_last_notif_time', now)
+    StorageManager.setMetaProp('webpush_last_notif_time', Date.now() / 1000)
     removeWrapper()
   })
 }
 
-export const addBellEventListeners = (bellWrapper, notificationhandler) => {
-  const removeBellWrapper = () => bellWrapper.parentNode?.removeChild(bellWrapper)
-
+export const addBellEventListeners = (bellWrapper) => {
   const bellIcon = bellWrapper.querySelector('#bell_icon')
   bellIcon.addEventListener('click', () => {
     if (Notification.permission === 'denied') {
       toggleGifModal(bellWrapper)
     } else {
-      notificationhandler.setApplicationServerKey(appServerKey)
-      notificationhandler.setUpWebPushNotifications(null, '/clevertap_sw.js', null, null)
+      notificationHandler.setApplicationServerKey(appServerKey)
+      notificationHandler.setUpWebPushNotifications(null, swPath, null, null)
       if (Notification.permission === 'granted') {
-        console.log('Granted')
-        removeBellWrapper()
+        bellWrapper.remove()
       }
     }
   })
