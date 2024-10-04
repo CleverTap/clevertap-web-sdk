@@ -110,7 +110,7 @@ export const getBellIconStyles = (style) => {
     #bell_wrapper {
       position: fixed;
       cursor: pointer;
-      background-color: ${style.card.color};
+      background-color: ${style.card.backgroundColor};
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       width: 48px;
       height: 48px;
