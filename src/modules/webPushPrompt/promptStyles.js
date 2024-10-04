@@ -168,7 +168,7 @@ export const getBellIconStyles = (style) => {
       height: 24px;
       top: 8px;
       right: 8px;
-      background: #9999992F;
+      background: rgba(238, 238, 238, 0.8);
       text-align: center;
       line-height: 20px;
       border-radius: 4px;

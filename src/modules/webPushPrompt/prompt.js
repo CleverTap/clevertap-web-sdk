@@ -125,7 +125,7 @@ export const createBellIcon = (configData, notificationhandler) => {
   const gifModal = createElementWithAttributes('div', { id: 'gif_modal', style: 'display: none;' })
   const gifImage = createElementWithAttributes('img', {
     id: 'gif_image',
-    src: 'https://cdn.dribbble.com/users/147945/screenshots/3065505/media/6af71ed902032ca97ab155795787b3fe.gif'
+    src: 'https://d2r1yp2w7bby2u.cloudfront.net/js/permission_grant.gif'
   })
   const closeModal = createElementWithAttributes('div', { id: 'close_modal', innerHTML: '&times;' })
 
