@@ -843,10 +843,6 @@ export default class CleverTap {
     return Variable.define(name, defaultValue, this.#variableStore)
   }
 
-  // enableWebPushNotifications () {
-  //   enablePush(this.#logger, this.#account, this.#request)
-  // }
-
   syncVariables (onSyncSuccess, onSyncFailure) {
     if (this.#logger.logLevel === 4) {
       return this.#variableStore.syncVariables(onSyncSuccess, onSyncFailure)

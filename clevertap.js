@@ -4576,7 +4576,7 @@
           message: 'SDKVersion',
           accountId,
           originUrl: window.location.href,
-          sdkVersion: '1.9.4'
+          sdkVersion: '1.10.0'
         }, '*');
       }
     }
@@ -5432,19 +5432,25 @@
     }
   };
 
+  let appServerKey = null;
+  let swPath = '/clevertap_sw.js';
+  let notificationHandler = null;
   const processWebPushConfig = (webPushConfig, logger, request) => {
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
-    if (webPushConfig.isPreview) {
+    const updatePushConfig = () => {
       $ct.pushConfig = webPushConfig;
       StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
+    };
+
+    if (webPushConfig.isPreview) {
+      updatePushConfig();
       enablePush(logger, null, request);
     } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
-      $ct.pushConfig = webPushConfig;
-      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
+      updatePushConfig();
     }
   };
-  const enablePush = (logger, account, request, swPath) => {
+  const enablePush = (logger, account, request, customSwPath) => {
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     $ct.pushConfig = _pushConfig;
@@ -5454,11 +5460,11 @@
       return;
     }
 
-    if (swPath === undefined) {
-      swPath = '/clevertap_sw.js';
+    if (customSwPath) {
+      swPath = customSwPath;
     }
 
-    const notificationHandler = new NotificationHandler({
+    notificationHandler = new NotificationHandler({
       logger,
       session: {},
       request,
@@ -5467,25 +5473,16 @@
     const {
       showBox,
       boxType,
-      showBellIcon
+      showBellIcon,
+      isPreview
     } = $ct.pushConfig;
 
-    if ($ct.pushConfig.isPreview) {
-      if ($ct.pushConfig.boxConfig) {
-        createNotificationBox($ct.pushConfig);
-      }
-
-      if ($ct.pushConfig.bellIconConfig) {
-        createBellIcon($ct.pushConfig);
-      }
+    if (isPreview) {
+      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig);
+      if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
     } else {
-      if (showBox && boxType === 'new') {
-        createNotificationBox($ct.pushConfig, notificationHandler, swPath);
-      }
-
-      if (showBellIcon) {
-        createBellIcon($ct.pushConfig, notificationHandler, swPath);
-      }
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig);
+      if (showBellIcon) createBellIcon($ct.pushConfig);
     }
   };
 
@@ -5499,15 +5496,14 @@
     return element;
   };
 
-  const createNotificationBox = (configData, notificationhandler, swPath) => {
+  const createNotificationBox = configData => {
     if (document.getElementById('pnWrapper')) return;
     const {
-      boxConfig
-    } = configData;
-    const {
-      content,
-      style
-    } = boxConfig; // Create the wrapper div
+      boxConfig: {
+        content,
+        style
+      }
+    } = configData; // Create the wrapper div
 
     const wrapper = createElementWithAttributes('div', {
       id: 'pnWrapper'
@@ -5573,24 +5569,18 @@
       document.body.appendChild(wrapper);
 
       if (!configData.isPreview) {
-        addEventListeners(wrapper, notificationhandler, swPath);
+        addEventListeners(wrapper);
       }
     }
   };
-  const createBellIcon = (configData, notificationhandler, swPath) => {
-    if (document.getElementById('bell_wrapper')) return;
-
-    if (Notification.permission === 'granted') {
-      return;
-    }
-
+  const createBellIcon = configData => {
+    if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return;
     const {
-      bellIconConfig
+      bellIconConfig: {
+        content,
+        style
+      }
     } = configData;
-    const {
-      content,
-      style
-    } = bellIconConfig;
     const bellWrapper = createElementWithAttributes('div', {
       id: 'bell_wrapper'
     });
@@ -5624,7 +5614,7 @@
       bellWrapper.appendChild(tooltip);
     }
 
-    setElementPosition(bellWrapper, bellIconConfig.style.card.position); // Apply styles
+    setElementPosition(bellWrapper, style.card.position); // Apply styles
 
     const styleElement = createElementWithAttributes('style', {
       textContent: getBellIconStyles(style)
@@ -5633,16 +5623,15 @@
     document.body.appendChild(bellWrapper);
 
     if (!configData.isPreview) {
-      addBellEventListeners(bellWrapper, notificationhandler, swPath);
+      addBellEventListeners(bellWrapper);
     }
 
     return bellWrapper;
   };
-  let appServerKey = null;
   const setServerKey = serverKey => {
     appServerKey = serverKey;
   };
-  const addEventListeners = (wrapper, notificationhandler, swPath) => {
+  const addEventListeners = wrapper => {
     const primaryButton = wrapper.querySelector('#primaryButton');
     const secondaryButton = wrapper.querySelector('#secondaryButton');
 
@@ -5654,33 +5643,25 @@
 
     primaryButton.addEventListener('click', () => {
       removeWrapper();
-      notificationhandler.setApplicationServerKey(appServerKey);
-      notificationhandler.setUpWebPushNotifications(null, swPath, null, null);
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
     });
     secondaryButton.addEventListener('click', () => {
-      const now = new Date().getTime() / 1000;
-      StorageManager.setMetaProp('webpush_last_notif_time', now);
+      StorageManager.setMetaProp('webpush_last_notif_time', Date.now() / 1000);
       removeWrapper();
     });
   };
-  const addBellEventListeners = (bellWrapper, notificationhandler, swPath) => {
-    const removeBellWrapper = () => {
-      var _bellWrapper$parentNo;
-
-      return (_bellWrapper$parentNo = bellWrapper.parentNode) === null || _bellWrapper$parentNo === void 0 ? void 0 : _bellWrapper$parentNo.removeChild(bellWrapper);
-    };
-
+  const addBellEventListeners = bellWrapper => {
     const bellIcon = bellWrapper.querySelector('#bell_icon');
     bellIcon.addEventListener('click', () => {
       if (Notification.permission === 'denied') {
         toggleGifModal(bellWrapper);
       } else {
-        notificationhandler.setApplicationServerKey(appServerKey);
-        notificationhandler.setUpWebPushNotifications(null, swPath, null, null);
+        notificationHandler.setApplicationServerKey(appServerKey);
+        notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
 
         if (Notification.permission === 'granted') {
-          console.log('Granted');
-          removeBellWrapper();
+          bellWrapper.remove();
         }
       }
     });
@@ -7206,7 +7187,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.9.4',
+        lib: 'web-sdk-v1.10.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8876,15 +8857,12 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.9.4';
+      return 'web-sdk-v1.10.0';
     }
 
     defineVariable(name, defaultValue) {
       return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1]);
-    } // enableWebPushNotifications () {
-    //   enablePush(this.#logger, this.#account, this.#request)
-    // }
-
+    }
 
     syncVariables(onSyncSuccess, onSyncFailure) {
       if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
