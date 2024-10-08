@@ -1,4 +1,4 @@
-export const updateFormData = (element, formStyle) => {
+export const updateFormData = (element, formStyle, isPreview) => {
   // Update the element style
   if (formStyle.style !== undefined) {
     Object.keys(formStyle.style).forEach((property) => {
@@ -18,7 +18,7 @@ export const updateFormData = (element, formStyle) => {
 
   // Update element text
   if (formStyle.text !== undefined) {
-    element.innerText = formStyle.text
+    element.innerText = isPreview ? formStyle.text.text : formStyle.text.replacements
   }
 
   // Handle element onClick
