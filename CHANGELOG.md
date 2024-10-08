@@ -1,9 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.10.0] - 18 Sept, 2024
+## [1.10.0] - 8 Oct, 2024
 - Adds new api to handle rendering of customized web push prompt
 - Adds handling of personalisation in Visual Editor
+
+## [1.9.6] - 23 Sept, 2024
+- Shopify support for visual builder
+
+## [1.9.5] - 23 Sept, 2024
+- Elimninates the use for migration service worker.
 
 ## [1.9.4] - 18 Sept, 2024
 - Added anti flicker solution for visual editor
