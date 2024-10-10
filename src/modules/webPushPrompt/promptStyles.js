@@ -32,11 +32,7 @@ export const getBoxPromptStyles = (style) => {
       display: flex;
       align-items: center;
       margin-bottom: 16px;
-      gap: 4px;
-    }
-
-    #iconContainer {
-      margin-right: 16px;
+      gap: 20px;
     }
 
     #imgElement {
@@ -46,6 +42,8 @@ export const getBoxPromptStyles = (style) => {
 
     #titleDescWrapper {
       flex-grow: 1;
+      overflow: hidden;
+      word-break: break-all;
     }
 
     #title {
@@ -81,22 +79,26 @@ export const getBoxPromptStyles = (style) => {
       background-color: ${style.buttons.primaryButton.buttonColor};
       color: ${style.buttons.primaryButton.textColor};
       border-radius: ${style.buttons.primaryButton.borderRadius}px;
-      ${style.buttons.primaryButton.borderEnabled ? `
-        border-width: ${style.buttons.primaryButton.border.borderWidth}px;
-        border-color: ${style.buttons.primaryButton.border.borderColor};
-        border-style: solid;
-      ` : ''}
+      ${style.buttons.primaryButton.borderEnabled
+        ? `
+          border-width: ${style.buttons.primaryButton.border.borderWidth}px;
+          border-color: ${style.buttons.primaryButton.border.borderColor};
+          border-style: solid;
+        `
+        : 'border: none;'}
     }
 
     #secondaryButton {
       background-color: ${style.buttons.secondaryButton.buttonColor};
       color: ${style.buttons.secondaryButton.textColor};
       border-radius: ${style.buttons.secondaryButton.borderRadius}px;
-      ${style.buttons.secondaryButton.borderEnabled ? `
-        border-width: ${style.buttons.secondaryButton.border.borderWidth}px;
-        border-color: ${style.buttons.secondaryButton.border.borderColor};
-        border-style: solid;
-      ` : ''}
+      ${style.buttons.primaryButton.borderEnabled
+        ? `
+          border-width: ${style.buttons.secondaryButton.border.borderWidth}px;
+          border-color: ${style.buttons.secondaryButton.border.borderColor};
+          border-style: solid;
+        `
+        : 'border: none;'}
     }
 
     #primaryButton:hover, #secondaryButton:hover {
