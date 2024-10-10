@@ -5312,27 +5312,29 @@
    */
 
 
-  var renderVisualBuilder = function renderVisualBuilder(targetingMsgJson, isPreview) {
-    var details = isPreview ? targetingMsgJson.details[0] : targetingMsgJson.display.details[0];
-    var siteUrl = Object.keys(details)[0];
-    var selectors = details[siteUrl];
-    var elementDisplayed = false;
-    if (siteUrl !== window.location.href.split('?')[0]) return;
+  const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+    console.log(targetingMsgJson.details);
+    const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
+    let elementDisplayed = false;
 
-    var processElement = function processElement(element, selector) {
-      if (selectors[selector].html) {
-        element.outerHTML = selectors[selector].html;
-      } else if (selectors[selector].json) {
-        dispatchJsonData(targetingMsgJson, selectors[selector]);
+    const processElement = (element, selector) => {
+      var _selector$values;
+
+      if (!selector.values) return;
+
+      if (selector.values.html) {
+        element.outerHTML = selector.values.html;
+      } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
+        dispatchJsonData(targetingMsgJson, selector.values);
       } else {
-        updateFormData(element, selectors[selector].form, isPreview);
+        updateFormData(element, selector.values.form);
       }
     };
 
-    var tryFindingElement = function tryFindingElement(selector) {
-      var count = 0;
-      var intervalId = setInterval(function () {
-        var retryElement = document.querySelector(selector);
+    const tryFindingElement = selector => {
+      let count = 0;
+      const intervalId = setInterval(() => {
+        const retryElement = document.querySelector(selector.selector);
 
         if (retryElement) {
           processElement(retryElement, selector);
@@ -5344,14 +5346,18 @@
       }, 500);
     };
 
-    Object.keys(selectors).forEach(function (selector) {
-      var element = document.querySelector(selector);
+    details.forEach(d => {
+      if (d.url === window.location.href.split('?')[0]) {
+        d.selectorData.forEach(s => {
+          const element = document.querySelector(s.selector);
 
-      if (element) {
-        processElement(element, selector);
-        elementDisplayed = true;
-      } else {
-        tryFindingElement(selector);
+          if (element) {
+            processElement(element, s);
+            elementDisplayed = true;
+          } else {
+            tryFindingElement(s);
+          }
+        });
       }
     });
 
