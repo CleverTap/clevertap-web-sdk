@@ -4540,6 +4540,25 @@
     }
   };
 
+  const versionCompare = currentVersion => {
+    const requiredVersion = '1.9.2';
+    if (requiredVersion === currentVersion) return true;
+    const splitRequiredVersion = requiredVersion.split('.');
+    const splitCurrentVersion = currentVersion.split('.');
+    let p1 = 0;
+    let isWebsiteVersionHigher = false;
+
+    while (p1 < splitRequiredVersion.length && !isWebsiteVersionHigher) {
+      if (parseInt(splitRequiredVersion[p1]) < parseInt(splitCurrentVersion[p1])) {
+        isWebsiteVersionHigher = true;
+      }
+
+      p1++;
+    }
+
+    return isWebsiteVersionHigher;
+  };
+
   const checkBuilder = (logger, accountId) => {
     const search = window.location.search;
     const parentWindow = window.opener;
@@ -4572,11 +4591,13 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
+        const sdkVersion = '1.10.1';
+        const isRequiredVersion = versionCompare(sdkVersion);
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
           originUrl: window.location.href,
-          sdkVersion: '1.10.0'
+          sdkVersion: isRequiredVersion ? '1.9.3' : sdkVersion
         }, '*');
       }
     }
@@ -7165,7 +7186,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.10.0',
+        lib: 'web-sdk-v1.10.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8835,7 +8856,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.10.0';
+      return 'web-sdk-v1.10.1';
     }
 
     defineVariable(name, defaultValue) {
