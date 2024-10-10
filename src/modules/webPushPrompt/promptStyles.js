@@ -136,7 +136,7 @@ export const getBellIconStyles = (style) => {
 
     #bell_tooltip {
       display: none;
-      background-color: rgba(43, 46, 62, .9);
+      background-color: #2b2e3e;
       color: #fff;
       border-radius: 4px;
       padding: 4px;
