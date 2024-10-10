@@ -8663,7 +8663,6 @@
         return;
       }
 
-      checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], accountId);
       StorageManager.removeCookie('WZRK_P', window.location.hostname);
 
       if (!_classPrivateFieldLooseBase(this, _account$6)[_account$6].id) {
@@ -8676,6 +8675,7 @@
         _classPrivateFieldLooseBase(this, _account$6)[_account$6].id = accountId;
       }
 
+      checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
       _classPrivateFieldLooseBase(this, _session$3)[_session$3].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$6)[_account$6].id;
 
       if (region) {
