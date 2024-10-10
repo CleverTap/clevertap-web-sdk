@@ -5112,7 +5112,7 @@
 
     if (formStyle.text !== undefined) {
       console.log(formStyle.text);
-      element.innerText = isPreview ? formStyle.text.text : formStyle.text.replacements;
+      element.innerText = isPreview ? formStyle.text.text : formStyle.text;
     } // Handle element onClick
 
 
@@ -5328,6 +5328,7 @@
       } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
         dispatchJsonData(targetingMsgJson, selector.values);
       } else {
+        console.log('updateFormData called with', selector.values.form, isPreview);
         updateFormData(element, selector.values.form, isPreview);
       }
     };
