@@ -4540,6 +4540,23 @@
     }
   };
 
+  const versionCompare = currentVersion => {
+    const splitRequiredVersion = '1.9.2'.split('.');
+    const splitCurrentVersion = currentVersion.split('.');
+    let p1 = 0;
+    let isWebsiteVersionHigher = false;
+
+    while (p1 < splitRequiredVersion.length && !isWebsiteVersionHigher) {
+      if (parseInt(splitRequiredVersion[p1]) < parseInt(splitCurrentVersion[p1])) {
+        isWebsiteVersionHigher = true;
+      }
+
+      p1++;
+    }
+
+    return isWebsiteVersionHigher;
+  };
+
   const checkBuilder = (logger, accountId) => {
     const search = window.location.search;
     const parentWindow = window.opener;
@@ -4572,11 +4589,13 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
+        const sdkVersion = '1.10.0';
+        let isRequiredVersion = versionCompare(sdkVersion);
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
           originUrl: window.location.href,
-          sdkVersion: '1.10.0'
+          sdkVersion: isRequiredVersion ? '1.9.3' : sdkVersion
         }, '*');
       }
     }
