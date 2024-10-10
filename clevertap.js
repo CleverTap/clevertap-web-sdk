@@ -5312,12 +5312,12 @@
    */
 
 
-  const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+  var renderVisualBuilder = function renderVisualBuilder(targetingMsgJson, isPreview) {
     console.log(targetingMsgJson.details);
-    const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
-    let elementDisplayed = false;
+    var details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
+    var elementDisplayed = false;
 
-    const processElement = (element, selector) => {
+    var processElement = function processElement(element, selector) {
       var _selector$values;
 
       if (!selector.values) return;
@@ -5331,10 +5331,10 @@
       }
     };
 
-    const tryFindingElement = selector => {
-      let count = 0;
-      const intervalId = setInterval(() => {
-        const retryElement = document.querySelector(selector.selector);
+    var tryFindingElement = function tryFindingElement(selector) {
+      var count = 0;
+      var intervalId = setInterval(function () {
+        var retryElement = document.querySelector(selector.selector);
 
         if (retryElement) {
           processElement(retryElement, selector);
@@ -5346,10 +5346,10 @@
       }, 500);
     };
 
-    details.forEach(d => {
+    details.forEach(function (d) {
       if (d.url === window.location.href.split('?')[0]) {
-        d.selectorData.forEach(s => {
-          const element = document.querySelector(s.selector);
+        d.selectorData.forEach(function (s) {
+          var element = document.querySelector(s.selector);
 
           if (element) {
             processElement(element, s);
