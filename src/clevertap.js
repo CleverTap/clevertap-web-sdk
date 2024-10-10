@@ -590,7 +590,7 @@ export default class CleverTap {
       // already initailsed
       return
     }
-    checkBuilder(this.#logger, accountId)
+
     StorageManager.removeCookie('WZRK_P', window.location.hostname)
     if (!this.#account.id) {
       if (!accountId) {
@@ -599,6 +599,7 @@ export default class CleverTap {
       }
       this.#account.id = accountId
     }
+    checkBuilder(this.#logger, this.#account.id)
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
 
     if (region) {
