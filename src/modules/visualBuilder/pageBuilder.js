@@ -165,7 +165,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     } else if (selector.values?.json) {
       dispatchJsonData(targetingMsgJson, selector.values)
     } else {
-      updateFormData(element, selector.values.form)
+      updateFormData(element, selector.values.form, isPreview)
     }
   }
 

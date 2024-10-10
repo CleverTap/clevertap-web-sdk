@@ -18,6 +18,7 @@ export const updateFormData = (element, formStyle, isPreview) => {
 
   // Update element text
   if (formStyle.text !== undefined) {
+    console.log(formStyle.text)
     element.innerText = isPreview ? formStyle.text.text : formStyle.text.replacements
   }
 
