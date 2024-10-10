@@ -35,6 +35,7 @@ import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
+import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 
 const _tr = (msg, {
   device,
@@ -955,7 +956,6 @@ const _tr = (msg, {
      * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
      * as we would not have any entry related to webInboxSettings in the LS
      */
-
     if (hasWebInboxSettingsInLS()) {
       checkAndRegisterWebInboxElements()
     }
@@ -969,6 +969,10 @@ const _tr = (msg, {
     } else {
       handleInboxNotifications()
     }
+  }
+
+  if (msg.webPushConfig) {
+    processWebPushConfig(msg.webPushConfig, logger, request)
   }
 
   if (msg.vars) {

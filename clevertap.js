@@ -206,6 +206,7 @@
   const PUSH_DELAY_MS = 1000;
   const MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
   const WZRK_FETCH = 'wzrk_fetch';
+  const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -602,7 +603,8 @@
     dismissSpamControl: false,
     globalUnsubscribe: true,
     flutterVersion: null,
-    variableStore: {} // domain: window.location.hostname, url -> getHostName()
+    variableStore: {},
+    pushConfig: null // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -4574,7 +4576,7 @@
           message: 'SDKVersion',
           accountId,
           originUrl: window.location.href,
-          sdkVersion: '1.9.6'
+          sdkVersion: '1.10.0'
         }, '*');
       }
     }
@@ -4890,6 +4892,832 @@
       applyAntiFlicker(personalizedSelectors);
     });
   }
+
+  const getBoxPromptStyles = style => {
+    return "\n    #pnWrapper {\n    }\n\n    #pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: 360px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 20px;\n    }\n\n    #imgElement {\n      width: 64px;\n      height: 64px;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      word-break: break-all;\n    }\n\n    #title {\n      font-size: 18px;\n      font-weight: bold;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n    }\n\n    #description {\n      font-size: 14px;\n      color: ").concat(style.text.descriptionColor, ";\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      height: 32px;\n      gap: 8px;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 16px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
+  };
+  const getBellIconStyles = style => {
+    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
+  };
+
+  var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
+
+  var _logger$5 = _classPrivateFieldLooseKey("logger");
+
+  var _request$4 = _classPrivateFieldLooseKey("request");
+
+  var _account$2 = _classPrivateFieldLooseKey("account");
+
+  var _wizAlertJSPath = _classPrivateFieldLooseKey("wizAlertJSPath");
+
+  var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
+
+  var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
+
+  var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
+
+  var _setUpChromeFirefoxNotifications = _classPrivateFieldLooseKey("setUpChromeFirefoxNotifications");
+
+  var _addWizAlertJS = _classPrivateFieldLooseKey("addWizAlertJS");
+
+  var _removeWizAlertJS = _classPrivateFieldLooseKey("removeWizAlertJS");
+
+  var _handleNotificationRegistration = _classPrivateFieldLooseKey("handleNotificationRegistration");
+
+  class NotificationHandler extends Array {
+    constructor(_ref, values) {
+      let {
+        logger,
+        session,
+        request,
+        account
+      } = _ref;
+      super();
+      Object.defineProperty(this, _handleNotificationRegistration, {
+        value: _handleNotificationRegistration2
+      });
+      Object.defineProperty(this, _removeWizAlertJS, {
+        value: _removeWizAlertJS2
+      });
+      Object.defineProperty(this, _addWizAlertJS, {
+        value: _addWizAlertJS2
+      });
+      Object.defineProperty(this, _setUpChromeFirefoxNotifications, {
+        value: _setUpChromeFirefoxNotifications2
+      });
+      Object.defineProperty(this, _setUpSafariNotifications, {
+        value: _setUpSafariNotifications2
+      });
+      Object.defineProperty(this, _setUpWebPush, {
+        value: _setUpWebPush2
+      });
+      Object.defineProperty(this, _oldValues$3, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _logger$5, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _request$4, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _account$2, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _wizAlertJSPath, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _fcmPublicKey, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath] = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js';
+      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = null;
+      _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = values;
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
+      _classPrivateFieldLooseBase(this, _request$4)[_request$4] = request;
+      _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
+    }
+
+    push() {
+      for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
+        displayArgs[_key] = arguments[_key];
+      }
+
+      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+
+      return 0;
+    }
+
+    enable() {
+      let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      const {
+        swPath
+      } = options;
+      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath);
+    }
+
+    _processOldValues() {
+      if (_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]) {
+        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
+      }
+
+      _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = null;
+    }
+
+    setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
+      if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
+        _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
+      } else if (navigator.userAgent.indexOf('Safari') !== -1) {
+        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl);
+      }
+    }
+
+    setApplicationServerKey(applicationServerKey) {
+      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
+    }
+
+    _enableWebPush(enabled, applicationServerKey) {
+      $ct.webPushEnabled = enabled;
+
+      if (applicationServerKey != null) {
+        this.setApplicationServerKey(applicationServerKey);
+      }
+
+      if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
+        _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
+      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
+      }
+    }
+
+  }
+
+  var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
+    if ($ct.webPushEnabled && displayArgs.length > 0) {
+      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
+    } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
+      $ct.notifApi.notifEnabledFromApi = true;
+      $ct.notifApi.displayArgs = displayArgs.slice();
+    } else if ($ct.webPushEnabled === false && displayArgs.length > 0) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure push notifications are fully enabled and integrated');
+    }
+  };
+
+  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
+    // ensure that proper arguments are passed
+    if (typeof apnsWebPushId === 'undefined') {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
+    }
+
+    if (typeof apnsServiceUrl === 'undefined') {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
+    }
+
+    if ('safari' in window && 'pushNotification' in window.safari) {
+      window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
+        if (subscription.permission === 'granted') {
+          const subscriptionData = JSON.parse(JSON.stringify(subscription));
+          subscriptionData.endpoint = subscription.deviceToken;
+          subscriptionData.browser = 'Safari';
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+          _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+        } else if (subscription.permission === 'denied') {
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+        }
+      });
+    }
+  };
+
+  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
+    let registrationScope = '';
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
+        if (typeof __wzrk_account_id !== 'undefined') {
+          // eslint-disable-line
+          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
+          // hence add a timeout and hope serviceWroker is ready within that time.
+          return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
+        }
+
+        registrationScope = registration.scope; // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
+        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
+        // OR getRegistrations PROMISE IF ITS FIREFOX
+
+        const rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
+        const isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
+
+        if (isServiceWorkerAtRoot) {
+          return navigator.serviceWorker.ready;
+        } else {
+          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+            return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
+          } else {
+            return navigator.serviceWorker.getRegistrations();
+          }
+        }
+      }).then(serviceWorkerRegistration => {
+        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
+        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
+          serviceWorkerRegistration = serviceWorkerRegistration.filter(i => i.scope === registrationScope)[0];
+        }
+
+        const subscribeObj = {
+          userVisibleOnly: true
+        };
+
+        if (_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
+          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
+        }
+
+        serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+
+
+          const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
+
+          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+            subscriptionData.browser = 'Chrome';
+          } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+            subscriptionData.browser = 'Firefox';
+          }
+
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+          _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+
+          if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+            subscriptionCallback();
+          }
+
+          const existingBellWrapper = document.getElementById('bell_wrapper');
+
+          if (existingBellWrapper) {
+            existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+          }
+        }).catch(error => {
+          // unsubscribe from webpush if error
+          serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
+            if (subscription !== null) {
+              subscription.unsubscribe().then(successful => {
+                // You've successfully unsubscribed
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Unsubscription successful');
+
+                window.clevertap.notifications.push({
+                  skipDialog: true
+                });
+              }).catch(e => {
+                // Unsubscription failed
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error unsubscribing: ' + e);
+              });
+            }
+          });
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error subscribing: ' + error);
+        });
+      }).catch(err => {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('error registering service worker: ' + err);
+      });
+    }
+  };
+
+  var _addWizAlertJS2 = function _addWizAlertJS2() {
+    const scriptTag = document.createElement('script');
+    scriptTag.setAttribute('type', 'text/javascript');
+    scriptTag.setAttribute('id', 'wzrk-alert-js');
+    scriptTag.setAttribute('src', _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath]); // add the script tag to the end of the body
+
+    document.getElementsByTagName('body')[0].appendChild(scriptTag);
+    return scriptTag;
+  };
+
+  var _removeWizAlertJS2 = function _removeWizAlertJS2() {
+    const scriptTag = document.getElementById('wzrk-alert-js');
+    scriptTag.parentNode.removeChild(scriptTag);
+  };
+
+  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
+    // make sure everything is specified
+    let titleText;
+    let bodyText;
+    let okButtonText;
+    let rejectButtonText;
+    let okButtonColor;
+    let skipDialog;
+    let askAgainTimeInSeconds;
+    let okCallback;
+    let rejectCallback;
+    let subscriptionCallback;
+    let serviceWorkerPath;
+    let httpsPopupPath;
+    let httpsIframePath;
+    let apnsWebPushId;
+    let apnsWebPushServiceUrl;
+
+    if (displayArgs.length === 1) {
+      if (isObject(displayArgs[0])) {
+        const notifObj = displayArgs[0];
+        titleText = notifObj.titleText;
+        bodyText = notifObj.bodyText;
+        okButtonText = notifObj.okButtonText;
+        rejectButtonText = notifObj.rejectButtonText;
+        okButtonColor = notifObj.okButtonColor;
+        skipDialog = notifObj.skipDialog;
+        askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
+        okCallback = notifObj.okCallback;
+        rejectCallback = notifObj.rejectCallback;
+        subscriptionCallback = notifObj.subscriptionCallback;
+        serviceWorkerPath = notifObj.serviceWorkerPath;
+        httpsPopupPath = notifObj.httpsPopupPath;
+        httpsIframePath = notifObj.httpsIframePath;
+        apnsWebPushId = notifObj.apnsWebPushId;
+        apnsWebPushServiceUrl = notifObj.apnsWebPushServiceUrl;
+      }
+    } else {
+      titleText = displayArgs[0];
+      bodyText = displayArgs[1];
+      okButtonText = displayArgs[2];
+      rejectButtonText = displayArgs[3];
+      okButtonColor = displayArgs[4];
+      skipDialog = displayArgs[5];
+      askAgainTimeInSeconds = displayArgs[6];
+    }
+
+    if (skipDialog == null) {
+      skipDialog = false;
+    }
+
+    if (serviceWorkerPath == null) {
+      serviceWorkerPath = '/clevertap_sw.js';
+    } // ensure that the browser supports notifications
+
+
+    if (typeof navigator.serviceWorker === 'undefined') {
+      return;
+    }
+
+    const isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
+
+    if (window.location.protocol !== 'https:' && document.location.hostname !== 'localhost' && !isHTTP) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure you are https or localhost to register for notifications');
+
+      return;
+    } // right now, we only support Chrome V50 & higher & Firefox
+
+
+    if (navigator.userAgent.indexOf('Chrome') !== -1) {
+      const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/);
+
+      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) {
+        return;
+      }
+    } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+      const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/);
+
+      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) {
+        return;
+      }
+    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
+      const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/);
+
+      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) {
+        return;
+      }
+    } else {
+      return;
+    } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
+
+
+    if (!isHTTP) {
+      if (Notification == null) {
+        return;
+      } // handle migrations from other services -> chrome notifications may have already been asked for before
+
+
+      if (Notification.permission === 'granted') {
+        // skip the dialog and register
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        return;
+      } else if (Notification.permission === 'denied') {
+        // we've lost this profile :'(
+        return;
+      }
+
+      if (skipDialog) {
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        return;
+      }
+    } // make sure the right parameters are passed
+
+
+    if (!titleText || !bodyText || !okButtonText || !rejectButtonText) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Missing input parameters; please specify title, body, ok button and cancel button text');
+
+      return;
+    } // make sure okButtonColor is formatted properly
+
+
+    if (okButtonColor == null || !okButtonColor.match(/^#[a-f\d]{6}$/i)) {
+      okButtonColor = '#f28046'; // default color for positive button
+    } // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
+
+
+    const now = new Date().getTime() / 1000;
+
+    if (StorageManager.getMetaProp('notif_last_time') == null) {
+      StorageManager.setMetaProp('notif_last_time', now);
+    } else {
+      if (askAgainTimeInSeconds == null) {
+        // 7 days by default
+        askAgainTimeInSeconds = 7 * 24 * 60 * 60;
+      }
+
+      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
+        return;
+      } else {
+        // continue asking
+        StorageManager.setMetaProp('notif_last_time', now);
+      }
+    }
+
+    if (isHTTP) {
+      // add the https iframe
+      const httpsIframe = document.createElement('iframe');
+      httpsIframe.setAttribute('style', 'display:none;');
+      httpsIframe.setAttribute('src', httpsIframePath);
+      document.body.appendChild(httpsIframe);
+      window.addEventListener('message', event => {
+        if (event.data != null) {
+          let obj = {};
+
+          try {
+            obj = JSON.parse(event.data);
+          } catch (e) {
+            // not a call from our iframe
+            return;
+          }
+
+          if (obj.state != null) {
+            if (obj.from === 'ct' && obj.state === 'not') {
+              _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
+                // create our wizrocket popup
+                window.wzrkPermissionPopup.wizAlert({
+                  title: titleText,
+                  body: bodyText,
+                  confirmButtonText: okButtonText,
+                  confirmButtonColor: okButtonColor,
+                  rejectButtonText: rejectButtonText
+                }, enabled => {
+                  // callback function
+                  if (enabled) {
+                    // the user accepted on the dialog box
+                    if (typeof okCallback === 'function') {
+                      okCallback();
+                    } // redirect to popup.html
+
+
+                    window.open(httpsPopupPath);
+                  } else {
+                    if (typeof rejectCallback === 'function') {
+                      rejectCallback();
+                    }
+                  }
+
+                  _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
+                });
+              };
+            }
+          }
+        }
+      }, false);
+    } else {
+      _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
+        // create our wizrocket popup
+        window.wzrkPermissionPopup.wizAlert({
+          title: titleText,
+          body: bodyText,
+          confirmButtonText: okButtonText,
+          confirmButtonColor: okButtonColor,
+          rejectButtonText: rejectButtonText
+        }, enabled => {
+          // callback function
+          if (enabled) {
+            // the user accepted on the dialog box
+            if (typeof okCallback === 'function') {
+              okCallback();
+            }
+
+            this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+          } else {
+            if (typeof rejectCallback === 'function') {
+              rejectCallback();
+            }
+          }
+
+          _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
+        });
+      };
+    }
+  };
+
+  const BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi40OTYyIDUuMjQzOTVDMTIuODM5MSA1LjAzMzE3IDEzLjI4NDcgNS4xNDY4OSAxMy40OTczIDUuNDg4NjdDMTMuNzIyMyA1Ljg1MDE4IDEzLjYwMDIgNi4zMjUxOCAxMy4yMzggNi41NDkwMkM3LjM5Mzk5IDEwLjE2MDYgMy41IDE2LjYyNTcgMy41IDI0LjAwMDNDMy41IDM1LjMyMjEgMTIuNjc4MiA0NC41MDAzIDI0IDQ0LjUwMDNDMjguMDA1NSA0NC41MDAzIDMxLjc0MjYgNDMuMzUxNSAzNC45IDQxLjM2NTVDMzUuMjYwOCA0MS4xMzg1IDM1Ljc0MTYgNDEuMjM4NiAzNS45NjY4IDQxLjYwMDZDMzYuMTc5MiA0MS45NDE5IDM2LjA4NSA0Mi4zOTExIDM1Ljc0NTIgNDIuNjA2QzMyLjM0NjggNDQuNzU1OSAyOC4zMTg3IDQ2LjAwMDMgMjQgNDYuMDAwM0MxMS44NDk3IDQ2LjAwMDMgMiAzNi4xNTA1IDIgMjQuMDAwM0MyIDE2LjA2NjkgNi4xOTkyMSA5LjExNDMyIDEyLjQ5NjIgNS4yNDM5NVpNMzguOCAzOS45MDAzQzM4LjggNDAuMzk3MyAzOC4zOTcxIDQwLjgwMDMgMzcuOSA0MC44MDAzQzM3LjQwMjkgNDAuODAwMyAzNyA0MC4zOTczIDM3IDM5LjkwMDNDMzcgMzkuNDAzMiAzNy40MDI5IDM5LjAwMDMgMzcuOSAzOS4wMDAzQzM4LjM5NzEgMzkuMDAwMyAzOC44IDM5LjQwMzIgMzguOCAzOS45MDAzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMkMyMi44OTU0IDEyIDIyIDEyLjg5NTQgMjIgMTRWMTQuMjUyQzE4LjU0OTUgMTUuMTQwMSAxNiAxOC4yNzIzIDE2IDIyVjI5LjVIMTUuNDc2OUMxNC42NjEyIDI5LjUgMTQgMzAuMTYxMiAxNCAzMC45NzY5VjMxLjAyMzFDMTQgMzEuODM4OCAxNC42NjEyIDMyLjUgMTUuNDc2OSAzMi41SDMyLjUyMzFDMzMuMzM4OCAzMi41IDM0IDMxLjgzODggMzQgMzEuMDIzMVYzMC45NzY5QzM0IDMwLjE2MTIgMzMuMzM4OCAyOS41IDMyLjUyMzEgMjkuNUgzMlYyMkMzMiAxOC4yNzIzIDI5LjQ1MDUgMTUuMTQwMSAyNiAxNC4yNTJWMTRDMjYgMTIuODk1NCAyNS4xMDQ2IDEyIDI0IDEyWk0yNiAzNFYzMy41SDIyVjM0QzIyIDM1LjEwNDYgMjIuODk1NCAzNiAyNCAzNkMyNS4xMDQ2IDM2IDI2IDM1LjEwNDYgMjYgMzRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
+  const PROMPT_BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMzIiIGZpbGw9IiMwMEFFQjkiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0zMS45OTg2IDIwQzMwLjkxOTggMjAgMzAuMDQyOCAyMC44NzQ2IDMwLjA0MjggMjEuOTUzNEwzMC4wNDI5IDIxLjk3MzRDMjYuNTQzNCAyMi41NTM1IDIzLjg3NSAyNS41OTQzIDIzLjg3NSAyOS4yNTgyVjM4LjA5OTVIMjMuODczNUMyMy4wNTg5IDM4LjA5OTUgMjIuMzk4NCAzOC43NiAyMi4zOTg0IDM5LjU3NDZDMjIuMzk4NCA0MC4zODkzIDIzLjA1ODkgNDEuMDQ5NyAyMy44NzM1IDQxLjA0OTdIMjkuNzgxMlY0MS43ODQyQzI5Ljc4MTIgNDMuMDA3NyAzMC43NzMxIDQzLjk5OTYgMzEuOTk2NiA0My45OTk2QzMzLjIyMDIgNDMuOTk5NiAzNC4yMTIgNDMuMDA3NyAzNC4yMTIgNDEuNzg0MlY0MS4wNDk3SDQwLjEyMzNDNDAuOTM4IDQxLjA0OTcgNDEuNTk4NCA0MC4zODkzIDQxLjU5ODQgMzkuNTc0NkM0MS41OTg0IDM4Ljc2IDQwLjkzOCAzOC4wOTk1IDQwLjEyMzMgMzguMDk5NUg0MC4xMjEyVjI5LjI1ODJDNDAuMTIxMiAyNS41OTQ2IDM3LjQ1MzMgMjIuNTU0MiAzMy45NTQzIDIxLjk3MzZMMzMuOTU0NCAyMS45NTM0QzMzLjk1NDQgMjAuODc0NiAzMy4wNzc1IDIwIDMxLjk5ODYgMjBaIiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCBvcGFjaXR5PSIwLjUiIHg9IjcuNSIgeT0iNy41IiB3aWR0aD0iNDkiIGhlaWdodD0iNDkiIHJ4PSIyNC41IiBzdHJva2U9IndoaXRlIi8+CjxyZWN0IG9wYWNpdHk9IjAuMyIgeD0iNC41IiB5PSI0LjUiIHdpZHRoPSI1NSIgaGVpZ2h0PSI1NSIgcng9IjI3LjUiIHN0cm9rZT0id2hpdGUiLz4KPHJlY3Qgb3BhY2l0eT0iMC44IiB4PSIxMC41IiB5PSIxMC41IiB3aWR0aD0iNDMiIGhlaWdodD0iNDMiIHJ4PSIyMS41IiBzdHJva2U9IndoaXRlIi8+Cjwvc3ZnPgo=';
+
+  let appServerKey = null;
+  let swPath = '/clevertap_sw.js';
+  let notificationHandler = null;
+  const processWebPushConfig = (webPushConfig, logger, request) => {
+    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+
+    const updatePushConfig = () => {
+      $ct.pushConfig = webPushConfig;
+      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
+    };
+
+    if (webPushConfig.isPreview) {
+      updatePushConfig();
+      enablePush(logger, null, request);
+    } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
+      updatePushConfig();
+    }
+  };
+  const enablePush = (logger, account, request, customSwPath) => {
+    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+
+    $ct.pushConfig = _pushConfig;
+
+    if (!$ct.pushConfig) {
+      logger.error('Web Push config data not present');
+      return;
+    }
+
+    if (customSwPath) {
+      swPath = customSwPath;
+    }
+
+    notificationHandler = new NotificationHandler({
+      logger,
+      session: {},
+      request,
+      account
+    });
+    const {
+      showBox,
+      boxType,
+      showBellIcon,
+      isPreview
+    } = $ct.pushConfig;
+
+    if (isPreview) {
+      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig);
+      if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
+    } else {
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig);
+      if (showBellIcon) createBellIcon($ct.pushConfig);
+    }
+  };
+
+  const createElementWithAttributes = function (tag) {
+    let attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    const element = document.createElement(tag);
+    Object.entries(attributes).forEach((_ref) => {
+      let [key, value] = _ref;
+      element[key] = value;
+    });
+    return element;
+  };
+
+  const createNotificationBox = configData => {
+    if (document.getElementById('pnWrapper')) return;
+    const {
+      boxConfig: {
+        content,
+        style
+      }
+    } = configData; // Create the wrapper div
+
+    const wrapper = createElementWithAttributes('div', {
+      id: 'pnWrapper'
+    });
+    const overlayDiv = createElementWithAttributes('div', {
+      id: 'pnOverlay'
+    });
+    const pnCard = createElementWithAttributes('div', {
+      id: 'pnCard'
+    });
+    const iconTitleDescWrapper = createElementWithAttributes('div', {
+      id: 'iconTitleDescWrapper'
+    });
+    const iconContainer = createElementWithAttributes('div', {
+      id: 'iconContainer'
+    });
+    const imgElement = createElementWithAttributes('img', {
+      id: 'imgElement',
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url
+    });
+    iconContainer.appendChild(imgElement);
+    iconTitleDescWrapper.appendChild(iconContainer);
+    const titleDescWrapper = createElementWithAttributes('div', {
+      id: 'titleDescWrapper'
+    });
+    titleDescWrapper.appendChild(createElementWithAttributes('div', {
+      id: 'title',
+      textContent: content.title
+    }));
+    titleDescWrapper.appendChild(createElementWithAttributes('div', {
+      id: 'description',
+      textContent: content.description
+    }));
+    iconTitleDescWrapper.appendChild(titleDescWrapper);
+    const buttonsContainer = createElementWithAttributes('div', {
+      id: 'buttonsContainer'
+    });
+    const primaryButton = createElementWithAttributes('button', {
+      id: 'primaryButton',
+      textContent: content.buttons.primaryButtonText
+    });
+    const secondaryButton = createElementWithAttributes('button', {
+      id: 'secondaryButton',
+      textContent: content.buttons.secondaryButtonText
+    });
+    buttonsContainer.appendChild(secondaryButton);
+    buttonsContainer.appendChild(primaryButton);
+    pnCard.appendChild(iconTitleDescWrapper);
+    pnCard.appendChild(buttonsContainer); // Apply styles
+
+    const styleElement = createElementWithAttributes('style', {
+      textContent: getBoxPromptStyles(style)
+    });
+    wrapper.appendChild(styleElement);
+    wrapper.appendChild(pnCard);
+    wrapper.appendChild(overlayDiv);
+    setElementPosition(pnCard, style.card.position);
+    const now = new Date().getTime() / 1000;
+    const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
+    const popupFrequency = content.popupFrequency || 7 * 24 * 60 * 60;
+
+    if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
+      document.body.appendChild(wrapper);
+
+      if (!configData.isPreview) {
+        addEventListeners(wrapper);
+      }
+    }
+  };
+  const createBellIcon = configData => {
+    if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return;
+    const {
+      bellIconConfig: {
+        content,
+        style
+      }
+    } = configData;
+    const bellWrapper = createElementWithAttributes('div', {
+      id: 'bell_wrapper'
+    });
+    const bellIcon = createElementWithAttributes('img', {
+      id: 'bell_icon',
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(BELL_BASE64) : content.icon.url
+    }); // For playing gif
+
+    const gifModal = createElementWithAttributes('div', {
+      id: 'gif_modal',
+      style: 'display: none;'
+    });
+    const gifImage = createElementWithAttributes('img', {
+      id: 'gif_image',
+      src: 'https://d2r1yp2w7bby2u.cloudfront.net/js/permission_grant.gif'
+    });
+    const closeModal = createElementWithAttributes('div', {
+      id: 'close_modal',
+      innerHTML: '&times;'
+    });
+    gifModal.appendChild(gifImage);
+    gifModal.appendChild(closeModal);
+    bellWrapper.appendChild(bellIcon);
+    bellWrapper.appendChild(gifModal);
+
+    if (content.hoverText.enabled) {
+      const tooltip = createElementWithAttributes('div', {
+        id: 'bell_tooltip',
+        textContent: content.hoverText.text
+      });
+      bellWrapper.appendChild(tooltip);
+    }
+
+    setElementPosition(bellWrapper, style.card.position); // Apply styles
+
+    const styleElement = createElementWithAttributes('style', {
+      textContent: getBellIconStyles(style)
+    });
+    document.head.appendChild(styleElement);
+    document.body.appendChild(bellWrapper);
+
+    if (!configData.isPreview) {
+      addBellEventListeners(bellWrapper);
+    }
+
+    return bellWrapper;
+  };
+  const setServerKey = serverKey => {
+    appServerKey = serverKey;
+  };
+  const addEventListeners = wrapper => {
+    const primaryButton = wrapper.querySelector('#primaryButton');
+    const secondaryButton = wrapper.querySelector('#secondaryButton');
+
+    const removeWrapper = () => {
+      var _wrapper$parentNode;
+
+      return (_wrapper$parentNode = wrapper.parentNode) === null || _wrapper$parentNode === void 0 ? void 0 : _wrapper$parentNode.removeChild(wrapper);
+    };
+
+    primaryButton.addEventListener('click', () => {
+      removeWrapper();
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+    });
+    secondaryButton.addEventListener('click', () => {
+      StorageManager.setMetaProp('webpush_last_notif_time', Date.now() / 1000);
+      removeWrapper();
+    });
+  };
+  const addBellEventListeners = bellWrapper => {
+    const bellIcon = bellWrapper.querySelector('#bell_icon');
+    bellIcon.addEventListener('click', () => {
+      if (Notification.permission === 'denied') {
+        toggleGifModal(bellWrapper);
+      } else {
+        notificationHandler.setApplicationServerKey(appServerKey);
+        notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+
+        if (Notification.permission === 'granted') {
+          bellWrapper.remove();
+        }
+      }
+    });
+    bellIcon.addEventListener('mouseenter', () => displayTooltip(bellWrapper));
+    bellIcon.addEventListener('mouseleave', () => clearTooltip(bellWrapper));
+    bellWrapper.querySelector('#close_modal').addEventListener('click', () => toggleGifModal(bellWrapper));
+  };
+  const setElementPosition = (element, position) => {
+    Object.assign(element.style, {
+      inset: 'auto',
+      transform: 'none'
+    });
+    const positions = {
+      'Top Right': {
+        inset: '16px 16px auto auto'
+      },
+      'Top Left': {
+        inset: '16px auto auto 16px'
+      },
+      'Bottom Right': {
+        inset: 'auto 16px 16px auto'
+      },
+      'Bottom Left': {
+        inset: 'auto auto 16px 16px'
+      },
+      Center: {
+        inset: '50%',
+        transform: 'translate(-50%, -50%)'
+      },
+      Top: {
+        inset: '16px auto auto 50%',
+        transform: 'translateX(-50%)'
+      },
+      Bottom: {
+        inset: 'auto auto 16px 50%',
+        transform: 'translateX(-50%)'
+      }
+    };
+    Object.assign(element.style, positions[position] || positions['top-right']);
+  };
+
+  const displayTooltip = bellWrapper => {
+    const gifModal = bellWrapper.querySelector('#gif_modal');
+
+    if (gifModal.style.display === 'flex') {
+      return;
+    }
+
+    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+
+    if (tooltip) {
+      tooltip.style.display = 'flex';
+    }
+
+    const bellIcon = bellWrapper.querySelector('#bell_icon');
+    const bellRect = bellIcon.getBoundingClientRect();
+    var midX = window.innerWidth / 2;
+    var midY = window.innerHeight / 2;
+    bellWrapper.style['flex-direction'] = bellRect.y > midY ? 'column-reverse' : 'column';
+    bellWrapper.style['align-items'] = bellRect.x > midX ? 'flex-end' : 'flex-start';
+  };
+
+  const clearTooltip = bellWrapper => {
+    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+
+    if (tooltip) {
+      tooltip.style.display = 'none';
+    }
+  };
+
+  const toggleGifModal = bellWrapper => {
+    clearTooltip(bellWrapper);
+    const gifModal = bellWrapper.querySelector('#gif_modal');
+    gifModal.style.display = gifModal.style.display === 'none' ? 'flex' : 'none';
+  };
 
   const _tr = (msg, _ref) => {
     let {
@@ -5883,6 +6711,10 @@
       }
     }
 
+    if (msg.webPushConfig) {
+      processWebPushConfig(msg.webPushConfig, logger, request);
+    }
+
     if (msg.vars) {
       $ct.variableStore.mergeVariables(msg.vars);
       return;
@@ -6078,7 +6910,7 @@
     return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
   };
 
-  var _logger$5 = _classPrivateFieldLooseKey("logger");
+  var _logger$6 = _classPrivateFieldLooseKey("logger");
 
   var _sessionId = _classPrivateFieldLooseKey("sessionId");
 
@@ -6091,7 +6923,7 @@
         logger,
         isPersonalisationActive
       } = _ref;
-      Object.defineProperty(this, _logger$5, {
+      Object.defineProperty(this, _logger$6, {
         writable: true,
         value: void 0
       });
@@ -6106,7 +6938,7 @@
       this.cookieName = void 0;
       this.scookieObj = void 0;
       this.sessionId = StorageManager.getMetaProp('cs');
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3] = isPersonalisationActive;
     }
 
@@ -6217,9 +7049,9 @@
   let seqNo = 0;
   let requestTime = 0;
 
-  var _logger$6 = _classPrivateFieldLooseKey("logger");
+  var _logger$7 = _classPrivateFieldLooseKey("logger");
 
-  var _account$2 = _classPrivateFieldLooseKey("account");
+  var _account$3 = _classPrivateFieldLooseKey("account");
 
   var _device$2 = _classPrivateFieldLooseKey("device");
 
@@ -6243,11 +7075,11 @@
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
       });
-      Object.defineProperty(this, _logger$6, {
+      Object.defineProperty(this, _logger$7, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _account$2, {
+      Object.defineProperty(this, _account$3, {
         writable: true,
         value: void 0
       });
@@ -6268,8 +7100,8 @@
         value: false
       });
       this.processingBackup = false;
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
-      _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
+      _classPrivateFieldLooseBase(this, _logger$7)[_logger$7] = logger;
+      _classPrivateFieldLooseBase(this, _account$3)[_account$3] = account;
       _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
       _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4] = isPersonalisationActive;
@@ -6292,7 +7124,7 @@
           const backupEvent = backupMap[idx];
 
           if (typeof backupEvent.fired === 'undefined') {
-            _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Processing backup event : ' + backupEvent.q);
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('Processing backup event : ' + backupEvent.q);
 
             if (typeof backupEvent.q !== 'undefined') {
               RequestDispatcher.fireRequest(backupEvent.q);
@@ -6310,15 +7142,15 @@
     addSystemDataToObject(dataObject, ignoreTrim) {
       // ignore trim for chrome notifications; undefined everywhere else
       if (typeof ignoreTrim === 'undefined') {
-        dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+        dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
       }
 
-      if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError)) {
-        dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError;
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError = {};
+      if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$7)[_logger$7].wzrkError)) {
+        dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].wzrkError;
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].wzrkError = {};
       }
 
-      dataObject.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+      dataObject.id = _classPrivateFieldLooseBase(this, _account$3)[_account$3].id;
 
       if (isValueValid(_classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie)) {
         dataObject.g = _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie;
@@ -6333,7 +7165,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.9.6',
+        lib: 'web-sdk-v1.10.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -6352,7 +7184,7 @@
       if (_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
         data.rc = true;
 
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('reset cookie sent in request and cleared from meta for future requests.');
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('reset cookie sent in request and cleared from meta for future requests.');
       }
 
       if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4]()) {
@@ -6384,7 +7216,7 @@
       const now = getNow();
       url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
       const data = url + '&i=' + now + '&sn=' + seqNo;
-      StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]); // if offline is set to true, save the request in backup and return
+      StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]); // if offline is set to true, save the request in backup and return
 
       if ($ct.offline) return; // if there is no override
       // and an OUL request is not in progress
@@ -6403,7 +7235,7 @@
         window.oulReqN = $ct.globalCache.REQ_N;
         RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
       } else {
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
       }
     }
 
@@ -6419,15 +7251,15 @@
         }
 
         data.action = 'unregister';
-        data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+        data.id = _classPrivateFieldLooseBase(this, _account$3)[_account$3].id;
 
         const obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
 
         data.s = obj.s; // session cookie
 
-        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
 
-        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -6445,10 +7277,10 @@
       payload = this.addSystemDataToObject(payload, true);
       payload = JSON.stringify(payload);
 
-      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]));
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]));
       RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
 
       StorageManager.save(WEBPUSH_LS_KEY, 'ok');
@@ -6460,9 +7292,9 @@
       data = this.addSystemDataToObject(data, undefined);
       this.addFlags(data);
       data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
-      const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+      const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
 
-      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
       pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -6483,11 +7315,11 @@
 
         throw response;
       }).then(data => {
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Sync data successful', data);
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('Sync data successful', data);
 
         return data;
       }).catch(e => {
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Error in syncing variables', e);
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('Error in syncing variables', e);
 
         throw e;
       });
@@ -6523,13 +7355,13 @@
     }
   };
 
-  var _request$4 = _classPrivateFieldLooseKey("request");
+  var _request$5 = _classPrivateFieldLooseKey("request");
 
-  var _account$3 = _classPrivateFieldLooseKey("account");
+  var _account$4 = _classPrivateFieldLooseKey("account");
 
-  var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
+  var _oldValues$4 = _classPrivateFieldLooseKey("oldValues");
 
-  var _logger$7 = _classPrivateFieldLooseKey("logger");
+  var _logger$8 = _classPrivateFieldLooseKey("logger");
 
   var _processPrivacyArray = _classPrivateFieldLooseKey("processPrivacyArray");
 
@@ -6544,26 +7376,26 @@
       Object.defineProperty(this, _processPrivacyArray, {
         value: _processPrivacyArray2
       });
-      Object.defineProperty(this, _request$4, {
+      Object.defineProperty(this, _request$5, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _account$3, {
+      Object.defineProperty(this, _account$4, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _oldValues$3, {
+      Object.defineProperty(this, _oldValues$4, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _logger$7, {
+      Object.defineProperty(this, _logger$8, {
         writable: true,
         value: void 0
       });
-      _classPrivateFieldLooseBase(this, _logger$7)[_logger$7] = logger;
-      _classPrivateFieldLooseBase(this, _request$4)[_request$4] = request;
-      _classPrivateFieldLooseBase(this, _account$3)[_account$3] = account;
-      _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = values;
+      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8] = logger;
+      _classPrivateFieldLooseBase(this, _request$5)[_request$5] = request;
+      _classPrivateFieldLooseBase(this, _account$4)[_account$4] = account;
+      _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = values;
     }
 
     push() {
@@ -6581,11 +7413,11 @@
     }
 
     _processOldValues() {
-      if (_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]) {
-        _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
+      if (_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]) {
+        _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]);
       }
 
-      _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = null;
+      _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = null;
     }
 
   }
@@ -6618,527 +7450,19 @@
       if (!isObjectEmpty(profileObj)) {
         data.type = 'profile';
         data.profile = profileObj;
-        data = _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
-        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
+        data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, undefined);
+        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$8)[_logger$8]);
 
-        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
+        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$4)[_account$4].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false');
 
-        _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+        _classPrivateFieldLooseBase(this, _request$5)[_request$5].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
 
         privacyArr.splice(0, privacyArr.length);
       }
-    }
-  };
-
-  var _oldValues$4 = _classPrivateFieldLooseKey("oldValues");
-
-  var _logger$8 = _classPrivateFieldLooseKey("logger");
-
-  var _request$5 = _classPrivateFieldLooseKey("request");
-
-  var _account$4 = _classPrivateFieldLooseKey("account");
-
-  var _wizAlertJSPath = _classPrivateFieldLooseKey("wizAlertJSPath");
-
-  var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
-
-  var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
-
-  var _setUpWebPushNotifications = _classPrivateFieldLooseKey("setUpWebPushNotifications");
-
-  var _setApplicationServerKey = _classPrivateFieldLooseKey("setApplicationServerKey");
-
-  var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
-
-  var _setUpChromeFirefoxNotifications = _classPrivateFieldLooseKey("setUpChromeFirefoxNotifications");
-
-  var _addWizAlertJS = _classPrivateFieldLooseKey("addWizAlertJS");
-
-  var _removeWizAlertJS = _classPrivateFieldLooseKey("removeWizAlertJS");
-
-  var _handleNotificationRegistration = _classPrivateFieldLooseKey("handleNotificationRegistration");
-
-  class NotificationHandler extends Array {
-    constructor(_ref, values) {
-      let {
-        logger,
-        session,
-        request,
-        account
-      } = _ref;
-      super();
-      Object.defineProperty(this, _handleNotificationRegistration, {
-        value: _handleNotificationRegistration2
-      });
-      Object.defineProperty(this, _removeWizAlertJS, {
-        value: _removeWizAlertJS2
-      });
-      Object.defineProperty(this, _addWizAlertJS, {
-        value: _addWizAlertJS2
-      });
-      Object.defineProperty(this, _setUpChromeFirefoxNotifications, {
-        value: _setUpChromeFirefoxNotifications2
-      });
-      Object.defineProperty(this, _setUpSafariNotifications, {
-        value: _setUpSafariNotifications2
-      });
-      Object.defineProperty(this, _setApplicationServerKey, {
-        value: _setApplicationServerKey2
-      });
-      Object.defineProperty(this, _setUpWebPushNotifications, {
-        value: _setUpWebPushNotifications2
-      });
-      Object.defineProperty(this, _setUpWebPush, {
-        value: _setUpWebPush2
-      });
-      Object.defineProperty(this, _oldValues$4, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _logger$8, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _request$5, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _account$4, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _wizAlertJSPath, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _fcmPublicKey, {
-        writable: true,
-        value: void 0
-      });
-      _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath] = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js';
-      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = null;
-      _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = values;
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8] = logger;
-      _classPrivateFieldLooseBase(this, _request$5)[_request$5] = request;
-      _classPrivateFieldLooseBase(this, _account$4)[_account$4] = account;
-    }
-
-    push() {
-      for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
-        displayArgs[_key] = arguments[_key];
-      }
-
-      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
-
-      return 0;
-    }
-
-    _processOldValues() {
-      if (_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]) {
-        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]);
-      }
-
-      _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = null;
-    }
-
-    _enableWebPush(enabled, applicationServerKey) {
-      $ct.webPushEnabled = enabled;
-
-      if (applicationServerKey != null) {
-        _classPrivateFieldLooseBase(this, _setApplicationServerKey)[_setApplicationServerKey](applicationServerKey);
-      }
-
-      if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-        _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-        _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
-      }
-    }
-
-  }
-
-  var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
-    if ($ct.webPushEnabled && displayArgs.length > 0) {
-      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
-    } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
-      $ct.notifApi.notifEnabledFromApi = true;
-      $ct.notifApi.displayArgs = displayArgs.slice();
-    } else if ($ct.webPushEnabled === false && displayArgs.length > 0) {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Make sure push notifications are fully enabled and integrated');
-    }
-  };
-
-  var _setUpWebPushNotifications2 = function _setUpWebPushNotifications2(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-    if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
-      _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-      _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl);
-    }
-  };
-
-  var _setApplicationServerKey2 = function _setApplicationServerKey2(applicationServerKey) {
-    _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
-  };
-
-  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
-    // ensure that proper arguments are passed
-    if (typeof apnsWebPushId === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Ensure that APNS Web Push ID is supplied');
-    }
-
-    if (typeof apnsServiceUrl === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Ensure that APNS Web Push service path is supplied');
-    }
-
-    if ('safari' in window && 'pushNotification' in window.safari) {
-      window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
-        if (subscription.permission === 'granted') {
-          const subscriptionData = JSON.parse(JSON.stringify(subscription));
-          subscriptionData.endpoint = subscription.deviceToken;
-          subscriptionData.browser = 'Safari';
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-          _classPrivateFieldLooseBase(this, _request$5)[_request$5].registerToken(subscriptionData);
-
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
-        } else if (subscription.permission === 'denied') {
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].info('Error subscribing to Safari web push');
-        }
-      });
-    }
-  };
-
-  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
-    let registrationScope = '';
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
-        if (typeof __wzrk_account_id !== 'undefined') {
-          // eslint-disable-line
-          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
-          // hence add a timeout and hope serviceWroker is ready within that time.
-          return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
-        }
-
-        registrationScope = registration.scope; // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
-        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
-        // OR getRegistrations PROMISE IF ITS FIREFOX
-
-        const rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
-        const isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
-
-        if (isServiceWorkerAtRoot) {
-          return navigator.serviceWorker.ready;
-        } else {
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
-            return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
-          } else {
-            return navigator.serviceWorker.getRegistrations();
-          }
-        }
-      }).then(serviceWorkerRegistration => {
-        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
-        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
-          serviceWorkerRegistration = serviceWorkerRegistration.filter(i => i.scope === registrationScope)[0];
-        }
-
-        const subscribeObj = {
-          userVisibleOnly: true
-        };
-
-        if (_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
-          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
-        }
-
-        serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
-
-
-          const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
-
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
-            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-            subscriptionData.browser = 'Chrome';
-          } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
-            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-            subscriptionData.browser = 'Firefox';
-          }
-
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-          _classPrivateFieldLooseBase(this, _request$5)[_request$5].registerToken(subscriptionData);
-
-          if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
-            subscriptionCallback();
-          }
-        }).catch(error => {
-          // unsubscribe from webpush if error
-          serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
-            if (subscription !== null) {
-              subscription.unsubscribe().then(successful => {
-                // You've successfully unsubscribed
-                _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].info('Unsubscription successful');
-
-                window.clevertap.notifications.push({
-                  skipDialog: true
-                });
-              }).catch(e => {
-                // Unsubscription failed
-                _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error unsubscribing: ' + e);
-              });
-            }
-          });
-
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Error subscribing: ' + error);
-        });
-      }).catch(err => {
-        _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('error registering service worker: ' + err);
-      });
-    }
-  };
-
-  var _addWizAlertJS2 = function _addWizAlertJS2() {
-    const scriptTag = document.createElement('script');
-    scriptTag.setAttribute('type', 'text/javascript');
-    scriptTag.setAttribute('id', 'wzrk-alert-js');
-    scriptTag.setAttribute('src', _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath]); // add the script tag to the end of the body
-
-    document.getElementsByTagName('body')[0].appendChild(scriptTag);
-    return scriptTag;
-  };
-
-  var _removeWizAlertJS2 = function _removeWizAlertJS2() {
-    const scriptTag = document.getElementById('wzrk-alert-js');
-    scriptTag.parentNode.removeChild(scriptTag);
-  };
-
-  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
-    // make sure everything is specified
-    let titleText;
-    let bodyText;
-    let okButtonText;
-    let rejectButtonText;
-    let okButtonColor;
-    let skipDialog;
-    let askAgainTimeInSeconds;
-    let okCallback;
-    let rejectCallback;
-    let subscriptionCallback;
-    let serviceWorkerPath;
-    let httpsPopupPath;
-    let httpsIframePath;
-    let apnsWebPushId;
-    let apnsWebPushServiceUrl;
-
-    if (displayArgs.length === 1) {
-      if (isObject(displayArgs[0])) {
-        const notifObj = displayArgs[0];
-        titleText = notifObj.titleText;
-        bodyText = notifObj.bodyText;
-        okButtonText = notifObj.okButtonText;
-        rejectButtonText = notifObj.rejectButtonText;
-        okButtonColor = notifObj.okButtonColor;
-        skipDialog = notifObj.skipDialog;
-        askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
-        okCallback = notifObj.okCallback;
-        rejectCallback = notifObj.rejectCallback;
-        subscriptionCallback = notifObj.subscriptionCallback;
-        serviceWorkerPath = notifObj.serviceWorkerPath;
-        httpsPopupPath = notifObj.httpsPopupPath;
-        httpsIframePath = notifObj.httpsIframePath;
-        apnsWebPushId = notifObj.apnsWebPushId;
-        apnsWebPushServiceUrl = notifObj.apnsWebPushServiceUrl;
-      }
-    } else {
-      titleText = displayArgs[0];
-      bodyText = displayArgs[1];
-      okButtonText = displayArgs[2];
-      rejectButtonText = displayArgs[3];
-      okButtonColor = displayArgs[4];
-      skipDialog = displayArgs[5];
-      askAgainTimeInSeconds = displayArgs[6];
-    }
-
-    if (skipDialog == null) {
-      skipDialog = false;
-    }
-
-    if (serviceWorkerPath == null) {
-      serviceWorkerPath = '/clevertap_sw.js';
-    } // ensure that the browser supports notifications
-
-
-    if (typeof navigator.serviceWorker === 'undefined') {
-      return;
-    }
-
-    const isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
-
-    if (window.location.protocol !== 'https:' && document.location.hostname !== 'localhost' && !isHTTP) {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Make sure you are https or localhost to register for notifications');
-
-      return;
-    } // right now, we only support Chrome V50 & higher & Firefox
-
-
-    if (navigator.userAgent.indexOf('Chrome') !== -1) {
-      const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/);
-
-      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) {
-        return;
-      }
-    } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
-      const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/);
-
-      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) {
-        return;
-      }
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-      const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/);
-
-      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) {
-        return;
-      }
-    } else {
-      return;
-    } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
-
-
-    if (!isHTTP) {
-      if (Notification == null) {
-        return;
-      } // handle migrations from other services -> chrome notifications may have already been asked for before
-
-
-      if (Notification.permission === 'granted') {
-        // skip the dialog and register
-        _classPrivateFieldLooseBase(this, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-
-        return;
-      } else if (Notification.permission === 'denied') {
-        // we've lost this profile :'(
-        return;
-      }
-
-      if (skipDialog) {
-        _classPrivateFieldLooseBase(this, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-
-        return;
-      }
-    } // make sure the right parameters are passed
-
-
-    if (!titleText || !bodyText || !okButtonText || !rejectButtonText) {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Missing input parameters; please specify title, body, ok button and cancel button text');
-
-      return;
-    } // make sure okButtonColor is formatted properly
-
-
-    if (okButtonColor == null || !okButtonColor.match(/^#[a-f\d]{6}$/i)) {
-      okButtonColor = '#f28046'; // default color for positive button
-    } // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
-
-
-    const now = new Date().getTime() / 1000;
-
-    if (StorageManager.getMetaProp('notif_last_time') == null) {
-      StorageManager.setMetaProp('notif_last_time', now);
-    } else {
-      if (askAgainTimeInSeconds == null) {
-        // 7 days by default
-        askAgainTimeInSeconds = 7 * 24 * 60 * 60;
-      }
-
-      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
-        return;
-      } else {
-        // continue asking
-        StorageManager.setMetaProp('notif_last_time', now);
-      }
-    }
-
-    if (isHTTP) {
-      // add the https iframe
-      const httpsIframe = document.createElement('iframe');
-      httpsIframe.setAttribute('style', 'display:none;');
-      httpsIframe.setAttribute('src', httpsIframePath);
-      document.body.appendChild(httpsIframe);
-      window.addEventListener('message', event => {
-        if (event.data != null) {
-          let obj = {};
-
-          try {
-            obj = JSON.parse(event.data);
-          } catch (e) {
-            // not a call from our iframe
-            return;
-          }
-
-          if (obj.state != null) {
-            if (obj.from === 'ct' && obj.state === 'not') {
-              _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-                // create our wizrocket popup
-                window.wzrkPermissionPopup.wizAlert({
-                  title: titleText,
-                  body: bodyText,
-                  confirmButtonText: okButtonText,
-                  confirmButtonColor: okButtonColor,
-                  rejectButtonText: rejectButtonText
-                }, enabled => {
-                  // callback function
-                  if (enabled) {
-                    // the user accepted on the dialog box
-                    if (typeof okCallback === 'function') {
-                      okCallback();
-                    } // redirect to popup.html
-
-
-                    window.open(httpsPopupPath);
-                  } else {
-                    if (typeof rejectCallback === 'function') {
-                      rejectCallback();
-                    }
-                  }
-
-                  _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-                });
-              };
-            }
-          }
-        }
-      }, false);
-    } else {
-      _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-        // create our wizrocket popup
-        window.wzrkPermissionPopup.wizAlert({
-          title: titleText,
-          body: bodyText,
-          confirmButtonText: okButtonText,
-          confirmButtonColor: okButtonColor,
-          rejectButtonText: rejectButtonText
-        }, enabled => {
-          // callback function
-          if (enabled) {
-            // the user accepted on the dialog box
-            if (typeof okCallback === 'function') {
-              okCallback();
-            }
-
-            _classPrivateFieldLooseBase(this, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-          } else {
-            if (typeof rejectCallback === 'function') {
-              rejectCallback();
-            }
-          }
-
-          _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-        });
-      };
     }
   };
 
@@ -8214,6 +8538,8 @@
       };
 
       api.enableWebPush = (enabled, applicationServerKey) => {
+        setServerKey(applicationServerKey);
+
         this.notifications._enableWebPush(enabled, applicationServerKey);
       };
 
@@ -8509,7 +8835,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.9.6';
+      return 'web-sdk-v1.10.0';
     }
 
     defineVariable(name, defaultValue) {
