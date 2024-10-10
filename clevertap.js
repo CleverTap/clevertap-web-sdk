@@ -4541,7 +4541,9 @@
   };
 
   const versionCompare = currentVersion => {
-    const splitRequiredVersion = '1.9.2'.split('.');
+    const requiredVersion = '1.9.2';
+    if (requiredVersion === currentVersion) return true;
+    const splitRequiredVersion = requiredVersion.split('.');
     const splitCurrentVersion = currentVersion.split('.');
     let p1 = 0;
     let isWebsiteVersionHigher = false;
@@ -4590,7 +4592,7 @@
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
         const sdkVersion = '1.10.0';
-        let isRequiredVersion = versionCompare(sdkVersion);
+        const isRequiredVersion = versionCompare(sdkVersion);
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,

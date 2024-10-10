@@ -1,6 +1,7 @@
-
 export const versionCompare = (currentVersion) => {
-  const splitRequiredVersion = '1.9.2'.split('.')
+  const requiredVersion = '1.9.2'
+  if (requiredVersion === currentVersion) return true
+  const splitRequiredVersion = requiredVersion.split('.')
   const splitCurrentVersion = currentVersion.split('.')
 
   let p1 = 0
