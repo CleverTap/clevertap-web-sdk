@@ -32,12 +32,12 @@ export const getBoxPromptStyles = (style) => {
       display: flex;
       align-items: center;
       margin-bottom: 16px;
-      gap: 20px;
+      gap: 12px;
     }
 
     #imgElement {
-      width: 64px;
-      height: 64px;
+      max-width: 64px;
+      max-height: 64px;
     }
 
     #titleDescWrapper {
@@ -47,15 +47,18 @@ export const getBoxPromptStyles = (style) => {
     }
 
     #title {
-      font-size: 18px;
-      font-weight: bold;
+      font-size: 16px;
+      font-weight: 700;
       color: ${style.text.titleColor};
       margin-bottom: 4px;
+      line-height: 24px;
     }
 
     #description {
       font-size: 14px;
+      font-weight: 500;
       color: ${style.text.descriptionColor};
+      line-height: 20px;
     }
 
     #buttonsContainer {
