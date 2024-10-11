@@ -1,6 +1,11 @@
 export const getBoxPromptStyles = (style) => {
+  const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0
+  const cardPadding = 16 * 2 // Left and right padding
+  const cardContentWidth = 360 - cardPadding - totalBorderWidth
+
   return `
     #pnWrapper {
+      width: 360px;
     }
 
     #pnOverlay {
@@ -17,7 +22,7 @@ export const getBoxPromptStyles = (style) => {
       background-color: ${style.card.color};
       border-radius: ${style.card.borderRadius}px;
       padding: 16px;
-      width: 360px;
+      width: ${cardContentWidth}px;
       position: fixed;
       z-index: 999999;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -43,7 +48,7 @@ export const getBoxPromptStyles = (style) => {
     #titleDescWrapper {
       flex-grow: 1;
       overflow: hidden;
-      word-break: break-all;
+      overflow-wrap: break-word;
     }
 
     #title {
