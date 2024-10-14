@@ -2224,7 +2224,6 @@
 
     if ($ct.campaignDivMap != null) {
       const divId = $ct.campaignDivMap[campaignId];
-      console.log('divId ', divId);
 
       if (divId != null) {
         document.getElementById(divId).style.display = 'none';
@@ -4822,7 +4821,6 @@
           const index = item - 1;
 
           if (window.parent.clevertap) {
-            // console.log('Raise notification clicked event for ', item)
             window.clevertap.renderNotificationClicked({
               msgId: this.target.wzrk_id,
               pivotId: this.target.wzrk_pivot,

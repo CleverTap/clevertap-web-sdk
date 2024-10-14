@@ -426,7 +426,6 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
   }
   if ($ct.campaignDivMap != null) {
     const divId = $ct.campaignDivMap[campaignId]
-    console.log('divId ', divId)
     if (divId != null) {
       document.getElementById(divId).style.display = 'none'
       if (divId === 'intentPreview') {
