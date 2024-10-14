@@ -2232,6 +2232,14 @@
           if (document.getElementById('intentOpacityDiv') != null) {
             document.getElementById('intentOpacityDiv').style.display = 'none';
           }
+        } else if (divId === 'wizParDiv0') {
+          if (document.getElementById('intentOpacityDiv0') != null) {
+            document.getElementById('intentOpacityDiv0').style.display = 'none';
+          }
+        } else if (divId === 'wizParDiv2') {
+          if (document.getElementById('intentOpacityDiv2') != null) {
+            document.getElementById('intentOpacityDiv2').style.display = 'none';
+          }
         }
       }
     }
@@ -3065,245 +3073,6 @@
       }
     }
   };
-
-  class CTWebPersonalisationBanner extends HTMLElement {
-    constructor() {
-      super();
-      this._details = null;
-      this.shadow = null;
-      this.shadow = this.attachShadow({
-        mode: 'open'
-      });
-    }
-
-    get details() {
-      return this._details || '';
-    }
-
-    set details(val) {
-      if (this._details === null) {
-        this._details = val;
-        this.renderBanner();
-      }
-    }
-
-    renderBanner() {
-      this.shadow.innerHTML = this.getBannerContent();
-
-      if (this.trackClick !== false) {
-        this.addEventListener('click', () => {
-          const onClickUrl = this.details.onClick;
-
-          if (onClickUrl) {
-            this.details.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl;
-          }
-
-          window.clevertap.renderNotificationClicked({
-            msgId: this.msgId,
-            pivotId: this.pivotId
-          });
-        });
-      }
-
-      window.clevertap.renderNotificationViewed({
-        msgId: this.msgId,
-        pivotId: this.pivotId
-      });
-    }
-
-    getBannerContent() {
-      return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n          cursor: ".concat(this.details.onClick ? 'pointer' : '', "\n        }\n        img {\n          height: ").concat(this.divHeight ? this.divHeight : 'auto', ";\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ").concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:480px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\" part=\"banner__img\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
-    }
-
-  }
-
-  class CTWebPersonalisationCarousel extends HTMLElement {
-    constructor() {
-      super();
-      this._target = null;
-      this._carousel = null;
-      this.shadow = null;
-      this.slides = 0;
-      this.previouslySelectedItem = -1;
-      this.selectedItem = 1;
-      this.autoSlide = null;
-      this.stopAutoSlideTimeout = null;
-      this.shadow = this.attachShadow({
-        mode: 'open'
-      });
-
-      if (customElements.get('ct-web-personalisation-banner') === undefined) {
-        customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
-      }
-    }
-
-    get target() {
-      return this._target || '';
-    }
-
-    set target(val) {
-      if (this._target === null) {
-        this._target = val;
-        this.renderCarousel();
-      }
-    }
-
-    get details() {
-      return this.target.display.details;
-    }
-
-    get display() {
-      return this.target.display;
-    }
-
-    renderCarousel() {
-      this.slides = this.details.length;
-      this.shadow.innerHTML = this.getStyles();
-      const carousel = this.getCarouselContent();
-
-      if (this.display.showNavBtns) {
-        carousel.insertAdjacentHTML('beforeend', this.display.navBtnsHtml);
-      }
-
-      if (this.display.showNavArrows) {
-        carousel.insertAdjacentHTML('beforeend', this.display.leftNavArrowHtml);
-        carousel.insertAdjacentHTML('beforeend', this.display.rightNavArrowHtml);
-      }
-
-      this._carousel = carousel;
-      this.shadow.appendChild(carousel);
-      this.setupClick();
-      this.updateSelectedItem(); // TODO: enable conditionally
-
-      this.startAutoSlide();
-      this.setupOnHover();
-      window.clevertap.renderNotificationViewed({
-        msgId: this.target.wzrk_id,
-        pivotId: this.target.wzrk_pivot
-      });
-    }
-
-    setupClick() {
-      this._carousel.addEventListener('click', event => {
-        const eventID = event.target.id;
-
-        if (eventID.startsWith('carousel__button')) {
-          const selected = +eventID.split('-')[1];
-
-          if (selected !== this.selectedItem) {
-            this.previouslySelectedItem = this.selectedItem;
-            this.selectedItem = selected;
-            this.updateSelectedItem();
-            this.startAutoSlide();
-          }
-        } else if (eventID.startsWith('carousel__arrow')) {
-          eventID.endsWith('right') ? this.goToNext() : this.goToPrev();
-          this.startAutoSlide();
-        } else if (eventID.indexOf('-') > -1) {
-          const item = +eventID.split('-')[1];
-          const index = item - 1;
-
-          if (window.parent.clevertap) {
-            // console.log('Raise notification clicked event for ', item)
-            window.clevertap.renderNotificationClicked({
-              msgId: this.target.wzrk_id,
-              pivotId: this.target.wzrk_pivot,
-              wzrk_slideNo: item
-            });
-          }
-
-          const url = this.details[index].onClick;
-
-          if (url !== '') {
-            this.details[index].window ? window.open(url, '_blank') : window.location.href = url;
-          }
-        }
-      });
-    }
-
-    setupOnHover() {
-      this._carousel.addEventListener('mouseenter', event => {
-        this.stopAutoSlideTimeout = setTimeout(() => {
-          this.autoSlide = clearInterval(this.autoSlide);
-        }, 500);
-      });
-
-      this._carousel.addEventListener('mouseleave', event => {
-        clearTimeout(this.stopAutoSlideTimeout);
-
-        if (this.autoSlide === undefined) {
-          this.startAutoSlide();
-        }
-      });
-    }
-
-    getCarouselContent() {
-      const carousel = document.createElement('div');
-      carousel.setAttribute('class', 'carousel');
-      this.details.forEach((detail, i) => {
-        const banner = document.createElement('ct-web-personalisation-banner');
-        banner.classList.add('carousel__item');
-        banner.trackClick = false;
-        banner.setAttribute('id', "carousel__item-".concat(i + 1));
-        banner.details = detail;
-        carousel.appendChild(banner);
-      });
-      return carousel;
-    }
-
-    getStyles() {
-      var _this$target, _this$target$display;
-
-      return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      ct-web-personalisation-banner::part(banner__img) {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
-    }
-
-    updateSelectedItem() {
-      if (this.previouslySelectedItem !== -1) {
-        const prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
-        const prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
-        prevItem.classList.remove('carousel__item--selected');
-
-        if (prevButton) {
-          prevButton.classList.remove('carousel__button--selected');
-        }
-      }
-
-      const item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
-      const button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
-      item.classList.add('carousel__item--selected');
-
-      if (button) {
-        button.classList.add('carousel__button--selected');
-      }
-    }
-
-    startAutoSlide() {
-      clearInterval(this.autoSlide);
-      this.autoSlide = setInterval(() => {
-        this.goToNext();
-      }, this.display.sliderTime ? this.display.sliderTime * 1000 : 3000);
-    }
-
-    goToNext() {
-      this.goTo(this.selectedItem, (this.selectedItem + 1) % this.slides);
-    }
-
-    goToPrev() {
-      this.goTo(this.selectedItem, this.selectedItem - 1);
-    }
-
-    goTo(prev, cur) {
-      this.previouslySelectedItem = prev;
-      this.selectedItem = cur;
-
-      if (cur === 0) {
-        this.selectedItem = this.slides;
-      }
-
-      this.updateSelectedItem();
-    }
-
-  }
 
   class CTWebPopupImageOnly extends HTMLElement {
     constructor() {
@@ -4591,7 +4360,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.10.1';
+        const sdkVersion = '1.10.2';
         const isRequiredVersion = versionCompare(sdkVersion);
         parentWindow.postMessage({
           message: 'SDKVersion',
@@ -4913,6 +4682,470 @@
       applyAntiFlicker(personalizedSelectors);
     });
   }
+
+  class CTWebPersonalisationBanner extends HTMLElement {
+    constructor() {
+      super();
+      this._details = null;
+      this.shadow = null;
+      this.shadow = this.attachShadow({
+        mode: 'open'
+      });
+    }
+
+    get details() {
+      return this._details || '';
+    }
+
+    set details(val) {
+      if (this._details === null) {
+        this._details = val;
+        this.renderBanner();
+      }
+    }
+
+    renderBanner() {
+      this.shadow.innerHTML = this.getBannerContent();
+
+      if (this.trackClick !== false) {
+        this.addEventListener('click', () => {
+          const onClickUrl = this.details.onClick;
+
+          if (onClickUrl) {
+            this.details.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl;
+          }
+
+          window.clevertap.renderNotificationClicked({
+            msgId: this.msgId,
+            pivotId: this.pivotId
+          });
+        });
+      }
+
+      window.clevertap.renderNotificationViewed({
+        msgId: this.msgId,
+        pivotId: this.pivotId
+      });
+    }
+
+    getBannerContent() {
+      return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n          cursor: ".concat(this.details.onClick ? 'pointer' : '', "\n        }\n        img {\n          height: ").concat(this.divHeight ? this.divHeight : 'auto', ";\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ").concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:480px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\" part=\"banner__img\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
+    }
+
+  }
+
+  class CTWebPersonalisationCarousel extends HTMLElement {
+    constructor() {
+      super();
+      this._target = null;
+      this._carousel = null;
+      this.shadow = null;
+      this.slides = 0;
+      this.previouslySelectedItem = -1;
+      this.selectedItem = 1;
+      this.autoSlide = null;
+      this.stopAutoSlideTimeout = null;
+      this.shadow = this.attachShadow({
+        mode: 'open'
+      });
+
+      if (customElements.get('ct-web-personalisation-banner') === undefined) {
+        customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
+      }
+    }
+
+    get target() {
+      return this._target || '';
+    }
+
+    set target(val) {
+      if (this._target === null) {
+        this._target = val;
+        this.renderCarousel();
+      }
+    }
+
+    get details() {
+      return this.target.display.details;
+    }
+
+    get display() {
+      return this.target.display;
+    }
+
+    renderCarousel() {
+      this.slides = this.details.length;
+      this.shadow.innerHTML = this.getStyles();
+      const carousel = this.getCarouselContent();
+
+      if (this.display.showNavBtns) {
+        carousel.insertAdjacentHTML('beforeend', this.display.navBtnsHtml);
+      }
+
+      if (this.display.showNavArrows) {
+        carousel.insertAdjacentHTML('beforeend', this.display.leftNavArrowHtml);
+        carousel.insertAdjacentHTML('beforeend', this.display.rightNavArrowHtml);
+      }
+
+      this._carousel = carousel;
+      this.shadow.appendChild(carousel);
+      this.setupClick();
+      this.updateSelectedItem(); // TODO: enable conditionally
+
+      this.startAutoSlide();
+      this.setupOnHover();
+      window.clevertap.renderNotificationViewed({
+        msgId: this.target.wzrk_id,
+        pivotId: this.target.wzrk_pivot
+      });
+    }
+
+    setupClick() {
+      this._carousel.addEventListener('click', event => {
+        const eventID = event.target.id;
+
+        if (eventID.startsWith('carousel__button')) {
+          const selected = +eventID.split('-')[1];
+
+          if (selected !== this.selectedItem) {
+            this.previouslySelectedItem = this.selectedItem;
+            this.selectedItem = selected;
+            this.updateSelectedItem();
+            this.startAutoSlide();
+          }
+        } else if (eventID.startsWith('carousel__arrow')) {
+          eventID.endsWith('right') ? this.goToNext() : this.goToPrev();
+          this.startAutoSlide();
+        } else if (eventID.indexOf('-') > -1) {
+          const item = +eventID.split('-')[1];
+          const index = item - 1;
+
+          if (window.parent.clevertap) {
+            window.clevertap.renderNotificationClicked({
+              msgId: this.target.wzrk_id,
+              pivotId: this.target.wzrk_pivot,
+              wzrk_slideNo: item
+            });
+          }
+
+          const url = this.details[index].onClick;
+
+          if (url !== '') {
+            this.details[index].window ? window.open(url, '_blank') : window.location.href = url;
+          }
+        }
+      });
+    }
+
+    setupOnHover() {
+      this._carousel.addEventListener('mouseenter', event => {
+        this.stopAutoSlideTimeout = setTimeout(() => {
+          this.autoSlide = clearInterval(this.autoSlide);
+        }, 500);
+      });
+
+      this._carousel.addEventListener('mouseleave', event => {
+        clearTimeout(this.stopAutoSlideTimeout);
+
+        if (this.autoSlide === undefined) {
+          this.startAutoSlide();
+        }
+      });
+    }
+
+    getCarouselContent() {
+      const carousel = document.createElement('div');
+      carousel.setAttribute('class', 'carousel');
+      this.details.forEach((detail, i) => {
+        const banner = document.createElement('ct-web-personalisation-banner');
+        banner.classList.add('carousel__item');
+        banner.trackClick = false;
+        banner.setAttribute('id', "carousel__item-".concat(i + 1));
+        banner.details = detail;
+        carousel.appendChild(banner);
+      });
+      return carousel;
+    }
+
+    getStyles() {
+      var _this$target, _this$target$display;
+
+      return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      ct-web-personalisation-banner::part(banner__img) {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
+    }
+
+    updateSelectedItem() {
+      if (this.previouslySelectedItem !== -1) {
+        const prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
+        const prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
+        prevItem.classList.remove('carousel__item--selected');
+
+        if (prevButton) {
+          prevButton.classList.remove('carousel__button--selected');
+        }
+      }
+
+      const item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
+      const button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
+      item.classList.add('carousel__item--selected');
+
+      if (button) {
+        button.classList.add('carousel__button--selected');
+      }
+    }
+
+    startAutoSlide() {
+      clearInterval(this.autoSlide);
+      this.autoSlide = setInterval(() => {
+        this.goToNext();
+      }, this.display.sliderTime ? this.display.sliderTime * 1000 : 3000);
+    }
+
+    goToNext() {
+      this.goTo(this.selectedItem, (this.selectedItem + 1) % this.slides);
+    }
+
+    goToPrev() {
+      this.goTo(this.selectedItem, this.selectedItem - 1);
+    }
+
+    goTo(prev, cur) {
+      this.previouslySelectedItem = prev;
+      this.selectedItem = cur;
+
+      if (cur === 0) {
+        this.selectedItem = this.slides;
+      }
+
+      this.updateSelectedItem();
+    }
+
+  }
+
+  const renderPersonalisationBanner = targetingMsgJson => {
+    var _targetingMsgJson$dis;
+
+    if (customElements.get('ct-web-personalisation-banner') === undefined) {
+      customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
+    }
+
+    const divId = (_targetingMsgJson$dis = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis !== void 0 ? _targetingMsgJson$dis : targetingMsgJson.display.divSelector;
+    const bannerEl = document.createElement('ct-web-personalisation-banner');
+    bannerEl.msgId = targetingMsgJson.wzrk_id;
+    bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
+    bannerEl.divHeight = targetingMsgJson.display.divHeight;
+    bannerEl.details = targetingMsgJson.display.details[0];
+    const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
+    containerEl.innerHTML = '';
+    containerEl.appendChild(bannerEl);
+  };
+  const renderPersonalisationCarousel = targetingMsgJson => {
+    var _targetingMsgJson$dis2;
+
+    if (customElements.get('ct-web-personalisation-carousel') === undefined) {
+      customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
+    }
+
+    const divId = (_targetingMsgJson$dis2 = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis2 !== void 0 ? _targetingMsgJson$dis2 : targetingMsgJson.display.divSelector;
+    const carousel = document.createElement('ct-web-personalisation-carousel');
+    carousel.target = targetingMsgJson;
+    const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
+    container.innerHTML = '';
+    container.appendChild(carousel);
+  };
+  const handleKVpairCampaign = targetingMsgJson => {
+    const inaObj = {};
+    inaObj.msgId = targetingMsgJson.wzrk_id;
+
+    if (targetingMsgJson.wzrk_pivot) {
+      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+    }
+
+    if (targetingMsgJson.msgContent.kv != null) {
+      inaObj.kv = targetingMsgJson.msgContent.kv;
+    }
+
+    const kvPairsEvent = new CustomEvent('CT_web_native_display', {
+      detail: inaObj
+    });
+    document.dispatchEvent(kvPairsEvent);
+  };
+
+  const invokeExternalJs = (jsFunc, targetingMsgJson) => {
+    const func = window.parent[jsFunc];
+
+    if (typeof func === 'function') {
+      if (targetingMsgJson.display.kv != null) {
+        func(targetingMsgJson.display.kv);
+      } else {
+        func();
+      }
+    }
+  };
+  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
+    const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
+    return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
+  };
+  const staleDataUpdate = (staledata, campType) => {
+    const campObj = getCampaignObject();
+    const globalObj = campObj[campType].global;
+
+    if (globalObj != null && campType) {
+      for (const idx in staledata) {
+        if (staledata.hasOwnProperty(idx)) {
+          delete globalObj[staledata[idx]];
+
+          if (StorageManager.read(CAMP_COOKIE_G)) {
+            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+            if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
+              delete guidCampObj[guid][campType][staledata[idx]];
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+            }
+          }
+        }
+      }
+    }
+
+    saveCampaignObject(campObj);
+  };
+  const mergeEventMap = newEvtMap => {
+    if ($ct.globalEventsMap == null) {
+      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
+
+      if ($ct.globalEventsMap == null) {
+        $ct.globalEventsMap = newEvtMap;
+        return;
+      }
+    }
+
+    for (const key in newEvtMap) {
+      if (newEvtMap.hasOwnProperty(key)) {
+        const oldEvtObj = $ct.globalEventsMap[key];
+        const newEvtObj = newEvtMap[key];
+
+        if ($ct.globalEventsMap[key] != null) {
+          if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
+            $ct.globalEventsMap[key] = newEvtObj;
+          }
+        } else {
+          $ct.globalEventsMap[key] = newEvtObj;
+        }
+      }
+    }
+  };
+  const incrementImpression = (targetingMsgJson, _request) => {
+    const data = {};
+    data.type = 'event';
+    data.evtName = NOTIFICATION_VIEWED;
+    data.evtData = {
+      [WZRK_ID]: targetingMsgJson.wzrk_id
+    };
+
+    if (targetingMsgJson.wzrk_pivot) {
+      data.evtData = { ...data.evtData,
+        wzrk_pivot: targetingMsgJson.wzrk_pivot
+      };
+    }
+
+    _request.processEvent(data);
+  };
+  const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session) => {
+    if (onClick !== '' && onClick != null) {
+      let ctaElement;
+      let jsCTAElements;
+
+      if (isLegacy) {
+        ctaElement = contentDiv;
+      } else if (contentDiv !== null) {
+        jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
+
+        if (jsCTAElements != null && jsCTAElements.length === 1) {
+          ctaElement = jsCTAElements[0];
+        }
+      }
+
+      const jsFunc = targetingMsgJson.display.jsFunc;
+      const isPreview = targetingMsgJson.display.preview;
+
+      if (isPreview == null) {
+        onClick += getCookieParams(_device, _session);
+      }
+
+      if (ctaElement != null) {
+        ctaElement.onclick = () => {
+          // invoke js function call
+          if (jsFunc != null) {
+            // track notification clicked event
+            if (isPreview == null) {
+              RequestDispatcher.fireRequest(onClick);
+            }
+
+            invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
+
+            closeIframe('-1', divId, _session.sessionId);
+          } else {
+            const rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
+            const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+
+            if (rValue === 'pushPrompt') {
+              if (!targetingMsgJson.display.preview) {
+                window.parent.clevertap.renderNotificationClicked({
+                  msgId: targetingMsgJson.wzrk_id,
+                  pivotId: targetingMsgJson.wzrk_pivot
+                });
+              } // Open Web Push Soft prompt
+
+
+              window.clevertap.notifications.push({
+                skipDialog: true
+              });
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else if (rValue === 'none') {
+              // Close notification
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else {
+              // Will get the url to open
+              if (targetingMsgJson.display.window === 1) {
+                window.open(onClick, '_blank');
+
+                if (targetingMsgJson.display['close-popup']) {
+                  closeIframe(campaignId, divId, _session.sessionId);
+                }
+
+                if (!targetingMsgJson.display.preview) {
+                  window.parent.clevertap.renderNotificationClicked({
+                    msgId: targetingMsgJson.wzrk_id,
+                    pivotId: targetingMsgJson.wzrk_pivot
+                  });
+                }
+              } else {
+                window.location = onClick;
+              }
+            }
+          }
+        };
+      }
+    }
+  };
+  const getCookieParams = (_device, _session) => {
+    const gcookie = _device.getGuid();
+
+    const scookieObj = _session.getSessionCookieObject();
+
+    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
+  };
+
+  const renderPopUpImageOnly = (targetingMsgJson, _session) => {
+    const divId = 'wzrkImageOnlyDiv';
+    const popupImageOnly = document.createElement('ct-web-popup-imageonly');
+    popupImageOnly.session = _session;
+    popupImageOnly.target = targetingMsgJson;
+    const containerEl = document.getElementById(divId);
+    containerEl.innerHTML = '';
+    containerEl.style.visibility = 'hidden';
+    containerEl.appendChild(popupImageOnly);
+  };
 
   const getBoxPromptStyles = style => {
     const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
@@ -5926,9 +6159,11 @@
       } // delay
 
 
-      if (targetingMsgJson[DISPLAY].delay != null && targetingMsgJson[DISPLAY].delay > 0) {
-        const delay = targetingMsgJson[DISPLAY].delay;
-        targetingMsgJson[DISPLAY].delay = 0;
+      const displayObj = targetingMsgJson.display;
+
+      if (displayObj.wtarget_type === 1 && displayObj.delay != null && displayObj.delay > 0) {
+        const delay = displayObj.delay;
+        displayObj.delay = 0;
         setTimeout(_tr, delay * 1000, msg, {
           device: _device,
           session: _session,
@@ -5957,166 +6192,53 @@
       });
     };
 
-    const getCookieParams = () => {
-      const gcookie = _device.getGuid();
-
-      const scookieObj = _session.getSessionCookieObject();
-
-      return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
-    };
-
-    const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
-      if (onClick !== '' && onClick != null) {
-        let ctaElement;
-        let jsCTAElements;
-
-        if (isLegacy) {
-          ctaElement = contentDiv;
-        } else if (contentDiv !== null) {
-          jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
-
-          if (jsCTAElements != null && jsCTAElements.length === 1) {
-            ctaElement = jsCTAElements[0];
-          }
-        }
-
-        const jsFunc = targetingMsgJson.display.jsFunc;
-        const isPreview = targetingMsgJson.display.preview;
-
-        if (isPreview == null) {
-          onClick += getCookieParams();
-        }
-
-        if (ctaElement != null) {
-          ctaElement.onclick = () => {
-            // invoke js function call
-            if (jsFunc != null) {
-              // track notification clicked event
-              if (isPreview == null) {
-                RequestDispatcher.fireRequest(onClick);
-              }
-
-              invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
-
-              closeIframe('-1', divId, _session.sessionId);
-              return;
-            } // pass on the gcookie|page|scookieId for capturing the click event
-
-
-            if (targetingMsgJson.display.window === 1) {
-              window.open(onClick, '_blank');
-            } else {
-              window.location = onClick;
-            }
-          };
-        }
-      }
-    };
-
-    const invokeExternalJs = (jsFunc, targetingMsgJson) => {
-      const func = window.parent[jsFunc];
-
-      if (typeof func === 'function') {
-        if (targetingMsgJson.display.kv != null) {
-          func(targetingMsgJson.display.kv);
-        } else {
-          func();
-        }
-      }
-    };
-
     const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
-      incrementImpression(targetingMsgJson);
-      setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy);
+      incrementImpression(targetingMsgJson, _request);
+      setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session);
     };
 
-    const incrementImpression = targetingMsgJson => {
-      const data = {};
-      data.type = 'event';
-      data.evtName = NOTIFICATION_VIEWED;
-      data.evtData = {
-        [WZRK_ID]: targetingMsgJson.wzrk_id
-      };
-
-      if (targetingMsgJson.wzrk_pivot) {
-        data.evtData = { ...data.evtData,
-          wzrk_pivot: targetingMsgJson.wzrk_pivot
-        };
-      }
-
-      _request.processEvent(data);
-    };
-
-    const renderPersonalisationBanner = targetingMsgJson => {
-      var _targetingMsgJson$dis;
-
-      if (customElements.get('ct-web-personalisation-banner') === undefined) {
-        customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
-      }
-
-      const divId = (_targetingMsgJson$dis = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis !== void 0 ? _targetingMsgJson$dis : targetingMsgJson.display.divSelector;
-      const bannerEl = document.createElement('ct-web-personalisation-banner');
-      bannerEl.msgId = targetingMsgJson.wzrk_id;
-      bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
-      bannerEl.divHeight = targetingMsgJson.display.divHeight;
-      bannerEl.details = targetingMsgJson.display.details[0];
-      const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
-      containerEl.innerHTML = '';
-      containerEl.appendChild(bannerEl);
-    };
-
-    const renderPersonalisationCarousel = targetingMsgJson => {
-      var _targetingMsgJson$dis2;
-
-      if (customElements.get('ct-web-personalisation-carousel') === undefined) {
-        customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
-      }
-
-      const divId = (_targetingMsgJson$dis2 = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis2 !== void 0 ? _targetingMsgJson$dis2 : targetingMsgJson.display.divSelector;
-      const carousel = document.createElement('ct-web-personalisation-carousel');
-      carousel.target = targetingMsgJson;
-      const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
-      container.innerHTML = '';
-      container.appendChild(carousel);
-    };
-
-    const renderPopUpImageOnly = targetingMsgJson => {
+    const handleImageOnlyPopup = targetingMsgJson => {
       const divId = 'wzrkImageOnlyDiv';
-      const popupImageOnly = document.createElement('ct-web-popup-imageonly');
-      popupImageOnly.session = _session;
-      popupImageOnly.target = targetingMsgJson;
-      const containerEl = document.getElementById(divId);
-      containerEl.innerHTML = '';
-      containerEl.style.visibility = 'hidden';
-      containerEl.appendChild(popupImageOnly);
+
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
+      }
+
+      if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
+        const element = document.getElementById(divId);
+        element.remove();
+      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+
+
+      if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
+        return;
+      }
+
+      const msgDiv = document.createElement('div');
+      msgDiv.id = divId;
+      document.body.appendChild(msgDiv);
+
+      if (customElements.get('ct-web-popup-imageonly') === undefined) {
+        customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
+      }
+
+      return renderPopUpImageOnly(targetingMsgJson, _session);
     };
 
-    const renderFooterNotification = targetingMsgJson => {
+    const isExistingCampaign = campaignId => {
+      const testIframe = document.querySelector('iframe');
+
+      if (testIframe) {
+        const iframeDocument = testIframe.contentDocument || testIframe.contentWindow.document;
+        return iframeDocument.documentElement.innerHTML.includes(campaignId);
+      }
+
+      return false;
+    };
+
+    const createTemplate = (targetingMsgJson, isExitIntent) => {
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       const displayObj = targetingMsgJson.display;
-
-      if (displayObj.wtarget_type === 2) {
-        // Handling Web Native display
-        // Logic for kv pair data
-        if (targetingMsgJson.msgContent.type === 1) {
-          const inaObj = {};
-          inaObj.msgId = targetingMsgJson.wzrk_id;
-
-          if (targetingMsgJson.wzrk_pivot) {
-            inaObj.pivotId = targetingMsgJson.wzrk_pivot;
-          }
-
-          if (targetingMsgJson.msgContent.kv != null) {
-            inaObj.kv = targetingMsgJson.msgContent.kv;
-          }
-
-          const kvPairsEvent = new CustomEvent('CT_web_native_display', {
-            detail: inaObj
-          });
-          document.dispatchEvent(kvPairsEvent);
-          return;
-        }
-      }
 
       if (displayObj.layout === 1) {
         // Handling Web Exit Intent
@@ -6125,31 +6247,8 @@
 
       if (displayObj.layout === 3) {
         // Handling Web Popup Image Only
-        const divId = 'wzrkImageOnlyDiv';
-
-        if (doCampHouseKeeping(targetingMsgJson) === false) {
-          return;
-        }
-
-        if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
-          const element = document.getElementById(divId);
-          element.remove();
-        } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
-
-
-        if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
-          return;
-        }
-
-        const msgDiv = document.createElement('div');
-        msgDiv.id = divId;
-        document.body.appendChild(msgDiv);
-
-        if (customElements.get('ct-web-popup-imageonly') === undefined) {
-          customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
-        }
-
-        return renderPopUpImageOnly(targetingMsgJson);
+        handleImageOnlyPopup(targetingMsgJson);
+        return;
       }
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
@@ -6157,11 +6256,22 @@
       }
 
       const divId = 'wizParDiv' + displayObj.layout;
+      const opacityDivId = 'intentOpacityDiv' + displayObj.layout;
 
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         const element = document.getElementById(divId);
-        element.remove();
+        const opacityElement = document.getElementById(opacityDivId);
+
+        if (element) {
+          element.remove();
+        }
+
+        if (opacityElement) {
+          opacityElement.remove();
+        }
       }
+
+      if (isExistingCampaign(campaignId)) return;
 
       if (document.getElementById(divId) != null) {
         return;
@@ -6169,6 +6279,16 @@
 
       $ct.campaignDivMap[campaignId] = divId;
       const isBanner = displayObj.layout === 2;
+
+      if (isExitIntent) {
+        const opacityDiv = document.createElement('div');
+        opacityDiv.id = opacityDivId;
+        const opacity = targetingMsgJson.display.opacity || 0.7;
+        const rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
+        opacityDiv.setAttribute('style', "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
+        document.body.appendChild(opacityDiv);
+      }
+
       const msgDiv = document.createElement('div');
       msgDiv.id = divId;
       const viewHeight = window.innerHeight;
@@ -6321,15 +6441,15 @@
       }
     };
 
-    const appendScriptForCustomEvent = (targetingMsgJson, html) => {
-      const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
-      return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
+    const renderFooterNotification = targetingMsgJson => {
+      createTemplate(targetingMsgJson, false);
     };
 
     let _callBackCalled = false;
 
     const showFooterNotification = targetingMsgJson => {
-      let onClick = targetingMsgJson.display.onClick; // TODO: Needs wizrocket as a global variable
+      let onClick = targetingMsgJson.display.onClick;
+      const displayObj = targetingMsgJson.display; // TODO: Needs wizrocket as a global variable
 
       if (window.clevertap.hasOwnProperty('notificationCallback') && typeof window.clevertap.notificationCallback !== 'undefined' && typeof window.clevertap.notificationCallback === 'function') {
         const notificationCallback = window.clevertap.notificationCallback;
@@ -6350,7 +6470,7 @@
           window.clevertap.raiseNotificationClicked = () => {
             if (onClick !== '' && onClick != null) {
               const jsFunc = targetingMsgJson.display.jsFunc;
-              onClick += getCookieParams(); // invoke js function call
+              onClick += getCookieParams(_device, _session); // invoke js function call
 
               if (jsFunc != null) {
                 // track notification clicked event
@@ -6377,7 +6497,32 @@
         }
       } else {
         window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id;
-        renderFooterNotification(targetingMsgJson);
+
+        if (displayObj.deliveryTrigger) {
+          if (displayObj.deliveryTrigger.inactive) {
+            triggerByInactivity(targetingMsgJson);
+          }
+
+          if (displayObj.deliveryTrigger.scroll) {
+            triggerByScroll(targetingMsgJson);
+          }
+
+          if (displayObj.deliveryTrigger.isExitIntent) {
+            exitintentObj = targetingMsgJson;
+            window.document.body.onmouseleave = showExitIntent;
+          } // delay
+
+
+          const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
+
+          if (delay != null && delay > 0) {
+            setTimeout(() => {
+              renderFooterNotification(targetingMsgJson);
+            }, delay * 1000);
+          }
+        } else {
+          renderFooterNotification(targetingMsgJson);
+        }
 
         if (window.clevertap.hasOwnProperty('popupCallbacks') && typeof window.clevertap.popupCallbacks !== 'undefined' && typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === 'function') {
           const popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id];
@@ -6445,26 +6590,111 @@
       }
     };
 
+    const triggerByInactivity = targetNotif => {
+      const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // Convert to milliseconds
+
+      let idleTimer;
+      const events = ['mousemove', 'keypress', 'scroll', 'mousedown', 'touchmove', 'click'];
+
+      const resetIdleTimer = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          renderFooterNotification(targetNotif);
+          removeEventListeners();
+        }, IDLE_TIME_THRESHOLD);
+      };
+
+      const eventHandler = () => {
+        resetIdleTimer();
+      };
+
+      const setupEventListeners = () => {
+        events.forEach(eventType => window.addEventListener(eventType, eventHandler, {
+          passive: true
+        }));
+      };
+
+      const removeEventListeners = () => {
+        events.forEach(eventType => window.removeEventListener(eventType, eventHandler));
+      };
+
+      setupEventListeners();
+      resetIdleTimer();
+      return removeEventListeners; // Return a cleanup function
+    };
+
+    const triggerByScroll = targetNotif => {
+      const calculateScrollPercentage = () => {
+        const {
+          scrollHeight,
+          clientHeight,
+          scrollTop
+        } = document.documentElement;
+        return scrollTop / (scrollHeight - clientHeight) * 100;
+      };
+
+      const scrollListener = () => {
+        const scrollPercentage = calculateScrollPercentage();
+
+        if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
+          renderFooterNotification(targetNotif);
+          window.removeEventListener('scroll', throttledScrollListener);
+        }
+      };
+
+      const throttle = (func, limit) => {
+        let inThrottle = false;
+        return function () {
+          const context = this;
+
+          if (!inThrottle) {
+            for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+              args[_key] = arguments[_key];
+            }
+
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => {
+              inThrottle = false;
+            }, limit);
+          }
+        };
+      };
+
+      const throttledScrollListener = throttle(scrollListener, 200);
+      window.addEventListener('scroll', throttledScrollListener, {
+        passive: true
+      });
+      return () => window.removeEventListener('scroll', throttledScrollListener); // Return a cleanup function
+    };
+
     let exitintentObj;
 
     const showExitIntent = (event, targetObj) => {
-      let targetingMsgJson;
+      if ((event === null || event === void 0 ? void 0 : event.clientY) > 0) return;
+      const targetingMsgJson = targetObj || exitintentObj;
+      const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      const layout = targetingMsgJson.display.layout;
+      if (isExistingCampaign(campaignId)) return;
 
-      if (event != null && event.clientY > 0) {
+      if (targetingMsgJson.display.wtarget_type === 0 && (layout === 0 || layout === 2 || layout === 3)) {
+        createTemplate(targetingMsgJson, true);
         return;
       }
 
-      if (targetObj == null) {
-        targetingMsgJson = exitintentObj;
-      } else {
-        targetingMsgJson = targetObj;
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
       }
 
-      if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
-        const element = document.getElementById('intentPreview');
-        element.remove();
-        document.getElementById('intentOpacityDiv').remove();
-      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+      if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0) {
+        const intentPreview = document.getElementById('intentPreview');
+        const intentOpacityDiv = document.getElementById('intentOpacityDiv');
+
+        if (intentPreview && intentOpacityDiv) {
+          intentPreview.remove();
+          intentOpacityDiv.remove();
+        }
+      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist`
 
 
       if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
@@ -6476,11 +6706,6 @@
         return;
       }
 
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
-        return;
-      }
-
-      const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       $ct.campaignDivMap[campaignId] = 'intentPreview';
       let legacy = false;
       const opacityDiv = document.createElement('div');
@@ -6644,7 +6869,9 @@
           window.document.body.onmouseleave = showExitIntent;
         } else if (targetNotif.display.wtarget_type === 2) {
           // if display['wtarget_type']==2 then web native display
-          if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
+          if (targetNotif.msgContent.type === 1) {
+            handleKVpairCampaign(targetNotif);
+          } else if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
             // Check for banner and carousel
             const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
 
@@ -6670,32 +6897,6 @@
         }
       }
     }
-
-    const mergeEventMap = newEvtMap => {
-      if ($ct.globalEventsMap == null) {
-        $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
-
-        if ($ct.globalEventsMap == null) {
-          $ct.globalEventsMap = newEvtMap;
-          return;
-        }
-      }
-
-      for (const key in newEvtMap) {
-        if (newEvtMap.hasOwnProperty(key)) {
-          const oldEvtObj = $ct.globalEventsMap[key];
-          const newEvtObj = newEvtMap[key];
-
-          if ($ct.globalEventsMap[key] != null) {
-            if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
-              $ct.globalEventsMap[key] = newEvtObj;
-            }
-          } else {
-            $ct.globalEventsMap[key] = newEvtObj;
-          }
-        }
-      }
-    };
 
     const handleInboxNotifications = () => {
       if (msg.inbox_preview) {
@@ -6744,31 +6945,6 @@
       $ct.variableStore.mergeVariables(msg.vars);
       return;
     }
-
-    const staleDataUpdate = (staledata, campType) => {
-      const campObj = getCampaignObject();
-      const globalObj = campObj[campType].global;
-
-      if (globalObj != null && campType) {
-        for (const idx in staledata) {
-          if (staledata.hasOwnProperty(idx)) {
-            delete globalObj[staledata[idx]];
-
-            if (StorageManager.read(CAMP_COOKIE_G)) {
-              const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-              const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-
-              if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
-                delete guidCampObj[guid][campType][staledata[idx]];
-                StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
-              }
-            }
-          }
-        }
-      }
-
-      saveCampaignObject(campObj);
-    };
 
     if (StorageManager._isLocalStorageSupported()) {
       try {
@@ -7190,7 +7366,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.10.1',
+        lib: 'web-sdk-v1.10.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8860,7 +9036,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.10.1';
+      return 'web-sdk-v1.10.2';
     }
 
     defineVariable(name, defaultValue) {
