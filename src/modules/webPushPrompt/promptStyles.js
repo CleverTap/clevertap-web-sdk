@@ -1,6 +1,11 @@
 export const getBoxPromptStyles = (style) => {
+  const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0
+  const cardPadding = 16 * 2 // Left and right padding
+  const cardContentWidth = 360 - cardPadding - totalBorderWidth
+
   return `
     #pnWrapper {
+      width: 360px;
     }
 
     #pnOverlay {
@@ -17,7 +22,7 @@ export const getBoxPromptStyles = (style) => {
       background-color: ${style.card.color};
       border-radius: ${style.card.borderRadius}px;
       padding: 16px;
-      width: 360px;
+      width: ${cardContentWidth}px;
       position: fixed;
       z-index: 999999;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -32,30 +37,33 @@ export const getBoxPromptStyles = (style) => {
       display: flex;
       align-items: center;
       margin-bottom: 16px;
-      gap: 20px;
+      gap: 12px;
     }
 
     #imgElement {
-      width: 64px;
-      height: 64px;
+      max-width: 64px;
+      max-height: 64px;
     }
 
     #titleDescWrapper {
       flex-grow: 1;
       overflow: hidden;
-      word-break: break-all;
+      overflow-wrap: break-word;
     }
 
     #title {
-      font-size: 18px;
-      font-weight: bold;
+      font-size: 16px;
+      font-weight: 700;
       color: ${style.text.titleColor};
       margin-bottom: 4px;
+      line-height: 24px;
     }
 
     #description {
       font-size: 14px;
+      font-weight: 500;
       color: ${style.text.descriptionColor};
+      line-height: 20px;
     }
 
     #buttonsContainer {
