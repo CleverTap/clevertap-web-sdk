@@ -1,5 +1,6 @@
-import { CSS_PATH, OVERLAY_PATH } from './builder_constants'
+import { CSS_PATH, OVERLAY_PATH, WVE_CLASS } from './builder_constants'
 import { updateFormData } from './dataUpdate'
+import { versionCompare } from './versionCompare'
 
 export const checkBuilder = (logger, accountId) => {
   const search = window.location.search
@@ -23,11 +24,13 @@ export const checkBuilder = (logger, accountId) => {
 
   if (search === '?ctBuilderSDKCheck') {
     if (parentWindow) {
+      const sdkVersion = '$$PACKAGE_VERSION$$'
+      const isRequiredVersion = versionCompare(sdkVersion)
       parentWindow.postMessage({
         message: 'SDKVersion',
         accountId,
         originUrl: window.location.href,
-        sdkVersion: '$$PACKAGE_VERSION$$'
+        sdkVersion: isRequiredVersion ? '1.9.3' : sdkVersion
       },
       '*'
       )
@@ -57,21 +60,31 @@ const handleMessageEvent = (event) => {
  * @param {Object} details - The details object.
  */
 const initialiseCTBuilder = (url, variant, details) => {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => onContentLoad(url, variant, details))
-  } else {
+  if (document.readyState === 'complete') {
     onContentLoad(url, variant, details)
+  } else {
+    document.addEventListener('readystatechange', () => {
+      if (document.readyState === 'complete') {
+        onContentLoad(url, variant, details)
+      }
+    })
   }
 }
 
 let container
 let contentLoaded = false
+let isShopify = false
 /**
  * Handles content load for Clevertap builder.
  */
 function onContentLoad (url, variant, details) {
   if (!contentLoaded) {
+    if (window.Shopify) {
+      isShopify = true
+    }
     document.body.innerHTML = ''
+    document.head.innerHTML = ''
+    document.documentElement.innerHTML = ''
     container = document.createElement('div')
     container.id = 'overlayDiv'
     container.style.position = 'relative' // Ensure relative positioning for absolute positioning of form
@@ -87,7 +100,6 @@ function onContentLoad (url, variant, details) {
         console.error('Error loading overlay script:', error)
       })
     loadCSS()
-    loadTypeKit()
   }
 }
 
@@ -117,7 +129,7 @@ function loadOverlayScript (overlayPath, url, variant, details) {
     script.src = overlayPath
     script.onload = function () {
       if (typeof window.Overlay === 'function') {
-        window.Overlay({ id: '#overlayDiv', url, variant, details })
+        window.Overlay({ id: '#overlayDiv', url, variant, details, isShopify })
         resolve()
       } else {
         reject(new Error('ContentLayout not found in overlay.js'))
@@ -128,42 +140,6 @@ function loadOverlayScript (overlayPath, url, variant, details) {
     }
     document.head.appendChild(script)
   })
-}
-
-/**
- * Loads TypeKit script.
- */
-function loadTypeKit () {
-  const config = {
-    kitId: 'eqj6nom',
-    scriptTimeout: 3000,
-    async: true
-  }
-
-  const docElement = document.documentElement
-  const timeoutId = setTimeout(function () {
-    docElement.className = docElement.className.replace(/\bwf-loading\b/g, '') + ' wf-inactive'
-  }, config.scriptTimeout)
-  const typeKitScript = document.createElement('script')
-  let scriptLoaded = false
-  const firstScript = document.getElementsByTagName('script')[0]
-  let scriptReadyState
-
-  docElement.className += ' wf-loading'
-  typeKitScript.src = 'https://use.typekit.net/' + config.kitId + '.js'
-  typeKitScript.async = true
-  typeKitScript.onload = typeKitScript.onreadystatechange = function () {
-    scriptReadyState = this.readyState
-    if (scriptLoaded || (scriptReadyState && scriptReadyState !== 'complete' && scriptReadyState !== 'loaded')) return
-    scriptLoaded = true
-    clearTimeout(timeoutId)
-    try {
-      // eslint-disable-next-line no-undef
-      Typekit.load(config)
-    } catch (e) {}
-  }
-
-  firstScript.parentNode.insertBefore(typeKitScript, firstScript)
 }
 
 /**
@@ -246,4 +222,93 @@ function isValidUrl (string) {
   } catch (_err) {
     return false
   }
+}
+
+export function addAntiFlicker (antiFlicker) {
+  const { personalizedSelectors = [], delayTime = 2000 } = antiFlicker
+  const retryElements = {} // Track selectors that need retry
+  let retryCount = 0 // Counter for retries
+  let retryInterval
+  function isInViewport (element) {
+    const rect = element.getBoundingClientRect()
+    const { innerHeight: windowHeight, innerWidth: windowWidth } = window
+    return (
+      rect.bottom > 0 &&
+      rect.right > 0 &&
+      rect.top < windowHeight &&
+      rect.left < windowWidth
+    )
+  }
+  (function () {
+    const styleContent = `
+      .wve-anti-flicker-hide {
+        opacity: 0 !important
+      }
+      .wve-anti-flicker-show {
+        transition: opacity 0.5s, filter 0.5s !important
+      }
+    `
+    // Create and append the style element if it doesn't exist
+    const styleId = WVE_CLASS.FLICKER_ID
+    if (!document.getElementById(styleId)) {
+      const styleElement = document.createElement('style')
+      styleElement.id = styleId
+      styleElement.textContent = styleContent
+      document.head.appendChild(styleElement)
+    }
+  })()
+  function applyAntiFlicker (selectors) {
+    function processSelectors (selectorElements) {
+      const elements = []
+      selectorElements.forEach(selector => {
+        const matchedElements = document.querySelectorAll(selector)
+        if (matchedElements.length) {
+          matchedElements.forEach(el => {
+            if (isInViewport(el)) {
+              elements.push(el)
+            }
+          })
+          delete retryElements[selector] // Successfully processed, remove from retry list
+        } else {
+          retryElements[selector] = false // Add to retry list if not found
+        }
+      })
+      applyStyles(elements)
+    }
+    function retryProcessing () {
+      processSelectors(Object.keys(retryElements))
+      retryCount++
+      if (Object.keys(retryElements).length === 0 || retryCount > 20) {
+        retryCount = 0
+        clearInterval(retryInterval)
+      }
+    }
+    processSelectors(selectors)
+    if (Object.keys(retryElements).length) {
+      retryInterval = setInterval(retryProcessing, 100)
+    }
+  }
+  function applyStyles (elements) {
+    elements.forEach(el => el.classList.add(WVE_CLASS.FLICKER_HIDE))
+    setTimeout(() => {
+      elements.forEach(el => {
+        el.classList.remove(WVE_CLASS.FLICKER_HIDE)
+        el.classList.add(WVE_CLASS.FLICKER_SHOW)
+      })
+    }, delayTime) // Apply styles after maxRenderTime
+  }
+  function observeUrlChange () {
+    let previousHref = document.location.href
+    const observer = new MutationObserver(() => {
+      if (previousHref !== document.location.href) {
+        previousHref = document.location.href
+        applyAntiFlicker(personalizedSelectors)
+      }
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+  }
+  window.addEventListener('load', () => {
+    observeUrlChange()
+    applyAntiFlicker(personalizedSelectors)
+  })
 }

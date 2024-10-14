@@ -28,6 +28,7 @@ import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
 import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel } from './campaignRender/nativeDisplay'
 import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate } from './campaignRender/utilities'
 import { renderPopUpImageOnly } from './campaignRender/webPopup'
+import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 
 const _tr = (msg, {
   device,
@@ -902,6 +903,10 @@ const _tr = (msg, {
     } else {
       handleInboxNotifications()
     }
+  }
+
+  if (msg.webPushConfig) {
+    processWebPushConfig(msg.webPushConfig, logger, request)
   }
 
   if (msg.vars) {
