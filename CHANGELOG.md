@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.10.1] - 8 Oct, 2024
+- Adding a fix for the version check in visual editor
+
+## [1.10.0] - 8 Oct, 2024
+- Adds new api to handle rendering of customized web push prompt
+
 ## [1.9.6] - 23 Sept, 2024
 - Shopify support for visual builder
 

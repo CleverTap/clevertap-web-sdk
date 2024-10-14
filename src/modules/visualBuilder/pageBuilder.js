@@ -1,5 +1,6 @@
 import { CSS_PATH, OVERLAY_PATH, WVE_CLASS } from './builder_constants'
 import { updateFormData } from './dataUpdate'
+import { versionCompare } from './versionCompare'
 
 export const checkBuilder = (logger, accountId) => {
   const search = window.location.search
@@ -23,11 +24,13 @@ export const checkBuilder = (logger, accountId) => {
 
   if (search === '?ctBuilderSDKCheck') {
     if (parentWindow) {
+      const sdkVersion = '$$PACKAGE_VERSION$$'
+      const isRequiredVersion = versionCompare(sdkVersion)
       parentWindow.postMessage({
         message: 'SDKVersion',
         accountId,
         originUrl: window.location.href,
-        sdkVersion: '$$PACKAGE_VERSION$$'
+        sdkVersion: isRequiredVersion ? '1.9.3' : sdkVersion
       },
       '*'
       )
