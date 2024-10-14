@@ -432,6 +432,14 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
         if (document.getElementById('intentOpacityDiv') != null) {
           document.getElementById('intentOpacityDiv').style.display = 'none'
         }
+      } else if (divId === 'wizParDiv0') {
+        if (document.getElementById('intentOpacityDiv0') != null) {
+          document.getElementById('intentOpacityDiv0').style.display = 'none'
+        }
+      } else if (divId === 'wizParDiv2') {
+        if (document.getElementById('intentOpacityDiv2') != null) {
+          document.getElementById('intentOpacityDiv2').style.display = 'none'
+        }
       }
     }
   }
