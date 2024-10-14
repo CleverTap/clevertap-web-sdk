@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.10.2] - 14 Oct, 2024
+## [1.11.0] - 14 Oct, 2024
 - Adds Additional triggers and clicks handling for Web Popup template
 - Adds a fix for account id undefined for visual editor
 - Adds a fix for css in soft prompt
