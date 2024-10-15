@@ -42,7 +42,7 @@ export const getBoxPromptStyles = (style) => {
     }
 
     #imgElement {
-      width: 64px;
+      min-width: 64px;
       max-height: 64px;
     }
 
