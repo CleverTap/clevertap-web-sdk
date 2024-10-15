@@ -31,6 +31,7 @@ export const getBoxPromptStyles = (style) => {
         border-color: ${style.card.border.borderColor};
         border-style: solid;
       ` : ''}
+      height: fit-content;
     }
 
     #iconTitleDescWrapper {
@@ -41,7 +42,7 @@ export const getBoxPromptStyles = (style) => {
     }
 
     #imgElement {
-      max-width: 64px;
+      width: 64px;
       max-height: 64px;
     }
 
@@ -69,18 +70,23 @@ export const getBoxPromptStyles = (style) => {
     #buttonsContainer {
       display: flex;
       justify-content: space-between;
-      height: 32px;
+      min-height: 32px;
       gap: 8px;
+      align-items: center;
     }
 
     #primaryButton, #secondaryButton {
-      padding: 16px;
+      padding: 6px 24px;
       flex: 1;
       cursor: pointer;
       font-weight: bold;
       display: flex;
       align-items: center;
       justify-content: center;
+      height: max-content;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 20px;
     }
 
     #primaryButton {
@@ -100,7 +106,7 @@ export const getBoxPromptStyles = (style) => {
       background-color: ${style.buttons.secondaryButton.buttonColor};
       color: ${style.buttons.secondaryButton.textColor};
       border-radius: ${style.buttons.secondaryButton.borderRadius}px;
-      ${style.buttons.primaryButton.borderEnabled
+      ${style.buttons.secondaryButton.borderEnabled
         ? `
           border-width: ${style.buttons.secondaryButton.border.borderWidth}px;
           border-color: ${style.buttons.secondaryButton.border.borderColor};
