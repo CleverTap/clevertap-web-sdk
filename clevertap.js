@@ -6161,7 +6161,7 @@
 
       const displayObj = targetingMsgJson.display;
 
-      if (displayObj.wtarget_type === 1 && displayObj.delay != null && displayObj.delay > 0) {
+      if (displayObj.delay != null && displayObj.delay > 0) {
         const delay = displayObj.delay;
         displayObj.delay = 0;
         setTimeout(_tr, delay * 1000, msg, {
