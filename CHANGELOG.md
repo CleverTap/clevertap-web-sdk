@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.11.1] - 14 Oct, 2024
+## [1.11.1] - 16 Oct, 2024
 - Fixes a bug where delay was not working for Web Popup Campaigns
 
 ## [1.11.0] - 14 Oct, 2024
