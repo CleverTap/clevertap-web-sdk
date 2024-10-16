@@ -4360,7 +4360,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.0';
+        const sdkVersion = '1.11.1';
         const isRequiredVersion = versionCompare(sdkVersion);
         parentWindow.postMessage({
           message: 'SDKVersion',
@@ -6157,7 +6157,7 @@
 
       const displayObj = targetingMsgJson.display;
 
-      if (displayObj.wtarget_type === 1 && displayObj.delay != null && displayObj.delay > 0) {
+      if (displayObj.delay != null && displayObj.delay > 0) {
         const delay = displayObj.delay;
         displayObj.delay = 0;
         setTimeout(_tr, delay * 1000, msg, {
@@ -7362,7 +7362,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.0',
+        lib: 'web-sdk-v1.11.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9032,7 +9032,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.0';
+      return 'web-sdk-v1.11.1';
     }
 
     defineVariable(name, defaultValue) {
