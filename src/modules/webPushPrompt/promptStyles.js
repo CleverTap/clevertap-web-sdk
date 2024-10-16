@@ -41,9 +41,11 @@ export const getBoxPromptStyles = (style) => {
       gap: 12px;
     }
 
-    #imgElement {
+    #iconContainer {
       min-width: 64px;
-      max-height: 64px;
+      max-width: 64px;
+      aspect-ratio: 1;
+      object-fit: cover;
     }
 
     #titleDescWrapper {
