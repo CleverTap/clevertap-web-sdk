@@ -65,13 +65,11 @@ export const createNotificationBox = (configData) => {
   const pnCard = createElementWithAttributes('div', { id: 'pnCard' })
 
   const iconTitleDescWrapper = createElementWithAttributes('div', { id: 'iconTitleDescWrapper' })
-  const iconContainer = createElementWithAttributes('div', { id: 'iconContainer' })
-  const imgElement = createElementWithAttributes('img', {
-    id: 'imgElement',
+  const iconContainer = createElementWithAttributes('img', {
+    id: 'iconContainer',
     src: content.icon.type === 'default' ? `data:image/svg+xml;base64,${PROMPT_BELL_BASE64}` : content.icon.url
   })
 
-  iconContainer.appendChild(imgElement)
   iconTitleDescWrapper.appendChild(iconContainer)
 
   const titleDescWrapper = createElementWithAttributes('div', { id: 'titleDescWrapper' })
