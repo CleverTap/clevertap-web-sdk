@@ -148,7 +148,6 @@ function loadOverlayScript (overlayPath, url, variant, details) {
  * @param {boolean} isPreview - Indicates if it's a preview.
  */
 export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
-  console.log(targetingMsgJson.details)
   const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details
   let elementDisplayed = false
 

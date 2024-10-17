@@ -4501,7 +4501,6 @@
 
 
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
-    console.log(targetingMsgJson.details);
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let elementDisplayed = false;
 
