@@ -238,7 +238,7 @@ const _tr = (msg, {
   }
 
   const isExistingCampaign = (campaignId) => {
-    const testIframe = document.querySelector('iframe')
+    const testIframe = document.getElementById('wiz-iframe-intent') || document.getElementById('wiz-iframe')
     if (testIframe) {
       const iframeDocument = testIframe.contentDocument || testIframe.contentWindow.document
       return iframeDocument.documentElement.innerHTML.includes(campaignId)
