@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.11.2] - 17 Oct, 2024
-- Updated payload structure support for Visual Editor
+- Fixes a bug where Web Popup Campaign was not working if other iframes present on DOM.
 
 ## [1.11.1] - 16 Oct, 2024
 - Fixes a bug where delay was not working for Web Popup Campaigns
