@@ -149,7 +149,18 @@ function loadOverlayScript (overlayPath, url, variant, details) {
  */
 export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
   const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details
-  let elementDisplayed = false
+  let notificationViewed = false
+  const payload = {
+    msgId: targetingMsgJson.wzrk_id,
+    pivotId: targetingMsgJson.wzrk_pivot
+  }
+
+  const raiseViewed = () => {
+    if (!isPreview && !notificationViewed) {
+      notificationViewed = true
+      window.clevertap.renderNotificationViewed(payload)
+    }
+  }
 
   const processElement = (element, selector) => {
     if (!selector.values) return
@@ -158,7 +169,8 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     } else if (selector.values?.json) {
       dispatchJsonData(targetingMsgJson, selector.values)
     } else {
-      updateFormData(element, selector.values.form)
+      payload.msgCTkv = { wzrk_selector: selector.selector }
+      updateFormData(element, selector.values.form, payload, isPreview)
     }
   }
 
@@ -167,6 +179,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     const intervalId = setInterval(() => {
       const retryElement = document.querySelector(selector.selector)
       if (retryElement) {
+        raiseViewed()
         processElement(retryElement, selector)
         clearInterval(intervalId)
       } else if (++count >= 20) {
@@ -181,21 +194,14 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
       d.selectorData.forEach(s => {
         const element = document.querySelector(s.selector)
         if (element) {
+          raiseViewed()
           processElement(element, s)
-          elementDisplayed = true
         } else {
           tryFindingElement(s)
         }
       })
     }
   })
-
-  if (elementDisplayed && !isPreview) {
-    window.clevertap.renderNotificationViewed({
-      msgId: targetingMsgJson.wzrk_id,
-      pivotId: targetingMsgJson.wzrk_pivot
-    })
-  }
 }
 
 /**
