@@ -4561,7 +4561,9 @@
     };
 
     details.forEach(d => {
-      if (d.url === window.location.href.split('?')[0]) {
+      const url = window.location.href.split('?')[0].replace(/\/$/, '');
+
+      if (d.url.replace(/\/$/, '') === url) {
         d.selectorData.forEach(s => {
           const element = document.querySelector(s.selector);
 
