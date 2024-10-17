@@ -148,28 +148,38 @@ function loadOverlayScript (overlayPath, url, variant, details) {
  * @param {boolean} isPreview - Indicates if it's a preview.
  */
 export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
-  const details = isPreview ? targetingMsgJson.details[0] : targetingMsgJson.display.details[0]
-  const siteUrl = Object.keys(details)[0]
-  const selectors = details[siteUrl]
-  let elementDisplayed = false
+  const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details
+  let notificationViewed = false
+  const payload = {
+    msgId: targetingMsgJson.wzrk_id,
+    pivotId: targetingMsgJson.wzrk_pivot
+  }
 
-  if (siteUrl !== window.location.href.split('?')[0]) return
+  const raiseViewed = () => {
+    if (!isPreview && !notificationViewed) {
+      notificationViewed = true
+      window.clevertap.renderNotificationViewed(payload)
+    }
+  }
 
   const processElement = (element, selector) => {
-    if (selectors[selector].html) {
-      element.outerHTML = selectors[selector].html
-    } else if (selectors[selector].json) {
-      dispatchJsonData(targetingMsgJson, selectors[selector])
+    if (!selector.values) return
+    if (selector.values.html) {
+      element.outerHTML = selector.values.html
+    } else if (selector.values?.json) {
+      dispatchJsonData(targetingMsgJson, selector.values)
     } else {
-      updateFormData(element, selectors[selector].form)
+      payload.msgCTkv = { wzrk_selector: selector.selector }
+      updateFormData(element, selector.values.form, payload, isPreview)
     }
   }
 
   const tryFindingElement = (selector) => {
     let count = 0
     const intervalId = setInterval(() => {
-      const retryElement = document.querySelector(selector)
+      const retryElement = document.querySelector(selector.selector)
       if (retryElement) {
+        raiseViewed()
         processElement(retryElement, selector)
         clearInterval(intervalId)
       } else if (++count >= 20) {
@@ -179,22 +189,20 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     }, 500)
   }
 
-  Object.keys(selectors).forEach(selector => {
-    const element = document.querySelector(selector)
-    if (element) {
-      processElement(element, selector)
-      elementDisplayed = true
-    } else {
-      tryFindingElement(selector)
+  details.forEach(d => {
+    const url = window.location.href.split('?')[0].replace(/\/$/, '')
+    if (d.url.replace(/\/$/, '') === url) {
+      d.selectorData.forEach(s => {
+        const element = document.querySelector(s.selector)
+        if (element) {
+          raiseViewed()
+          processElement(element, s)
+        } else {
+          tryFindingElement(s)
+        }
+      })
     }
   })
-
-  if (elementDisplayed && !isPreview) {
-    window.clevertap.renderNotificationViewed({
-      msgId: targetingMsgJson.wzrk_id,
-      pivotId: targetingMsgJson.wzrk_pivot
-    })
-  }
 }
 
 /**
