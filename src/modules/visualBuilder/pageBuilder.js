@@ -48,7 +48,14 @@ const handleMessageEvent = (event) => {
     return
   }
   if (event.data.message === 'Dashboard') {
-    initialiseCTBuilder(event.data.url, event.data.variant ?? null, event.data.details ?? {})
+    // handle personalisation
+    window.evtMaster = event.data.personalisation.evtMaster
+    initialiseCTBuilder(
+      event.data.url,
+      event.data.variant ?? null,
+      event.data.details ?? {},
+      event.data.personalisation
+    )
   } else if (event.data.message === 'Overlay') {
     renderVisualBuilder(event.data, true)
   }
@@ -58,14 +65,15 @@ const handleMessageEvent = (event) => {
  * @param {string} url - The URL to initialize the builder.
  * @param {string} variant - The variant of the builder.
  * @param {Object} details - The details object.
+ * @param {Object} personalisation - The personalisation object
  */
-const initialiseCTBuilder = (url, variant, details) => {
+const initialiseCTBuilder = (url, variant, details, personalisation) => {
   if (document.readyState === 'complete') {
-    onContentLoad(url, variant, details)
+    onContentLoad(url, variant, details, personalisation)
   } else {
     document.addEventListener('readystatechange', () => {
       if (document.readyState === 'complete') {
-        onContentLoad(url, variant, details)
+        onContentLoad(url, variant, details, personalisation)
       }
     })
   }
@@ -77,7 +85,7 @@ let isShopify = false
 /**
  * Handles content load for Clevertap builder.
  */
-function onContentLoad (url, variant, details) {
+function onContentLoad (url, variant, details, personalisation) {
   if (!contentLoaded) {
     if (window.Shopify) {
       isShopify = true
@@ -91,7 +99,7 @@ function onContentLoad (url, variant, details) {
     container.style.display = 'flex'
     document.body.appendChild(container)
     const overlayPath = OVERLAY_PATH
-    loadOverlayScript(overlayPath, url, variant, details)
+    loadOverlayScript(overlayPath, url, variant, details, personalisation)
       .then(() => {
         console.log('Overlay script loaded successfully.')
         contentLoaded = true
@@ -120,16 +128,17 @@ function loadCSS () {
  * @param {string} url - The URL.
  * @param {string} variant - The variant.
  * @param {Object} details - The details object.
+ * @param {Object} personalisation
  * @returns {Promise} A promise.
  */
-function loadOverlayScript (overlayPath, url, variant, details) {
+function loadOverlayScript (overlayPath, url, variant, details, personalisation) {
   return new Promise((resolve, reject) => {
     var script = document.createElement('script')
     script.type = 'module'
     script.src = overlayPath
     script.onload = function () {
       if (typeof window.Overlay === 'function') {
-        window.Overlay({ id: '#overlayDiv', url, variant, details, isShopify })
+        window.Overlay({ id: '#overlayDiv', url, variant, details, isShopify, personalisation })
         resolve()
       } else {
         reject(new Error('ContentLayout not found in overlay.js'))
@@ -148,27 +157,26 @@ function loadOverlayScript (overlayPath, url, variant, details) {
  * @param {boolean} isPreview - Indicates if it's a preview.
  */
 export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
-  const details = isPreview ? targetingMsgJson.details[0] : targetingMsgJson.display.details[0]
-  const siteUrl = Object.keys(details)[0]
-  const selectors = details[siteUrl]
+  console.log(targetingMsgJson.details)
+  const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details
   let elementDisplayed = false
 
-  if (siteUrl !== window.location.href.split('?')[0]) return
-
   const processElement = (element, selector) => {
-    if (selectors[selector].html) {
-      element.outerHTML = selectors[selector].html
-    } else if (selectors[selector].json) {
-      dispatchJsonData(targetingMsgJson, selectors[selector])
+    if (!selector.values) return
+    if (selector.values.html) {
+      element.outerHTML = selector.values.html
+    } else if (selector.values?.json) {
+      dispatchJsonData(targetingMsgJson, selector.values)
     } else {
-      updateFormData(element, selectors[selector].form)
+      console.log('updateFormData called with', selector.values.form, isPreview)
+      updateFormData(element, selector.values.form, isPreview)
     }
   }
 
   const tryFindingElement = (selector) => {
     let count = 0
     const intervalId = setInterval(() => {
-      const retryElement = document.querySelector(selector)
+      const retryElement = document.querySelector(selector.selector)
       if (retryElement) {
         processElement(retryElement, selector)
         clearInterval(intervalId)
@@ -179,13 +187,17 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     }, 500)
   }
 
-  Object.keys(selectors).forEach(selector => {
-    const element = document.querySelector(selector)
-    if (element) {
-      processElement(element, selector)
-      elementDisplayed = true
-    } else {
-      tryFindingElement(selector)
+  details.forEach(d => {
+    if (d.url === window.location.href.split('?')[0]) {
+      d.selectorData.forEach(s => {
+        const element = document.querySelector(s.selector)
+        if (element) {
+          processElement(element, s)
+          elementDisplayed = true
+        } else {
+          tryFindingElement(s)
+        }
+      })
     }
   })
 
