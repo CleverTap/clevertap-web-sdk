@@ -2,8 +2,7 @@ import {
   addToLocalProfileMap,
   arp,
   getCampaignObject,
-  saveCampaignObject,
-  closeIframe
+  saveCampaignObject
 } from './clevertap'
 
 import {
@@ -11,12 +10,9 @@ import {
   DISPLAY,
   GLOBAL,
   EV_COOKIE,
-  NOTIFICATION_VIEWED,
   NOTIFICATION_CLICKED,
   WZRK_PREFIX,
-  WZRK_ID,
-  CAMP_COOKIE_G,
-  GCOOKIE_NAME
+  WZRK_ID
 } from './constants'
 
 import {
@@ -24,17 +20,15 @@ import {
   getToday
 } from './datetime'
 
-import {
-  compressToBase64
-} from './encoder'
-
 import { StorageManager, $ct } from './storage'
 import RequestDispatcher from './requestDispatcher'
-import { CTWebPersonalisationBanner } from './web-personalisation/banner'
-import { CTWebPersonalisationCarousel } from './web-personalisation/carousel'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
+import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel } from './campaignRender/nativeDisplay'
+import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate } from './campaignRender/utilities'
+import { renderPopUpImageOnly } from './campaignRender/webPopup'
+import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 
 const _tr = (msg, {
   device,
@@ -187,9 +181,10 @@ const _tr = (msg, {
       }
     }
     // delay
-    if (targetingMsgJson[DISPLAY].delay != null && targetingMsgJson[DISPLAY].delay > 0) {
-      const delay = targetingMsgJson[DISPLAY].delay
-      targetingMsgJson[DISPLAY].delay = 0
+    const displayObj = targetingMsgJson.display
+    if (displayObj.delay != null && displayObj.delay > 0) {
+      const delay = displayObj.delay
+      displayObj.delay = 0
       setTimeout(_tr, delay * 1000, msg, {
         device: _device,
         session: _session,
@@ -215,163 +210,52 @@ const _tr = (msg, {
     saveCampaignObject({ [campKey]: newCampObj })
   }
 
-  const getCookieParams = () => {
-    const gcookie = _device.getGuid()
-    const scookieObj = _session.getSessionCookieObject()
-    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s))
-  }
-
-  const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
-    if (onClick !== '' && onClick != null) {
-      let ctaElement
-      let jsCTAElements
-      if (isLegacy) {
-        ctaElement = contentDiv
-      } else if (contentDiv !== null) {
-        jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA')
-        if (jsCTAElements != null && jsCTAElements.length === 1) {
-          ctaElement = jsCTAElements[0]
-        }
-      }
-      const jsFunc = targetingMsgJson.display.jsFunc
-      const isPreview = targetingMsgJson.display.preview
-      if (isPreview == null) {
-        onClick += getCookieParams()
-      }
-
-      if (ctaElement != null) {
-        ctaElement.onclick = () => {
-          // invoke js function call
-          if (jsFunc != null) {
-            // track notification clicked event
-            if (isPreview == null) {
-              RequestDispatcher.fireRequest(onClick)
-            }
-            invokeExternalJs(jsFunc, targetingMsgJson)
-            // close iframe. using -1 for no campaignId
-            closeIframe('-1', divId, _session.sessionId)
-            return
-          }
-          // pass on the gcookie|page|scookieId for capturing the click event
-          if (targetingMsgJson.display.window === 1) {
-            window.open(onClick, '_blank')
-          } else {
-            window.location = onClick
-          }
-        }
-      }
-    }
-  }
-
-  const invokeExternalJs = (jsFunc, targetingMsgJson) => {
-    const func = window.parent[jsFunc]
-    if (typeof func === 'function') {
-      if (targetingMsgJson.display.kv != null) {
-        func(targetingMsgJson.display.kv)
-      } else {
-        func()
-      }
-    }
-  }
-
   const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
-    incrementImpression(targetingMsgJson)
-    setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy)
+    incrementImpression(targetingMsgJson, _request)
+    setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session)
   }
 
-  const incrementImpression = (targetingMsgJson) => {
-    const data = {}
-    data.type = 'event'
-    data.evtName = NOTIFICATION_VIEWED
-    data.evtData = { [WZRK_ID]: targetingMsgJson.wzrk_id }
-    if (targetingMsgJson.wzrk_pivot) {
-      data.evtData = { ...data.evtData, wzrk_pivot: targetingMsgJson.wzrk_pivot }
-    }
-    _request.processEvent(data)
-  }
-
-  const renderPersonalisationBanner = (targetingMsgJson) => {
-    if (customElements.get('ct-web-personalisation-banner') === undefined) {
-      customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner)
-    }
-    const divId = targetingMsgJson.display.divId ?? targetingMsgJson.display.divSelector
-    const bannerEl = document.createElement('ct-web-personalisation-banner')
-    bannerEl.msgId = targetingMsgJson.wzrk_id
-    bannerEl.pivotId = targetingMsgJson.wzrk_pivot
-    bannerEl.divHeight = targetingMsgJson.display.divHeight
-    bannerEl.details = targetingMsgJson.display.details[0]
-    const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId)
-    containerEl.innerHTML = ''
-    containerEl.appendChild(bannerEl)
-  }
-
-  const renderPersonalisationCarousel = (targetingMsgJson) => {
-    if (customElements.get('ct-web-personalisation-carousel') === undefined) {
-      customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel)
-    }
-    const divId = targetingMsgJson.display.divId ?? targetingMsgJson.display.divSelector
-    const carousel = document.createElement('ct-web-personalisation-carousel')
-    carousel.target = targetingMsgJson
-    const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId)
-    container.innerHTML = ''
-    container.appendChild(carousel)
-  }
-
-  const renderPopUpImageOnly = (targetingMsgJson) => {
+  const handleImageOnlyPopup = (targetingMsgJson) => {
     const divId = 'wzrkImageOnlyDiv'
-    const popupImageOnly = document.createElement('ct-web-popup-imageonly')
-    popupImageOnly.session = _session
-    popupImageOnly.target = targetingMsgJson
-    const containerEl = document.getElementById(divId)
-    containerEl.innerHTML = ''
-    containerEl.style.visibility = 'hidden'
-    containerEl.appendChild(popupImageOnly)
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
+      return
+    }
+    if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
+      const element = document.getElementById(divId)
+      element.remove()
+    }
+    // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+    if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
+      return
+    }
+    const msgDiv = document.createElement('div')
+    msgDiv.id = divId
+    document.body.appendChild(msgDiv)
+    if (customElements.get('ct-web-popup-imageonly') === undefined) {
+      customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly)
+    }
+    return renderPopUpImageOnly(targetingMsgJson, _session)
   }
 
-  const renderFooterNotification = (targetingMsgJson) => {
+  const isExistingCampaign = (campaignId) => {
+    const testIframe = document.getElementById('wiz-iframe-intent') || document.getElementById('wiz-iframe')
+    if (testIframe) {
+      const iframeDocument = testIframe.contentDocument || testIframe.contentWindow.document
+      return iframeDocument.documentElement.innerHTML.includes(campaignId)
+    }
+    return false
+  }
+
+  const createTemplate = (targetingMsgJson, isExitIntent) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     const displayObj = targetingMsgJson.display
 
-    if (displayObj.wtarget_type === 2) { // Handling Web Native display
-      // Logic for kv pair data
-      if (targetingMsgJson.msgContent.type === 1) {
-        const inaObj = {}
-
-        inaObj.msgId = targetingMsgJson.wzrk_id
-        if (targetingMsgJson.wzrk_pivot) {
-          inaObj.pivotId = targetingMsgJson.wzrk_pivot
-        }
-        if (targetingMsgJson.msgContent.kv != null) {
-          inaObj.kv = targetingMsgJson.msgContent.kv
-        }
-        const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
-        document.dispatchEvent(kvPairsEvent)
-        return
-      }
-    }
     if (displayObj.layout === 1) { // Handling Web Exit Intent
       return showExitIntent(undefined, targetingMsgJson)
     }
     if (displayObj.layout === 3) { // Handling Web Popup Image Only
-      const divId = 'wzrkImageOnlyDiv'
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
-        return
-      }
-      if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
-        const element = document.getElementById(divId)
-        element.remove()
-      }
-      // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
-      if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
-        return
-      }
-      const msgDiv = document.createElement('div')
-      msgDiv.id = divId
-      document.body.appendChild(msgDiv)
-      if (customElements.get('ct-web-popup-imageonly') === undefined) {
-        customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly)
-      }
-      return renderPopUpImageOnly(targetingMsgJson)
+      handleImageOnlyPopup(targetingMsgJson)
+      return
     }
 
     if (doCampHouseKeeping(targetingMsgJson) === false) {
@@ -379,17 +263,34 @@ const _tr = (msg, {
     }
 
     const divId = 'wizParDiv' + displayObj.layout
+    const opacityDivId = 'intentOpacityDiv' + displayObj.layout
 
     if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
       const element = document.getElementById(divId)
-      element.remove()
+      const opacityElement = document.getElementById(opacityDivId)
+      if (element) {
+        element.remove()
+      }
+      if (opacityElement) {
+        opacityElement.remove()
+      }
     }
+    if (isExistingCampaign(campaignId)) return
+
     if (document.getElementById(divId) != null) {
       return
     }
 
     $ct.campaignDivMap[campaignId] = divId
     const isBanner = displayObj.layout === 2
+    if (isExitIntent) {
+      const opacityDiv = document.createElement('div')
+      opacityDiv.id = opacityDivId
+      const opacity = targetingMsgJson.display.opacity || 0.7
+      const rgbaColor = `rgba(0,0,0,${opacity})`
+      opacityDiv.setAttribute('style', `position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ${rgbaColor};`)
+      document.body.appendChild(opacityDiv)
+    }
     const msgDiv = document.createElement('div')
     msgDiv.id = divId
     const viewHeight = window.innerHeight
@@ -553,41 +454,15 @@ const _tr = (msg, {
       }
     }
   }
-
-  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
-    const script = `<script>
-      const ct__camapignId = '${targetingMsgJson.wzrk_id}';
-      const ct__formatVal = (v) => {
-          return v && v.trim().substring(0, 20);
-      }
-      const ct__parentOrigin =  window.parent.origin;
-      document.body.addEventListener('click', (event) => {
-        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');
-        if (elem) {
-            const {innerText, id, name, value, href} = elem;
-            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');
-            const onclickURL = clickAttr?.match(/(window.open)[(\](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];
-            const props = {innerText, id, name, value};
-            let msgCTkv = Object.keys(props).reduce((acc, c) => {
-                const formattedVal = ct__formatVal(props[c]);
-                formattedVal && (acc['wzrk_click_' + c] = formattedVal);
-                return acc;
-            }, {});
-            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }
-            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }
-            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '${targetingMsgJson.wzrk_pivot}' };
-            window.parent.clevertap.renderNotificationClicked(notifData);
-        }
-      });
-      </script>
-    `
-    return html.replace(/(<\s*\/\s*body)/, `${script}\n$1`)
+  const renderFooterNotification = (targetingMsgJson) => {
+    createTemplate(targetingMsgJson, false)
   }
 
   let _callBackCalled = false
 
   const showFooterNotification = (targetingMsgJson) => {
     let onClick = targetingMsgJson.display.onClick
+    const displayObj = targetingMsgJson.display
 
     // TODO: Needs wizrocket as a global variable
     if (window.clevertap.hasOwnProperty('notificationCallback') &&
@@ -609,7 +484,7 @@ const _tr = (msg, {
         window.clevertap.raiseNotificationClicked = () => {
           if (onClick !== '' && onClick != null) {
             const jsFunc = targetingMsgJson.display.jsFunc
-            onClick += getCookieParams()
+            onClick += getCookieParams(_device, _session)
 
             // invoke js function call
             if (jsFunc != null) {
@@ -634,7 +509,28 @@ const _tr = (msg, {
       }
     } else {
       window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id
-      renderFooterNotification(targetingMsgJson)
+
+      if (displayObj.deliveryTrigger) {
+        if (displayObj.deliveryTrigger.inactive) {
+          triggerByInactivity(targetingMsgJson)
+        }
+        if (displayObj.deliveryTrigger.scroll) {
+          triggerByScroll(targetingMsgJson)
+        }
+        if (displayObj.deliveryTrigger.isExitIntent) {
+          exitintentObj = targetingMsgJson
+          window.document.body.onmouseleave = showExitIntent
+        }
+        // delay
+        const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed
+        if (delay != null && delay > 0) {
+          setTimeout(() => {
+            renderFooterNotification(targetingMsgJson)
+          }, delay * 1000)
+        }
+      } else {
+        renderFooterNotification(targetingMsgJson)
+      }
 
       if (window.clevertap.hasOwnProperty('popupCallbacks') &&
         typeof window.clevertap.popupCallbacks !== 'undefined' &&
@@ -691,24 +587,88 @@ const _tr = (msg, {
     }
   }
 
+  const triggerByInactivity = (targetNotif) => {
+    const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000 // Convert to milliseconds
+    let idleTimer
+    const events = ['mousemove', 'keypress', 'scroll', 'mousedown', 'touchmove', 'click']
+    const resetIdleTimer = () => {
+      clearTimeout(idleTimer)
+      idleTimer = setTimeout(() => {
+        renderFooterNotification(targetNotif)
+        removeEventListeners()
+      }, IDLE_TIME_THRESHOLD)
+    }
+    const eventHandler = () => {
+      resetIdleTimer()
+    }
+    const setupEventListeners = () => {
+      events.forEach(eventType => window.addEventListener(eventType, eventHandler, { passive: true }))
+    }
+    const removeEventListeners = () => {
+      events.forEach(eventType => window.removeEventListener(eventType, eventHandler))
+    }
+    setupEventListeners()
+    resetIdleTimer()
+    return removeEventListeners// Return a cleanup function
+  }
+
+  const triggerByScroll = (targetNotif) => {
+    const calculateScrollPercentage = () => {
+      const { scrollHeight, clientHeight, scrollTop } = document.documentElement
+      return (scrollTop / (scrollHeight - clientHeight)) * 100
+    }
+    const scrollListener = () => {
+      const scrollPercentage = calculateScrollPercentage()
+      if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
+        renderFooterNotification(targetNotif)
+        window.removeEventListener('scroll', throttledScrollListener)
+      }
+    }
+    const throttle = (func, limit) => {
+      let inThrottle = false
+      return function (...args) {
+        const context = this
+        if (!inThrottle) {
+          func.apply(context, args)
+          inThrottle = true
+          setTimeout(() => {
+            inThrottle = false
+          }, limit)
+        }
+      }
+    }
+    const throttledScrollListener = throttle(scrollListener, 200)
+    window.addEventListener('scroll', throttledScrollListener, { passive: true })
+    return () => window.removeEventListener('scroll', throttledScrollListener)// Return a cleanup function
+  }
+
   let exitintentObj
   const showExitIntent = (event, targetObj) => {
-    let targetingMsgJson
-    if (event != null && event.clientY > 0) {
+    if (event?.clientY > 0) return
+    const targetingMsgJson = targetObj || exitintentObj
+
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
+    const layout = targetingMsgJson.display.layout
+    if (isExistingCampaign(campaignId)) return
+
+    if (targetingMsgJson.display.wtarget_type === 0 && (layout === 0 || layout === 2 || layout === 3)) {
+      createTemplate(targetingMsgJson, true)
       return
     }
-    if (targetObj == null) {
-      targetingMsgJson = exitintentObj
-    } else {
-      targetingMsgJson = targetObj
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
+      return
     }
 
-    if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
-      const element = document.getElementById('intentPreview')
-      element.remove()
-      document.getElementById('intentOpacityDiv').remove()
+    if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0) {
+      const intentPreview = document.getElementById('intentPreview')
+      const intentOpacityDiv = document.getElementById('intentOpacityDiv')
+      if (intentPreview && intentOpacityDiv) {
+        intentPreview.remove()
+        intentOpacityDiv.remove()
+      }
     }
-    // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+
+    // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist`
     if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
       return
     }
@@ -719,11 +679,6 @@ const _tr = (msg, {
       return
     }
 
-    if (doCampHouseKeeping(targetingMsgJson) === false) {
-      return
-    }
-
-    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     $ct.campaignDivMap[campaignId] = 'intentPreview'
     let legacy = false
     const opacityDiv = document.createElement('div')
@@ -886,7 +841,9 @@ const _tr = (msg, {
         exitintentObj = targetNotif
         window.document.body.onmouseleave = showExitIntent
       } else if (targetNotif.display.wtarget_type === 2) { // if display['wtarget_type']==2 then web native display
-        if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) { // Check for banner and carousel
+        if (targetNotif.msgContent.type === 1) {
+          handleKVpairCampaign(targetNotif)
+        } else if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) { // Check for banner and carousel
           const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector)
           if (element !== null) {
             targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
@@ -906,29 +863,6 @@ const _tr = (msg, {
         processNativeDisplayArr(arrInAppNotifs)
       } else {
         addLoadListener(arrInAppNotifs)
-      }
-    }
-  }
-
-  const mergeEventMap = (newEvtMap) => {
-    if ($ct.globalEventsMap == null) {
-      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE)
-      if ($ct.globalEventsMap == null) {
-        $ct.globalEventsMap = newEvtMap
-        return
-      }
-    }
-    for (const key in newEvtMap) {
-      if (newEvtMap.hasOwnProperty(key)) {
-        const oldEvtObj = $ct.globalEventsMap[key]
-        const newEvtObj = newEvtMap[key]
-        if ($ct.globalEventsMap[key] != null) {
-          if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
-            $ct.globalEventsMap[key] = newEvtObj
-          }
-        } else {
-          $ct.globalEventsMap[key] = newEvtObj
-        }
       }
     }
   }
@@ -971,30 +905,13 @@ const _tr = (msg, {
     }
   }
 
+  if (msg.webPushConfig) {
+    processWebPushConfig(msg.webPushConfig, logger, request)
+  }
+
   if (msg.vars) {
     $ct.variableStore.mergeVariables(msg.vars)
     return
-  }
-
-  const staleDataUpdate = (staledata, campType) => {
-    const campObj = getCampaignObject()
-    const globalObj = campObj[campType].global
-    if (globalObj != null && campType) {
-      for (const idx in staledata) {
-        if (staledata.hasOwnProperty(idx)) {
-          delete globalObj[staledata[idx]]
-          if (StorageManager.read(CAMP_COOKIE_G)) {
-            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)))
-            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-            if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
-              delete guidCampObj[guid][campType][staledata[idx]]
-              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
-            }
-          }
-        }
-      }
-    }
-    saveCampaignObject(campObj)
   }
 
   if (StorageManager._isLocalStorageSupported()) {
