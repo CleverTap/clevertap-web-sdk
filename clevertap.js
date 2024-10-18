@@ -225,6 +225,10 @@
     };
   }
 
+  function _slicedToArray(arr, i) {
+    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
+  }
+
   function _toConsumableArray(arr) {
     return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
   }
@@ -233,8 +237,39 @@
     if (Array.isArray(arr)) return _arrayLikeToArray(arr);
   }
 
+  function _arrayWithHoles(arr) {
+    if (Array.isArray(arr)) return arr;
+  }
+
   function _iterableToArray(iter) {
     if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
+  }
+
+  function _iterableToArrayLimit(arr, i) {
+    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
+    var _arr = [];
+    var _n = true;
+    var _d = false;
+    var _e = undefined;
+
+    try {
+      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+        _arr.push(_s.value);
+
+        if (i && _arr.length === i) break;
+      }
+    } catch (err) {
+      _d = true;
+      _e = err;
+    } finally {
+      try {
+        if (!_n && _i["return"] != null) _i["return"]();
+      } finally {
+        if (_d) throw _e;
+      }
+    }
+
+    return _arr;
   }
 
   function _unsupportedIterableToArray(o, minLen) {
@@ -256,6 +291,10 @@
 
   function _nonIterableSpread() {
     throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+  }
+
+  function _nonIterableRest() {
+    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
   function _createForOfIteratorHelper(o, allowArrayLike) {
@@ -528,6 +567,7 @@
   var PUSH_DELAY_MS = 1000;
   var MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
   var WZRK_FETCH = 'wzrk_fetch';
+  var WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
@@ -947,7 +987,8 @@
     dismissSpamControl: false,
     globalUnsubscribe: true,
     flutterVersion: null,
-    variableStore: {} // domain: window.location.hostname, url -> getHostName()
+    variableStore: {},
+    pushConfig: null // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -2612,6 +2653,14 @@
           if (document.getElementById('intentOpacityDiv') != null) {
             document.getElementById('intentOpacityDiv').style.display = 'none';
           }
+        } else if (divId === 'wizParDiv0') {
+          if (document.getElementById('intentOpacityDiv0') != null) {
+            document.getElementById('intentOpacityDiv0').style.display = 'none';
+          }
+        } else if (divId === 'wizParDiv2') {
+          if (document.getElementById('intentOpacityDiv2') != null) {
+            document.getElementById('intentOpacityDiv2').style.display = 'none';
+          }
         }
       }
     }
@@ -3480,295 +3529,6 @@
       }
     }
   };
-
-  var CTWebPersonalisationBanner = /*#__PURE__*/function (_HTMLElement) {
-    _inherits(CTWebPersonalisationBanner, _HTMLElement);
-
-    var _super = _createSuper(CTWebPersonalisationBanner);
-
-    function CTWebPersonalisationBanner() {
-      var _this;
-
-      _classCallCheck(this, CTWebPersonalisationBanner);
-
-      _this = _super.call(this);
-      _this._details = null;
-      _this.shadow = null;
-      _this.shadow = _this.attachShadow({
-        mode: 'open'
-      });
-      return _this;
-    }
-
-    _createClass(CTWebPersonalisationBanner, [{
-      key: "renderBanner",
-      value: function renderBanner() {
-        var _this2 = this;
-
-        this.shadow.innerHTML = this.getBannerContent();
-
-        if (this.trackClick !== false) {
-          this.addEventListener('click', function () {
-            var onClickUrl = _this2.details.onClick;
-
-            if (onClickUrl) {
-              _this2.details.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl;
-            }
-
-            window.clevertap.renderNotificationClicked({
-              msgId: _this2.msgId,
-              pivotId: _this2.pivotId
-            });
-          });
-        }
-
-        window.clevertap.renderNotificationViewed({
-          msgId: this.msgId,
-          pivotId: this.pivotId
-        });
-      }
-    }, {
-      key: "getBannerContent",
-      value: function getBannerContent() {
-        return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n          cursor: ".concat(this.details.onClick ? 'pointer' : '', "\n        }\n        img {\n          height: ").concat(this.divHeight ? this.divHeight : 'auto', ";\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ").concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:480px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\" part=\"banner__img\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
-      }
-    }, {
-      key: "details",
-      get: function get() {
-        return this._details || '';
-      },
-      set: function set(val) {
-        if (this._details === null) {
-          this._details = val;
-          this.renderBanner();
-        }
-      }
-    }]);
-
-    return CTWebPersonalisationBanner;
-  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
-
-  var CTWebPersonalisationCarousel = /*#__PURE__*/function (_HTMLElement) {
-    _inherits(CTWebPersonalisationCarousel, _HTMLElement);
-
-    var _super = _createSuper(CTWebPersonalisationCarousel);
-
-    function CTWebPersonalisationCarousel() {
-      var _this;
-
-      _classCallCheck(this, CTWebPersonalisationCarousel);
-
-      _this = _super.call(this);
-      _this._target = null;
-      _this._carousel = null;
-      _this.shadow = null;
-      _this.slides = 0;
-      _this.previouslySelectedItem = -1;
-      _this.selectedItem = 1;
-      _this.autoSlide = null;
-      _this.stopAutoSlideTimeout = null;
-      _this.shadow = _this.attachShadow({
-        mode: 'open'
-      });
-
-      if (customElements.get('ct-web-personalisation-banner') === undefined) {
-        customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
-      }
-
-      return _this;
-    }
-
-    _createClass(CTWebPersonalisationCarousel, [{
-      key: "renderCarousel",
-      value: function renderCarousel() {
-        this.slides = this.details.length;
-        this.shadow.innerHTML = this.getStyles();
-        var carousel = this.getCarouselContent();
-
-        if (this.display.showNavBtns) {
-          carousel.insertAdjacentHTML('beforeend', this.display.navBtnsHtml);
-        }
-
-        if (this.display.showNavArrows) {
-          carousel.insertAdjacentHTML('beforeend', this.display.leftNavArrowHtml);
-          carousel.insertAdjacentHTML('beforeend', this.display.rightNavArrowHtml);
-        }
-
-        this._carousel = carousel;
-        this.shadow.appendChild(carousel);
-        this.setupClick();
-        this.updateSelectedItem(); // TODO: enable conditionally
-
-        this.startAutoSlide();
-        this.setupOnHover();
-        window.clevertap.renderNotificationViewed({
-          msgId: this.target.wzrk_id,
-          pivotId: this.target.wzrk_pivot
-        });
-      }
-    }, {
-      key: "setupClick",
-      value: function setupClick() {
-        var _this2 = this;
-
-        this._carousel.addEventListener('click', function (event) {
-          var eventID = event.target.id;
-
-          if (eventID.startsWith('carousel__button')) {
-            var selected = +eventID.split('-')[1];
-
-            if (selected !== _this2.selectedItem) {
-              _this2.previouslySelectedItem = _this2.selectedItem;
-              _this2.selectedItem = selected;
-
-              _this2.updateSelectedItem();
-
-              _this2.startAutoSlide();
-            }
-          } else if (eventID.startsWith('carousel__arrow')) {
-            eventID.endsWith('right') ? _this2.goToNext() : _this2.goToPrev();
-
-            _this2.startAutoSlide();
-          } else if (eventID.indexOf('-') > -1) {
-            var item = +eventID.split('-')[1];
-            var index = item - 1;
-
-            if (window.parent.clevertap) {
-              // console.log('Raise notification clicked event for ', item)
-              window.clevertap.renderNotificationClicked({
-                msgId: _this2.target.wzrk_id,
-                pivotId: _this2.target.wzrk_pivot,
-                wzrk_slideNo: item
-              });
-            }
-
-            var url = _this2.details[index].onClick;
-
-            if (url !== '') {
-              _this2.details[index].window ? window.open(url, '_blank') : window.location.href = url;
-            }
-          }
-        });
-      }
-    }, {
-      key: "setupOnHover",
-      value: function setupOnHover() {
-        var _this3 = this;
-
-        this._carousel.addEventListener('mouseenter', function (event) {
-          _this3.stopAutoSlideTimeout = setTimeout(function () {
-            _this3.autoSlide = clearInterval(_this3.autoSlide);
-          }, 500);
-        });
-
-        this._carousel.addEventListener('mouseleave', function (event) {
-          clearTimeout(_this3.stopAutoSlideTimeout);
-
-          if (_this3.autoSlide === undefined) {
-            _this3.startAutoSlide();
-          }
-        });
-      }
-    }, {
-      key: "getCarouselContent",
-      value: function getCarouselContent() {
-        var carousel = document.createElement('div');
-        carousel.setAttribute('class', 'carousel');
-        this.details.forEach(function (detail, i) {
-          var banner = document.createElement('ct-web-personalisation-banner');
-          banner.classList.add('carousel__item');
-          banner.trackClick = false;
-          banner.setAttribute('id', "carousel__item-".concat(i + 1));
-          banner.details = detail;
-          carousel.appendChild(banner);
-        });
-        return carousel;
-      }
-    }, {
-      key: "getStyles",
-      value: function getStyles() {
-        var _this$target, _this$target$display;
-
-        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      ct-web-personalisation-banner::part(banner__img) {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
-      }
-    }, {
-      key: "updateSelectedItem",
-      value: function updateSelectedItem() {
-        if (this.previouslySelectedItem !== -1) {
-          var prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
-          var prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
-          prevItem.classList.remove('carousel__item--selected');
-
-          if (prevButton) {
-            prevButton.classList.remove('carousel__button--selected');
-          }
-        }
-
-        var item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
-        var button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
-        item.classList.add('carousel__item--selected');
-
-        if (button) {
-          button.classList.add('carousel__button--selected');
-        }
-      }
-    }, {
-      key: "startAutoSlide",
-      value: function startAutoSlide() {
-        var _this4 = this;
-
-        clearInterval(this.autoSlide);
-        this.autoSlide = setInterval(function () {
-          _this4.goToNext();
-        }, this.display.sliderTime ? this.display.sliderTime * 1000 : 3000);
-      }
-    }, {
-      key: "goToNext",
-      value: function goToNext() {
-        this.goTo(this.selectedItem, (this.selectedItem + 1) % this.slides);
-      }
-    }, {
-      key: "goToPrev",
-      value: function goToPrev() {
-        this.goTo(this.selectedItem, this.selectedItem - 1);
-      }
-    }, {
-      key: "goTo",
-      value: function goTo(prev, cur) {
-        this.previouslySelectedItem = prev;
-        this.selectedItem = cur;
-
-        if (cur === 0) {
-          this.selectedItem = this.slides;
-        }
-
-        this.updateSelectedItem();
-      }
-    }, {
-      key: "target",
-      get: function get() {
-        return this._target || '';
-      },
-      set: function set(val) {
-        if (this._target === null) {
-          this._target = val;
-          this.renderCarousel();
-        }
-      }
-    }, {
-      key: "details",
-      get: function get() {
-        return this.target.display.details;
-      }
-    }, {
-      key: "display",
-      get: function get() {
-        return this.target.display;
-      }
-    }]);
-
-    return CTWebPersonalisationCarousel;
-  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
 
   var CTWebPopupImageOnly = /*#__PURE__*/function (_HTMLElement) {
     _inherits(CTWebPopupImageOnly, _HTMLElement);
@@ -5138,6 +4898,25 @@
     }
   };
 
+  var versionCompare = function versionCompare(currentVersion) {
+    var requiredVersion = '1.9.2';
+    if (requiredVersion === currentVersion) return true;
+    var splitRequiredVersion = requiredVersion.split('.');
+    var splitCurrentVersion = currentVersion.split('.');
+    var p1 = 0;
+    var isWebsiteVersionHigher = false;
+
+    while (p1 < splitRequiredVersion.length && !isWebsiteVersionHigher) {
+      if (parseInt(splitRequiredVersion[p1]) < parseInt(splitCurrentVersion[p1])) {
+        isWebsiteVersionHigher = true;
+      }
+
+      p1++;
+    }
+
+    return isWebsiteVersionHigher;
+  };
+
   var checkBuilder = function checkBuilder(logger, accountId) {
     var search = window.location.search;
     var parentWindow = window.opener;
@@ -5170,11 +4949,13 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
+        var sdkVersion = '1.11.2';
+        var isRequiredVersion = versionCompare(sdkVersion);
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId: accountId,
           originUrl: window.location.href,
-          sdkVersion: '1.9.6'
+          sdkVersion: isRequiredVersion ? '1.9.3' : sdkVersion
         }, '*');
       }
     }
@@ -5504,6 +5285,1377 @@
     });
   }
 
+  var CTWebPersonalisationBanner = /*#__PURE__*/function (_HTMLElement) {
+    _inherits(CTWebPersonalisationBanner, _HTMLElement);
+
+    var _super = _createSuper(CTWebPersonalisationBanner);
+
+    function CTWebPersonalisationBanner() {
+      var _this;
+
+      _classCallCheck(this, CTWebPersonalisationBanner);
+
+      _this = _super.call(this);
+      _this._details = null;
+      _this.shadow = null;
+      _this.shadow = _this.attachShadow({
+        mode: 'open'
+      });
+      return _this;
+    }
+
+    _createClass(CTWebPersonalisationBanner, [{
+      key: "renderBanner",
+      value: function renderBanner() {
+        var _this2 = this;
+
+        this.shadow.innerHTML = this.getBannerContent();
+
+        if (this.trackClick !== false) {
+          this.addEventListener('click', function () {
+            var onClickUrl = _this2.details.onClick;
+
+            if (onClickUrl) {
+              _this2.details.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl;
+            }
+
+            window.clevertap.renderNotificationClicked({
+              msgId: _this2.msgId,
+              pivotId: _this2.pivotId
+            });
+          });
+        }
+
+        window.clevertap.renderNotificationViewed({
+          msgId: this.msgId,
+          pivotId: this.pivotId
+        });
+      }
+    }, {
+      key: "getBannerContent",
+      value: function getBannerContent() {
+        return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n          cursor: ".concat(this.details.onClick ? 'pointer' : '', "\n        }\n        img {\n          height: ").concat(this.divHeight ? this.divHeight : 'auto', ";\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ").concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:480px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\" part=\"banner__img\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
+      }
+    }, {
+      key: "details",
+      get: function get() {
+        return this._details || '';
+      },
+      set: function set(val) {
+        if (this._details === null) {
+          this._details = val;
+          this.renderBanner();
+        }
+      }
+    }]);
+
+    return CTWebPersonalisationBanner;
+  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
+
+  var CTWebPersonalisationCarousel = /*#__PURE__*/function (_HTMLElement) {
+    _inherits(CTWebPersonalisationCarousel, _HTMLElement);
+
+    var _super = _createSuper(CTWebPersonalisationCarousel);
+
+    function CTWebPersonalisationCarousel() {
+      var _this;
+
+      _classCallCheck(this, CTWebPersonalisationCarousel);
+
+      _this = _super.call(this);
+      _this._target = null;
+      _this._carousel = null;
+      _this.shadow = null;
+      _this.slides = 0;
+      _this.previouslySelectedItem = -1;
+      _this.selectedItem = 1;
+      _this.autoSlide = null;
+      _this.stopAutoSlideTimeout = null;
+      _this.shadow = _this.attachShadow({
+        mode: 'open'
+      });
+
+      if (customElements.get('ct-web-personalisation-banner') === undefined) {
+        customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
+      }
+
+      return _this;
+    }
+
+    _createClass(CTWebPersonalisationCarousel, [{
+      key: "renderCarousel",
+      value: function renderCarousel() {
+        this.slides = this.details.length;
+        this.shadow.innerHTML = this.getStyles();
+        var carousel = this.getCarouselContent();
+
+        if (this.display.showNavBtns) {
+          carousel.insertAdjacentHTML('beforeend', this.display.navBtnsHtml);
+        }
+
+        if (this.display.showNavArrows) {
+          carousel.insertAdjacentHTML('beforeend', this.display.leftNavArrowHtml);
+          carousel.insertAdjacentHTML('beforeend', this.display.rightNavArrowHtml);
+        }
+
+        this._carousel = carousel;
+        this.shadow.appendChild(carousel);
+        this.setupClick();
+        this.updateSelectedItem(); // TODO: enable conditionally
+
+        this.startAutoSlide();
+        this.setupOnHover();
+        window.clevertap.renderNotificationViewed({
+          msgId: this.target.wzrk_id,
+          pivotId: this.target.wzrk_pivot
+        });
+      }
+    }, {
+      key: "setupClick",
+      value: function setupClick() {
+        var _this2 = this;
+
+        this._carousel.addEventListener('click', function (event) {
+          var eventID = event.target.id;
+
+          if (eventID.startsWith('carousel__button')) {
+            var selected = +eventID.split('-')[1];
+
+            if (selected !== _this2.selectedItem) {
+              _this2.previouslySelectedItem = _this2.selectedItem;
+              _this2.selectedItem = selected;
+
+              _this2.updateSelectedItem();
+
+              _this2.startAutoSlide();
+            }
+          } else if (eventID.startsWith('carousel__arrow')) {
+            eventID.endsWith('right') ? _this2.goToNext() : _this2.goToPrev();
+
+            _this2.startAutoSlide();
+          } else if (eventID.indexOf('-') > -1) {
+            var item = +eventID.split('-')[1];
+            var index = item - 1;
+
+            if (window.parent.clevertap) {
+              window.clevertap.renderNotificationClicked({
+                msgId: _this2.target.wzrk_id,
+                pivotId: _this2.target.wzrk_pivot,
+                wzrk_slideNo: item
+              });
+            }
+
+            var url = _this2.details[index].onClick;
+
+            if (url !== '') {
+              _this2.details[index].window ? window.open(url, '_blank') : window.location.href = url;
+            }
+          }
+        });
+      }
+    }, {
+      key: "setupOnHover",
+      value: function setupOnHover() {
+        var _this3 = this;
+
+        this._carousel.addEventListener('mouseenter', function (event) {
+          _this3.stopAutoSlideTimeout = setTimeout(function () {
+            _this3.autoSlide = clearInterval(_this3.autoSlide);
+          }, 500);
+        });
+
+        this._carousel.addEventListener('mouseleave', function (event) {
+          clearTimeout(_this3.stopAutoSlideTimeout);
+
+          if (_this3.autoSlide === undefined) {
+            _this3.startAutoSlide();
+          }
+        });
+      }
+    }, {
+      key: "getCarouselContent",
+      value: function getCarouselContent() {
+        var carousel = document.createElement('div');
+        carousel.setAttribute('class', 'carousel');
+        this.details.forEach(function (detail, i) {
+          var banner = document.createElement('ct-web-personalisation-banner');
+          banner.classList.add('carousel__item');
+          banner.trackClick = false;
+          banner.setAttribute('id', "carousel__item-".concat(i + 1));
+          banner.details = detail;
+          carousel.appendChild(banner);
+        });
+        return carousel;
+      }
+    }, {
+      key: "getStyles",
+      value: function getStyles() {
+        var _this$target, _this$target$display;
+
+        return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      ct-web-personalisation-banner::part(banner__img) {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
+      }
+    }, {
+      key: "updateSelectedItem",
+      value: function updateSelectedItem() {
+        if (this.previouslySelectedItem !== -1) {
+          var prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
+          var prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
+          prevItem.classList.remove('carousel__item--selected');
+
+          if (prevButton) {
+            prevButton.classList.remove('carousel__button--selected');
+          }
+        }
+
+        var item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
+        var button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
+        item.classList.add('carousel__item--selected');
+
+        if (button) {
+          button.classList.add('carousel__button--selected');
+        }
+      }
+    }, {
+      key: "startAutoSlide",
+      value: function startAutoSlide() {
+        var _this4 = this;
+
+        clearInterval(this.autoSlide);
+        this.autoSlide = setInterval(function () {
+          _this4.goToNext();
+        }, this.display.sliderTime ? this.display.sliderTime * 1000 : 3000);
+      }
+    }, {
+      key: "goToNext",
+      value: function goToNext() {
+        this.goTo(this.selectedItem, (this.selectedItem + 1) % this.slides);
+      }
+    }, {
+      key: "goToPrev",
+      value: function goToPrev() {
+        this.goTo(this.selectedItem, this.selectedItem - 1);
+      }
+    }, {
+      key: "goTo",
+      value: function goTo(prev, cur) {
+        this.previouslySelectedItem = prev;
+        this.selectedItem = cur;
+
+        if (cur === 0) {
+          this.selectedItem = this.slides;
+        }
+
+        this.updateSelectedItem();
+      }
+    }, {
+      key: "target",
+      get: function get() {
+        return this._target || '';
+      },
+      set: function set(val) {
+        if (this._target === null) {
+          this._target = val;
+          this.renderCarousel();
+        }
+      }
+    }, {
+      key: "details",
+      get: function get() {
+        return this.target.display.details;
+      }
+    }, {
+      key: "display",
+      get: function get() {
+        return this.target.display;
+      }
+    }]);
+
+    return CTWebPersonalisationCarousel;
+  }( /*#__PURE__*/_wrapNativeSuper(HTMLElement));
+
+  var renderPersonalisationBanner = function renderPersonalisationBanner(targetingMsgJson) {
+    var _targetingMsgJson$dis;
+
+    if (customElements.get('ct-web-personalisation-banner') === undefined) {
+      customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
+    }
+
+    var divId = (_targetingMsgJson$dis = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis !== void 0 ? _targetingMsgJson$dis : targetingMsgJson.display.divSelector;
+    var bannerEl = document.createElement('ct-web-personalisation-banner');
+    bannerEl.msgId = targetingMsgJson.wzrk_id;
+    bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
+    bannerEl.divHeight = targetingMsgJson.display.divHeight;
+    bannerEl.details = targetingMsgJson.display.details[0];
+    var containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
+    containerEl.innerHTML = '';
+    containerEl.appendChild(bannerEl);
+  };
+  var renderPersonalisationCarousel = function renderPersonalisationCarousel(targetingMsgJson) {
+    var _targetingMsgJson$dis2;
+
+    if (customElements.get('ct-web-personalisation-carousel') === undefined) {
+      customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
+    }
+
+    var divId = (_targetingMsgJson$dis2 = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis2 !== void 0 ? _targetingMsgJson$dis2 : targetingMsgJson.display.divSelector;
+    var carousel = document.createElement('ct-web-personalisation-carousel');
+    carousel.target = targetingMsgJson;
+    var container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
+    container.innerHTML = '';
+    container.appendChild(carousel);
+  };
+  var handleKVpairCampaign = function handleKVpairCampaign(targetingMsgJson) {
+    var inaObj = {};
+    inaObj.msgId = targetingMsgJson.wzrk_id;
+
+    if (targetingMsgJson.wzrk_pivot) {
+      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+    }
+
+    if (targetingMsgJson.msgContent.kv != null) {
+      inaObj.kv = targetingMsgJson.msgContent.kv;
+    }
+
+    var kvPairsEvent = new CustomEvent('CT_web_native_display', {
+      detail: inaObj
+    });
+    document.dispatchEvent(kvPairsEvent);
+  };
+
+  var invokeExternalJs = function invokeExternalJs(jsFunc, targetingMsgJson) {
+    var func = window.parent[jsFunc];
+
+    if (typeof func === 'function') {
+      if (targetingMsgJson.display.kv != null) {
+        func(targetingMsgJson.display.kv);
+      } else {
+        func();
+      }
+    }
+  };
+  var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, html) {
+    var script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
+    return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
+  };
+  var staleDataUpdate = function staleDataUpdate(staledata, campType) {
+    var campObj = getCampaignObject();
+    var globalObj = campObj[campType].global;
+
+    if (globalObj != null && campType) {
+      for (var idx in staledata) {
+        if (staledata.hasOwnProperty(idx)) {
+          delete globalObj[staledata[idx]];
+
+          if (StorageManager.read(CAMP_COOKIE_G)) {
+            var guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+            var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+            if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
+              delete guidCampObj[guid][campType][staledata[idx]];
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+            }
+          }
+        }
+      }
+    }
+
+    saveCampaignObject(campObj);
+  };
+  var mergeEventMap = function mergeEventMap(newEvtMap) {
+    if ($ct.globalEventsMap == null) {
+      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
+
+      if ($ct.globalEventsMap == null) {
+        $ct.globalEventsMap = newEvtMap;
+        return;
+      }
+    }
+
+    for (var key in newEvtMap) {
+      if (newEvtMap.hasOwnProperty(key)) {
+        var oldEvtObj = $ct.globalEventsMap[key];
+        var newEvtObj = newEvtMap[key];
+
+        if ($ct.globalEventsMap[key] != null) {
+          if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
+            $ct.globalEventsMap[key] = newEvtObj;
+          }
+        } else {
+          $ct.globalEventsMap[key] = newEvtObj;
+        }
+      }
+    }
+  };
+  var incrementImpression = function incrementImpression(targetingMsgJson, _request) {
+    var data = {};
+    data.type = 'event';
+    data.evtName = NOTIFICATION_VIEWED;
+    data.evtData = _defineProperty({}, WZRK_ID, targetingMsgJson.wzrk_id);
+
+    if (targetingMsgJson.wzrk_pivot) {
+      data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
+        wzrk_pivot: targetingMsgJson.wzrk_pivot
+      });
+    }
+
+    _request.processEvent(data);
+  };
+  var setupClickEvent = function setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session) {
+    if (onClick !== '' && onClick != null) {
+      var ctaElement;
+      var jsCTAElements;
+
+      if (isLegacy) {
+        ctaElement = contentDiv;
+      } else if (contentDiv !== null) {
+        jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
+
+        if (jsCTAElements != null && jsCTAElements.length === 1) {
+          ctaElement = jsCTAElements[0];
+        }
+      }
+
+      var jsFunc = targetingMsgJson.display.jsFunc;
+      var isPreview = targetingMsgJson.display.preview;
+
+      if (isPreview == null) {
+        onClick += getCookieParams(_device, _session);
+      }
+
+      if (ctaElement != null) {
+        ctaElement.onclick = function () {
+          // invoke js function call
+          if (jsFunc != null) {
+            // track notification clicked event
+            if (isPreview == null) {
+              RequestDispatcher.fireRequest(onClick);
+            }
+
+            invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
+
+            closeIframe('-1', divId, _session.sessionId);
+          } else {
+            var rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
+            var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+
+            if (rValue === 'pushPrompt') {
+              if (!targetingMsgJson.display.preview) {
+                window.parent.clevertap.renderNotificationClicked({
+                  msgId: targetingMsgJson.wzrk_id,
+                  pivotId: targetingMsgJson.wzrk_pivot
+                });
+              } // Open Web Push Soft prompt
+
+
+              window.clevertap.notifications.push({
+                skipDialog: true
+              });
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else if (rValue === 'none') {
+              // Close notification
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else {
+              // Will get the url to open
+              if (targetingMsgJson.display.window === 1) {
+                window.open(onClick, '_blank');
+
+                if (targetingMsgJson.display['close-popup']) {
+                  closeIframe(campaignId, divId, _session.sessionId);
+                }
+
+                if (!targetingMsgJson.display.preview) {
+                  window.parent.clevertap.renderNotificationClicked({
+                    msgId: targetingMsgJson.wzrk_id,
+                    pivotId: targetingMsgJson.wzrk_pivot
+                  });
+                }
+              } else {
+                window.location = onClick;
+              }
+            }
+          }
+        };
+      }
+    }
+  };
+  var getCookieParams = function getCookieParams(_device, _session) {
+    var gcookie = _device.getGuid();
+
+    var scookieObj = _session.getSessionCookieObject();
+
+    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
+  };
+
+  var renderPopUpImageOnly = function renderPopUpImageOnly(targetingMsgJson, _session) {
+    var divId = 'wzrkImageOnlyDiv';
+    var popupImageOnly = document.createElement('ct-web-popup-imageonly');
+    popupImageOnly.session = _session;
+    popupImageOnly.target = targetingMsgJson;
+    var containerEl = document.getElementById(divId);
+    containerEl.innerHTML = '';
+    containerEl.style.visibility = 'hidden';
+    containerEl.appendChild(popupImageOnly);
+  };
+
+  var getBoxPromptStyles = function getBoxPromptStyles(style) {
+    var totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
+    var cardPadding = 16 * 2; // Left and right padding
+
+    var cardContentWidth = 360 - cardPadding - totalBorderWidth;
+    return "\n    #pnWrapper {\n      width: 360px;\n    }\n\n    #pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
+  };
+  var getBellIconStyles = function getBellIconStyles(style) {
+    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
+  };
+
+  var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
+
+  var _logger$5 = _classPrivateFieldLooseKey("logger");
+
+  var _request$4 = _classPrivateFieldLooseKey("request");
+
+  var _account$2 = _classPrivateFieldLooseKey("account");
+
+  var _wizAlertJSPath = _classPrivateFieldLooseKey("wizAlertJSPath");
+
+  var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
+
+  var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
+
+  var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
+
+  var _setUpChromeFirefoxNotifications = _classPrivateFieldLooseKey("setUpChromeFirefoxNotifications");
+
+  var _addWizAlertJS = _classPrivateFieldLooseKey("addWizAlertJS");
+
+  var _removeWizAlertJS = _classPrivateFieldLooseKey("removeWizAlertJS");
+
+  var _handleNotificationRegistration = _classPrivateFieldLooseKey("handleNotificationRegistration");
+
+  var NotificationHandler = /*#__PURE__*/function (_Array) {
+    _inherits(NotificationHandler, _Array);
+
+    var _super = _createSuper(NotificationHandler);
+
+    function NotificationHandler(_ref, values) {
+      var _this;
+
+      var logger = _ref.logger,
+          session = _ref.session,
+          request = _ref.request,
+          account = _ref.account;
+
+      _classCallCheck(this, NotificationHandler);
+
+      _this = _super.call(this);
+      Object.defineProperty(_assertThisInitialized(_this), _handleNotificationRegistration, {
+        value: _handleNotificationRegistration2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _removeWizAlertJS, {
+        value: _removeWizAlertJS2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _addWizAlertJS, {
+        value: _addWizAlertJS2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _setUpChromeFirefoxNotifications, {
+        value: _setUpChromeFirefoxNotifications2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _setUpSafariNotifications, {
+        value: _setUpSafariNotifications2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _setUpWebPush, {
+        value: _setUpWebPush2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _oldValues$3, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _logger$5, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _request$4, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _account$2, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _wizAlertJSPath, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _fcmPublicKey, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _wizAlertJSPath)[_wizAlertJSPath] = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js';
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _fcmPublicKey)[_fcmPublicKey] = null;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$3)[_oldValues$3] = values;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$5)[_logger$5] = logger;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$4)[_request$4] = request;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$2)[_account$2] = account;
+      return _this;
+    }
+
+    _createClass(NotificationHandler, [{
+      key: "push",
+      value: function push() {
+        for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
+          displayArgs[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+
+        return 0;
+      }
+    }, {
+      key: "enable",
+      value: function enable() {
+        var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+        var swPath = options.swPath;
+        enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath);
+      }
+    }, {
+      key: "_processOldValues",
+      value: function _processOldValues() {
+        if (_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]) {
+          _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
+        }
+
+        _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = null;
+      }
+    }, {
+      key: "setUpWebPushNotifications",
+      value: function setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
+        if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
+          _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
+        } else if (navigator.userAgent.indexOf('Safari') !== -1) {
+          _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl);
+        }
+      }
+    }, {
+      key: "setApplicationServerKey",
+      value: function setApplicationServerKey(applicationServerKey) {
+        _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
+      }
+    }, {
+      key: "_enableWebPush",
+      value: function _enableWebPush(enabled, applicationServerKey) {
+        $ct.webPushEnabled = enabled;
+
+        if (applicationServerKey != null) {
+          this.setApplicationServerKey(applicationServerKey);
+        }
+
+        if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
+          _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
+        } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
+        }
+      }
+    }]);
+
+    return NotificationHandler;
+  }( /*#__PURE__*/_wrapNativeSuper(Array));
+
+  var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
+    if ($ct.webPushEnabled && displayArgs.length > 0) {
+      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
+    } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
+      $ct.notifApi.notifEnabledFromApi = true;
+      $ct.notifApi.displayArgs = displayArgs.slice();
+    } else if ($ct.webPushEnabled === false && displayArgs.length > 0) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure push notifications are fully enabled and integrated');
+    }
+  };
+
+  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
+    var _this2 = this;
+
+    // ensure that proper arguments are passed
+    if (typeof apnsWebPushId === 'undefined') {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
+    }
+
+    if (typeof apnsServiceUrl === 'undefined') {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
+    }
+
+    if ('safari' in window && 'pushNotification' in window.safari) {
+      window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, function (subscription) {
+        if (subscription.permission === 'granted') {
+          var subscriptionData = JSON.parse(JSON.stringify(subscription));
+          subscriptionData.endpoint = subscription.deviceToken;
+          subscriptionData.browser = 'Safari';
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+          _classPrivateFieldLooseBase(_this2, _request$4)[_request$4].registerToken(subscriptionData);
+
+          _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+        } else if (subscription.permission === 'denied') {
+          _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+        }
+      });
+    }
+  };
+
+  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
+    var _this3 = this;
+
+    var registrationScope = '';
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register(serviceWorkerPath).then(function (registration) {
+        if (typeof __wzrk_account_id !== 'undefined') {
+          // eslint-disable-line
+          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
+          // hence add a timeout and hope serviceWroker is ready within that time.
+          return new Promise(function (resolve) {
+            return setTimeout(function () {
+              return resolve(registration);
+            }, 5000);
+          });
+        }
+
+        registrationScope = registration.scope; // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
+        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
+        // OR getRegistrations PROMISE IF ITS FIREFOX
+
+        var rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
+        var isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
+
+        if (isServiceWorkerAtRoot) {
+          return navigator.serviceWorker.ready;
+        } else {
+          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+            return new Promise(function (resolve) {
+              return setTimeout(function () {
+                return resolve(registration);
+              }, 5000);
+            });
+          } else {
+            return navigator.serviceWorker.getRegistrations();
+          }
+        }
+      }).then(function (serviceWorkerRegistration) {
+        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
+        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
+          serviceWorkerRegistration = serviceWorkerRegistration.filter(function (i) {
+            return i.scope === registrationScope;
+          })[0];
+        }
+
+        var subscribeObj = {
+          userVisibleOnly: true
+        };
+
+        if (_classPrivateFieldLooseBase(_this3, _fcmPublicKey)[_fcmPublicKey] != null) {
+          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(_this3, _fcmPublicKey)[_fcmPublicKey]);
+        }
+
+        serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(function (subscription) {
+          _classPrivateFieldLooseBase(_this3, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+
+
+          var subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
+
+          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+            subscriptionData.browser = 'Chrome';
+          } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+            subscriptionData.browser = 'Firefox';
+          }
+
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+          _classPrivateFieldLooseBase(_this3, _request$4)[_request$4].registerToken(subscriptionData);
+
+          if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+            subscriptionCallback();
+          }
+
+          var existingBellWrapper = document.getElementById('bell_wrapper');
+
+          if (existingBellWrapper) {
+            existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+          }
+        }).catch(function (error) {
+          // unsubscribe from webpush if error
+          serviceWorkerRegistration.pushManager.getSubscription().then(function (subscription) {
+            if (subscription !== null) {
+              subscription.unsubscribe().then(function (successful) {
+                // You've successfully unsubscribed
+                _classPrivateFieldLooseBase(_this3, _logger$5)[_logger$5].info('Unsubscription successful');
+
+                window.clevertap.notifications.push({
+                  skipDialog: true
+                });
+              }).catch(function (e) {
+                // Unsubscription failed
+                _classPrivateFieldLooseBase(_this3, _logger$5)[_logger$5].error('Error unsubscribing: ' + e);
+              });
+            }
+          });
+
+          _classPrivateFieldLooseBase(_this3, _logger$5)[_logger$5].error('Error subscribing: ' + error);
+        });
+      }).catch(function (err) {
+        _classPrivateFieldLooseBase(_this3, _logger$5)[_logger$5].error('error registering service worker: ' + err);
+      });
+    }
+  };
+
+  var _addWizAlertJS2 = function _addWizAlertJS2() {
+    var scriptTag = document.createElement('script');
+    scriptTag.setAttribute('type', 'text/javascript');
+    scriptTag.setAttribute('id', 'wzrk-alert-js');
+    scriptTag.setAttribute('src', _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath]); // add the script tag to the end of the body
+
+    document.getElementsByTagName('body')[0].appendChild(scriptTag);
+    return scriptTag;
+  };
+
+  var _removeWizAlertJS2 = function _removeWizAlertJS2() {
+    var scriptTag = document.getElementById('wzrk-alert-js');
+    scriptTag.parentNode.removeChild(scriptTag);
+  };
+
+  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
+    var _this4 = this;
+
+    // make sure everything is specified
+    var titleText;
+    var bodyText;
+    var okButtonText;
+    var rejectButtonText;
+    var okButtonColor;
+    var skipDialog;
+    var askAgainTimeInSeconds;
+    var okCallback;
+    var rejectCallback;
+    var subscriptionCallback;
+    var serviceWorkerPath;
+    var httpsPopupPath;
+    var httpsIframePath;
+    var apnsWebPushId;
+    var apnsWebPushServiceUrl;
+
+    if (displayArgs.length === 1) {
+      if (isObject(displayArgs[0])) {
+        var notifObj = displayArgs[0];
+        titleText = notifObj.titleText;
+        bodyText = notifObj.bodyText;
+        okButtonText = notifObj.okButtonText;
+        rejectButtonText = notifObj.rejectButtonText;
+        okButtonColor = notifObj.okButtonColor;
+        skipDialog = notifObj.skipDialog;
+        askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
+        okCallback = notifObj.okCallback;
+        rejectCallback = notifObj.rejectCallback;
+        subscriptionCallback = notifObj.subscriptionCallback;
+        serviceWorkerPath = notifObj.serviceWorkerPath;
+        httpsPopupPath = notifObj.httpsPopupPath;
+        httpsIframePath = notifObj.httpsIframePath;
+        apnsWebPushId = notifObj.apnsWebPushId;
+        apnsWebPushServiceUrl = notifObj.apnsWebPushServiceUrl;
+      }
+    } else {
+      titleText = displayArgs[0];
+      bodyText = displayArgs[1];
+      okButtonText = displayArgs[2];
+      rejectButtonText = displayArgs[3];
+      okButtonColor = displayArgs[4];
+      skipDialog = displayArgs[5];
+      askAgainTimeInSeconds = displayArgs[6];
+    }
+
+    if (skipDialog == null) {
+      skipDialog = false;
+    }
+
+    if (serviceWorkerPath == null) {
+      serviceWorkerPath = '/clevertap_sw.js';
+    } // ensure that the browser supports notifications
+
+
+    if (typeof navigator.serviceWorker === 'undefined') {
+      return;
+    }
+
+    var isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
+
+    if (window.location.protocol !== 'https:' && document.location.hostname !== 'localhost' && !isHTTP) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure you are https or localhost to register for notifications');
+
+      return;
+    } // right now, we only support Chrome V50 & higher & Firefox
+
+
+    if (navigator.userAgent.indexOf('Chrome') !== -1) {
+      var chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/);
+
+      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) {
+        return;
+      }
+    } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+      var firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/);
+
+      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) {
+        return;
+      }
+    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
+      var safariAgent = navigator.userAgent.match(/Safari\/(\d+)/);
+
+      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) {
+        return;
+      }
+    } else {
+      return;
+    } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
+
+
+    if (!isHTTP) {
+      if (Notification == null) {
+        return;
+      } // handle migrations from other services -> chrome notifications may have already been asked for before
+
+
+      if (Notification.permission === 'granted') {
+        // skip the dialog and register
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        return;
+      } else if (Notification.permission === 'denied') {
+        // we've lost this profile :'(
+        return;
+      }
+
+      if (skipDialog) {
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        return;
+      }
+    } // make sure the right parameters are passed
+
+
+    if (!titleText || !bodyText || !okButtonText || !rejectButtonText) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Missing input parameters; please specify title, body, ok button and cancel button text');
+
+      return;
+    } // make sure okButtonColor is formatted properly
+
+
+    if (okButtonColor == null || !okButtonColor.match(/^#[a-f\d]{6}$/i)) {
+      okButtonColor = '#f28046'; // default color for positive button
+    } // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
+
+
+    var now = new Date().getTime() / 1000;
+
+    if (StorageManager.getMetaProp('notif_last_time') == null) {
+      StorageManager.setMetaProp('notif_last_time', now);
+    } else {
+      if (askAgainTimeInSeconds == null) {
+        // 7 days by default
+        askAgainTimeInSeconds = 7 * 24 * 60 * 60;
+      }
+
+      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
+        return;
+      } else {
+        // continue asking
+        StorageManager.setMetaProp('notif_last_time', now);
+      }
+    }
+
+    if (isHTTP) {
+      // add the https iframe
+      var httpsIframe = document.createElement('iframe');
+      httpsIframe.setAttribute('style', 'display:none;');
+      httpsIframe.setAttribute('src', httpsIframePath);
+      document.body.appendChild(httpsIframe);
+      window.addEventListener('message', function (event) {
+        if (event.data != null) {
+          var obj = {};
+
+          try {
+            obj = JSON.parse(event.data);
+          } catch (e) {
+            // not a call from our iframe
+            return;
+          }
+
+          if (obj.state != null) {
+            if (obj.from === 'ct' && obj.state === 'not') {
+              _classPrivateFieldLooseBase(_this4, _addWizAlertJS)[_addWizAlertJS]().onload = function () {
+                // create our wizrocket popup
+                window.wzrkPermissionPopup.wizAlert({
+                  title: titleText,
+                  body: bodyText,
+                  confirmButtonText: okButtonText,
+                  confirmButtonColor: okButtonColor,
+                  rejectButtonText: rejectButtonText
+                }, function (enabled) {
+                  // callback function
+                  if (enabled) {
+                    // the user accepted on the dialog box
+                    if (typeof okCallback === 'function') {
+                      okCallback();
+                    } // redirect to popup.html
+
+
+                    window.open(httpsPopupPath);
+                  } else {
+                    if (typeof rejectCallback === 'function') {
+                      rejectCallback();
+                    }
+                  }
+
+                  _classPrivateFieldLooseBase(_this4, _removeWizAlertJS)[_removeWizAlertJS]();
+                });
+              };
+            }
+          }
+        }
+      }, false);
+    } else {
+      _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = function () {
+        // create our wizrocket popup
+        window.wzrkPermissionPopup.wizAlert({
+          title: titleText,
+          body: bodyText,
+          confirmButtonText: okButtonText,
+          confirmButtonColor: okButtonColor,
+          rejectButtonText: rejectButtonText
+        }, function (enabled) {
+          // callback function
+          if (enabled) {
+            // the user accepted on the dialog box
+            if (typeof okCallback === 'function') {
+              okCallback();
+            }
+
+            _this4.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+          } else {
+            if (typeof rejectCallback === 'function') {
+              rejectCallback();
+            }
+          }
+
+          _classPrivateFieldLooseBase(_this4, _removeWizAlertJS)[_removeWizAlertJS]();
+        });
+      };
+    }
+  };
+
+  var BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi40OTYyIDUuMjQzOTVDMTIuODM5MSA1LjAzMzE3IDEzLjI4NDcgNS4xNDY4OSAxMy40OTczIDUuNDg4NjdDMTMuNzIyMyA1Ljg1MDE4IDEzLjYwMDIgNi4zMjUxOCAxMy4yMzggNi41NDkwMkM3LjM5Mzk5IDEwLjE2MDYgMy41IDE2LjYyNTcgMy41IDI0LjAwMDNDMy41IDM1LjMyMjEgMTIuNjc4MiA0NC41MDAzIDI0IDQ0LjUwMDNDMjguMDA1NSA0NC41MDAzIDMxLjc0MjYgNDMuMzUxNSAzNC45IDQxLjM2NTVDMzUuMjYwOCA0MS4xMzg1IDM1Ljc0MTYgNDEuMjM4NiAzNS45NjY4IDQxLjYwMDZDMzYuMTc5MiA0MS45NDE5IDM2LjA4NSA0Mi4zOTExIDM1Ljc0NTIgNDIuNjA2QzMyLjM0NjggNDQuNzU1OSAyOC4zMTg3IDQ2LjAwMDMgMjQgNDYuMDAwM0MxMS44NDk3IDQ2LjAwMDMgMiAzNi4xNTA1IDIgMjQuMDAwM0MyIDE2LjA2NjkgNi4xOTkyMSA5LjExNDMyIDEyLjQ5NjIgNS4yNDM5NVpNMzguOCAzOS45MDAzQzM4LjggNDAuMzk3MyAzOC4zOTcxIDQwLjgwMDMgMzcuOSA0MC44MDAzQzM3LjQwMjkgNDAuODAwMyAzNyA0MC4zOTczIDM3IDM5LjkwMDNDMzcgMzkuNDAzMiAzNy40MDI5IDM5LjAwMDMgMzcuOSAzOS4wMDAzQzM4LjM5NzEgMzkuMDAwMyAzOC44IDM5LjQwMzIgMzguOCAzOS45MDAzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMkMyMi44OTU0IDEyIDIyIDEyLjg5NTQgMjIgMTRWMTQuMjUyQzE4LjU0OTUgMTUuMTQwMSAxNiAxOC4yNzIzIDE2IDIyVjI5LjVIMTUuNDc2OUMxNC42NjEyIDI5LjUgMTQgMzAuMTYxMiAxNCAzMC45NzY5VjMxLjAyMzFDMTQgMzEuODM4OCAxNC42NjEyIDMyLjUgMTUuNDc2OSAzMi41SDMyLjUyMzFDMzMuMzM4OCAzMi41IDM0IDMxLjgzODggMzQgMzEuMDIzMVYzMC45NzY5QzM0IDMwLjE2MTIgMzMuMzM4OCAyOS41IDMyLjUyMzEgMjkuNUgzMlYyMkMzMiAxOC4yNzIzIDI5LjQ1MDUgMTUuMTQwMSAyNiAxNC4yNTJWMTRDMjYgMTIuODk1NCAyNS4xMDQ2IDEyIDI0IDEyWk0yNiAzNFYzMy41SDIyVjM0QzIyIDM1LjEwNDYgMjIuODk1NCAzNiAyNCAzNkMyNS4xMDQ2IDM2IDI2IDM1LjEwNDYgMjYgMzRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
+  var PROMPT_BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMzIiIGZpbGw9IiMwMEFFQjkiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0zMS45OTg2IDIwQzMwLjkxOTggMjAgMzAuMDQyOCAyMC44NzQ2IDMwLjA0MjggMjEuOTUzNEwzMC4wNDI5IDIxLjk3MzRDMjYuNTQzNCAyMi41NTM1IDIzLjg3NSAyNS41OTQzIDIzLjg3NSAyOS4yNTgyVjM4LjA5OTVIMjMuODczNUMyMy4wNTg5IDM4LjA5OTUgMjIuMzk4NCAzOC43NiAyMi4zOTg0IDM5LjU3NDZDMjIuMzk4NCA0MC4zODkzIDIzLjA1ODkgNDEuMDQ5NyAyMy44NzM1IDQxLjA0OTdIMjkuNzgxMlY0MS43ODQyQzI5Ljc4MTIgNDMuMDA3NyAzMC43NzMxIDQzLjk5OTYgMzEuOTk2NiA0My45OTk2QzMzLjIyMDIgNDMuOTk5NiAzNC4yMTIgNDMuMDA3NyAzNC4yMTIgNDEuNzg0MlY0MS4wNDk3SDQwLjEyMzNDNDAuOTM4IDQxLjA0OTcgNDEuNTk4NCA0MC4zODkzIDQxLjU5ODQgMzkuNTc0NkM0MS41OTg0IDM4Ljc2IDQwLjkzOCAzOC4wOTk1IDQwLjEyMzMgMzguMDk5NUg0MC4xMjEyVjI5LjI1ODJDNDAuMTIxMiAyNS41OTQ2IDM3LjQ1MzMgMjIuNTU0MiAzMy45NTQzIDIxLjk3MzZMMzMuOTU0NCAyMS45NTM0QzMzLjk1NDQgMjAuODc0NiAzMy4wNzc1IDIwIDMxLjk5ODYgMjBaIiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCBvcGFjaXR5PSIwLjUiIHg9IjcuNSIgeT0iNy41IiB3aWR0aD0iNDkiIGhlaWdodD0iNDkiIHJ4PSIyNC41IiBzdHJva2U9IndoaXRlIi8+CjxyZWN0IG9wYWNpdHk9IjAuMyIgeD0iNC41IiB5PSI0LjUiIHdpZHRoPSI1NSIgaGVpZ2h0PSI1NSIgcng9IjI3LjUiIHN0cm9rZT0id2hpdGUiLz4KPHJlY3Qgb3BhY2l0eT0iMC44IiB4PSIxMC41IiB5PSIxMC41IiB3aWR0aD0iNDMiIGhlaWdodD0iNDMiIHJ4PSIyMS41IiBzdHJva2U9IndoaXRlIi8+Cjwvc3ZnPgo=';
+
+  var appServerKey = null;
+  var swPath = '/clevertap_sw.js';
+  var notificationHandler = null;
+  var processWebPushConfig = function processWebPushConfig(webPushConfig, logger, request) {
+    var _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+
+    var updatePushConfig = function updatePushConfig() {
+      $ct.pushConfig = webPushConfig;
+      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
+    };
+
+    if (webPushConfig.isPreview) {
+      updatePushConfig();
+      enablePush(logger, null, request);
+    } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
+      updatePushConfig();
+    }
+  };
+  var enablePush = function enablePush(logger, account, request, customSwPath) {
+    var _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+
+    $ct.pushConfig = _pushConfig;
+
+    if (!$ct.pushConfig) {
+      logger.error('Web Push config data not present');
+      return;
+    }
+
+    if (customSwPath) {
+      swPath = customSwPath;
+    }
+
+    notificationHandler = new NotificationHandler({
+      logger: logger,
+      session: {},
+      request: request,
+      account: account
+    });
+    var _$ct$pushConfig = $ct.pushConfig,
+        showBox = _$ct$pushConfig.showBox,
+        boxType = _$ct$pushConfig.boxType,
+        showBellIcon = _$ct$pushConfig.showBellIcon,
+        isPreview = _$ct$pushConfig.isPreview;
+
+    if (isPreview) {
+      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig);
+      if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
+    } else {
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig);
+      if (showBellIcon) createBellIcon($ct.pushConfig);
+    }
+  };
+
+  var createElementWithAttributes = function createElementWithAttributes(tag) {
+    var attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var element = document.createElement(tag);
+    Object.entries(attributes).forEach(function (_ref) {
+      var _ref2 = _slicedToArray(_ref, 2),
+          key = _ref2[0],
+          value = _ref2[1];
+
+      element[key] = value;
+    });
+    return element;
+  };
+
+  var createNotificationBox = function createNotificationBox(configData) {
+    if (document.getElementById('pnWrapper')) return;
+    var _configData$boxConfig = configData.boxConfig,
+        content = _configData$boxConfig.content,
+        style = _configData$boxConfig.style; // Create the wrapper div
+
+    var wrapper = createElementWithAttributes('div', {
+      id: 'pnWrapper'
+    });
+    var overlayDiv = createElementWithAttributes('div', {
+      id: 'pnOverlay'
+    });
+    var pnCard = createElementWithAttributes('div', {
+      id: 'pnCard'
+    });
+    var iconTitleDescWrapper = createElementWithAttributes('div', {
+      id: 'iconTitleDescWrapper'
+    });
+    var iconContainer = createElementWithAttributes('img', {
+      id: 'iconContainer',
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url
+    });
+    iconTitleDescWrapper.appendChild(iconContainer);
+    var titleDescWrapper = createElementWithAttributes('div', {
+      id: 'titleDescWrapper'
+    });
+    titleDescWrapper.appendChild(createElementWithAttributes('div', {
+      id: 'title',
+      textContent: content.title
+    }));
+    titleDescWrapper.appendChild(createElementWithAttributes('div', {
+      id: 'description',
+      textContent: content.description
+    }));
+    iconTitleDescWrapper.appendChild(titleDescWrapper);
+    var buttonsContainer = createElementWithAttributes('div', {
+      id: 'buttonsContainer'
+    });
+    var primaryButton = createElementWithAttributes('button', {
+      id: 'primaryButton',
+      textContent: content.buttons.primaryButtonText
+    });
+    var secondaryButton = createElementWithAttributes('button', {
+      id: 'secondaryButton',
+      textContent: content.buttons.secondaryButtonText
+    });
+    buttonsContainer.appendChild(secondaryButton);
+    buttonsContainer.appendChild(primaryButton);
+    pnCard.appendChild(iconTitleDescWrapper);
+    pnCard.appendChild(buttonsContainer); // Apply styles
+
+    var styleElement = createElementWithAttributes('style', {
+      textContent: getBoxPromptStyles(style)
+    });
+    wrapper.appendChild(styleElement);
+    wrapper.appendChild(pnCard);
+    wrapper.appendChild(overlayDiv);
+    setElementPosition(pnCard, style.card.position);
+    var now = new Date().getTime() / 1000;
+    var lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
+    var popupFrequency = content.popupFrequency || 7 * 24 * 60 * 60;
+
+    if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
+      document.body.appendChild(wrapper);
+
+      if (!configData.isPreview) {
+        addEventListeners(wrapper);
+      }
+    }
+  };
+  var createBellIcon = function createBellIcon(configData) {
+    if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return;
+    var _configData$bellIconC = configData.bellIconConfig,
+        content = _configData$bellIconC.content,
+        style = _configData$bellIconC.style;
+    var bellWrapper = createElementWithAttributes('div', {
+      id: 'bell_wrapper'
+    });
+    var bellIcon = createElementWithAttributes('img', {
+      id: 'bell_icon',
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(BELL_BASE64) : content.icon.url
+    }); // For playing gif
+
+    var gifModal = createElementWithAttributes('div', {
+      id: 'gif_modal',
+      style: 'display: none;'
+    });
+    var gifImage = createElementWithAttributes('img', {
+      id: 'gif_image',
+      src: 'https://d2r1yp2w7bby2u.cloudfront.net/js/permission_grant.gif'
+    });
+    var closeModal = createElementWithAttributes('div', {
+      id: 'close_modal',
+      innerHTML: '&times;'
+    });
+    gifModal.appendChild(gifImage);
+    gifModal.appendChild(closeModal);
+    bellWrapper.appendChild(bellIcon);
+    bellWrapper.appendChild(gifModal);
+
+    if (content.hoverText.enabled) {
+      var tooltip = createElementWithAttributes('div', {
+        id: 'bell_tooltip',
+        textContent: content.hoverText.text
+      });
+      bellWrapper.appendChild(tooltip);
+    }
+
+    setElementPosition(bellWrapper, style.card.position); // Apply styles
+
+    var styleElement = createElementWithAttributes('style', {
+      textContent: getBellIconStyles(style)
+    });
+    document.head.appendChild(styleElement);
+    document.body.appendChild(bellWrapper);
+
+    if (!configData.isPreview) {
+      addBellEventListeners(bellWrapper);
+    }
+
+    return bellWrapper;
+  };
+  var setServerKey = function setServerKey(serverKey) {
+    appServerKey = serverKey;
+  };
+  var addEventListeners = function addEventListeners(wrapper) {
+    var primaryButton = wrapper.querySelector('#primaryButton');
+    var secondaryButton = wrapper.querySelector('#secondaryButton');
+
+    var removeWrapper = function removeWrapper() {
+      var _wrapper$parentNode;
+
+      return (_wrapper$parentNode = wrapper.parentNode) === null || _wrapper$parentNode === void 0 ? void 0 : _wrapper$parentNode.removeChild(wrapper);
+    };
+
+    primaryButton.addEventListener('click', function () {
+      removeWrapper();
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+    });
+    secondaryButton.addEventListener('click', function () {
+      StorageManager.setMetaProp('webpush_last_notif_time', Date.now() / 1000);
+      removeWrapper();
+    });
+  };
+  var addBellEventListeners = function addBellEventListeners(bellWrapper) {
+    var bellIcon = bellWrapper.querySelector('#bell_icon');
+    bellIcon.addEventListener('click', function () {
+      if (Notification.permission === 'denied') {
+        toggleGifModal(bellWrapper);
+      } else {
+        notificationHandler.setApplicationServerKey(appServerKey);
+        notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+
+        if (Notification.permission === 'granted') {
+          bellWrapper.remove();
+        }
+      }
+    });
+    bellIcon.addEventListener('mouseenter', function () {
+      return displayTooltip(bellWrapper);
+    });
+    bellIcon.addEventListener('mouseleave', function () {
+      return clearTooltip(bellWrapper);
+    });
+    bellWrapper.querySelector('#close_modal').addEventListener('click', function () {
+      return toggleGifModal(bellWrapper);
+    });
+  };
+  var setElementPosition = function setElementPosition(element, position) {
+    Object.assign(element.style, {
+      inset: 'auto',
+      transform: 'none'
+    });
+    var positions = {
+      'Top Right': {
+        inset: '16px 16px auto auto'
+      },
+      'Top Left': {
+        inset: '16px auto auto 16px'
+      },
+      'Bottom Right': {
+        inset: 'auto 16px 16px auto'
+      },
+      'Bottom Left': {
+        inset: 'auto auto 16px 16px'
+      },
+      Center: {
+        inset: '50%',
+        transform: 'translate(-50%, -50%)'
+      },
+      Top: {
+        inset: '16px auto auto 50%',
+        transform: 'translateX(-50%)'
+      },
+      Bottom: {
+        inset: 'auto auto 16px 50%',
+        transform: 'translateX(-50%)'
+      }
+    };
+    Object.assign(element.style, positions[position] || positions['top-right']);
+  };
+
+  var displayTooltip = function displayTooltip(bellWrapper) {
+    var gifModal = bellWrapper.querySelector('#gif_modal');
+
+    if (gifModal.style.display === 'flex') {
+      return;
+    }
+
+    var tooltip = bellWrapper.querySelector('#bell_tooltip');
+
+    if (tooltip) {
+      tooltip.style.display = 'flex';
+    }
+
+    var bellIcon = bellWrapper.querySelector('#bell_icon');
+    var bellRect = bellIcon.getBoundingClientRect();
+    var midX = window.innerWidth / 2;
+    var midY = window.innerHeight / 2;
+    bellWrapper.style['flex-direction'] = bellRect.y > midY ? 'column-reverse' : 'column';
+    bellWrapper.style['align-items'] = bellRect.x > midX ? 'flex-end' : 'flex-start';
+  };
+
+  var clearTooltip = function clearTooltip(bellWrapper) {
+    var tooltip = bellWrapper.querySelector('#bell_tooltip');
+
+    if (tooltip) {
+      tooltip.style.display = 'none';
+    }
+  };
+
+  var toggleGifModal = function toggleGifModal(bellWrapper) {
+    clearTooltip(bellWrapper);
+    var gifModal = bellWrapper.querySelector('#gif_modal');
+    gifModal.style.display = gifModal.style.display === 'none' ? 'flex' : 'none';
+  };
+
   var _tr = function _tr(msg, _ref) {
     var device = _ref.device,
         session = _ref.session,
@@ -5684,9 +6836,11 @@
       } // delay
 
 
-      if (targetingMsgJson[DISPLAY].delay != null && targetingMsgJson[DISPLAY].delay > 0) {
-        var delay = targetingMsgJson[DISPLAY].delay;
-        targetingMsgJson[DISPLAY].delay = 0;
+      var displayObj = targetingMsgJson.display;
+
+      if (displayObj.delay != null && displayObj.delay > 0) {
+        var delay = displayObj.delay;
+        displayObj.delay = 0;
         setTimeout(_tr, delay * 1000, msg, {
           device: _device,
           session: _session,
@@ -5713,164 +6867,53 @@
       saveCampaignObject(_defineProperty({}, campKey, newCampObj));
     };
 
-    var getCookieParams = function getCookieParams() {
-      var gcookie = _device.getGuid();
-
-      var scookieObj = _session.getSessionCookieObject();
-
-      return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
-    };
-
-    var setupClickEvent = function setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy) {
-      if (onClick !== '' && onClick != null) {
-        var ctaElement;
-        var jsCTAElements;
-
-        if (isLegacy) {
-          ctaElement = contentDiv;
-        } else if (contentDiv !== null) {
-          jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
-
-          if (jsCTAElements != null && jsCTAElements.length === 1) {
-            ctaElement = jsCTAElements[0];
-          }
-        }
-
-        var jsFunc = targetingMsgJson.display.jsFunc;
-        var isPreview = targetingMsgJson.display.preview;
-
-        if (isPreview == null) {
-          onClick += getCookieParams();
-        }
-
-        if (ctaElement != null) {
-          ctaElement.onclick = function () {
-            // invoke js function call
-            if (jsFunc != null) {
-              // track notification clicked event
-              if (isPreview == null) {
-                RequestDispatcher.fireRequest(onClick);
-              }
-
-              invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
-
-              closeIframe('-1', divId, _session.sessionId);
-              return;
-            } // pass on the gcookie|page|scookieId for capturing the click event
-
-
-            if (targetingMsgJson.display.window === 1) {
-              window.open(onClick, '_blank');
-            } else {
-              window.location = onClick;
-            }
-          };
-        }
-      }
-    };
-
-    var invokeExternalJs = function invokeExternalJs(jsFunc, targetingMsgJson) {
-      var func = window.parent[jsFunc];
-
-      if (typeof func === 'function') {
-        if (targetingMsgJson.display.kv != null) {
-          func(targetingMsgJson.display.kv);
-        } else {
-          func();
-        }
-      }
-    };
-
     var setupClickUrl = function setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, isLegacy) {
-      incrementImpression(targetingMsgJson);
-      setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy);
+      incrementImpression(targetingMsgJson, _request);
+      setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session);
     };
 
-    var incrementImpression = function incrementImpression(targetingMsgJson) {
-      var data = {};
-      data.type = 'event';
-      data.evtName = NOTIFICATION_VIEWED;
-      data.evtData = _defineProperty({}, WZRK_ID, targetingMsgJson.wzrk_id);
-
-      if (targetingMsgJson.wzrk_pivot) {
-        data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
-          wzrk_pivot: targetingMsgJson.wzrk_pivot
-        });
-      }
-
-      _request.processEvent(data);
-    };
-
-    var renderPersonalisationBanner = function renderPersonalisationBanner(targetingMsgJson) {
-      var _targetingMsgJson$dis;
-
-      if (customElements.get('ct-web-personalisation-banner') === undefined) {
-        customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
-      }
-
-      var divId = (_targetingMsgJson$dis = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis !== void 0 ? _targetingMsgJson$dis : targetingMsgJson.display.divSelector;
-      var bannerEl = document.createElement('ct-web-personalisation-banner');
-      bannerEl.msgId = targetingMsgJson.wzrk_id;
-      bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
-      bannerEl.divHeight = targetingMsgJson.display.divHeight;
-      bannerEl.details = targetingMsgJson.display.details[0];
-      var containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
-      containerEl.innerHTML = '';
-      containerEl.appendChild(bannerEl);
-    };
-
-    var renderPersonalisationCarousel = function renderPersonalisationCarousel(targetingMsgJson) {
-      var _targetingMsgJson$dis2;
-
-      if (customElements.get('ct-web-personalisation-carousel') === undefined) {
-        customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
-      }
-
-      var divId = (_targetingMsgJson$dis2 = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis2 !== void 0 ? _targetingMsgJson$dis2 : targetingMsgJson.display.divSelector;
-      var carousel = document.createElement('ct-web-personalisation-carousel');
-      carousel.target = targetingMsgJson;
-      var container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
-      container.innerHTML = '';
-      container.appendChild(carousel);
-    };
-
-    var renderPopUpImageOnly = function renderPopUpImageOnly(targetingMsgJson) {
+    var handleImageOnlyPopup = function handleImageOnlyPopup(targetingMsgJson) {
       var divId = 'wzrkImageOnlyDiv';
-      var popupImageOnly = document.createElement('ct-web-popup-imageonly');
-      popupImageOnly.session = _session;
-      popupImageOnly.target = targetingMsgJson;
-      var containerEl = document.getElementById(divId);
-      containerEl.innerHTML = '';
-      containerEl.style.visibility = 'hidden';
-      containerEl.appendChild(popupImageOnly);
+
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
+      }
+
+      if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
+        var element = document.getElementById(divId);
+        element.remove();
+      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+
+
+      if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
+        return;
+      }
+
+      var msgDiv = document.createElement('div');
+      msgDiv.id = divId;
+      document.body.appendChild(msgDiv);
+
+      if (customElements.get('ct-web-popup-imageonly') === undefined) {
+        customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
+      }
+
+      return renderPopUpImageOnly(targetingMsgJson, _session);
     };
 
-    var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
+    var isExistingCampaign = function isExistingCampaign(campaignId) {
+      var testIframe = document.getElementById('wiz-iframe-intent') || document.getElementById('wiz-iframe');
+
+      if (testIframe) {
+        var iframeDocument = testIframe.contentDocument || testIframe.contentWindow.document;
+        return iframeDocument.documentElement.innerHTML.includes(campaignId);
+      }
+
+      return false;
+    };
+
+    var createTemplate = function createTemplate(targetingMsgJson, isExitIntent) {
       var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       var displayObj = targetingMsgJson.display;
-
-      if (displayObj.wtarget_type === 2) {
-        // Handling Web Native display
-        // Logic for kv pair data
-        if (targetingMsgJson.msgContent.type === 1) {
-          var inaObj = {};
-          inaObj.msgId = targetingMsgJson.wzrk_id;
-
-          if (targetingMsgJson.wzrk_pivot) {
-            inaObj.pivotId = targetingMsgJson.wzrk_pivot;
-          }
-
-          if (targetingMsgJson.msgContent.kv != null) {
-            inaObj.kv = targetingMsgJson.msgContent.kv;
-          }
-
-          var kvPairsEvent = new CustomEvent('CT_web_native_display', {
-            detail: inaObj
-          });
-          document.dispatchEvent(kvPairsEvent);
-          return;
-        }
-      }
 
       if (displayObj.layout === 1) {
         // Handling Web Exit Intent
@@ -5879,32 +6922,8 @@
 
       if (displayObj.layout === 3) {
         // Handling Web Popup Image Only
-        var _divId = 'wzrkImageOnlyDiv';
-
-        if (doCampHouseKeeping(targetingMsgJson) === false) {
-          return;
-        }
-
-        if ($ct.dismissSpamControl && document.getElementById(_divId) != null) {
-          var element = document.getElementById(_divId);
-          element.remove();
-        } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
-
-
-        if (document.getElementById(_divId) != null || document.getElementById('intentPreview') != null) {
-          return;
-        }
-
-        var _msgDiv = document.createElement('div');
-
-        _msgDiv.id = _divId;
-        document.body.appendChild(_msgDiv);
-
-        if (customElements.get('ct-web-popup-imageonly') === undefined) {
-          customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
-        }
-
-        return renderPopUpImageOnly(targetingMsgJson);
+        handleImageOnlyPopup(targetingMsgJson);
+        return;
       }
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
@@ -5912,12 +6931,22 @@
       }
 
       var divId = 'wizParDiv' + displayObj.layout;
+      var opacityDivId = 'intentOpacityDiv' + displayObj.layout;
 
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
-        var _element = document.getElementById(divId);
+        var element = document.getElementById(divId);
+        var opacityElement = document.getElementById(opacityDivId);
 
-        _element.remove();
+        if (element) {
+          element.remove();
+        }
+
+        if (opacityElement) {
+          opacityElement.remove();
+        }
       }
+
+      if (isExistingCampaign(campaignId)) return;
 
       if (document.getElementById(divId) != null) {
         return;
@@ -5925,6 +6954,16 @@
 
       $ct.campaignDivMap[campaignId] = divId;
       var isBanner = displayObj.layout === 2;
+
+      if (isExitIntent) {
+        var opacityDiv = document.createElement('div');
+        opacityDiv.id = opacityDivId;
+        var opacity = targetingMsgJson.display.opacity || 0.7;
+        var rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
+        opacityDiv.setAttribute('style', "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
+        document.body.appendChild(opacityDiv);
+      }
+
       var msgDiv = document.createElement('div');
       msgDiv.id = divId;
       var viewHeight = window.innerHeight;
@@ -6077,15 +7116,15 @@
       }
     };
 
-    var appendScriptForCustomEvent = function appendScriptForCustomEvent(targetingMsgJson, html) {
-      var script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
-      return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
+    var renderFooterNotification = function renderFooterNotification(targetingMsgJson) {
+      createTemplate(targetingMsgJson, false);
     };
 
     var _callBackCalled = false;
 
     var showFooterNotification = function showFooterNotification(targetingMsgJson) {
-      var onClick = targetingMsgJson.display.onClick; // TODO: Needs wizrocket as a global variable
+      var onClick = targetingMsgJson.display.onClick;
+      var displayObj = targetingMsgJson.display; // TODO: Needs wizrocket as a global variable
 
       if (window.clevertap.hasOwnProperty('notificationCallback') && typeof window.clevertap.notificationCallback !== 'undefined' && typeof window.clevertap.notificationCallback === 'function') {
         var notificationCallback = window.clevertap.notificationCallback;
@@ -6106,7 +7145,7 @@
           window.clevertap.raiseNotificationClicked = function () {
             if (onClick !== '' && onClick != null) {
               var jsFunc = targetingMsgJson.display.jsFunc;
-              onClick += getCookieParams(); // invoke js function call
+              onClick += getCookieParams(_device, _session); // invoke js function call
 
               if (jsFunc != null) {
                 // track notification clicked event
@@ -6133,7 +7172,32 @@
         }
       } else {
         window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id;
-        renderFooterNotification(targetingMsgJson);
+
+        if (displayObj.deliveryTrigger) {
+          if (displayObj.deliveryTrigger.inactive) {
+            triggerByInactivity(targetingMsgJson);
+          }
+
+          if (displayObj.deliveryTrigger.scroll) {
+            triggerByScroll(targetingMsgJson);
+          }
+
+          if (displayObj.deliveryTrigger.isExitIntent) {
+            exitintentObj = targetingMsgJson;
+            window.document.body.onmouseleave = showExitIntent;
+          } // delay
+
+
+          var delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
+
+          if (delay != null && delay > 0) {
+            setTimeout(function () {
+              renderFooterNotification(targetingMsgJson);
+            }, delay * 1000);
+          }
+        } else {
+          renderFooterNotification(targetingMsgJson);
+        }
 
         if (window.clevertap.hasOwnProperty('popupCallbacks') && typeof window.clevertap.popupCallbacks !== 'undefined' && typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === 'function') {
           var popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id];
@@ -6206,26 +7270,116 @@
       }
     };
 
+    var triggerByInactivity = function triggerByInactivity(targetNotif) {
+      var IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // Convert to milliseconds
+
+      var idleTimer;
+      var events = ['mousemove', 'keypress', 'scroll', 'mousedown', 'touchmove', 'click'];
+
+      var resetIdleTimer = function resetIdleTimer() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(function () {
+          renderFooterNotification(targetNotif);
+          removeEventListeners();
+        }, IDLE_TIME_THRESHOLD);
+      };
+
+      var eventHandler = function eventHandler() {
+        resetIdleTimer();
+      };
+
+      var setupEventListeners = function setupEventListeners() {
+        events.forEach(function (eventType) {
+          return window.addEventListener(eventType, eventHandler, {
+            passive: true
+          });
+        });
+      };
+
+      var removeEventListeners = function removeEventListeners() {
+        events.forEach(function (eventType) {
+          return window.removeEventListener(eventType, eventHandler);
+        });
+      };
+
+      setupEventListeners();
+      resetIdleTimer();
+      return removeEventListeners; // Return a cleanup function
+    };
+
+    var triggerByScroll = function triggerByScroll(targetNotif) {
+      var calculateScrollPercentage = function calculateScrollPercentage() {
+        var _document$documentEle = document.documentElement,
+            scrollHeight = _document$documentEle.scrollHeight,
+            clientHeight = _document$documentEle.clientHeight,
+            scrollTop = _document$documentEle.scrollTop;
+        return scrollTop / (scrollHeight - clientHeight) * 100;
+      };
+
+      var scrollListener = function scrollListener() {
+        var scrollPercentage = calculateScrollPercentage();
+
+        if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
+          renderFooterNotification(targetNotif);
+          window.removeEventListener('scroll', throttledScrollListener);
+        }
+      };
+
+      var throttle = function throttle(func, limit) {
+        var inThrottle = false;
+        return function () {
+          var context = this;
+
+          if (!inThrottle) {
+            for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+              args[_key] = arguments[_key];
+            }
+
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(function () {
+              inThrottle = false;
+            }, limit);
+          }
+        };
+      };
+
+      var throttledScrollListener = throttle(scrollListener, 200);
+      window.addEventListener('scroll', throttledScrollListener, {
+        passive: true
+      });
+      return function () {
+        return window.removeEventListener('scroll', throttledScrollListener);
+      }; // Return a cleanup function
+    };
+
     var exitintentObj;
 
     var showExitIntent = function showExitIntent(event, targetObj) {
-      var targetingMsgJson;
+      if ((event === null || event === void 0 ? void 0 : event.clientY) > 0) return;
+      var targetingMsgJson = targetObj || exitintentObj;
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      var layout = targetingMsgJson.display.layout;
+      if (isExistingCampaign(campaignId)) return;
 
-      if (event != null && event.clientY > 0) {
+      if (targetingMsgJson.display.wtarget_type === 0 && (layout === 0 || layout === 2 || layout === 3)) {
+        createTemplate(targetingMsgJson, true);
         return;
       }
 
-      if (targetObj == null) {
-        targetingMsgJson = exitintentObj;
-      } else {
-        targetingMsgJson = targetObj;
+      if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
       }
 
-      if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0 && document.getElementById('intentPreview') != null && document.getElementById('intentOpacityDiv') != null) {
-        var element = document.getElementById('intentPreview');
-        element.remove();
-        document.getElementById('intentOpacityDiv').remove();
-      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+      if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0) {
+        var intentPreview = document.getElementById('intentPreview');
+        var intentOpacityDiv = document.getElementById('intentOpacityDiv');
+
+        if (intentPreview && intentOpacityDiv) {
+          intentPreview.remove();
+          intentOpacityDiv.remove();
+        }
+      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist`
 
 
       if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
@@ -6237,11 +7391,6 @@
         return;
       }
 
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
-        return;
-      }
-
-      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       $ct.campaignDivMap[campaignId] = 'intentPreview';
       var legacy = false;
       var opacityDiv = document.createElement('div');
@@ -6405,7 +7554,9 @@
           window.document.body.onmouseleave = showExitIntent;
         } else if (targetNotif.display.wtarget_type === 2) {
           // if display['wtarget_type']==2 then web native display
-          if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
+          if (targetNotif.msgContent.type === 1) {
+            handleKVpairCampaign(targetNotif);
+          } else if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
             // Check for banner and carousel
             var element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
 
@@ -6431,32 +7582,6 @@
         }
       }
     }
-
-    var mergeEventMap = function mergeEventMap(newEvtMap) {
-      if ($ct.globalEventsMap == null) {
-        $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
-
-        if ($ct.globalEventsMap == null) {
-          $ct.globalEventsMap = newEvtMap;
-          return;
-        }
-      }
-
-      for (var key in newEvtMap) {
-        if (newEvtMap.hasOwnProperty(key)) {
-          var oldEvtObj = $ct.globalEventsMap[key];
-          var newEvtObj = newEvtMap[key];
-
-          if ($ct.globalEventsMap[key] != null) {
-            if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
-              $ct.globalEventsMap[key] = newEvtObj;
-            }
-          } else {
-            $ct.globalEventsMap[key] = newEvtObj;
-          }
-        }
-      }
-    };
 
     var handleInboxNotifications = function handleInboxNotifications() {
       if (msg.inbox_preview) {
@@ -6497,35 +7622,14 @@
       }
     }
 
+    if (msg.webPushConfig) {
+      processWebPushConfig(msg.webPushConfig, logger, request);
+    }
+
     if (msg.vars) {
       $ct.variableStore.mergeVariables(msg.vars);
       return;
     }
-
-    var staleDataUpdate = function staleDataUpdate(staledata, campType) {
-      var campObj = getCampaignObject();
-      var globalObj = campObj[campType].global;
-
-      if (globalObj != null && campType) {
-        for (var idx in staledata) {
-          if (staledata.hasOwnProperty(idx)) {
-            delete globalObj[staledata[idx]];
-
-            if (StorageManager.read(CAMP_COOKIE_G)) {
-              var guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-              var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-
-              if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
-                delete guidCampObj[guid][campType][staledata[idx]];
-                StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
-              }
-            }
-          }
-        }
-      }
-
-      saveCampaignObject(campObj);
-    };
 
     if (StorageManager._isLocalStorageSupported()) {
       try {
@@ -6708,7 +7812,7 @@
     return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
   };
 
-  var _logger$5 = _classPrivateFieldLooseKey("logger");
+  var _logger$6 = _classPrivateFieldLooseKey("logger");
 
   var _sessionId = _classPrivateFieldLooseKey("sessionId");
 
@@ -6722,7 +7826,7 @@
 
       _classCallCheck(this, SessionManager);
 
-      Object.defineProperty(this, _logger$5, {
+      Object.defineProperty(this, _logger$6, {
         writable: true,
         value: void 0
       });
@@ -6737,7 +7841,7 @@
       this.cookieName = void 0;
       this.scookieObj = void 0;
       this.sessionId = StorageManager.getMetaProp('cs');
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3] = isPersonalisationActive;
     }
 
@@ -6856,9 +7960,9 @@
   var seqNo = 0;
   var requestTime = 0;
 
-  var _logger$6 = _classPrivateFieldLooseKey("logger");
+  var _logger$7 = _classPrivateFieldLooseKey("logger");
 
-  var _account$2 = _classPrivateFieldLooseKey("account");
+  var _account$3 = _classPrivateFieldLooseKey("account");
 
   var _device$2 = _classPrivateFieldLooseKey("device");
 
@@ -6883,11 +7987,11 @@
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
       });
-      Object.defineProperty(this, _logger$6, {
+      Object.defineProperty(this, _logger$7, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _account$2, {
+      Object.defineProperty(this, _account$3, {
         writable: true,
         value: void 0
       });
@@ -6908,8 +8012,8 @@
         value: false
       });
       this.processingBackup = false;
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
-      _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
+      _classPrivateFieldLooseBase(this, _logger$7)[_logger$7] = logger;
+      _classPrivateFieldLooseBase(this, _account$3)[_account$3] = account;
       _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
       _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4] = isPersonalisationActive;
@@ -6934,7 +8038,7 @@
             var backupEvent = backupMap[idx];
 
             if (typeof backupEvent.fired === 'undefined') {
-              _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Processing backup event : ' + backupEvent.q);
+              _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('Processing backup event : ' + backupEvent.q);
 
               if (typeof backupEvent.q !== 'undefined') {
                 RequestDispatcher.fireRequest(backupEvent.q);
@@ -6953,15 +8057,15 @@
       value: function addSystemDataToObject(dataObject, ignoreTrim) {
         // ignore trim for chrome notifications; undefined everywhere else
         if (typeof ignoreTrim === 'undefined') {
-          dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+          dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
         }
 
-        if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError)) {
-          dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError;
-          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].wzrkError = {};
+        if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$7)[_logger$7].wzrkError)) {
+          dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].wzrkError;
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].wzrkError = {};
         }
 
-        dataObject.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+        dataObject.id = _classPrivateFieldLooseBase(this, _account$3)[_account$3].id;
 
         if (isValueValid(_classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie)) {
           dataObject.g = _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie;
@@ -6976,7 +8080,7 @@
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
         dataObject.af = _objectSpread2(_objectSpread2({}, dataObject.af), {}, {
-          lib: 'web-sdk-v1.9.6',
+          lib: 'web-sdk-v1.11.2',
           protocol: proto
         }, $ct.flutterVersion); // app fields
 
@@ -6995,7 +8099,7 @@
         if (_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
           data.rc = true;
 
-          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('reset cookie sent in request and cleared from meta for future requests.');
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('reset cookie sent in request and cleared from meta for future requests.');
         }
 
         if (_classPrivateFieldLooseBase(this, _isPersonalisationActive$4)[_isPersonalisationActive$4]()) {
@@ -7028,7 +8132,7 @@
         var now = getNow();
         url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
         var data = url + '&i=' + now + '&sn=' + seqNo;
-        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]); // if offline is set to true, save the request in backup and return
+        StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]); // if offline is set to true, save the request in backup and return
 
         if ($ct.offline) return; // if there is no override
         // and an OUL request is not in progress
@@ -7047,7 +8151,7 @@
           window.oulReqN = $ct.globalCache.REQ_N;
           RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
         } else {
-          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
         }
       }
     }, {
@@ -7064,15 +8168,15 @@
           }
 
           data.action = 'unregister';
-          data.id = _classPrivateFieldLooseBase(this, _account$2)[_account$2].id;
+          data.id = _classPrivateFieldLooseBase(this, _account$3)[_account$3].id;
 
           var obj = _classPrivateFieldLooseBase(this, _session$2)[_session$2].getSessionCookieObject();
 
           data.s = obj.s; // session cookie
 
-          var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+          var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
 
-          var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+          var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
           pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
           pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -7091,10 +8195,10 @@
         payload = this.addSystemDataToObject(payload, true);
         payload = JSON.stringify(payload);
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]));
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]));
         RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
 
         StorageManager.save(WEBPUSH_LS_KEY, 'ok');
@@ -7107,9 +8211,9 @@
         data = this.addSystemDataToObject(data, undefined);
         this.addFlags(data);
         data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
-        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -7133,11 +8237,11 @@
 
           throw response;
         }).then(function (data) {
-          _classPrivateFieldLooseBase(_this, _logger$6)[_logger$6].debug('Sync data successful', data);
+          _classPrivateFieldLooseBase(_this, _logger$7)[_logger$7].debug('Sync data successful', data);
 
           return data;
         }).catch(function (e) {
-          _classPrivateFieldLooseBase(_this, _logger$6)[_logger$6].debug('Error in syncing variables', e);
+          _classPrivateFieldLooseBase(_this, _logger$7)[_logger$7].debug('Error in syncing variables', e);
 
           throw e;
         });
@@ -7175,13 +8279,13 @@
     }
   };
 
-  var _request$4 = _classPrivateFieldLooseKey("request");
+  var _request$5 = _classPrivateFieldLooseKey("request");
 
-  var _account$3 = _classPrivateFieldLooseKey("account");
+  var _account$4 = _classPrivateFieldLooseKey("account");
 
-  var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
+  var _oldValues$4 = _classPrivateFieldLooseKey("oldValues");
 
-  var _logger$7 = _classPrivateFieldLooseKey("logger");
+  var _logger$8 = _classPrivateFieldLooseKey("logger");
 
   var _processPrivacyArray = _classPrivateFieldLooseKey("processPrivacyArray");
 
@@ -7203,26 +8307,26 @@
       Object.defineProperty(_assertThisInitialized(_this), _processPrivacyArray, {
         value: _processPrivacyArray2
       });
-      Object.defineProperty(_assertThisInitialized(_this), _request$4, {
+      Object.defineProperty(_assertThisInitialized(_this), _request$5, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _account$3, {
+      Object.defineProperty(_assertThisInitialized(_this), _account$4, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _oldValues$3, {
+      Object.defineProperty(_assertThisInitialized(_this), _oldValues$4, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(_assertThisInitialized(_this), _logger$7, {
+      Object.defineProperty(_assertThisInitialized(_this), _logger$8, {
         writable: true,
         value: void 0
       });
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$7)[_logger$7] = logger;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$4)[_request$4] = request;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$3)[_account$3] = account;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$3)[_oldValues$3] = values;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$8)[_logger$8] = logger;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$5)[_request$5] = request;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$4)[_account$4] = account;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$4)[_oldValues$4] = values;
       return _this;
     }
 
@@ -7246,11 +8350,11 @@
     }, {
       key: "_processOldValues",
       value: function _processOldValues() {
-        if (_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]) {
-          _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
+        if (_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]) {
+          _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]);
         }
 
-        _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = null;
+        _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = null;
       }
     }]);
 
@@ -7285,557 +8389,19 @@
       if (!isObjectEmpty(profileObj)) {
         data.type = 'profile';
         data.profile = profileObj;
-        data = _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
-        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
+        data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, undefined);
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$8)[_logger$8]);
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$4)[_account$4].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false');
 
-        _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+        _classPrivateFieldLooseBase(this, _request$5)[_request$5].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
 
         privacyArr.splice(0, privacyArr.length);
       }
-    }
-  };
-
-  var _oldValues$4 = _classPrivateFieldLooseKey("oldValues");
-
-  var _logger$8 = _classPrivateFieldLooseKey("logger");
-
-  var _request$5 = _classPrivateFieldLooseKey("request");
-
-  var _account$4 = _classPrivateFieldLooseKey("account");
-
-  var _wizAlertJSPath = _classPrivateFieldLooseKey("wizAlertJSPath");
-
-  var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
-
-  var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
-
-  var _setUpWebPushNotifications = _classPrivateFieldLooseKey("setUpWebPushNotifications");
-
-  var _setApplicationServerKey = _classPrivateFieldLooseKey("setApplicationServerKey");
-
-  var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
-
-  var _setUpChromeFirefoxNotifications = _classPrivateFieldLooseKey("setUpChromeFirefoxNotifications");
-
-  var _addWizAlertJS = _classPrivateFieldLooseKey("addWizAlertJS");
-
-  var _removeWizAlertJS = _classPrivateFieldLooseKey("removeWizAlertJS");
-
-  var _handleNotificationRegistration = _classPrivateFieldLooseKey("handleNotificationRegistration");
-
-  var NotificationHandler = /*#__PURE__*/function (_Array) {
-    _inherits(NotificationHandler, _Array);
-
-    var _super = _createSuper(NotificationHandler);
-
-    function NotificationHandler(_ref, values) {
-      var _this;
-
-      var logger = _ref.logger,
-          session = _ref.session,
-          request = _ref.request,
-          account = _ref.account;
-
-      _classCallCheck(this, NotificationHandler);
-
-      _this = _super.call(this);
-      Object.defineProperty(_assertThisInitialized(_this), _handleNotificationRegistration, {
-        value: _handleNotificationRegistration2
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _removeWizAlertJS, {
-        value: _removeWizAlertJS2
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _addWizAlertJS, {
-        value: _addWizAlertJS2
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _setUpChromeFirefoxNotifications, {
-        value: _setUpChromeFirefoxNotifications2
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _setUpSafariNotifications, {
-        value: _setUpSafariNotifications2
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _setApplicationServerKey, {
-        value: _setApplicationServerKey2
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _setUpWebPushNotifications, {
-        value: _setUpWebPushNotifications2
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _setUpWebPush, {
-        value: _setUpWebPush2
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _oldValues$4, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _logger$8, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _request$5, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _account$4, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _wizAlertJSPath, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(_assertThisInitialized(_this), _fcmPublicKey, {
-        writable: true,
-        value: void 0
-      });
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _wizAlertJSPath)[_wizAlertJSPath] = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js';
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _fcmPublicKey)[_fcmPublicKey] = null;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$4)[_oldValues$4] = values;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$8)[_logger$8] = logger;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$5)[_request$5] = request;
-      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _account$4)[_account$4] = account;
-      return _this;
-    }
-
-    _createClass(NotificationHandler, [{
-      key: "push",
-      value: function push() {
-        for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
-          displayArgs[_key] = arguments[_key];
-        }
-
-        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
-
-        return 0;
-      }
-    }, {
-      key: "_processOldValues",
-      value: function _processOldValues() {
-        if (_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]) {
-          _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]);
-        }
-
-        _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = null;
-      }
-    }, {
-      key: "_enableWebPush",
-      value: function _enableWebPush(enabled, applicationServerKey) {
-        $ct.webPushEnabled = enabled;
-
-        if (applicationServerKey != null) {
-          _classPrivateFieldLooseBase(this, _setApplicationServerKey)[_setApplicationServerKey](applicationServerKey);
-        }
-
-        if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-          _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-        } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
-        }
-      }
-    }]);
-
-    return NotificationHandler;
-  }( /*#__PURE__*/_wrapNativeSuper(Array));
-
-  var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
-    if ($ct.webPushEnabled && displayArgs.length > 0) {
-      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
-    } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
-      $ct.notifApi.notifEnabledFromApi = true;
-      $ct.notifApi.displayArgs = displayArgs.slice();
-    } else if ($ct.webPushEnabled === false && displayArgs.length > 0) {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Make sure push notifications are fully enabled and integrated');
-    }
-  };
-
-  var _setUpWebPushNotifications2 = function _setUpWebPushNotifications2(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-    if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
-      _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-      _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl);
-    }
-  };
-
-  var _setApplicationServerKey2 = function _setApplicationServerKey2(applicationServerKey) {
-    _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
-  };
-
-  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
-    var _this2 = this;
-
-    // ensure that proper arguments are passed
-    if (typeof apnsWebPushId === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Ensure that APNS Web Push ID is supplied');
-    }
-
-    if (typeof apnsServiceUrl === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Ensure that APNS Web Push service path is supplied');
-    }
-
-    if ('safari' in window && 'pushNotification' in window.safari) {
-      window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, function (subscription) {
-        if (subscription.permission === 'granted') {
-          var subscriptionData = JSON.parse(JSON.stringify(subscription));
-          subscriptionData.endpoint = subscription.deviceToken;
-          subscriptionData.browser = 'Safari';
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-          _classPrivateFieldLooseBase(_this2, _request$5)[_request$5].registerToken(subscriptionData);
-
-          _classPrivateFieldLooseBase(_this2, _logger$8)[_logger$8].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
-        } else if (subscription.permission === 'denied') {
-          _classPrivateFieldLooseBase(_this2, _logger$8)[_logger$8].info('Error subscribing to Safari web push');
-        }
-      });
-    }
-  };
-
-  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
-    var _this3 = this;
-
-    var registrationScope = '';
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register(serviceWorkerPath).then(function (registration) {
-        if (typeof __wzrk_account_id !== 'undefined') {
-          // eslint-disable-line
-          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
-          // hence add a timeout and hope serviceWroker is ready within that time.
-          return new Promise(function (resolve) {
-            return setTimeout(function () {
-              return resolve(registration);
-            }, 5000);
-          });
-        }
-
-        registrationScope = registration.scope; // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
-        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
-        // OR getRegistrations PROMISE IF ITS FIREFOX
-
-        var rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
-        var isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
-
-        if (isServiceWorkerAtRoot) {
-          return navigator.serviceWorker.ready;
-        } else {
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
-            return new Promise(function (resolve) {
-              return setTimeout(function () {
-                return resolve(registration);
-              }, 5000);
-            });
-          } else {
-            return navigator.serviceWorker.getRegistrations();
-          }
-        }
-      }).then(function (serviceWorkerRegistration) {
-        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
-        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
-          serviceWorkerRegistration = serviceWorkerRegistration.filter(function (i) {
-            return i.scope === registrationScope;
-          })[0];
-        }
-
-        var subscribeObj = {
-          userVisibleOnly: true
-        };
-
-        if (_classPrivateFieldLooseBase(_this3, _fcmPublicKey)[_fcmPublicKey] != null) {
-          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(_this3, _fcmPublicKey)[_fcmPublicKey]);
-        }
-
-        serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(function (subscription) {
-          _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
-
-
-          var subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
-
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
-            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-            subscriptionData.browser = 'Chrome';
-          } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
-            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-            subscriptionData.browser = 'Firefox';
-          }
-
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-          _classPrivateFieldLooseBase(_this3, _request$5)[_request$5].registerToken(subscriptionData);
-
-          if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
-            subscriptionCallback();
-          }
-        }).catch(function (error) {
-          // unsubscribe from webpush if error
-          serviceWorkerRegistration.pushManager.getSubscription().then(function (subscription) {
-            if (subscription !== null) {
-              subscription.unsubscribe().then(function (successful) {
-                // You've successfully unsubscribed
-                _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8].info('Unsubscription successful');
-
-                window.clevertap.notifications.push({
-                  skipDialog: true
-                });
-              }).catch(function (e) {
-                // Unsubscription failed
-                _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8].error('Error unsubscribing: ' + e);
-              });
-            }
-          });
-
-          _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8].error('Error subscribing: ' + error);
-        });
-      }).catch(function (err) {
-        _classPrivateFieldLooseBase(_this3, _logger$8)[_logger$8].error('error registering service worker: ' + err);
-      });
-    }
-  };
-
-  var _addWizAlertJS2 = function _addWizAlertJS2() {
-    var scriptTag = document.createElement('script');
-    scriptTag.setAttribute('type', 'text/javascript');
-    scriptTag.setAttribute('id', 'wzrk-alert-js');
-    scriptTag.setAttribute('src', _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath]); // add the script tag to the end of the body
-
-    document.getElementsByTagName('body')[0].appendChild(scriptTag);
-    return scriptTag;
-  };
-
-  var _removeWizAlertJS2 = function _removeWizAlertJS2() {
-    var scriptTag = document.getElementById('wzrk-alert-js');
-    scriptTag.parentNode.removeChild(scriptTag);
-  };
-
-  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
-    var _this4 = this;
-
-    // make sure everything is specified
-    var titleText;
-    var bodyText;
-    var okButtonText;
-    var rejectButtonText;
-    var okButtonColor;
-    var skipDialog;
-    var askAgainTimeInSeconds;
-    var okCallback;
-    var rejectCallback;
-    var subscriptionCallback;
-    var serviceWorkerPath;
-    var httpsPopupPath;
-    var httpsIframePath;
-    var apnsWebPushId;
-    var apnsWebPushServiceUrl;
-
-    if (displayArgs.length === 1) {
-      if (isObject(displayArgs[0])) {
-        var notifObj = displayArgs[0];
-        titleText = notifObj.titleText;
-        bodyText = notifObj.bodyText;
-        okButtonText = notifObj.okButtonText;
-        rejectButtonText = notifObj.rejectButtonText;
-        okButtonColor = notifObj.okButtonColor;
-        skipDialog = notifObj.skipDialog;
-        askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
-        okCallback = notifObj.okCallback;
-        rejectCallback = notifObj.rejectCallback;
-        subscriptionCallback = notifObj.subscriptionCallback;
-        serviceWorkerPath = notifObj.serviceWorkerPath;
-        httpsPopupPath = notifObj.httpsPopupPath;
-        httpsIframePath = notifObj.httpsIframePath;
-        apnsWebPushId = notifObj.apnsWebPushId;
-        apnsWebPushServiceUrl = notifObj.apnsWebPushServiceUrl;
-      }
-    } else {
-      titleText = displayArgs[0];
-      bodyText = displayArgs[1];
-      okButtonText = displayArgs[2];
-      rejectButtonText = displayArgs[3];
-      okButtonColor = displayArgs[4];
-      skipDialog = displayArgs[5];
-      askAgainTimeInSeconds = displayArgs[6];
-    }
-
-    if (skipDialog == null) {
-      skipDialog = false;
-    }
-
-    if (serviceWorkerPath == null) {
-      serviceWorkerPath = '/clevertap_sw.js';
-    } // ensure that the browser supports notifications
-
-
-    if (typeof navigator.serviceWorker === 'undefined') {
-      return;
-    }
-
-    var isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
-
-    if (window.location.protocol !== 'https:' && document.location.hostname !== 'localhost' && !isHTTP) {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Make sure you are https or localhost to register for notifications');
-
-      return;
-    } // right now, we only support Chrome V50 & higher & Firefox
-
-
-    if (navigator.userAgent.indexOf('Chrome') !== -1) {
-      var chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/);
-
-      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) {
-        return;
-      }
-    } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
-      var firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/);
-
-      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) {
-        return;
-      }
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-      var safariAgent = navigator.userAgent.match(/Safari\/(\d+)/);
-
-      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) {
-        return;
-      }
-    } else {
-      return;
-    } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
-
-
-    if (!isHTTP) {
-      if (Notification == null) {
-        return;
-      } // handle migrations from other services -> chrome notifications may have already been asked for before
-
-
-      if (Notification.permission === 'granted') {
-        // skip the dialog and register
-        _classPrivateFieldLooseBase(this, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-
-        return;
-      } else if (Notification.permission === 'denied') {
-        // we've lost this profile :'(
-        return;
-      }
-
-      if (skipDialog) {
-        _classPrivateFieldLooseBase(this, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-
-        return;
-      }
-    } // make sure the right parameters are passed
-
-
-    if (!titleText || !bodyText || !okButtonText || !rejectButtonText) {
-      _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Missing input parameters; please specify title, body, ok button and cancel button text');
-
-      return;
-    } // make sure okButtonColor is formatted properly
-
-
-    if (okButtonColor == null || !okButtonColor.match(/^#[a-f\d]{6}$/i)) {
-      okButtonColor = '#f28046'; // default color for positive button
-    } // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
-
-
-    var now = new Date().getTime() / 1000;
-
-    if (StorageManager.getMetaProp('notif_last_time') == null) {
-      StorageManager.setMetaProp('notif_last_time', now);
-    } else {
-      if (askAgainTimeInSeconds == null) {
-        // 7 days by default
-        askAgainTimeInSeconds = 7 * 24 * 60 * 60;
-      }
-
-      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
-        return;
-      } else {
-        // continue asking
-        StorageManager.setMetaProp('notif_last_time', now);
-      }
-    }
-
-    if (isHTTP) {
-      // add the https iframe
-      var httpsIframe = document.createElement('iframe');
-      httpsIframe.setAttribute('style', 'display:none;');
-      httpsIframe.setAttribute('src', httpsIframePath);
-      document.body.appendChild(httpsIframe);
-      window.addEventListener('message', function (event) {
-        if (event.data != null) {
-          var obj = {};
-
-          try {
-            obj = JSON.parse(event.data);
-          } catch (e) {
-            // not a call from our iframe
-            return;
-          }
-
-          if (obj.state != null) {
-            if (obj.from === 'ct' && obj.state === 'not') {
-              _classPrivateFieldLooseBase(_this4, _addWizAlertJS)[_addWizAlertJS]().onload = function () {
-                // create our wizrocket popup
-                window.wzrkPermissionPopup.wizAlert({
-                  title: titleText,
-                  body: bodyText,
-                  confirmButtonText: okButtonText,
-                  confirmButtonColor: okButtonColor,
-                  rejectButtonText: rejectButtonText
-                }, function (enabled) {
-                  // callback function
-                  if (enabled) {
-                    // the user accepted on the dialog box
-                    if (typeof okCallback === 'function') {
-                      okCallback();
-                    } // redirect to popup.html
-
-
-                    window.open(httpsPopupPath);
-                  } else {
-                    if (typeof rejectCallback === 'function') {
-                      rejectCallback();
-                    }
-                  }
-
-                  _classPrivateFieldLooseBase(_this4, _removeWizAlertJS)[_removeWizAlertJS]();
-                });
-              };
-            }
-          }
-        }
-      }, false);
-    } else {
-      _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = function () {
-        // create our wizrocket popup
-        window.wzrkPermissionPopup.wizAlert({
-          title: titleText,
-          body: bodyText,
-          confirmButtonText: okButtonText,
-          confirmButtonColor: okButtonColor,
-          rejectButtonText: rejectButtonText
-        }, function (enabled) {
-          // callback function
-          if (enabled) {
-            // the user accepted on the dialog box
-            if (typeof okCallback === 'function') {
-              okCallback();
-            }
-
-            _classPrivateFieldLooseBase(_this4, _setUpWebPushNotifications)[_setUpWebPushNotifications](subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-          } else {
-            if (typeof rejectCallback === 'function') {
-              rejectCallback();
-            }
-          }
-
-          _classPrivateFieldLooseBase(_this4, _removeWizAlertJS)[_removeWizAlertJS]();
-        });
-      };
     }
   };
 
@@ -8961,6 +9527,8 @@
       };
 
       api.enableWebPush = function (enabled, applicationServerKey) {
+        setServerKey(applicationServerKey);
+
         _this.notifications._enableWebPush(enabled, applicationServerKey);
       };
 
@@ -9067,7 +9635,6 @@
           return;
         }
 
-        checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], accountId);
         StorageManager.removeCookie('WZRK_P', window.location.hostname);
 
         if (!_classPrivateFieldLooseBase(this, _account$6)[_account$6].id) {
@@ -9080,6 +9647,7 @@
           _classPrivateFieldLooseBase(this, _account$6)[_account$6].id = accountId;
         }
 
+        checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
         _classPrivateFieldLooseBase(this, _session$3)[_session$3].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$6)[_account$6].id;
 
         if (region) {
@@ -9256,7 +9824,7 @@
     }, {
       key: "getSDKVersion",
       value: function getSDKVersion() {
-        return 'web-sdk-v1.9.6';
+        return 'web-sdk-v1.11.2';
       }
     }, {
       key: "defineVariable",
