@@ -188,8 +188,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
   }
 
   details.forEach(d => {
-    const url = window.location.href.split('?')[0].replace(/\/$/, '')
-    if (d.url.replace(/\/$/, '') === url) {
+    if (d.url === window.location.href.split('?')[0]) {
       d.selectorData.forEach(s => {
         const element = document.querySelector(s.selector)
         if (element) {
