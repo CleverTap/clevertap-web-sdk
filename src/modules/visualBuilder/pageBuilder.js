@@ -1,6 +1,5 @@
 import { CSS_PATH, OVERLAY_PATH, WVE_CLASS } from './builder_constants'
 import { updateFormData } from './dataUpdate'
-import { versionCompare } from './versionCompare'
 
 export const checkBuilder = (logger, accountId) => {
   const search = window.location.search
@@ -25,12 +24,11 @@ export const checkBuilder = (logger, accountId) => {
   if (search === '?ctBuilderSDKCheck') {
     if (parentWindow) {
       const sdkVersion = '$$PACKAGE_VERSION$$'
-      const isRequiredVersion = versionCompare(sdkVersion)
       parentWindow.postMessage({
         message: 'SDKVersion',
         accountId,
         originUrl: window.location.href,
-        sdkVersion: isRequiredVersion ? '1.9.3' : sdkVersion
+        sdkVersion
       },
       '*'
       )
@@ -157,9 +155,19 @@ function loadOverlayScript (overlayPath, url, variant, details, personalisation)
  * @param {boolean} isPreview - Indicates if it's a preview.
  */
 export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
-  console.log(targetingMsgJson.details)
   const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details
-  let elementDisplayed = false
+  let notificationViewed = false
+  const payload = {
+    msgId: targetingMsgJson.wzrk_id,
+    pivotId: targetingMsgJson.wzrk_pivot
+  }
+
+  const raiseViewed = () => {
+    if (!isPreview && !notificationViewed) {
+      notificationViewed = true
+      window.clevertap.renderNotificationViewed(payload)
+    }
+  }
 
   const processElement = (element, selector) => {
     if (!selector.values) return
@@ -168,8 +176,8 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     } else if (selector.values?.json) {
       dispatchJsonData(targetingMsgJson, selector.values)
     } else {
-      console.log('updateFormData called with', selector.values.form, isPreview)
-      updateFormData(element, selector.values.form, isPreview)
+      payload.msgCTkv = { wzrk_selector: selector.selector }
+      updateFormData(element, selector.values.form, payload, isPreview)
     }
   }
 
@@ -178,6 +186,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     const intervalId = setInterval(() => {
       const retryElement = document.querySelector(selector.selector)
       if (retryElement) {
+        raiseViewed()
         processElement(retryElement, selector)
         clearInterval(intervalId)
       } else if (++count >= 20) {
@@ -192,21 +201,14 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
       d.selectorData.forEach(s => {
         const element = document.querySelector(s.selector)
         if (element) {
+          raiseViewed()
           processElement(element, s)
-          elementDisplayed = true
         } else {
           tryFindingElement(s)
         }
       })
     }
   })
-
-  if (elementDisplayed && !isPreview) {
-    window.clevertap.renderNotificationViewed({
-      msgId: targetingMsgJson.wzrk_id,
-      pivotId: targetingMsgJson.wzrk_pivot
-    })
-  }
 }
 
 /**
