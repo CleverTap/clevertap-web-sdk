@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.3] - 17 Oct, 2024
+- Support for new payload structure of Visual Editor
+- Moved version check of SDK to Dashboard
+
 ## [1.11.2] - 17 Oct, 2024
 - Fixes a bug where Web Popup Campaign was not working if other iframes present on DOM.
 
