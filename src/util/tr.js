@@ -2,7 +2,8 @@ import {
   addToLocalProfileMap,
   arp,
   getCampaignObject,
-  saveCampaignObject
+  saveCampaignObject,
+  updateOcInCampaignObjects
 } from './clevertap'
 
 import {
@@ -44,6 +45,7 @@ const _tr = (msg, {
   // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
+    const currentTimestamp = Date.now()
     const today = getToday()
 
     const incrCount = (obj, campaignId, excludeFromFreqCaps) => {
@@ -71,18 +73,16 @@ const _tr = (msg, {
       const campObj = getCampaignObject()
       if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
         campTypeObj = campObj.wi
-      } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) {
-        campTypeObj = campObj.wp
       } else {
         campTypeObj = {}
       }
-      if (campObj.hasOwnProperty('global')) {
-        campTypeObj.wp = campObj
-      }
+      // if (campObj.hasOwnProperty('global')) {
+      //   campTypeObj.wp = campObj
+      // }
       // global session limit. default is 1
-      if (targetingMsgJson[DISPLAY].wmc == null) {
-        targetingMsgJson[DISPLAY].wmc = 1
-      }
+      // if (targetingMsgJson[DISPLAY].wmc == null) {
+      //   targetingMsgJson[DISPLAY].wmc = 1
+      // }
 
       // global session limit for web inbox. default is 1
       if (targetingMsgJson[DISPLAY].wimc == null) {
@@ -94,7 +94,7 @@ const _tr = (msg, {
       let campaignDailyLimit = -1 // tdc - Once per day
       let campaignTotalLimit = -1 // tlc - Once per user for the duration of campaign
       let totalDailyLimit = -1
-      let totalSessionLimit = -1 // wmc - Web Popup Global Session Limit
+      // let totalSessionLimit = -1 // wmc - Web Popup Global Session Limit
       let totalInboxSessionLimit = -1 // wimc - Web Inbox Global Session Limit
 
       if (targetingMsgJson[DISPLAY].efc != null) { // exclude from frequency cap
@@ -112,9 +112,9 @@ const _tr = (msg, {
       if (targetingMsgJson[DISPLAY].wmp != null) { // No of campaigns per day
         totalDailyLimit = parseInt(targetingMsgJson[DISPLAY].wmp, 10)
       }
-      if (targetingMsgJson[DISPLAY].wmc != null) { // No of campaigns per session
-        totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10)
-      }
+      // if (targetingMsgJson[DISPLAY].wmc != null) { // No of campaigns per session
+      //   totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10)
+      // }
 
       if (targetingMsgJson[DISPLAY].wimc != null) { // No of inbox campaigns per session
         totalInboxSessionLimit = parseInt(targetingMsgJson[DISPLAY].wimc, 10)
@@ -134,12 +134,13 @@ const _tr = (msg, {
           if (totalInboxSessionLimit > 0 && totalSessionCount >= totalInboxSessionLimit && excludeFromFreqCaps < 0) {
             return false
           }
-        } else {
-          // session
-          if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
-            return false
-          }
         }
+        // else {
+        //   // session
+        //   if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
+        //     return false
+        //   }
+        // }
 
         // campaign session
         if (campaignSessionLimit > 0 && campaignSessionCount >= campaignSessionLimit) {
@@ -198,16 +199,114 @@ const _tr = (msg, {
     incrCount(dailyObj, campaignId, excludeFromFreqCaps)
     incrCount(globalObj, campaignId, excludeFromFreqCaps)
 
-    let campKey = 'wp'
+    // let campKey = 'wp'
     if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
-      campKey = 'wi'
+      const campKey = 'wi'
+      // get ride of stale sessions and day entries
+      const newCampObj = {}
+      newCampObj[_session.sessionId] = sessionObj
+      newCampObj[today] = dailyObj
+      newCampObj[GLOBAL] = globalObj
+
+      saveCampaignObject({ [campKey]: newCampObj }, _session.sessionId)
     }
-    // get ride of stale sessions and day entries
-    const newCampObj = {}
-    newCampObj[_session.sessionId] = sessionObj
-    newCampObj[today] = dailyObj
-    newCampObj[GLOBAL] = globalObj
-    saveCampaignObject({ [campKey]: newCampObj })
+    if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && targetingMsgJson[DISPLAY].adp && excludeFromFreqCaps < 0) {
+      // if (excludeFromFreqCaps > 0) {
+      //   console.log('we should exclude it', excludeFromFreqCaps)
+      //   return
+      // }
+      let campaignObj = getCampaignObject()
+      if (campaignObj.hasOwnProperty('wp')) {
+        var wpSessionObj = campaignObj.wp[_session.sessionId]
+        console.log('test session', wpSessionObj)
+
+        if (wpSessionObj) {
+          const campaignSessionCount = wpSessionObj[campaignId]
+
+          // dnd
+          if (campaignSessionCount === 'dnd' && !$ct.dismissSpamControl) {
+            return false
+          }
+        } else {
+          wpSessionObj = {}
+          campaignObj.wp[_session.sessionId] = wpSessionObj
+          console.log('test session in else', wpSessionObj, campaignObj.wp[_session.sessionId])
+        }
+        Object.keys(campaignObj.wp).forEach(key => {
+          if (key === 'global') return
+          console.log(typeof key, 'test type', typeof _session.sessionId)
+
+          if (key !== (_session.sessionId).toString()) {
+            console.log('key value pair', key, _session.sessionId)
+
+            delete campaignObj.wp[key]
+          }
+          console.log('lets log it', key)
+        })
+      }
+
+      const migrateOldStructure = (campaignObj) => {
+        if (!campaignObj.wp) {
+          campaignObj.wp = {}
+        }
+        if (!campaignObj.wp.global) {
+          campaignObj.wp.global = {}
+        }
+
+        // Migrate the old structure in the global section
+        Object.keys(campaignObj.wp.global).forEach(campaignId => {
+          if (campaignId === 'tc' || campaignId === 'wp_tc' || campaignId === 'wp_sc') return
+          if (typeof campaignObj.wp.global[campaignId] === 'number') {
+            campaignObj.wp.global[campaignId] = {
+              ts: [], // Initialize an empty timestamp array
+              oc: 0 // Initialize the occurrence count to 0
+            }
+          }
+        })
+
+        // // Ensure wp_tc (daily count) and wp_sc (session count) are initialized
+        // if (typeof campaignObj.wp.global.wp_tc !== 'object') {
+        //   campaignObj.wp.global.wp_tc = {}
+        // }
+        // if (typeof campaignObj.wp.global.wp_sc !== 'object') {
+        //   campaignObj.wp.global.wp_sc = {}
+        // }
+
+        return campaignObj
+      }
+
+      // Migrate and ensure the structure is up-to-date
+      campaignObj = migrateOldStructure(campaignObj)
+
+      // Ensure the global section for the specific campaign exists
+      if (!campaignObj.wp.global[campaignId]) {
+        campaignObj.wp.global[campaignId] = { ts: [], oc: 0 } // Initialize with ts and oc
+      }
+
+      // Add new timestamp only, no changes to oc (occurrence count)
+      campaignObj.wp.global[campaignId].ts.push(currentTimestamp)
+
+      // // Update wp_tc (daily count)
+      // if (!campaignObj.wp.global.wp_tc || !campaignObj.wp.global.wp_tc.hasOwnProperty(today)) {
+      //   // If today is different or wp_tc does not exist, reset today's count
+      //   campaignObj.wp.global.wp_tc = { [today]: 1 }
+      // } else {
+      //   // Increment today's count
+      //   campaignObj.wp.global.wp_tc[today] += 1
+      // }
+
+      // // Update wp_sc (session count)
+      // if (!campaignObj.wp.global.wp_sc || !campaignObj.wp.global.wp_sc.hasOwnProperty(_session.sessionId)) {
+      //   // If session ID is different or wp_sc does not exist, reset session count
+      //   campaignObj.wp.global.wp_sc = { [_session.sessionId]: 1 }
+      // } else {
+      //   // Increment session count
+      //   campaignObj.wp.global.wp_sc[_session.sessionId] += 1
+      // }
+
+      // Save the updated global web popup data
+      saveCampaignObject(campaignObj, _session.sessionId)
+    }
   }
 
   const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
@@ -933,6 +1032,9 @@ const _tr = (msg, {
       }
       if (msg.arp != null) {
         arp(msg.arp)
+      }
+      if (msg.wtq != null) {
+        updateOcInCampaignObjects(msg.wtq)
       }
       if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
         // web popup stale
