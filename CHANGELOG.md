@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.4] 24th Oct, 2024
+- Fix for gender values. Have removed frontend validation
+
 ## [1.11.3] - 17 Oct, 2024
 - Support for new payload structure of Visual Editor
 - Moved version check of SDK to Dashboard
