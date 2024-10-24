@@ -142,10 +142,10 @@ describe('util/clevertap', function () {
       expect(input).toMatchObject({ name: 'fooBar' })
     })
 
-    test('should delete Gender key and log error if value is not "M" or "F"', () => {
+    test('should delete Gender key and log error if value is not "M","F","O","U","male","female","others","unknown"', () => {
       const input = {
         name: 'fooBar',
-        Gender: 'male'
+        Gender: 'hello'
       }
 
       isProfileValid(input, { logger: this.logger })
