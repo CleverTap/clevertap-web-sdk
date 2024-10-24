@@ -1,4 +1,4 @@
-export const updateFormData = (element, formStyle) => {
+export const updateFormData = (element, formStyle, payload, isPreview = false) => {
   // Update the element style
   if (formStyle.style !== undefined) {
     Object.keys(formStyle.style).forEach((property) => {
@@ -25,8 +25,18 @@ export const updateFormData = (element, formStyle) => {
   if (formStyle.clickDetails !== undefined) {
     const url = formStyle.clickDetails.clickUrl
     element.onclick = formStyle.clickDetails.newTab
-      ? () => window.open(url, '_blank').focus()
-      : () => { window.location.href = url }
+      ? () => {
+        if (!isPreview) {
+          window.clevertap.raiseNotificationClicked(payload)
+        }
+        window.open(url, '_blank').focus()
+      }
+      : () => {
+        if (!isPreview) {
+          window.clevertap.raiseNotificationClicked(payload)
+        }
+        window.location.href = url
+      }
   }
 
   // Set the image source
