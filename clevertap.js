@@ -1948,7 +1948,7 @@
             continue;
           }
 
-          if (profileKey === 'Gender' && !profileVal.match(/^M$|^F$/)) {
+          if (profileKey === 'Gender' && !profileVal.match(/\b(?:[mM](?:ale)?|[fF](?:emale)?|[oO](?:thers)?|[uU](?:nknown)?)\b/)) {
             valid = false;
             logger.error(GENDER_ERROR);
           }
