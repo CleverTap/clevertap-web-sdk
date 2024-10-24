@@ -1992,11 +1992,11 @@
           // Web inbox total count for the day (witlc)
           witlc: resultObjWI,
           // Unchanged: Old way of processing web inbox lifetime count
-          sc: wpSc,
+          wsc: wpSc,
           // Web popup session count (wp_sc)
-          oc: oc,
+          woc: oc,
           // Occurrence count for campaigns
-          fc: fc // Frequency count (timestamps) for campaigns
+          wfc: fc // Frequency count (timestamps) for campaigns
 
         }
       };
@@ -7152,7 +7152,7 @@
           arp(msg.arp);
         }
 
-        if (msg.wtq != null) {
+        if (msg.wtq != null && msg.wtq.length > 0) {
           updateOcInCampaignObjects(msg.wtq);
         }
 

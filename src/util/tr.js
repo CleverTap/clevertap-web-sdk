@@ -1033,7 +1033,7 @@ const _tr = (msg, {
       if (msg.arp != null) {
         arp(msg.arp)
       }
-      if (msg.wtq != null) {
+      if (msg.wtq != null && msg.wtq.length > 0) {
         updateOcInCampaignObjects(msg.wtq)
       }
       if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
