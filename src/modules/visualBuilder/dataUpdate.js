@@ -18,7 +18,6 @@ export const updateFormData = (element, formStyle, payload, isPreview = false) =
 
   // Update element text
   if (formStyle.text !== undefined) {
-    console.log(formStyle.text)
     element.innerText = isPreview ? formStyle.text.text : formStyle.text
   }
 
