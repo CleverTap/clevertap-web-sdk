@@ -18,7 +18,7 @@ export const updateFormData = (element, formStyle, payload, isPreview = false) =
 
   // Update element text
   if (formStyle.text !== undefined) {
-    element.innerText = formStyle.text
+    element.innerText = isPreview ? formStyle.text.text : formStyle.text
   }
 
   // Handle element onClick
