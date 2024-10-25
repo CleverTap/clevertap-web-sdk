@@ -6087,7 +6087,7 @@
 
     const doCampHouseKeeping = targetingMsgJson => {
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-      const currentTimestamp = Date.now();
+      const currentTimestamp = Math.floor(Date.now() / 1000);
       const today = getToday();
 
       const incrCount = (obj, campaignId, excludeFromFreqCaps) => {
