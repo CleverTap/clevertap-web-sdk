@@ -732,10 +732,6 @@ export default class CleverTap {
 
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
 
-    if (parseInt(data.pg) === 1) {
-      this.event.push(WZRK_FETCH, { t: 4 })
-    }
-
     this.#previousUrl = currLocation
     setTimeout(() => {
       if (pgCount <= 3) {
