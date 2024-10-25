@@ -97,15 +97,6 @@ export const setCampaignObjectForGuid = (sessionId) => {
                   if (campObj.wp?.global?.wp_sc?.[sessionId]) {
                     campKeyObj.wp_sc = campKeyObj.wp_sc || {}
                     campKeyObj.wp_sc[sessionId] = campObj.wp?.global?.wp_sc?.[sessionId] // Increment session count
-                    // const previousWpSc = guidCampObj[guid]?.wp?.wp_sc?.[sessionId] || 0
-                    // campKeyObj.wp_sc = campKeyObj.wp_sc || {}
-
-                    // Check if the current session ID exists in wp_sc
-                    // if (!campKeyObj.wp_sc.hasOwnProperty(sessionId)) {
-                    //   campKeyObj.wp_sc[sessionId] = previousWpSc + 1 // Initialize or increment session count
-                    // } else {
-                    //   campKeyObj.wp_sc[sessionId] += 1 // Increment session count
-                    // }
                   }
                 }
 

@@ -1865,14 +1865,6 @@
 
                       campKeyObj.wp_sc = campKeyObj.wp_sc || {};
                       campKeyObj.wp_sc[sessionId] = (_campObj$wp2 = campObj.wp) === null || _campObj$wp2 === void 0 ? void 0 : (_campObj$wp2$global = _campObj$wp2.global) === null || _campObj$wp2$global === void 0 ? void 0 : (_campObj$wp2$global$w = _campObj$wp2$global.wp_sc) === null || _campObj$wp2$global$w === void 0 ? void 0 : _campObj$wp2$global$w[sessionId]; // Increment session count
-                      // const previousWpSc = guidCampObj[guid]?.wp?.wp_sc?.[sessionId] || 0
-                      // campKeyObj.wp_sc = campKeyObj.wp_sc || {}
-                      // Check if the current session ID exists in wp_sc
-                      // if (!campKeyObj.wp_sc.hasOwnProperty(sessionId)) {
-                      //   campKeyObj.wp_sc[sessionId] = previousWpSc + 1 // Initialize or increment session count
-                      // } else {
-                      //   campKeyObj.wp_sc[sessionId] += 1 // Increment session count
-                      // }
                     }
                   }
 
@@ -6289,7 +6281,7 @@
         }, _session.sessionId);
       }
 
-      if (targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) {
+      if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && targetingMsgJson[DISPLAY].adp) {
         let campaignObj = getCampaignObject();
 
         if (campaignObj.hasOwnProperty('wp')) {

@@ -210,7 +210,7 @@ const _tr = (msg, {
 
       saveCampaignObject({ [campKey]: newCampObj }, _session.sessionId)
     }
-    if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1)) {
+    if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && targetingMsgJson[DISPLAY].adp) {
       let campaignObj = getCampaignObject()
       if (campaignObj.hasOwnProperty('wp')) {
         var wpSessionObj = campaignObj.wp[_session.sessionId]
