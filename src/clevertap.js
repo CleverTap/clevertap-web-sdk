@@ -27,8 +27,7 @@ import {
   COMMAND_ADD,
   COMMAND_REMOVE,
   COMMAND_DELETE,
-  EVT_PUSH,
-  WZRK_FETCH
+  EVT_PUSH
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
