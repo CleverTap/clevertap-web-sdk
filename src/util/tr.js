@@ -210,15 +210,10 @@ const _tr = (msg, {
 
       saveCampaignObject({ [campKey]: newCampObj }, _session.sessionId)
     }
-    if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && targetingMsgJson[DISPLAY].adp && excludeFromFreqCaps < 0) {
-      // if (excludeFromFreqCaps > 0) {
-      //   console.log('we should exclude it', excludeFromFreqCaps)
-      //   return
-      // }
+    if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1)) {
       let campaignObj = getCampaignObject()
       if (campaignObj.hasOwnProperty('wp')) {
         var wpSessionObj = campaignObj.wp[_session.sessionId]
-        console.log('test session', wpSessionObj)
 
         if (wpSessionObj) {
           const campaignSessionCount = wpSessionObj[campaignId]
@@ -230,18 +225,13 @@ const _tr = (msg, {
         } else {
           wpSessionObj = {}
           campaignObj.wp[_session.sessionId] = wpSessionObj
-          console.log('test session in else', wpSessionObj, campaignObj.wp[_session.sessionId])
         }
         Object.keys(campaignObj.wp).forEach(key => {
           if (key === 'global') return
-          console.log(typeof key, 'test type', typeof _session.sessionId)
 
           if (key !== (_session.sessionId).toString()) {
-            console.log('key value pair', key, _session.sessionId)
-
             delete campaignObj.wp[key]
           }
-          console.log('lets log it', key)
         })
       }
 
@@ -286,23 +276,23 @@ const _tr = (msg, {
       // Add new timestamp only, no changes to oc (occurrence count)
       campaignObj.wp.global[campaignId].ts.push(currentTimestamp)
 
-      // // Update wp_tc (daily count)
-      // if (!campaignObj.wp.global.wp_tc || !campaignObj.wp.global.wp_tc.hasOwnProperty(today)) {
-      //   // If today is different or wp_tc does not exist, reset today's count
-      //   campaignObj.wp.global.wp_tc = { [today]: 1 }
-      // } else {
-      //   // Increment today's count
-      //   campaignObj.wp.global.wp_tc[today] += 1
-      // }
+      // Update wp_tc (daily count)
+      if (!campaignObj.wp.global.wp_tc || !campaignObj.wp.global.wp_tc.hasOwnProperty(today)) {
+        // If today is different or wp_tc does not exist, reset today's count
+        campaignObj.wp.global.wp_tc = { [today]: 1 }
+      } else {
+        // Increment today's count
+        campaignObj.wp.global.wp_tc[today] += 1
+      }
 
-      // // Update wp_sc (session count)
-      // if (!campaignObj.wp.global.wp_sc || !campaignObj.wp.global.wp_sc.hasOwnProperty(_session.sessionId)) {
-      //   // If session ID is different or wp_sc does not exist, reset session count
-      //   campaignObj.wp.global.wp_sc = { [_session.sessionId]: 1 }
-      // } else {
-      //   // Increment session count
-      //   campaignObj.wp.global.wp_sc[_session.sessionId] += 1
-      // }
+      // Update wp_sc (session count)
+      if (!campaignObj.wp.global.wp_sc || !campaignObj.wp.global.wp_sc.hasOwnProperty(_session.sessionId)) {
+        // If session ID is different or wp_sc does not exist, reset session count
+        campaignObj.wp.global.wp_sc = { [_session.sessionId]: 1 }
+      } else {
+        // Increment session count
+        campaignObj.wp.global.wp_sc[_session.sessionId] += 1
+      }
 
       // Save the updated global web popup data
       saveCampaignObject(campaignObj, _session.sessionId)
@@ -1034,7 +1024,7 @@ const _tr = (msg, {
         arp(msg.arp)
       }
       if (msg.wtq != null && msg.wtq.length > 0) {
-        updateOcInCampaignObjects(msg.wtq)
+        updateOcInCampaignObjects(msg.wtq, _session.sessionId)
       }
       if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
         // web popup stale

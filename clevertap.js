@@ -1856,7 +1856,36 @@
 
               if (key === 'wp') {
                 Object.keys(globalObj || {}).forEach(campaignId => {
-                  var _guidCampObj$guid, _guidCampObj$guid$wp, _guidCampObj$guid$wp$, _guidCampObj$guid2, _guidCampObj$guid2$wp, _guidCampObj$guid2$wp2;
+                  if (campaignId === 'wp_sc') {
+                    var _campObj$wp, _campObj$wp$global, _campObj$wp$global$wp;
+
+                    // Handle wp_sc (session count) only if it exists in wzrk_camp
+                    if ((_campObj$wp = campObj.wp) === null || _campObj$wp === void 0 ? void 0 : (_campObj$wp$global = _campObj$wp.global) === null || _campObj$wp$global === void 0 ? void 0 : (_campObj$wp$global$wp = _campObj$wp$global.wp_sc) === null || _campObj$wp$global$wp === void 0 ? void 0 : _campObj$wp$global$wp[sessionId]) {
+                      var _campObj$wp2, _campObj$wp2$global, _campObj$wp2$global$w;
+
+                      campKeyObj.wp_sc = campKeyObj.wp_sc || {};
+                      campKeyObj.wp_sc[sessionId] = (_campObj$wp2 = campObj.wp) === null || _campObj$wp2 === void 0 ? void 0 : (_campObj$wp2$global = _campObj$wp2.global) === null || _campObj$wp2$global === void 0 ? void 0 : (_campObj$wp2$global$w = _campObj$wp2$global.wp_sc) === null || _campObj$wp2$global$w === void 0 ? void 0 : _campObj$wp2$global$w[sessionId]; // Increment session count
+                      // const previousWpSc = guidCampObj[guid]?.wp?.wp_sc?.[sessionId] || 0
+                      // campKeyObj.wp_sc = campKeyObj.wp_sc || {}
+                      // Check if the current session ID exists in wp_sc
+                      // if (!campKeyObj.wp_sc.hasOwnProperty(sessionId)) {
+                      //   campKeyObj.wp_sc[sessionId] = previousWpSc + 1 // Initialize or increment session count
+                      // } else {
+                      //   campKeyObj.wp_sc[sessionId] += 1 // Increment session count
+                      // }
+                    }
+                  }
+
+                  if (campaignId === 'wp_tc') {
+                    var _campObj$wp3, _campObj$wp3$global, _campObj$wp3$global$w;
+
+                    if ((_campObj$wp3 = campObj.wp) === null || _campObj$wp3 === void 0 ? void 0 : (_campObj$wp3$global = _campObj$wp3.global) === null || _campObj$wp3$global === void 0 ? void 0 : (_campObj$wp3$global$w = _campObj$wp3$global.wp_tc) === null || _campObj$wp3$global$w === void 0 ? void 0 : _campObj$wp3$global$w[today]) {
+                      var _campObj$wp4, _campObj$wp4$global, _campObj$wp4$global$w;
+
+                      campKeyObj.wp_tc = campKeyObj.wp_tc || {};
+                      campKeyObj.wp_tc[today] = (_campObj$wp4 = campObj.wp) === null || _campObj$wp4 === void 0 ? void 0 : (_campObj$wp4$global = _campObj$wp4.global) === null || _campObj$wp4$global === void 0 ? void 0 : (_campObj$wp4$global$w = _campObj$wp4$global.wp_tc) === null || _campObj$wp4$global$w === void 0 ? void 0 : _campObj$wp4$global$w[today];
+                    }
+                  }
 
                   if (campaignId === 'tc' || campaignId === 'wp_tc' || campaignId === 'wp_sc') return;
                   const campaignData = globalObj[campaignId]; // Initialize or update ts (timestamps) and oc (occurrence count) for each campaign
@@ -1874,37 +1903,17 @@
                   } // Store the occurrence count (oc) from the backend into the campaign object
 
 
-                  if (campKeyObj[campaignId].oc) {
-                    // campKeyObj[campaignId].oc = campaignData.oc || 0
-                    campKeyObj[campaignId].oc = campKeyObj[campaignId].oc || 0;
-                    campKeyObj[campaignId].oc += campaignData.oc || 0;
-                  }
-
-                  const previousWpTc = ((_guidCampObj$guid = guidCampObj[guid]) === null || _guidCampObj$guid === void 0 ? void 0 : (_guidCampObj$guid$wp = _guidCampObj$guid.wp) === null || _guidCampObj$guid$wp === void 0 ? void 0 : (_guidCampObj$guid$wp$ = _guidCampObj$guid$wp.wp_tc) === null || _guidCampObj$guid$wp$ === void 0 ? void 0 : _guidCampObj$guid$wp$[today]) || 0;
-                  campKeyObj.wp_tc = campKeyObj.wp_tc || {};
-
-                  if (campKeyObj.wp_tc[today]) {
-                    campKeyObj.wp_tc[today] += 1; // Increment today's count
-                  } else {
-                    campKeyObj.wp_tc[today] = previousWpTc + 1; // Initialize today's count
-                  }
-
-                  const previousWpSc = ((_guidCampObj$guid2 = guidCampObj[guid]) === null || _guidCampObj$guid2 === void 0 ? void 0 : (_guidCampObj$guid2$wp = _guidCampObj$guid2.wp) === null || _guidCampObj$guid2$wp === void 0 ? void 0 : (_guidCampObj$guid2$wp2 = _guidCampObj$guid2$wp.wp_sc) === null || _guidCampObj$guid2$wp2 === void 0 ? void 0 : _guidCampObj$guid2$wp2[sessionId]) || 0;
-                  campKeyObj.wp_sc = campKeyObj.wp_sc || {};
-                  console.log('why undefined for sessionId', sessionId); // Check if the current session ID exists in wp_sc
-
-                  if (!campKeyObj.wp_sc.hasOwnProperty(sessionId)) {
-                    // If the session ID is different or does not exist, reset session count
-                    campKeyObj.wp_sc = {
-                      [sessionId]: previousWpSc + 1
-                    };
-                  } else {
-                    // Increment the session count for the existing session
-                    campKeyObj.wp_sc[sessionId] += 1;
-                  }
-
-                  console.log('old sc in guid', previousWpSc, 'new sc in guid', campKeyObj.wp_sc[sessionId]); // if (campKeyObj.wp.wp_sc) {
-                  //   console.log('old sc in guid', previousWpSc, 'new sc in guid', campKeyObj.wp.wp_sc[sessionId])
+                  campKeyObj[campaignId].oc = campaignData.oc || 0; // if (campKeyObj[campaignId].oc !== undefined && campKeyObj[campaignId].oc !== 0) {
+                  //   // If oc exists in wzrk_camp_g, increment it
+                  //   campKeyObj[campaignId].oc += 1
+                  // } else {
+                  //   // Otherwise, take it from wzrk_camp (campaignData) and set in wzrk_camp_g
+                  //   campKeyObj[campaignId].oc = campaignData.oc || 0
+                  // }
+                  // if (campaignData.oc) {
+                  //   campKeyObj[campaignId].oc = campaignData.oc || 0
+                  //   // campKeyObj[campaignId].oc = campKeyObj[campaignId].oc || 0
+                  //   // campKeyObj[campaignId].oc += campaignData.oc || 0
                   // }
                 });
               } else {
@@ -2316,13 +2325,19 @@
       }
     }
   };
-  const updateOcInCampaignObjects = newOcData => {
+  const updateOcInCampaignObjects = (newOcData, sessionId) => {
     // Update oc in wzrk_camp (CAMP_COOKIE_NAME)
-    const campaignObj = getCampaignObject(); // Ensure that wp exists in the global object for webpopups
+    const campaignObj = getCampaignObject();
+
+    if (!campaignObj.hasOwnProperty('wp')) {
+      campaignObj.wp = {};
+      campaignObj.wp.global = {};
+    } // Ensure that wp exists in the global object for webpopups
+
 
     if (campaignObj.wp && campaignObj.wp.global) {
       // Iterate over the wp array in newOcData
-      newOcData.wp.forEach(campaignId => {
+      newOcData.forEach(campaignId => {
         // Initialize the campaign in the global object if it doesn't exist
         if (!campaignObj.wp.global[campaignId]) {
           campaignObj.wp.global[campaignId] = {
@@ -2335,7 +2350,7 @@
         campaignObj.wp.global[campaignId].oc += 1;
       }); // Save the updated campaign object back to wzrk_camp (CAMP_COOKIE_NAME)
 
-      saveCampaignObject(campaignObj);
+      saveCampaignObject(campaignObj, sessionId);
     }
   };
   const arp = jsonMap => {
@@ -6274,16 +6289,11 @@
         }, _session.sessionId);
       }
 
-      if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && targetingMsgJson[DISPLAY].adp && excludeFromFreqCaps < 0) {
-        // if (excludeFromFreqCaps > 0) {
-        //   console.log('we should exclude it', excludeFromFreqCaps)
-        //   return
-        // }
+      if (targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) {
         let campaignObj = getCampaignObject();
 
         if (campaignObj.hasOwnProperty('wp')) {
           var wpSessionObj = campaignObj.wp[_session.sessionId];
-          console.log('test session', wpSessionObj);
 
           if (wpSessionObj) {
             const campaignSessionCount = wpSessionObj[campaignId]; // dnd
@@ -6294,19 +6304,14 @@
           } else {
             wpSessionObj = {};
             campaignObj.wp[_session.sessionId] = wpSessionObj;
-            console.log('test session in else', wpSessionObj, campaignObj.wp[_session.sessionId]);
           }
 
           Object.keys(campaignObj.wp).forEach(key => {
             if (key === 'global') return;
-            console.log(typeof key, 'test type', typeof _session.sessionId);
 
             if (key !== _session.sessionId.toString()) {
-              console.log('key value pair', key, _session.sessionId);
               delete campaignObj.wp[key];
             }
-
-            console.log('lets log it', key);
           });
         }
 
@@ -6353,23 +6358,29 @@
         } // Add new timestamp only, no changes to oc (occurrence count)
 
 
-        campaignObj.wp.global[campaignId].ts.push(currentTimestamp); // // Update wp_tc (daily count)
-        // if (!campaignObj.wp.global.wp_tc || !campaignObj.wp.global.wp_tc.hasOwnProperty(today)) {
-        //   // If today is different or wp_tc does not exist, reset today's count
-        //   campaignObj.wp.global.wp_tc = { [today]: 1 }
-        // } else {
-        //   // Increment today's count
-        //   campaignObj.wp.global.wp_tc[today] += 1
-        // }
-        // // Update wp_sc (session count)
-        // if (!campaignObj.wp.global.wp_sc || !campaignObj.wp.global.wp_sc.hasOwnProperty(_session.sessionId)) {
-        //   // If session ID is different or wp_sc does not exist, reset session count
-        //   campaignObj.wp.global.wp_sc = { [_session.sessionId]: 1 }
-        // } else {
-        //   // Increment session count
-        //   campaignObj.wp.global.wp_sc[_session.sessionId] += 1
-        // }
-        // Save the updated global web popup data
+        campaignObj.wp.global[campaignId].ts.push(currentTimestamp); // Update wp_tc (daily count)
+
+        if (!campaignObj.wp.global.wp_tc || !campaignObj.wp.global.wp_tc.hasOwnProperty(today)) {
+          // If today is different or wp_tc does not exist, reset today's count
+          campaignObj.wp.global.wp_tc = {
+            [today]: 1
+          };
+        } else {
+          // Increment today's count
+          campaignObj.wp.global.wp_tc[today] += 1;
+        } // Update wp_sc (session count)
+
+
+        if (!campaignObj.wp.global.wp_sc || !campaignObj.wp.global.wp_sc.hasOwnProperty(_session.sessionId)) {
+          // If session ID is different or wp_sc does not exist, reset session count
+          campaignObj.wp.global.wp_sc = {
+            [_session.sessionId]: 1
+          };
+        } else {
+          // Increment session count
+          campaignObj.wp.global.wp_sc[_session.sessionId] += 1;
+        } // Save the updated global web popup data
+
 
         saveCampaignObject(campaignObj, _session.sessionId);
       }
@@ -7153,7 +7164,7 @@
         }
 
         if (msg.wtq != null && msg.wtq.length > 0) {
-          updateOcInCampaignObjects(msg.wtq);
+          updateOcInCampaignObjects(msg.wtq, _session.sessionId);
         }
 
         if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
