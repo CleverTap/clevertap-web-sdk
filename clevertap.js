@@ -1986,20 +1986,18 @@
       const wpSc = ((_wpData$wp_sc = wpData.wp_sc) === null || _wpData$wp_sc === void 0 ? void 0 : _wpData$wp_sc[sessionID]) || 0; // Prepare the result object with the required fields for the backend
 
       resultObj = {
-        WZRK_CAMP: {
-          wmp: todayCwp,
-          // Web popup total count for the day (wp_tc)
-          wimp: todayCwi,
-          // Web inbox total count for the day (witlc)
-          witlc: resultObjWI,
-          // Unchanged: Old way of processing web inbox lifetime count
-          wsc: wpSc,
-          // Web popup session count (wp_sc)
-          woc: oc,
-          // Occurrence count for campaigns
-          wfc: fc // Frequency count (timestamps) for campaigns
+        wmp: todayCwp,
+        // Web popup total count for the day (wp_tc)
+        wimp: todayCwi,
+        // Web inbox total count for the day (witlc)
+        witlc: resultObjWI,
+        // Unchanged: Old way of processing web inbox lifetime count
+        wsc: wpSc,
+        // Web popup session count (wp_sc)
+        woc: oc,
+        // Occurrence count for campaigns
+        wfc: fc // Frequency count (timestamps) for campaigns
 
-        }
       };
       return resultObj;
     }
