@@ -210,7 +210,7 @@ const _tr = (msg, {
 
       saveCampaignObject({ [campKey]: newCampObj }, _session.sessionId)
     }
-    if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && targetingMsgJson[DISPLAY].adp && excludeFromFreqCaps < 0) {
+    if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1)) {
       let campaignObj = getCampaignObject()
       if (campaignObj.hasOwnProperty('wp')) {
         var wpSessionObj = campaignObj.wp[_session.sessionId]
@@ -264,20 +264,20 @@ const _tr = (msg, {
         campaignObj.wp.global[campaignId] = { ts: [], oc: 0 } // Initialize with ts and oc
       }
 
-      // Add new timestamp only, no changes to oc (occurrence count)
-      campaignObj.wp.global[campaignId].ts.push(currentTimestamp)
+      if (targetingMsgJson[DISPLAY].adp && excludeFromFreqCaps < 0) {
+        campaignObj.wp.global[campaignId].ts.push(currentTimestamp)
 
-      setCampaignObjectForGuid(_session.sessionId, [], true)
+        setCampaignObjectForGuid(_session.sessionId, [], true)
 
-      // Update wp_sc (session count)
-      if (!campaignObj.wp.global.wp_sc || !campaignObj.wp.global.wp_sc.hasOwnProperty(_session.sessionId)) {
-        // If session ID is different or wp_sc does not exist, reset session count
-        campaignObj.wp.global.wp_sc = { [_session.sessionId]: 1 }
-      } else {
-        // Increment session count
-        campaignObj.wp.global.wp_sc[_session.sessionId] += 1
+        // Update wp_sc (session count)
+        if (!campaignObj.wp.global.wp_sc || !campaignObj.wp.global.wp_sc.hasOwnProperty(_session.sessionId)) {
+          // If session ID is different or wp_sc does not exist, reset session count
+          campaignObj.wp.global.wp_sc = { [_session.sessionId]: 1 }
+        } else {
+          // Increment session count
+          campaignObj.wp.global.wp_sc[_session.sessionId] += 1
+        }
       }
-
       // Save the updated global web popup data
       saveCampaignObject(campaignObj, _session.sessionId)
     }
