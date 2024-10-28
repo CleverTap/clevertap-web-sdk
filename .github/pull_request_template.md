@@ -3,9 +3,9 @@
 
 Describe the key changes in this PR with the Jira Issue reference 
 
-### Screenshots (if any)
+### Changes to Public Facing API if any 
 
-Attach screenshots to illustrate changes, if applicable
+Please list the impact on the public facing API if any
 
 ### How Has This Been Tested?
 
@@ -14,6 +14,7 @@ Describe the testing approach and any relevant configurations (e.g., environment
 ### Checklist
 
 - [ ] Code compiles without errors
+- [ ] Version Bump added to package.json & CHANGELOG.md
 - [ ] All tests pass
 - [ ] Build process is successful
 - [ ] Documentation has been updated (if needed)
