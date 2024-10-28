@@ -74,7 +74,7 @@ export const saveCampaignObject = (campaignObj, sessionId) => {
 }
 
 // set Campaign Object against the guid, with daily count and total count details
-export const setCampaignObjectForGuid = (sessionId) => {
+export const setCampaignObjectForGuid = (sessionId, newOcData = [], wpTc = false) => {
   if (StorageManager._isLocalStorageSupported()) {
     let guid = StorageManager.read(GCOOKIE_NAME)
     if (isValueValid(guid)) {
@@ -86,24 +86,44 @@ export const setCampaignObjectForGuid = (sessionId) => {
         if (guid && StorageManager._isLocalStorageSupported()) {
           var finalCampObj = {}
           var campObj = getCampaignObject()
+          const campWPObj = (guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid].wp) ? guidCampObj[guid].wp : {}
+          const today = getToday()
+          if (newOcData.length > 0) {
+            newOcData.forEach((campaignId) => {
+              if (!campWPObj[campaignId] || (campWPObj[campaignId].ts === undefined && campWPObj[campaignId].oc === undefined)) {
+                campWPObj[campaignId] = { ts: [], oc: 0 }
+              }
+              campWPObj[campaignId].oc += 1 // Increment oc count
+            })
+          }
+          if (wpTc) {
+            campWPObj.wp_tc = campWPObj.wp_tc || {}
+            Object.keys(campWPObj.wp_tc).forEach(previousDay => {
+              if (previousDay !== today) {
+                // Remove stale session ID
+                delete campWPObj.wp_tc[previousDay]
+              }
+            })
+            campWPObj.wp_tc[today] = (campWPObj.wp_tc[today] || 0) + 1
+          }
+          finalCampObj.wp = campWPObj
+          guidCampObj[guid] = finalCampObj
+          StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
           Object.keys(campObj).forEach(key => {
             const campKeyObj = (guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key]) ? guidCampObj[guid][key] : {}
             const globalObj = campObj[key].global
-            const today = getToday()
             if (key === 'wp') {
               Object.keys(globalObj || {}).forEach(campaignId => {
                 if (campaignId === 'wp_sc') {
-                  // Handle wp_sc (session count) only if it exists in wzrk_camp
                   if (campObj.wp?.global?.wp_sc?.[sessionId]) {
                     campKeyObj.wp_sc = campKeyObj.wp_sc || {}
+                    Object.keys(campKeyObj.wp_sc).forEach(existingSessionId => {
+                      if (existingSessionId !== sessionId) {
+                        // Remove stale session ID
+                        delete campKeyObj.wp_sc[existingSessionId]
+                      }
+                    })
                     campKeyObj.wp_sc[sessionId] = campObj.wp?.global?.wp_sc?.[sessionId] // Increment session count
-                  }
-                }
-
-                if (campaignId === 'wp_tc') {
-                  if (campObj.wp?.global?.wp_tc?.[today]) {
-                    campKeyObj.wp_tc = campKeyObj.wp_tc || {}
-                    campKeyObj.wp_tc[today] = campObj.wp?.global?.wp_tc?.[today]
                   }
                 }
                 if (campaignId === 'tc' || campaignId === 'wp_tc' || campaignId === 'wp_sc') return
@@ -122,21 +142,6 @@ export const setCampaignObjectForGuid = (sessionId) => {
                     ])
                   )
                 }
-
-                // Store the occurrence count (oc) from the backend into the campaign object
-                campKeyObj[campaignId].oc = campaignData.oc || 0
-                // if (campKeyObj[campaignId].oc !== undefined && campKeyObj[campaignId].oc !== 0) {
-                //   // If oc exists in wzrk_camp_g, increment it
-                //   campKeyObj[campaignId].oc += 1
-                // } else {
-                //   // Otherwise, take it from wzrk_camp (campaignData) and set in wzrk_camp_g
-                //   campKeyObj[campaignId].oc = campaignData.oc || 0
-                // }
-                // if (campaignData.oc) {
-                //   campKeyObj[campaignId].oc = campaignData.oc || 0
-                //   // campKeyObj[campaignId].oc = campKeyObj[campaignId].oc || 0
-                //   // campKeyObj[campaignId].oc += campaignData.oc || 0
-                // }
               })
             } else {
               // Handle wi (web inbox) campaigns without new changes
@@ -515,34 +520,6 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
         }
       }
     }
-  }
-}
-
-export const updateOcInCampaignObjects = (newOcData, sessionId) => {
-  // Update oc in wzrk_camp (CAMP_COOKIE_NAME)
-  const campaignObj = getCampaignObject()
-
-  if (!campaignObj.hasOwnProperty('wp')) {
-    campaignObj.wp = {}
-
-    campaignObj.wp.global = {}
-  }
-
-  // Ensure that wp exists in the global object for webpopups
-  if (campaignObj.wp && campaignObj.wp.global) {
-    // Iterate over the wp array in newOcData
-    newOcData.forEach(campaignId => {
-      // Initialize the campaign in the global object if it doesn't exist
-      if (!campaignObj.wp.global[campaignId]) {
-        campaignObj.wp.global[campaignId] = { ts: [], oc: 0 } // Initialize if missing
-      }
-
-      // Increment the oc (occurrence count) for the campaignId
-      campaignObj.wp.global[campaignId].oc += 1
-    })
-
-    // Save the updated campaign object back to wzrk_camp (CAMP_COOKIE_NAME)
-    saveCampaignObject(campaignObj, sessionId)
   }
 }
 

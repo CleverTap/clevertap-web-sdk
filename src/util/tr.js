@@ -3,7 +3,7 @@ import {
   arp,
   getCampaignObject,
   saveCampaignObject,
-  updateOcInCampaignObjects
+  setCampaignObjectForGuid
 } from './clevertap'
 
 import {
@@ -210,7 +210,7 @@ const _tr = (msg, {
 
       saveCampaignObject({ [campKey]: newCampObj }, _session.sessionId)
     }
-    if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && targetingMsgJson[DISPLAY].adp) {
+    if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && targetingMsgJson[DISPLAY].adp && excludeFromFreqCaps < 0) {
       let campaignObj = getCampaignObject()
       if (campaignObj.hasOwnProperty('wp')) {
         var wpSessionObj = campaignObj.wp[_session.sessionId]
@@ -253,15 +253,6 @@ const _tr = (msg, {
             }
           }
         })
-
-        // // Ensure wp_tc (daily count) and wp_sc (session count) are initialized
-        // if (typeof campaignObj.wp.global.wp_tc !== 'object') {
-        //   campaignObj.wp.global.wp_tc = {}
-        // }
-        // if (typeof campaignObj.wp.global.wp_sc !== 'object') {
-        //   campaignObj.wp.global.wp_sc = {}
-        // }
-
         return campaignObj
       }
 
@@ -276,14 +267,7 @@ const _tr = (msg, {
       // Add new timestamp only, no changes to oc (occurrence count)
       campaignObj.wp.global[campaignId].ts.push(currentTimestamp)
 
-      // Update wp_tc (daily count)
-      if (!campaignObj.wp.global.wp_tc || !campaignObj.wp.global.wp_tc.hasOwnProperty(today)) {
-        // If today is different or wp_tc does not exist, reset today's count
-        campaignObj.wp.global.wp_tc = { [today]: 1 }
-      } else {
-        // Increment today's count
-        campaignObj.wp.global.wp_tc[today] += 1
-      }
+      setCampaignObjectForGuid(_session.sessionId, [], true)
 
       // Update wp_sc (session count)
       if (!campaignObj.wp.global.wp_sc || !campaignObj.wp.global.wp_sc.hasOwnProperty(_session.sessionId)) {
@@ -1024,7 +1008,7 @@ const _tr = (msg, {
         arp(msg.arp)
       }
       if (msg.wtq != null && msg.wtq.length > 0) {
-        updateOcInCampaignObjects(msg.wtq, _session.sessionId)
+        setCampaignObjectForGuid(_session.sessionId, msg.wtq)
       }
       if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
         // web popup stale
