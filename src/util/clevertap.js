@@ -80,7 +80,7 @@ export const setCampaignObjectForGuid = (sessionId, newOcData = [], wpTc = false
     if (isValueValid(guid)) {
       try {
         guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-        const guidCampObj = StorageManager.read(CAMP_COOKIE_G)? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))): {}
+        const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {}
         if (guid && StorageManager._isLocalStorageSupported()) {
           var finalCampObj = {}
           var campObj = getCampaignObject()
