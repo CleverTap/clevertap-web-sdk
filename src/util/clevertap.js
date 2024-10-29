@@ -93,6 +93,10 @@ export const setCampaignObjectForGuid = (sessionId, newOcData = [], wpTc = false
               }
               campWPObj[campaignId].oc += 1 // Increment oc count
             })
+            finalCampObj.wp = campWPObj
+            guidCampObj[guid] = finalCampObj
+            StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
+            return
           }
           if (wpTc) {
             campWPObj.wp_tc = campWPObj.wp_tc || {}
@@ -103,10 +107,12 @@ export const setCampaignObjectForGuid = (sessionId, newOcData = [], wpTc = false
               }
             })
             campWPObj.wp_tc[today] = (campWPObj.wp_tc[today] || 0) + 1
+            finalCampObj.wp = campWPObj
+            guidCampObj[guid] = finalCampObj
+            StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
+            return
           }
-          finalCampObj.wp = campWPObj
-          guidCampObj[guid] = finalCampObj
-          StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
+
           Object.keys(campObj).forEach(key => {
             const campKeyObj = (guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key]) ? guidCampObj[guid][key] : {}
             const globalObj = campObj[key].global
@@ -142,6 +148,8 @@ export const setCampaignObjectForGuid = (sessionId, newOcData = [], wpTc = false
                 }
               })
             } else {
+              console.log('key', key, globalObj)
+
               // Handle wi (web inbox) campaigns without new changes
               Object.keys(globalObj || {}).forEach(campaignId => {
                 if (campaignId === 'tc') return // Skip total count (tc)
@@ -497,6 +505,8 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
         campaignObj[currentSessionId] = sessionCampaignObj
       }
       sessionCampaignObj[campaignId] = 'dnd'
+      console.log('close iframe sav camp Obj', campaignObj)
+
       saveCampaignObject(campaignObj)
     }
   }

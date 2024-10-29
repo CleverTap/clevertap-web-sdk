@@ -1866,6 +1866,10 @@
 
                 campWPObj[campaignId].oc += 1; // Increment oc count
               });
+              finalCampObj.wp = campWPObj;
+              guidCampObj[guid] = finalCampObj;
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+              return;
             }
 
             if (wpTc) {
@@ -1877,11 +1881,12 @@
                 }
               });
               campWPObj.wp_tc[today] = (campWPObj.wp_tc[today] || 0) + 1;
+              finalCampObj.wp = campWPObj;
+              guidCampObj[guid] = finalCampObj;
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+              return;
             }
 
-            finalCampObj.wp = campWPObj;
-            guidCampObj[guid] = finalCampObj;
-            StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
             Object.keys(campObj).forEach(key => {
               const campKeyObj = guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key] ? guidCampObj[guid][key] : {};
               const globalObj = campObj[key].global;
@@ -1921,7 +1926,8 @@
                   }
                 });
               } else {
-                // Handle wi (web inbox) campaigns without new changes
+                console.log('key', key, globalObj); // Handle wi (web inbox) campaigns without new changes
+
                 Object.keys(globalObj || {}).forEach(campaignId => {
                   var _campObj$key, _campObj$key$today;
 
@@ -2301,6 +2307,7 @@
         }
 
         sessionCampaignObj[campaignId] = 'dnd';
+        console.log('close iframe sav camp Obj', campaignObj);
         saveCampaignObject(campaignObj);
       }
     }
