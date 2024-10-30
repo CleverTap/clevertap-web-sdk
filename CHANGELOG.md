@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.11.4] 30th Oct, 2024
+## [1.11.5] 30th Oct, 2024
 - Added support for personalisation in visual editor
 
 ## [1.11.4] 24th Oct, 2024
