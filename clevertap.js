@@ -6272,6 +6272,63 @@
 
       if (targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) {
         let campaignObj = getCampaignObject();
+        const campaignTypeObj = campaignObj.wp;
+        let todaysCount, sessionCount;
+
+        if (campaignTypeObj[today]) {
+          var _campaignTypeObj$toda;
+
+          todaysCount = (_campaignTypeObj$toda = campaignTypeObj[today]) === null || _campaignTypeObj$toda === void 0 ? void 0 : _campaignTypeObj$toda.tc;
+
+          if (todaysCount > 0) {
+            console.log('transfer count to new structure');
+          }
+        }
+
+        if (campaignTypeObj[_session.sessionId]) {
+          var _campaignTypeObj$_ses;
+
+          sessionCount = (_campaignTypeObj$_ses = campaignTypeObj[_session.sessionId]) === null || _campaignTypeObj$_ses === void 0 ? void 0 : _campaignTypeObj$_ses.tc;
+
+          if (sessionCount > 0) {
+            campaignObj.wp.global.wp_sc = {
+              [_session.sessionId]: sessionCount
+            };
+          }
+        }
+
+        if (StorageManager._isLocalStorageSupported()) {
+          let guid = StorageManager.read(GCOOKIE_NAME);
+
+          if (isValueValid(guid)) {
+            try {
+              guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+              const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
+
+              if (guid && StorageManager._isLocalStorageSupported()) {
+                var finalCampObj = {};
+                const campWPObj = guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid].wp ? guidCampObj[guid].wp : {};
+                const today = getToday();
+                campWPObj.wp_tc = campWPObj.wp_tc || {};
+                campWPObj.wp_sc = campWPObj.wp_sc || {}; // Object.keys(campWPObj.wp_tc).forEach(previousDay => {
+                //   if (previousDay !== today) {
+                //     // Remove stale session ID
+                //     delete campWPObj.wp_tc[previousDay]
+                //   }
+                // })
+
+                campWPObj.wp_tc[today] = todaysCount;
+                campWPObj.wp_sc[_session.sessionId] = sessionCount; // (campWPObj.wp_tc[today] || 0) + 1
+
+                finalCampObj.wp = campWPObj;
+                guidCampObj[guid] = finalCampObj;
+                StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+              }
+            } catch (e) {
+              console.error('Invalid clevertap Id ' + e);
+            }
+          }
+        }
 
         if (campaignObj.hasOwnProperty('wp')) {
           var wpSessionObj = campaignObj.wp[_session.sessionId];
@@ -6331,18 +6388,21 @@
           }; // Initialize with ts and oc
         }
 
-        if (targetingMsgJson[DISPLAY].adp && excludeFromFreqCaps < 0) {
-          campaignObj.wp.global[campaignId].ts.push(currentTimestamp);
-          setCampaignObjectForGuid(_session.sessionId, [], true); // Update wp_sc (session count)
+        if (targetingMsgJson[DISPLAY].adp) {
+          campaignObj.wp.global[campaignId].ts.push(currentTimestamp); // Update wp_sc (session count)
 
-          if (!campaignObj.wp.global.wp_sc || !campaignObj.wp.global.wp_sc.hasOwnProperty(_session.sessionId)) {
-            // If session ID is different or wp_sc does not exist, reset session count
-            campaignObj.wp.global.wp_sc = {
-              [_session.sessionId]: 1
-            };
-          } else {
-            // Increment session count
-            campaignObj.wp.global.wp_sc[_session.sessionId] += 1;
+          if (excludeFromFreqCaps < 0) {
+            setCampaignObjectForGuid(_session.sessionId, [], true);
+
+            if (!campaignObj.wp.global.wp_sc || !campaignObj.wp.global.wp_sc.hasOwnProperty(_session.sessionId)) {
+              // If session ID is different or wp_sc does not exist, reset session count
+              campaignObj.wp.global.wp_sc = {
+                [_session.sessionId]: 1
+              };
+            } else {
+              // Increment session count
+              campaignObj.wp.global.wp_sc[_session.sessionId] += 1;
+            }
           }
         } // Save the updated global web popup data
 
