@@ -148,8 +148,6 @@ export const setCampaignObjectForGuid = (sessionId, newOcData = [], wpTc = false
                 }
               })
             } else {
-              console.log('key', key, globalObj)
-
               // Handle wi (web inbox) campaigns without new changes
               Object.keys(globalObj || {}).forEach(campaignId => {
                 if (campaignId === 'tc') return // Skip total count (tc)
@@ -505,7 +503,6 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
         campaignObj[currentSessionId] = sessionCampaignObj
       }
       sessionCampaignObj[campaignId] = 'dnd'
-      console.log('close iframe sav camp Obj', campaignObj)
 
       saveCampaignObject(campaignObj)
     }

@@ -1926,8 +1926,7 @@
                   }
                 });
               } else {
-                console.log('key', key, globalObj); // Handle wi (web inbox) campaigns without new changes
-
+                // Handle wi (web inbox) campaigns without new changes
                 Object.keys(globalObj || {}).forEach(campaignId => {
                   var _campObj$key, _campObj$key$today;
 
@@ -2307,7 +2306,6 @@
         }
 
         sessionCampaignObj[campaignId] = 'dnd';
-        console.log('close iframe sav camp Obj', campaignObj);
         saveCampaignObject(campaignObj);
       }
     }
