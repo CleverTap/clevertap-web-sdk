@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.4] 30th Oct, 2024
+- Added support for personalisation in visual editor
+
 ## [1.11.4] 24th Oct, 2024
 - Fix for gender values. Have removed frontend validation
 
