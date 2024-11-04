@@ -1,6 +1,19 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.5] 30th Oct, 2024
+- Added support for personalisation in visual editor
+
+## [1.11.4] 24th Oct, 2024
+- Fix for gender values. Have removed frontend validation
+
+## [1.11.3] - 17 Oct, 2024
+- Support for new payload structure of Visual Editor
+- Moved version check of SDK to Dashboard
+
+## [1.11.2] - 17 Oct, 2024
+- Fixes a bug where Web Popup Campaign was not working if other iframes present on DOM.
+
 ## [1.11.1] - 16 Oct, 2024
 - Fixes a bug where delay was not working for Web Popup Campaigns
 

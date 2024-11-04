@@ -996,7 +996,7 @@
 
   const EMBED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Incorrect embed script.");
   const EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
-  const GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should be either M or F. ").concat(DATA_NOT_SENT_TEXT);
+  const GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should one of the following: m,f,o,u,male,female,unknown,others (case insensitive). ").concat(DATA_NOT_SENT_TEXT);
   const EMPLOYED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Employed value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
   const MARRIED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Married value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
   const EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
@@ -2036,7 +2036,7 @@
             continue;
           }
 
-          if (profileKey === 'Gender' && !profileVal.match(/^M$|^F$/)) {
+          if (profileKey === 'Gender' && !profileVal.match(/\b(?:[mM](?:ale)?|[fF](?:emale)?|[oO](?:thers)?|[uU](?:nknown)?)\b/)) {
             valid = false;
             logger.error(GENDER_ERROR);
           }
@@ -4352,7 +4352,9 @@
     FLICKER_ID: 'wve-flicker-style'
   };
 
-  const updateFormData = (element, formStyle) => {
+  const updateFormData = function (element, formStyle, payload) {
+    let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+
     // Update the element style
     if (formStyle.style !== undefined) {
       Object.keys(formStyle.style).forEach(property => {
@@ -4373,13 +4375,23 @@
 
 
     if (formStyle.text !== undefined) {
-      element.innerText = formStyle.text;
+      element.innerText = isPreview ? formStyle.text.text : formStyle.text;
     } // Handle element onClick
 
 
     if (formStyle.clickDetails !== undefined) {
       const url = formStyle.clickDetails.clickUrl;
-      element.onclick = formStyle.clickDetails.newTab ? () => window.open(url, '_blank').focus() : () => {
+      element.onclick = formStyle.clickDetails.newTab ? () => {
+        if (!isPreview) {
+          window.clevertap.raiseNotificationClicked(payload);
+        }
+
+        window.open(url, '_blank').focus();
+      } : () => {
+        if (!isPreview) {
+          window.clevertap.raiseNotificationClicked(payload);
+        }
+
         window.location.href = url;
       };
     } // Set the image source
@@ -4395,25 +4407,6 @@
       style.innerHTML = formStyle.elementCss;
       document.head.appendChild(style);
     }
-  };
-
-  const versionCompare = currentVersion => {
-    const requiredVersion = '1.9.2';
-    if (requiredVersion === currentVersion) return true;
-    const splitRequiredVersion = requiredVersion.split('.');
-    const splitCurrentVersion = currentVersion.split('.');
-    let p1 = 0;
-    let isWebsiteVersionHigher = false;
-
-    while (p1 < splitRequiredVersion.length && !isWebsiteVersionHigher) {
-      if (parseInt(splitRequiredVersion[p1]) < parseInt(splitCurrentVersion[p1])) {
-        isWebsiteVersionHigher = true;
-      }
-
-      p1++;
-    }
-
-    return isWebsiteVersionHigher;
   };
 
   const checkBuilder = (logger, accountId) => {
@@ -4448,13 +4441,12 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.1';
-        const isRequiredVersion = versionCompare(sdkVersion);
+        const sdkVersion = '1.11.5';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
           originUrl: window.location.href,
-          sdkVersion: isRequiredVersion ? '1.9.3' : sdkVersion
+          sdkVersion
         }, '*');
       }
     }
@@ -4474,7 +4466,9 @@
     if (event.data.message === 'Dashboard') {
       var _event$data$variant, _event$data$details;
 
-      initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null, (_event$data$details = event.data.details) !== null && _event$data$details !== void 0 ? _event$data$details : {});
+      // handle personalisation
+      window.evtMaster = event.data.personalisation.evtMaster;
+      initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null, (_event$data$details = event.data.details) !== null && _event$data$details !== void 0 ? _event$data$details : {}, event.data.personalisation);
     } else if (event.data.message === 'Overlay') {
       renderVisualBuilder(event.data, true);
     }
@@ -4484,16 +4478,17 @@
    * @param {string} url - The URL to initialize the builder.
    * @param {string} variant - The variant of the builder.
    * @param {Object} details - The details object.
+   * @param {Object} personalisation - The personalisation object
    */
 
 
-  const initialiseCTBuilder = (url, variant, details) => {
+  const initialiseCTBuilder = (url, variant, details, personalisation) => {
     if (document.readyState === 'complete') {
-      onContentLoad(url, variant, details);
+      onContentLoad(url, variant, details, personalisation);
     } else {
       document.addEventListener('readystatechange', () => {
         if (document.readyState === 'complete') {
-          onContentLoad(url, variant, details);
+          onContentLoad(url, variant, details, personalisation);
         }
       });
     }
@@ -4506,7 +4501,7 @@
    * Handles content load for Clevertap builder.
    */
 
-  function onContentLoad(url, variant, details) {
+  function onContentLoad(url, variant, details, personalisation) {
     if (!contentLoaded) {
       if (window.Shopify) {
         isShopify = true;
@@ -4522,7 +4517,7 @@
       container.style.display = 'flex';
       document.body.appendChild(container);
       const overlayPath = OVERLAY_PATH;
-      loadOverlayScript(overlayPath, url, variant, details).then(() => {
+      loadOverlayScript(overlayPath, url, variant, details, personalisation).then(() => {
         console.log('Overlay script loaded successfully.');
         contentLoaded = true;
       }).catch(error => {
@@ -4549,11 +4544,12 @@
    * @param {string} url - The URL.
    * @param {string} variant - The variant.
    * @param {Object} details - The details object.
+   * @param {Object} personalisation
    * @returns {Promise} A promise.
    */
 
 
-  function loadOverlayScript(overlayPath, url, variant, details) {
+  function loadOverlayScript(overlayPath, url, variant, details, personalisation) {
     return new Promise((resolve, reject) => {
       var script = document.createElement('script');
       script.type = 'module';
@@ -4566,7 +4562,8 @@
             url,
             variant,
             details,
-            isShopify
+            isShopify,
+            personalisation
           });
           resolve();
         } else {
@@ -4589,28 +4586,44 @@
 
 
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
-    const details = isPreview ? targetingMsgJson.details[0] : targetingMsgJson.display.details[0];
-    const siteUrl = Object.keys(details)[0];
-    const selectors = details[siteUrl];
-    let elementDisplayed = false;
-    if (siteUrl !== window.location.href.split('?')[0]) return;
+    const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
+    let notificationViewed = false;
+    const payload = {
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot
+    };
+
+    const raiseViewed = () => {
+      if (!isPreview && !notificationViewed) {
+        notificationViewed = true;
+        window.clevertap.renderNotificationViewed(payload);
+      }
+    };
 
     const processElement = (element, selector) => {
-      if (selectors[selector].html) {
-        element.outerHTML = selectors[selector].html;
-      } else if (selectors[selector].json) {
-        dispatchJsonData(targetingMsgJson, selectors[selector]);
+      var _selector$values;
+
+      if (!selector.values) return;
+
+      if (selector.values.html) {
+        element.outerHTML = selector.values.html;
+      } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
+        dispatchJsonData(targetingMsgJson, selector.values);
       } else {
-        updateFormData(element, selectors[selector].form);
+        payload.msgCTkv = {
+          wzrk_selector: selector.selector
+        };
+        updateFormData(element, selector.values.form, payload, isPreview);
       }
     };
 
     const tryFindingElement = selector => {
       let count = 0;
       const intervalId = setInterval(() => {
-        const retryElement = document.querySelector(selector);
+        const retryElement = document.querySelector(selector.selector);
 
         if (retryElement) {
+          raiseViewed();
           processElement(retryElement, selector);
           clearInterval(intervalId);
         } else if (++count >= 20) {
@@ -4620,23 +4633,20 @@
       }, 500);
     };
 
-    Object.keys(selectors).forEach(selector => {
-      const element = document.querySelector(selector);
+    details.forEach(d => {
+      if (d.url === window.location.href.split('?')[0]) {
+        d.selectorData.forEach(s => {
+          const element = document.querySelector(s.selector);
 
-      if (element) {
-        processElement(element, selector);
-        elementDisplayed = true;
-      } else {
-        tryFindingElement(selector);
+          if (element) {
+            raiseViewed();
+            processElement(element, s);
+          } else {
+            tryFindingElement(s);
+          }
+        });
       }
     });
-
-    if (elementDisplayed && !isPreview) {
-      window.clevertap.renderNotificationViewed({
-        msgId: targetingMsgJson.wzrk_id,
-        pivotId: targetingMsgJson.wzrk_pivot
-      });
-    }
   };
   /**
    * Dispatches JSON data.
@@ -6443,7 +6453,7 @@
     };
 
     const isExistingCampaign = campaignId => {
-      const testIframe = document.querySelector('iframe');
+      const testIframe = document.getElementById('wiz-iframe-intent') || document.getElementById('wiz-iframe');
 
       if (testIframe) {
         const iframeDocument = testIframe.contentDocument || testIframe.contentWindow.document;
@@ -7587,7 +7597,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.1',
+        lib: 'web-sdk-v1.11.5',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9257,7 +9267,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.1';
+      return 'web-sdk-v1.11.5';
     }
 
     defineVariable(name, defaultValue) {
