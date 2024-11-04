@@ -174,7 +174,7 @@ export const setCampaignObjectForGuid = (sessionId, newOcData = [], wpTc = false
   }
 }
 export const getCampaignObjForLc = (session) => {
-  const sessionID = session.scookieObj.s
+  const sessionID = session?.scookieObj?.s
   // Retrieve the GUID from storage
   const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
 

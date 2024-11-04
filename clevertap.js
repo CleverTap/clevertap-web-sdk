@@ -1952,7 +1952,9 @@
     }
   };
   const getCampaignObjForLc = session => {
-    const sessionID = session.scookieObj.s; // Retrieve the GUID from storage
+    var _session$scookieObj;
+
+    const sessionID = session === null || session === void 0 ? void 0 : (_session$scookieObj = session.scookieObj) === null || _session$scookieObj === void 0 ? void 0 : _session$scookieObj.s; // Retrieve the GUID from storage
 
     const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
 
