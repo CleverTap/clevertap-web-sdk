@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.7] 05th Nov, 2024
+- Fix for not passing `wzrk_fetch` event on pageChanged
+
 ## [1.11.6] 04th Nov, 2024
 - Fix for Checking Web Inbox when inbox Node becomes stale
 
