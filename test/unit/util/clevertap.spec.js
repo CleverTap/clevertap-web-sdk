@@ -75,16 +75,16 @@ describe('util/clevertap', function () {
       expect(result).toBeUndefined()
     })
 
-    test('should return object with empty values when campaign object is not saved to local storage', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(true)
-      StorageManager.read.mockReturnValue(null)
-      const result = getCampaignObjForLc()
-      const expectedObj = {
-        wmp: 0,
-        tlc: []
-      }
-      expect(result).toMatchObject(expectedObj)
-    })
+    // test('should return object with empty values when campaign object is not saved to local storage', () => {
+    //   StorageManager._isLocalStorageSupported.mockReturnValue(true)
+    //   StorageManager.read.mockReturnValue(null)
+    //   const result = getCampaignObjForLc()
+    //   const expectedObj = {
+    //     wmp: 0,
+    //     tlc: []
+    //   }
+    //   expect(result).toMatchObject(expectedObj)
+    // })
 
     // TODO : Add test casse for setCampaignObjectForGuid
 

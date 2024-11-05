@@ -2,7 +2,8 @@ import {
   addToLocalProfileMap,
   arp,
   getCampaignObject,
-  saveCampaignObject
+  saveCampaignObject,
+  setCampaignObjectForGuid
 } from './clevertap'
 
 import {
@@ -12,9 +13,13 @@ import {
   EV_COOKIE,
   NOTIFICATION_CLICKED,
   WZRK_PREFIX,
-  WZRK_ID
+  WZRK_ID,
+  GCOOKIE_NAME,
+  CAMP_COOKIE_G
 } from './constants'
-
+import {
+  isValueValid
+} from './datatypes'
 import {
   getNow,
   getToday
@@ -44,6 +49,7 @@ const _tr = (msg, {
   // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
+    const currentTimestamp = Math.floor(Date.now() / 1000)
     const today = getToday()
 
     const incrCount = (obj, campaignId, excludeFromFreqCaps) => {
@@ -71,18 +77,16 @@ const _tr = (msg, {
       const campObj = getCampaignObject()
       if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
         campTypeObj = campObj.wi
-      } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) {
-        campTypeObj = campObj.wp
       } else {
         campTypeObj = {}
       }
-      if (campObj.hasOwnProperty('global')) {
-        campTypeObj.wp = campObj
-      }
+      // if (campObj.hasOwnProperty('global')) {
+      //   campTypeObj.wp = campObj
+      // }
       // global session limit. default is 1
-      if (targetingMsgJson[DISPLAY].wmc == null) {
-        targetingMsgJson[DISPLAY].wmc = 1
-      }
+      // if (targetingMsgJson[DISPLAY].wmc == null) {
+      //   targetingMsgJson[DISPLAY].wmc = 1
+      // }
 
       // global session limit for web inbox. default is 1
       if (targetingMsgJson[DISPLAY].wimc == null) {
@@ -94,7 +98,7 @@ const _tr = (msg, {
       let campaignDailyLimit = -1 // tdc - Once per day
       let campaignTotalLimit = -1 // tlc - Once per user for the duration of campaign
       let totalDailyLimit = -1
-      let totalSessionLimit = -1 // wmc - Web Popup Global Session Limit
+      // let totalSessionLimit = -1 // wmc - Web Popup Global Session Limit
       let totalInboxSessionLimit = -1 // wimc - Web Inbox Global Session Limit
 
       if (targetingMsgJson[DISPLAY].efc != null) { // exclude from frequency cap
@@ -112,9 +116,9 @@ const _tr = (msg, {
       if (targetingMsgJson[DISPLAY].wmp != null) { // No of campaigns per day
         totalDailyLimit = parseInt(targetingMsgJson[DISPLAY].wmp, 10)
       }
-      if (targetingMsgJson[DISPLAY].wmc != null) { // No of campaigns per session
-        totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10)
-      }
+      // if (targetingMsgJson[DISPLAY].wmc != null) { // No of campaigns per session
+      //   totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10)
+      // }
 
       if (targetingMsgJson[DISPLAY].wimc != null) { // No of inbox campaigns per session
         totalInboxSessionLimit = parseInt(targetingMsgJson[DISPLAY].wimc, 10)
@@ -134,12 +138,13 @@ const _tr = (msg, {
           if (totalInboxSessionLimit > 0 && totalSessionCount >= totalInboxSessionLimit && excludeFromFreqCaps < 0) {
             return false
           }
-        } else {
-          // session
-          if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
-            return false
-          }
         }
+        // else {
+        //   // session
+        //   if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
+        //     return false
+        //   }
+        // }
 
         // campaign session
         if (campaignSessionLimit > 0 && campaignSessionCount >= campaignSessionLimit) {
@@ -198,16 +203,137 @@ const _tr = (msg, {
     incrCount(dailyObj, campaignId, excludeFromFreqCaps)
     incrCount(globalObj, campaignId, excludeFromFreqCaps)
 
-    let campKey = 'wp'
+    // let campKey = 'wp'
     if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
-      campKey = 'wi'
+      const campKey = 'wi'
+      // get ride of stale sessions and day entries
+      const newCampObj = {}
+      newCampObj[_session.sessionId] = sessionObj
+      newCampObj[today] = dailyObj
+      newCampObj[GLOBAL] = globalObj
+
+      saveCampaignObject({ [campKey]: newCampObj }, _session.sessionId)
     }
-    // get ride of stale sessions and day entries
-    const newCampObj = {}
-    newCampObj[_session.sessionId] = sessionObj
-    newCampObj[today] = dailyObj
-    newCampObj[GLOBAL] = globalObj
-    saveCampaignObject({ [campKey]: newCampObj })
+    if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1)) {
+      let campaignObj = getCampaignObject()
+      const campaignTypeObj = campaignObj.wp
+      let todaysCount, sessionCount
+      if (campaignTypeObj) {
+        if (campaignTypeObj[today]) {
+          todaysCount = campaignTypeObj[today]?.tc
+          if (todaysCount > 0) {
+            console.log('transfer count to new structure')
+          }
+        }
+        if (campaignTypeObj[_session.sessionId]) {
+          sessionCount = campaignTypeObj[_session.sessionId]?.tc
+          if (sessionCount > 0) {
+            campaignObj.wp.global.wp_sc = { [_session.sessionId]: sessionCount }
+          }
+        }
+      }
+
+      if (StorageManager._isLocalStorageSupported()) {
+        let guid = StorageManager.read(GCOOKIE_NAME)
+        if (isValueValid(guid)) {
+          try {
+            guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+            const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {}
+            if (guid && StorageManager._isLocalStorageSupported()) {
+              var finalCampObj = {}
+              const campWPObj = (guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid].wp) ? guidCampObj[guid].wp : {}
+              const today = getToday()
+              campWPObj.wp_tc = campWPObj.wp_tc || {}
+              campWPObj.wp_sc = campWPObj.wp_sc || {}
+              // Object.keys(campWPObj.wp_tc).forEach(previousDay => {
+              //   if (previousDay !== today) {
+              //     // Remove stale session ID
+              //     delete campWPObj.wp_tc[previousDay]
+              //   }
+              // })
+              campWPObj.wp_tc[today] = todaysCount
+              campWPObj.wp_sc[_session.sessionId] = sessionCount
+              // (campWPObj.wp_tc[today] || 0) + 1
+              finalCampObj.wp = campWPObj
+              guidCampObj[guid] = finalCampObj
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
+            }
+          } catch (e) {
+            console.error('Invalid clevertap Id ' + e)
+          }
+        }
+      }
+
+      if (campaignObj.hasOwnProperty('wp')) {
+        var wpSessionObj = campaignObj.wp[_session.sessionId]
+
+        if (wpSessionObj) {
+          const campaignSessionCount = wpSessionObj[campaignId]
+
+          // dnd
+          if (campaignSessionCount === 'dnd' && !$ct.dismissSpamControl) {
+            return false
+          }
+        } else {
+          wpSessionObj = {}
+          campaignObj.wp[_session.sessionId] = wpSessionObj
+        }
+        Object.keys(campaignObj.wp).forEach(key => {
+          if (key === 'global') return
+
+          if (key !== (_session.sessionId).toString()) {
+            delete campaignObj.wp[key]
+          }
+        })
+      }
+
+      const migrateOldStructure = (campaignObj) => {
+        if (!campaignObj.wp) {
+          campaignObj.wp = {}
+        }
+        if (!campaignObj.wp.global) {
+          campaignObj.wp.global = {}
+        }
+
+        // Migrate the old structure in the global section
+        Object.keys(campaignObj.wp.global).forEach(campaignId => {
+          if (campaignId === 'tc' || campaignId === 'wp_tc' || campaignId === 'wp_sc') return
+          if (typeof campaignObj.wp.global[campaignId] === 'number') {
+            campaignObj.wp.global[campaignId] = {
+              ts: [], // Initialize an empty timestamp array
+              oc: 0 // Initialize the occurrence count to 0
+            }
+          }
+        })
+        return campaignObj
+      }
+
+      // Migrate and ensure the structure is up-to-date
+      campaignObj = migrateOldStructure(campaignObj)
+
+      // Ensure the global section for the specific campaign exists
+      if (!campaignObj.wp.global[campaignId]) {
+        campaignObj.wp.global[campaignId] = { ts: [], oc: 0 } // Initialize with ts and oc
+      }
+
+      if (targetingMsgJson[DISPLAY].adp) {
+        campaignObj.wp.global[campaignId].ts.push(currentTimestamp)
+
+        // Update wp_sc (session count)
+        if (excludeFromFreqCaps < 0) {
+          setCampaignObjectForGuid(_session.sessionId, [], true)
+          if (!campaignObj.wp.global.wp_sc || !campaignObj.wp.global.wp_sc.hasOwnProperty(_session.sessionId)) {
+            // If session ID is different or wp_sc does not exist, reset session count
+            campaignObj.wp.global.wp_sc = { [_session.sessionId]: 1 }
+          } else {
+            // Increment session count
+            campaignObj.wp.global.wp_sc[_session.sessionId] += 1
+          }
+        }
+      }
+      // Save the updated global web popup data
+      saveCampaignObject(campaignObj, _session.sessionId)
+    }
   }
 
   const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
@@ -933,6 +1059,9 @@ const _tr = (msg, {
       }
       if (msg.arp != null) {
         arp(msg.arp)
+      }
+      if (msg.wtq != null && msg.wtq.length > 0) {
+        setCampaignObjectForGuid(_session.sessionId, msg.wtq)
       }
       if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
         // web popup stale

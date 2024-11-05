@@ -1825,7 +1825,7 @@
 
     return finalcampObj;
   };
-  const saveCampaignObject = campaignObj => {
+  const saveCampaignObject = (campaignObj, sessionId) => {
     if (StorageManager._isLocalStorageSupported()) {
       const newObj = { ...getCampaignObject(),
         ...campaignObj
@@ -1833,11 +1833,14 @@
       const campObj = JSON.stringify(newObj);
       StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj)); // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
 
-      setCampaignObjectForGuid();
+      setCampaignObjectForGuid(sessionId);
     }
   }; // set Campaign Object against the guid, with daily count and total count details
 
-  const setCampaignObjectForGuid = () => {
+  const setCampaignObjectForGuid = function (sessionId) {
+    let newOcData = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+    let wpTc = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
     if (StorageManager._isLocalStorageSupported()) {
       let guid = StorageManager.read(GCOOKIE_NAME);
 
@@ -1849,45 +1852,96 @@
           if (guid && StorageManager._isLocalStorageSupported()) {
             var finalCampObj = {};
             var campObj = getCampaignObject();
+            const campWPObj = guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid].wp ? guidCampObj[guid].wp : {};
+            const today = getToday();
+
+            if (newOcData.length > 0) {
+              newOcData.forEach(campaignId => {
+                if (!campWPObj[campaignId] || campWPObj[campaignId].ts === undefined && campWPObj[campaignId].oc === undefined) {
+                  campWPObj[campaignId] = {
+                    ts: [],
+                    oc: 0
+                  };
+                }
+
+                campWPObj[campaignId].oc += 1; // Increment oc count
+              });
+              finalCampObj.wp = campWPObj;
+              guidCampObj[guid] = finalCampObj;
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+              return;
+            }
+
+            if (wpTc) {
+              campWPObj.wp_tc = campWPObj.wp_tc || {};
+              Object.keys(campWPObj.wp_tc).forEach(previousDay => {
+                if (previousDay !== today) {
+                  // Remove stale session ID
+                  delete campWPObj.wp_tc[previousDay];
+                }
+              });
+              campWPObj.wp_tc[today] = (campWPObj.wp_tc[today] || 0) + 1;
+              finalCampObj.wp = campWPObj;
+              guidCampObj[guid] = finalCampObj;
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+              return;
+            }
+
             Object.keys(campObj).forEach(key => {
               const campKeyObj = guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key] ? guidCampObj[guid][key] : {};
               const globalObj = campObj[key].global;
-              const today = getToday();
-              const dailyObj = campObj[key][today];
 
-              if (typeof globalObj !== 'undefined') {
-                const campaignIdArray = Object.keys(globalObj);
+              if (key === 'wp') {
+                Object.keys(globalObj || {}).forEach(campaignId => {
+                  if (campaignId === 'wp_sc') {
+                    var _campObj$wp, _campObj$wp$global, _campObj$wp$global$wp;
 
-                for (const index in campaignIdArray) {
-                  let resultObj = [];
+                    if ((_campObj$wp = campObj.wp) === null || _campObj$wp === void 0 ? void 0 : (_campObj$wp$global = _campObj$wp.global) === null || _campObj$wp$global === void 0 ? void 0 : (_campObj$wp$global$wp = _campObj$wp$global.wp_sc) === null || _campObj$wp$global$wp === void 0 ? void 0 : _campObj$wp$global$wp[sessionId]) {
+                      var _campObj$wp2, _campObj$wp2$global, _campObj$wp2$global$w;
 
-                  if (campaignIdArray.hasOwnProperty(index)) {
-                    let dailyC = 0;
-                    let totalC = 0;
-                    const campaignId = campaignIdArray[index];
-
-                    if (campaignId === 'tc') {
-                      continue;
+                      campKeyObj.wp_sc = campKeyObj.wp_sc || {};
+                      Object.keys(campKeyObj.wp_sc).forEach(existingSessionId => {
+                        if (existingSessionId !== sessionId) {
+                          // Remove stale session ID
+                          delete campKeyObj.wp_sc[existingSessionId];
+                        }
+                      });
+                      campKeyObj.wp_sc[sessionId] = (_campObj$wp2 = campObj.wp) === null || _campObj$wp2 === void 0 ? void 0 : (_campObj$wp2$global = _campObj$wp2.global) === null || _campObj$wp2$global === void 0 ? void 0 : (_campObj$wp2$global$w = _campObj$wp2$global.wp_sc) === null || _campObj$wp2$global$w === void 0 ? void 0 : _campObj$wp2$global$w[sessionId]; // Increment session count
                     }
-
-                    if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-                      dailyC = dailyObj[campaignId];
-                    }
-
-                    if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-                      totalC = globalObj[campaignId];
-                    }
-
-                    resultObj = [campaignId, dailyC, totalC];
-                    campKeyObj[campaignId] = resultObj;
                   }
-                }
+
+                  if (campaignId === 'tc' || campaignId === 'wp_tc' || campaignId === 'wp_sc') return;
+                  const campaignData = globalObj[campaignId]; // Initialize or update ts (timestamps) and oc (occurrence count) for each campaign
+
+                  if (!campKeyObj[campaignId] || campKeyObj[campaignId].ts === undefined && campKeyObj[campaignId].oc === undefined) {
+                    campKeyObj[campaignId] = {
+                      ts: [],
+                      oc: 0
+                    };
+                  } // Add timestamps for the specific campaign in `global`
+
+
+                  if (campKeyObj[campaignId].ts) {
+                    campKeyObj[campaignId].ts = Array.from(new Set([...campKeyObj[campaignId].ts, ...(Array.isArray(campaignData.ts) ? campaignData.ts : [])]));
+                  }
+                });
+              } else {
+                // Handle wi (web inbox) campaigns without new changes
+                Object.keys(globalObj || {}).forEach(campaignId => {
+                  var _campObj$key, _campObj$key$today;
+
+                  if (campaignId === 'tc') return; // Skip total count (tc)
+
+                  const dailyC = ((_campObj$key = campObj[key]) === null || _campObj$key === void 0 ? void 0 : (_campObj$key$today = _campObj$key[today]) === null || _campObj$key$today === void 0 ? void 0 : _campObj$key$today[campaignId]) || 0;
+                  const totalC = (globalObj === null || globalObj === void 0 ? void 0 : globalObj[campaignId]) || 0;
+                  const resultObj = [campaignId, dailyC, totalC];
+                  campKeyObj[campaignId] = resultObj;
+                });
               }
 
-              finalCampObj = { ...finalCampObj,
-                [key]: campKeyObj
-              };
-            });
+              finalCampObj[key] = campKeyObj;
+            }); // Save updated campaign object back to storage
+
             guidCampObj[guid] = finalCampObj;
             StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
           }
@@ -1897,36 +1951,72 @@
       }
     }
   };
-  const getCampaignObjForLc = () => {
-    // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
+  const getCampaignObjForLc = session => {
+    var _session$scookieObj;
+
+    const sessionID = session === null || session === void 0 ? void 0 : (_session$scookieObj = session.scookieObj) === null || _session$scookieObj === void 0 ? void 0 : _session$scookieObj.s; // Retrieve the GUID from storage
+
     const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-    let campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
+      var _wpData$wp_sc;
+
       let resultObj = {};
-      campObj = getCampaignObject();
-      const storageValue = StorageManager.read(CAMP_COOKIE_G);
+      const campObj = getCampaignObject(); // Fetch current campaign object from local storage (CAMP_COOKIE_NAME)
+
+      const storageValue = StorageManager.read(CAMP_COOKIE_G); // Fetch from CAMP_COOKIE_G (wzrk_camp_G)
+
       const decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
-      const parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
-      const resultObjWP = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wp ? Object.values(parsedValue[guid].wp) : [];
+      const parsedValue = decodedValue ? JSON.parse(decodedValue) : null; // Retrieve wp (web popup) data from wzrk_camp_G
+
+      const wpData = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wp ? parsedValue[guid].wp : {}; // Retrieve wi (web inbox) data from wzrk_camp_G using the old method
+
       const resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
       const today = getToday();
       let todayCwp = 0;
-      let todayCwi = 0;
+      let todayCwi = 0; // Get today's web popup total count (wp_tc) from wzrk_camp_G
 
-      if (campObj.wp && campObj.wp[today] && campObj.wp[today].tc !== 'undefined') {
-        todayCwp = campObj.wp[today].tc;
-      }
+      if (wpData.wp_tc && wpData.wp_tc[today] !== undefined) {
+        todayCwp = wpData.wp_tc[today];
+      } // Get today's web inbox total count from wzrk_camp (not touched, old method)
+
 
       if (campObj.wi && campObj.wi[today] && campObj.wi[today].tc !== 'undefined') {
         todayCwi = campObj.wi[today].tc;
-      }
+      } // Prepare the occurrence count (oc) and frequency count (fc) for web popups from wzrk_camp_G
+
+
+      const oc = {};
+      const fc = {};
+
+      if (wpData) {
+        Object.keys(wpData).forEach(campaignId => {
+          if (wpData[campaignId].oc) {
+            oc[campaignId] = wpData[campaignId].oc; // Add occurrence count for each campaign
+          }
+
+          if (wpData[campaignId].ts) {
+            fc[campaignId] = wpData[campaignId].ts; // Add frequency count (timestamps) for each campaign
+          }
+        });
+      } // Retrieve wp_sc (session count) from wzrk_camp_G
+
+
+      const wpSc = ((_wpData$wp_sc = wpData.wp_sc) === null || _wpData$wp_sc === void 0 ? void 0 : _wpData$wp_sc[sessionID]) || 0; // Prepare the result object with the required fields for the backend
 
       resultObj = {
         wmp: todayCwp,
+        // Web popup total count for the day (wp_tc)
         wimp: todayCwi,
-        tlc: resultObjWP,
-        witlc: resultObjWI
+        // Web inbox total count for the day (witlc)
+        witlc: resultObjWI,
+        // Unchanged: Old way of processing web inbox lifetime count
+        wsc: wpSc,
+        // Web popup session count (wp_sc)
+        woc: oc,
+        // Occurrence count for campaigns
+        wfc: fc // Frequency count (timestamps) for campaigns
+
       };
       return resultObj;
     }
@@ -4997,7 +5087,7 @@
   };
   const staleDataUpdate = (staledata, campType) => {
     const campObj = getCampaignObject();
-    const globalObj = campObj[campType].global;
+    const globalObj = campObj && Object.keys(campObj).length > 0 ? campObj[campType].global : {};
 
     if (globalObj != null && campType) {
       for (const idx in staledata) {
@@ -5998,6 +6088,7 @@
 
     const doCampHouseKeeping = targetingMsgJson => {
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      const currentTimestamp = Math.floor(Date.now() / 1000);
       const today = getToday();
 
       const incrCount = (obj, campaignId, excludeFromFreqCaps) => {
@@ -6030,20 +6121,16 @@
 
         if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
           campTypeObj = campObj.wi;
-        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) {
-          campTypeObj = campObj.wp;
         } else {
           campTypeObj = {};
-        }
-
-        if (campObj.hasOwnProperty('global')) {
-          campTypeObj.wp = campObj;
-        } // global session limit. default is 1
-
-
-        if (targetingMsgJson[DISPLAY].wmc == null) {
-          targetingMsgJson[DISPLAY].wmc = 1;
-        } // global session limit for web inbox. default is 1
+        } // if (campObj.hasOwnProperty('global')) {
+        //   campTypeObj.wp = campObj
+        // }
+        // global session limit. default is 1
+        // if (targetingMsgJson[DISPLAY].wmc == null) {
+        //   targetingMsgJson[DISPLAY].wmc = 1
+        // }
+        // global session limit for web inbox. default is 1
 
 
         if (targetingMsgJson[DISPLAY].wimc == null) {
@@ -6058,8 +6145,7 @@
 
         let campaignTotalLimit = -1; // tlc - Once per user for the duration of campaign
 
-        let totalDailyLimit = -1;
-        let totalSessionLimit = -1; // wmc - Web Popup Global Session Limit
+        let totalDailyLimit = -1; // let totalSessionLimit = -1 // wmc - Web Popup Global Session Limit
 
         let totalInboxSessionLimit = -1; // wimc - Web Inbox Global Session Limit
 
@@ -6086,12 +6172,10 @@
         if (targetingMsgJson[DISPLAY].wmp != null) {
           // No of campaigns per day
           totalDailyLimit = parseInt(targetingMsgJson[DISPLAY].wmp, 10);
-        }
+        } // if (targetingMsgJson[DISPLAY].wmc != null) { // No of campaigns per session
+        //   totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10)
+        // }
 
-        if (targetingMsgJson[DISPLAY].wmc != null) {
-          // No of campaigns per session
-          totalSessionLimit = parseInt(targetingMsgJson[DISPLAY].wmc, 10);
-        }
 
         if (targetingMsgJson[DISPLAY].wimc != null) {
           // No of inbox campaigns per session
@@ -6114,12 +6198,13 @@
             if (totalInboxSessionLimit > 0 && totalSessionCount >= totalInboxSessionLimit && excludeFromFreqCaps < 0) {
               return false;
             }
-          } else {
-            // session
-            if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
-              return false;
-            }
-          } // campaign session
+          } // else {
+          //   // session
+          //   if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
+          //     return false
+          //   }
+          // }
+          // campaign session
 
 
           if (campaignSessionLimit > 0 && campaignSessionCount >= campaignSessionLimit) {
@@ -6181,21 +6266,161 @@
 
       incrCount(sessionObj, campaignId, excludeFromFreqCaps);
       incrCount(dailyObj, campaignId, excludeFromFreqCaps);
-      incrCount(globalObj, campaignId, excludeFromFreqCaps);
-      let campKey = 'wp';
+      incrCount(globalObj, campaignId, excludeFromFreqCaps); // let campKey = 'wp'
 
       if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
-        campKey = 'wi';
-      } // get ride of stale sessions and day entries
+        const campKey = 'wi'; // get ride of stale sessions and day entries
+
+        const newCampObj = {};
+        newCampObj[_session.sessionId] = sessionObj;
+        newCampObj[today] = dailyObj;
+        newCampObj[GLOBAL] = globalObj;
+        saveCampaignObject({
+          [campKey]: newCampObj
+        }, _session.sessionId);
+      }
+
+      if (targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) {
+        let campaignObj = getCampaignObject();
+        const campaignTypeObj = campaignObj.wp;
+        let todaysCount, sessionCount;
+
+        if (campaignTypeObj) {
+          if (campaignTypeObj[today]) {
+            var _campaignTypeObj$toda;
+
+            todaysCount = (_campaignTypeObj$toda = campaignTypeObj[today]) === null || _campaignTypeObj$toda === void 0 ? void 0 : _campaignTypeObj$toda.tc;
+
+            if (todaysCount > 0) {
+              console.log('transfer count to new structure');
+            }
+          }
+
+          if (campaignTypeObj[_session.sessionId]) {
+            var _campaignTypeObj$_ses;
+
+            sessionCount = (_campaignTypeObj$_ses = campaignTypeObj[_session.sessionId]) === null || _campaignTypeObj$_ses === void 0 ? void 0 : _campaignTypeObj$_ses.tc;
+
+            if (sessionCount > 0) {
+              campaignObj.wp.global.wp_sc = {
+                [_session.sessionId]: sessionCount
+              };
+            }
+          }
+        }
+
+        if (StorageManager._isLocalStorageSupported()) {
+          let guid = StorageManager.read(GCOOKIE_NAME);
+
+          if (isValueValid(guid)) {
+            try {
+              guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+              const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
+
+              if (guid && StorageManager._isLocalStorageSupported()) {
+                var finalCampObj = {};
+                const campWPObj = guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid].wp ? guidCampObj[guid].wp : {};
+                const today = getToday();
+                campWPObj.wp_tc = campWPObj.wp_tc || {};
+                campWPObj.wp_sc = campWPObj.wp_sc || {}; // Object.keys(campWPObj.wp_tc).forEach(previousDay => {
+                //   if (previousDay !== today) {
+                //     // Remove stale session ID
+                //     delete campWPObj.wp_tc[previousDay]
+                //   }
+                // })
+
+                campWPObj.wp_tc[today] = todaysCount;
+                campWPObj.wp_sc[_session.sessionId] = sessionCount; // (campWPObj.wp_tc[today] || 0) + 1
+
+                finalCampObj.wp = campWPObj;
+                guidCampObj[guid] = finalCampObj;
+                StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+              }
+            } catch (e) {
+              console.error('Invalid clevertap Id ' + e);
+            }
+          }
+        }
+
+        if (campaignObj.hasOwnProperty('wp')) {
+          var wpSessionObj = campaignObj.wp[_session.sessionId];
+
+          if (wpSessionObj) {
+            const campaignSessionCount = wpSessionObj[campaignId]; // dnd
+
+            if (campaignSessionCount === 'dnd' && !$ct.dismissSpamControl) {
+              return false;
+            }
+          } else {
+            wpSessionObj = {};
+            campaignObj.wp[_session.sessionId] = wpSessionObj;
+          }
+
+          Object.keys(campaignObj.wp).forEach(key => {
+            if (key === 'global') return;
+
+            if (key !== _session.sessionId.toString()) {
+              delete campaignObj.wp[key];
+            }
+          });
+        }
+
+        const migrateOldStructure = campaignObj => {
+          if (!campaignObj.wp) {
+            campaignObj.wp = {};
+          }
+
+          if (!campaignObj.wp.global) {
+            campaignObj.wp.global = {};
+          } // Migrate the old structure in the global section
 
 
-      const newCampObj = {};
-      newCampObj[_session.sessionId] = sessionObj;
-      newCampObj[today] = dailyObj;
-      newCampObj[GLOBAL] = globalObj;
-      saveCampaignObject({
-        [campKey]: newCampObj
-      });
+          Object.keys(campaignObj.wp.global).forEach(campaignId => {
+            if (campaignId === 'tc' || campaignId === 'wp_tc' || campaignId === 'wp_sc') return;
+
+            if (typeof campaignObj.wp.global[campaignId] === 'number') {
+              campaignObj.wp.global[campaignId] = {
+                ts: [],
+                // Initialize an empty timestamp array
+                oc: 0 // Initialize the occurrence count to 0
+
+              };
+            }
+          });
+          return campaignObj;
+        }; // Migrate and ensure the structure is up-to-date
+
+
+        campaignObj = migrateOldStructure(campaignObj); // Ensure the global section for the specific campaign exists
+
+        if (!campaignObj.wp.global[campaignId]) {
+          campaignObj.wp.global[campaignId] = {
+            ts: [],
+            oc: 0
+          }; // Initialize with ts and oc
+        }
+
+        if (targetingMsgJson[DISPLAY].adp) {
+          campaignObj.wp.global[campaignId].ts.push(currentTimestamp); // Update wp_sc (session count)
+
+          if (excludeFromFreqCaps < 0) {
+            setCampaignObjectForGuid(_session.sessionId, [], true);
+
+            if (!campaignObj.wp.global.wp_sc || !campaignObj.wp.global.wp_sc.hasOwnProperty(_session.sessionId)) {
+              // If session ID is different or wp_sc does not exist, reset session count
+              campaignObj.wp.global.wp_sc = {
+                [_session.sessionId]: 1
+              };
+            } else {
+              // Increment session count
+              campaignObj.wp.global.wp_sc[_session.sessionId] += 1;
+            }
+          }
+        } // Save the updated global web popup data
+
+
+        saveCampaignObject(campaignObj, _session.sessionId);
+      }
     };
 
     const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
@@ -6975,6 +7200,10 @@
           arp(msg.arp);
         }
 
+        if (msg.wtq != null && msg.wtq.length > 0) {
+          setCampaignObjectForGuid(_session.sessionId, msg.wtq);
+        }
+
         if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
           // web popup stale
           staleDataUpdate(msg.inapp_stale, 'wp');
@@ -7498,7 +7727,7 @@
 
       data = this.addSystemDataToObject(data, undefined);
       this.addFlags(data);
-      data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
+      data[CAMP_COOKIE_NAME] = getCampaignObjForLc(_classPrivateFieldLooseBase(this, _session$2)[_session$2]);
       const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
 
       let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
@@ -8969,7 +9198,7 @@
 
       data = _classPrivateFieldLooseBase(this, _request$7)[_request$7].addSystemDataToObject(data, undefined);
       data.cpg = currLocation;
-      data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
+      data[CAMP_COOKIE_NAME] = getCampaignObjForLc(_classPrivateFieldLooseBase(this, _session$3)[_session$3]);
 
       let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
 

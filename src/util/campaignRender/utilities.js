@@ -47,7 +47,7 @@ export const appendScriptForCustomEvent = (targetingMsgJson, html) => {
 
 export const staleDataUpdate = (staledata, campType) => {
   const campObj = getCampaignObject()
-  const globalObj = campObj[campType].global
+  const globalObj = (campObj && Object.keys(campObj).length > 0) ? campObj[campType].global : {}
   if (globalObj != null && campType) {
     for (const idx in staledata) {
       if (staledata.hasOwnProperty(idx)) {
