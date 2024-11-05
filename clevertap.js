@@ -6285,25 +6285,27 @@
         const campaignTypeObj = campaignObj.wp;
         let todaysCount, sessionCount;
 
-        if (campaignTypeObj[today]) {
-          var _campaignTypeObj$toda;
+        if (campaignTypeObj) {
+          if (campaignTypeObj[today]) {
+            var _campaignTypeObj$toda;
 
-          todaysCount = (_campaignTypeObj$toda = campaignTypeObj[today]) === null || _campaignTypeObj$toda === void 0 ? void 0 : _campaignTypeObj$toda.tc;
+            todaysCount = (_campaignTypeObj$toda = campaignTypeObj[today]) === null || _campaignTypeObj$toda === void 0 ? void 0 : _campaignTypeObj$toda.tc;
 
-          if (todaysCount > 0) {
-            console.log('transfer count to new structure');
+            if (todaysCount > 0) {
+              console.log('transfer count to new structure');
+            }
           }
-        }
 
-        if (campaignTypeObj[_session.sessionId]) {
-          var _campaignTypeObj$_ses;
+          if (campaignTypeObj[_session.sessionId]) {
+            var _campaignTypeObj$_ses;
 
-          sessionCount = (_campaignTypeObj$_ses = campaignTypeObj[_session.sessionId]) === null || _campaignTypeObj$_ses === void 0 ? void 0 : _campaignTypeObj$_ses.tc;
+            sessionCount = (_campaignTypeObj$_ses = campaignTypeObj[_session.sessionId]) === null || _campaignTypeObj$_ses === void 0 ? void 0 : _campaignTypeObj$_ses.tc;
 
-          if (sessionCount > 0) {
-            campaignObj.wp.global.wp_sc = {
-              [_session.sessionId]: sessionCount
-            };
+            if (sessionCount > 0) {
+              campaignObj.wp.global.wp_sc = {
+                [_session.sessionId]: sessionCount
+              };
+            }
           }
         }
 

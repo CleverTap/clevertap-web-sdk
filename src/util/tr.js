@@ -218,17 +218,18 @@ const _tr = (msg, {
       let campaignObj = getCampaignObject()
       const campaignTypeObj = campaignObj.wp
       let todaysCount, sessionCount
-
-      if (campaignTypeObj[today]) {
-        todaysCount = campaignTypeObj[today]?.tc
-        if (todaysCount > 0) {
-          console.log('transfer count to new structure')
+      if (campaignTypeObj) {
+        if (campaignTypeObj[today]) {
+          todaysCount = campaignTypeObj[today]?.tc
+          if (todaysCount > 0) {
+            console.log('transfer count to new structure')
+          }
         }
-      }
-      if (campaignTypeObj[_session.sessionId]) {
-        sessionCount = campaignTypeObj[_session.sessionId]?.tc
-        if (sessionCount > 0) {
-          campaignObj.wp.global.wp_sc = { [_session.sessionId]: sessionCount }
+        if (campaignTypeObj[_session.sessionId]) {
+          sessionCount = campaignTypeObj[_session.sessionId]?.tc
+          if (sessionCount > 0) {
+            campaignObj.wp.global.wp_sc = { [_session.sessionId]: sessionCount }
+          }
         }
       }
 
