@@ -24,7 +24,7 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
   }
 }
 
-export const enablePush = (logger, account, request, customSwPath) => {
+export const enablePush = (logger, account, request, customSwPath, fcmPublicKey) => {
   const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
   $ct.pushConfig = _pushConfig
   if (!$ct.pushConfig) {
@@ -38,10 +38,10 @@ export const enablePush = (logger, account, request, customSwPath) => {
   const { showBox, boxType, showBellIcon, isPreview } = $ct.pushConfig
 
   if (isPreview) {
-    if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig)
+    if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey)
     if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig)
   } else {
-    if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig)
+    if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey)
     if (showBellIcon) createBellIcon($ct.pushConfig)
   }
 }
@@ -54,7 +54,7 @@ const createElementWithAttributes = (tag, attributes = {}) => {
   return element
 }
 
-export const createNotificationBox = (configData) => {
+export const createNotificationBox = (configData, fcmPublicKey) => {
   if (document.getElementById('pnWrapper')) return
 
   const { boxConfig: { content, style } } = configData
@@ -106,10 +106,20 @@ export const createNotificationBox = (configData) => {
   const now = new Date().getTime() / 1000
   const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time')
   const popupFrequency = content.popupFrequency || 7 * 24 * 60 * 60
+  const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
 
-  if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
-    document.body.appendChild(wrapper)
-    if (!configData.isPreview) { addEventListeners(wrapper) }
+  if (shouldShowNotification) {
+    if (!isSafari) {
+      document.body.appendChild(wrapper)
+      if (!configData.isPreview) { addEventListeners(wrapper) }
+    } else {
+      const vapidSupportedAndNotMigrated = ('PushManager' in window) && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && fcmPublicKey !== null
+      if (vapidSupportedAndNotMigrated) {
+        document.body.appendChild(wrapper)
+        if (!configData.isPreview) { addEventListeners(wrapper) }
+      }
+    }
   }
 }
 
