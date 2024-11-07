@@ -5281,13 +5281,17 @@
       if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
         _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
       } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl);
+        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath);
       }
     }
 
     setApplicationServerKey(applicationServerKey) {
       _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
     }
+    /* TODO
+      1. Safari 15, fall back to APNs -> https://developer.apple.com/documentation/usernotifications/sending-web-push-notifications-in-web-apps-and-browsers
+     */
+
 
     _enableWebPush(enabled, applicationServerKey) {
       $ct.webPushEnabled = enabled;
@@ -5306,7 +5310,7 @@
   }
 
   var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
-    if ($ct.webPushEnabled && displayArgs.length > 0) {
+    if ($ct.webPushEnabled || displayArgs.length > 0) {
       _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
     } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
       $ct.notifApi.notifEnabledFromApi = true;
@@ -5316,30 +5320,79 @@
     }
   };
 
-  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
+  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
     // ensure that proper arguments are passed
-    if (typeof apnsWebPushId === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
-    }
+    // if (typeof apnsWebPushId === 'undefined') {
+    //   this.#logger.error('Ensure that APNS Web Push ID is supplied')
+    // }
+    // if (typeof apnsServiceUrl === 'undefined') {
+    //   this.#logger.error('Ensure that APNS Web Push service path is supplied')
+    // }
+    if (localStorage.APN_ENABLED && apnsServiceUrl && apnsWebPushId) {
+      if ('safari' in window && 'pushNotification' in window.safari) {
+        window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
+          if (subscription.permission === 'granted') {
+            const subscriptionData = JSON.parse(JSON.stringify(subscription));
+            subscriptionData.endpoint = subscription.deviceToken;
+            subscriptionData.browser = 'Safari';
 
-    if (typeof apnsServiceUrl === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
-    }
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+              apnsServiceUrl,
+              apnsWebPushId
+            }));
 
-    if ('safari' in window && 'pushNotification' in window.safari) {
-      window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
-        if (subscription.permission === 'granted') {
-          const subscriptionData = JSON.parse(JSON.stringify(subscription));
-          subscriptionData.endpoint = subscription.deviceToken;
-          subscriptionData.browser = 'Safari';
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
 
-          _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
-        } else if (subscription.permission === 'denied') {
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
-        }
+            _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+          } else if (subscription.permission === 'denied') {
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+          }
+        });
+      }
+    } else {
+      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
+        window.Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            const subscribeObj = {
+              applicationServerKey: "BFygpPBmFuCSAXq1UDxA-LNBM2gzYHbp6Xld16N0xXp962u7oVu4BMG0qoafzHXFR43aAJi51JpmboG5v8idtbQ",
+              //this.#fcmPublicKey,
+              userVisibleOnly: true
+            };
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Sub Obj' + JSON.stringify(subscribeObj));
+
+            registration.pushManager.subscribe(subscribeObj).then(subscription => {
+              _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
+
+              _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+                applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
+                userVisibleOnly: true
+              }));
+
+              _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+
+              const subscriptionData = JSON.parse(JSON.stringify(subscription));
+              subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+              StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+              _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+
+              if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+                subscriptionCallback();
+              }
+
+              const existingBellWrapper = document.getElementById('bell_wrapper');
+
+              if (existingBellWrapper) {
+                existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+              }
+            });
+          }
+        });
       });
     }
   };
@@ -5387,7 +5440,11 @@
         }
 
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify(subscribeObj));
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription)); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
 
 
           const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token

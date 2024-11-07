@@ -641,6 +641,13 @@ export default class CleverTap {
       document.removeEventListener('click', this.#boundCheckPageChanged)
     }
     this.#onloadcalled = 1
+
+    /* 
+      This function is used to migrate existing APNS Subsciptions for Safari Browsers to 
+      Native Web Push, Once all the users are migrated to Native Web Push in Safari, We can remove this
+    */
+    this.notifications.migrateSupportedSafariWithAPNSSubscription();
+
   }
 
   // process the option array provided to the clevertap object

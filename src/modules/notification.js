@@ -49,7 +49,7 @@ export default class NotificationHandler extends Array {
   }
 
   #setUpWebPush (displayArgs) {
-    if ($ct.webPushEnabled && displayArgs.length > 0) {
+    if ($ct.webPushEnabled || displayArgs.length > 0) {
       this.#handleNotificationRegistration(displayArgs)
     } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
       $ct.notifApi.notifEnabledFromApi = true
@@ -63,7 +63,7 @@ export default class NotificationHandler extends Array {
     if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
       this.#setUpChromeFirefoxNotifications(subscriptionCallback, serviceWorkerPath)
     } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-      this.#setUpSafariNotifications(subscriptionCallback, apnsWebPushId, apnsServiceUrl)
+      this.#setUpSafariNotifications(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath)
     }
   }
 
@@ -71,30 +71,89 @@ export default class NotificationHandler extends Array {
     this.#fcmPublicKey = applicationServerKey
   }
 
-  #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
-    // ensure that proper arguments are passed
-    if (typeof apnsWebPushId === 'undefined') {
-      this.#logger.error('Ensure that APNS Web Push ID is supplied')
-    }
-    if (typeof apnsServiceUrl === 'undefined') {
-      this.#logger.error('Ensure that APNS Web Push service path is supplied')
-    }
-    if ('safari' in window && 'pushNotification' in window.safari) {
-      window.safari.pushNotification.requestPermission(
-        apnsServiceUrl,
-        apnsWebPushId, {}, (subscription) => {
-          if (subscription.permission === 'granted') {
-            const subscriptionData = JSON.parse(JSON.stringify(subscription))
-            subscriptionData.endpoint = subscription.deviceToken
-            subscriptionData.browser = 'Safari'
-            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+  migrateSupportedSafariWithAPNSSubscription() {
+    const notifObj = $ct.notifApi.displayArgs[0]
+    const apnsServiceUrl = notifObj.apnsServiceUrl;
+    const apnsWebPushId = notifObj.apnsWebPushId;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const existingSubscription = apnsWebPushId && apnsServiceUrl && window.safari.pushNotification.permission(apnsWebPushId);
 
-            this.#request.registerToken(subscriptionData)
-            this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
-          } else if (subscription.permission === 'denied') {
-            this.#logger.info('Error subscribing to Safari web push')
+    if(isSafari && ("PushManager" in window) && existingSubscription?.permission === "granted") {
+      this.#handleNotificationRegistration($ct.notifApi.displayArgs)
+    }
+  }
+
+
+  #isNativeWebPushSupported() {
+    return "PushManager" in window; 
+  }
+
+  #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
+    if (this.#isNativeWebPushSupported()) {
+      navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
+        window.Notification.requestPermission().then((permission) => {
+          if (permission === 'granted') {
+            const subscribeObj = {
+              applicationServerKey: 'BFygpPBmFuCSAXq1UDxA-LNBM2gzYHbp6Xld16N0xXp962u7oVu4BMG0qoafzHXFR43aAJi51JpmboG5v8idtbQ', // this.#fcmPublicKey,
+              userVisibleOnly: true
+            }
+            this.#logger.info('Sub Obj' + JSON.stringify(subscribeObj))
+            registration.pushManager.subscribe(subscribeObj).then((subscription) => {
+              this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
+              this.#logger.info('Service Data Sent: ' + JSON.stringify({
+                applicationServerKey: this.#fcmPublicKey,
+                userVisibleOnly: true
+              }))
+              this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
+
+              const subscriptionData = JSON.parse(JSON.stringify(subscription))
+
+              subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
+              StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+              this.#request.registerToken(subscriptionData)
+
+              if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+                subscriptionCallback()
+              }
+              const existingBellWrapper = document.getElementById('bell_wrapper')
+              if (existingBellWrapper) {
+                existingBellWrapper.parentNode.removeChild(existingBellWrapper)
+              }
+            })
           }
         })
+      })
+    } else {
+      // ensure that proper arguments are passed
+      if (typeof apnsWebPushId === 'undefined') {
+        this.#logger.error('Ensure that APNS Web Push ID is supplied')
+      }
+      if (typeof apnsServiceUrl === 'undefined') {
+        this.#logger.error('Ensure that APNS Web Push service path is supplied')
+      }
+      if ('safari' in window && 'pushNotification' in window.safari) {
+        window.safari.pushNotification.requestPermission(
+          apnsServiceUrl,
+          apnsWebPushId, {}, (subscription) => {
+            if (subscription.permission === 'granted') {
+              const subscriptionData = JSON.parse(JSON.stringify(subscription))
+              subscriptionData.endpoint = subscription.deviceToken
+              subscriptionData.browser = 'Safari'
+              this.#logger.info('Service Data Sent: ' + JSON.stringify({
+                apnsServiceUrl,
+                apnsWebPushId
+              }))
+              this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
+
+              StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+
+              this.#request.registerToken(subscriptionData)
+              this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
+            } else if (subscription.permission === 'denied') {
+              this.#logger.info('Error subscribing to Safari web push')
+            }
+          })
+      }
     }
   }
 
@@ -141,7 +200,8 @@ export default class NotificationHandler extends Array {
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj)
           .then((subscription) => {
             this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
-
+            this.#logger.info('Service Data Sent: ' + JSON.stringify(subscribeObj))
+            this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
             // convert the subscription keys to strings; this sets it up nicely for pushing to LC
             const subscriptionData = JSON.parse(JSON.stringify(subscription))
 
@@ -204,6 +264,8 @@ export default class NotificationHandler extends Array {
     scriptTag.parentNode.removeChild(scriptTag)
   }
 
+
+  // Use this function
   #handleNotificationRegistration (displayArgs) {
     // make sure everything is specified
     let titleText
