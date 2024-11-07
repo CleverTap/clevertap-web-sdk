@@ -377,7 +377,7 @@ export class Inbox extends HTMLElement {
             }
           }
         }
-      } else if (this.inboxSelector.contains(e.target) || this.isInboxOpen) {
+      } else if (this.checkForWebInbox(e) || this.isInboxOpen) {
         if (this.isInboxFromFlutter) {
           this.isInboxFromFlutter = false
         } else {
@@ -386,6 +386,16 @@ export class Inbox extends HTMLElement {
       }
     }
   })()
+
+  /**
+   * This function checks if the current Event Node is same as the already stored inboxSelector or the
+   * inboxSelector present in the document
+   */
+  checkForWebInbox (e) {
+    const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+    return this.inboxSelector.contains(e.target) ||
+     document.getElementById(config.inboxSelector).contains(e.target)
+  }
 
   /**
    * This function will be called every time when a message comes into the inbox viewport and it's visibility increases to 50% or drops below 50%

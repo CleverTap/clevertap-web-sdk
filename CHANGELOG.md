@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.6] 04th Nov, 2024
+- Fix for Checking Web Inbox when inbox Node becomes stale
+
 ## [1.11.5] 30th Oct, 2024
 - Added support for personalisation in visual editor
 
