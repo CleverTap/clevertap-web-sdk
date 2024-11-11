@@ -3496,7 +3496,7 @@
         msgs = [];
       }
 
-      if (msgs.length > 0 && this.inbox) {
+      if (msgs.length > 0) {
         this.updateInboxMessages(msgs);
       }
     }
@@ -3608,7 +3608,7 @@
 
       for (const msg in messages) {
         if (messages[msg].wzrk_ttl && messages[msg].wzrk_ttl > 0 && messages[msg].wzrk_ttl < now) {
-          if (deleteMsgsFromUI) {
+          if (deleteMsgsFromUI && this.inbox) {
             const el = this.shadowRoot.getElementById(messages[msg].id);
             el && el.remove();
 
@@ -3650,8 +3650,11 @@
         this.unviewedCounter++;
       });
       saveInboxMessages(inboxMsgs);
-      this.buildUIForMessages(incomingMsgs);
-      this.updateUnviewedBadgeCounter();
+
+      if (this.inbox) {
+        this.buildUIForMessages(incomingMsgs);
+        this.updateUnviewedBadgeCounter();
+      }
     }
 
     createEl(type, id, part) {
@@ -4363,7 +4366,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.5';
+        const sdkVersion = '1.11.7';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -5557,7 +5560,11 @@
 
 
     if (!isHTTP) {
-      if (Notification == null) {
+      const hasNotification = ('Notification' in window);
+
+      if (!hasNotification || Notification == null) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Notification not supported on this Device or Browser');
+
         return;
       } // handle migrations from other services -> chrome notifications may have already been asked for before
 
@@ -7382,7 +7389,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.5',
+        lib: 'web-sdk-v1.11.7',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9052,7 +9059,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.5';
+      return 'web-sdk-v1.11.7';
     }
 
     defineVariable(name, defaultValue) {

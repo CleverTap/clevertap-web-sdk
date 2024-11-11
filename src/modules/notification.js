@@ -289,7 +289,9 @@ export default class NotificationHandler extends Array {
     // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
     if (!isHTTP) {
-      if (Notification == null) {
+      const hasNotification = 'Notification' in window
+      if (!hasNotification || Notification == null) {
+        this.#logger.error('Notification not supported on this Device or Browser')
         return
       }
       // handle migrations from other services -> chrome notifications may have already been asked for before
