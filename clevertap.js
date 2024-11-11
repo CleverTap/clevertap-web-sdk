@@ -4363,7 +4363,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.5';
+        const sdkVersion = '1.11.7';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -5557,7 +5557,11 @@
 
 
     if (!isHTTP) {
-      if (Notification == null) {
+      const hasNotification = ('Notification' in window);
+
+      if (!hasNotification || Notification == null) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Notification not supported on this Device or Browser');
+
         return;
       } // handle migrations from other services -> chrome notifications may have already been asked for before
 
@@ -7382,7 +7386,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.5',
+        lib: 'web-sdk-v1.11.7',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9052,7 +9056,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.5';
+      return 'web-sdk-v1.11.7';
     }
 
     defineVariable(name, defaultValue) {
