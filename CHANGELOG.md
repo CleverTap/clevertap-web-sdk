@@ -2,6 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.11.7] 11th Nov, 2024
+- Fixed saving/fetching inbox messages for custom inbox
 - Added undefined check for 'Notification' in web push
 
 ## [1.11.6] 04th Nov, 2024
