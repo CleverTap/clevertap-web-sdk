@@ -3496,7 +3496,7 @@
         msgs = [];
       }
 
-      if (msgs.length > 0 && this.inbox) {
+      if (msgs.length > 0) {
         this.updateInboxMessages(msgs);
       }
     }
@@ -3608,7 +3608,7 @@
 
       for (const msg in messages) {
         if (messages[msg].wzrk_ttl && messages[msg].wzrk_ttl > 0 && messages[msg].wzrk_ttl < now) {
-          if (deleteMsgsFromUI) {
+          if (deleteMsgsFromUI && this.inbox) {
             const el = this.shadowRoot.getElementById(messages[msg].id);
             el && el.remove();
 
@@ -3650,8 +3650,11 @@
         this.unviewedCounter++;
       });
       saveInboxMessages(inboxMsgs);
-      this.buildUIForMessages(incomingMsgs);
-      this.updateUnviewedBadgeCounter();
+
+      if (this.inbox) {
+        this.buildUIForMessages(incomingMsgs);
+        this.updateUnviewedBadgeCounter();
+      }
     }
 
     createEl(type, id, part) {
