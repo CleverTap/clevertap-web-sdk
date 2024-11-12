@@ -256,10 +256,10 @@ export function addAntiFlicker (antiFlicker) {
   (function () {
     const styleContent = `
       .wve-anti-flicker-hide {
-        opacity: 0 !important
+        opacity: 0 !important;
       }
       .wve-anti-flicker-show {
-        transition: opacity 0.5s, filter 0.5s !important
+        transition: opacity 0.5s, filter 0.5s !important;
       }
     `
     // Create and append the style element if it doesn't exist
@@ -321,8 +321,8 @@ export function addAntiFlicker (antiFlicker) {
     })
     observer.observe(document.body, { childList: true, subtree: true })
   }
-  window.addEventListener('load', () => {
+  window.addEventListener('DOMContentLoaded', () => {
     observeUrlChange()
-    applyAntiFlicker(personalizedSelectors)
   })
+  applyAntiFlicker(personalizedSelectors)
 }

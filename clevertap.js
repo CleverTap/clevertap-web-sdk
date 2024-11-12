@@ -4366,7 +4366,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.7';
+        const sdkVersion = '1.11.8';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -4627,7 +4627,7 @@
     }
 
     (function () {
-      const styleContent = "\n      .wve-anti-flicker-hide {\n        opacity: 0 !important\n      }\n      .wve-anti-flicker-show {\n        transition: opacity 0.5s, filter 0.5s !important\n      }\n    "; // Create and append the style element if it doesn't exist
+      const styleContent = "\n      .wve-anti-flicker-hide {\n        opacity: 0 !important;\n      }\n      .wve-anti-flicker-show {\n        transition: opacity 0.5s, filter 0.5s !important;\n      }\n    "; // Create and append the style element if it doesn't exist
 
       const styleId = WVE_CLASS.FLICKER_ID;
 
@@ -4700,10 +4700,10 @@
       });
     }
 
-    window.addEventListener('load', () => {
+    window.addEventListener('DOMContentLoaded', () => {
       observeUrlChange();
-      applyAntiFlicker(personalizedSelectors);
     });
+    applyAntiFlicker(personalizedSelectors);
   }
 
   class CTWebPersonalisationBanner extends HTMLElement {
@@ -7389,7 +7389,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.7',
+        lib: 'web-sdk-v1.11.8',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9059,7 +9059,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.7';
+      return 'web-sdk-v1.11.8';
     }
 
     defineVariable(name, defaultValue) {
