@@ -4366,7 +4366,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.8';
+        const sdkVersion = '1.11.9';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -6808,7 +6808,7 @@
         html = css + title + body;
       }
 
-      iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
+      iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe); // Dispatch event for interstitial/exit intent close
 
       const closeCampaign = new Event('CT_campaign_rendered');
@@ -7389,7 +7389,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.8',
+        lib: 'web-sdk-v1.11.9',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9059,7 +9059,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.8';
+      return 'web-sdk-v1.11.9';
     }
 
     defineVariable(name, defaultValue) {
