@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.8] 13th Nov, 2024
+- Fixed anti-flicker for visual editor 
+- Fixed White Background issue in Web Popup
+
 ## [1.11.7] 11th Nov, 2024
 - Fixed saving/fetching inbox messages for custom inbox
 - Added undefined check for 'Notification' in web push
