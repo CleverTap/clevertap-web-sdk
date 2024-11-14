@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.9] 14th Nov, 2024
+- Fixed delete & read web-inbox messages for custom inbox
+
 ## [1.11.8] 13th Nov, 2024
 - Fixed anti-flicker for visual editor 
 - Fixed White Background issue in Web Popup

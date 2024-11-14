@@ -4366,7 +4366,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.8';
+        const sdkVersion = '1.11.9';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -7389,7 +7389,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.8',
+        lib: 'web-sdk-v1.11.9',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8439,16 +8439,24 @@
         const messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
-          const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId);
-
           if (messages[messageId].viewed === 0) {
             $ct.inbox.unviewedCounter--;
             delete $ct.inbox.unviewedMessages[messageId];
-            document.getElementById('unviewedBadge').innerText = $ct.inbox.unviewedCounter;
-            document.getElementById('unviewedBadge').style.display = $ct.inbox.unviewedCounter > 0 ? 'flex' : 'none';
+            const unViewedBadge = document.getElementById('unviewedBadge');
+
+            if (unViewedBadge) {
+              unViewedBadge.innerText = $ct.inbox.unviewedCounter;
+              unViewedBadge.style.display = $ct.inbox.unviewedCounter > 0 ? 'flex' : 'none';
+            }
           }
 
-          el && el.remove();
+          const ctInbox = document.querySelector('ct-web-inbox');
+
+          if (ctInbox) {
+            const el = ctInbox.shadowRoot.getElementById(messageId);
+            el && el.remove();
+          }
+
           delete messages[messageId];
           saveInboxMessages(messages);
         } else {
@@ -8466,18 +8474,23 @@
         const messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
-          const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId);
+          const ctInbox = document.querySelector('ct-web-inbox');
 
-          if (el !== null) {
-            el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+          if (ctInbox) {
+            const el = ctInbox.shadowRoot.getElementById(messageId);
+
+            if (el !== null) {
+              el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+            }
           }
 
           messages[messageId].viewed = 1;
+          const unViewedBadge = document.getElementById('unviewedBadge');
 
-          if (document.getElementById('unviewedBadge')) {
-            var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1;
-            document.getElementById('unviewedBadge').innerText = counter;
-            document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none';
+          if (unViewedBadge) {
+            var counter = parseInt(unViewedBadge.innerText) - 1;
+            unViewedBadge.innerText = counter;
+            unViewedBadge.style.display = counter > 0 ? 'flex' : 'none';
           }
 
           window.clevertap.renderNotificationViewed({
@@ -8514,10 +8527,14 @@
         if (Object.keys(unreadMsg).length > 0) {
           const msgIds = Object.keys(unreadMsg);
           msgIds.forEach(key => {
-            const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(key);
+            const ctInbox = document.querySelector('ct-web-inbox');
 
-            if (el !== null) {
-              el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+            if (ctInbox) {
+              const el = ctInbox.shadowRoot.getElementById(key);
+
+              if (el !== null) {
+                el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+              }
             }
 
             messages[key].viewed = 1;
@@ -8526,8 +8543,13 @@
               pivotId: messages[key].wzrk_pivot
             });
           });
-          document.getElementById('unviewedBadge').innerText = 0;
-          document.getElementById('unviewedBadge').style.display = 'none';
+          const unViewedBadge = document.getElementById('unviewedBadge');
+
+          if (unViewedBadge) {
+            unViewedBadge.innerText = 0;
+            unViewedBadge.style.display = 'none';
+          }
+
           saveInboxMessages(messages);
           $ct.inbox.unviewedCounter = 0;
           $ct.inbox.unviewedMessages = {};
@@ -9059,7 +9081,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.8';
+      return 'web-sdk-v1.11.9';
     }
 
     defineVariable(name, defaultValue) {
