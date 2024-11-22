@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.10] 22nd Nov, 2024
+- Fixed Web Popup Stale Nodes Cleanup
+
 ## [1.11.9] 14th Nov, 2024
 - Fixed delete & read web-inbox messages for custom inbox
 
