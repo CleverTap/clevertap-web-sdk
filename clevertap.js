@@ -2226,19 +2226,19 @@
       const divId = $ct.campaignDivMap[campaignId];
 
       if (divId != null) {
-        document.getElementById(divId).style.display = 'none';
+        document.getElementById(divId).remove();
 
         if (divId === 'intentPreview') {
           if (document.getElementById('intentOpacityDiv') != null) {
-            document.getElementById('intentOpacityDiv').style.display = 'none';
+            document.getElementById('intentOpacityDiv').remove();
           }
         } else if (divId === 'wizParDiv0') {
           if (document.getElementById('intentOpacityDiv0') != null) {
-            document.getElementById('intentOpacityDiv0').style.display = 'none';
+            document.getElementById('intentOpacityDiv0').remove();
           }
         } else if (divId === 'wizParDiv2') {
           if (document.getElementById('intentOpacityDiv2') != null) {
-            document.getElementById('intentOpacityDiv2').style.display = 'none';
+            document.getElementById('intentOpacityDiv2').remove();
           }
         }
       }
@@ -4366,7 +4366,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.9';
+        const sdkVersion = '1.11.10';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -7399,7 +7399,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.9',
+        lib: 'web-sdk-v1.11.10',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9091,7 +9091,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.9';
+      return 'web-sdk-v1.11.10';
     }
 
     defineVariable(name, defaultValue) {
