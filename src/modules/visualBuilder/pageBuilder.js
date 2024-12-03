@@ -1,5 +1,5 @@
 import { CSS_PATH, OVERLAY_PATH, WVE_CLASS } from './builder_constants'
-import { updateFormData } from './dataUpdate'
+import { updateFormData, updateElementCSS } from './dataUpdate'
 
 export const checkBuilder = (logger, accountId) => {
   const search = window.location.search
@@ -171,6 +171,14 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
 
   const processElement = (element, selector) => {
     if (!selector.values) return
+    if (selector.values.elementCSS) {
+      updateElementCSS(selector.values)
+    }
+    if (selector.values.isTrackingClicks?.name) {
+      element.addEventListener('click', () => {
+        console.log('clicked', selector.values.isTrackingClicks.name)
+      })
+    }
     if (selector.values.html) {
       element.outerHTML = selector.values.html
     } else if (selector.values?.json) {
