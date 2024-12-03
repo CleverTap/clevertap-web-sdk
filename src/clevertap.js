@@ -749,6 +749,10 @@ export default class CleverTap {
     }
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
+    const sessionId = Math.floor(Date.now() / 1000)
+    const cookieExpiry = 86400 * 365
+    pageLoadUrl = addToURL(pageLoadUrl, 's', sessionId)
+    StorageManager.createBroadCookie(this.#session.cookieName, sessionId, cookieExpiry, window.location.hostname)
 
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
 

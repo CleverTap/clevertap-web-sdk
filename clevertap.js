@@ -9021,6 +9021,10 @@
 
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$a)[_logger$a]));
+      const sessionId = Math.floor(Date.now() / 1000);
+      const cookieExpiry = 86400 * 365;
+      pageLoadUrl = addToURL(pageLoadUrl, 's', sessionId);
+      StorageManager.createBroadCookie(_classPrivateFieldLooseBase(this, _session$3)[_session$3].cookieName, sessionId, cookieExpiry, window.location.hostname);
 
       _classPrivateFieldLooseBase(this, _request$7)[_request$7].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
 
