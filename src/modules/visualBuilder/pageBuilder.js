@@ -169,23 +169,34 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     }
   }
 
+  const raiseClicked = (payload) => {
+    console.log('clicked')
+    window.clevertap.renderNotificationClicked(payload)
+  }
+
   const processElement = (element, selector) => {
-    if (!selector.values) return
-    if (selector.values.elementCSS) {
-      updateElementCSS(selector.values)
+    if (selector.elementCSS) {
+      updateElementCSS(selector)
     }
-    if (selector.values.isTrackingClicks?.name) {
+    if (selector.isTrackingClicks?.name) {
       element.addEventListener('click', () => {
-        console.log('clicked', selector.values.isTrackingClicks.name)
+        const clickedPayload = {
+          msgId: targetingMsgJson.wzrk_id,
+          pivotId: targetingMsgJson.wzrk_pivot,
+          msgCTkv: { wzrk_selector: selector.isTrackingClicks.name }
+        }
+        raiseClicked(clickedPayload)
       })
     }
-    if (selector.values.html) {
-      element.outerHTML = selector.values.html
-    } else if (selector.values?.json) {
-      dispatchJsonData(targetingMsgJson, selector.values)
-    } else {
-      payload.msgCTkv = { wzrk_selector: selector.selector }
-      updateFormData(element, selector.values.form, payload, isPreview)
+    if (selector.values) {
+      if (selector.values.html) {
+        element.outerHTML = selector.values.html
+      } else if (selector.values?.json) {
+        dispatchJsonData(targetingMsgJson, selector.values)
+      } else {
+        payload.msgCTkv = { wzrk_selector: selector.selector }
+        updateFormData(element, selector.values.form, payload, isPreview)
+      }
     }
   }
 
