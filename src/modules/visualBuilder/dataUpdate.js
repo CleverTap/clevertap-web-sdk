@@ -43,11 +43,13 @@ export const updateFormData = (element, formStyle, payload, isPreview = false) =
   if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
     element.src = formStyle.imgURL
   }
+}
 
+export const updateElementCSS = (element) => {
   // Handle elementCss
-  if (formStyle.elementCss !== undefined) {
+  if (element.elementCSS !== undefined) {
     const style = document.createElement('style')
-    style.innerHTML = formStyle.elementCss
+    style.innerHTML = element.elementCSS
     document.head.appendChild(style)
   }
 }
