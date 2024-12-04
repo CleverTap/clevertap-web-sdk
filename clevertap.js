@@ -4867,50 +4867,52 @@
   var updateFormData = function updateFormData(element, formStyle, payload) {
     var isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
-    // Update the element style
-    if (formStyle.style !== undefined) {
-      Object.keys(formStyle.style).forEach(function (property) {
-        element.style.setProperty(property, formStyle.style[property]);
-      });
-    } // Update underline for element
+    if (formStyle !== undefined) {
+      // Update the element style
+      if (formStyle.style !== undefined) {
+        Object.keys(formStyle.style).forEach(function (property) {
+          element.style.setProperty(property, formStyle.style[property]);
+        });
+      } // Update underline for element
 
 
-    if (formStyle.underline !== undefined) {
-      var curTextDecoration = element.style.textDecoration;
+      if (formStyle.underline !== undefined) {
+        var curTextDecoration = element.style.textDecoration;
 
-      if (formStyle.underline) {
-        element.style.textDecoration = "".concat(curTextDecoration, " underline").trim();
-      } else {
-        element.style.textDecoration = curTextDecoration.replace('underline', '').trim();
+        if (formStyle.underline) {
+          element.style.textDecoration = "".concat(curTextDecoration, " underline").trim();
+        } else {
+          element.style.textDecoration = curTextDecoration.replace('underline', '').trim();
+        }
+      } // Update element text
+
+
+      if (formStyle.text !== undefined) {
+        element.innerText = isPreview ? formStyle.text.text : formStyle.text;
+      } // Handle element onClick
+
+
+      if (formStyle.clickDetails !== undefined) {
+        var url = formStyle.clickDetails.clickUrl;
+        element.onclick = formStyle.clickDetails.newTab ? function () {
+          if (!isPreview) {
+            window.clevertap.raiseNotificationClicked(payload);
+          }
+
+          window.open(url, '_blank').focus();
+        } : function () {
+          if (!isPreview) {
+            window.clevertap.raiseNotificationClicked(payload);
+          }
+
+          window.location.href = url;
+        };
+      } // Set the image source
+
+
+      if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
+        element.src = formStyle.imgURL;
       }
-    } // Update element text
-
-
-    if (formStyle.text !== undefined) {
-      element.innerText = isPreview ? formStyle.text.text : formStyle.text;
-    } // Handle element onClick
-
-
-    if (formStyle.clickDetails !== undefined) {
-      var url = formStyle.clickDetails.clickUrl;
-      element.onclick = formStyle.clickDetails.newTab ? function () {
-        if (!isPreview) {
-          window.clevertap.raiseNotificationClicked(payload);
-        }
-
-        window.open(url, '_blank').focus();
-      } : function () {
-        if (!isPreview) {
-          window.clevertap.raiseNotificationClicked(payload);
-        }
-
-        window.location.href = url;
-      };
-    } // Set the image source
-
-
-    if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
-      element.src = formStyle.imgURL;
     }
   };
   var updateElementCSS = function updateElementCSS(element) {
