@@ -4366,7 +4366,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.10';
+        const sdkVersion = '1.11.11';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -4531,9 +4531,13 @@
       if (!selector.values) return;
 
       if (selector.values.html) {
-        element.outerHTML = selector.values.html;
+        if (isPreview) {
+          element.outerHTML = selector.values.html.text;
+        } else {
+          element.outerHTML = selector.values.html;
+        }
       } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
-        dispatchJsonData(targetingMsgJson, selector.values);
+        dispatchJsonData(targetingMsgJson, selector.values, isPreview);
       } else {
         payload.msgCTkv = {
           wzrk_selector: selector.selector
@@ -4577,9 +4581,11 @@
    * Dispatches JSON data.
    * @param {Object} targetingMsgJson - The point and click campaign JSON object.
    * @param {Object} selector - The selector object.
+   * @param {boolean} isPreview - If preview different handling
    */
 
   function dispatchJsonData(targetingMsgJson, selector) {
+    let isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
     const inaObj = {};
     inaObj.msgId = targetingMsgJson.wzrk_id;
 
@@ -4588,7 +4594,11 @@
     }
 
     if (selector.json != null) {
-      inaObj.json = selector.json;
+      if (isPreview) {
+        inaObj.json = selector.json.text;
+      } else {
+        inaObj.json = selector.json;
+      }
     }
 
     const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', {
@@ -7389,7 +7399,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.10',
+        lib: 'web-sdk-v1.11.11',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9081,7 +9091,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.10';
+      return 'web-sdk-v1.11.11';
     }
 
     defineVariable(name, defaultValue) {
