@@ -6,9 +6,9 @@ jobs:
   build:
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use node.js version 10.24.1
-        uses: actions/setup-node@v2.1.2
+        uses: actions/setup-node@v4
         with:
           node-version: '10.24.1'
       - name: Get yarn cache directory path
@@ -28,7 +28,7 @@ jobs:
       - name: Build package
         run: yarn run build
       - name: Use node.js version 10.24.1
-        uses: actions/setup-node@v2.1.2
+        uses: actions/checkout@v4.1.2
         with:
           node-version: '10.24.1'
           registry-url: 'https://registry.npmjs.org'
@@ -45,4 +45,4 @@ jobs:
 #       - name: Copy file to S3
 #         # S3_bucket/clevertap.js for beta, /a.js when moving to prod for all
 #         run: |
-#           aws s3 cp clevertap.min.js s3://${{ secrets.S3_BUCKET_PATH }} 
+#           aws s3 cp clevertap.min.js s3://${{ secrets.S3_BUCKET_PATH }}
