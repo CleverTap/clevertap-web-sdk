@@ -1,13 +1,13 @@
 import { StorageManager, $ct } from '../util/storage'
 import { isObject } from '../util/datatypes'
 import {
-  PUSH_SUBSCRIPTION_DATA
+  PUSH_SUBSCRIPTION_DATA,
+  WEBPUSH_CONFIG
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
 } from '../util/encoder'
 import { enablePush } from './webPushPrompt/prompt'
-
 export default class NotificationHandler extends Array {
   #oldValues
   #logger
@@ -49,7 +49,7 @@ export default class NotificationHandler extends Array {
   }
 
   #setUpWebPush (displayArgs) {
-    if ($ct.webPushEnabled || displayArgs.length > 0) {
+    if ($ct.webPushEnabled && displayArgs.length > 0) {
       this.#handleNotificationRegistration(displayArgs)
     } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
       $ct.notifApi.notifEnabledFromApi = true
@@ -71,28 +71,44 @@ export default class NotificationHandler extends Array {
     this.#fcmPublicKey = applicationServerKey
   }
 
-  migrateSupportedSafariWithAPNSSubscription() {
-    const notifObj = $ct.notifApi.displayArgs[0]
-    const apnsServiceUrl = notifObj.apnsServiceUrl;
-    const apnsWebPushId = notifObj.apnsWebPushId;
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    const existingSubscription = apnsWebPushId && apnsServiceUrl && window.safari.pushNotification.permission(apnsWebPushId);
+  migrateSupportedSafariWithAPNSSubscription () {
+    this.#addWizAlertJS().onload = () => {
+      StorageManager.setMetaProp('apns_migration_soft_prompt_show', true)
+      const pushConfigs = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
 
-    if(isSafari && ("PushManager" in window) && existingSubscription?.permission === "granted") {
-      this.#handleNotificationRegistration($ct.notifApi.displayArgs)
+      // TODO : Get these parameters from the server
+      window.wzrkPermissionPopup.wizAlert(
+        {
+          title: pushConfigs?.boxConfig?.content?.title || 'Title',
+          body: pushConfigs?.boxConfig?.content?.description || 'Description',
+          confirmButtonText: pushConfigs?.boxConfig?.content?.buttons?.primaryButtonText || 'Primary Button Text',
+          confirmButtonColor: 'green',
+          rejectButtonText: pushConfigs?.boxConfig?.content?.buttons?.secondaryButtonText || 'Secondary Button Text'
+        },
+        (enabled) => {
+          if (enabled) {
+            // TODO : How can we identify if the servicer worker file name is changed
+            this.#setUpSafariNotifications(null, null, null, '/clevertap_sw.js')
+          }
+        }
+      )
     }
   }
 
-
-  #isNativeWebPushSupported() {
-    return "PushManager" in window; 
+  #isNativeWebPushSupported () {
+    return 'PushManager' in window
   }
 
   #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
     if (this.#isNativeWebPushSupported()) {
+      if (this.#fcmPublicKey == null) {
+        this.#logger.error('Ensure that Vapid public key is configured in the dashboard')
+        return
+      }
       navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
         window.Notification.requestPermission().then((permission) => {
           if (permission === 'granted') {
+            // TODO: Remove the hardcoded key once BE changes are done
             const subscribeObj = {
               applicationServerKey: 'BFygpPBmFuCSAXq1UDxA-LNBM2gzYHbp6Xld16N0xXp962u7oVu4BMG0qoafzHXFR43aAJi51JpmboG5v8idtbQ', // this.#fcmPublicKey,
               userVisibleOnly: true
@@ -200,8 +216,8 @@ export default class NotificationHandler extends Array {
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj)
           .then((subscription) => {
             this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
-            this.#logger.info('Service Data Sent: ' + JSON.stringify(subscribeObj))
-            this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
+            this.#logger.debug('Service Data Sent: ' + JSON.stringify(subscribeObj))
+            this.#logger.debug('Subscription Data Received: ' + JSON.stringify(subscription))
             // convert the subscription keys to strings; this sets it up nicely for pushing to LC
             const subscriptionData = JSON.parse(JSON.stringify(subscription))
 
@@ -264,8 +280,6 @@ export default class NotificationHandler extends Array {
     scriptTag.parentNode.removeChild(scriptTag)
   }
 
-
-  // Use this function
   #handleNotificationRegistration (displayArgs) {
     // make sure everything is specified
     let titleText
@@ -472,6 +486,15 @@ export default class NotificationHandler extends Array {
   }
 
   _enableWebPush (enabled, applicationServerKey) {
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    /*
+      For Safari If the enabled=true, vapidServer key is not `null`, it means that there has been a Vapid Feature is enabled for Safari from Dashboard,
+      Hence we nudge the user once to do a new subsciption via Native Web Push(Vapid)
+    */
+
+    // TODO : change `applicationServerKey === null` to `applicationServerKey !== null` once BE changes are done
+    const shoudMigrateToVapid = isSafari && ('PushManager' in window) && !StorageManager.getMetaProp('apns_migration_soft_prompt_show') && enabled && applicationServerKey === null
+
     $ct.webPushEnabled = enabled
     if (applicationServerKey != null) {
       this.setApplicationServerKey(applicationServerKey)
@@ -480,6 +503,14 @@ export default class NotificationHandler extends Array {
       this.#handleNotificationRegistration($ct.notifApi.displayArgs)
     } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
       this.#logger.error('Ensure that web push notifications are fully enabled and integrated before requesting them')
+    }
+
+    if (shoudMigrateToVapid) {
+      /*
+        This function is used to migrate existing APNS Subsciptions for Safari Browsers to
+        Native Web Push, Once all the users are migrated to Native Web Push in Safari, We can remove this
+      */
+      this.migrateSupportedSafariWithAPNSSubscription()
     }
   }
 }
