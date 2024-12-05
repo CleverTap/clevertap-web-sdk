@@ -1,9 +1,6 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.11.12] 5th Dec, 2024
-- Changed Git Action Build Version
-
 ## [1.11.11] 3rd Dec, 2024
 - Support for Personalisation in HTML & JSON for Visual Editor
 
