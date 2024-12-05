@@ -49,7 +49,7 @@ export default class NotificationHandler extends Array {
   }
 
   #setUpWebPush (displayArgs) {
-    if ($ct.webPushEnabled || displayArgs.length > 0) {
+    if ($ct.webPushEnabled && displayArgs.length > 0) {
       this.#handleNotificationRegistration(displayArgs)
     } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
       $ct.notifApi.notifEnabledFromApi = true
@@ -71,21 +71,20 @@ export default class NotificationHandler extends Array {
     this.#fcmPublicKey = applicationServerKey
   }
 
-  migrateSupportedSafariWithAPNSSubscription() {
+  migrateSupportedSafariWithAPNSSubscription () {
     const notifObj = $ct.notifApi.displayArgs[0]
-    const apnsServiceUrl = notifObj.apnsServiceUrl;
-    const apnsWebPushId = notifObj.apnsWebPushId;
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    const existingSubscription = apnsWebPushId && apnsServiceUrl && window.safari.pushNotification.permission(apnsWebPushId);
+    const apnsServiceUrl = notifObj.apnsServiceUrl
+    const apnsWebPushId = notifObj.apnsWebPushId
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    const existingSubscription = apnsWebPushId && apnsServiceUrl && window.safari.pushNotification.permission(apnsWebPushId)
 
-    if(isSafari && ("PushManager" in window) && existingSubscription?.permission === "granted") {
+    if (isSafari && ('PushManager' in window) && existingSubscription?.permission === 'granted') {
       this.#handleNotificationRegistration($ct.notifApi.displayArgs)
     }
   }
 
-
-  #isNativeWebPushSupported() {
-    return "PushManager" in window; 
+  #isNativeWebPushSupported () {
+    return 'PushManager' in window
   }
 
   #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
@@ -200,8 +199,8 @@ export default class NotificationHandler extends Array {
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj)
           .then((subscription) => {
             this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
-            this.#logger.info('Service Data Sent: ' + JSON.stringify(subscribeObj))
-            this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
+            this.#logger.debug('Service Data Sent: ' + JSON.stringify(subscribeObj))
+            this.#logger.debug('Subscription Data Received: ' + JSON.stringify(subscription))
             // convert the subscription keys to strings; this sets it up nicely for pushing to LC
             const subscriptionData = JSON.parse(JSON.stringify(subscription))
 
@@ -264,8 +263,6 @@ export default class NotificationHandler extends Array {
     scriptTag.parentNode.removeChild(scriptTag)
   }
 
-
-  // Use this function
   #handleNotificationRegistration (displayArgs) {
     // make sure everything is specified
     let titleText

@@ -5182,6 +5182,8 @@
 
   var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
 
+  var _isNativeWebPushSupported = _classPrivateFieldLooseKey("isNativeWebPushSupported");
+
   var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
 
   var _setUpChromeFirefoxNotifications = _classPrivateFieldLooseKey("setUpChromeFirefoxNotifications");
@@ -5215,6 +5217,9 @@
       });
       Object.defineProperty(this, _setUpSafariNotifications, {
         value: _setUpSafariNotifications2
+      });
+      Object.defineProperty(this, _isNativeWebPushSupported, {
+        value: _isNativeWebPushSupported2
       });
       Object.defineProperty(this, _setUpWebPush, {
         value: _setUpWebPush2
@@ -5288,10 +5293,18 @@
     setApplicationServerKey(applicationServerKey) {
       _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
     }
-    /* TODO
-      1. Safari 15, fall back to APNs -> https://developer.apple.com/documentation/usernotifications/sending-web-push-notifications-in-web-apps-and-browsers
-     */
 
+    migrateSupportedSafariWithAPNSSubscription() {
+      const notifObj = $ct.notifApi.displayArgs[0];
+      const apnsServiceUrl = notifObj.apnsServiceUrl;
+      const apnsWebPushId = notifObj.apnsWebPushId;
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const existingSubscription = apnsWebPushId && apnsServiceUrl && window.safari.pushNotification.permission(apnsWebPushId);
+
+      if (isSafari && "PushManager" in window && (existingSubscription === null || existingSubscription === void 0 ? void 0 : existingSubscription.permission) === "granted") {
+        _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
+      }
+    }
 
     _enableWebPush(enabled, applicationServerKey) {
       $ct.webPushEnabled = enabled;
@@ -5310,7 +5323,7 @@
   }
 
   var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
-    if ($ct.webPushEnabled || displayArgs.length > 0) {
+    if ($ct.webPushEnabled && displayArgs.length > 0) {
       _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
     } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
       $ct.notifApi.notifEnabledFromApi = true;
@@ -5320,46 +5333,18 @@
     }
   };
 
+  var _isNativeWebPushSupported2 = function _isNativeWebPushSupported2() {
+    return "PushManager" in window;
+  };
+
   var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
-    // ensure that proper arguments are passed
-    // if (typeof apnsWebPushId === 'undefined') {
-    //   this.#logger.error('Ensure that APNS Web Push ID is supplied')
-    // }
-    // if (typeof apnsServiceUrl === 'undefined') {
-    //   this.#logger.error('Ensure that APNS Web Push service path is supplied')
-    // }
-    if (localStorage.APN_ENABLED && apnsServiceUrl && apnsWebPushId) {
-      if ('safari' in window && 'pushNotification' in window.safari) {
-        window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
-          if (subscription.permission === 'granted') {
-            const subscriptionData = JSON.parse(JSON.stringify(subscription));
-            subscriptionData.endpoint = subscription.deviceToken;
-            subscriptionData.browser = 'Safari';
-
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
-              apnsServiceUrl,
-              apnsWebPushId
-            }));
-
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
-
-            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-            _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
-
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
-          } else if (subscription.permission === 'denied') {
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
-          }
-        });
-      }
-    } else {
+    if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]()) {
       navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
         window.Notification.requestPermission().then(permission => {
           if (permission === 'granted') {
             const subscribeObj = {
-              applicationServerKey: "BFygpPBmFuCSAXq1UDxA-LNBM2gzYHbp6Xld16N0xXp962u7oVu4BMG0qoafzHXFR43aAJi51JpmboG5v8idtbQ",
-              //this.#fcmPublicKey,
+              applicationServerKey: 'BFygpPBmFuCSAXq1UDxA-LNBM2gzYHbp6Xld16N0xXp962u7oVu4BMG0qoafzHXFR43aAJi51JpmboG5v8idtbQ',
+              // this.#fcmPublicKey,
               userVisibleOnly: true
             };
 
@@ -5394,6 +5379,40 @@
           }
         });
       });
+    } else {
+      // ensure that proper arguments are passed
+      if (typeof apnsWebPushId === 'undefined') {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
+      }
+
+      if (typeof apnsServiceUrl === 'undefined') {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
+      }
+
+      if ('safari' in window && 'pushNotification' in window.safari) {
+        window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
+          if (subscription.permission === 'granted') {
+            const subscriptionData = JSON.parse(JSON.stringify(subscription));
+            subscriptionData.endpoint = subscription.deviceToken;
+            subscriptionData.browser = 'Safari';
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+              apnsServiceUrl,
+              apnsWebPushId
+            }));
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+
+            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+            _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+          } else if (subscription.permission === 'denied') {
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+          }
+        });
+      }
     }
   };
 
@@ -5442,9 +5461,9 @@
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
           _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
 
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify(subscribeObj));
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Service Data Sent: ' + JSON.stringify(subscribeObj));
 
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription)); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Subscription Data Received: ' + JSON.stringify(subscription)); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
 
 
           const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
@@ -8966,6 +8985,12 @@
       }
 
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 1;
+      /* 
+        This function is used to migrate existing APNS Subsciptions for Safari Browsers to 
+        Native Web Push, Once all the users are migrated to Native Web Push in Safari, We can remove this
+      */
+
+      this.notifications.migrateSupportedSafariWithAPNSSubscription();
     } // process the option array provided to the clevertap object
     // after its been initialized
 
