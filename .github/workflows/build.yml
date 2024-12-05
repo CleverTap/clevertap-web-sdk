@@ -11,7 +11,7 @@ on:
     types: [opened, synchronize, reopened]
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-14-arm64
     steps:
       - uses: actions/checkout@v2
       - name: Use node.js version 10.24.1
