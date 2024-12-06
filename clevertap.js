@@ -5295,15 +5295,23 @@
     }
 
     migrateSupportedSafariWithAPNSSubscription() {
-      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
+      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]([{
+        bodyText: "We promise to only send you relevant content and give you updates on your transactions",
+        hidePoweredByCT: true,
+        okButtonColor: "#f28046",
+        okButtonText: "Sign me up!",
+        rejectButtonText: "No thanks",
+        serviceWorkerPath: "/clevertap_sw.js",
+        titleText: "Would you like to receive Push Notifications?"
+      }]);
 
       StorageManager.setMetaProp('apns_migration_performed', true);
     }
 
     _enableWebPush(enabled, applicationServerKey) {
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      /* 
-        For Safari If the enabled=true, vapidServer key is `null`, it means that there has been a APNs Feature is enabled, Hence we nudge the user once to do a new subsciption via Native Web Push(Vapid) 
+      /*
+        For Safari If the enabled=true, vapidServer key is `null`, it means that there has been a APNs Feature is enabled, Hence we nudge the user once to do a new subsciption via Native Web Push(Vapid)
       */
 
       const shoudMigrateToVapid = isSafari && 'PushManager' in window && !StorageManager.getMetaProp('apns_migration_performed') && enabled && applicationServerKey === null;
