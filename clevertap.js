@@ -5295,17 +5295,19 @@
     }
 
     migrateSupportedSafariWithAPNSSubscription() {
-      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]([{
-        bodyText: "We promise to only send you relevant content and give you updates on your transactions",
-        hidePoweredByCT: true,
-        okButtonColor: "#f28046",
-        okButtonText: "Sign me up!",
-        rejectButtonText: "No thanks",
-        serviceWorkerPath: "/clevertap_sw.js",
-        titleText: "Would you like to receive Push Notifications?"
-      }]);
+      document.body.addEventListener('click', event => {
+        _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]([{
+          bodyText: 'We promise to only send you relevant content and give you updates on your transactions',
+          hidePoweredByCT: true,
+          okButtonColor: '#f28046',
+          okButtonText: 'Sign me up!',
+          rejectButtonText: 'No thanks',
+          serviceWorkerPath: '/clevertap_sw.js',
+          titleText: 'Would you like to receive Push Notifications?'
+        }]);
 
-      StorageManager.setMetaProp('apns_migration_performed', true);
+        StorageManager.setMetaProp('apns_migration_performed', true);
+      });
     }
 
     _enableWebPush(enabled, applicationServerKey) {
