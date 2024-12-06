@@ -5295,18 +5295,18 @@
     }
 
     migrateSupportedSafariWithAPNSSubscription() {
-      const notifObj = $ct.notifApi.displayArgs[0];
-      const apnsServiceUrl = notifObj.apnsServiceUrl;
-      const apnsWebPushId = notifObj.apnsWebPushId;
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      const existingSubscription = apnsWebPushId && apnsServiceUrl && window.safari.pushNotification.permission(apnsWebPushId);
+      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
 
-      if (isSafari && "PushManager" in window && (existingSubscription === null || existingSubscription === void 0 ? void 0 : existingSubscription.permission) === "granted") {
-        _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      }
+      StorageManager.setMetaProp('apns_migration_performed', true);
     }
 
     _enableWebPush(enabled, applicationServerKey) {
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      /* 
+        For Safari If the enabled=true, vapidServer key is `null`, it means that there has been a APNs Feature is enabled, Hence we nudge the user once to do a new subsciption via Native Web Push(Vapid) 
+      */
+
+      const shoudMigrateToVapid = isSafari && 'PushManager' in window && !StorageManager.getMetaProp('apns_migration_performed') && enabled && applicationServerKey === null;
       $ct.webPushEnabled = enabled;
 
       if (applicationServerKey != null) {
@@ -5317,6 +5317,14 @@
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
       } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
+      }
+
+      if (shoudMigrateToVapid) {
+        /*
+          This function is used to migrate existing APNS Subsciptions for Safari Browsers to
+          Native Web Push, Once all the users are migrated to Native Web Push in Safari, We can remove this
+        */
+        this.migrateSupportedSafariWithAPNSSubscription();
       }
     }
 
@@ -5334,7 +5342,7 @@
   };
 
   var _isNativeWebPushSupported2 = function _isNativeWebPushSupported2() {
-    return "PushManager" in window;
+    return 'PushManager' in window;
   };
 
   var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
@@ -8985,12 +8993,6 @@
       }
 
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 1;
-      /* 
-        This function is used to migrate existing APNS Subsciptions for Safari Browsers to 
-        Native Web Push, Once all the users are migrated to Native Web Push in Safari, We can remove this
-      */
-
-      this.notifications.migrateSupportedSafariWithAPNSSubscription();
     } // process the option array provided to the clevertap object
     // after its been initialized
 

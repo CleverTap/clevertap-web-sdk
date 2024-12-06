@@ -72,15 +72,8 @@ export default class NotificationHandler extends Array {
   }
 
   migrateSupportedSafariWithAPNSSubscription () {
-    const notifObj = $ct.notifApi.displayArgs[0]
-    const apnsServiceUrl = notifObj.apnsServiceUrl
-    const apnsWebPushId = notifObj.apnsWebPushId
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-    const existingSubscription = apnsWebPushId && apnsServiceUrl && window.safari.pushNotification.permission(apnsWebPushId)
-
-    if (isSafari && ('PushManager' in window) && existingSubscription?.permission === 'granted') {
-      this.#handleNotificationRegistration($ct.notifApi.displayArgs)
-    }
+    this.#handleNotificationRegistration($ct.notifApi.displayArgs)
+    StorageManager.setMetaProp('apns_migration_performed', true)
   }
 
   #isNativeWebPushSupported () {
@@ -469,6 +462,12 @@ export default class NotificationHandler extends Array {
   }
 
   _enableWebPush (enabled, applicationServerKey) {
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    /*
+      For Safari If the enabled=true, vapidServer key is `null`, it means that there has been a APNs Feature is enabled, Hence we nudge the user once to do a new subsciption via Native Web Push(Vapid)
+    */
+    const shoudMigrateToVapid = isSafari && ('PushManager' in window) && !StorageManager.getMetaProp('apns_migration_performed') && enabled && applicationServerKey === null
+
     $ct.webPushEnabled = enabled
     if (applicationServerKey != null) {
       this.setApplicationServerKey(applicationServerKey)
@@ -477,6 +476,14 @@ export default class NotificationHandler extends Array {
       this.#handleNotificationRegistration($ct.notifApi.displayArgs)
     } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
       this.#logger.error('Ensure that web push notifications are fully enabled and integrated before requesting them')
+    }
+
+    if (shoudMigrateToVapid) {
+      /*
+        This function is used to migrate existing APNS Subsciptions for Safari Browsers to
+        Native Web Push, Once all the users are migrated to Native Web Push in Safari, We can remove this
+      */
+      this.migrateSupportedSafariWithAPNSSubscription()
     }
   }
 }
