@@ -1,5 +1,5 @@
-import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
-import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
+import {CTWebPersonalisationBanner} from '../web-personalisation/banner'
+import {CTWebPersonalisationCarousel} from '../web-personalisation/carousel'
 
 export const renderPersonalisationBanner = (targetingMsgJson) => {
   if (customElements.get('ct-web-personalisation-banner') === undefined) {
@@ -37,6 +37,65 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
   if (targetingMsgJson.msgContent.kv != null) {
     inaObj.kv = targetingMsgJson.msgContent.kv
   }
-  const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
+  const kvPairsEvent = new CustomEvent('CT_web_native_display', {detail: inaObj})
   document.dispatchEvent(kvPairsEvent)
+}
+
+export const renderCustomHtml = (targetingMsgJson) => {
+  const divId = targetingMsgJson.display.divId
+  const html = targetingMsgJson.display.html
+
+  if (!divId || !html) {
+    return
+  }
+
+  let notificationViewed = false
+  const payload = {
+    msgId: targetingMsgJson.wzrk_id,
+    pivotId: targetingMsgJson.wzrk_pivot
+  }
+
+
+  const processElement = (element) => {
+    if (element) {
+      element.outerHTML = html
+    }
+  }
+
+  const raiseViewed = () => {
+    if (!notificationViewed) {
+      notificationViewed = true
+      window.clevertap.renderNotificationViewed(payload)
+    }
+  }
+
+  const tryFindingElement = (divId) => {
+    let count = 0
+    const intervalId = setInterval(() => {
+      const retryElement = document.querySelector(divId)
+      if (retryElement) {
+        raiseViewed()
+        processElement(retryElement)
+        clearInterval(intervalId)
+      } else if (++count >= 20) {
+        console.log(`No element present on DOM with divId '${ divId }'.`)
+        clearInterval(intervalId)
+      }
+    }, 500)
+  }
+  tryFindingElement(divId)
+}
+
+
+export const handleJson = (targetingMsgJson) => {
+  const inaObj = {}
+  inaObj.msgId = targetingMsgJson.wzrk_id
+  if (targetingMsgJson.wzrk_pivot) {
+    inaObj.pivotId = targetingMsgJson.wzrk_pivot
+  }
+  if (targetingMsgJson.display.json != null) {
+    inaObj.json = targetingMsgJson.msgContent.json
+  }
+  const jsonEvent = new CustomEvent('CT_web_native_display_json', {detail: inaObj})
+  document.dispatchEvent(jsonEvent)
 }
