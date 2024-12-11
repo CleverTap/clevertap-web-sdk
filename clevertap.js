@@ -4672,8 +4672,8 @@
 
     StorageManager.saveToLSorCookie(WEBINBOX, newObj);
   };
-  const initializeWebInbox = logger => {
-    return new Promise((resolve, reject) => {
+  var initializeWebInbox = function initializeWebInbox(logger) {
+    return new Promise(function (resolve, reject) {
       // Adding this as a band-aid for SUC-126380
       // Adds ct-web-inbox element in dom which is not visible if Web Inbox Config in LS
       document.addEventListener('readystatechange', function () {
@@ -4965,7 +4965,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.12';
+        var sdkVersion = '1.11.12';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId: accountId,
@@ -5125,7 +5125,6 @@
     };
 
     var raiseClicked = function raiseClicked(payload) {
-      console.log('clicked');
       window.clevertap.renderNotificationClicked(payload);
     };
 
@@ -5152,19 +5151,20 @@
       if (selector.values) {
         var _selector$values;
 
-      if (selector.values.html) {
-        if (isPreview) {
-          element.outerHTML = selector.values.html.text;
+        if (selector.values.html) {
+          if (isPreview) {
+            element.outerHTML = selector.values.html.text;
+          } else {
+            element.outerHTML = selector.values.html;
+          }
+        } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
+          dispatchJsonData(targetingMsgJson, selector.values, isPreview);
         } else {
-          element.outerHTML = selector.values.html;
+          payload.msgCTkv = {
+            wzrk_selector: selector.selector
+          };
+          updateFormData(element, selector.values.form, payload, isPreview);
         }
-      } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
-        dispatchJsonData(targetingMsgJson, selector.values, isPreview);
-      } else {
-        payload.msgCTkv = {
-          wzrk_selector: selector.selector
-        };
-        updateFormData(element, selector.values.form, payload, isPreview);
       }
     };
 
@@ -5207,8 +5207,8 @@
    */
 
   function dispatchJsonData(targetingMsgJson, selector) {
-    let isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-    const inaObj = {};
+    var isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+    var inaObj = {};
     inaObj.msgId = targetingMsgJson.wzrk_id;
 
     if (targetingMsgJson.wzrk_pivot) {
@@ -8135,13 +8135,12 @@
 
         dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
 
-      let proto = document.location.protocol;
-      proto = proto.replace(':', '');
-      dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.12',
-        protocol: proto,
-        ...$ct.flutterVersion
-      }; // app fields
+        var proto = document.location.protocol;
+        proto = proto.replace(':', '');
+        dataObject.af = _objectSpread2(_objectSpread2({}, dataObject.af), {}, {
+          lib: 'web-sdk-v1.11.12',
+          protocol: proto
+        }, $ct.flutterVersion); // app fields
 
         if (sessionStorage.hasOwnProperty('WZRK_D')) {
           dataObject.debug = true;
@@ -9898,24 +9897,27 @@
         $ct.offline = arg; // if offline is disabled
         // process events from cache
 
-      if (!arg) {
-        _classPrivateFieldLooseBase(this, _request$7)[_request$7].processBackupEvents();
+        if (!arg) {
+          _classPrivateFieldLooseBase(this, _request$7)[_request$7].processBackupEvents();
+        }
       }
-    }
-
-    getSDKVersion() {
-      return 'web-sdk-v1.11.12';
-    }
-
-    defineVariable(name, defaultValue) {
-      return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1]);
-    }
-
-    syncVariables(onSyncSuccess, onSyncFailure) {
-      if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
-        return _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].syncVariables(onSyncSuccess, onSyncFailure);
-      } else {
-        const m = 'App log level is not set to 4';
+    }, {
+      key: "getSDKVersion",
+      value: function getSDKVersion() {
+        return 'web-sdk-v1.11.12';
+      }
+    }, {
+      key: "defineVariable",
+      value: function defineVariable(name, defaultValue) {
+        return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1]);
+      }
+    }, {
+      key: "syncVariables",
+      value: function syncVariables(onSyncSuccess, onSyncFailure) {
+        if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
+          return _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].syncVariables(onSyncSuccess, onSyncFailure);
+        } else {
+          var m = 'App log level is not set to 4';
 
           _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error(m);
 

@@ -170,7 +170,6 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
   }
 
   const raiseClicked = (payload) => {
-    console.log('clicked')
     window.clevertap.renderNotificationClicked(payload)
   }
 
@@ -190,14 +189,19 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     }
     if (selector.values) {
       if (selector.values.html) {
-        element.outerHTML = selector.values.html
+        if (isPreview) {
+          element.outerHTML = selector.values.html.text
+        } else {
+          element.outerHTML = selector.values.html
+        }
       } else if (selector.values?.json) {
-        dispatchJsonData(targetingMsgJson, selector.values)
+        dispatchJsonData(targetingMsgJson, selector.values, isPreview)
       } else {
         payload.msgCTkv = { wzrk_selector: selector.selector }
         updateFormData(element, selector.values.form, payload, isPreview)
-      }    
+      }
     }
+  }
 
   const tryFindingElement = (selector) => {
     let count = 0
