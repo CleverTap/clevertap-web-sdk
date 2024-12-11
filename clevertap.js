@@ -4090,6 +4090,15 @@
   };
   const initializeWebInbox = logger => {
     return new Promise((resolve, reject) => {
+      // Adding this as a band-aid for SUC-126380
+      // Adds ct-web-inbox element in dom which is not visible if Web Inbox Config in LS
+      document.addEventListener('readystatechange', function () {
+        if (document.readyState === 'complete') {
+          addWebInbox(logger);
+          resolve();
+        }
+      });
+
       if (document.readyState === 'complete') {
         addWebInbox(logger);
         resolve();
@@ -4366,7 +4375,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.11';
+        const sdkVersion = '1.11.12';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -7399,7 +7408,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.11',
+        lib: 'web-sdk-v1.11.12',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9091,7 +9100,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.11';
+      return 'web-sdk-v1.11.12';
     }
 
     defineVariable(name, defaultValue) {

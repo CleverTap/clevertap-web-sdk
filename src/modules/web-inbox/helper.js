@@ -70,6 +70,14 @@ export const saveInboxMessages = (messages) => {
 
 export const initializeWebInbox = (logger) => {
   return new Promise((resolve, reject) => {
+    // Adding this as a band-aid for SUC-126380
+    // Adds ct-web-inbox element in dom which is not visible if Web Inbox Config in LS
+    document.addEventListener('readystatechange', function () {
+      if (document.readyState === 'complete') {
+        addWebInbox(logger)
+        resolve()
+      }
+    })
     if (document.readyState === 'complete') {
       addWebInbox(logger)
       resolve()
