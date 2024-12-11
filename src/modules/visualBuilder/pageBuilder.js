@@ -1,5 +1,5 @@
 import { CSS_PATH, OVERLAY_PATH, WVE_CLASS } from './builder_constants'
-import { updateFormData } from './dataUpdate'
+import { updateFormData, updateElementCSS } from './dataUpdate'
 
 export const checkBuilder = (logger, accountId) => {
   const search = window.location.search
@@ -169,19 +169,37 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     }
   }
 
+  const raiseClicked = (payload) => {
+    window.clevertap.renderNotificationClicked(payload)
+  }
+
   const processElement = (element, selector) => {
-    if (!selector.values) return
-    if (selector.values.html) {
-      if (isPreview) {
-        element.outerHTML = selector.values.html.text
+    if (selector.elementCSS) {
+      updateElementCSS(selector)
+    }
+    if (selector.isTrackingClicks?.name) {
+      element.addEventListener('click', () => {
+        const clickedPayload = {
+          msgId: targetingMsgJson.wzrk_id,
+          pivotId: targetingMsgJson.wzrk_pivot,
+          msgCTkv: { wzrk_selector: selector.isTrackingClicks.name }
+        }
+        raiseClicked(clickedPayload)
+      })
+    }
+    if (selector.values) {
+      if (selector.values.html) {
+        if (isPreview) {
+          element.outerHTML = selector.values.html.text
+        } else {
+          element.outerHTML = selector.values.html
+        }
+      } else if (selector.values?.json) {
+        dispatchJsonData(targetingMsgJson, selector.values, isPreview)
       } else {
-        element.outerHTML = selector.values.html
+        payload.msgCTkv = { wzrk_selector: selector.selector }
+        updateFormData(element, selector.values.form, payload, isPreview)
       }
-    } else if (selector.values?.json) {
-      dispatchJsonData(targetingMsgJson, selector.values, isPreview)
-    } else {
-      payload.msgCTkv = { wzrk_selector: selector.selector }
-      updateFormData(element, selector.values.form, payload, isPreview)
     }
   }
 
