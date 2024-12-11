@@ -196,9 +196,8 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
       } else {
         payload.msgCTkv = { wzrk_selector: selector.selector }
         updateFormData(element, selector.values.form, payload, isPreview)
-      }
+      }    
     }
-  }
 
   const tryFindingElement = (selector) => {
     let count = 0
@@ -234,15 +233,20 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
  * Dispatches JSON data.
  * @param {Object} targetingMsgJson - The point and click campaign JSON object.
  * @param {Object} selector - The selector object.
+ * @param {boolean} isPreview - If preview different handling
  */
-function dispatchJsonData (targetingMsgJson, selector) {
+function dispatchJsonData (targetingMsgJson, selector, isPreview = false) {
   const inaObj = {}
   inaObj.msgId = targetingMsgJson.wzrk_id
   if (targetingMsgJson.wzrk_pivot) {
     inaObj.pivotId = targetingMsgJson.wzrk_pivot
   }
   if (selector.json != null) {
-    inaObj.json = selector.json
+    if (isPreview) {
+      inaObj.json = selector.json.text
+    } else {
+      inaObj.json = selector.json
+    }
   }
   const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', { detail: inaObj })
   document.dispatchEvent(kvPairsEvent)
