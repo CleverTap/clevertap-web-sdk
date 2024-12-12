@@ -1,8 +1,7 @@
 import { StorageManager, $ct } from '../util/storage'
 import { isObject } from '../util/datatypes'
 import {
-  PUSH_SUBSCRIPTION_DATA,
-  WEBPUSH_CONFIG
+  PUSH_SUBSCRIPTION_DATA
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
@@ -71,39 +70,39 @@ export default class NotificationHandler extends Array {
     this.#fcmPublicKey = applicationServerKey
   }
 
-  migrateSupportedSafariWithAPNSSubscription () {
-    this.#addWizAlertJS().onload = () => {
-      StorageManager.setMetaProp('apns_migration_soft_prompt_show', true)
-      const pushConfigs = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
+  // migrateSupportedSafariWithAPNSSubscription () {
+  //   this.#addWizAlertJS().onload = () => {
+  //     StorageManager.setMetaProp('apns_migration_soft_prompt_show', true)
+  //     const pushConfigs = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
 
-      // If the boxConfig is not present, set default values
-      const boxContent = pushConfigs?.boxConfig?.content || {
-        title: 'Would you like to receive Push Notifications?',
-        description: 'We promise to only send you relevant content and give you updates on your transactions',
-        buttons: {
-          primaryButtonText: 'Sign me up!',
-          secondaryButtonText: 'No thanks'
-        }
-      }
+  //     // If the boxConfig is not present, set default values
+  //     const boxContent = pushConfigs?.boxConfig?.content || {
+  //       title: 'Would you like to receive Push Notifications?',
+  //       description: 'We promise to only send you relevant content and give you updates on your transactions',
+  //       buttons: {
+  //         primaryButtonText: 'Sign me up!',
+  //         secondaryButtonText: 'No thanks'
+  //       }
+  //     }
 
-      // TODO : Get these parameters from the server
-      window.wzrkPermissionPopup.wizAlert(
-        {
-          title: boxContent.title,
-          body: boxContent.description,
-          confirmButtonText: boxContent.buttons?.primaryButtonText,
-          confirmButtonColor: '#f28046',
-          rejectButtonText: boxContent.buttons?.secondaryButtonText
-        },
-        (enabled) => {
-          if (enabled) {
-            // TODO : How can we identify if the servicer worker file name is changed
-            this.#setUpSafariNotifications(null, null, null, '/clevertap_sw.js')
-          }
-        }
-      )
-    }
-  }
+  //     // TODO : Get these parameters from the server
+  //     window.wzrkPermissionPopup.wizAlert(
+  //       {
+  //         title: boxContent.title,
+  //         body: boxContent.description,
+  //         confirmButtonText: boxContent.buttons?.primaryButtonText,
+  //         confirmButtonColor: '#f28046',
+  //         rejectButtonText: boxContent.buttons?.secondaryButtonText
+  //       },
+  //       (enabled) => {
+  //         if (enabled) {
+  //           // TODO : How can we identify if the servicer worker file name is changed
+  //           this.#setUpSafariNotifications(null, null, null, '/clevertap_sw.js')
+  //         }
+  //       }
+  //     )
+  //   }
+  // }
 
   #isNativeWebPushSupported () {
     return 'PushManager' in window
@@ -116,6 +115,7 @@ export default class NotificationHandler extends Array {
       //   this.#logger.error('Ensure that Vapid public key is configured in the dashboard')
       //   return
       // }
+      StorageManager.setMetaProp('vapid_shown', true)
       navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
         window.Notification.requestPermission().then((permission) => {
           if (permission === 'granted') {
@@ -406,6 +406,14 @@ export default class NotificationHandler extends Array {
       okButtonColor = '#f28046' // default color for positive button
     }
 
+    // user is already subs to APNS
+    // next time after n days he comes back and has added vapid keys in dashboard
+    // now when the user calls notififcation.push()
+    // for safari alone
+    // Now do we want to show the soft prompt depends on nofif AND the `vapid_shown` variable
+    // will go to vapid flow
+    // make this change for this and clevertap.notifications.enable()
+
     // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
     const now = new Date().getTime() / 1000
     if ((StorageManager.getMetaProp('notif_last_time')) == null) {
@@ -416,12 +424,15 @@ export default class NotificationHandler extends Array {
         askAgainTimeInSeconds = 7 * 24 * 60 * 60
       }
 
-      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
+      const notifLastTime = StorageManager.getMetaProp('notif_last_time')
+      if (now - notifLastTime < askAgainTimeInSeconds) {
         return
-      } else {
-        // continue asking
-        StorageManager.setMetaProp('notif_last_time', now)
       }
+
+      if (navigator.userAgent.includes('Safari') && StorageManager.getMetaProp('vapid_shown') === true) {
+        return
+      }
+      StorageManager.setMetaProp('notif_last_time', now)
     }
 
     if (isHTTP) {
@@ -497,14 +508,14 @@ export default class NotificationHandler extends Array {
   }
 
   _enableWebPush (enabled, applicationServerKey) {
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+    // const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
     /*
       For Safari If the enabled=true, vapidServer key is not `null`, it means that there has been a Vapid Feature is enabled for Safari from Dashboard,
       Hence we nudge the user once to do a new subsciption via Native Web Push(Vapid)
     */
 
     // TODO : change `applicationServerKey === null` to `applicationServerKey !== null` once BE changes are done
-    const shoudMigrateToVapid = isSafari && ('PushManager' in window) && !StorageManager.getMetaProp('apns_migration_soft_prompt_show') && enabled && applicationServerKey === null
+    // const shoudMigrateToVapid = isSafari && ('PushManager' in window) && !StorageManager.getMetaProp('apns_migration_soft_prompt_show') && enabled && applicationServerKey === null
 
     $ct.webPushEnabled = enabled
     if (applicationServerKey != null) {
@@ -516,12 +527,12 @@ export default class NotificationHandler extends Array {
       this.#logger.error('Ensure that web push notifications are fully enabled and integrated before requesting them')
     }
 
-    if (shoudMigrateToVapid) {
-      /*
-        This function is used to migrate existing APNS Subsciptions for Safari Browsers to
-        Native Web Push, Once all the users are migrated to Native Web Push in Safari, We can remove this
-      */
-      this.migrateSupportedSafariWithAPNSSubscription()
-    }
+    // if (shoudMigrateToVapid) {
+    //   /*
+    //     This function is used to migrate existing APNS Subsciptions for Safari Browsers to
+    //     Native Web Push, Once all the users are migrated to Native Web Push in Safari, We can remove this
+    //   */
+    //   this.migrateSupportedSafariWithAPNSSubscription()
+    // }
   }
 }

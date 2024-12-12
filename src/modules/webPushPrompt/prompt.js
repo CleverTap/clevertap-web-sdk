@@ -108,6 +108,9 @@ export const createNotificationBox = (configData) => {
   const popupFrequency = content.popupFrequency || 7 * 24 * 60 * 60
 
   if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
+    if (navigator.userAgent.includes('Safari') && StorageManager.getMetaProp('vapid_shown') === true) {
+      return
+    }
     document.body.appendChild(wrapper)
     if (!configData.isPreview) { addEventListeners(wrapper) }
   }
