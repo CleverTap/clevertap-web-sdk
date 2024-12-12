@@ -24,7 +24,7 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
   }
 }
 
-export const enablePush = (logger, account, request, customSwPath) => {
+export const enablePush = (logger, account, request, customSwPath, skipDialog) => {
   const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
   $ct.pushConfig = _pushConfig
   if (!$ct.pushConfig) {
@@ -35,6 +35,13 @@ export const enablePush = (logger, account, request, customSwPath) => {
   if (customSwPath) { swPath = customSwPath }
 
   notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
+
+  if (skipDialog) {
+    notificationHandler.setApplicationServerKey(appServerKey)
+    notificationHandler.setUpWebPushNotifications(null, swPath, null, null)
+    return
+  }
+
   const { showBox, boxType, showBellIcon, isPreview } = $ct.pushConfig
 
   if (isPreview) {
@@ -103,13 +110,28 @@ export const createNotificationBox = (configData) => {
 
   setElementPosition(pnCard, style.card.position)
 
+  if (!configData.isPreview) {
+    if ('Notification' in window && Notification !== null) {
+      if (Notification.permission === 'granted') {
+        notificationHandler.setApplicationServerKey(appServerKey)
+        notificationHandler.setUpWebPushNotifications(null, swPath, null, null)
+        return
+      } else if (Notification.permission === 'denied') {
+        return
+      }
+    }
+  }
+
   const now = new Date().getTime() / 1000
   const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time')
   const popupFrequency = content.popupFrequency || 7 * 24 * 60 * 60
 
   if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
     document.body.appendChild(wrapper)
-    if (!configData.isPreview) { addEventListeners(wrapper) }
+    if (!configData.isPreview) {
+      StorageManager.setMetaProp('webpush_last_notif_time', now)
+      addEventListeners(wrapper)
+    }
   }
 }
 
@@ -175,7 +197,6 @@ export const addEventListeners = (wrapper) => {
   })
 
   secondaryButton.addEventListener('click', () => {
-    StorageManager.setMetaProp('webpush_last_notif_time', Date.now() / 1000)
     removeWrapper()
   })
 }

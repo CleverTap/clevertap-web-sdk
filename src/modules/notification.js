@@ -37,8 +37,8 @@ export default class NotificationHandler extends Array {
   }
 
   enable (options = {}) {
-    const { swPath } = options
-    enablePush(this.#logger, this.#account, this.#request, swPath)
+    const { swPath, skipDialog } = options
+    enablePush(this.#logger, this.#account, this.#request, swPath, skipDialog)
   }
 
   _processOldValues () {
@@ -287,7 +287,7 @@ export default class NotificationHandler extends Array {
     }
 
     // we check for the cookie in setUpChromeNotifications() the tokens may have changed
-
+    
     if (!isHTTP) {
       const hasNotification = 'Notification' in window
       if (!hasNotification || Notification == null) {
