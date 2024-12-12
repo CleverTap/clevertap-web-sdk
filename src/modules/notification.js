@@ -287,7 +287,7 @@ export default class NotificationHandler extends Array {
     }
 
     // we check for the cookie in setUpChromeNotifications() the tokens may have changed
-    
+
     if (!isHTTP) {
       const hasNotification = 'Notification' in window
       if (!hasNotification || Notification == null) {

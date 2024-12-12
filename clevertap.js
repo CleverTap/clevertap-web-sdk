@@ -4375,7 +4375,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.12';
+        const sdkVersion = '1.11.13';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -7429,7 +7429,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.12',
+        lib: 'web-sdk-v1.11.13',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9121,7 +9121,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.12';
+      return 'web-sdk-v1.11.13';
     }
 
     defineVariable(name, defaultValue) {

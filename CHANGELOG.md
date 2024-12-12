@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.13] 12th Dec, 2024
+- Fixed web push soft prompt bug
+
 ## [1.11.12] 11th Dec, 2024
 - Initialize Web Inbox on document readyState complete
 
