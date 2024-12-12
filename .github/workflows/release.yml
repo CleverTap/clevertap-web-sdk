@@ -4,7 +4,7 @@ on:
     types: [published]
 jobs:
   build:
-    runs-on: macos-13
+    runs-on: macos-14-large
     steps:
       - uses: actions/checkout@v2
       - name: Use node.js version 10.24.1
@@ -14,7 +14,7 @@ jobs:
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn cache dir)"
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -45,4 +45,4 @@ jobs:
 #       - name: Copy file to S3
 #         # S3_bucket/clevertap.js for beta, /a.js when moving to prod for all
 #         run: |
-#           aws s3 cp clevertap.min.js s3://${{ secrets.S3_BUCKET_PATH }} 
+#           aws s3 cp clevertap.min.js s3://${{ secrets.S3_BUCKET_PATH }}
