@@ -124,7 +124,7 @@ export const createNotificationBox = (configData) => {
 
   const now = new Date().getTime() / 1000
   const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time')
-  const popupFrequency = content.popupFrequency || 7 * 24 * 60 * 60
+  const popupFrequency = content.popupFrequency || 7 // number of days
 
   if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
     document.body.appendChild(wrapper)
