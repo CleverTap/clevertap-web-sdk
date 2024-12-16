@@ -5271,7 +5271,7 @@
       const {
         swPath
       } = options;
-      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath);
+      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
     }
 
     _processOldValues() {
@@ -5292,48 +5292,9 @@
 
     setApplicationServerKey(applicationServerKey) {
       _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
-    } // migrateSupportedSafariWithAPNSSubscription () {
-    //   this.#addWizAlertJS().onload = () => {
-    //     StorageManager.setMetaProp('apns_migration_soft_prompt_show', true)
-    //     const pushConfigs = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
-    //     // If the boxConfig is not present, set default values
-    //     const boxContent = pushConfigs?.boxConfig?.content || {
-    //       title: 'Would you like to receive Push Notifications?',
-    //       description: 'We promise to only send you relevant content and give you updates on your transactions',
-    //       buttons: {
-    //         primaryButtonText: 'Sign me up!',
-    //         secondaryButtonText: 'No thanks'
-    //       }
-    //     }
-    //     // TODO : Get these parameters from the server
-    //     window.wzrkPermissionPopup.wizAlert(
-    //       {
-    //         title: boxContent.title,
-    //         body: boxContent.description,
-    //         confirmButtonText: boxContent.buttons?.primaryButtonText,
-    //         confirmButtonColor: '#f28046',
-    //         rejectButtonText: boxContent.buttons?.secondaryButtonText
-    //       },
-    //       (enabled) => {
-    //         if (enabled) {
-    //           // TODO : How can we identify if the servicer worker file name is changed
-    //           this.#setUpSafariNotifications(null, null, null, '/clevertap_sw.js')
-    //         }
-    //       }
-    //     )
-    //   }
-    // }
-
+    }
 
     _enableWebPush(enabled, applicationServerKey) {
-      // const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-
-      /*
-        For Safari If the enabled=true, vapidServer key is not `null`, it means that there has been a Vapid Feature is enabled for Safari from Dashboard,
-        Hence we nudge the user once to do a new subsciption via Native Web Push(Vapid)
-      */
-      // TODO : change `applicationServerKey === null` to `applicationServerKey !== null` once BE changes are done
-      // const shoudMigrateToVapid = isSafari && ('PushManager' in window) && !StorageManager.getMetaProp('apns_migration_soft_prompt_show') && enabled && applicationServerKey === null
       $ct.webPushEnabled = enabled;
 
       if (applicationServerKey != null) {
@@ -5344,14 +5305,7 @@
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
       } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
-      } // if (shoudMigrateToVapid) {
-      //   /*
-      //     This function is used to migrate existing APNS Subsciptions for Safari Browsers to
-      //     Native Web Push, Once all the users are migrated to Native Web Push in Safari, We can remove this
-      //   */
-      //   this.migrateSupportedSafariWithAPNSSubscription()
-      // }
-
+      }
     }
 
   }
@@ -5378,7 +5332,7 @@
       //   this.#logger.error('Ensure that Vapid public key is configured in the dashboard')
       //   return
       // }
-      StorageManager.setMetaProp('vapid_shown', true);
+      StorageManager.setMetaProp('vapid_migration_prompt_shown', true);
       navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
         window.Notification.requestPermission().then(permission => {
           if (permission === 'granted') {
@@ -5694,14 +5648,7 @@
 
     if (okButtonColor == null || !okButtonColor.match(/^#[a-f\d]{6}$/i)) {
       okButtonColor = '#f28046'; // default color for positive button
-    } // user is already subs to APNS
-    // next time after n days he comes back and has added vapid keys in dashboard
-    // now when the user calls notififcation.push()
-    // for safari alone
-    // Now do we want to show the soft prompt depends on nofif AND the `vapid_shown` variable
-    // will go to vapid flow
-    // make this change for this and clevertap.notifications.enable()
-    // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
+    } // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
 
 
     const now = new Date().getTime() / 1000;
@@ -5715,13 +5662,20 @@
       }
 
       const notifLastTime = StorageManager.getMetaProp('notif_last_time');
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
       if (now - notifLastTime < askAgainTimeInSeconds) {
-        return;
-      }
+        if (!isSafari) {
+          return;
+        } // TODO : change `this.#fcmPublicKey  === null` to `this.#fcmPublicKey  !== null` once BE changes are done
+        // Vapid is supported but not migrated
 
-      if (navigator.userAgent.includes('Safari') && StorageManager.getMetaProp('vapid_shown') === true) {
-        return;
+
+        const vapidSupported = isSafari && 'PushManager' in window && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] === null;
+
+        if (!vapidSupported) {
+          return;
+        }
       }
 
       StorageManager.setMetaProp('notif_last_time', now);
@@ -5828,7 +5782,7 @@
       updatePushConfig();
     }
   };
-  const enablePush = (logger, account, request, customSwPath) => {
+  const enablePush = (logger, account, request, customSwPath, fcmPublicKey) => {
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     $ct.pushConfig = _pushConfig;
@@ -5856,10 +5810,10 @@
     } = $ct.pushConfig;
 
     if (isPreview) {
-      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig);
+      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey);
       if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
     } else {
-      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig);
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey);
       if (showBellIcon) createBellIcon($ct.pushConfig);
     }
   };
@@ -5874,7 +5828,7 @@
     return element;
   };
 
-  const createNotificationBox = configData => {
+  const createNotificationBox = (configData, fcmPublicKey) => {
     if (document.getElementById('pnWrapper')) return;
     const {
       boxConfig: {
@@ -5938,16 +5892,28 @@
     const now = new Date().getTime() / 1000;
     const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
     const popupFrequency = content.popupFrequency || 7 * 24 * 60 * 60;
+    const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-    if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
-      if (navigator.userAgent.includes('Safari') && StorageManager.getMetaProp('vapid_shown') === true) {
-        return;
-      }
+    if (shouldShowNotification) {
+      if (!isSafari) {
+        document.body.appendChild(wrapper);
 
-      document.body.appendChild(wrapper);
+        if (!configData.isPreview) {
+          addEventListeners(wrapper);
+        }
+      } else {
+        // TODO : change `fcmPublicKey  === null` to `fcmPublicKey  !== null` once BE changes are done
+        // Vapid is supported but not migrated
+        const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && fcmPublicKey === null;
 
-      if (!configData.isPreview) {
-        addEventListeners(wrapper);
+        if (vapidSupportedAndNotMigrated) {
+          document.body.appendChild(wrapper);
+
+          if (!configData.isPreview) {
+            addEventListeners(wrapper);
+          }
+        }
       }
     }
   };
