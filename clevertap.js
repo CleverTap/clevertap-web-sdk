@@ -996,7 +996,7 @@
 
   const EMBED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Incorrect embed script.");
   const EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
-  const GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should be either M or F. ").concat(DATA_NOT_SENT_TEXT);
+  const GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should one of the following: m,f,o,u,male,female,unknown,others (case insensitive). ").concat(DATA_NOT_SENT_TEXT);
   const EMPLOYED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Employed value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
   const MARRIED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Married value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
   const EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
@@ -1948,7 +1948,7 @@
             continue;
           }
 
-          if (profileKey === 'Gender' && !profileVal.match(/^M$|^F$/)) {
+          if (profileKey === 'Gender' && !profileVal.match(/\b(?:[mM](?:ale)?|[fF](?:emale)?|[oO](?:thers)?|[uU](?:nknown)?)\b/)) {
             valid = false;
             logger.error(GENDER_ERROR);
           }
@@ -2226,19 +2226,19 @@
       const divId = $ct.campaignDivMap[campaignId];
 
       if (divId != null) {
-        document.getElementById(divId).style.display = 'none';
+        document.getElementById(divId).remove();
 
         if (divId === 'intentPreview') {
           if (document.getElementById('intentOpacityDiv') != null) {
-            document.getElementById('intentOpacityDiv').style.display = 'none';
+            document.getElementById('intentOpacityDiv').remove();
           }
         } else if (divId === 'wizParDiv0') {
           if (document.getElementById('intentOpacityDiv0') != null) {
-            document.getElementById('intentOpacityDiv0').style.display = 'none';
+            document.getElementById('intentOpacityDiv0').remove();
           }
         } else if (divId === 'wizParDiv2') {
           if (document.getElementById('intentOpacityDiv2') != null) {
-            document.getElementById('intentOpacityDiv2').style.display = 'none';
+            document.getElementById('intentOpacityDiv2').remove();
           }
         }
       }
@@ -3464,7 +3464,7 @@
                 }
               }
             }
-          } else if (this.inboxSelector.contains(e.target) || this.isInboxOpen) {
+          } else if (this.checkForWebInbox(e) || this.isInboxOpen) {
             if (this.isInboxFromFlutter) {
               this.isInboxFromFlutter = false;
             } else {
@@ -3496,7 +3496,7 @@
         msgs = [];
       }
 
-      if (msgs.length > 0 && this.inbox) {
+      if (msgs.length > 0) {
         this.updateInboxMessages(msgs);
       }
     }
@@ -3608,7 +3608,7 @@
 
       for (const msg in messages) {
         if (messages[msg].wzrk_ttl && messages[msg].wzrk_ttl > 0 && messages[msg].wzrk_ttl < now) {
-          if (deleteMsgsFromUI) {
+          if (deleteMsgsFromUI && this.inbox) {
             const el = this.shadowRoot.getElementById(messages[msg].id);
             el && el.remove();
 
@@ -3650,8 +3650,11 @@
         this.unviewedCounter++;
       });
       saveInboxMessages(inboxMsgs);
-      this.buildUIForMessages(incomingMsgs);
-      this.updateUnviewedBadgeCounter();
+
+      if (this.inbox) {
+        this.buildUIForMessages(incomingMsgs);
+        this.updateUnviewedBadgeCounter();
+      }
     }
 
     createEl(type, id, part) {
@@ -3854,9 +3857,19 @@
 
 
     /**
+     * This function checks if the current Event Node is same as the already stored inboxSelector or the
+     * inboxSelector present in the document
+     */
+    checkForWebInbox(e) {
+      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+      return this.inboxSelector.contains(e.target) || document.getElementById(config.inboxSelector).contains(e.target);
+    }
+    /**
      * This function will be called every time when a message comes into the inbox viewport and it's visibility increases to 50% or drops below 50%
      * If a msg is 50% visible in the UI, we need to mark the message as viewed in LS and raise notification viewed event
      */
+
+
     handleMessageViewed(entries) {
       const raiseViewedEvent = !this.isPreview;
 
@@ -4077,6 +4090,15 @@
   };
   const initializeWebInbox = logger => {
     return new Promise((resolve, reject) => {
+      // Adding this as a band-aid for SUC-126380
+      // Adds ct-web-inbox element in dom which is not visible if Web Inbox Config in LS
+      document.addEventListener('readystatechange', function () {
+        if (document.readyState === 'complete') {
+          addWebInbox(logger);
+          resolve();
+        }
+      });
+
       if (document.readyState === 'complete') {
         addWebInbox(logger);
         resolve();
@@ -4264,7 +4286,9 @@
     FLICKER_ID: 'wve-flicker-style'
   };
 
-  const updateFormData = (element, formStyle) => {
+  const updateFormData = function (element, formStyle, payload) {
+    let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+
     // Update the element style
     if (formStyle.style !== undefined) {
       Object.keys(formStyle.style).forEach(property => {
@@ -4285,13 +4309,23 @@
 
 
     if (formStyle.text !== undefined) {
-      element.innerText = formStyle.text;
+      element.innerText = isPreview ? formStyle.text.text : formStyle.text;
     } // Handle element onClick
 
 
     if (formStyle.clickDetails !== undefined) {
       const url = formStyle.clickDetails.clickUrl;
-      element.onclick = formStyle.clickDetails.newTab ? () => window.open(url, '_blank').focus() : () => {
+      element.onclick = formStyle.clickDetails.newTab ? () => {
+        if (!isPreview) {
+          window.clevertap.raiseNotificationClicked(payload);
+        }
+
+        window.open(url, '_blank').focus();
+      } : () => {
+        if (!isPreview) {
+          window.clevertap.raiseNotificationClicked(payload);
+        }
+
         window.location.href = url;
       };
     } // Set the image source
@@ -4307,25 +4341,6 @@
       style.innerHTML = formStyle.elementCss;
       document.head.appendChild(style);
     }
-  };
-
-  const versionCompare = currentVersion => {
-    const requiredVersion = '1.9.2';
-    if (requiredVersion === currentVersion) return true;
-    const splitRequiredVersion = requiredVersion.split('.');
-    const splitCurrentVersion = currentVersion.split('.');
-    let p1 = 0;
-    let isWebsiteVersionHigher = false;
-
-    while (p1 < splitRequiredVersion.length && !isWebsiteVersionHigher) {
-      if (parseInt(splitRequiredVersion[p1]) < parseInt(splitCurrentVersion[p1])) {
-        isWebsiteVersionHigher = true;
-      }
-
-      p1++;
-    }
-
-    return isWebsiteVersionHigher;
   };
 
   const checkBuilder = (logger, accountId) => {
@@ -4360,13 +4375,12 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.2';
-        const isRequiredVersion = versionCompare(sdkVersion);
+        const sdkVersion = '1.11.12';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
           originUrl: window.location.href,
-          sdkVersion: isRequiredVersion ? '1.9.3' : sdkVersion
+          sdkVersion
         }, '*');
       }
     }
@@ -4386,7 +4400,9 @@
     if (event.data.message === 'Dashboard') {
       var _event$data$variant, _event$data$details;
 
-      initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null, (_event$data$details = event.data.details) !== null && _event$data$details !== void 0 ? _event$data$details : {});
+      // handle personalisation
+      window.evtMaster = event.data.personalisation.evtMaster;
+      initialiseCTBuilder(event.data.url, (_event$data$variant = event.data.variant) !== null && _event$data$variant !== void 0 ? _event$data$variant : null, (_event$data$details = event.data.details) !== null && _event$data$details !== void 0 ? _event$data$details : {}, event.data.personalisation);
     } else if (event.data.message === 'Overlay') {
       renderVisualBuilder(event.data, true);
     }
@@ -4396,16 +4412,17 @@
    * @param {string} url - The URL to initialize the builder.
    * @param {string} variant - The variant of the builder.
    * @param {Object} details - The details object.
+   * @param {Object} personalisation - The personalisation object
    */
 
 
-  const initialiseCTBuilder = (url, variant, details) => {
+  const initialiseCTBuilder = (url, variant, details, personalisation) => {
     if (document.readyState === 'complete') {
-      onContentLoad(url, variant, details);
+      onContentLoad(url, variant, details, personalisation);
     } else {
       document.addEventListener('readystatechange', () => {
         if (document.readyState === 'complete') {
-          onContentLoad(url, variant, details);
+          onContentLoad(url, variant, details, personalisation);
         }
       });
     }
@@ -4418,7 +4435,7 @@
    * Handles content load for Clevertap builder.
    */
 
-  function onContentLoad(url, variant, details) {
+  function onContentLoad(url, variant, details, personalisation) {
     if (!contentLoaded) {
       if (window.Shopify) {
         isShopify = true;
@@ -4434,7 +4451,7 @@
       container.style.display = 'flex';
       document.body.appendChild(container);
       const overlayPath = OVERLAY_PATH;
-      loadOverlayScript(overlayPath, url, variant, details).then(() => {
+      loadOverlayScript(overlayPath, url, variant, details, personalisation).then(() => {
         console.log('Overlay script loaded successfully.');
         contentLoaded = true;
       }).catch(error => {
@@ -4461,11 +4478,12 @@
    * @param {string} url - The URL.
    * @param {string} variant - The variant.
    * @param {Object} details - The details object.
+   * @param {Object} personalisation
    * @returns {Promise} A promise.
    */
 
 
-  function loadOverlayScript(overlayPath, url, variant, details) {
+  function loadOverlayScript(overlayPath, url, variant, details, personalisation) {
     return new Promise((resolve, reject) => {
       var script = document.createElement('script');
       script.type = 'module';
@@ -4478,7 +4496,8 @@
             url,
             variant,
             details,
-            isShopify
+            isShopify,
+            personalisation
           });
           resolve();
         } else {
@@ -4501,28 +4520,48 @@
 
 
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
-    const details = isPreview ? targetingMsgJson.details[0] : targetingMsgJson.display.details[0];
-    const siteUrl = Object.keys(details)[0];
-    const selectors = details[siteUrl];
-    let elementDisplayed = false;
-    if (siteUrl !== window.location.href.split('?')[0]) return;
+    const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
+    let notificationViewed = false;
+    const payload = {
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot
+    };
+
+    const raiseViewed = () => {
+      if (!isPreview && !notificationViewed) {
+        notificationViewed = true;
+        window.clevertap.renderNotificationViewed(payload);
+      }
+    };
 
     const processElement = (element, selector) => {
-      if (selectors[selector].html) {
-        element.outerHTML = selectors[selector].html;
-      } else if (selectors[selector].json) {
-        dispatchJsonData(targetingMsgJson, selectors[selector]);
+      var _selector$values;
+
+      if (!selector.values) return;
+
+      if (selector.values.html) {
+        if (isPreview) {
+          element.outerHTML = selector.values.html.text;
+        } else {
+          element.outerHTML = selector.values.html;
+        }
+      } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
+        dispatchJsonData(targetingMsgJson, selector.values, isPreview);
       } else {
-        updateFormData(element, selectors[selector].form);
+        payload.msgCTkv = {
+          wzrk_selector: selector.selector
+        };
+        updateFormData(element, selector.values.form, payload, isPreview);
       }
     };
 
     const tryFindingElement = selector => {
       let count = 0;
       const intervalId = setInterval(() => {
-        const retryElement = document.querySelector(selector);
+        const retryElement = document.querySelector(selector.selector);
 
         if (retryElement) {
+          raiseViewed();
           processElement(retryElement, selector);
           clearInterval(intervalId);
         } else if (++count >= 20) {
@@ -4532,31 +4571,30 @@
       }, 500);
     };
 
-    Object.keys(selectors).forEach(selector => {
-      const element = document.querySelector(selector);
+    details.forEach(d => {
+      if (d.url === window.location.href.split('?')[0]) {
+        d.selectorData.forEach(s => {
+          const element = document.querySelector(s.selector);
 
-      if (element) {
-        processElement(element, selector);
-        elementDisplayed = true;
-      } else {
-        tryFindingElement(selector);
+          if (element) {
+            raiseViewed();
+            processElement(element, s);
+          } else {
+            tryFindingElement(s);
+          }
+        });
       }
     });
-
-    if (elementDisplayed && !isPreview) {
-      window.clevertap.renderNotificationViewed({
-        msgId: targetingMsgJson.wzrk_id,
-        pivotId: targetingMsgJson.wzrk_pivot
-      });
-    }
   };
   /**
    * Dispatches JSON data.
    * @param {Object} targetingMsgJson - The point and click campaign JSON object.
    * @param {Object} selector - The selector object.
+   * @param {boolean} isPreview - If preview different handling
    */
 
   function dispatchJsonData(targetingMsgJson, selector) {
+    let isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
     const inaObj = {};
     inaObj.msgId = targetingMsgJson.wzrk_id;
 
@@ -4565,7 +4603,11 @@
     }
 
     if (selector.json != null) {
-      inaObj.json = selector.json;
+      if (isPreview) {
+        inaObj.json = selector.json.text;
+      } else {
+        inaObj.json = selector.json;
+      }
     }
 
     const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', {
@@ -4604,7 +4646,7 @@
     }
 
     (function () {
-      const styleContent = "\n      .wve-anti-flicker-hide {\n        opacity: 0 !important\n      }\n      .wve-anti-flicker-show {\n        transition: opacity 0.5s, filter 0.5s !important\n      }\n    "; // Create and append the style element if it doesn't exist
+      const styleContent = "\n      .wve-anti-flicker-hide {\n        opacity: 0 !important;\n      }\n      .wve-anti-flicker-show {\n        transition: opacity 0.5s, filter 0.5s !important;\n      }\n    "; // Create and append the style element if it doesn't exist
 
       const styleId = WVE_CLASS.FLICKER_ID;
 
@@ -4677,10 +4719,10 @@
       });
     }
 
-    window.addEventListener('load', () => {
+    window.addEventListener('DOMContentLoaded', () => {
       observeUrlChange();
-      applyAntiFlicker(personalizedSelectors);
     });
+    applyAntiFlicker(personalizedSelectors);
   }
 
   class CTWebPersonalisationBanner extends HTMLElement {
@@ -5537,7 +5579,11 @@
 
 
     if (!isHTTP) {
-      if (Notification == null) {
+      const hasNotification = ('Notification' in window);
+
+      if (!hasNotification || Notification == null) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Notification not supported on this Device or Browser');
+
         return;
       } // handle migrations from other services -> chrome notifications may have already been asked for before
 
@@ -6781,7 +6827,7 @@
         html = css + title + body;
       }
 
-      iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
+      iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe); // Dispatch event for interstitial/exit intent close
 
       const closeCampaign = new Event('CT_campaign_rendered');
@@ -7362,7 +7408,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.2',
+        lib: 'web-sdk-v1.11.12',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8412,16 +8458,24 @@
         const messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
-          const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId);
-
           if (messages[messageId].viewed === 0) {
             $ct.inbox.unviewedCounter--;
             delete $ct.inbox.unviewedMessages[messageId];
-            document.getElementById('unviewedBadge').innerText = $ct.inbox.unviewedCounter;
-            document.getElementById('unviewedBadge').style.display = $ct.inbox.unviewedCounter > 0 ? 'flex' : 'none';
+            const unViewedBadge = document.getElementById('unviewedBadge');
+
+            if (unViewedBadge) {
+              unViewedBadge.innerText = $ct.inbox.unviewedCounter;
+              unViewedBadge.style.display = $ct.inbox.unviewedCounter > 0 ? 'flex' : 'none';
+            }
           }
 
-          el && el.remove();
+          const ctInbox = document.querySelector('ct-web-inbox');
+
+          if (ctInbox) {
+            const el = ctInbox.shadowRoot.getElementById(messageId);
+            el && el.remove();
+          }
+
           delete messages[messageId];
           saveInboxMessages(messages);
         } else {
@@ -8439,18 +8493,23 @@
         const messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
-          const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId);
+          const ctInbox = document.querySelector('ct-web-inbox');
 
-          if (el !== null) {
-            el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+          if (ctInbox) {
+            const el = ctInbox.shadowRoot.getElementById(messageId);
+
+            if (el !== null) {
+              el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+            }
           }
 
           messages[messageId].viewed = 1;
+          const unViewedBadge = document.getElementById('unviewedBadge');
 
-          if (document.getElementById('unviewedBadge')) {
-            var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1;
-            document.getElementById('unviewedBadge').innerText = counter;
-            document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none';
+          if (unViewedBadge) {
+            var counter = parseInt(unViewedBadge.innerText) - 1;
+            unViewedBadge.innerText = counter;
+            unViewedBadge.style.display = counter > 0 ? 'flex' : 'none';
           }
 
           window.clevertap.renderNotificationViewed({
@@ -8487,10 +8546,14 @@
         if (Object.keys(unreadMsg).length > 0) {
           const msgIds = Object.keys(unreadMsg);
           msgIds.forEach(key => {
-            const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(key);
+            const ctInbox = document.querySelector('ct-web-inbox');
 
-            if (el !== null) {
-              el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+            if (ctInbox) {
+              const el = ctInbox.shadowRoot.getElementById(key);
+
+              if (el !== null) {
+                el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
+              }
             }
 
             messages[key].viewed = 1;
@@ -8499,8 +8562,13 @@
               pivotId: messages[key].wzrk_pivot
             });
           });
-          document.getElementById('unviewedBadge').innerText = 0;
-          document.getElementById('unviewedBadge').style.display = 'none';
+          const unViewedBadge = document.getElementById('unviewedBadge');
+
+          if (unViewedBadge) {
+            unViewedBadge.innerText = 0;
+            unViewedBadge.style.display = 'none';
+          }
+
           saveInboxMessages(messages);
           $ct.inbox.unviewedCounter = 0;
           $ct.inbox.unviewedMessages = {};
@@ -9032,7 +9100,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.2';
+      return 'web-sdk-v1.11.12';
     }
 
     defineVariable(name, defaultValue) {

@@ -33,7 +33,7 @@ export class Inbox extends HTMLElement {
   }
 
   set incomingMessages (msgs = []) {
-    if (msgs.length > 0 && this.inbox) {
+    if (msgs.length > 0) {
       this.updateInboxMessages(msgs)
     }
   }
@@ -134,7 +134,7 @@ export class Inbox extends HTMLElement {
     const now = Math.floor(Date.now() / 1000)
     for (const msg in messages) {
       if (messages[msg].wzrk_ttl && messages[msg].wzrk_ttl > 0 && messages[msg].wzrk_ttl < now) {
-        if (deleteMsgsFromUI) {
+        if (deleteMsgsFromUI && this.inbox) {
           const el = this.shadowRoot.getElementById(messages[msg].id)
           el && el.remove()
           if (!messages[msg].viewed) {
@@ -168,8 +168,10 @@ export class Inbox extends HTMLElement {
       this.unviewedCounter++
     })
     saveInboxMessages(inboxMsgs)
-    this.buildUIForMessages(incomingMsgs)
-    this.updateUnviewedBadgeCounter()
+    if (this.inbox) {
+      this.buildUIForMessages(incomingMsgs)
+      this.updateUnviewedBadgeCounter()
+    }
   }
 
   createEl (type, id, part) {
@@ -377,7 +379,7 @@ export class Inbox extends HTMLElement {
             }
           }
         }
-      } else if (this.inboxSelector.contains(e.target) || this.isInboxOpen) {
+      } else if (this.checkForWebInbox(e) || this.isInboxOpen) {
         if (this.isInboxFromFlutter) {
           this.isInboxFromFlutter = false
         } else {
@@ -386,6 +388,16 @@ export class Inbox extends HTMLElement {
       }
     }
   })()
+
+  /**
+   * This function checks if the current Event Node is same as the already stored inboxSelector or the
+   * inboxSelector present in the document
+   */
+  checkForWebInbox (e) {
+    const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+    return this.inboxSelector.contains(e.target) ||
+     document.getElementById(config.inboxSelector).contains(e.target)
+  }
 
   /**
    * This function will be called every time when a message comes into the inbox viewport and it's visibility increases to 50% or drops below 50%

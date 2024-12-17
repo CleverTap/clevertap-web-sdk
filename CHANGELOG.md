@@ -1,6 +1,39 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.12] 11th Dec, 2024
+- Initialize Web Inbox on document readyState complete
+
+## [1.11.11] 3rd Dec, 2024
+- Support for Personalisation in HTML & JSON for Visual Editor
+
+## [1.11.10] 22nd Nov, 2024
+- Fixed Web Popup Stale Nodes Cleanup
+
+## [1.11.9] 14th Nov, 2024
+- Fixed delete & read web-inbox messages for custom inbox
+
+## [1.11.8] 13th Nov, 2024
+- Fixed anti-flicker for visual editor 
+- Fixed White Background issue in Web Popup
+
+## [1.11.7] 11th Nov, 2024
+- Fixed saving/fetching inbox messages for custom inbox
+- Added undefined check for 'Notification' in web push
+
+## [1.11.6] 04th Nov, 2024
+- Fix for Checking Web Inbox when inbox Node becomes stale
+
+## [1.11.5] 30th Oct, 2024
+- Added support for personalisation in visual editor
+
+## [1.11.4] 24th Oct, 2024
+- Fix for gender values. Have removed frontend validation
+
+## [1.11.3] - 17 Oct, 2024
+- Support for new payload structure of Visual Editor
+- Moved version check of SDK to Dashboard
+
 ## [1.11.2] - 17 Oct, 2024
 - Fixes a bug where Web Popup Campaign was not working if other iframes present on DOM.
 

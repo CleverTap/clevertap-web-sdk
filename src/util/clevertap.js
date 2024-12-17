@@ -177,7 +177,7 @@ export const isProfileValid = (profileObj, { logger }) => {
           delete profileObj[profileKey]
           continue
         }
-        if (profileKey === 'Gender' && !profileVal.match(/^M$|^F$/)) {
+        if (profileKey === 'Gender' && !profileVal.match(/\b(?:[mM](?:ale)?|[fF](?:emale)?|[oO](?:thers)?|[uU](?:nknown)?)\b/)) {
           valid = false
           logger.error(GENDER_ERROR)
         }
@@ -427,18 +427,18 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
   if ($ct.campaignDivMap != null) {
     const divId = $ct.campaignDivMap[campaignId]
     if (divId != null) {
-      document.getElementById(divId).style.display = 'none'
+      document.getElementById(divId).remove()
       if (divId === 'intentPreview') {
         if (document.getElementById('intentOpacityDiv') != null) {
-          document.getElementById('intentOpacityDiv').style.display = 'none'
+          document.getElementById('intentOpacityDiv').remove()
         }
       } else if (divId === 'wizParDiv0') {
         if (document.getElementById('intentOpacityDiv0') != null) {
-          document.getElementById('intentOpacityDiv0').style.display = 'none'
+          document.getElementById('intentOpacityDiv0').remove()
         }
       } else if (divId === 'wizParDiv2') {
         if (document.getElementById('intentOpacityDiv2') != null) {
-          document.getElementById('intentOpacityDiv2').style.display = 'none'
+          document.getElementById('intentOpacityDiv2').remove()
         }
       }
     }

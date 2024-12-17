@@ -768,7 +768,7 @@ const _tr = (msg, {
         '</div></div>'
       html = css + title + body
     }
-    iframe.setAttribute('style', 'z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;')
+    iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
 
     // Dispatch event for interstitial/exit intent close

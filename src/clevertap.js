@@ -254,14 +254,20 @@ export default class CleverTap {
     this.deleteInboxMessage = (messageId) => {
       const messages = getInboxMessages()
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
-        const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
         if (messages[messageId].viewed === 0) {
           $ct.inbox.unviewedCounter--
           delete $ct.inbox.unviewedMessages[messageId]
-          document.getElementById('unviewedBadge').innerText = $ct.inbox.unviewedCounter
-          document.getElementById('unviewedBadge').style.display = $ct.inbox.unviewedCounter > 0 ? 'flex' : 'none'
+          const unViewedBadge = document.getElementById('unviewedBadge')
+          if (unViewedBadge) {
+            unViewedBadge.innerText = $ct.inbox.unviewedCounter
+            unViewedBadge.style.display = $ct.inbox.unviewedCounter > 0 ? 'flex' : 'none'
+          }
         }
-        el && el.remove()
+        const ctInbox = document.querySelector('ct-web-inbox')
+        if (ctInbox) {
+          const el = ctInbox.shadowRoot.getElementById(messageId)
+          el && el.remove()
+        }
         delete messages[messageId]
         saveInboxMessages(messages)
       } else {
@@ -277,13 +283,19 @@ export default class CleverTap {
       const unreadMsg = $ct.inbox.unviewedMessages
       const messages = getInboxMessages()
       if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
-        const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
-        if (el !== null) { el.shadowRoot.getElementById('unreadMarker').style.display = 'none' }
+        const ctInbox = document.querySelector('ct-web-inbox')
+        if (ctInbox) {
+          const el = ctInbox.shadowRoot.getElementById(messageId)
+          if (el !== null) {
+            el.shadowRoot.getElementById('unreadMarker').style.display = 'none'
+          }
+        }
         messages[messageId].viewed = 1
-        if (document.getElementById('unviewedBadge')) {
-          var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1
-          document.getElementById('unviewedBadge').innerText = counter
-          document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none'
+        const unViewedBadge = document.getElementById('unviewedBadge')
+        if (unViewedBadge) {
+          var counter = parseInt(unViewedBadge.innerText) - 1
+          unViewedBadge.innerText = counter
+          unViewedBadge.style.display = counter > 0 ? 'flex' : 'none'
         }
         window.clevertap.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
         $ct.inbox.unviewedCounter--
@@ -313,13 +325,21 @@ export default class CleverTap {
       if (Object.keys(unreadMsg).length > 0) {
         const msgIds = Object.keys(unreadMsg)
         msgIds.forEach(key => {
-          const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(key)
-          if (el !== null) { el.shadowRoot.getElementById('unreadMarker').style.display = 'none' }
+          const ctInbox = document.querySelector('ct-web-inbox')
+          if (ctInbox) {
+            const el = ctInbox.shadowRoot.getElementById(key)
+            if (el !== null) {
+              el.shadowRoot.getElementById('unreadMarker').style.display = 'none'
+            }
+          }
           messages[key].viewed = 1
           window.clevertap.renderNotificationViewed({ msgId: messages[key].wzrk_id, pivotId: messages[key].wzrk_pivot })
         })
-        document.getElementById('unviewedBadge').innerText = 0
-        document.getElementById('unviewedBadge').style.display = 'none'
+        const unViewedBadge = document.getElementById('unviewedBadge')
+        if (unViewedBadge) {
+          unViewedBadge.innerText = 0
+          unViewedBadge.style.display = 'none'
+        }
         saveInboxMessages(messages)
         $ct.inbox.unviewedCounter = 0
         $ct.inbox.unviewedMessages = {}
