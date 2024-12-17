@@ -5865,7 +5865,7 @@
 
     const now = new Date().getTime() / 1000;
     const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
-    const popupFrequency = content.popupFrequency || 7 * 24 * 60 * 60;
+    const popupFrequency = content.popupFrequency || 7; // number of days
 
     if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
       document.body.appendChild(wrapper);
@@ -8510,10 +8510,13 @@
 
 
       this.markReadInboxMessage = messageId => {
-        const unreadMsg = $ct.inbox.unviewedMessages;
         const messages = getInboxMessages();
 
-        if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
+        if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
+          if (messages[messageId].viewed === 1) {
+            _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Message already viewed' + messageId);
+          }
+
           const ctInbox = document.querySelector('ct-web-inbox');
 
           if (ctInbox) {

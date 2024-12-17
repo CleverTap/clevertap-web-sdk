@@ -281,9 +281,11 @@ export default class CleverTap {
      - Remove the unread marker, update the viewed flag, decrement the bage Count
      - renderNotificationViewed */
     this.markReadInboxMessage = (messageId) => {
-      const unreadMsg = $ct.inbox.unviewedMessages
       const messages = getInboxMessages()
-      if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
+      if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
+        if (messages[messageId].viewed === 1) {
+          this.#logger.error('Message already viewed' + messageId)
+        }
         const ctInbox = document.querySelector('ct-web-inbox')
         if (ctInbox) {
           const el = ctInbox.shadowRoot.getElementById(messageId)
