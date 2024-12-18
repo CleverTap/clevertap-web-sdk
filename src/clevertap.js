@@ -218,10 +218,12 @@ export default class CleverTap {
 
     // Get Inbox Unread Message Count
     this.getInboxMessageUnreadCount = () => {
-      if ($ct.inbox) {
-        return $ct.inbox.unviewedCounter
-      } else {
-        this.#logger.debug('No unread messages')
+      try {
+        const unreadMessages = this.getUnreadInboxMessages()
+        const result = Object.keys(unreadMessages).length
+        return result
+      } catch (e) {
+        this.#logger.error('Error in getInboxMessageUnreadCount' + e)
       }
     }
 
@@ -232,10 +234,20 @@ export default class CleverTap {
 
     // Get only Unread messages
     this.getUnreadInboxMessages = () => {
-      if ($ct.inbox) {
-        return $ct.inbox.unviewedMessages
-      } else {
-        this.#logger.debug('No unread messages')
+      try {
+        const messages = getInboxMessages()
+        const result = {}
+
+        if (Object.keys(messages).length > 0) {
+          for (const message in messages) {
+            if (messages[message].viewed === 0) {
+              result[message] = messages[message]
+            }
+          }
+        }
+        return result
+      } catch (e) {
+        this.#logger.error('Error in getUnreadInboxMessages' + e)
       }
     }
 
@@ -284,7 +296,7 @@ export default class CleverTap {
       const messages = getInboxMessages()
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
         if (messages[messageId].viewed === 1) {
-          this.#logger.error('Message already viewed' + messageId)
+          return this.#logger.error('Message already viewed' + messageId)
         }
         const ctInbox = document.querySelector('ct-web-inbox')
         if (ctInbox) {
@@ -323,8 +335,8 @@ export default class CleverTap {
       - renderNotificationViewed, update the badge count and style
     */
     this.markReadAllInboxMessage = () => {
-      const unreadMsg = $ct.inbox.unviewedMessages
       const messages = getInboxMessages()
+      const unreadMsg = this.getUnreadInboxMessages()
       if (Object.keys(unreadMsg).length > 0) {
         const msgIds = Object.keys(unreadMsg)
         msgIds.forEach(key => {

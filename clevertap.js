@@ -8440,10 +8440,12 @@
 
 
       this.getInboxMessageUnreadCount = () => {
-        if ($ct.inbox) {
-          return $ct.inbox.unviewedCounter;
-        } else {
-          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('No unread messages');
+        try {
+          const unreadMessages = this.getUnreadInboxMessages();
+          const result = Object.keys(unreadMessages).length;
+          return result;
+        } catch (e) {
+          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Error in getInboxMessageUnreadCount' + e);
         }
       }; // Get All Inbox messages
 
@@ -8454,10 +8456,21 @@
 
 
       this.getUnreadInboxMessages = () => {
-        if ($ct.inbox) {
-          return $ct.inbox.unviewedMessages;
-        } else {
-          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('No unread messages');
+        try {
+          const messages = getInboxMessages();
+          const result = {};
+
+          if (Object.keys(messages).length > 0) {
+            for (const message in messages) {
+              if (messages[message].viewed === 0) {
+                result[message] = messages[message];
+              }
+            }
+          }
+
+          return result;
+        } catch (e) {
+          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Error in getUnreadInboxMessages' + e);
         }
       }; // Get message object belonging to the given message id only. Message id should be a String
 
@@ -8514,7 +8527,7 @@
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
           if (messages[messageId].viewed === 1) {
-            _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Message already viewed' + messageId);
+            return _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Message already viewed' + messageId);
           }
 
           const ctInbox = document.querySelector('ct-web-inbox');
@@ -8564,8 +8577,8 @@
 
 
       this.markReadAllInboxMessage = () => {
-        const unreadMsg = $ct.inbox.unviewedMessages;
         const messages = getInboxMessages();
+        const unreadMsg = this.getUnreadInboxMessages();
 
         if (Object.keys(unreadMsg).length > 0) {
           const msgIds = Object.keys(unreadMsg);
