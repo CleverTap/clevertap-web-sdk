@@ -4375,7 +4375,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.12';
+        const sdkVersion = '1.11.13';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -5296,9 +5296,10 @@
     enable() {
       let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       const {
-        swPath
+        swPath,
+        skipDialog
       } = options;
-      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath);
+      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, skipDialog);
     }
 
     _processOldValues() {
@@ -5735,7 +5736,7 @@
       updatePushConfig();
     }
   };
-  const enablePush = (logger, account, request, customSwPath) => {
+  const enablePush = (logger, account, request, customSwPath, skipDialog) => {
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     $ct.pushConfig = _pushConfig;
@@ -5755,6 +5756,13 @@
       request,
       account
     });
+
+    if (skipDialog) {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+      return;
+    }
+
     const {
       showBox,
       boxType,
@@ -5842,6 +5850,19 @@
     wrapper.appendChild(pnCard);
     wrapper.appendChild(overlayDiv);
     setElementPosition(pnCard, style.card.position);
+
+    if (!configData.isPreview) {
+      if ('Notification' in window && Notification !== null) {
+        if (Notification.permission === 'granted') {
+          notificationHandler.setApplicationServerKey(appServerKey);
+          notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+          return;
+        } else if (Notification.permission === 'denied') {
+          return;
+        }
+      }
+    }
+
     const now = new Date().getTime() / 1000;
     const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
     const popupFrequency = content.popupFrequency || 7 * 24 * 60 * 60;
@@ -5850,6 +5871,7 @@
       document.body.appendChild(wrapper);
 
       if (!configData.isPreview) {
+        StorageManager.setMetaProp('webpush_last_notif_time', now);
         addEventListeners(wrapper);
       }
     }
@@ -5928,7 +5950,6 @@
       notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
     });
     secondaryButton.addEventListener('click', () => {
-      StorageManager.setMetaProp('webpush_last_notif_time', Date.now() / 1000);
       removeWrapper();
     });
   };
@@ -7408,7 +7429,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.12',
+        lib: 'web-sdk-v1.11.13',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9100,7 +9121,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.12';
+      return 'web-sdk-v1.11.13';
     }
 
     defineVariable(name, defaultValue) {
