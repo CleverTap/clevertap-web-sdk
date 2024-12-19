@@ -76,18 +76,16 @@ export default class NotificationHandler extends Array {
 
   #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
     if (this.#isNativeWebPushSupported()) {
-      // TODO : Add this check once BE Changes are done
-      // if (this.#fcmPublicKey == null) {
-      //   this.#logger.error('Ensure that Vapid public key is configured in the dashboard')
-      //   return
-      // }
+      if (this.#fcmPublicKey == null) {
+        this.#logger.error('Ensure that Vapid public key is configured in the dashboard')
+        return
+      }
       StorageManager.setMetaProp('vapid_migration_prompt_shown', true)
       navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
         window.Notification.requestPermission().then((permission) => {
           if (permission === 'granted') {
-            // TODO: Remove the hardcoded key once BE changes are done
             const subscribeObj = {
-              applicationServerKey: 'BFygpPBmFuCSAXq1UDxA-LNBM2gzYHbp6Xld16N0xXp962u7oVu4BMG0qoafzHXFR43aAJi51JpmboG5v8idtbQ', // this.#fcmPublicKey,
+              applicationServerKey: this.#fcmPublicKey,
               userVisibleOnly: true
             }
             this.#logger.info('Sub Obj' + JSON.stringify(subscribeObj))
@@ -389,9 +387,7 @@ export default class NotificationHandler extends Array {
           return
         }
 
-        // TODO : change `this.#fcmPublicKey  === null` to `this.#fcmPublicKey  !== null` once BE changes are done
-        // Vapid is supported but not migrated
-        const vapidSupported = isSafari && ('PushManager' in window) && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && this.#fcmPublicKey === null
+        const vapidSupported = isSafari && ('PushManager' in window) && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && this.#fcmPublicKey !== null
         if (!vapidSupported) {
           return
         }

@@ -114,9 +114,7 @@ export const createNotificationBox = (configData, fcmPublicKey) => {
       document.body.appendChild(wrapper)
       if (!configData.isPreview) { addEventListeners(wrapper) }
     } else {
-      // TODO : change `fcmPublicKey  === null` to `fcmPublicKey  !== null` once BE changes are done
-      // Vapid is supported but not migrated
-      const vapidSupportedAndNotMigrated = ('PushManager' in window) && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && fcmPublicKey === null
+      const vapidSupportedAndNotMigrated = ('PushManager' in window) && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && fcmPublicKey !== null
       if (vapidSupportedAndNotMigrated) {
         document.body.appendChild(wrapper)
         if (!configData.isPreview) { addEventListeners(wrapper) }

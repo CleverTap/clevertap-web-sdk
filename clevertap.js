@@ -5327,19 +5327,18 @@
 
   var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
     if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]()) {
-      // TODO : Add this check once BE Changes are done
-      // if (this.#fcmPublicKey == null) {
-      //   this.#logger.error('Ensure that Vapid public key is configured in the dashboard')
-      //   return
-      // }
+      if (_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] == null) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that Vapid public key is configured in the dashboard');
+
+        return;
+      }
+
       StorageManager.setMetaProp('vapid_migration_prompt_shown', true);
       navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
         window.Notification.requestPermission().then(permission => {
           if (permission === 'granted') {
-            // TODO: Remove the hardcoded key once BE changes are done
             const subscribeObj = {
-              applicationServerKey: 'BFygpPBmFuCSAXq1UDxA-LNBM2gzYHbp6Xld16N0xXp962u7oVu4BMG0qoafzHXFR43aAJi51JpmboG5v8idtbQ',
-              // this.#fcmPublicKey,
+              applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
               userVisibleOnly: true
             };
 
@@ -5667,11 +5666,9 @@
       if (now - notifLastTime < askAgainTimeInSeconds) {
         if (!isSafari) {
           return;
-        } // TODO : change `this.#fcmPublicKey  === null` to `this.#fcmPublicKey  !== null` once BE changes are done
-        // Vapid is supported but not migrated
+        }
 
-
-        const vapidSupported = isSafari && 'PushManager' in window && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] === null;
+        const vapidSupported = isSafari && 'PushManager' in window && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
 
         if (!vapidSupported) {
           return;
@@ -5903,9 +5900,7 @@
           addEventListeners(wrapper);
         }
       } else {
-        // TODO : change `fcmPublicKey  === null` to `fcmPublicKey  !== null` once BE changes are done
-        // Vapid is supported but not migrated
-        const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && fcmPublicKey === null;
+        const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && fcmPublicKey !== null;
 
         if (vapidSupportedAndNotMigrated) {
           document.body.appendChild(wrapper);
