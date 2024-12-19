@@ -4375,7 +4375,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.13';
+        const sdkVersion = '1.11.14';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -5865,7 +5865,7 @@
 
     const now = new Date().getTime() / 1000;
     const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
-    const popupFrequency = content.popupFrequency || 7 * 24 * 60 * 60;
+    const popupFrequency = content.popupFrequency || 7; // number of days
 
     if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
       document.body.appendChild(wrapper);
@@ -7429,7 +7429,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.13',
+        lib: 'web-sdk-v1.11.14',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8440,10 +8440,12 @@
 
 
       this.getInboxMessageUnreadCount = () => {
-        if ($ct.inbox) {
-          return $ct.inbox.unviewedCounter;
-        } else {
-          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('No unread messages');
+        try {
+          const unreadMessages = this.getUnreadInboxMessages();
+          const result = Object.keys(unreadMessages).length;
+          return result;
+        } catch (e) {
+          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Error in getInboxMessageUnreadCount' + e);
         }
       }; // Get All Inbox messages
 
@@ -8454,10 +8456,21 @@
 
 
       this.getUnreadInboxMessages = () => {
-        if ($ct.inbox) {
-          return $ct.inbox.unviewedMessages;
-        } else {
-          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('No unread messages');
+        try {
+          const messages = getInboxMessages();
+          const result = {};
+
+          if (Object.keys(messages).length > 0) {
+            for (const message in messages) {
+              if (messages[message].viewed === 0) {
+                result[message] = messages[message];
+              }
+            }
+          }
+
+          return result;
+        } catch (e) {
+          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Error in getUnreadInboxMessages' + e);
         }
       }; // Get message object belonging to the given message id only. Message id should be a String
 
@@ -8510,10 +8523,13 @@
 
 
       this.markReadInboxMessage = messageId => {
-        const unreadMsg = $ct.inbox.unviewedMessages;
         const messages = getInboxMessages();
 
-        if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
+        if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
+          if (messages[messageId].viewed === 1) {
+            return _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Message already viewed' + messageId);
+          }
+
           const ctInbox = document.querySelector('ct-web-inbox');
 
           if (ctInbox) {
@@ -8561,8 +8577,8 @@
 
 
       this.markReadAllInboxMessage = () => {
-        const unreadMsg = $ct.inbox.unviewedMessages;
         const messages = getInboxMessages();
+        const unreadMsg = this.getUnreadInboxMessages();
 
         if (Object.keys(unreadMsg).length > 0) {
           const msgIds = Object.keys(unreadMsg);
@@ -9121,7 +9137,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.13';
+      return 'web-sdk-v1.11.14';
     }
 
     defineVariable(name, defaultValue) {
