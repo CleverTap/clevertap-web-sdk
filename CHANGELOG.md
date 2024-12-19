@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.14] 17th Dec, 2024
+- Fixed Custom Web Inbox APIs
+
 ## [1.11.13] 12th Dec, 2024
 - Fixed web push soft prompt bug
 
