@@ -155,6 +155,7 @@ function loadOverlayScript (overlayPath, url, variant, details, personalisation)
  * @param {boolean} isPreview - Indicates if it's a preview.
  */
 export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+  const insertedElements = []
   const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details
   let notificationViewed = false
   const payload = {
@@ -171,17 +172,21 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
 
   const processElement = (element, selector) => {
     if (!selector.values) return
-    if (selector.values.html) {
-      if (isPreview) {
-        element.outerHTML = selector.values.html.text
-      } else {
-        element.outerHTML = selector.values.html
-      }
-    } else if (selector.values?.json) {
-      dispatchJsonData(targetingMsgJson, selector.values, isPreview)
-    } else {
-      payload.msgCTkv = { wzrk_selector: selector.selector }
-      updateFormData(element, selector.values.form, payload, isPreview)
+    switch (selector.values.editor) {
+      case 'html':
+        if (isPreview) {
+          element.outerHTML = selector.values.html.text
+        } else {
+          element.outerHTML = selector.values.html
+        }
+        break
+      case 'json':
+        dispatchJsonData(targetingMsgJson, selector.values, isPreview)
+        break
+      case 'form':
+        payload.msgCTkv = { wzrk_selector: selector.selector }
+        updateFormData(element, selector.values.form, payload, isPreview)
+        break
     }
   }
 
@@ -203,16 +208,64 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
   details.forEach(d => {
     if (d.url === window.location.href.split('?')[0]) {
       d.selectorData.forEach(s => {
-        const element = document.querySelector(s.selector)
-        if (element) {
-          raiseViewed()
-          processElement(element, s)
+        if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) &&
+          s.values.initialHtml) {
+          insertedElements.push(s)
         } else {
-          tryFindingElement(s)
+          const element = document.querySelector(s.selector)
+          if (element) {
+            raiseViewed()
+            processElement(element, s)
+          } else {
+            tryFindingElement(s)
+          }
         }
       })
     }
   })
+
+  setTimeout(() => {
+    if (insertedElements.length > 0) {
+      const sortedArr = insertedElements.sort((a, b) => {
+        const numA = parseInt(a.selector.split('-')[0], 10)
+        const numB = parseInt(b.selector.split('-')[0], 10)
+        return numA - numB
+      })
+      sortedArr.forEach(s => {
+        const { pos, sibling } = findSiblingSelector(s.selector)
+        let siblingEl
+        try {
+          siblingEl = document.querySelector(sibling)
+        } catch (e) {
+          siblingEl = null
+        }
+        const ctEl = document.querySelector(`[ct-selector="${sibling}"]`)
+        const element = ctEl || siblingEl
+        if (element) {
+          const tempDiv = document.createElement('div')
+          tempDiv.innerHTML = s.values.initialHtml
+          const newElement = tempDiv.firstElementChild
+          element.insertAdjacentElement(pos, newElement)
+          if (!element.getAttribute('ct-selector')) {
+            element.setAttribute('ct-selector', sibling)
+          }
+          const insertedElement = document.querySelector(`[ct-selector="${s.selector}"]`)
+          raiseViewed()
+          processElement(insertedElement, s)
+        }
+      })
+    }
+  }, 2000)
+}
+
+function findSiblingSelector (input) {
+  const regex = /^(\d+)-(afterend|beforebegin)-(.+)$/
+  const match = input.match(regex)
+
+  if (match) {
+    return { pos: match[2], sibling: match[3] }
+  }
+  return { pos: 'beforebegin', sibling: '' }
 }
 
 /**
