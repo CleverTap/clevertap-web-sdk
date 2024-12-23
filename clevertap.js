@@ -5214,6 +5214,8 @@
 
   var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
 
+  var _isNativeWebPushSupported = _classPrivateFieldLooseKey("isNativeWebPushSupported");
+
   var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
 
   var _setUpChromeFirefoxNotifications = _classPrivateFieldLooseKey("setUpChromeFirefoxNotifications");
@@ -5247,6 +5249,9 @@
       });
       Object.defineProperty(this, _setUpSafariNotifications, {
         value: _setUpSafariNotifications2
+      });
+      Object.defineProperty(this, _isNativeWebPushSupported, {
+        value: _isNativeWebPushSupported2
       });
       Object.defineProperty(this, _setUpWebPush, {
         value: _setUpWebPush2
@@ -5299,7 +5304,7 @@
         swPath,
         skipDialog
       } = options;
-      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, skipDialog);
+      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, skipDialog, _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
     }
 
     _processOldValues() {
@@ -5314,7 +5319,7 @@
       if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
         _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
       } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl);
+        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath);
       }
     }
 
@@ -5349,31 +5354,92 @@
     }
   };
 
-  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
-    // ensure that proper arguments are passed
-    if (typeof apnsWebPushId === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
-    }
+  var _isNativeWebPushSupported2 = function _isNativeWebPushSupported2() {
+    return 'PushManager' in window;
+  };
 
-    if (typeof apnsServiceUrl === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
-    }
+  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
+    if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]()) {
+      if (_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] == null) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that Vapid public key is configured in the dashboard');
 
-    if ('safari' in window && 'pushNotification' in window.safari) {
-      window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
-        if (subscription.permission === 'granted') {
-          const subscriptionData = JSON.parse(JSON.stringify(subscription));
-          subscriptionData.endpoint = subscription.deviceToken;
-          subscriptionData.browser = 'Safari';
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+        return;
+      }
 
-          _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+      StorageManager.setMetaProp('vapid_migration_prompt_shown', true);
+      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
+        window.Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            const subscribeObj = {
+              applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
+              userVisibleOnly: true
+            };
 
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
-        } else if (subscription.permission === 'denied') {
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
-        }
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Sub Obj' + JSON.stringify(subscribeObj));
+
+            registration.pushManager.subscribe(subscribeObj).then(subscription => {
+              _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
+
+              _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+                applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
+                userVisibleOnly: true
+              }));
+
+              _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+
+              const subscriptionData = JSON.parse(JSON.stringify(subscription));
+              subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+              StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+              _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+
+              if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+                subscriptionCallback();
+              }
+
+              const existingBellWrapper = document.getElementById('bell_wrapper');
+
+              if (existingBellWrapper) {
+                existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+              }
+            });
+          }
+        });
       });
+    } else {
+      // ensure that proper arguments are passed
+      if (typeof apnsWebPushId === 'undefined') {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
+      }
+
+      if (typeof apnsServiceUrl === 'undefined') {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
+      }
+
+      if ('safari' in window && 'pushNotification' in window.safari) {
+        window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
+          if (subscription.permission === 'granted') {
+            const subscriptionData = JSON.parse(JSON.stringify(subscription));
+            subscriptionData.endpoint = subscription.deviceToken;
+            subscriptionData.browser = 'Safari';
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+              apnsServiceUrl,
+              apnsWebPushId
+            }));
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+
+            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+            _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+          } else if (subscription.permission === 'denied') {
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+          }
+        });
+      }
     }
   };
 
@@ -5420,7 +5486,11 @@
         }
 
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Service Data Sent: ' + JSON.stringify(subscribeObj));
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Subscription Data Received: ' + JSON.stringify(subscription)); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
 
 
           const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
@@ -5504,6 +5574,8 @@
     let httpsIframePath;
     let apnsWebPushId;
     let apnsWebPushServiceUrl;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const vapidSupportedAndMigrated = isSafari && 'PushManager' in window && StorageManager.getMetaProp('vapid_migration_prompt_shown') && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
 
     if (displayArgs.length === 1) {
       if (isObject(displayArgs[0])) {
@@ -5589,7 +5661,7 @@
       } // handle migrations from other services -> chrome notifications may have already been asked for before
 
 
-      if (Notification.permission === 'granted') {
+      if (Notification.permission === 'granted' && vapidSupportedAndMigrated) {
         // skip the dialog and register
         this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
         return;
@@ -5627,10 +5699,17 @@
         askAgainTimeInSeconds = 7 * 24 * 60 * 60;
       }
 
-      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
-        return;
+      const notifLastTime = StorageManager.getMetaProp('notif_last_time');
+
+      if (now - notifLastTime < askAgainTimeInSeconds) {
+        if (!isSafari) {
+          return;
+        }
+
+        if (vapidSupportedAndMigrated) {
+          return;
+        }
       } else {
-        // continue asking
         StorageManager.setMetaProp('notif_last_time', now);
       }
     }
@@ -5736,7 +5815,7 @@
       updatePushConfig();
     }
   };
-  const enablePush = (logger, account, request, customSwPath, skipDialog) => {
+  const enablePush = (logger, account, request, customSwPath, skipDialog, fcmPublicKey) => {
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     $ct.pushConfig = _pushConfig;
@@ -5771,10 +5850,10 @@
     } = $ct.pushConfig;
 
     if (isPreview) {
-      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig);
+      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey);
       if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
     } else {
-      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig);
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey);
       if (showBellIcon) createBellIcon($ct.pushConfig);
     }
   };
@@ -5789,7 +5868,7 @@
     return element;
   };
 
-  const createNotificationBox = configData => {
+  const createNotificationBox = (configData, fcmPublicKey) => {
     if (document.getElementById('pnWrapper')) return;
     const {
       boxConfig: {
@@ -5867,12 +5946,28 @@
     const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
     const popupFrequency = content.popupFrequency || 7; // number of days
 
-    if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
-      document.body.appendChild(wrapper);
+    const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-      if (!configData.isPreview) {
-        StorageManager.setMetaProp('webpush_last_notif_time', now);
-        addEventListeners(wrapper);
+    if (shouldShowNotification) {
+      if (!isSafari) {
+        document.body.appendChild(wrapper);
+
+        if (!configData.isPreview) {
+          StorageManager.setMetaProp('webpush_last_notif_time', now);
+          addEventListeners(wrapper);
+        }
+      } else {
+        const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && fcmPublicKey !== null;
+
+        if (vapidSupportedAndNotMigrated) {
+          document.body.appendChild(wrapper);
+
+          if (!configData.isPreview) {
+            addEventListeners(wrapper);
+            StorageManager.setMetaProp('webpush_last_notif_time', now);
+          }
+        }
       }
     }
   };
