@@ -5359,13 +5359,11 @@
   };
 
   var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
-    if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]()) {
-      if (_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] == null) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that Vapid public key is configured in the dashboard');
-
-        return;
-      }
-
+    if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
+      // if (this.#fcmPublicKey == null) {
+      //   this.#logger.error('Ensure that Vapid public key is configured in the dashboard')
+      //   return
+      // }
       StorageManager.setMetaProp('vapid_migration_prompt_shown', true);
       navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
         window.Notification.requestPermission().then(permission => {

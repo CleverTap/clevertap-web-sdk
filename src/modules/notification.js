@@ -76,11 +76,11 @@ export default class NotificationHandler extends Array {
   }
 
   #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
-    if (this.#isNativeWebPushSupported()) {
-      if (this.#fcmPublicKey == null) {
-        this.#logger.error('Ensure that Vapid public key is configured in the dashboard')
-        return
-      }
+    if (this.#isNativeWebPushSupported() && this.#fcmPublicKey != null) {
+      // if (this.#fcmPublicKey == null) {
+      //   this.#logger.error('Ensure that Vapid public key is configured in the dashboard')
+      //   return
+      // }
       StorageManager.setMetaProp('vapid_migration_prompt_shown', true)
       navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
         window.Notification.requestPermission().then((permission) => {
