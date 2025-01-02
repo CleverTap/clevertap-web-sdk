@@ -5013,8 +5013,9 @@
     const isPreview = targetingMsgJson.display.preview;
 
     if (isPreview) {
-      const iframe = document.createElement('iframe');
-      iframe.src = 'https://web-push-automation.vercel.app/?region=sk1&accountId=844-R9K-896Z';
+      const iframe = document.createElement('iframe'); // iframe.src = 'https://web-push-automation.vercel.app/?region=sk1&accountId=844-R9K-896Z'
+
+      iframe.src = 'https://www.ajio.com';
       iframe.width = '100%';
       iframe.height = '500px';
       iframe.sandbox = 'allow-scripts allow-same-origin';
