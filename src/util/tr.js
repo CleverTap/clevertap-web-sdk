@@ -20,15 +20,15 @@ import {
   getToday
 } from './datetime'
 
-import { StorageManager, $ct } from './storage'
+import {StorageManager, $ct} from './storage'
 import RequestDispatcher from './requestDispatcher'
-import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
-import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
-import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
-import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel, renderCustomHtml, handleJson } from './campaignRender/nativeDisplay'
-import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate } from './campaignRender/utilities'
-import { renderPopUpImageOnly } from './campaignRender/webPopup'
-import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
+import {CTWebPopupImageOnly} from './web-popupImageonly/popupImageonly'
+import {checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs} from '../modules/web-inbox/helper'
+import {renderVisualBuilder} from '../modules/visualBuilder/pageBuilder'
+import {handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel, renderCustomHtml, handleJson} from './campaignRender/nativeDisplay'
+import {appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate} from './campaignRender/utilities'
+import {renderPopUpImageOnly} from './campaignRender/webPopup'
+import {processWebPushConfig} from '../modules/webPushPrompt/prompt'
 
 const _tr = (msg, {
   device,
@@ -207,7 +207,7 @@ const _tr = (msg, {
     newCampObj[_session.sessionId] = sessionObj
     newCampObj[today] = dailyObj
     newCampObj[GLOBAL] = globalObj
-    saveCampaignObject({ [campKey]: newCampObj })
+    saveCampaignObject({[campKey]: newCampObj})
   }
 
   const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
@@ -287,8 +287,8 @@ const _tr = (msg, {
       const opacityDiv = document.createElement('div')
       opacityDiv.id = opacityDivId
       const opacity = targetingMsgJson.display.opacity || 0.7
-      const rgbaColor = `rgba(0,0,0,${opacity})`
-      opacityDiv.setAttribute('style', `position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ${rgbaColor};`)
+      const rgbaColor = `rgba(0,0,0,${ opacity })`
+      opacityDiv.setAttribute('style', `position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ${ rgbaColor };`)
       document.body.appendChild(opacityDiv)
     }
     const msgDiv = document.createElement('div')
@@ -296,7 +296,7 @@ const _tr = (msg, {
     const viewHeight = window.innerHeight
     const viewWidth = window.innerWidth
     let legacy = false
-
+    console.log('isBanner', !isBanner)
     if (!isBanner) {
       const marginBottom = viewHeight * 5 / 100
       var contentHeight = 10
@@ -550,7 +550,7 @@ const _tr = (msg, {
         for (var wzrkPrefixKey in targetingMsgJson) {
           // ADD WZRK PREFIX KEY VALUE PAIRS
           if (wzrkPrefixKey.startsWith(WZRK_PREFIX) && wzrkPrefixKey !== WZRK_ID) {
-            const wzrkJson = { [wzrkPrefixKey]: targetingMsgJson[wzrkPrefixKey] }
+            const wzrkJson = {[wzrkPrefixKey]: targetingMsgJson[wzrkPrefixKey]}
             msgCTkv.push(wzrkJson)
           }
         }
@@ -564,20 +564,20 @@ const _tr = (msg, {
 
         // PUBLIC API TO RECORD CLICKED EVENT
         window.clevertap.raisePopupNotificationClicked = (notificationData) => {
-          if (!notificationData || !notificationData.msgId) { return }
+          if (!notificationData || !notificationData.msgId) {return }
 
           const eventData = {}
           eventData.type = 'event'
           eventData.evtName = NOTIFICATION_CLICKED
-          eventData.evtData = { [WZRK_ID]: notificationData.msgId }
+          eventData.evtData = {[WZRK_ID]: notificationData.msgId}
           if (targetingMsgJson.wzrk_pivot) {
-            eventData.evtData = { ...eventData.evtData, wzrk_pivot: notificationData.pivotId }
+            eventData.evtData = {...eventData.evtData, wzrk_pivot: notificationData.pivotId}
           }
 
           // WZRK PREFIX KEY VALUE PAIRS
           if (notificationData.msgCTkv) {
             for (var wzrkPrefixObj of notificationData.msgCTkv) {
-              eventData.evtData = { ...eventData.evtData, ...wzrkPrefixObj }
+              eventData.evtData = {...eventData.evtData, ...wzrkPrefixObj}
             }
           }
 
@@ -603,7 +603,7 @@ const _tr = (msg, {
       resetIdleTimer()
     }
     const setupEventListeners = () => {
-      events.forEach(eventType => window.addEventListener(eventType, eventHandler, { passive: true }))
+      events.forEach(eventType => window.addEventListener(eventType, eventHandler, {passive: true}))
     }
     const removeEventListeners = () => {
       events.forEach(eventType => window.removeEventListener(eventType, eventHandler))
@@ -615,7 +615,7 @@ const _tr = (msg, {
 
   const triggerByScroll = (targetNotif) => {
     const calculateScrollPercentage = () => {
-      const { scrollHeight, clientHeight, scrollTop } = document.documentElement
+      const {scrollHeight, clientHeight, scrollTop} = document.documentElement
       return (scrollTop / (scrollHeight - clientHeight)) * 100
     }
     const scrollListener = () => {
@@ -639,7 +639,7 @@ const _tr = (msg, {
       }
     }
     const throttledScrollListener = throttle(scrollListener, 200)
-    window.addEventListener('scroll', throttledScrollListener, { passive: true })
+    window.addEventListener('scroll', throttledScrollListener, {passive: true})
     return () => window.removeEventListener('scroll', throttledScrollListener)// Return a cleanup function
   }
 
@@ -685,8 +685,8 @@ const _tr = (msg, {
     const opacityDiv = document.createElement('div')
     opacityDiv.id = 'intentOpacityDiv'
     const opacity = targetingMsgJson.display.opacity || 0.7
-    const rgbaColor = `rgba(0,0,0,${opacity})`
-    opacityDiv.setAttribute('style', `position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ${rgbaColor};`)
+    const rgbaColor = `rgba(0,0,0,${ opacity })`
+    opacityDiv.setAttribute('style', `position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ${ rgbaColor };`)
     document.body.appendChild(opacityDiv)
 
     const msgDiv = document.createElement('div')

@@ -1,7 +1,8 @@
-import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
-import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
+import {CTWebPersonalisationBanner} from '../web-personalisation/banner'
+import {CTWebPersonalisationCarousel} from '../web-personalisation/carousel'
 
 export const renderPersonalisationBanner = (targetingMsgJson) => {
+  console.log('renderPersonalisationBanner', targetingMsgJson)
   if (customElements.get('ct-web-personalisation-banner') === undefined) {
     customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner)
   }
@@ -38,7 +39,7 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
   if (targetingMsgJson.msgContent.kv != null) {
     inaObj.kv = targetingMsgJson.msgContent.kv
   }
-  const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
+  const kvPairsEvent = new CustomEvent('CT_web_native_display', {detail: inaObj})
   document.dispatchEvent(kvPairsEvent)
 }
 
@@ -46,6 +47,22 @@ export const renderCustomHtml = (targetingMsgJson) => {
   console.log('targetingMsgJson', targetingMsgJson)
   const divId = targetingMsgJson.display.divId
   const html = targetingMsgJson.display.html
+  const isPreview = targetingMsgJson.display.preview
+
+  if (isPreview) {
+    const iframe = document.createElement('iframe')
+    iframe.src = 'https://web-push-automation.vercel.app/?region=sk1&accountId=844-R9K-896Z'
+    iframe.width = "100%"
+    iframe.height = "500px"
+    iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
+    iframe.id = 'wiz-custom-html-preview'
+    const divSelector = targetingMsgJson.display.divSelector
+    const containerElement = document.querySelector(divSelector)
+    console.log('containerElement', containerElement)
+    console.log('iframe', iframe)
+    containerElement.innerHTML = ''
+    containerElement.appendChild(iframe)
+  }
 
   if (!divId || !html) {
     return
@@ -79,7 +96,7 @@ export const renderCustomHtml = (targetingMsgJson) => {
         processElement(retryElement)
         clearInterval(intervalId)
       } else if (++count >= 20) {
-        console.log(`No element present on DOM with divId '${divId}'.`)
+        console.log(`No element present on DOM with divId '${ divId }'.`)
         clearInterval(intervalId)
       }
     }, 500)
@@ -96,6 +113,6 @@ export const handleJson = (targetingMsgJson) => {
   if (targetingMsgJson.display.json != null) {
     inaObj.json = targetingMsgJson.msgContent.json
   }
-  const jsonEvent = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
+  const jsonEvent = new CustomEvent('CT_web_native_display_json', {detail: inaObj})
   document.dispatchEvent(jsonEvent)
 }
