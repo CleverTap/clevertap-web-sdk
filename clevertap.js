@@ -5015,9 +5015,9 @@
     if (isPreview) {
       const iframe = document.createElement('iframe');
       iframe.src = 'https://web-push-automation.vercel.app/?region=sk1&accountId=844-R9K-896Z';
-      iframe.width = "100%";
-      iframe.height = "500px";
-      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
+      iframe.width = '100%';
+      iframe.height = '500px';
+      iframe.sandbox = 'allow-scripts allow-same-origin';
       iframe.id = 'wiz-custom-html-preview';
       const divSelector = targetingMsgJson.display.divSelector;
       const containerElement = document.querySelector(divSelector);
