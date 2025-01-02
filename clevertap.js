@@ -5005,6 +5005,7 @@
     document.dispatchEvent(kvPairsEvent);
   };
   const renderCustomHtml = targetingMsgJson => {
+    console.log('targetingMsgJson', targetingMsgJson);
     const divId = targetingMsgJson.display.divId;
     const html = targetingMsgJson.display.html;
 
@@ -6491,6 +6492,7 @@
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
+      console.log('@@iframe attahcing html');
       iframe.srcdoc = html;
 
       const adjustIFrameHeight = () => {
@@ -6822,6 +6824,7 @@
       }
 
       document.body.appendChild(msgDiv);
+      console.log('craeting ifarme');
       const iframe = document.createElement('iframe');
       const borderRadius = targetingMsgJson.display.br === false ? '0' : '8';
       iframe.frameborder = '0px';
@@ -6894,6 +6897,7 @@
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
+      console.log('passing html to oframe');
       iframe.srcdoc = html;
 
       iframe.onload = () => {
@@ -6984,6 +6988,7 @@
           } else if (targetNotif.msgContent.type === 4) {
             renderVisualBuilder(targetNotif, false);
           } else if (targetNotif.msgContent.type === 5) {
+            console.log('render custom hrml targetNotif', targetNotif);
             renderCustomHtml(targetNotif);
           } else if (targetNotif.msgContent.type === 6) {
             handleJson(targetNotif);

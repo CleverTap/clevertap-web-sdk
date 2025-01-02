@@ -411,6 +411,7 @@ const _tr = (msg, {
     if (displayObj['custom-editor']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
+    console.log('@@iframe attahcing html')
     iframe.srcdoc = html
 
     const adjustIFrameHeight = () => {
@@ -698,6 +699,7 @@ const _tr = (msg, {
       msgDiv.setAttribute('style', targetingMsgJson.display.iFrameStyle)
     }
     document.body.appendChild(msgDiv)
+    console.log('craeting ifarme')
     const iframe = document.createElement('iframe')
     const borderRadius = targetingMsgJson.display.br === false ? '0' : '8'
     iframe.frameborder = '0px'
@@ -779,6 +781,7 @@ const _tr = (msg, {
     if (targetingMsgJson.display['custom-editor']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
+    console.log('passing html to oframe')
     iframe.srcdoc = html
 
     iframe.onload = () => {
@@ -855,6 +858,7 @@ const _tr = (msg, {
         } else if (targetNotif.msgContent.type === 4) {
           renderVisualBuilder(targetNotif, false)
         } else if (targetNotif.msgContent.type === 5) {
+          console.log('render custom hrml targetNotif', targetNotif)
           renderCustomHtml(targetNotif)
         } else if (targetNotif.msgContent.type === 6) {
           handleJson(targetNotif, false)

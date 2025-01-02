@@ -43,6 +43,7 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
 }
 
 export const renderCustomHtml = (targetingMsgJson) => {
+  console.log('targetingMsgJson', targetingMsgJson)
   const divId = targetingMsgJson.display.divId
   const html = targetingMsgJson.display.html
 
