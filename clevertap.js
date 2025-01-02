@@ -4974,6 +4974,8 @@
   const renderPersonalisationCarousel = targetingMsgJson => {
     var _targetingMsgJson$dis2;
 
+    console.log('renderPersonalisationCarousel', targetingMsgJson);
+
     if (customElements.get('ct-web-personalisation-carousel') === undefined) {
       customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
     }
@@ -5001,6 +5003,68 @@
       detail: inaObj
     });
     document.dispatchEvent(kvPairsEvent);
+  };
+  const renderCustomHtml = targetingMsgJson => {
+    const divId = targetingMsgJson.display.divId;
+    const html = targetingMsgJson.display.html;
+
+    if (!divId || !html) {
+      return;
+    }
+
+    let notificationViewed = false;
+    const payload = {
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot
+    };
+
+    const processElement = element => {
+      if (element) {
+        element.outerHTML = html;
+      }
+    };
+
+    const raiseViewed = () => {
+      if (!notificationViewed) {
+        notificationViewed = true;
+        window.clevertap.renderNotificationViewed(payload);
+      }
+    };
+
+    const tryFindingElement = divId => {
+      let count = 0;
+      const intervalId = setInterval(() => {
+        const retryElement = document.querySelector(divId);
+
+        if (retryElement) {
+          raiseViewed();
+          processElement(retryElement);
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          console.log("No element present on DOM with divId '".concat(divId, "'."));
+          clearInterval(intervalId);
+        }
+      }, 500);
+    };
+
+    tryFindingElement(divId);
+  };
+  const handleJson = targetingMsgJson => {
+    const inaObj = {};
+    inaObj.msgId = targetingMsgJson.wzrk_id;
+
+    if (targetingMsgJson.wzrk_pivot) {
+      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+    }
+
+    if (targetingMsgJson.display.json != null) {
+      inaObj.json = targetingMsgJson.msgContent.json;
+    }
+
+    const jsonEvent = new CustomEvent('CT_web_native_display_json', {
+      detail: inaObj
+    });
+    document.dispatchEvent(jsonEvent);
   };
 
   const invokeExternalJs = (jsFunc, targetingMsgJson) => {
@@ -6772,6 +6836,8 @@
         pointerCss = 'cursor:pointer;';
       }
 
+      console.log('targetingMsgJson', targetingMsgJson);
+
       if (targetingMsgJson.display.preview && targetingMsgJson.display['custom-editor']) {
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
       }
@@ -6902,6 +6968,8 @@
           window.document.body.onmouseleave = showExitIntent;
         } else if (targetNotif.display.wtarget_type === 2) {
           // if display['wtarget_type']==2 then web native display
+          console.log('it is web native display');
+
           if (targetNotif.msgContent.type === 1) {
             handleKVpairCampaign(targetNotif);
           } else if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
@@ -6915,6 +6983,10 @@
             }
           } else if (targetNotif.msgContent.type === 4) {
             renderVisualBuilder(targetNotif, false);
+          } else if (targetNotif.msgContent.type === 5) {
+            renderCustomHtml(targetNotif);
+          } else if (targetNotif.msgContent.type === 6) {
+            handleJson(targetNotif);
           } else {
             showFooterNotification(targetNotif);
           }
