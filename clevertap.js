@@ -4957,6 +4957,8 @@
   const renderPersonalisationBanner = targetingMsgJson => {
     var _targetingMsgJson$dis;
 
+    console.log('renderPersonalisationBanner', targetingMsgJson);
+
     if (customElements.get('ct-web-personalisation-banner') === undefined) {
       customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
     }
@@ -5008,6 +5010,22 @@
     console.log('targetingMsgJson', targetingMsgJson);
     const divId = targetingMsgJson.display.divId;
     const html = targetingMsgJson.display.html;
+    const isPreview = targetingMsgJson.display.preview;
+
+    if (isPreview) {
+      const iframe = document.createElement('iframe');
+      iframe.src = 'https://web-push-automation.vercel.app/?region=sk1&accountId=844-R9K-896Z';
+      iframe.width = "100%";
+      iframe.height = "500px";
+      iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
+      iframe.id = 'wiz-custom-html-preview';
+      const divSelector = targetingMsgJson.display.divSelector;
+      const containerElement = document.querySelector(divSelector);
+      console.log('containerElement', containerElement);
+      console.log('iframe', iframe);
+      containerElement.innerHTML = '';
+      containerElement.appendChild(iframe);
+    }
 
     if (!divId || !html) {
       return;
@@ -6392,6 +6410,7 @@
       const viewHeight = window.innerHeight;
       const viewWidth = window.innerWidth;
       let legacy = false;
+      console.log('isBanner', !isBanner);
 
       if (!isBanner) {
         const marginBottom = viewHeight * 5 / 100;
