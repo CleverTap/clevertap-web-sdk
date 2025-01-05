@@ -47,7 +47,9 @@ export const renderCustomHtml = (targetingMsgJson) => {
   console.log('targetingMsgJson', targetingMsgJson)
   const { display, wzrk_id: wzrkId, wzrk_pivot: wzrkPivot } = targetingMsgJson || {}
 
-  const { divId, html, preview: isPreview, url, divSelector } = display || {}
+  const { divId, preview: isPreview, url, divSelector } = display || {}
+  const details = display.details[0]
+  const html = details.html
   // const divId = targetingMsgJson.display.divId
   // const html = targetingMsgJson.display.html
   // const isPreview = targetingMsgJson.display.preview
@@ -193,11 +195,13 @@ const findIframeElement = (divId, html, iframeElement) => {
 export const handleJson = (targetingMsgJson) => {
   const inaObj = {}
   inaObj.msgId = targetingMsgJson.wzrk_id
+  const details = targetingMsgJson.display.details[0]
+  const json = details.json
   if (targetingMsgJson.wzrk_pivot) {
     inaObj.pivotId = targetingMsgJson.wzrk_pivot
   }
   if (targetingMsgJson.display.json != null) {
-    inaObj.json = targetingMsgJson.msgContent.json
+    inaObj.json = json
   }
   const jsonEvent = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
   document.dispatchEvent(jsonEvent)
