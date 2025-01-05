@@ -718,7 +718,7 @@ const _tr = (msg, {
     }
     let html
     // direct html
-    if (targetingMsgJson.msgContent.type === 1) {
+    if (targetingMsgJson.msgContent.type === 1 || targetingMsgJson.msgContent.type === 5) {
       html = targetingMsgJson.msgContent.html
       html = html.replace(/##campaignId##/g, campaignId)
       html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id)
