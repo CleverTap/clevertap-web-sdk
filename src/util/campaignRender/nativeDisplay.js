@@ -175,6 +175,7 @@ const findIframeElement = (divId, html, iframeElement) => {
   console.log('findIframeElement iframeElement', iframeElement)
   let count = 0
   const intervalId = setInterval(() => {
+    console.log('count', count)
     if (iframeElement && iframeElement.contentDocument) {
       const divInsideIframe = iframeElement.contentDocument?.querySelector(divId)
       if (divInsideIframe) {

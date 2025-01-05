@@ -5143,6 +5143,8 @@
     console.log('findIframeElement iframeElement', iframeElement);
     let count = 0;
     const intervalId = setInterval(() => {
+      console.log('count', count);
+
       if (iframeElement && iframeElement.contentDocument) {
         var _iframeElement$conten;
 
