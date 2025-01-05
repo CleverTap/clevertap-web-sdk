@@ -136,6 +136,7 @@ const processElement = (element, html) => {
 const renderPreviewIframe = (url, divSelector, divId, html) => {
   const containerElement = document.querySelector(divSelector)
   console.log('containerElement', containerElement)
+  containerElement.style.height = 'calc(100% - 52px)'
   if (!containerElement) {
     console.error(`No element found for selector: ${divSelector}`)
     return
@@ -144,7 +145,7 @@ const renderPreviewIframe = (url, divSelector, divId, html) => {
   const iframe = document.createElement('iframe')
   iframe.src = url
   iframe.width = '100%'
-  iframe.height = '500px'
+  iframe.height = '100%'
   iframe.sandbox = 'allow-scripts allow-same-origin'
   iframe.id = 'wiz-custom-html-preview'
 
@@ -163,11 +164,15 @@ const renderPreviewIframe = (url, divSelector, divId, html) => {
   //   }
   // });
   iframe.onload = function () {
+    console.log('iframe onload')
     findIframeElement(divId, html, iframe)
   }
 }
 
 const findIframeElement = (divId, html, iframeElement) => {
+  console.log('findIframeElement divId', divId)
+  console.log('findIframeElement html', html)
+  console.log('findIframeElement iframeElement', iframeElement)
   let count = 0
   const intervalId = setInterval(() => {
     if (iframeElement && iframeElement.contentDocument) {
