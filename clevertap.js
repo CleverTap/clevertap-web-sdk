@@ -5375,32 +5375,50 @@
 
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Sub Obj' + JSON.stringify(subscribeObj));
 
-            registration.pushManager.subscribe(subscribeObj).then(subscription => {
-              _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
+            const subscribeForPush = () => {
+              registration.pushManager.subscribe(subscribeObj).then(subscription => {
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
 
-              _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
-                applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
-                userVisibleOnly: true
-              }));
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+                  applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
+                  userVisibleOnly: true
+                }));
 
-              _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
 
-              const subscriptionData = JSON.parse(JSON.stringify(subscription));
-              subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-              StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+                const subscriptionData = JSON.parse(JSON.stringify(subscription));
+                subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+                StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
-              _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+                _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
 
-              if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
-                subscriptionCallback();
-              }
+                if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+                  subscriptionCallback();
+                }
 
-              const existingBellWrapper = document.getElementById('bell_wrapper');
+                const existingBellWrapper = document.getElementById('bell_wrapper');
 
-              if (existingBellWrapper) {
-                existingBellWrapper.parentNode.removeChild(existingBellWrapper);
-              }
-            });
+                if (existingBellWrapper) {
+                  existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+                }
+              });
+            };
+
+            const serviceWorker = registration.installing || registration.waiting || registration.active;
+
+            if (serviceWorker && serviceWorker.state === 'activated') {
+              // Already activated, proceed with subscription
+              subscribeForPush();
+            } else if (serviceWorker) {
+              // Listen for state changes to handle activation
+              serviceWorker.addEventListener('statechange', event => {
+                if (event.target.state === 'activated') {
+                  _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker activated. Proceeding with subscription.');
+
+                  subscribeForPush();
+                }
+              });
+            }
           }
         });
       });

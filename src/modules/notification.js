@@ -90,28 +90,44 @@ export default class NotificationHandler extends Array {
               userVisibleOnly: true
             }
             this.#logger.info('Sub Obj' + JSON.stringify(subscribeObj))
-            registration.pushManager.subscribe(subscribeObj).then((subscription) => {
-              this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
-              this.#logger.info('Service Data Sent: ' + JSON.stringify({
-                applicationServerKey: this.#fcmPublicKey,
-                userVisibleOnly: true
-              }))
-              this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
+            const subscribeForPush = () => {
+              registration.pushManager.subscribe(subscribeObj).then((subscription) => {
+                this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
+                this.#logger.info('Service Data Sent: ' + JSON.stringify({
+                  applicationServerKey: this.#fcmPublicKey,
+                  userVisibleOnly: true
+                }))
+                this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
 
-              const subscriptionData = JSON.parse(JSON.stringify(subscription))
+                const subscriptionData = JSON.parse(JSON.stringify(subscription))
+                
+                subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
+                StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+                this.#request.registerToken(subscriptionData)
 
-              subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
-              StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
-              this.#request.registerToken(subscriptionData)
+                if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+                  subscriptionCallback()
+                }
+                const existingBellWrapper = document.getElementById('bell_wrapper')
+                if (existingBellWrapper) {
+                  existingBellWrapper.parentNode.removeChild(existingBellWrapper)
+                }
+              })
+            }
 
-              if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
-                subscriptionCallback()
-              }
-              const existingBellWrapper = document.getElementById('bell_wrapper')
-              if (existingBellWrapper) {
-                existingBellWrapper.parentNode.removeChild(existingBellWrapper)
-              }
-            })
+            const serviceWorker = registration.installing || registration.waiting || registration.active
+            if (serviceWorker && serviceWorker.state === 'activated') {
+              // Already activated, proceed with subscription
+              subscribeForPush()
+            } else if (serviceWorker) {
+              // Listen for state changes to handle activation
+              serviceWorker.addEventListener('statechange', (event) => {
+                if (event.target.state === 'activated') {
+                  this.#logger.info('Service Worker activated. Proceeding with subscription.')
+                  subscribeForPush()
+                }
+              })
+            }
           }
         })
       })
