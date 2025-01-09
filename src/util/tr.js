@@ -296,7 +296,6 @@ const _tr = (msg, {
     const viewHeight = window.innerHeight
     const viewWidth = window.innerWidth
     let legacy = false
-    console.log('isBanner', !isBanner)
     if (!isBanner) {
       const marginBottom = viewHeight * 5 / 100
       var contentHeight = 10
@@ -411,7 +410,6 @@ const _tr = (msg, {
     if (displayObj['custom-editor']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    console.log('@@iframe attahcing html')
     iframe.srcdoc = html
 
     const adjustIFrameHeight = () => {
@@ -699,7 +697,6 @@ const _tr = (msg, {
       msgDiv.setAttribute('style', targetingMsgJson.display.iFrameStyle)
     }
     document.body.appendChild(msgDiv)
-    console.log('craeting ifarme')
     const iframe = document.createElement('iframe')
     const borderRadius = targetingMsgJson.display.br === false ? '0' : '8'
     iframe.frameborder = '0px'
@@ -712,7 +709,6 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    console.log('targetingMsgJson', targetingMsgJson)
     if (targetingMsgJson.display.preview && targetingMsgJson.display['custom-editor']) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
     }
@@ -781,7 +777,6 @@ const _tr = (msg, {
     if (targetingMsgJson.display['custom-editor']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    console.log('passing html to oframe')
     iframe.srcdoc = html
 
     iframe.onload = () => {
@@ -845,7 +840,6 @@ const _tr = (msg, {
         exitintentObj = targetNotif
         window.document.body.onmouseleave = showExitIntent
       } else if (targetNotif.display.wtarget_type === 2) { // if display['wtarget_type']==2 then web native display
-        console.log('it is web native display')
         if (targetNotif.msgContent.type === 1) {
           handleKVpairCampaign(targetNotif)
         } else if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) { // Check for banner and carousel
@@ -858,7 +852,6 @@ const _tr = (msg, {
         } else if (targetNotif.msgContent.type === 4) {
           renderVisualBuilder(targetNotif, false)
         } else if (targetNotif.msgContent.type === 5) {
-          console.log('render custom hrml targetNotif', targetNotif)
           renderCustomHtml(targetNotif)
         } else if (targetNotif.msgContent.type === 6) {
           handleJson(targetNotif, false)
