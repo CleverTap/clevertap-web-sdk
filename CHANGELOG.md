@@ -1,6 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.11.14] 17th Dec, 2024
+- Fixed Custom Web Inbox APIs
+
+## [1.11.13] 12th Dec, 2024
+- Fixed web push soft prompt bug
+
+## [1.11.12] 11th Dec, 2024
+- Initialize Web Inbox on document readyState complete
+
 ## [1.11.11] 3rd Dec, 2024
 - Support for Personalisation in HTML & JSON for Visual Editor
 
