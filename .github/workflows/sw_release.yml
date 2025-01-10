@@ -2,6 +2,7 @@ name: Release sw_webpush.min.js to s3
 on:
   release:
     types: [published]
+  workflow_dispatch:
 jobs:
   build:
     runs-on: macos-14-large
@@ -26,7 +27,7 @@ jobs:
       - name: Build package
         run: yarn run build_sw
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
