@@ -395,7 +395,7 @@ export class Inbox extends HTMLElement {
    */
   checkForWebInbox (e) {
     const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
-    return this.inboxSelector.contains(e.target) ||
+    return this.inboxSelector?.contains(e.target) ||
      document.getElementById(config.inboxSelector).contains(e.target)
   }
 
