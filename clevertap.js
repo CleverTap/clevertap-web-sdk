@@ -5200,6 +5200,16 @@
     return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
   };
 
+  const isChrome = () => {
+    return navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('CriOS') !== -1;
+  };
+  const isFirefox = () => {
+    return navigator.userAgent.indexOf('Firefox') !== -1 || navigator.userAgent.indexOf('FxiOS') !== -1;
+  };
+  const isSafari = () => {
+    return navigator.userAgent.indexOf('Safari') !== -1;
+  };
+
   var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
 
   var _logger$5 = _classPrivateFieldLooseKey("logger");
@@ -5316,10 +5326,10 @@
     }
 
     setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-      if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
+      if (isChrome() || isFirefox()) {
         _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
-      } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath);
+      } else if (isSafari()) {
+        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl);
       }
     }
 
@@ -5481,7 +5491,7 @@
         if (isServiceWorkerAtRoot) {
           return navigator.serviceWorker.ready;
         } else {
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+          if (isChrome()) {
             return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
           } else {
             return navigator.serviceWorker.getRegistrations();
@@ -5489,7 +5499,7 @@
         }
       }).then(serviceWorkerRegistration => {
         // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
-        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
+        if (isFirefox() && Array.isArray(serviceWorkerRegistration)) {
           serviceWorkerRegistration = serviceWorkerRegistration.filter(i => i.scope === registrationScope)[0];
         }
 
@@ -5511,10 +5521,10 @@
 
           const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
 
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+          if (isChrome()) {
             subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
             subscriptionData.browser = 'Chrome';
-          } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+          } else if (isFirefox()) {
             subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
             subscriptionData.browser = 'Firefox';
           }
@@ -5644,19 +5654,19 @@
     } // right now, we only support Chrome V50 & higher & Firefox
 
 
-    if (navigator.userAgent.indexOf('Chrome') !== -1) {
+    if (isChrome()) {
       const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/);
 
       if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) {
         return;
       }
-    } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+    } else if (isFirefox()) {
       const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/);
 
       if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) {
         return;
       }
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
+    } else if (isSafari()) {
       const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/);
 
       if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) {

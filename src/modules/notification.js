@@ -7,6 +7,7 @@ import {
   urlBase64ToUint8Array
 } from '../util/encoder'
 import { enablePush } from './webPushPrompt/prompt'
+import { isChrome, isFirefox, isSafari } from '../util/helpers'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -60,10 +61,10 @@ export default class NotificationHandler extends Array {
   }
 
   setUpWebPushNotifications (subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-    if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
+    if (isChrome() || isFirefox()) {
       this.#setUpChromeFirefoxNotifications(subscriptionCallback, serviceWorkerPath)
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-      this.#setUpSafariNotifications(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath)
+    } else if (isSafari()) {
+      this.#setUpSafariNotifications(subscriptionCallback, apnsWebPushId, apnsServiceUrl)
     }
   }
 
@@ -100,7 +101,7 @@ export default class NotificationHandler extends Array {
                 this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
 
                 const subscriptionData = JSON.parse(JSON.stringify(subscription))
-                
+
                 subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
                 StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
                 this.#request.registerToken(subscriptionData)
@@ -188,7 +189,7 @@ export default class NotificationHandler extends Array {
         if (isServiceWorkerAtRoot) {
           return navigator.serviceWorker.ready
         } else {
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+          if (isChrome()) {
             return new Promise(resolve => setTimeout(() => resolve(registration), 5000))
           } else {
             return navigator.serviceWorker.getRegistrations()
@@ -196,7 +197,7 @@ export default class NotificationHandler extends Array {
         }
       }).then((serviceWorkerRegistration) => {
         // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
-        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
+        if (isFirefox() && Array.isArray(serviceWorkerRegistration)) {
           serviceWorkerRegistration = serviceWorkerRegistration.filter((i) => i.scope === registrationScope)[0]
         }
         const subscribeObj = { userVisibleOnly: true }
@@ -215,10 +216,10 @@ export default class NotificationHandler extends Array {
             const subscriptionData = JSON.parse(JSON.stringify(subscription))
 
             // remove the common chrome/firefox endpoint at the beginning of the token
-            if (navigator.userAgent.indexOf('Chrome') !== -1) {
+            if (isChrome()) {
               subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
               subscriptionData.browser = 'Chrome'
-            } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+            } else if (isFirefox()) {
               subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
               subscriptionData.browser = 'Firefox'
             }
@@ -344,13 +345,13 @@ export default class NotificationHandler extends Array {
     }
 
     // right now, we only support Chrome V50 & higher & Firefox
-    if (navigator.userAgent.indexOf('Chrome') !== -1) {
+    if (isChrome()) {
       const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/)
       if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) { return }
-    } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+    } else if (isFirefox()) {
       const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/)
       if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) { return }
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
+    } else if (isSafari()) {
       const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/)
       if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) { return }
     } else {
