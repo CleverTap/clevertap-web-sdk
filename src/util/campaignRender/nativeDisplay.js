@@ -1,5 +1,5 @@
-import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
-import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
+import {CTWebPersonalisationBanner} from '../web-personalisation/banner'
+import {CTWebPersonalisationCarousel} from '../web-personalisation/carousel'
 
 export const renderPersonalisationBanner = (targetingMsgJson) => {
   if (customElements.get('ct-web-personalisation-banner') === undefined) {
@@ -37,12 +37,12 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
   if (targetingMsgJson.msgContent.kv != null) {
     inaObj.kv = targetingMsgJson.msgContent.kv
   }
-  const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
+  const kvPairsEvent = new CustomEvent('CT_web_native_display', {detail: inaObj})
   document.dispatchEvent(kvPairsEvent)
 }
 
-export const renderCustomHtml = (targetingMsgJson) => {
-  const { display, wzrk_id: wzrkId, wzrk_pivot: wzrkPivot } = targetingMsgJson || {}
+export const renderCustomHtml = (targetingMsgJson, logger) => {
+  const {display, wzrk_id: wzrkId, wzrk_pivot: wzrkPivot} = targetingMsgJson || {}
 
   const divId = display.divId || {}
   const details = display.details[0]
@@ -72,22 +72,16 @@ export const renderCustomHtml = (targetingMsgJson) => {
       const retryElement = document.querySelector(divId)
       if (retryElement) {
         raiseViewed()
-        processElement(retryElement, html)
+        retryElement.outerHTML = html
         clearInterval(intervalId)
       } else if (++count >= 20) {
-        console.log(`No element present on DOM with divId '${divId}'.`)
+        logger.log(`No element present on DOM with divId '${ divId }'.`)
         clearInterval(intervalId)
       }
     }, 500)
   }
 
   tryFindingElement(divId)
-}
-
-const processElement = (element, html) => {
-  if (element) {
-    element.outerHTML = html
-  }
 }
 
 export const handleJson = (targetingMsgJson) => {
@@ -101,6 +95,6 @@ export const handleJson = (targetingMsgJson) => {
   if (targetingMsgJson.display.json != null) {
     inaObj.json = json
   }
-  const jsonEvent = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
+  const jsonEvent = new CustomEvent('CT_web_native_display_json', {detail: inaObj})
   document.dispatchEvent(jsonEvent)
 }

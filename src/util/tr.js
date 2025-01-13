@@ -852,7 +852,7 @@ const _tr = (msg, {
         } else if (targetNotif.msgContent.type === 4) {
           renderVisualBuilder(targetNotif, false)
         } else if (targetNotif.msgContent.type === 5) {
-          renderCustomHtml(targetNotif)
+          renderCustomHtml(targetNotif, _logger)
         } else if (targetNotif.msgContent.type === 6) {
           handleJson(targetNotif, false)
         } else {
