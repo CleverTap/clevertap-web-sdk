@@ -49,7 +49,7 @@ export const renderCustomHtml = (targetingMsgJson, logger) => {
   const html = details.html
 
   if (!divId || !html) {
-    console.error('No div Id or no html found')
+    logger.error('No div Id or no html found')
     return
   }
 
