@@ -69,30 +69,40 @@ export const saveInboxMessages = (messages) => {
 }
 
 export const initializeWebInbox = (logger) => {
-  const retryUntil = (condition, onSuccess, onFailure, interval = 500, maxRetries = 20) => {
-    let attempts = 0
-    const retry = setInterval(() => {
-      if (condition()) {
-        // DOM Node Found and Inbox not Initialized
-        clearInterval(retry)
-        onSuccess()
-      } else if ($ct.inbox !== null) {
-        // Inbox Already Initialized
-        clearInterval(retry)
-      } else if (attempts >= maxRetries) {
-        // Tried for 10 seconds and no DOM Node Found
-        clearInterval(retry)
-        onFailure()
-      }
-
-      attempts++
-    }, interval)
-  }
-
   return new Promise((resolve, reject) => {
-    const onSuccess = () => {
-      addWebInbox(logger)
-      resolve()
+    const retryUntil = (condition, interval = 500, maxRetries = 20) => {
+      return new Promise((resolve, reject) => {
+        let attempts = 0
+        const retry = setInterval(() => {
+          logger.debug(`Retry attempt: ${attempts + 1}`)
+          if (condition()) {
+            clearInterval(retry)
+            resolve() // Success
+          } else if ($ct.inbox !== null) {
+            clearInterval(retry)
+            resolve() // Inbox already initialized
+          } else if (attempts >= maxRetries) {
+            clearInterval(retry)
+            reject(new Error('Condition not met within max retries'))
+          }
+          attempts++
+        }, interval)
+      })
+    }
+
+    const addInboxSafely = () => {
+      if ($ct.inbox === null) {
+        addWebInbox(logger)
+      }
+    }
+
+    const checkElementCondition = () => {
+      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+      if (!config.inboxSelector) {
+        logger.error('Inbox selector is not configured')
+        return false
+      }
+      return document.getElementById(config.inboxSelector) && $ct.inbox === null
     }
 
     const onFailure = () => {
@@ -100,24 +110,36 @@ export const initializeWebInbox = (logger) => {
       reject(new Error('Failed to initialize web inbox'))
     }
 
-    const checkElementCondition = () => {
-      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
-      return document.getElementById(config.inboxSelector) && $ct.inbox === null
-    }
-
-    document.addEventListener('readystatechange', () => {
-      if (document.readyState === 'complete' && $ct.inbox === null) {
-        retryUntil(checkElementCondition, onSuccess, onFailure)
+    let retryStarted = false // Guard flag
+    const startRetry = () => {
+      if (!retryStarted) {
+        retryStarted = true
+        retryUntil(checkElementCondition, 500, 20)
+          .then(() => {
+            addInboxSafely()
+            resolve()
+          })
+          .catch(onFailure)
       }
-    })
-
-    if (document.readyState === 'complete') {
-      retryUntil(checkElementCondition, onSuccess, onFailure)
-    } else {
-      window.addEventListener('load', () => {
-        retryUntil(checkElementCondition, onSuccess, onFailure)
-      })
     }
+
+    const setupEventListeners = () => {
+      if (document.readyState === 'complete') {
+        startRetry()
+      } else {
+        window.addEventListener('load', startRetry)
+        document.addEventListener(
+          'readystatechange',
+          () => {
+            if (document.readyState === 'complete') {
+              startRetry()
+            }
+          }
+        )
+      }
+    }
+
+    setupEventListeners()
   })
 }
 

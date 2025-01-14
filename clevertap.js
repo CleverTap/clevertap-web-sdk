@@ -4091,32 +4091,46 @@
     StorageManager.saveToLSorCookie(WEBINBOX, newObj);
   };
   const initializeWebInbox = logger => {
-    const retryUntil = function (condition, onSuccess, onFailure) {
-      let interval = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 500;
-      let maxRetries = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 20;
-      let attempts = 0;
-      const retry = setInterval(() => {
-        if (condition()) {
-          // DOM Node Found and Inbox not Initialized
-          clearInterval(retry);
-          onSuccess();
-        } else if ($ct.inbox !== null) {
-          // Inbox Already Initialized
-          clearInterval(retry);
-        } else if (attempts >= maxRetries) {
-          // Tried for 10 seconds and no DOM Node Found
-          clearInterval(retry);
-          onFailure();
+    return new Promise((resolve, reject) => {
+      const retryUntil = function (condition) {
+        let interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 500;
+        let maxRetries = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 20;
+        return new Promise((resolve, reject) => {
+          let attempts = 0;
+          const retry = setInterval(() => {
+            logger.debug("Retry attempt: ".concat(attempts + 1));
+
+            if (condition()) {
+              clearInterval(retry);
+              resolve(); // Success
+            } else if ($ct.inbox !== null) {
+              clearInterval(retry);
+              resolve(); // Inbox already initialized
+            } else if (attempts >= maxRetries) {
+              clearInterval(retry);
+              reject(new Error('Condition not met within max retries'));
+            }
+
+            attempts++;
+          }, interval);
+        });
+      };
+
+      const addInboxSafely = () => {
+        if ($ct.inbox === null) {
+          addWebInbox(logger);
+        }
+      };
+
+      const checkElementCondition = () => {
+        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+
+        if (!config.inboxSelector) {
+          logger.error('Inbox selector is not configured');
+          return false;
         }
 
-        attempts++;
-      }, interval);
-    };
-
-    return new Promise((resolve, reject) => {
-      const onSuccess = () => {
-        addWebInbox(logger);
-        resolve();
+        return document.getElementById(config.inboxSelector) && $ct.inbox === null;
       };
 
       const onFailure = () => {
@@ -4124,24 +4138,32 @@
         reject(new Error('Failed to initialize web inbox'));
       };
 
-      const checkElementCondition = () => {
-        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-        return document.getElementById(config.inboxSelector) && $ct.inbox === null;
+      let retryStarted = false; // Guard flag
+
+      const startRetry = () => {
+        if (!retryStarted) {
+          retryStarted = true;
+          retryUntil(checkElementCondition, 500, 20).then(() => {
+            addInboxSafely();
+            resolve();
+          }).catch(onFailure);
+        }
       };
 
-      document.addEventListener('readystatechange', () => {
-        if (document.readyState === 'complete' && $ct.inbox === null) {
-          retryUntil(checkElementCondition, onSuccess, onFailure);
+      const setupEventListeners = () => {
+        if (document.readyState === 'complete') {
+          startRetry();
+        } else {
+          window.addEventListener('load', startRetry);
+          document.addEventListener('readystatechange', () => {
+            if (document.readyState === 'complete') {
+              startRetry();
+            }
+          });
         }
-      });
+      };
 
-      if (document.readyState === 'complete') {
-        retryUntil(checkElementCondition, onSuccess, onFailure);
-      } else {
-        window.addEventListener('load', () => {
-          retryUntil(checkElementCondition, onSuccess, onFailure);
-        });
-      }
+      setupEventListeners();
     });
   };
   const checkAndRegisterWebInboxElements = () => {
@@ -4372,7 +4394,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.15';
+        const sdkVersion = '1.11.16';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -7426,7 +7448,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.15',
+        lib: 'web-sdk-v1.11.16',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9134,7 +9156,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.15';
+      return 'web-sdk-v1.11.16';
     }
 
     defineVariable(name, defaultValue) {
