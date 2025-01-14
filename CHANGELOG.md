@@ -1,10 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.11.15] 14th Jan, 2025
+## [1.11.16] 14th Jan, 2025
 - Added Support for Vapid Web Push for Safari Mac
 - Added Support for Web Push on Safari IOS 
 - Fixed Browser Identification methods
+
+## [1.11.15] 14th Jan, 2024
+- Fixed Custom Web Inbox Init issue
 
 ## [1.11.14] 17th Dec, 2024
 - Fixed Custom Web Inbox APIs
