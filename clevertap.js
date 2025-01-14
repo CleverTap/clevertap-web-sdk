@@ -4135,7 +4135,6 @@
 
       const onFailure = () => {
         logger.debug('Failed to add inbox');
-        reject(new Error('Failed to initialize web inbox'));
       };
 
       let retryStarted = false; // Guard flag
