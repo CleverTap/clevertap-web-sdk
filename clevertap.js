@@ -207,6 +207,8 @@
   const MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
   const WZRK_FETCH = 'wzrk_fetch';
   const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
+  const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
+  const NOTIF_LAST_TIME = 'notif_last_time';
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -4393,7 +4395,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.15';
+        const sdkVersion = '1.12.0';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -5219,13 +5221,17 @@
   };
 
   const isChrome = () => {
-    return navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('CriOS') !== -1;
+    const ua = navigator.userAgent;
+    return ua.includes('Chrome') || ua.includes('CriOS');
   };
   const isFirefox = () => {
-    return navigator.userAgent.indexOf('Firefox') !== -1 || navigator.userAgent.indexOf('FxiOS') !== -1;
+    const ua = navigator.userAgent;
+    return ua.includes('Firefox') || ua.includes('FxiOS');
   };
   const isSafari = () => {
-    return navigator.userAgent.indexOf('Safari') !== -1;
+    const ua = navigator.userAgent; // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
+
+    return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
   };
 
   var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
@@ -5388,11 +5394,7 @@
 
   var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
     if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
-      // if (this.#fcmPublicKey == null) {
-      //   this.#logger.error('Ensure that Vapid public key is configured in the dashboard')
-      //   return
-      // }
-      StorageManager.setMetaProp('vapid_migration_prompt_shown', true);
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
       navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
         window.Notification.requestPermission().then(permission => {
           if (permission === 'granted') {
@@ -5618,8 +5620,7 @@
     let httpsIframePath;
     let apnsWebPushId;
     let apnsWebPushServiceUrl;
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    const vapidSupportedAndMigrated = isSafari && 'PushManager' in window && StorageManager.getMetaProp('vapid_migration_prompt_shown') && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
+    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
 
     if (displayArgs.length === 1) {
       if (isObject(displayArgs[0])) {
@@ -5735,18 +5736,18 @@
 
     const now = new Date().getTime() / 1000;
 
-    if (StorageManager.getMetaProp('notif_last_time') == null) {
-      StorageManager.setMetaProp('notif_last_time', now);
+    if (StorageManager.getMetaProp(NOTIF_LAST_TIME) == null) {
+      StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
     } else {
       if (askAgainTimeInSeconds == null) {
         // 7 days by default
         askAgainTimeInSeconds = 7 * 24 * 60 * 60;
       }
 
-      const notifLastTime = StorageManager.getMetaProp('notif_last_time');
+      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME);
 
       if (now - notifLastTime < askAgainTimeInSeconds) {
-        if (!isSafari) {
+        if (!isSafari()) {
           return;
         }
 
@@ -5754,7 +5755,7 @@
           return;
         }
       } else {
-        StorageManager.setMetaProp('notif_last_time', now);
+        StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
       }
     }
 
@@ -5991,10 +5992,9 @@
     const popupFrequency = content.popupFrequency || 7; // number of days
 
     const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
     if (shouldShowNotification) {
-      if (!isSafari) {
+      if (!isSafari()) {
         document.body.appendChild(wrapper);
 
         if (!configData.isPreview) {
@@ -6002,7 +6002,7 @@
           addEventListeners(wrapper);
         }
       } else {
-        const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && fcmPublicKey !== null;
+        const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
 
         if (vapidSupportedAndNotMigrated) {
           document.body.appendChild(wrapper);
@@ -7568,7 +7568,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.15',
+        lib: 'web-sdk-v1.12.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9276,7 +9276,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.15';
+      return 'web-sdk-v1.12.0';
     }
 
     defineVariable(name, defaultValue) {

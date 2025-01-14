@@ -1,8 +1,9 @@
 import { getBellIconStyles, getBoxPromptStyles } from './promptStyles.js'
-import { WEBPUSH_CONFIG } from '../../util/constants.js'
+import { WEBPUSH_CONFIG, VAPID_MIGRATION_PROMPT_SHOWN } from '../../util/constants.js'
 import { StorageManager, $ct } from '../../util/storage.js'
 import NotificationHandler from '../notification.js'
 import { BELL_BASE64, PROMPT_BELL_BASE64 } from './promptConstants.js'
+import { isSafari } from '../../util/helpers.js'
 
 let appServerKey = null
 let swPath = '/clevertap_sw.js'
@@ -125,17 +126,16 @@ export const createNotificationBox = (configData, fcmPublicKey) => {
   const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time')
   const popupFrequency = content.popupFrequency || 7 // number of days
   const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
 
   if (shouldShowNotification) {
-    if (!isSafari) {
+    if (!isSafari()) {
       document.body.appendChild(wrapper)
       if (!configData.isPreview) {
         StorageManager.setMetaProp('webpush_last_notif_time', now)
         addEventListeners(wrapper)
       }
     } else {
-      const vapidSupportedAndNotMigrated = ('PushManager' in window) && !StorageManager.getMetaProp('vapid_migration_prompt_shown') && fcmPublicKey !== null
+      const vapidSupportedAndNotMigrated = ('PushManager' in window) && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null
       if (vapidSupportedAndNotMigrated) {
         document.body.appendChild(wrapper)
         if (!configData.isPreview) {

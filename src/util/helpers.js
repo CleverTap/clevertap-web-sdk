@@ -1,11 +1,19 @@
 export const isChrome = () => {
-  return navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('CriOS') !== -1
+  const ua = navigator.userAgent
+  return ua.includes('Chrome') || ua.includes('CriOS')
 }
 
 export const isFirefox = () => {
-  return navigator.userAgent.indexOf('Firefox') !== -1 || navigator.userAgent.indexOf('FxiOS') !== -1
+  const ua = navigator.userAgent
+  return ua.includes('Firefox') || ua.includes('FxiOS')
 }
 
 export const isSafari = () => {
-  return navigator.userAgent.indexOf('Safari') !== -1
+  const ua = navigator.userAgent
+  // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
+  return ua.includes('Safari') &&
+         !ua.includes('CriOS') &&
+         !ua.includes('FxiOS') &&
+         !ua.includes('Chrome') &&
+         !ua.includes('Firefox')
 }

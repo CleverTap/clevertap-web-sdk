@@ -1,7 +1,9 @@
 import { StorageManager, $ct } from '../util/storage'
 import { isObject } from '../util/datatypes'
 import {
-  PUSH_SUBSCRIPTION_DATA
+  PUSH_SUBSCRIPTION_DATA,
+  VAPID_MIGRATION_PROMPT_SHOWN,
+  NOTIF_LAST_TIME
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
@@ -78,11 +80,7 @@ export default class NotificationHandler extends Array {
 
   #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
     if (this.#isNativeWebPushSupported() && this.#fcmPublicKey != null) {
-      // if (this.#fcmPublicKey == null) {
-      //   this.#logger.error('Ensure that Vapid public key is configured in the dashboard')
-      //   return
-      // }
-      StorageManager.setMetaProp('vapid_migration_prompt_shown', true)
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
       navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
         window.Notification.requestPermission().then((permission) => {
           if (permission === 'granted') {
@@ -291,8 +289,7 @@ export default class NotificationHandler extends Array {
     let httpsIframePath
     let apnsWebPushId
     let apnsWebPushServiceUrl
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-    const vapidSupportedAndMigrated = isSafari && ('PushManager' in window) && StorageManager.getMetaProp('vapid_migration_prompt_shown') && this.#fcmPublicKey !== null
+    const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && this.#fcmPublicKey !== null
 
     if (displayArgs.length === 1) {
       if (isObject(displayArgs[0])) {
@@ -395,24 +392,24 @@ export default class NotificationHandler extends Array {
 
     // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
     const now = new Date().getTime() / 1000
-    if ((StorageManager.getMetaProp('notif_last_time')) == null) {
-      StorageManager.setMetaProp('notif_last_time', now)
+    if ((StorageManager.getMetaProp(NOTIF_LAST_TIME)) == null) {
+      StorageManager.setMetaProp(NOTIF_LAST_TIME, now)
     } else {
       if (askAgainTimeInSeconds == null) {
         // 7 days by default
         askAgainTimeInSeconds = 7 * 24 * 60 * 60
       }
 
-      const notifLastTime = StorageManager.getMetaProp('notif_last_time')
+      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME)
       if (now - notifLastTime < askAgainTimeInSeconds) {
-        if (!isSafari) {
+        if (!isSafari()) {
           return
         }
         if (vapidSupportedAndMigrated) {
           return
         }
       } else {
-        StorageManager.setMetaProp('notif_last_time', now)
+        StorageManager.setMetaProp(NOTIF_LAST_TIME, now)
       }
     }
 

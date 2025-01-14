@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.11.16] 14th Jan, 2025
+## [1.12.0] 14th Jan, 2025
 - Added Support for Vapid Web Push for Safari Mac
 - Added Support for Web Push on Safari IOS 
 - Fixed Browser Identification methods
