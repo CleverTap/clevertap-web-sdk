@@ -3861,8 +3861,10 @@
      * inboxSelector present in the document
      */
     checkForWebInbox(e) {
+      var _this$inboxSelector;
+
       const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-      return this.inboxSelector.contains(e.target) || document.getElementById(config.inboxSelector).contains(e.target);
+      return ((_this$inboxSelector = this.inboxSelector) === null || _this$inboxSelector === void 0 ? void 0 : _this$inboxSelector.contains(e.target)) || document.getElementById(config.inboxSelector).contains(e.target);
     }
     /**
      * This function will be called every time when a message comes into the inbox viewport and it's visibility increases to 50% or drops below 50%
@@ -4090,61 +4092,77 @@
   };
   const initializeWebInbox = logger => {
     return new Promise((resolve, reject) => {
-      // Adding this as a band-aid for SUC-126380
-      // Adds ct-web-inbox element in dom which is not visible if Web Inbox Config in LS
-      document.addEventListener('readystatechange', function () {
-        if (document.readyState === 'complete') {
-          addWebInbox(logger);
-          resolve();
-        }
-      });
+      const retryUntil = function (condition) {
+        let interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 500;
+        let maxRetries = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 20;
+        return new Promise((resolve, reject) => {
+          let attempts = 0;
+          const retry = setInterval(() => {
+            logger.debug("Retry attempt: ".concat(attempts + 1));
 
-      if (document.readyState === 'complete') {
-        addWebInbox(logger);
-        resolve();
-      } else {
+            if (condition()) {
+              clearInterval(retry);
+              resolve(); // Success
+            } else if ($ct.inbox !== null) {
+              clearInterval(retry);
+              resolve(); // Inbox already initialized
+            } else if (attempts >= maxRetries) {
+              clearInterval(retry);
+              reject(new Error('Condition not met within max retries'));
+            }
+
+            attempts++;
+          }, interval);
+        });
+      };
+
+      const addInboxSafely = () => {
+        if ($ct.inbox === null) {
+          addWebInbox(logger);
+        }
+      };
+
+      const checkElementCondition = () => {
         const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
 
-        const onLoaded = () => {
-          /**
-           * We need this null check here because $ct.inbox could be initialised via init method too on document load.
-           * In that case we don't need to call addWebInbox method
-           */
-          if ($ct.inbox === null) {
-            addWebInbox(logger);
-          }
+        if (!config.inboxSelector) {
+          logger.error('Inbox selector is not configured');
+          return false;
+        }
 
-          resolve();
-        };
+        return document.getElementById(config.inboxSelector) && $ct.inbox === null;
+      };
 
-        window.addEventListener('load', () => {
-          /**
-           * Scripts can be loaded layzily, we may not get element from dom as it may not be mounted yet
-           * We will to check element for 10 seconds and give up
-           */
-          if (document.getElementById(config.inboxSelector)) {
-            onLoaded();
-          } else {
-            // check for element for next 10 seconds
-            let count = 0;
+      const onFailure = () => {
+        logger.debug('Failed to add inbox');
+      };
 
-            if (count < 20) {
-              const t = setInterval(() => {
-                if (document.getElementById(config.inboxSelector)) {
-                  onLoaded();
-                  clearInterval(t);
-                  resolve();
-                } else if (count >= 20) {
-                  clearInterval(t);
-                  logger.debug('Failed to add inbox');
-                }
+      let retryStarted = false; // Guard flag
 
-                count++;
-              }, 500);
+      const startRetry = () => {
+        if (!retryStarted) {
+          retryStarted = true;
+          retryUntil(checkElementCondition, 500, 20).then(() => {
+            addInboxSafely();
+            resolve();
+          }).catch(onFailure);
+        }
+      };
+
+      const setupEventListeners = () => {
+        if (document.readyState === 'complete') {
+          startRetry();
+        } else {
+          window.addEventListener('load', startRetry);
+          document.addEventListener('readystatechange', () => {
+            if (document.readyState === 'complete') {
+              startRetry();
             }
-          }
-        });
-      }
+          });
+        }
+      };
+
+      setupEventListeners();
     });
   };
   const checkAndRegisterWebInboxElements = () => {
@@ -4375,7 +4393,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.14';
+        const sdkVersion = '1.11.15';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -7429,7 +7447,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.14',
+        lib: 'web-sdk-v1.11.15',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9137,7 +9155,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.14';
+      return 'web-sdk-v1.11.15';
     }
 
     defineVariable(name, defaultValue) {
