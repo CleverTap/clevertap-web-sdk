@@ -4375,7 +4375,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.14';
+        const sdkVersion = '1.11.15';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -5011,7 +5011,7 @@
     });
     document.dispatchEvent(kvPairsEvent);
   };
-  const renderCustomHtml = targetingMsgJson => {
+  const renderCustomHtml = (targetingMsgJson, logger) => {
     const {
       display,
       wzrk_id: wzrkId,
@@ -5022,7 +5022,7 @@
     const html = details.html;
 
     if (!divId || !html) {
-      console.error('No div Id or no html found');
+      logger.error('No div Id or no html found');
       return;
     }
 
@@ -5046,10 +5046,10 @@
 
         if (retryElement) {
           raiseViewed();
-          processElement(retryElement, html);
+          retryElement.outerHTML = html;
           clearInterval(intervalId);
         } else if (++count >= 20) {
-          console.log("No element present on DOM with divId '".concat(divId, "'."));
+          logger.log("No element present on DOM with divId '".concat(divId, "'."));
           clearInterval(intervalId);
         }
       }, 500);
@@ -5057,13 +5057,6 @@
 
     tryFindingElement(divId);
   };
-
-  const processElement = (element, html) => {
-    if (element) {
-      element.outerHTML = html;
-    }
-  };
-
   const handleJson = targetingMsgJson => {
     const inaObj = {};
     inaObj.msgId = targetingMsgJson.wzrk_id;
@@ -7018,7 +7011,7 @@
           } else if (targetNotif.msgContent.type === 4) {
             renderVisualBuilder(targetNotif, false);
           } else if (targetNotif.msgContent.type === 5) {
-            renderCustomHtml(targetNotif);
+            renderCustomHtml(targetNotif, _logger);
           } else if (targetNotif.msgContent.type === 6) {
             handleJson(targetNotif);
           } else {
@@ -7505,7 +7498,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.14',
+        lib: 'web-sdk-v1.11.15',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9213,7 +9206,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.14';
+      return 'web-sdk-v1.11.15';
     }
 
     defineVariable(name, defaultValue) {
