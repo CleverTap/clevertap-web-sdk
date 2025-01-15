@@ -66,7 +66,7 @@ export default class NotificationHandler extends Array {
     if (isChrome() || isFirefox()) {
       this.#setUpChromeFirefoxNotifications(subscriptionCallback, serviceWorkerPath)
     } else if (isSafari()) {
-      this.#setUpSafariNotifications(subscriptionCallback, apnsWebPushId, apnsServiceUrl)
+      this.#setUpSafariNotifications(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath)
     }
   }
 
