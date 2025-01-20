@@ -189,21 +189,22 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
       })
     }
     if (selector.values) {
-    switch (selector.values.editor) {
-      case 'html':
-        if (isPreview) {
-          element.outerHTML = selector.values.html.text
-        } else {
-          element.outerHTML = selector.values.html
-        }
-        break
-      case 'json':
-        dispatchJsonData(targetingMsgJson, selector.values, isPreview)
-        break
-      case 'form':
-        payload.msgCTkv = { wzrk_selector: selector.selector }
-        updateFormData(element, selector.values.form, payload, isPreview)
-        break
+      switch (selector.values.editor) {
+        case 'html':
+          if (isPreview) {
+            element.outerHTML = selector.values.html.text
+          } else {
+            element.outerHTML = selector.values.html
+          }
+          break
+        case 'json':
+          dispatchJsonData(targetingMsgJson, selector.values, isPreview)
+          break
+        case 'form':
+          payload.msgCTkv = { wzrk_selector: selector.selector }
+          updateFormData(element, selector.values.form, payload, isPreview)
+          break
+      }
     }
   }
 

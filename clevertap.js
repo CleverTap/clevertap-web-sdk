@@ -4965,7 +4965,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        var sdkVersion = '1.11.12';
+        var sdkVersion = '1.11.14';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId: accountId,
@@ -5110,6 +5110,7 @@
 
 
   var renderVisualBuilder = function renderVisualBuilder(targetingMsgJson, isPreview) {
+    var insertedElements = [];
     var details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     var notificationViewed = false;
     var payload = {
@@ -5149,21 +5150,26 @@
       }
 
       if (selector.values) {
-        var _selector$values;
+        switch (selector.values.editor) {
+          case 'html':
+            if (isPreview) {
+              element.outerHTML = selector.values.html.text;
+            } else {
+              element.outerHTML = selector.values.html;
+            }
 
-        if (selector.values.html) {
-          if (isPreview) {
-            element.outerHTML = selector.values.html.text;
-          } else {
-            element.outerHTML = selector.values.html;
-          }
-        } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
-          dispatchJsonData(targetingMsgJson, selector.values, isPreview);
-        } else {
-          payload.msgCTkv = {
-            wzrk_selector: selector.selector
-          };
-          updateFormData(element, selector.values.form, payload, isPreview);
+            break;
+
+          case 'json':
+            dispatchJsonData(targetingMsgJson, selector.values, isPreview);
+            break;
+
+          case 'form':
+            payload.msgCTkv = {
+              wzrk_selector: selector.selector
+            };
+            updateFormData(element, selector.values.form, payload, isPreview);
+            break;
         }
       }
     };
@@ -5187,7 +5193,10 @@
     details.forEach(function (d) {
       if (d.url === window.location.href.split('?')[0]) {
         d.selectorData.forEach(function (s) {
-          var element = document.querySelector(s.selector);
+          if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
+            insertedElements.push(s);
+          } else {
+            var element = document.querySelector(s.selector);
 
             if (element) {
               raiseViewed();
@@ -5199,19 +5208,19 @@
         });
       }
     });
-    setTimeout(() => {
+    setTimeout(function () {
       if (insertedElements.length > 0) {
-        const sortedArr = insertedElements.sort((a, b) => {
-          const numA = parseInt(a.selector.split('-')[0], 10);
-          const numB = parseInt(b.selector.split('-')[0], 10);
+        var sortedArr = insertedElements.sort(function (a, b) {
+          var numA = parseInt(a.selector.split('-')[0], 10);
+          var numB = parseInt(b.selector.split('-')[0], 10);
           return numA - numB;
         });
-        sortedArr.forEach(s => {
-          const {
-            pos,
-            sibling
-          } = findSiblingSelector(s.selector);
-          let siblingEl;
+        sortedArr.forEach(function (s) {
+          var _findSiblingSelector = findSiblingSelector(s.selector),
+              pos = _findSiblingSelector.pos,
+              sibling = _findSiblingSelector.sibling;
+
+          var siblingEl;
 
           try {
             siblingEl = document.querySelector(sibling);
@@ -5219,20 +5228,20 @@
             siblingEl = null;
           }
 
-          const ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
-          const element = ctEl || siblingEl;
+          var ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+          var element = ctEl || siblingEl;
 
           if (element) {
-            const tempDiv = document.createElement('div');
+            var tempDiv = document.createElement('div');
             tempDiv.innerHTML = s.values.initialHtml;
-            const newElement = tempDiv.firstElementChild;
+            var newElement = tempDiv.firstElementChild;
             element.insertAdjacentElement(pos, newElement);
 
             if (!element.getAttribute('ct-selector')) {
               element.setAttribute('ct-selector', sibling);
             }
 
-            const insertedElement = document.querySelector("[ct-selector=\"".concat(s.selector, "\"]"));
+            var insertedElement = document.querySelector("[ct-selector=\"".concat(s.selector, "\"]"));
             raiseViewed();
             processElement(insertedElement, s);
           }
@@ -5242,8 +5251,8 @@
   };
 
   function findSiblingSelector(input) {
-    const regex = /^(\d+)-(afterend|beforebegin)-(.+)$/;
-    const match = input.match(regex);
+    var regex = /^(\d+)-(afterend|beforebegin)-(.+)$/;
+    var match = input.match(regex);
 
     if (match) {
       return {
@@ -6027,8 +6036,9 @@
       key: "enable",
       value: function enable() {
         var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-        var swPath = options.swPath;
-        enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath);
+        var swPath = options.swPath,
+            skipDialog = options.skipDialog;
+        enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, skipDialog);
       }
     }, {
       key: "_processOldValues",
@@ -6487,7 +6497,7 @@
       updatePushConfig();
     }
   };
-  var enablePush = function enablePush(logger, account, request, customSwPath) {
+  var enablePush = function enablePush(logger, account, request, customSwPath, skipDialog) {
     var _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     $ct.pushConfig = _pushConfig;
@@ -6507,6 +6517,13 @@
       request: request,
       account: account
     });
+
+    if (skipDialog) {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+      return;
+    }
+
     var _$ct$pushConfig = $ct.pushConfig,
         showBox = _$ct$pushConfig.showBox,
         boxType = _$ct$pushConfig.boxType,
@@ -6593,9 +6610,22 @@
     wrapper.appendChild(pnCard);
     wrapper.appendChild(overlayDiv);
     setElementPosition(pnCard, style.card.position);
+
+    if (!configData.isPreview) {
+      if ('Notification' in window && Notification !== null) {
+        if (Notification.permission === 'granted') {
+          notificationHandler.setApplicationServerKey(appServerKey);
+          notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+          return;
+        } else if (Notification.permission === 'denied') {
+          return;
+        }
+      }
+    }
+
     var now = new Date().getTime() / 1000;
     var lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
-    var popupFrequency = content.popupFrequency || 7 * 24 * 60 * 60;
+    var popupFrequency = content.popupFrequency || 7; // number of days
 
     if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
       document.body.appendChild(wrapper);
@@ -6677,7 +6707,6 @@
       notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
     });
     secondaryButton.addEventListener('click', function () {
-      StorageManager.setMetaProp('webpush_last_notif_time', Date.now() / 1000);
       removeWrapper();
     });
   };
@@ -8198,7 +8227,7 @@
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
         dataObject.af = _objectSpread2(_objectSpread2({}, dataObject.af), {}, {
-          lib: 'web-sdk-v1.11.12',
+          lib: 'web-sdk-v1.11.14',
           protocol: proto
         }, $ct.flutterVersion); // app fields
 
@@ -9289,10 +9318,13 @@
 
 
       this.getInboxMessageUnreadCount = function () {
-        if ($ct.inbox) {
-          return $ct.inbox.unviewedCounter;
-        } else {
-          _classPrivateFieldLooseBase(_this, _logger$a)[_logger$a].debug('No unread messages');
+        try {
+          var unreadMessages = _this.getUnreadInboxMessages();
+
+          var result = Object.keys(unreadMessages).length;
+          return result;
+        } catch (e) {
+          _classPrivateFieldLooseBase(_this, _logger$a)[_logger$a].error('Error in getInboxMessageUnreadCount' + e);
         }
       }; // Get All Inbox messages
 
@@ -9303,10 +9335,21 @@
 
 
       this.getUnreadInboxMessages = function () {
-        if ($ct.inbox) {
-          return $ct.inbox.unviewedMessages;
-        } else {
-          _classPrivateFieldLooseBase(_this, _logger$a)[_logger$a].debug('No unread messages');
+        try {
+          var messages = getInboxMessages();
+          var result = {};
+
+          if (Object.keys(messages).length > 0) {
+            for (var message in messages) {
+              if (messages[message].viewed === 0) {
+                result[message] = messages[message];
+              }
+            }
+          }
+
+          return result;
+        } catch (e) {
+          _classPrivateFieldLooseBase(_this, _logger$a)[_logger$a].error('Error in getUnreadInboxMessages' + e);
         }
       }; // Get message object belonging to the given message id only. Message id should be a String
 
@@ -9359,10 +9402,13 @@
 
 
       this.markReadInboxMessage = function (messageId) {
-        var unreadMsg = $ct.inbox.unviewedMessages;
         var messages = getInboxMessages();
 
-        if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
+        if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
+          if (messages[messageId].viewed === 1) {
+            return _classPrivateFieldLooseBase(_this, _logger$a)[_logger$a].error('Message already viewed' + messageId);
+          }
+
           var ctInbox = document.querySelector('ct-web-inbox');
 
           if (ctInbox) {
@@ -9410,8 +9456,9 @@
 
 
       this.markReadAllInboxMessage = function () {
-        var unreadMsg = $ct.inbox.unviewedMessages;
         var messages = getInboxMessages();
+
+        var unreadMsg = _this.getUnreadInboxMessages();
 
         if (Object.keys(unreadMsg).length > 0) {
           var msgIds = Object.keys(unreadMsg);
@@ -9964,7 +10011,7 @@
     }, {
       key: "getSDKVersion",
       value: function getSDKVersion() {
-        return 'web-sdk-v1.11.12';
+        return 'web-sdk-v1.11.14';
       }
     }, {
       key: "defineVariable",
