@@ -5189,22 +5189,81 @@
         d.selectorData.forEach(function (s) {
           var element = document.querySelector(s.selector);
 
-          if (element) {
-            raiseViewed();
-            processElement(element, s);
-          } else {
-            tryFindingElement(s);
+            if (element) {
+              raiseViewed();
+              processElement(element, s);
+            } else {
+              tryFindingElement(s);
+            }
           }
         });
       }
     });
+    setTimeout(() => {
+      if (insertedElements.length > 0) {
+        const sortedArr = insertedElements.sort((a, b) => {
+          const numA = parseInt(a.selector.split('-')[0], 10);
+          const numB = parseInt(b.selector.split('-')[0], 10);
+          return numA - numB;
+        });
+        sortedArr.forEach(s => {
+          const {
+            pos,
+            sibling
+          } = findSiblingSelector(s.selector);
+          let siblingEl;
+
+          try {
+            siblingEl = document.querySelector(sibling);
+          } catch (e) {
+            siblingEl = null;
+          }
+
+          const ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+          const element = ctEl || siblingEl;
+
+          if (element) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = s.values.initialHtml;
+            const newElement = tempDiv.firstElementChild;
+            element.insertAdjacentElement(pos, newElement);
+
+            if (!element.getAttribute('ct-selector')) {
+              element.setAttribute('ct-selector', sibling);
+            }
+
+            const insertedElement = document.querySelector("[ct-selector=\"".concat(s.selector, "\"]"));
+            raiseViewed();
+            processElement(insertedElement, s);
+          }
+        });
+      }
+    }, 2000);
   };
+
+  function findSiblingSelector(input) {
+    const regex = /^(\d+)-(afterend|beforebegin)-(.+)$/;
+    const match = input.match(regex);
+
+    if (match) {
+      return {
+        pos: match[2],
+        sibling: match[3]
+      };
+    }
+
+    return {
+      pos: 'beforebegin',
+      sibling: ''
+    };
+  }
   /**
    * Dispatches JSON data.
    * @param {Object} targetingMsgJson - The point and click campaign JSON object.
    * @param {Object} selector - The selector object.
    * @param {boolean} isPreview - If preview different handling
    */
+
 
   function dispatchJsonData(targetingMsgJson, selector) {
     var isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
@@ -6542,6 +6601,7 @@
       document.body.appendChild(wrapper);
 
       if (!configData.isPreview) {
+        StorageManager.setMetaProp('webpush_last_notif_time', now);
         addEventListeners(wrapper);
       }
     }

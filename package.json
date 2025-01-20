@@ -1,6 +1,6 @@
 {
   "name": "clevertap-web-sdk",
-  "version": "1.11.12",
+  "version": "1.11.14",
   "description": "",
   "main": "clevertap.js",
   "scripts": {
