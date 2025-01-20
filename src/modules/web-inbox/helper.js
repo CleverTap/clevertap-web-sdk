@@ -99,7 +99,7 @@ export const initializeWebInbox = (logger) => {
     const checkElementCondition = () => {
       const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
       if (!config.inboxSelector) {
-        logger.error('Inbox selector is not configured')
+        logger.debug('Inbox selector is not configured')
         return false
       }
       return document.getElementById(config.inboxSelector) && $ct.inbox === null
