@@ -5317,7 +5317,7 @@
         const {
           serviceWorkerPath,
           skipDialog
-        } = displayArgs.length > 0 && isObject(displayArgs[0]) && displayArgs[0];
+        } = displayArgs.length > 0 && displayArgs.length === 1 && isObject(displayArgs[0]) && displayArgs[0];
 
         if (showBellIcon || showBox && boxType === 'new') {
           enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], serviceWorkerPath, skipDialog);
@@ -5485,7 +5485,7 @@
 
           const existingBellWrapper = document.getElementById('bell_wrapper');
           const softPromptCard = document.getElementById('pnWrapper');
-          const oldSoftPromptCart = document.getElementById('wzrk_wrapper');
+          const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
 
           if (existingBellWrapper) {
             existingBellWrapper.parentNode.removeChild(existingBellWrapper);
@@ -5495,8 +5495,8 @@
             softPromptCard.parentNode.removeChild(softPromptCard);
           }
 
-          if (oldSoftPromptCart) {
-            oldSoftPromptCart.parentNode.removeChild(oldSoftPromptCart);
+          if (oldSoftPromptCard) {
+            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
           }
         }).catch(error => {
           // unsubscribe from webpush if error
@@ -5541,7 +5541,6 @@
 
   var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
     // make sure everything is specified
-    console.log('handleNotificationRegistration');
     let titleText;
     let bodyText;
     let okButtonText;

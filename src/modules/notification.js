@@ -1,12 +1,12 @@
-import {StorageManager, $ct} from '../util/storage'
-import {isObject} from '../util/datatypes'
+import { StorageManager, $ct } from '../util/storage'
+import { isObject } from '../util/datatypes'
 import {
   PUSH_SUBSCRIPTION_DATA
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
 } from '../util/encoder'
-import {enablePush} from './webPushPrompt/prompt'
+import { enablePush } from './webPushPrompt/prompt'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -16,7 +16,7 @@ export default class NotificationHandler extends Array {
   #wizAlertJSPath
   #fcmPublicKey
 
-  constructor({
+  constructor ({
     logger,
     session,
     request,
@@ -34,8 +34,8 @@ export default class NotificationHandler extends Array {
   push (...displayArgs) {
     const WEBPUSH_CONFIG = JSON.parse(decodeURIComponent(localStorage.getItem('WZRK_PUSH_CONFIG'))) || null
     if (WEBPUSH_CONFIG) {
-      const {showBox, showBellIcon, boxType} = WEBPUSH_CONFIG
-      const {serviceWorkerPath, skipDialog} = displayArgs.length > 0 && isObject(displayArgs[0]) && displayArgs[0]
+      const { showBox, showBellIcon, boxType } = WEBPUSH_CONFIG
+      const { serviceWorkerPath, skipDialog } = displayArgs.length > 0 && displayArgs.length === 1 && isObject(displayArgs[0]) && displayArgs[0]
       if (showBellIcon || (showBox && boxType === 'new')) {
         enablePush(this.#logger, this.#account, this.#request, serviceWorkerPath, skipDialog)
       }
@@ -50,7 +50,7 @@ export default class NotificationHandler extends Array {
   }
 
   enable (options = {}) {
-    const {swPath, skipDialog} = options
+    const { swPath, skipDialog } = options
     enablePush(this.#logger, this.#account, this.#request, swPath, skipDialog)
   }
 
@@ -145,7 +145,7 @@ export default class NotificationHandler extends Array {
         if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
           serviceWorkerRegistration = serviceWorkerRegistration.filter((i) => i.scope === registrationScope)[0]
         }
-        const subscribeObj = {userVisibleOnly: true}
+        const subscribeObj = { userVisibleOnly: true }
 
         if (this.#fcmPublicKey != null) {
           subscribeObj.applicationServerKey = urlBase64ToUint8Array(this.#fcmPublicKey)
@@ -228,7 +228,6 @@ export default class NotificationHandler extends Array {
 
   #handleNotificationRegistration (displayArgs) {
     // make sure everything is specified
-    console.log('handleNotificationRegistration')
     let titleText
     let bodyText
     let okButtonText
@@ -298,13 +297,13 @@ export default class NotificationHandler extends Array {
     // right now, we only support Chrome V50 & higher & Firefox
     if (navigator.userAgent.indexOf('Chrome') !== -1) {
       const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/)
-      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) {return }
+      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) { return }
     } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
       const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/)
-      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) {return }
+      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) { return }
     } else if (navigator.userAgent.indexOf('Safari') !== -1) {
       const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/)
-      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) {return }
+      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) { return }
     } else {
       return
     }
