@@ -5302,8 +5302,32 @@
     }
 
     push() {
+      const WEBPUSH_CONFIG = JSON.parse(decodeURIComponent(localStorage.getItem('WZRK_PUSH_CONFIG'))) || null;
+
       for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
         displayArgs[_key] = arguments[_key];
+      }
+
+      if (WEBPUSH_CONFIG) {
+        const {
+          showBox,
+          showBellIcon,
+          boxType
+        } = WEBPUSH_CONFIG;
+        const {
+          serviceWorkerPath,
+          skipDialog
+        } = displayArgs.length > 0 && isObject(displayArgs[0]) && displayArgs[0];
+
+        if (showBellIcon || showBox && boxType === 'new') {
+          enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], serviceWorkerPath, skipDialog);
+        }
+
+        if (showBox && boxType === 'old') {
+          _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+        }
+
+        return;
       }
 
       _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
@@ -5460,9 +5484,19 @@
           }
 
           const existingBellWrapper = document.getElementById('bell_wrapper');
+          const softPromptCard = document.getElementById('pnWrapper');
+          const oldSoftPromptCart = document.getElementById('wzrk_wrapper');
 
           if (existingBellWrapper) {
             existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+          }
+
+          if (softPromptCard) {
+            softPromptCard.parentNode.removeChild(softPromptCard);
+          }
+
+          if (oldSoftPromptCart) {
+            oldSoftPromptCart.parentNode.removeChild(oldSoftPromptCart);
           }
         }).catch(error => {
           // unsubscribe from webpush if error
@@ -5507,6 +5541,7 @@
 
   var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
     // make sure everything is specified
+    console.log('handleNotificationRegistration');
     let titleText;
     let bodyText;
     let okButtonText;
