@@ -3479,7 +3479,8 @@
       this.setBadgeStyle = msgCount => {
         if (this.unviewedBadge !== null) {
           this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount;
-          this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none';
+          const shouldShowUnviewedBadge = msgCount > 0 && document.getElementById(this.config.inboxSelector);
+          this.unviewedBadge.style.display = shouldShowUnviewedBadge ? 'flex' : 'none';
         }
       };
 
@@ -3685,12 +3686,17 @@
     }
 
     updateUnviewedBadgePosition() {
-      const {
-        top,
-        right
-      } = this.inboxSelector.getBoundingClientRect();
-      this.unviewedBadge.style.top = "".concat(top - 8, "px");
-      this.unviewedBadge.style.left = "".concat(right - 8, "px");
+      try {
+        const inboxNode = document.getElementById(this.config.inboxSelector) || this.inboxSelector;
+        const {
+          top,
+          right
+        } = inboxNode.getBoundingClientRect();
+        this.unviewedBadge.style.top = "".concat(top - 8, "px");
+        this.unviewedBadge.style.left = "".concat(right - 8, "px");
+      } catch (error) {
+        this.logger.debug('Error updating unviewed badge position:', error);
+      }
     }
 
     createinbox() {
@@ -3859,14 +3865,17 @@
 
 
     /**
-     * This function checks if the current Event Node is same as the already stored inboxSelector or the
-     * inboxSelector present in the document
+     * Checks if the current event target is part of the stored inboxSelector or the inboxSelector in the document.
+     *
+     * @param {Event} e - The event object to check.
+     * @returns {boolean} - Returns true if the event target is within the inboxSelector, otherwise false.
      */
     checkForWebInbox(e) {
       var _this$inboxSelector;
 
       const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-      return ((_this$inboxSelector = this.inboxSelector) === null || _this$inboxSelector === void 0 ? void 0 : _this$inboxSelector.contains(e.target)) || document.getElementById(config.inboxSelector).contains(e.target);
+      const inboxElement = document.getElementById(config.inboxSelector);
+      return ((_this$inboxSelector = this.inboxSelector) === null || _this$inboxSelector === void 0 ? void 0 : _this$inboxSelector.contains(e.target)) || (inboxElement === null || inboxElement === void 0 ? void 0 : inboxElement.contains(e.target));
     }
     /**
      * This function will be called every time when a message comes into the inbox viewport and it's visibility increases to 50% or drops below 50%
@@ -3960,6 +3969,7 @@
     /**
      * Updates the UI with the number of unviewed messages
      * If there are more than 9 unviewed messages, we show the count as 9+
+     * Only show this badge if the current document has the inboxNode
      */
 
 
@@ -4128,7 +4138,7 @@
         const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
 
         if (!config.inboxSelector) {
-          logger.error('Inbox selector is not configured');
+          logger.debug('Inbox selector is not configured');
           return false;
         }
 
@@ -8330,6 +8340,8 @@
 
   var _checkPageChanged = _classPrivateFieldLooseKey("checkPageChanged");
 
+  var _updateUnviewedBadgePosition = _classPrivateFieldLooseKey("updateUnviewedBadgePosition");
+
   var _pingRequest = _classPrivateFieldLooseKey("pingRequest");
 
   var _isPingContinuous = _classPrivateFieldLooseKey("isPingContinuous");
@@ -8383,6 +8395,9 @@
       });
       Object.defineProperty(this, _pingRequest, {
         value: _pingRequest2
+      });
+      Object.defineProperty(this, _updateUnviewedBadgePosition, {
+        value: _updateUnviewedBadgePosition2
       });
       Object.defineProperty(this, _checkPageChanged, {
         value: _checkPageChanged2
@@ -9238,6 +9253,8 @@
           }, CONTINUOUS_PING_FREQ_IN_MILLIS);
         }
       }, FIRST_PING_FREQ_IN_MILLIS);
+
+      _classPrivateFieldLooseBase(this, _updateUnviewedBadgePosition)[_updateUnviewedBadgePosition]();
     }
 
     _isPersonalisationActive() {
@@ -9322,7 +9339,7 @@
   };
 
   var _debounce2 = function _debounce2(func) {
-    let delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 300;
+    let delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 50;
     let timeout;
     return function () {
       clearTimeout(timeout);
@@ -9338,6 +9355,32 @@
     });
 
     debouncedPageChanged();
+  };
+
+  var _updateUnviewedBadgePosition2 = function _updateUnviewedBadgePosition2() {
+    try {
+      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+      const inboxNode = document.getElementById(config.inboxSelector);
+      const unViewedBadge = document.getElementById('unviewedBadge');
+
+      if (!inboxNode) {
+        unViewedBadge.style.display = 'none';
+      } else {
+        const {
+          top,
+          right
+        } = inboxNode.getBoundingClientRect();
+
+        if (Number(unViewedBadge.innerText) > 0) {
+          unViewedBadge.style.display = 'flex';
+        }
+
+        unViewedBadge.style.top = "".concat(top - 8, "px");
+        unViewedBadge.style.left = "".concat(right - 8, "px");
+      }
+    } catch (error) {
+      _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('Error updating unviewed badge position:', error);
+    }
   };
 
   var _pingRequest2 = function _pingRequest2() {
