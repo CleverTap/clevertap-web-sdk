@@ -5302,46 +5302,35 @@
     }
 
     push() {
-      const WEBPUSH_CONFIG = JSON.parse(decodeURIComponent(localStorage.getItem('WZRK_PUSH_CONFIG'))) || null;
+      const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
       for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
         displayArgs[_key] = arguments[_key];
       }
 
-      if (WEBPUSH_CONFIG) {
-        const {
-          showBox,
-          showBellIcon,
-          boxType
-        } = WEBPUSH_CONFIG;
-        const {
-          serviceWorkerPath,
-          skipDialog
-        } = displayArgs.length > 0 && displayArgs.length === 1 && isObject(displayArgs[0]) && displayArgs[0];
+      if (!(Object.keys(webPushConfig).length > 0)) {
+        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
 
-        if (showBellIcon || showBox && boxType === 'new') {
-          enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], serviceWorkerPath, skipDialog);
-        }
-
-        if (showBox && boxType === 'old') {
-          _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
-        }
-
-        return;
+        return 0;
       }
 
-      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
-
-      return 0;
-    }
-
-    enable() {
-      let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       const {
-        swPath,
+        showBox,
+        showBellIcon,
+        boxType
+      } = webPushConfig;
+      const {
+        serviceWorkerPath,
         skipDialog
-      } = options;
-      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, skipDialog);
+      } = parseDisplayArgs(displayArgs);
+
+      if (showBellIcon || showBox && boxType === 'new') {
+        enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], serviceWorkerPath, skipDialog);
+      }
+
+      if (showBox && boxType === 'old') {
+        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+      }
     }
 
     _processOldValues() {
@@ -5788,6 +5777,23 @@
       updatePushConfig();
     }
   };
+  const parseDisplayArgs = displayArgs => {
+    if (displayArgs.length === 1 && isObject(displayArgs[0])) {
+      const {
+        serviceWorkerPath,
+        skipDialog
+      } = displayArgs[0];
+      return {
+        serviceWorkerPath,
+        skipDialog
+      };
+    }
+
+    return {
+      serviceWorkerPath: undefined,
+      skipDialog: displayArgs[5]
+    };
+  };
   const enablePush = (logger, account, request, customSwPath, skipDialog) => {
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
@@ -5800,6 +5806,10 @@
 
     if (customSwPath) {
       swPath = customSwPath;
+    }
+
+    if (skipDialog === null) {
+      skipDialog = false;
     }
 
     notificationHandler = new NotificationHandler({

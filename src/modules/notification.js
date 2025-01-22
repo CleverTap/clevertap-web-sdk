@@ -1,12 +1,13 @@
 import { StorageManager, $ct } from '../util/storage'
 import { isObject } from '../util/datatypes'
 import {
-  PUSH_SUBSCRIPTION_DATA
+  PUSH_SUBSCRIPTION_DATA,
+  WEBPUSH_CONFIG
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
 } from '../util/encoder'
-import { enablePush } from './webPushPrompt/prompt'
+import { enablePush, parseDisplayArgs } from './webPushPrompt/prompt'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -32,26 +33,21 @@ export default class NotificationHandler extends Array {
   }
 
   push (...displayArgs) {
-    const WEBPUSH_CONFIG = JSON.parse(decodeURIComponent(localStorage.getItem('WZRK_PUSH_CONFIG'))) || null
-    if (WEBPUSH_CONFIG) {
-      const { showBox, showBellIcon, boxType } = WEBPUSH_CONFIG
-      const { serviceWorkerPath, skipDialog } = displayArgs.length > 0 && displayArgs.length === 1 && isObject(displayArgs[0]) && displayArgs[0]
-      if (showBellIcon || (showBox && boxType === 'new')) {
-        enablePush(this.#logger, this.#account, this.#request, serviceWorkerPath, skipDialog)
-      }
-      if (showBox && boxType === 'old') {
-        this.#setUpWebPush(displayArgs)
-      }
+    const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
 
-      return
+    if (!(Object.keys(webPushConfig).length > 0)) {
+      this.#setUpWebPush(displayArgs)
+      return 0
     }
-    this.#setUpWebPush(displayArgs)
-    return 0
-  }
+    const { showBox, showBellIcon, boxType } = webPushConfig
+    const { serviceWorkerPath, skipDialog } = parseDisplayArgs(displayArgs)
+    if (showBellIcon || (showBox && boxType === 'new')) {
+      enablePush(this.#logger, this.#account, this.#request, serviceWorkerPath, skipDialog)
+    }
 
-  enable (options = {}) {
-    const { swPath, skipDialog } = options
-    enablePush(this.#logger, this.#account, this.#request, swPath, skipDialog)
+    if (showBox && boxType === 'old') {
+      this.#setUpWebPush(displayArgs)
+    }
   }
 
   _processOldValues () {

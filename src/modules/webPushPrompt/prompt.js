@@ -1,5 +1,6 @@
 import { getBellIconStyles, getBoxPromptStyles } from './promptStyles.js'
 import { WEBPUSH_CONFIG } from '../../util/constants.js'
+import { isObject } from '../../util/datatypes.js'
 import { StorageManager, $ct } from '../../util/storage.js'
 import NotificationHandler from '../notification.js'
 import { BELL_BASE64, PROMPT_BELL_BASE64 } from './promptConstants.js'
@@ -24,6 +25,15 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
   }
 }
 
+export const parseDisplayArgs = (displayArgs) => {
+  if (displayArgs.length === 1 && isObject(displayArgs[0])) {
+    const { serviceWorkerPath, skipDialog } = displayArgs[0]
+    return { serviceWorkerPath, skipDialog }
+  }
+
+  return { serviceWorkerPath: undefined, skipDialog: displayArgs[5] }
+}
+
 export const enablePush = (logger, account, request, customSwPath, skipDialog) => {
   const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
   $ct.pushConfig = _pushConfig
@@ -33,6 +43,10 @@ export const enablePush = (logger, account, request, customSwPath, skipDialog) =
   }
 
   if (customSwPath) { swPath = customSwPath }
+
+  if (skipDialog === null) {
+    skipDialog = false
+  }
 
   notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
 
