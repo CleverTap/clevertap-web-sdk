@@ -5303,6 +5303,7 @@
 
     push() {
       const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+      console.log('webPushConfig', webPushConfig);
 
       for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
         displayArgs[_key] = arguments[_key];
@@ -5450,6 +5451,8 @@
           subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
         }
 
+        const softPromptCard = document.getElementById('pnWrapper');
+        const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
           _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
 
@@ -5473,8 +5476,6 @@
           }
 
           const existingBellWrapper = document.getElementById('bell_wrapper');
-          const softPromptCard = document.getElementById('pnWrapper');
-          const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
 
           if (existingBellWrapper) {
             existingBellWrapper.parentNode.removeChild(existingBellWrapper);
@@ -5489,6 +5490,7 @@
           }
         }).catch(error => {
           // unsubscribe from webpush if error
+          console.log('rejected subscription');
           serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
             if (subscription !== null) {
               subscription.unsubscribe().then(successful => {
@@ -5506,6 +5508,14 @@
           });
 
           _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error subscribing: ' + error);
+
+          if (softPromptCard) {
+            softPromptCard.parentNode.removeChild(softPromptCard);
+          }
+
+          if (oldSoftPromptCard) {
+            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+          }
         });
       }).catch(err => {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('error registering service worker: ' + err);

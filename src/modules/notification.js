@@ -34,7 +34,7 @@ export default class NotificationHandler extends Array {
 
   push (...displayArgs) {
     const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
-
+    console.log('webPushConfig', webPushConfig)
     if (!(Object.keys(webPushConfig).length > 0)) {
       this.#setUpWebPush(displayArgs)
       return 0
@@ -147,6 +147,9 @@ export default class NotificationHandler extends Array {
           subscribeObj.applicationServerKey = urlBase64ToUint8Array(this.#fcmPublicKey)
         }
 
+        const softPromptCard = document.getElementById('pnWrapper')
+        const oldSoftPromptCard = document.getElementById('wzrk_wrapper')
+
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj)
           .then((subscription) => {
             this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
@@ -169,8 +172,6 @@ export default class NotificationHandler extends Array {
               subscriptionCallback()
             }
             const existingBellWrapper = document.getElementById('bell_wrapper')
-            const softPromptCard = document.getElementById('pnWrapper')
-            const oldSoftPromptCard = document.getElementById('wzrk_wrapper')
 
             if (existingBellWrapper) {
               existingBellWrapper.parentNode.removeChild(existingBellWrapper)
@@ -183,6 +184,7 @@ export default class NotificationHandler extends Array {
             }
           }).catch((error) => {
             // unsubscribe from webpush if error
+            console.log('rejected subscription')
             serviceWorkerRegistration.pushManager.getSubscription().then((subscription) => {
               if (subscription !== null) {
                 subscription.unsubscribe().then((successful) => {
@@ -198,6 +200,12 @@ export default class NotificationHandler extends Array {
               }
             })
             this.#logger.error('Error subscribing: ' + error)
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard)
+            }
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+            }
           })
       }).catch((err) => {
         this.#logger.error('error registering service worker: ' + err)
