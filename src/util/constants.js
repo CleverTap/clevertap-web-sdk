@@ -57,6 +57,8 @@ export const PUSH_DELAY_MS = 1000
 export const MAX_DELAY_FREQUENCY = 1000 * 60 * 10
 export const WZRK_FETCH = 'wzrk_fetch'
 export const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG'
+export const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown'
+export const NOTIF_LAST_TIME = 'notif_last_time'
 
 export const SYSTEM_EVENTS = [
   'Stayed',

@@ -1,8 +1,9 @@
 import { getBellIconStyles, getBoxPromptStyles } from './promptStyles.js'
-import { WEBPUSH_CONFIG } from '../../util/constants.js'
+import { WEBPUSH_CONFIG, VAPID_MIGRATION_PROMPT_SHOWN } from '../../util/constants.js'
 import { StorageManager, $ct } from '../../util/storage.js'
 import NotificationHandler from '../notification.js'
 import { BELL_BASE64, PROMPT_BELL_BASE64 } from './promptConstants.js'
+import { isSafari } from '../../util/helpers.js'
 
 let appServerKey = null
 let swPath = '/clevertap_sw.js'
@@ -23,8 +24,7 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
     updatePushConfig()
   }
 }
-
-export const enablePush = (logger, account, request, customSwPath, skipDialog) => {
+export const enablePush = (logger, account, request, customSwPath, skipDialog, fcmPublicKey) => {
   const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
   $ct.pushConfig = _pushConfig
   if (!$ct.pushConfig) {
@@ -45,10 +45,10 @@ export const enablePush = (logger, account, request, customSwPath, skipDialog) =
   const { showBox, boxType, showBellIcon, isPreview } = $ct.pushConfig
 
   if (isPreview) {
-    if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig)
+    if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey)
     if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig)
   } else {
-    if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig)
+    if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey)
     if (showBellIcon) createBellIcon($ct.pushConfig)
   }
 }
@@ -61,7 +61,7 @@ const createElementWithAttributes = (tag, attributes = {}) => {
   return element
 }
 
-export const createNotificationBox = (configData) => {
+export const createNotificationBox = (configData, fcmPublicKey) => {
   if (document.getElementById('pnWrapper')) return
 
   const { boxConfig: { content, style } } = configData
@@ -125,12 +125,24 @@ export const createNotificationBox = (configData) => {
   const now = new Date().getTime() / 1000
   const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time')
   const popupFrequency = content.popupFrequency || 7 // number of days
+  const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60
 
-  if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
-    document.body.appendChild(wrapper)
-    if (!configData.isPreview) {
-      StorageManager.setMetaProp('webpush_last_notif_time', now)
-      addEventListeners(wrapper)
+  if (shouldShowNotification) {
+    if (!isSafari()) {
+      document.body.appendChild(wrapper)
+      if (!configData.isPreview) {
+        StorageManager.setMetaProp('webpush_last_notif_time', now)
+        addEventListeners(wrapper)
+      }
+    } else {
+      const vapidSupportedAndNotMigrated = ('PushManager' in window) && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null
+      if (vapidSupportedAndNotMigrated) {
+        document.body.appendChild(wrapper)
+        if (!configData.isPreview) {
+          addEventListeners(wrapper)
+          StorageManager.setMetaProp('webpush_last_notif_time', now)
+        }
+      }
     }
   }
 }
