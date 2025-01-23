@@ -5251,11 +5251,11 @@
 
           var siblingEl;
 
-          try {
-            siblingEl = document.querySelector(sibling);
-          } catch (e) {
-            siblingEl = null;
-          }
+        try {
+          siblingEl = document.querySelector(sibling);
+        } catch (e) {
+          siblingEl = null;
+        }
 
           var ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
           var element = ctEl || siblingEl;
@@ -5266,9 +5266,9 @@
             var newElement = tempDiv.firstElementChild;
             element.insertAdjacentElement(pos, newElement);
 
-            if (!element.getAttribute('ct-selector')) {
-              element.setAttribute('ct-selector', sibling);
-            }
+          if (!element.getAttribute('ct-selector')) {
+            element.setAttribute('ct-selector', sibling);
+          }
 
             var insertedElement = document.querySelector("[ct-selector=\"".concat(s.selector, "\"]"));
             raiseViewed();
@@ -5959,6 +5959,20 @@
     return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
   };
 
+  const isChrome = () => {
+    const ua = navigator.userAgent;
+    return ua.includes('Chrome') || ua.includes('CriOS');
+  };
+  const isFirefox = () => {
+    const ua = navigator.userAgent;
+    return ua.includes('Firefox') || ua.includes('FxiOS');
+  };
+  const isSafari = () => {
+    const ua = navigator.userAgent; // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
+
+    return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
+  };
+
   var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
 
   var _logger$5 = _classPrivateFieldLooseKey("logger");
@@ -5972,6 +5986,8 @@
   var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
 
   var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
+
+  var _isNativeWebPushSupported = _classPrivateFieldLooseKey("isNativeWebPushSupported");
 
   var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
 
@@ -6131,9 +6147,9 @@
       _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
     }
 
-    if (typeof apnsServiceUrl === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
-    }
+      if (typeof apnsServiceUrl === 'undefined') {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
+      }
 
     if ('safari' in window && 'pushNotification' in window.safari) {
       window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, function (subscription) {
@@ -6213,10 +6229,10 @@
 
           var subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
 
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+          if (isChrome()) {
             subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
             subscriptionData.browser = 'Chrome';
-          } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+          } else if (isFirefox()) {
             subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
             subscriptionData.browser = 'Firefox';
           }
@@ -6379,7 +6395,7 @@
       } // handle migrations from other services -> chrome notifications may have already been asked for before
 
 
-      if (Notification.permission === 'granted') {
+      if (Notification.permission === 'granted' && vapidSupportedAndMigrated) {
         // skip the dialog and register
         this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
         return;
@@ -6409,19 +6425,26 @@
 
     var now = new Date().getTime() / 1000;
 
-    if (StorageManager.getMetaProp('notif_last_time') == null) {
-      StorageManager.setMetaProp('notif_last_time', now);
+    if (StorageManager.getMetaProp(NOTIF_LAST_TIME) == null) {
+      StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
     } else {
       if (askAgainTimeInSeconds == null) {
         // 7 days by default
         askAgainTimeInSeconds = 7 * 24 * 60 * 60;
       }
 
-      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
-        return;
+      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME);
+
+      if (now - notifLastTime < askAgainTimeInSeconds) {
+        if (!isSafari()) {
+          return;
+        }
+
+        if (vapidSupportedAndMigrated) {
+          return;
+        }
       } else {
-        // continue asking
-        StorageManager.setMetaProp('notif_last_time', now);
+        StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
       }
     }
 
@@ -6560,10 +6583,10 @@
         isPreview = _$ct$pushConfig.isPreview;
 
     if (isPreview) {
-      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig);
+      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey);
       if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
     } else {
-      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig);
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey);
       if (showBellIcon) createBellIcon($ct.pushConfig);
     }
   };
@@ -6656,8 +6679,11 @@
     var lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
     var popupFrequency = content.popupFrequency || 7; // number of days
 
-    if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
-      document.body.appendChild(wrapper);
+    const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
+
+    if (shouldShowNotification) {
+      if (!isSafari()) {
+        document.body.appendChild(wrapper);
 
       if (!configData.isPreview) {
         StorageManager.setMetaProp('webpush_last_notif_time', now);
