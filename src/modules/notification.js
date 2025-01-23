@@ -1,12 +1,15 @@
 import { StorageManager, $ct } from '../util/storage'
 import { isObject } from '../util/datatypes'
 import {
-  PUSH_SUBSCRIPTION_DATA
+  PUSH_SUBSCRIPTION_DATA,
+  VAPID_MIGRATION_PROMPT_SHOWN,
+  NOTIF_LAST_TIME
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
 } from '../util/encoder'
 import { enablePush } from './webPushPrompt/prompt'
+import { isChrome, isFirefox, isSafari } from '../util/helpers'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -38,7 +41,7 @@ export default class NotificationHandler extends Array {
 
   enable (options = {}) {
     const { swPath, skipDialog } = options
-    enablePush(this.#logger, this.#account, this.#request, swPath, skipDialog)
+    enablePush(this.#logger, this.#account, this.#request, swPath, skipDialog, this.#fcmPublicKey)
   }
 
   _processOldValues () {
@@ -60,10 +63,10 @@ export default class NotificationHandler extends Array {
   }
 
   setUpWebPushNotifications (subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-    if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
+    if (isChrome() || isFirefox()) {
       this.#setUpChromeFirefoxNotifications(subscriptionCallback, serviceWorkerPath)
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-      this.#setUpSafariNotifications(subscriptionCallback, apnsWebPushId, apnsServiceUrl)
+    } else if (isSafari()) {
+      this.#setUpSafariNotifications(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath)
     }
   }
 
@@ -71,30 +74,93 @@ export default class NotificationHandler extends Array {
     this.#fcmPublicKey = applicationServerKey
   }
 
-  #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
-    // ensure that proper arguments are passed
-    if (typeof apnsWebPushId === 'undefined') {
-      this.#logger.error('Ensure that APNS Web Push ID is supplied')
-    }
-    if (typeof apnsServiceUrl === 'undefined') {
-      this.#logger.error('Ensure that APNS Web Push service path is supplied')
-    }
-    if ('safari' in window && 'pushNotification' in window.safari) {
-      window.safari.pushNotification.requestPermission(
-        apnsServiceUrl,
-        apnsWebPushId, {}, (subscription) => {
-          if (subscription.permission === 'granted') {
-            const subscriptionData = JSON.parse(JSON.stringify(subscription))
-            subscriptionData.endpoint = subscription.deviceToken
-            subscriptionData.browser = 'Safari'
-            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+  #isNativeWebPushSupported () {
+    return 'PushManager' in window
+  }
 
-            this.#request.registerToken(subscriptionData)
-            this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
-          } else if (subscription.permission === 'denied') {
-            this.#logger.info('Error subscribing to Safari web push')
+  #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
+    if (this.#isNativeWebPushSupported() && this.#fcmPublicKey != null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
+      navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
+        window.Notification.requestPermission().then((permission) => {
+          if (permission === 'granted') {
+            const subscribeObj = {
+              applicationServerKey: this.#fcmPublicKey,
+              userVisibleOnly: true
+            }
+            this.#logger.info('Sub Obj' + JSON.stringify(subscribeObj))
+            const subscribeForPush = () => {
+              registration.pushManager.subscribe(subscribeObj).then((subscription) => {
+                this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
+                this.#logger.info('Service Data Sent: ' + JSON.stringify({
+                  applicationServerKey: this.#fcmPublicKey,
+                  userVisibleOnly: true
+                }))
+                this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
+
+                const subscriptionData = JSON.parse(JSON.stringify(subscription))
+
+                subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
+                StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+                this.#request.registerToken(subscriptionData)
+
+                if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+                  subscriptionCallback()
+                }
+                const existingBellWrapper = document.getElementById('bell_wrapper')
+                if (existingBellWrapper) {
+                  existingBellWrapper.parentNode.removeChild(existingBellWrapper)
+                }
+              })
+            }
+
+            const serviceWorker = registration.installing || registration.waiting || registration.active
+            if (serviceWorker && serviceWorker.state === 'activated') {
+              // Already activated, proceed with subscription
+              subscribeForPush()
+            } else if (serviceWorker) {
+              // Listen for state changes to handle activation
+              serviceWorker.addEventListener('statechange', (event) => {
+                if (event.target.state === 'activated') {
+                  this.#logger.info('Service Worker activated. Proceeding with subscription.')
+                  subscribeForPush()
+                }
+              })
+            }
           }
         })
+      })
+    } else {
+      // ensure that proper arguments are passed
+      if (typeof apnsWebPushId === 'undefined') {
+        this.#logger.error('Ensure that APNS Web Push ID is supplied')
+      }
+      if (typeof apnsServiceUrl === 'undefined') {
+        this.#logger.error('Ensure that APNS Web Push service path is supplied')
+      }
+      if ('safari' in window && 'pushNotification' in window.safari) {
+        window.safari.pushNotification.requestPermission(
+          apnsServiceUrl,
+          apnsWebPushId, {}, (subscription) => {
+            if (subscription.permission === 'granted') {
+              const subscriptionData = JSON.parse(JSON.stringify(subscription))
+              subscriptionData.endpoint = subscription.deviceToken
+              subscriptionData.browser = 'Safari'
+              this.#logger.info('Service Data Sent: ' + JSON.stringify({
+                apnsServiceUrl,
+                apnsWebPushId
+              }))
+              this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
+
+              StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+
+              this.#request.registerToken(subscriptionData)
+              this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
+            } else if (subscription.permission === 'denied') {
+              this.#logger.info('Error subscribing to Safari web push')
+            }
+          })
+      }
     }
   }
 
@@ -121,7 +187,7 @@ export default class NotificationHandler extends Array {
         if (isServiceWorkerAtRoot) {
           return navigator.serviceWorker.ready
         } else {
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+          if (isChrome()) {
             return new Promise(resolve => setTimeout(() => resolve(registration), 5000))
           } else {
             return navigator.serviceWorker.getRegistrations()
@@ -129,7 +195,7 @@ export default class NotificationHandler extends Array {
         }
       }).then((serviceWorkerRegistration) => {
         // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
-        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
+        if (isFirefox() && Array.isArray(serviceWorkerRegistration)) {
           serviceWorkerRegistration = serviceWorkerRegistration.filter((i) => i.scope === registrationScope)[0]
         }
         const subscribeObj = { userVisibleOnly: true }
@@ -141,15 +207,17 @@ export default class NotificationHandler extends Array {
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj)
           .then((subscription) => {
             this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
+            this.#logger.debug('Service Data Sent: ' + JSON.stringify(subscribeObj))
+            this.#logger.debug('Subscription Data Received: ' + JSON.stringify(subscription))
 
             // convert the subscription keys to strings; this sets it up nicely for pushing to LC
             const subscriptionData = JSON.parse(JSON.stringify(subscription))
 
             // remove the common chrome/firefox endpoint at the beginning of the token
-            if (navigator.userAgent.indexOf('Chrome') !== -1) {
+            if (isChrome()) {
               subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
               subscriptionData.browser = 'Chrome'
-            } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+            } else if (isFirefox()) {
               subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
               subscriptionData.browser = 'Firefox'
             }
@@ -221,6 +289,7 @@ export default class NotificationHandler extends Array {
     let httpsIframePath
     let apnsWebPushId
     let apnsWebPushServiceUrl
+    const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && this.#fcmPublicKey !== null
 
     if (displayArgs.length === 1) {
       if (isObject(displayArgs[0])) {
@@ -273,13 +342,13 @@ export default class NotificationHandler extends Array {
     }
 
     // right now, we only support Chrome V50 & higher & Firefox
-    if (navigator.userAgent.indexOf('Chrome') !== -1) {
+    if (isChrome()) {
       const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/)
       if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) { return }
-    } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+    } else if (isFirefox()) {
       const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/)
       if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) { return }
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
+    } else if (isSafari()) {
       const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/)
       if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) { return }
     } else {
@@ -295,7 +364,7 @@ export default class NotificationHandler extends Array {
         return
       }
       // handle migrations from other services -> chrome notifications may have already been asked for before
-      if (Notification.permission === 'granted') {
+      if (Notification.permission === 'granted' && vapidSupportedAndMigrated) {
         // skip the dialog and register
         this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
         return
@@ -323,19 +392,24 @@ export default class NotificationHandler extends Array {
 
     // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
     const now = new Date().getTime() / 1000
-    if ((StorageManager.getMetaProp('notif_last_time')) == null) {
-      StorageManager.setMetaProp('notif_last_time', now)
+    if ((StorageManager.getMetaProp(NOTIF_LAST_TIME)) == null) {
+      StorageManager.setMetaProp(NOTIF_LAST_TIME, now)
     } else {
       if (askAgainTimeInSeconds == null) {
         // 7 days by default
         askAgainTimeInSeconds = 7 * 24 * 60 * 60
       }
 
-      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
-        return
+      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME)
+      if (now - notifLastTime < askAgainTimeInSeconds) {
+        if (!isSafari()) {
+          return
+        }
+        if (vapidSupportedAndMigrated) {
+          return
+        }
       } else {
-        // continue asking
-        StorageManager.setMetaProp('notif_last_time', now)
+        StorageManager.setMetaProp(NOTIF_LAST_TIME, now)
       }
     }
 
