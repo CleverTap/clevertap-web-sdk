@@ -568,6 +568,8 @@
   var MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
   var WZRK_FETCH = 'wzrk_fetch';
   var WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
+  var VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
+  var NOTIF_LAST_TIME = 'notif_last_time';
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = function isString(input) {
@@ -4994,7 +4996,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        var sdkVersion = '1.11.16';
+        var sdkVersion = '1.12.0';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId: accountId,
@@ -5237,19 +5239,19 @@
         });
       }
     });
-    setTimeout(function () {
-      if (insertedElements.length > 0) {
-        var sortedArr = insertedElements.sort(function (a, b) {
-          var numA = parseInt(a.selector.split('-')[0], 10);
-          var numB = parseInt(b.selector.split('-')[0], 10);
-          return numA - numB;
-        });
-        sortedArr.forEach(function (s) {
-          var _findSiblingSelector = findSiblingSelector(s.selector),
-              pos = _findSiblingSelector.pos,
-              sibling = _findSiblingSelector.sibling;
 
-          var siblingEl;
+    if (insertedElements.length > 0) {
+      var sortedArr = insertedElements.sort(function (a, b) {
+        var numA = parseInt(a.selector.split('-')[0], 10);
+        var numB = parseInt(b.selector.split('-')[0], 10);
+        return numA - numB;
+      });
+      sortedArr.forEach(function (s) {
+        var _findSiblingSelector = findSiblingSelector(s.selector),
+            pos = _findSiblingSelector.pos,
+            sibling = _findSiblingSelector.sibling;
+
+        var siblingEl;
 
         try {
           siblingEl = document.querySelector(sibling);
@@ -5257,26 +5259,25 @@
           siblingEl = null;
         }
 
-          var ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
-          var element = ctEl || siblingEl;
+        var ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+        var element = ctEl || siblingEl;
 
-          if (element) {
-            var tempDiv = document.createElement('div');
-            tempDiv.innerHTML = s.values.initialHtml;
-            var newElement = tempDiv.firstElementChild;
-            element.insertAdjacentElement(pos, newElement);
+        if (element) {
+          var tempDiv = document.createElement('div');
+          tempDiv.innerHTML = s.values.initialHtml;
+          var newElement = tempDiv.firstElementChild;
+          element.insertAdjacentElement(pos, newElement);
 
           if (!element.getAttribute('ct-selector')) {
             element.setAttribute('ct-selector', sibling);
           }
 
-            var insertedElement = document.querySelector("[ct-selector=\"".concat(s.selector, "\"]"));
-            raiseViewed();
-            processElement(insertedElement, s);
-          }
-        });
-      }
-    }, 2000);
+          var insertedElement = document.querySelector("[ct-selector=\"".concat(s.selector, "\"]"));
+          raiseViewed();
+          processElement(insertedElement, s);
+        }
+      });
+    }
   };
 
   function findSiblingSelector(input) {
@@ -5959,16 +5960,16 @@
     return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
   };
 
-  const isChrome = () => {
-    const ua = navigator.userAgent;
+  var isChrome = function isChrome() {
+    var ua = navigator.userAgent;
     return ua.includes('Chrome') || ua.includes('CriOS');
   };
-  const isFirefox = () => {
-    const ua = navigator.userAgent;
+  var isFirefox = function isFirefox() {
+    var ua = navigator.userAgent;
     return ua.includes('Firefox') || ua.includes('FxiOS');
   };
-  const isSafari = () => {
-    const ua = navigator.userAgent; // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
+  var isSafari = function isSafari() {
+    var ua = navigator.userAgent; // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
 
     return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
   };
@@ -6030,6 +6031,9 @@
       Object.defineProperty(_assertThisInitialized(_this), _setUpSafariNotifications, {
         value: _setUpSafariNotifications2
       });
+      Object.defineProperty(_assertThisInitialized(_this), _isNativeWebPushSupported, {
+        value: _isNativeWebPushSupported2
+      });
       Object.defineProperty(_assertThisInitialized(_this), _setUpWebPush, {
         value: _setUpWebPush2
       });
@@ -6083,7 +6087,7 @@
         var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
         var swPath = options.swPath,
             skipDialog = options.skipDialog;
-        enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, skipDialog);
+        enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, skipDialog, _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
       }
     }, {
       key: "_processOldValues",
@@ -6097,10 +6101,10 @@
     }, {
       key: "setUpWebPushNotifications",
       value: function setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-        if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
+        if (isChrome() || isFirefox()) {
           _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
-        } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-          _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl);
+        } else if (isSafari()) {
+          _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath);
         }
       }
     }, {
@@ -6139,33 +6143,106 @@
     }
   };
 
-  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
+  var _isNativeWebPushSupported2 = function _isNativeWebPushSupported2() {
+    return 'PushManager' in window;
+  };
+
+  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
     var _this2 = this;
 
-    // ensure that proper arguments are passed
-    if (typeof apnsWebPushId === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
-    }
+    if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
+      navigator.serviceWorker.register(serviceWorkerPath).then(function (registration) {
+        window.Notification.requestPermission().then(function (permission) {
+          if (permission === 'granted') {
+            var subscribeObj = {
+              applicationServerKey: _classPrivateFieldLooseBase(_this2, _fcmPublicKey)[_fcmPublicKey],
+              userVisibleOnly: true
+            };
+
+            _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Sub Obj' + JSON.stringify(subscribeObj));
+
+            var subscribeForPush = function subscribeForPush() {
+              registration.pushManager.subscribe(subscribeObj).then(function (subscription) {
+                _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
+
+                _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+                  applicationServerKey: _classPrivateFieldLooseBase(_this2, _fcmPublicKey)[_fcmPublicKey],
+                  userVisibleOnly: true
+                }));
+
+                _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+
+                var subscriptionData = JSON.parse(JSON.stringify(subscription));
+                subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+                StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+                _classPrivateFieldLooseBase(_this2, _request$4)[_request$4].registerToken(subscriptionData);
+
+                if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+                  subscriptionCallback();
+                }
+
+                var existingBellWrapper = document.getElementById('bell_wrapper');
+
+                if (existingBellWrapper) {
+                  existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+                }
+              });
+            };
+
+            var serviceWorker = registration.installing || registration.waiting || registration.active;
+
+            if (serviceWorker && serviceWorker.state === 'activated') {
+              // Already activated, proceed with subscription
+              subscribeForPush();
+            } else if (serviceWorker) {
+              // Listen for state changes to handle activation
+              serviceWorker.addEventListener('statechange', function (event) {
+                if (event.target.state === 'activated') {
+                  _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Service Worker activated. Proceeding with subscription.');
+
+                  subscribeForPush();
+                }
+              });
+            }
+          }
+        });
+      });
+    } else {
+      // ensure that proper arguments are passed
+      if (typeof apnsWebPushId === 'undefined') {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
+      }
 
       if (typeof apnsServiceUrl === 'undefined') {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
       }
 
-    if ('safari' in window && 'pushNotification' in window.safari) {
-      window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, function (subscription) {
-        if (subscription.permission === 'granted') {
-          var subscriptionData = JSON.parse(JSON.stringify(subscription));
-          subscriptionData.endpoint = subscription.deviceToken;
-          subscriptionData.browser = 'Safari';
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+      if ('safari' in window && 'pushNotification' in window.safari) {
+        window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, function (subscription) {
+          if (subscription.permission === 'granted') {
+            var subscriptionData = JSON.parse(JSON.stringify(subscription));
+            subscriptionData.endpoint = subscription.deviceToken;
+            subscriptionData.browser = 'Safari';
 
-          _classPrivateFieldLooseBase(_this2, _request$4)[_request$4].registerToken(subscriptionData);
+            _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+              apnsServiceUrl: apnsServiceUrl,
+              apnsWebPushId: apnsWebPushId
+            }));
 
-          _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
-        } else if (subscription.permission === 'denied') {
-          _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
-        }
-      });
+            _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+
+            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+            _classPrivateFieldLooseBase(_this2, _request$4)[_request$4].registerToken(subscriptionData);
+
+            _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+          } else if (subscription.permission === 'denied') {
+            _classPrivateFieldLooseBase(_this2, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+          }
+        });
+      }
     }
   };
 
@@ -6197,7 +6274,7 @@
         if (isServiceWorkerAtRoot) {
           return navigator.serviceWorker.ready;
         } else {
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+          if (isChrome()) {
             return new Promise(function (resolve) {
               return setTimeout(function () {
                 return resolve(registration);
@@ -6209,7 +6286,7 @@
         }
       }).then(function (serviceWorkerRegistration) {
         // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
-        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
+        if (isFirefox() && Array.isArray(serviceWorkerRegistration)) {
           serviceWorkerRegistration = serviceWorkerRegistration.filter(function (i) {
             return i.scope === registrationScope;
           })[0];
@@ -6224,7 +6301,11 @@
         }
 
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(function (subscription) {
-          _classPrivateFieldLooseBase(_this3, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+          _classPrivateFieldLooseBase(_this3, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
+
+          _classPrivateFieldLooseBase(_this3, _logger$5)[_logger$5].debug('Service Data Sent: ' + JSON.stringify(subscribeObj));
+
+          _classPrivateFieldLooseBase(_this3, _logger$5)[_logger$5].debug('Subscription Data Received: ' + JSON.stringify(subscription)); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
 
 
           var subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
@@ -6310,6 +6391,7 @@
     var httpsIframePath;
     var apnsWebPushId;
     var apnsWebPushServiceUrl;
+    var vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
 
     if (displayArgs.length === 1) {
       if (isObject(displayArgs[0])) {
@@ -6362,19 +6444,19 @@
     } // right now, we only support Chrome V50 & higher & Firefox
 
 
-    if (navigator.userAgent.indexOf('Chrome') !== -1) {
+    if (isChrome()) {
       var chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/);
 
       if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) {
         return;
       }
-    } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+    } else if (isFirefox()) {
       var firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/);
 
       if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) {
         return;
       }
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
+    } else if (isSafari()) {
       var safariAgent = navigator.userAgent.match(/Safari\/(\d+)/);
 
       if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) {
@@ -6433,7 +6515,7 @@
         askAgainTimeInSeconds = 7 * 24 * 60 * 60;
       }
 
-      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME);
+      var notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME);
 
       if (now - notifLastTime < askAgainTimeInSeconds) {
         if (!isSafari()) {
@@ -6549,7 +6631,7 @@
       updatePushConfig();
     }
   };
-  var enablePush = function enablePush(logger, account, request, customSwPath, skipDialog) {
+  var enablePush = function enablePush(logger, account, request, customSwPath, skipDialog, fcmPublicKey) {
     var _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     $ct.pushConfig = _pushConfig;
@@ -6604,7 +6686,7 @@
     return element;
   };
 
-  var createNotificationBox = function createNotificationBox(configData) {
+  var createNotificationBox = function createNotificationBox(configData, fcmPublicKey) {
     if (document.getElementById('pnWrapper')) return;
     var _configData$boxConfig = configData.boxConfig,
         content = _configData$boxConfig.content,
@@ -6679,15 +6761,27 @@
     var lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
     var popupFrequency = content.popupFrequency || 7; // number of days
 
-    const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
+    var shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
 
     if (shouldShowNotification) {
       if (!isSafari()) {
         document.body.appendChild(wrapper);
 
-      if (!configData.isPreview) {
-        StorageManager.setMetaProp('webpush_last_notif_time', now);
-        addEventListeners(wrapper);
+        if (!configData.isPreview) {
+          StorageManager.setMetaProp('webpush_last_notif_time', now);
+          addEventListeners(wrapper);
+        }
+      } else {
+        var vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
+
+        if (vapidSupportedAndNotMigrated) {
+          document.body.appendChild(wrapper);
+
+          if (!configData.isPreview) {
+            addEventListeners(wrapper);
+            StorageManager.setMetaProp('webpush_last_notif_time', now);
+          }
+        }
       }
     }
   };
@@ -8282,7 +8376,7 @@
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
         dataObject.af = _objectSpread2(_objectSpread2({}, dataObject.af), {}, {
-          lib: 'web-sdk-v1.11.16',
+          lib: 'web-sdk-v1.12.0',
           protocol: proto
         }, $ct.flutterVersion); // app fields
 
@@ -10073,7 +10167,7 @@
     }, {
       key: "getSDKVersion",
       value: function getSDKVersion() {
-        return 'web-sdk-v1.11.16';
+        return 'web-sdk-v1.12.0';
       }
     }, {
       key: "defineVariable",
