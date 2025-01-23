@@ -28,7 +28,8 @@ import {
   COMMAND_REMOVE,
   COMMAND_DELETE,
   EVT_PUSH,
-  WZRK_FETCH
+  WZRK_FETCH,
+  WEBINBOX_CONFIG
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -687,7 +688,7 @@ export default class CleverTap {
     this.notifications._processOldValues()
   }
 
-  #debounce (func, delay = 300) {
+  #debounce (func, delay = 50) {
     let timeout
     return function () {
       clearTimeout(timeout)
@@ -702,6 +703,26 @@ export default class CleverTap {
       }
     })
     debouncedPageChanged()
+  }
+
+  #updateUnviewedBadgePosition () {
+    try {
+      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+      const inboxNode = document.getElementById(config.inboxSelector)
+      const unViewedBadge = document.getElementById('unviewedBadge')
+      if (!inboxNode) {
+        unViewedBadge.style.display = 'none'
+      } else {
+        const { top, right } = inboxNode.getBoundingClientRect()
+        if (Number(unViewedBadge.innerText) > 0) {
+          unViewedBadge.style.display = 'flex'
+        }
+        unViewedBadge.style.top = `${top - 8}px`
+        unViewedBadge.style.left = `${right - 8}px`
+      }
+    } catch (error) {
+      this.#logger.debug('Error updating unviewed badge position:', error)
+    }
   }
 
   pageChanged () {
@@ -783,6 +804,8 @@ export default class CleverTap {
         }, CONTINUOUS_PING_FREQ_IN_MILLIS)
       }
     }, FIRST_PING_FREQ_IN_MILLIS)
+
+    this.#updateUnviewedBadgePosition()
   }
 
   #pingRequest () {

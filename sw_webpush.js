@@ -71,35 +71,34 @@ self.addEventListener('push', function (event) {
 })
 
 function onClick (event, redirectPath, notificationData) {
-  var finalDeepLink = redirectPath
-  var silentRequest = true // are opening up a new window or sending a quiet get request from here?
+  let finalDeepLink = ''
+  let trackingUrl = redirectPath
   if (event.action === 'action1') {
     // button 1 was clicked
     if (typeof notificationData.notificationOptions.actions[0].deepLink !== 'undefined') {
-      finalDeepLink += '&r=' + encodeURIComponent(notificationData.notificationOptions.actions[0].deepLink)
-      silentRequest = false
+      trackingUrl += '&r=' + encodeURIComponent(notificationData.notificationOptions.actions[0].deepLink)
+      finalDeepLink = notificationData.notificationOptions.actions[0].deepLink
     }
-    finalDeepLink += '&b=' + encodeURIComponent('button1')
+    trackingUrl += '&b=' + encodeURIComponent('button1')
   } else if (event.action === 'action2') {
     // the second button was clicked
     if (typeof notificationData.notificationOptions.actions[1].deepLink !== 'undefined') {
-      finalDeepLink += '&r=' + encodeURIComponent(notificationData.notificationOptions.actions[1].deepLink)
-      silentRequest = false
+      trackingUrl += '&r=' + encodeURIComponent(notificationData.notificationOptions.actions[1].deepLink)
+      finalDeepLink = notificationData.notificationOptions.actions[1].deepLink
     }
-    finalDeepLink += '&b=' + encodeURIComponent('button2')
+    trackingUrl += '&b=' + encodeURIComponent('button2')
   } else {
     // general click
     if (typeof notificationData.deepLink !== 'undefined') {
-      finalDeepLink += '&r=' + encodeURIComponent(notificationData.deepLink)
-      silentRequest = false
+      trackingUrl += '&r=' + encodeURIComponent(notificationData.deepLink)
+      finalDeepLink = notificationData.deepLink
     }
 
-    finalDeepLink += '&b=' + encodeURIComponent('button0')
+    trackingUrl += '&b=' + encodeURIComponent('button0')
   }
 
-  if (silentRequest) {
-    fireSilentRequest(finalDeepLink)
-  } else {
+  fireSilentRequest(trackingUrl)
+  if (finalDeepLink) {
     clients.openWindow(finalDeepLink)
   }
   event.notification.close()

@@ -9061,6 +9061,8 @@
 
   var _checkPageChanged = _classPrivateFieldLooseKey("checkPageChanged");
 
+  var _updateUnviewedBadgePosition = _classPrivateFieldLooseKey("updateUnviewedBadgePosition");
+
   var _pingRequest = _classPrivateFieldLooseKey("pingRequest");
 
   var _isPingContinuous = _classPrivateFieldLooseKey("isPingContinuous");
@@ -9124,6 +9126,9 @@
       });
       Object.defineProperty(this, _pingRequest, {
         value: _pingRequest2
+      });
+      Object.defineProperty(this, _updateUnviewedBadgePosition, {
+        value: _updateUnviewedBadgePosition2
       });
       Object.defineProperty(this, _checkPageChanged, {
         value: _checkPageChanged2
@@ -10093,6 +10098,32 @@
     });
 
     debouncedPageChanged();
+  };
+
+  var _updateUnviewedBadgePosition2 = function _updateUnviewedBadgePosition2() {
+    try {
+      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+      const inboxNode = document.getElementById(config.inboxSelector);
+      const unViewedBadge = document.getElementById('unviewedBadge');
+
+      if (!inboxNode) {
+        unViewedBadge.style.display = 'none';
+      } else {
+        const {
+          top,
+          right
+        } = inboxNode.getBoundingClientRect();
+
+        if (Number(unViewedBadge.innerText) > 0) {
+          unViewedBadge.style.display = 'flex';
+        }
+
+        unViewedBadge.style.top = "".concat(top - 8, "px");
+        unViewedBadge.style.left = "".concat(right - 8, "px");
+      }
+    } catch (error) {
+      _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('Error updating unviewed badge position:', error);
+    }
   };
 
   var _pingRequest2 = function _pingRequest2() {
