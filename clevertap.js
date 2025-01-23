@@ -4550,6 +4550,7 @@
 
 
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+    const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let notificationViewed = false;
     const payload = {
@@ -4565,23 +4566,28 @@
     };
 
     const processElement = (element, selector) => {
-      var _selector$values;
-
       if (!selector.values) return;
 
-      if (selector.values.html) {
-        if (isPreview) {
-          element.outerHTML = selector.values.html.text;
-        } else {
-          element.outerHTML = selector.values.html;
-        }
-      } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
-        dispatchJsonData(targetingMsgJson, selector.values, isPreview);
-      } else {
-        payload.msgCTkv = {
-          wzrk_selector: selector.selector
-        };
-        updateFormData(element, selector.values.form, payload, isPreview);
+      switch (selector.values.editor) {
+        case 'html':
+          if (isPreview) {
+            element.outerHTML = selector.values.html.text;
+          } else {
+            element.outerHTML = selector.values.html;
+          }
+
+          break;
+
+        case 'json':
+          dispatchJsonData(targetingMsgJson, selector.values, isPreview);
+          break;
+
+        case 'form':
+          payload.msgCTkv = {
+            wzrk_selector: selector.selector
+          };
+          updateFormData(element, selector.values.form, payload, isPreview);
+          break;
       }
     };
 
@@ -4604,24 +4610,87 @@
     details.forEach(d => {
       if (d.url === window.location.href.split('?')[0]) {
         d.selectorData.forEach(s => {
-          const element = document.querySelector(s.selector);
-
-          if (element) {
-            raiseViewed();
-            processElement(element, s);
+          if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
+            insertedElements.push(s);
           } else {
-            tryFindingElement(s);
+            const element = document.querySelector(s.selector);
+
+            if (element) {
+              raiseViewed();
+              processElement(element, s);
+            } else {
+              tryFindingElement(s);
+            }
           }
         });
       }
     });
+
+    const addNewEl = selector => {
+      const {
+        pos,
+        sibling
+      } = findSiblingSelector(selector.selector);
+      let count = 0;
+      const intervalId = setInterval(() => {
+        const siblingEl = document.querySelector(sibling);
+        const ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+        const element = ctEl || siblingEl;
+
+        if (element) {
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = selector.values.initialHtml;
+          const newElement = tempDiv.firstElementChild;
+          element.insertAdjacentElement(pos, newElement);
+
+          if (!element.getAttribute('ct-selector')) {
+            element.setAttribute('ct-selector', sibling);
+          }
+
+          const insertedElement = document.querySelector("[ct-selector=\"".concat(selector.selector, "\"]"));
+          raiseViewed();
+          processElement(insertedElement, selector);
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          console.log("No element present on DOM with selector '".concat(sibling, "'."));
+          clearInterval(intervalId);
+        }
+      }, 500);
+    };
+
+    if (insertedElements.length > 0) {
+      const sortedArr = insertedElements.sort((a, b) => {
+        const numA = parseInt(a.selector.split('-')[0], 10);
+        const numB = parseInt(b.selector.split('-')[0], 10);
+        return numA - numB;
+      });
+      sortedArr.forEach(addNewEl);
+    }
   };
+
+  function findSiblingSelector(input) {
+    const regex = /^(\d+)-(afterend|beforebegin)-(.+)$/;
+    const match = input.match(regex);
+
+    if (match) {
+      return {
+        pos: match[2],
+        sibling: match[3]
+      };
+    }
+
+    return {
+      pos: 'beforebegin',
+      sibling: ''
+    };
+  }
   /**
    * Dispatches JSON data.
    * @param {Object} targetingMsgJson - The point and click campaign JSON object.
    * @param {Object} selector - The selector object.
    * @param {boolean} isPreview - If preview different handling
    */
+
 
   function dispatchJsonData(targetingMsgJson, selector) {
     let isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
