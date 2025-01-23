@@ -3477,7 +3477,8 @@
       this.setBadgeStyle = msgCount => {
         if (this.unviewedBadge !== null) {
           this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount;
-          this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none';
+          const shouldShowUnviewedBadge = msgCount > 0 && document.getElementById(this.config.inboxSelector);
+          this.unviewedBadge.style.display = shouldShowUnviewedBadge ? 'flex' : 'none';
         }
       };
 
@@ -3683,12 +3684,17 @@
     }
 
     updateUnviewedBadgePosition() {
-      const {
-        top,
-        right
-      } = this.inboxSelector.getBoundingClientRect();
-      this.unviewedBadge.style.top = "".concat(top - 8, "px");
-      this.unviewedBadge.style.left = "".concat(right - 8, "px");
+      try {
+        const inboxNode = document.getElementById(this.config.inboxSelector) || this.inboxSelector;
+        const {
+          top,
+          right
+        } = inboxNode.getBoundingClientRect();
+        this.unviewedBadge.style.top = "".concat(top - 8, "px");
+        this.unviewedBadge.style.left = "".concat(right - 8, "px");
+      } catch (error) {
+        this.logger.debug('Error updating unviewed badge position:', error);
+      }
     }
 
     createinbox() {
@@ -3857,12 +3863,17 @@
 
 
     /**
-     * This function checks if the current Event Node is same as the already stored inboxSelector or the
-     * inboxSelector present in the document
+     * Checks if the current event target is part of the stored inboxSelector or the inboxSelector in the document.
+     *
+     * @param {Event} e - The event object to check.
+     * @returns {boolean} - Returns true if the event target is within the inboxSelector, otherwise false.
      */
     checkForWebInbox(e) {
+      var _this$inboxSelector;
+
       const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-      return this.inboxSelector.contains(e.target) || document.getElementById(config.inboxSelector).contains(e.target);
+      const inboxElement = document.getElementById(config.inboxSelector);
+      return ((_this$inboxSelector = this.inboxSelector) === null || _this$inboxSelector === void 0 ? void 0 : _this$inboxSelector.contains(e.target)) || (inboxElement === null || inboxElement === void 0 ? void 0 : inboxElement.contains(e.target));
     }
     /**
      * This function will be called every time when a message comes into the inbox viewport and it's visibility increases to 50% or drops below 50%
@@ -3956,6 +3967,7 @@
     /**
      * Updates the UI with the number of unviewed messages
      * If there are more than 9 unviewed messages, we show the count as 9+
+     * Only show this badge if the current document has the inboxNode
      */
 
 
@@ -4090,61 +4102,77 @@
   };
   const initializeWebInbox = logger => {
     return new Promise((resolve, reject) => {
-      // Adding this as a band-aid for SUC-126380
-      // Adds ct-web-inbox element in dom which is not visible if Web Inbox Config in LS
-      document.addEventListener('readystatechange', function () {
-        if (document.readyState === 'complete') {
-          addWebInbox(logger);
-          resolve();
-        }
-      });
+      const retryUntil = function (condition) {
+        let interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 500;
+        let maxRetries = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 20;
+        return new Promise((resolve, reject) => {
+          let attempts = 0;
+          const retry = setInterval(() => {
+            logger.debug("Retry attempt: ".concat(attempts + 1));
 
-      if (document.readyState === 'complete') {
-        addWebInbox(logger);
-        resolve();
-      } else {
+            if (condition()) {
+              clearInterval(retry);
+              resolve(); // Success
+            } else if ($ct.inbox !== null) {
+              clearInterval(retry);
+              resolve(); // Inbox already initialized
+            } else if (attempts >= maxRetries) {
+              clearInterval(retry);
+              reject(new Error('Condition not met within max retries'));
+            }
+
+            attempts++;
+          }, interval);
+        });
+      };
+
+      const addInboxSafely = () => {
+        if ($ct.inbox === null) {
+          addWebInbox(logger);
+        }
+      };
+
+      const checkElementCondition = () => {
         const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
 
-        const onLoaded = () => {
-          /**
-           * We need this null check here because $ct.inbox could be initialised via init method too on document load.
-           * In that case we don't need to call addWebInbox method
-           */
-          if ($ct.inbox === null) {
-            addWebInbox(logger);
-          }
+        if (!config.inboxSelector) {
+          logger.debug('Inbox selector is not configured');
+          return false;
+        }
 
-          resolve();
-        };
+        return document.getElementById(config.inboxSelector) && $ct.inbox === null;
+      };
 
-        window.addEventListener('load', () => {
-          /**
-           * Scripts can be loaded layzily, we may not get element from dom as it may not be mounted yet
-           * We will to check element for 10 seconds and give up
-           */
-          if (document.getElementById(config.inboxSelector)) {
-            onLoaded();
-          } else {
-            // check for element for next 10 seconds
-            let count = 0;
+      const onFailure = () => {
+        logger.debug('Failed to add inbox');
+      };
 
-            if (count < 20) {
-              const t = setInterval(() => {
-                if (document.getElementById(config.inboxSelector)) {
-                  onLoaded();
-                  clearInterval(t);
-                  resolve();
-                } else if (count >= 20) {
-                  clearInterval(t);
-                  logger.debug('Failed to add inbox');
-                }
+      let retryStarted = false; // Guard flag
 
-                count++;
-              }, 500);
+      const startRetry = () => {
+        if (!retryStarted) {
+          retryStarted = true;
+          retryUntil(checkElementCondition, 500, 20).then(() => {
+            addInboxSafely();
+            resolve();
+          }).catch(onFailure);
+        }
+      };
+
+      const setupEventListeners = () => {
+        if (document.readyState === 'complete') {
+          startRetry();
+        } else {
+          window.addEventListener('load', startRetry);
+          document.addEventListener('readystatechange', () => {
+            if (document.readyState === 'complete') {
+              startRetry();
             }
-          }
-        });
-      }
+          });
+        }
+      };
+
+      setupEventListeners();
     });
   };
   const checkAndRegisterWebInboxElements = () => {
@@ -4375,7 +4403,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.14';
+        const sdkVersion = '1.11.16';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -7497,7 +7525,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.14',
+        lib: 'web-sdk-v1.11.16',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8259,6 +8287,8 @@
 
   var _checkPageChanged = _classPrivateFieldLooseKey("checkPageChanged");
 
+  var _updateUnviewedBadgePosition = _classPrivateFieldLooseKey("updateUnviewedBadgePosition");
+
   var _pingRequest = _classPrivateFieldLooseKey("pingRequest");
 
   var _isPingContinuous = _classPrivateFieldLooseKey("isPingContinuous");
@@ -8312,6 +8342,9 @@
       });
       Object.defineProperty(this, _pingRequest, {
         value: _pingRequest2
+      });
+      Object.defineProperty(this, _updateUnviewedBadgePosition, {
+        value: _updateUnviewedBadgePosition2
       });
       Object.defineProperty(this, _checkPageChanged, {
         value: _checkPageChanged2
@@ -9167,6 +9200,8 @@
           }, CONTINUOUS_PING_FREQ_IN_MILLIS);
         }
       }, FIRST_PING_FREQ_IN_MILLIS);
+
+      _classPrivateFieldLooseBase(this, _updateUnviewedBadgePosition)[_updateUnviewedBadgePosition]();
     }
 
     _isPersonalisationActive() {
@@ -9205,7 +9240,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.14';
+      return 'web-sdk-v1.11.16';
     }
 
     defineVariable(name, defaultValue) {
@@ -9251,7 +9286,7 @@
   };
 
   var _debounce2 = function _debounce2(func) {
-    let delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 300;
+    let delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 50;
     let timeout;
     return function () {
       clearTimeout(timeout);
@@ -9267,6 +9302,32 @@
     });
 
     debouncedPageChanged();
+  };
+
+  var _updateUnviewedBadgePosition2 = function _updateUnviewedBadgePosition2() {
+    try {
+      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+      const inboxNode = document.getElementById(config.inboxSelector);
+      const unViewedBadge = document.getElementById('unviewedBadge');
+
+      if (!inboxNode) {
+        unViewedBadge.style.display = 'none';
+      } else {
+        const {
+          top,
+          right
+        } = inboxNode.getBoundingClientRect();
+
+        if (Number(unViewedBadge.innerText) > 0) {
+          unViewedBadge.style.display = 'flex';
+        }
+
+        unViewedBadge.style.top = "".concat(top - 8, "px");
+        unViewedBadge.style.left = "".concat(right - 8, "px");
+      }
+    } catch (error) {
+      _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('Error updating unviewed badge position:', error);
+    }
   };
 
   var _pingRequest2 = function _pingRequest2() {

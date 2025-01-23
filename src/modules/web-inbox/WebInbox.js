@@ -197,9 +197,14 @@ export class Inbox extends HTMLElement {
   }
 
   updateUnviewedBadgePosition () {
-    const { top, right } = this.inboxSelector.getBoundingClientRect()
-    this.unviewedBadge.style.top = `${top - 8}px`
-    this.unviewedBadge.style.left = `${right - 8}px`
+    try {
+      const inboxNode = document.getElementById(this.config.inboxSelector) || this.inboxSelector
+      const { top, right } = inboxNode.getBoundingClientRect()
+      this.unviewedBadge.style.top = `${top - 8}px`
+      this.unviewedBadge.style.left = `${right - 8}px`
+    } catch (error) {
+      this.logger.debug('Error updating unviewed badge position:', error)
+    }
   }
 
   createinbox () {
@@ -390,13 +395,18 @@ export class Inbox extends HTMLElement {
   })()
 
   /**
-   * This function checks if the current Event Node is same as the already stored inboxSelector or the
-   * inboxSelector present in the document
+   * Checks if the current event target is part of the stored inboxSelector or the inboxSelector in the document.
+   *
+   * @param {Event} e - The event object to check.
+   * @returns {boolean} - Returns true if the event target is within the inboxSelector, otherwise false.
    */
   checkForWebInbox (e) {
     const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
-    return this.inboxSelector.contains(e.target) ||
-     document.getElementById(config.inboxSelector).contains(e.target)
+    const inboxElement = document.getElementById(config.inboxSelector)
+
+    return (
+      this.inboxSelector?.contains(e.target) || inboxElement?.contains(e.target)
+    )
   }
 
   /**
@@ -475,12 +485,14 @@ export class Inbox extends HTMLElement {
   /**
    * Updates the UI with the number of unviewed messages
    * If there are more than 9 unviewed messages, we show the count as 9+
+   * Only show this badge if the current document has the inboxNode
    */
 
   setBadgeStyle = (msgCount) => {
     if (this.unviewedBadge !== null) {
       this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount
-      this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none'
+      const shouldShowUnviewedBadge = msgCount > 0 && document.getElementById(this.config.inboxSelector)
+      this.unviewedBadge.style.display = shouldShowUnviewedBadge ? 'flex' : 'none'
     }
   }
 
