@@ -4626,31 +4626,20 @@
       }
     });
 
-    if (insertedElements.length > 0) {
-      const sortedArr = insertedElements.sort((a, b) => {
-        const numA = parseInt(a.selector.split('-')[0], 10);
-        const numB = parseInt(b.selector.split('-')[0], 10);
-        return numA - numB;
-      });
-      sortedArr.forEach(s => {
-        const {
-          pos,
-          sibling
-        } = findSiblingSelector(s.selector);
-        let siblingEl;
-
-        try {
-          siblingEl = document.querySelector(sibling);
-        } catch (e) {
-          siblingEl = null;
-        }
-
+    const addNewEl = selector => {
+      const {
+        pos,
+        sibling
+      } = findSiblingSelector(selector.selector);
+      let count = 0;
+      const intervalId = setInterval(() => {
+        const siblingEl = document.querySelector(sibling);
         const ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
         const element = ctEl || siblingEl;
 
         if (element) {
           const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = s.values.initialHtml;
+          tempDiv.innerHTML = selector.values.initialHtml;
           const newElement = tempDiv.firstElementChild;
           element.insertAdjacentElement(pos, newElement);
 
@@ -4658,11 +4647,24 @@
             element.setAttribute('ct-selector', sibling);
           }
 
-          const insertedElement = document.querySelector("[ct-selector=\"".concat(s.selector, "\"]"));
+          const insertedElement = document.querySelector("[ct-selector=\"".concat(selector.selector, "\"]"));
           raiseViewed();
-          processElement(insertedElement, s);
+          processElement(insertedElement, selector);
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          console.log("No element present on DOM with selector '".concat(sibling, "'."));
+          clearInterval(intervalId);
         }
+      }, 500);
+    };
+
+    if (insertedElements.length > 0) {
+      const sortedArr = insertedElements.sort((a, b) => {
+        const numA = parseInt(a.selector.split('-')[0], 10);
+        const numB = parseInt(b.selector.split('-')[0], 10);
+        return numA - numB;
       });
+      sortedArr.forEach(addNewEl);
     }
   };
 
