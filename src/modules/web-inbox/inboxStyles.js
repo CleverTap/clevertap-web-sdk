@@ -164,7 +164,9 @@ export const inboxContainerStyles = ({
           align-items: center; 
           background-color: ${headerBackgroundColor}; 
           background-color: var(--card-bg, ${headerBackgroundColor});
-          color: ${headerTitleColor}
+          color: ${headerTitleColor};
+          position: sticky;
+          top: 0;
         }
   
         #closeInbox {
@@ -190,6 +192,7 @@ export const inboxContainerStyles = ({
           display: flex;
           scroll-behavior: smooth;
           position: relative;
+          z-index: -1;
         }
 
         #categoriesWrapper {
@@ -256,6 +259,8 @@ export const inboxContainerStyles = ({
           overflow-y: auto;
           box-sizing: border-box;
           margin-top: 16px;
+          height: 100%;
+          overflow: scroll;
         }
 
         @media only screen and (min-width: 480px) {
