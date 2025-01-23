@@ -4002,7 +4002,8 @@
       _this.setBadgeStyle = function (msgCount) {
         if (_this.unviewedBadge !== null) {
           _this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount;
-          _this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none';
+          var shouldShowUnviewedBadge = msgCount > 0 && document.getElementById(_this.config.inboxSelector);
+          _this.unviewedBadge.style.display = shouldShowUnviewedBadge ? 'flex' : 'none';
         }
       };
 
@@ -4186,12 +4187,18 @@
     }, {
       key: "updateUnviewedBadgePosition",
       value: function updateUnviewedBadgePosition() {
-        var _this$inboxSelector$g = this.inboxSelector.getBoundingClientRect(),
-            top = _this$inboxSelector$g.top,
-            right = _this$inboxSelector$g.right;
+        try {
+          var inboxNode = document.getElementById(this.config.inboxSelector) || this.inboxSelector;
 
-        this.unviewedBadge.style.top = "".concat(top - 8, "px");
-        this.unviewedBadge.style.left = "".concat(right - 8, "px");
+          var _inboxNode$getBoundin = inboxNode.getBoundingClientRect(),
+              top = _inboxNode$getBoundin.top,
+              right = _inboxNode$getBoundin.right;
+
+          this.unviewedBadge.style.top = "".concat(top - 8, "px");
+          this.unviewedBadge.style.left = "".concat(right - 8, "px");
+        } catch (error) {
+          this.logger.debug('Error updating unviewed badge position:', error);
+        }
       }
     }, {
       key: "createinbox",
@@ -4389,12 +4396,17 @@
       key: "checkForWebInbox",
 
       /**
-       * This function checks if the current Event Node is same as the already stored inboxSelector or the
-       * inboxSelector present in the document
+       * Checks if the current event target is part of the stored inboxSelector or the inboxSelector in the document.
+       *
+       * @param {Event} e - The event object to check.
+       * @returns {boolean} - Returns true if the event target is within the inboxSelector, otherwise false.
        */
       value: function checkForWebInbox(e) {
+        var _this$inboxSelector;
+
         var config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-        return this.inboxSelector.contains(e.target) || document.getElementById(config.inboxSelector).contains(e.target);
+        var inboxElement = document.getElementById(config.inboxSelector);
+        return ((_this$inboxSelector = this.inboxSelector) === null || _this$inboxSelector === void 0 ? void 0 : _this$inboxSelector.contains(e.target)) || (inboxElement === null || inboxElement === void 0 ? void 0 : inboxElement.contains(e.target));
       }
       /**
        * This function will be called every time when a message comes into the inbox viewport and it's visibility increases to 50% or drops below 50%
@@ -4498,6 +4510,7 @@
       /**
        * Updates the UI with the number of unviewed messages
        * If there are more than 9 unviewed messages, we show the count as 9+
+       * Only show this badge if the current document has the inboxNode
        */
 
     }, {
@@ -4674,61 +4687,77 @@
   };
   var initializeWebInbox = function initializeWebInbox(logger) {
     return new Promise(function (resolve, reject) {
-      // Adding this as a band-aid for SUC-126380
-      // Adds ct-web-inbox element in dom which is not visible if Web Inbox Config in LS
-      document.addEventListener('readystatechange', function () {
-        if (document.readyState === 'complete') {
-          addWebInbox(logger);
-          resolve();
-        }
-      });
+      var retryUntil = function retryUntil(condition) {
+        var interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 500;
+        var maxRetries = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 20;
+        return new Promise(function (resolve, reject) {
+          var attempts = 0;
+          var retry = setInterval(function () {
+            logger.debug("Retry attempt: ".concat(attempts + 1));
 
-      if (document.readyState === 'complete') {
-        addWebInbox(logger);
-        resolve();
-      } else {
+            if (condition()) {
+              clearInterval(retry);
+              resolve(); // Success
+            } else if ($ct.inbox !== null) {
+              clearInterval(retry);
+              resolve(); // Inbox already initialized
+            } else if (attempts >= maxRetries) {
+              clearInterval(retry);
+              reject(new Error('Condition not met within max retries'));
+            }
+
+            attempts++;
+          }, interval);
+        });
+      };
+
+      var addInboxSafely = function addInboxSafely() {
+        if ($ct.inbox === null) {
+          addWebInbox(logger);
+        }
+      };
+
+      var checkElementCondition = function checkElementCondition() {
         var config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
 
-        var onLoaded = function onLoaded() {
-          /**
-           * We need this null check here because $ct.inbox could be initialised via init method too on document load.
-           * In that case we don't need to call addWebInbox method
-           */
-          if ($ct.inbox === null) {
-            addWebInbox(logger);
-          }
+        if (!config.inboxSelector) {
+          logger.debug('Inbox selector is not configured');
+          return false;
+        }
 
-          resolve();
-        };
+        return document.getElementById(config.inboxSelector) && $ct.inbox === null;
+      };
 
-        window.addEventListener('load', function () {
-          /**
-           * Scripts can be loaded layzily, we may not get element from dom as it may not be mounted yet
-           * We will to check element for 10 seconds and give up
-           */
-          if (document.getElementById(config.inboxSelector)) {
-            onLoaded();
-          } else {
-            // check for element for next 10 seconds
-            var count = 0;
+      var onFailure = function onFailure() {
+        logger.debug('Failed to add inbox');
+      };
 
-            if (count < 20) {
-              var t = setInterval(function () {
-                if (document.getElementById(config.inboxSelector)) {
-                  onLoaded();
-                  clearInterval(t);
-                  resolve();
-                } else if (count >= 20) {
-                  clearInterval(t);
-                  logger.debug('Failed to add inbox');
-                }
+      var retryStarted = false; // Guard flag
 
-                count++;
-              }, 500);
+      var startRetry = function startRetry() {
+        if (!retryStarted) {
+          retryStarted = true;
+          retryUntil(checkElementCondition, 500, 20).then(function () {
+            addInboxSafely();
+            resolve();
+          }).catch(onFailure);
+        }
+      };
+
+      var setupEventListeners = function setupEventListeners() {
+        if (document.readyState === 'complete') {
+          startRetry();
+        } else {
+          window.addEventListener('load', startRetry);
+          document.addEventListener('readystatechange', function () {
+            if (document.readyState === 'complete') {
+              startRetry();
             }
-          }
-        });
-      }
+          });
+        }
+      };
+
+      setupEventListeners();
     });
   };
   var checkAndRegisterWebInboxElements = function checkAndRegisterWebInboxElements() {
@@ -4865,8 +4894,8 @@
   var arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
   var greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
-  var OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/staging/lib-overlay/overlay.js';
-  var CSS_PATH = 'https://web-native-display-campaign.clevertap.com/staging/lib-overlay/style.css';
+  var OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
+  var CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
   var WVE_CLASS = {
     FLICKER_SHOW: 'wve-anti-flicker-show',
     FLICKER_HIDE: 'wve-anti-flicker-hide',
@@ -4965,7 +4994,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        var sdkVersion = '1.11.14';
+        var sdkVersion = '1.11.16';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId: accountId,
@@ -8227,7 +8256,7 @@
         var proto = document.location.protocol;
         proto = proto.replace(':', '');
         dataObject.af = _objectSpread2(_objectSpread2({}, dataObject.af), {}, {
-          lib: 'web-sdk-v1.11.14',
+          lib: 'web-sdk-v1.11.16',
           protocol: proto
         }, $ct.flutterVersion); // app fields
 
@@ -9985,6 +10014,8 @@
             }, CONTINUOUS_PING_FREQ_IN_MILLIS);
           }
         }, FIRST_PING_FREQ_IN_MILLIS);
+
+        _classPrivateFieldLooseBase(this, _updateUnviewedBadgePosition)[_updateUnviewedBadgePosition]();
       }
     }, {
       key: "_isPersonalisationActive",
@@ -10016,7 +10047,7 @@
     }, {
       key: "getSDKVersion",
       value: function getSDKVersion() {
-        return 'web-sdk-v1.11.14';
+        return 'web-sdk-v1.11.16';
       }
     }, {
       key: "defineVariable",
@@ -10080,7 +10111,7 @@
   };
 
   var _debounce2 = function _debounce2(func) {
-    var delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 300;
+    var delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 50;
     var timeout;
     return function () {
       clearTimeout(timeout);
@@ -10102,17 +10133,16 @@
 
   var _updateUnviewedBadgePosition2 = function _updateUnviewedBadgePosition2() {
     try {
-      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-      const inboxNode = document.getElementById(config.inboxSelector);
-      const unViewedBadge = document.getElementById('unviewedBadge');
+      var config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+      var inboxNode = document.getElementById(config.inboxSelector);
+      var unViewedBadge = document.getElementById('unviewedBadge');
 
       if (!inboxNode) {
         unViewedBadge.style.display = 'none';
       } else {
-        const {
-          top,
-          right
-        } = inboxNode.getBoundingClientRect();
+        var _inboxNode$getBoundin = inboxNode.getBoundingClientRect(),
+            top = _inboxNode$getBoundin.top,
+            right = _inboxNode$getBoundin.right;
 
         if (Number(unViewedBadge.innerText) > 0) {
           unViewedBadge.style.display = 'flex';
