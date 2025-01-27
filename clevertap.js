@@ -209,6 +209,7 @@
   const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
   const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
   const NOTIF_LAST_TIME = 'notif_last_time';
+  const TIMER_FOR_NOTIF_BADGE_UPDATE = 300;
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -8324,6 +8325,8 @@
 
   var _dismissSpamControl = _classPrivateFieldLooseKey("dismissSpamControl");
 
+  var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _debounce = _classPrivateFieldLooseKey("debounce");
@@ -8447,6 +8450,10 @@
         value: void 0
       });
       this.enablePersonalization = void 0;
+      Object.defineProperty(this, _pageChangeTimeoutId, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
@@ -9142,6 +9149,9 @@
       if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa]) {
         // listen to click on the document and check if URL has changed.
         document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+        /* Listen for the Back and Forward buttons */
+
+        window.addEventListener('popstate', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
       } else {
         // remove existing click listeners if any
         document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
@@ -9349,25 +9359,38 @@
 
   var _updateUnviewedBadgePosition2 = function _updateUnviewedBadgePosition2() {
     try {
-      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-      const inboxNode = document.getElementById(config.inboxSelector);
+      clearTimeout(_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]);
       const unViewedBadge = document.getElementById('unviewedBadge');
 
-      if (!inboxNode) {
-        unViewedBadge.style.display = 'none';
-      } else {
-        const {
-          top,
-          right
-        } = inboxNode.getBoundingClientRect();
+      if (!unViewedBadge) {
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('unViewedBadge not found');
 
-        if (Number(unViewedBadge.innerText) > 0) {
-          unViewedBadge.style.display = 'flex';
-        }
-
-        unViewedBadge.style.top = "".concat(top - 8, "px");
-        unViewedBadge.style.left = "".concat(right - 8, "px");
+        return;
       }
+      /* Reset to None */
+
+
+      unViewedBadge.style.display = 'none';
+      /* Set Timeout to let the page load and then update the position and display the badge */
+
+      _classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId] = setTimeout(() => {
+        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+        const inboxNode = document.getElementById(config.inboxSelector);
+
+        if (inboxNode) {
+          const {
+            top,
+            right
+          } = inboxNode.getBoundingClientRect();
+
+          if (Number(unViewedBadge.innerText) > 0) {
+            unViewedBadge.style.display = 'flex';
+          }
+
+          unViewedBadge.style.top = "".concat(top - 8, "px");
+          unViewedBadge.style.left = "".concat(right - 8, "px");
+        }
+      }, TIMER_FOR_NOTIF_BADGE_UPDATE);
     } catch (error) {
       _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('Error updating unviewed badge position:', error);
     }
