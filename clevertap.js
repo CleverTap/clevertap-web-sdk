@@ -9359,7 +9359,10 @@
 
   var _updateUnviewedBadgePosition2 = function _updateUnviewedBadgePosition2() {
     try {
-      clearTimeout(_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]);
+      if (_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]) {
+        clearTimeout(_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]);
+      }
+
       const unViewedBadge = document.getElementById('unviewedBadge');
 
       if (!unViewedBadge) {
@@ -9375,10 +9378,16 @@
 
       _classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId] = setTimeout(() => {
         const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-        const inboxNode = document.getElementById(config.inboxSelector);
+        const inboxNode = document.getElementById(config === null || config === void 0 ? void 0 : config.inboxSelector);
         /* Creating a Local Variable to avoid reference to stale DOM Node */
 
         const unViewedBadge = document.getElementById('unviewedBadge');
+
+        if (!unViewedBadge) {
+          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('unViewedBadge not found');
+
+          return;
+        }
 
         if (inboxNode) {
           const {

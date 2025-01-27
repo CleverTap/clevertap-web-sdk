@@ -712,7 +712,10 @@ export default class CleverTap {
 
   #updateUnviewedBadgePosition () {
     try {
-      clearTimeout(this.#pageChangeTimeoutId)
+      if (this.#pageChangeTimeoutId) {
+        clearTimeout(this.#pageChangeTimeoutId)
+      }
+
       const unViewedBadge = document.getElementById('unviewedBadge')
       if (!unViewedBadge) {
         this.#logger.debug('unViewedBadge not found')
@@ -725,9 +728,14 @@ export default class CleverTap {
       /* Set Timeout to let the page load and then update the position and display the badge */
       this.#pageChangeTimeoutId = setTimeout(() => {
         const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
-        const inboxNode = document.getElementById(config.inboxSelector)
+        const inboxNode = document.getElementById(config?.inboxSelector)
         /* Creating a Local Variable to avoid reference to stale DOM Node */
         const unViewedBadge = document.getElementById('unviewedBadge')
+
+        if (!unViewedBadge) {
+          this.#logger.debug('unViewedBadge not found')
+          return
+        }
 
         if (inboxNode) {
           const { top, right } = inboxNode.getBoundingClientRect()
