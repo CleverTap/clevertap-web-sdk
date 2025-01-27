@@ -4308,8 +4308,8 @@
   const arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
   const greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
-  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
-  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
+  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/staging/lib-overlay/overlay.js';
+  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/staging/lib-overlay/style.css';
   const WVE_CLASS = {
     FLICKER_SHOW: 'wve-anti-flicker-show',
     FLICKER_HIDE: 'wve-anti-flicker-hide',
@@ -4319,56 +4319,59 @@
   const updateFormData = function (element, formStyle, payload) {
     let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
-    // Update the element style
-    if (formStyle.style !== undefined) {
-      Object.keys(formStyle.style).forEach(property => {
-        element.style.setProperty(property, formStyle.style[property]);
-      });
-    } // Update underline for element
+    if (formStyle !== undefined) {
+      // Update the element style
+      if (formStyle.style !== undefined) {
+        Object.keys(formStyle.style).forEach(property => {
+          element.style.setProperty(property, formStyle.style[property]);
+        });
+      } // Update underline for element
 
 
-    if (formStyle.underline !== undefined) {
-      const curTextDecoration = element.style.textDecoration;
+      if (formStyle.underline !== undefined) {
+        const curTextDecoration = element.style.textDecoration;
 
-      if (formStyle.underline) {
-        element.style.textDecoration = "".concat(curTextDecoration, " underline").trim();
-      } else {
-        element.style.textDecoration = curTextDecoration.replace('underline', '').trim();
+        if (formStyle.underline) {
+          element.style.textDecoration = "".concat(curTextDecoration, " underline").trim();
+        } else {
+          element.style.textDecoration = curTextDecoration.replace('underline', '').trim();
+        }
+      } // Update element text
+
+
+      if (formStyle.text !== undefined) {
+        element.innerText = isPreview ? formStyle.text.text : formStyle.text;
+      } // Handle element onClick
+
+
+      if (formStyle.clickDetails !== undefined) {
+        const url = formStyle.clickDetails.clickUrl;
+        element.onclick = formStyle.clickDetails.newTab ? () => {
+          if (!isPreview) {
+            window.clevertap.raiseNotificationClicked(payload);
+          }
+
+          window.open(url, '_blank').focus();
+        } : () => {
+          if (!isPreview) {
+            window.clevertap.raiseNotificationClicked(payload);
+          }
+
+          window.location.href = url;
+        };
+      } // Set the image source
+
+
+      if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
+        element.src = formStyle.imgURL;
       }
-    } // Update element text
-
-
-    if (formStyle.text !== undefined) {
-      element.innerText = isPreview ? formStyle.text.text : formStyle.text;
-    } // Handle element onClick
-
-
-    if (formStyle.clickDetails !== undefined) {
-      const url = formStyle.clickDetails.clickUrl;
-      element.onclick = formStyle.clickDetails.newTab ? () => {
-        if (!isPreview) {
-          window.clevertap.raiseNotificationClicked(payload);
-        }
-
-        window.open(url, '_blank').focus();
-      } : () => {
-        if (!isPreview) {
-          window.clevertap.raiseNotificationClicked(payload);
-        }
-
-        window.location.href = url;
-      };
-    } // Set the image source
-
-
-    if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
-      element.src = formStyle.imgURL;
-    } // Handle elementCss
-
-
-    if (formStyle.elementCss !== undefined) {
+    }
+  };
+  const updateElementCSS = element => {
+    // Handle elementCss
+    if (element.elementCSS !== undefined) {
       const style = document.createElement('style');
-      style.innerHTML = formStyle.elementCss;
+      style.innerHTML = element.elementCSS;
       document.head.appendChild(style);
     }
   };
@@ -4550,6 +4553,7 @@
 
 
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+    const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let notificationViewed = false;
     const payload = {
@@ -4564,24 +4568,52 @@
       }
     };
 
+    const raiseClicked = payload => {
+      window.clevertap.renderNotificationClicked(payload);
+    };
+
     const processElement = (element, selector) => {
-      var _selector$values;
+      var _selector$isTrackingC;
 
-      if (!selector.values) return;
+      if (selector.elementCSS) {
+        updateElementCSS(selector);
+      }
 
-      if (selector.values.html) {
-        if (isPreview) {
-          element.outerHTML = selector.values.html.text;
-        } else {
-          element.outerHTML = selector.values.html;
+      if ((_selector$isTrackingC = selector.isTrackingClicks) === null || _selector$isTrackingC === void 0 ? void 0 : _selector$isTrackingC.name) {
+        element.addEventListener('click', () => {
+          const clickedPayload = {
+            msgId: targetingMsgJson.wzrk_id,
+            pivotId: targetingMsgJson.wzrk_pivot,
+            msgCTkv: {
+              wzrk_selector: selector.isTrackingClicks.name
+            }
+          };
+          raiseClicked(clickedPayload);
+        });
+      }
+
+      if (selector.values) {
+        switch (selector.values.editor) {
+          case 'html':
+            if (isPreview) {
+              element.outerHTML = selector.values.html.text;
+            } else {
+              element.outerHTML = selector.values.html;
+            }
+
+            break;
+
+          case 'json':
+            dispatchJsonData(targetingMsgJson, selector.values, isPreview);
+            break;
+
+          case 'form':
+            payload.msgCTkv = {
+              wzrk_selector: selector.selector
+            };
+            updateFormData(element, selector.values.form, payload, isPreview);
+            break;
         }
-      } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
-        dispatchJsonData(targetingMsgJson, selector.values, isPreview);
-      } else {
-        payload.msgCTkv = {
-          wzrk_selector: selector.selector
-        };
-        updateFormData(element, selector.values.form, payload, isPreview);
       }
     };
 
@@ -4604,24 +4636,93 @@
     details.forEach(d => {
       if (d.url === window.location.href.split('?')[0]) {
         d.selectorData.forEach(s => {
-          const element = document.querySelector(s.selector);
-
-          if (element) {
-            raiseViewed();
-            processElement(element, s);
+          if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
+            insertedElements.push(s);
           } else {
-            tryFindingElement(s);
+            const element = document.querySelector(s.selector);
+
+            if (element) {
+              raiseViewed();
+              processElement(element, s);
+            } else {
+              tryFindingElement(s);
+            }
           }
         });
       }
     });
+
+    const addNewEl = selector => {
+      const {
+        pos,
+        sibling
+      } = findSiblingSelector(selector.selector);
+      let count = 0;
+      const intervalId = setInterval(() => {
+        let element = null;
+
+        try {
+          const siblingEl = document.querySelector(sibling);
+          const ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+          element = ctEl || siblingEl;
+        } catch (_) {
+          element = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+        }
+
+        if (element) {
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = selector.values.initialHtml;
+          const newElement = tempDiv.firstElementChild;
+          element.insertAdjacentElement(pos, newElement);
+
+          if (!element.getAttribute('ct-selector')) {
+            element.setAttribute('ct-selector', sibling);
+          }
+
+          const insertedElement = document.querySelector("[ct-selector=\"".concat(selector.selector, "\"]"));
+          raiseViewed();
+          processElement(insertedElement, selector);
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          console.log("No element present on DOM with selector '".concat(sibling, "'."));
+          clearInterval(intervalId);
+        }
+      }, 500);
+    };
+
+    if (insertedElements.length > 0) {
+      const sortedArr = insertedElements.sort((a, b) => {
+        const numA = parseInt(a.selector.split('-')[0], 10);
+        const numB = parseInt(b.selector.split('-')[0], 10);
+        return numA - numB;
+      });
+      sortedArr.forEach(addNewEl);
+    }
   };
+
+  function findSiblingSelector(input) {
+    const regex = /^(\d+)-(afterend|beforebegin)-(.+)$/;
+    const match = input.match(regex);
+
+    if (match) {
+      return {
+        pos: match[2],
+        sibling: match[3]
+      };
+    }
+
+    return {
+      pos: 'beforebegin',
+      sibling: ''
+    };
+  }
   /**
    * Dispatches JSON data.
    * @param {Object} targetingMsgJson - The point and click campaign JSON object.
    * @param {Object} selector - The selector object.
    * @param {boolean} isPreview - If preview different handling
    */
+
 
   function dispatchJsonData(targetingMsgJson, selector) {
     let isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
