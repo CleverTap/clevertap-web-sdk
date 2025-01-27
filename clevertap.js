@@ -9376,6 +9376,9 @@
       _classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId] = setTimeout(() => {
         const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
         const inboxNode = document.getElementById(config.inboxSelector);
+        /* Creating a Local Variable to avoid reference to stale DOM Node */
+
+        const unViewedBadge = document.getElementById('unviewedBadge');
 
         if (inboxNode) {
           const {
