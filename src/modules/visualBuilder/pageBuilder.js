@@ -246,9 +246,14 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     const { pos, sibling } = findSiblingSelector(selector.selector)
     let count = 0
     const intervalId = setInterval(() => {
-      const siblingEl = document.querySelector(sibling)
-      const ctEl = document.querySelector(`[ct-selector="${sibling}"]`)
-      const element = ctEl || siblingEl
+      let element = null
+      try {
+        const siblingEl = document.querySelector(sibling)
+        const ctEl = document.querySelector(`[ct-selector="${sibling}"]`)
+        element = ctEl || siblingEl
+      } catch (_) {
+        element = document.querySelector(`[ct-selector="${sibling}"]`)
+      }
       if (element) {
         const tempDiv = document.createElement('div')
         tempDiv.innerHTML = selector.values.initialHtml
