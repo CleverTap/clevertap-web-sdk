@@ -207,6 +207,9 @@
   const MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
   const WZRK_FETCH = 'wzrk_fetch';
   const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
+  const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
+  const NOTIF_LAST_TIME = 'notif_last_time';
+  const TIMER_FOR_NOTIF_BADGE_UPDATE = 300;
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -3415,7 +3418,7 @@
       selectedCategoryBorderColor,
       headerCategoryHeight
     } = _ref2;
-    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n        }\n\n        @media only screen and (min-width: 480px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
+    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, ";\n          position: sticky;\n          top: 0;\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n          z-index: -1;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n          height: 100%;\n          overflow: scroll;\n        }\n\n        @media only screen and (min-width: 480px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
   };
 
   class Inbox extends HTMLElement {
@@ -3477,7 +3480,8 @@
       this.setBadgeStyle = msgCount => {
         if (this.unviewedBadge !== null) {
           this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount;
-          this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none';
+          const shouldShowUnviewedBadge = msgCount > 0 && document.getElementById(this.config.inboxSelector);
+          this.unviewedBadge.style.display = shouldShowUnviewedBadge ? 'flex' : 'none';
         }
       };
 
@@ -3683,12 +3687,17 @@
     }
 
     updateUnviewedBadgePosition() {
-      const {
-        top,
-        right
-      } = this.inboxSelector.getBoundingClientRect();
-      this.unviewedBadge.style.top = "".concat(top - 8, "px");
-      this.unviewedBadge.style.left = "".concat(right - 8, "px");
+      try {
+        const inboxNode = document.getElementById(this.config.inboxSelector) || this.inboxSelector;
+        const {
+          top,
+          right
+        } = inboxNode.getBoundingClientRect();
+        this.unviewedBadge.style.top = "".concat(top - 8, "px");
+        this.unviewedBadge.style.left = "".concat(right - 8, "px");
+      } catch (error) {
+        this.logger.debug('Error updating unviewed badge position:', error);
+      }
     }
 
     createinbox() {
@@ -3857,12 +3866,17 @@
 
 
     /**
-     * This function checks if the current Event Node is same as the already stored inboxSelector or the
-     * inboxSelector present in the document
+     * Checks if the current event target is part of the stored inboxSelector or the inboxSelector in the document.
+     *
+     * @param {Event} e - The event object to check.
+     * @returns {boolean} - Returns true if the event target is within the inboxSelector, otherwise false.
      */
     checkForWebInbox(e) {
+      var _this$inboxSelector;
+
       const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-      return this.inboxSelector.contains(e.target) || document.getElementById(config.inboxSelector).contains(e.target);
+      const inboxElement = document.getElementById(config.inboxSelector);
+      return ((_this$inboxSelector = this.inboxSelector) === null || _this$inboxSelector === void 0 ? void 0 : _this$inboxSelector.contains(e.target)) || (inboxElement === null || inboxElement === void 0 ? void 0 : inboxElement.contains(e.target));
     }
     /**
      * This function will be called every time when a message comes into the inbox viewport and it's visibility increases to 50% or drops below 50%
@@ -3956,6 +3970,7 @@
     /**
      * Updates the UI with the number of unviewed messages
      * If there are more than 9 unviewed messages, we show the count as 9+
+     * Only show this badge if the current document has the inboxNode
      */
 
 
@@ -4090,61 +4105,77 @@
   };
   const initializeWebInbox = logger => {
     return new Promise((resolve, reject) => {
-      // Adding this as a band-aid for SUC-126380
-      // Adds ct-web-inbox element in dom which is not visible if Web Inbox Config in LS
-      document.addEventListener('readystatechange', function () {
-        if (document.readyState === 'complete') {
-          addWebInbox(logger);
-          resolve();
-        }
-      });
+      const retryUntil = function (condition) {
+        let interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 500;
+        let maxRetries = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 20;
+        return new Promise((resolve, reject) => {
+          let attempts = 0;
+          const retry = setInterval(() => {
+            logger.debug("Retry attempt: ".concat(attempts + 1));
 
-      if (document.readyState === 'complete') {
-        addWebInbox(logger);
-        resolve();
-      } else {
+            if (condition()) {
+              clearInterval(retry);
+              resolve(); // Success
+            } else if ($ct.inbox !== null) {
+              clearInterval(retry);
+              resolve(); // Inbox already initialized
+            } else if (attempts >= maxRetries) {
+              clearInterval(retry);
+              reject(new Error('Condition not met within max retries'));
+            }
+
+            attempts++;
+          }, interval);
+        });
+      };
+
+      const addInboxSafely = () => {
+        if ($ct.inbox === null) {
+          addWebInbox(logger);
+        }
+      };
+
+      const checkElementCondition = () => {
         const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
 
-        const onLoaded = () => {
-          /**
-           * We need this null check here because $ct.inbox could be initialised via init method too on document load.
-           * In that case we don't need to call addWebInbox method
-           */
-          if ($ct.inbox === null) {
-            addWebInbox(logger);
-          }
+        if (!config.inboxSelector) {
+          logger.debug('Inbox selector is not configured');
+          return false;
+        }
 
-          resolve();
-        };
+        return document.getElementById(config.inboxSelector) && $ct.inbox === null;
+      };
 
-        window.addEventListener('load', () => {
-          /**
-           * Scripts can be loaded layzily, we may not get element from dom as it may not be mounted yet
-           * We will to check element for 10 seconds and give up
-           */
-          if (document.getElementById(config.inboxSelector)) {
-            onLoaded();
-          } else {
-            // check for element for next 10 seconds
-            let count = 0;
+      const onFailure = () => {
+        logger.debug('Failed to add inbox');
+      };
 
-            if (count < 20) {
-              const t = setInterval(() => {
-                if (document.getElementById(config.inboxSelector)) {
-                  onLoaded();
-                  clearInterval(t);
-                  resolve();
-                } else if (count >= 20) {
-                  clearInterval(t);
-                  logger.debug('Failed to add inbox');
-                }
+      let retryStarted = false; // Guard flag
 
-                count++;
-              }, 500);
+      const startRetry = () => {
+        if (!retryStarted) {
+          retryStarted = true;
+          retryUntil(checkElementCondition, 500, 20).then(() => {
+            addInboxSafely();
+            resolve();
+          }).catch(onFailure);
+        }
+      };
+
+      const setupEventListeners = () => {
+        if (document.readyState === 'complete') {
+          startRetry();
+        } else {
+          window.addEventListener('load', startRetry);
+          document.addEventListener('readystatechange', () => {
+            if (document.readyState === 'complete') {
+              startRetry();
             }
-          }
-        });
-      }
+          });
+        }
+      };
+
+      setupEventListeners();
     });
   };
   const checkAndRegisterWebInboxElements = () => {
@@ -4375,7 +4406,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.11.15';
+        const sdkVersion = '1.12.0';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -5265,6 +5296,20 @@
     return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
   };
 
+  const isChrome = () => {
+    const ua = navigator.userAgent;
+    return ua.includes('Chrome') || ua.includes('CriOS');
+  };
+  const isFirefox = () => {
+    const ua = navigator.userAgent;
+    return ua.includes('Firefox') || ua.includes('FxiOS');
+  };
+  const isSafari = () => {
+    const ua = navigator.userAgent; // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
+
+    return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
+  };
+
   var _oldValues$3 = _classPrivateFieldLooseKey("oldValues");
 
   var _logger$5 = _classPrivateFieldLooseKey("logger");
@@ -5278,6 +5323,8 @@
   var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
 
   var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
+
+  var _isNativeWebPushSupported = _classPrivateFieldLooseKey("isNativeWebPushSupported");
 
   var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
 
@@ -5312,6 +5359,9 @@
       });
       Object.defineProperty(this, _setUpSafariNotifications, {
         value: _setUpSafariNotifications2
+      });
+      Object.defineProperty(this, _isNativeWebPushSupported, {
+        value: _isNativeWebPushSupported2
       });
       Object.defineProperty(this, _setUpWebPush, {
         value: _setUpWebPush2
@@ -5364,7 +5414,7 @@
         swPath,
         skipDialog
       } = options;
-      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, skipDialog);
+      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, skipDialog, _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
     }
 
     _processOldValues() {
@@ -5376,10 +5426,10 @@
     }
 
     setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-      if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
+      if (isChrome() || isFirefox()) {
         _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
-      } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl);
+      } else if (isSafari()) {
+        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath);
       }
     }
 
@@ -5414,31 +5464,104 @@
     }
   };
 
-  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
-    // ensure that proper arguments are passed
-    if (typeof apnsWebPushId === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
-    }
+  var _isNativeWebPushSupported2 = function _isNativeWebPushSupported2() {
+    return 'PushManager' in window;
+  };
 
-    if (typeof apnsServiceUrl === 'undefined') {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
-    }
+  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
+    if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
+      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
+        window.Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            const subscribeObj = {
+              applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
+              userVisibleOnly: true
+            };
 
-    if ('safari' in window && 'pushNotification' in window.safari) {
-      window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
-        if (subscription.permission === 'granted') {
-          const subscriptionData = JSON.parse(JSON.stringify(subscription));
-          subscriptionData.endpoint = subscription.deviceToken;
-          subscriptionData.browser = 'Safari';
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Sub Obj' + JSON.stringify(subscribeObj));
 
-          _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+            const subscribeForPush = () => {
+              registration.pushManager.subscribe(subscribeObj).then(subscription => {
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
 
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
-        } else if (subscription.permission === 'denied') {
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
-        }
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+                  applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
+                  userVisibleOnly: true
+                }));
+
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+
+                const subscriptionData = JSON.parse(JSON.stringify(subscription));
+                subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+                StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+                _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+
+                if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+                  subscriptionCallback();
+                }
+
+                const existingBellWrapper = document.getElementById('bell_wrapper');
+
+                if (existingBellWrapper) {
+                  existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+                }
+              });
+            };
+
+            const serviceWorker = registration.installing || registration.waiting || registration.active;
+
+            if (serviceWorker && serviceWorker.state === 'activated') {
+              // Already activated, proceed with subscription
+              subscribeForPush();
+            } else if (serviceWorker) {
+              // Listen for state changes to handle activation
+              serviceWorker.addEventListener('statechange', event => {
+                if (event.target.state === 'activated') {
+                  _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker activated. Proceeding with subscription.');
+
+                  subscribeForPush();
+                }
+              });
+            }
+          }
+        });
       });
+    } else {
+      // ensure that proper arguments are passed
+      if (typeof apnsWebPushId === 'undefined') {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
+      }
+
+      if (typeof apnsServiceUrl === 'undefined') {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
+      }
+
+      if ('safari' in window && 'pushNotification' in window.safari) {
+        window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
+          if (subscription.permission === 'granted') {
+            const subscriptionData = JSON.parse(JSON.stringify(subscription));
+            subscriptionData.endpoint = subscription.deviceToken;
+            subscriptionData.browser = 'Safari';
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+              apnsServiceUrl,
+              apnsWebPushId
+            }));
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+
+            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+            _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+          } else if (subscription.permission === 'denied') {
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+          }
+        });
+      }
     }
   };
 
@@ -5464,7 +5587,7 @@
         if (isServiceWorkerAtRoot) {
           return navigator.serviceWorker.ready;
         } else {
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+          if (isChrome()) {
             return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
           } else {
             return navigator.serviceWorker.getRegistrations();
@@ -5472,7 +5595,7 @@
         }
       }).then(serviceWorkerRegistration => {
         // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
-        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
+        if (isFirefox() && Array.isArray(serviceWorkerRegistration)) {
           serviceWorkerRegistration = serviceWorkerRegistration.filter(i => i.scope === registrationScope)[0];
         }
 
@@ -5485,15 +5608,19 @@
         }
 
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Service Data Sent: ' + JSON.stringify(subscribeObj));
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Subscription Data Received: ' + JSON.stringify(subscription)); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
 
 
           const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
 
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+          if (isChrome()) {
             subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
             subscriptionData.browser = 'Chrome';
-          } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+          } else if (isFirefox()) {
             subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
             subscriptionData.browser = 'Firefox';
           }
@@ -5569,6 +5696,7 @@
     let httpsIframePath;
     let apnsWebPushId;
     let apnsWebPushServiceUrl;
+    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
 
     if (displayArgs.length === 1) {
       if (isObject(displayArgs[0])) {
@@ -5618,29 +5746,19 @@
       _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure you are https or localhost to register for notifications');
 
       return;
-    } // right now, we only support Chrome V50 & higher & Firefox
+    }
+    /*
+       If it is chrome or firefox and the nativeWebPush is not supported then return
+       For Safari the APNs route is open if nativeWebPush is not supported
+    */
 
 
-    if (navigator.userAgent.indexOf('Chrome') !== -1) {
-      const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/);
+    if (isChrome() || isFirefox()) {
+      if (!_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]()) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Web Push Notification is not supported on this browser');
 
-      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) {
         return;
       }
-    } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
-      const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/);
-
-      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) {
-        return;
-      }
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-      const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/);
-
-      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) {
-        return;
-      }
-    } else {
-      return;
     } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
 
@@ -5654,7 +5772,7 @@
       } // handle migrations from other services -> chrome notifications may have already been asked for before
 
 
-      if (Notification.permission === 'granted') {
+      if (Notification.permission === 'granted' && vapidSupportedAndMigrated) {
         // skip the dialog and register
         this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
         return;
@@ -5684,19 +5802,26 @@
 
     const now = new Date().getTime() / 1000;
 
-    if (StorageManager.getMetaProp('notif_last_time') == null) {
-      StorageManager.setMetaProp('notif_last_time', now);
+    if (StorageManager.getMetaProp(NOTIF_LAST_TIME) == null) {
+      StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
     } else {
       if (askAgainTimeInSeconds == null) {
         // 7 days by default
         askAgainTimeInSeconds = 7 * 24 * 60 * 60;
       }
 
-      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
-        return;
+      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME);
+
+      if (now - notifLastTime < askAgainTimeInSeconds) {
+        if (!isSafari()) {
+          return;
+        }
+
+        if (vapidSupportedAndMigrated) {
+          return;
+        }
       } else {
-        // continue asking
-        StorageManager.setMetaProp('notif_last_time', now);
+        StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
       }
     }
 
@@ -5801,7 +5926,7 @@
       updatePushConfig();
     }
   };
-  const enablePush = (logger, account, request, customSwPath, skipDialog) => {
+  const enablePush = (logger, account, request, customSwPath, skipDialog, fcmPublicKey) => {
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     $ct.pushConfig = _pushConfig;
@@ -5836,10 +5961,10 @@
     } = $ct.pushConfig;
 
     if (isPreview) {
-      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig);
+      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey);
       if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
     } else {
-      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig);
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey);
       if (showBellIcon) createBellIcon($ct.pushConfig);
     }
   };
@@ -5854,7 +5979,7 @@
     return element;
   };
 
-  const createNotificationBox = configData => {
+  const createNotificationBox = (configData, fcmPublicKey) => {
     if (document.getElementById('pnWrapper')) return;
     const {
       boxConfig: {
@@ -5932,12 +6057,27 @@
     const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
     const popupFrequency = content.popupFrequency || 7; // number of days
 
-    if (!lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60) {
-      document.body.appendChild(wrapper);
+    const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
 
-      if (!configData.isPreview) {
-        StorageManager.setMetaProp('webpush_last_notif_time', now);
-        addEventListeners(wrapper);
+    if (shouldShowNotification) {
+      if (!isSafari()) {
+        document.body.appendChild(wrapper);
+
+        if (!configData.isPreview) {
+          StorageManager.setMetaProp('webpush_last_notif_time', now);
+          addEventListeners(wrapper);
+        }
+      } else {
+        const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
+
+        if (vapidSupportedAndNotMigrated) {
+          document.body.appendChild(wrapper);
+
+          if (!configData.isPreview) {
+            addEventListeners(wrapper);
+            StorageManager.setMetaProp('webpush_last_notif_time', now);
+          }
+        }
       }
     }
   };
@@ -7498,7 +7638,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.11.15',
+        lib: 'web-sdk-v1.12.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8254,11 +8394,15 @@
 
   var _dismissSpamControl = _classPrivateFieldLooseKey("dismissSpamControl");
 
+  var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _debounce = _classPrivateFieldLooseKey("debounce");
 
   var _checkPageChanged = _classPrivateFieldLooseKey("checkPageChanged");
+
+  var _updateUnviewedBadgePosition = _classPrivateFieldLooseKey("updateUnviewedBadgePosition");
 
   var _pingRequest = _classPrivateFieldLooseKey("pingRequest");
 
@@ -8313,6 +8457,9 @@
       });
       Object.defineProperty(this, _pingRequest, {
         value: _pingRequest2
+      });
+      Object.defineProperty(this, _updateUnviewedBadgePosition, {
+        value: _updateUnviewedBadgePosition2
       });
       Object.defineProperty(this, _checkPageChanged, {
         value: _checkPageChanged2
@@ -8372,6 +8519,10 @@
         value: void 0
       });
       this.enablePersonalization = void 0;
+      Object.defineProperty(this, _pageChangeTimeoutId, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
@@ -9067,6 +9218,9 @@
       if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa]) {
         // listen to click on the document and check if URL has changed.
         document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+        /* Listen for the Back and Forward buttons */
+
+        window.addEventListener('popstate', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
       } else {
         // remove existing click listeners if any
         document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
@@ -9168,6 +9322,8 @@
           }, CONTINUOUS_PING_FREQ_IN_MILLIS);
         }
       }, FIRST_PING_FREQ_IN_MILLIS);
+
+      _classPrivateFieldLooseBase(this, _updateUnviewedBadgePosition)[_updateUnviewedBadgePosition]();
     }
 
     _isPersonalisationActive() {
@@ -9206,7 +9362,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.11.15';
+      return 'web-sdk-v1.12.0';
     }
 
     defineVariable(name, defaultValue) {
@@ -9252,7 +9408,7 @@
   };
 
   var _debounce2 = function _debounce2(func) {
-    let delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 300;
+    let delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 50;
     let timeout;
     return function () {
       clearTimeout(timeout);
@@ -9268,6 +9424,57 @@
     });
 
     debouncedPageChanged();
+  };
+
+  var _updateUnviewedBadgePosition2 = function _updateUnviewedBadgePosition2() {
+    try {
+      if (_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]) {
+        clearTimeout(_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]);
+      }
+
+      const unViewedBadge = document.getElementById('unviewedBadge');
+
+      if (!unViewedBadge) {
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('unViewedBadge not found');
+
+        return;
+      }
+      /* Reset to None */
+
+
+      unViewedBadge.style.display = 'none';
+      /* Set Timeout to let the page load and then update the position and display the badge */
+
+      _classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId] = setTimeout(() => {
+        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+        const inboxNode = document.getElementById(config === null || config === void 0 ? void 0 : config.inboxSelector);
+        /* Creating a Local Variable to avoid reference to stale DOM Node */
+
+        const unViewedBadge = document.getElementById('unviewedBadge');
+
+        if (!unViewedBadge) {
+          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('unViewedBadge not found');
+
+          return;
+        }
+
+        if (inboxNode) {
+          const {
+            top,
+            right
+          } = inboxNode.getBoundingClientRect();
+
+          if (Number(unViewedBadge.innerText) > 0) {
+            unViewedBadge.style.display = 'flex';
+          }
+
+          unViewedBadge.style.top = "".concat(top - 8, "px");
+          unViewedBadge.style.left = "".concat(right - 8, "px");
+        }
+      }, TIMER_FOR_NOTIF_BADGE_UPDATE);
+    } catch (error) {
+      _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('Error updating unviewed badge position:', error);
+    }
   };
 
   var _pingRequest2 = function _pingRequest2() {
