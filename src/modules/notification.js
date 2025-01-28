@@ -36,6 +36,15 @@ export default class NotificationHandler extends Array {
   }
 
   push (...displayArgs) {
+  /*
+    To handle a potential race condition, two flags are stored in Local Storage:
+    - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
+    - `notificationPushCalled`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+
+    This ensures the soft prompt is rendered correctly:
+    - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
+    - Otherwise, `notificationPushCalled` is set to true, and the rendering is deferred until the webPushConfig is received.
+  */
     const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
     setNotificationHandlerValues({
       logger: this.#logger,
@@ -184,7 +193,6 @@ export default class NotificationHandler extends Array {
             }
           }).catch((error) => {
             // unsubscribe from webpush if error
-            console.log('rejected subscription')
             serviceWorkerRegistration.pushManager.getSubscription().then((subscription) => {
               if (subscription !== null) {
                 subscription.unsubscribe().then((successful) => {

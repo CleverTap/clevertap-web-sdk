@@ -33,9 +33,15 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
     enablePush(logger, null, request)
   } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
     updatePushConfig()
-    StorageManager.saveToLSorCookie('webPushConfigResponseReceived', true)
-    const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled')
-    if (isNotificationPushCalled) {
+    try {
+      StorageManager.saveToLSorCookie('webPushConfigResponseReceived', true)
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled')
+      if (isNotificationPushCalled) {
+        processSoftPrompt()
+      }
+    } catch (error) {
+      logger?.error('Failed to process web push config:', error)
+      // Fallback: Attempt to process soft prompt anyway
       processSoftPrompt()
     }
   }
@@ -47,7 +53,7 @@ export const processSoftPrompt = () => {
   if (!(Object.keys(webPushConfig).length > 0)) {
     notificationHandler.setApplicationServerKey(appServerKey)
     notificationHandler.setupWebPush(displayArgs)
-    return 0
+    return
   }
   const { showBox, showBellIcon, boxType } = webPushConfig
   const { serviceWorkerPath, skipDialog } = parseDisplayArgs(displayArgs)
