@@ -4620,7 +4620,11 @@
     const tryFindingElement = selector => {
       let count = 0;
       const intervalId = setInterval(() => {
-        const retryElement = document.querySelector(selector.selector);
+        let retryElement;
+
+        try {
+          retryElement = document.querySelector(selector.selector);
+        } catch (_) {}
 
         if (retryElement) {
           raiseViewed();
@@ -4639,7 +4643,11 @@
           if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
             insertedElements.push(s);
           } else {
-            const element = document.querySelector(s.selector);
+            let element;
+
+            try {
+              element = document.querySelector(s.selector);
+            } catch (_) {}
 
             if (element) {
               raiseViewed();
