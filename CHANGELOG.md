@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.12.1] 28th Jan, 2025
+- Added WebNative Custom Html and Json templates Support
+
 ## [1.12.0] 27th Jan, 2025
 - Added Support for Vapid Web Push for Safari Mac
 - Added Support for Web Push on Safari IOS 

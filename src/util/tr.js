@@ -25,7 +25,7 @@ import RequestDispatcher from './requestDispatcher'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
-import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel } from './campaignRender/nativeDisplay'
+import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel, renderCustomHtml, handleJson } from './campaignRender/nativeDisplay'
 import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate } from './campaignRender/utilities'
 import { renderPopUpImageOnly } from './campaignRender/webPopup'
 import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
@@ -296,7 +296,6 @@ const _tr = (msg, {
     const viewHeight = window.innerHeight
     const viewWidth = window.innerWidth
     let legacy = false
-
     if (!isBanner) {
       const marginBottom = viewHeight * 5 / 100
       var contentHeight = 10
@@ -852,6 +851,10 @@ const _tr = (msg, {
           }
         } else if (targetNotif.msgContent.type === 4) {
           renderVisualBuilder(targetNotif, false)
+        } else if (targetNotif.msgContent.type === 5) {
+          renderCustomHtml(targetNotif, _logger)
+        } else if (targetNotif.msgContent.type === 6) {
+          handleJson(targetNotif, false)
         } else {
           showFooterNotification(targetNotif)
         }
