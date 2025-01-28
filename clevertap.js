@@ -5301,36 +5301,28 @@
       _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
     }
 
+    setupWebPush(displayArgs) {
+      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+    }
+
     push() {
-      const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
-      console.log('webPushConfig', webPushConfig);
+      const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
 
       for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
         displayArgs[_key] = arguments[_key];
       }
 
-      if (!(Object.keys(webPushConfig).length > 0)) {
-        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+      setNotificationHandlerValues({
+        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+        account: _classPrivateFieldLooseBase(this, _account$2)[_account$2],
+        request: _classPrivateFieldLooseBase(this, _request$4)[_request$4],
+        displayArgs
+      });
 
-        return 0;
-      }
-
-      const {
-        showBox,
-        showBellIcon,
-        boxType
-      } = webPushConfig;
-      const {
-        serviceWorkerPath,
-        skipDialog
-      } = parseDisplayArgs(displayArgs);
-
-      if (showBellIcon || showBox && boxType === 'new') {
-        enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], serviceWorkerPath, skipDialog);
-      }
-
-      if (showBox && boxType === 'old') {
-        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+      if (isWebPushConfigPresent) {
+        processSoftPrompt();
+      } else {
+        StorageManager.saveToLSorCookie('notificationPushCalled', true);
       }
     }
 
@@ -5772,6 +5764,17 @@
   let appServerKey = null;
   let swPath = '/clevertap_sw.js';
   let notificationHandler = null;
+  let logger = null;
+  let account = null;
+  let request = null;
+  let displayArgs = null;
+  const setNotificationHandlerValues = function () {
+    let notificationValues = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    logger = notificationValues.logger;
+    account = notificationValues.account;
+    request = notificationValues.request;
+    displayArgs = notificationValues.displayArgs;
+  };
   const processWebPushConfig = (webPushConfig, logger, request) => {
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
@@ -5785,6 +5788,46 @@
       enablePush(logger, null, request);
     } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
       updatePushConfig();
+      StorageManager.saveToLSorCookie('webPushConfigResponseReceived', true);
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled');
+
+      if (isNotificationPushCalled) {
+        processSoftPrompt();
+      }
+    }
+  };
+  const processSoftPrompt = () => {
+    const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+    const notificationHandler = new NotificationHandler({
+      logger,
+      session: {},
+      request,
+      account
+    });
+
+    if (!(Object.keys(webPushConfig).length > 0)) {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setupWebPush(displayArgs);
+      return 0;
+    }
+
+    const {
+      showBox,
+      showBellIcon,
+      boxType
+    } = webPushConfig;
+    const {
+      serviceWorkerPath,
+      skipDialog
+    } = parseDisplayArgs(displayArgs);
+
+    if (showBellIcon || showBox && boxType === 'new') {
+      enablePush(logger, account, request, serviceWorkerPath, skipDialog);
+    }
+
+    if (showBox && boxType === 'old') {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setupWebPush(displayArgs);
     }
   };
   const parseDisplayArgs = displayArgs => {

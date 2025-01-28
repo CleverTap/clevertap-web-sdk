@@ -8,6 +8,17 @@ import { BELL_BASE64, PROMPT_BELL_BASE64 } from './promptConstants.js'
 let appServerKey = null
 let swPath = '/clevertap_sw.js'
 let notificationHandler = null
+let logger = null
+let account = null
+let request = null
+let displayArgs = null
+
+export const setNotificationHandlerValues = (notificationValues = {}) => {
+  logger = notificationValues.logger
+  account = notificationValues.account
+  request = notificationValues.request
+  displayArgs = notificationValues.displayArgs
+}
 
 export const processWebPushConfig = (webPushConfig, logger, request) => {
   const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
@@ -22,6 +33,31 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
     enablePush(logger, null, request)
   } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
     updatePushConfig()
+    StorageManager.saveToLSorCookie('webPushConfigResponseReceived', true)
+    const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled')
+    if (isNotificationPushCalled) {
+      processSoftPrompt()
+    }
+  }
+}
+
+export const processSoftPrompt = () => {
+  const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
+  const notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
+  if (!(Object.keys(webPushConfig).length > 0)) {
+    notificationHandler.setApplicationServerKey(appServerKey)
+    notificationHandler.setupWebPush(displayArgs)
+    return 0
+  }
+  const { showBox, showBellIcon, boxType } = webPushConfig
+  const { serviceWorkerPath, skipDialog } = parseDisplayArgs(displayArgs)
+  if (showBellIcon || (showBox && boxType === 'new')) {
+    enablePush(logger, account, request, serviceWorkerPath, skipDialog)
+  }
+
+  if (showBox && boxType === 'old') {
+    notificationHandler.setApplicationServerKey(appServerKey)
+    notificationHandler.setupWebPush(displayArgs)
   }
 }
 

@@ -1,13 +1,12 @@
 import { StorageManager, $ct } from '../util/storage'
 import { isObject } from '../util/datatypes'
 import {
-  PUSH_SUBSCRIPTION_DATA,
-  WEBPUSH_CONFIG
+  PUSH_SUBSCRIPTION_DATA
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
 } from '../util/encoder'
-import { enablePush, parseDisplayArgs } from './webPushPrompt/prompt'
+import { setNotificationHandlerValues, processSoftPrompt } from './webPushPrompt/prompt'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -32,21 +31,22 @@ export default class NotificationHandler extends Array {
     this.#account = account
   }
 
-  push (...displayArgs) {
-    const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
-    console.log('webPushConfig', webPushConfig)
-    if (!(Object.keys(webPushConfig).length > 0)) {
-      this.#setUpWebPush(displayArgs)
-      return 0
-    }
-    const { showBox, showBellIcon, boxType } = webPushConfig
-    const { serviceWorkerPath, skipDialog } = parseDisplayArgs(displayArgs)
-    if (showBellIcon || (showBox && boxType === 'new')) {
-      enablePush(this.#logger, this.#account, this.#request, serviceWorkerPath, skipDialog)
-    }
+  setupWebPush (displayArgs) {
+    this.#setUpWebPush(displayArgs)
+  }
 
-    if (showBox && boxType === 'old') {
-      this.#setUpWebPush(displayArgs)
+  push (...displayArgs) {
+    const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
+    setNotificationHandlerValues({
+      logger: this.#logger,
+      account: this.#account,
+      request: this.#request,
+      displayArgs
+    })
+    if (isWebPushConfigPresent) {
+      processSoftPrompt()
+    } else {
+      StorageManager.saveToLSorCookie('notificationPushCalled', true)
     }
   }
 
