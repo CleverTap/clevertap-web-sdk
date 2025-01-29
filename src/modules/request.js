@@ -1,4 +1,4 @@
-import { CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY } from '../util/constants'
+import { SCOOKIE_PREFIX, CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY } from '../util/constants'
 import { isObjectEmpty, isValueValid, removeUnsupportedChars } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
@@ -43,6 +43,13 @@ export default class RequestManager {
         if (typeof backupEvent.fired === 'undefined') {
           this.#logger.debug('Processing backup event : ' + backupEvent.q)
           if (typeof backupEvent.q !== 'undefined') {
+            /* For extremely slow networks we often recreate the session from the SE hence appending
+            the session to the request */
+
+            const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + this.#account.id))
+            if (session?.s) {
+              backupEvent.q = backupEvent.q + '&s=' + session.s
+            }
             RequestDispatcher.fireRequest(backupEvent.q)
           }
           backupEvent.fired = true

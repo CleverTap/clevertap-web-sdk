@@ -7600,6 +7600,14 @@
             _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('Processing backup event : ' + backupEvent.q);
 
             if (typeof backupEvent.q !== 'undefined') {
+              /* For extremely slow networks we often recreate the session from the SE hence appending
+              the session to the request */
+              const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
+
+              if (session === null || session === void 0 ? void 0 : session.s) {
+                backupEvent.q = backupEvent.q + '&s=' + session.s;
+              }
+
               RequestDispatcher.fireRequest(backupEvent.q);
             }
 
