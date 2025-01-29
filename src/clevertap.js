@@ -547,14 +547,11 @@ export default class CleverTap {
       closeIframe(campaignId, divIdIgnored, this.#session.sessionId)
     }
     api.enableWebPush = (enabled, applicationServerKey) => {
-      console.log('api enableWebPush', applicationServerKey)
       setServerKey(applicationServerKey)
       StorageManager.saveToLSorCookie('applicationServerKeyReceived', true)
       this.notifications._enableWebPush(enabled, applicationServerKey)
       const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
       const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled')
-      console.log('isWebPushConfigPresent', isWebPushConfigPresent)
-      console.log('isNotificationPushCalled', isNotificationPushCalled)
       if (isWebPushConfigPresent && isNotificationPushCalled) {
         processSoftPrompt()
       }

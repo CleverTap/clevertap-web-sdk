@@ -9149,7 +9149,6 @@
       };
 
       api.enableWebPush = (enabled, applicationServerKey) => {
-        console.log('api enableWebPush', applicationServerKey);
         setServerKey(applicationServerKey);
         StorageManager.saveToLSorCookie('applicationServerKeyReceived', true);
 
@@ -9157,8 +9156,6 @@
 
         const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
         const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled');
-        console.log('isWebPushConfigPresent', isWebPushConfigPresent);
-        console.log('isNotificationPushCalled', isNotificationPushCalled);
 
         if (isWebPushConfigPresent && isNotificationPushCalled) {
           processSoftPrompt();
