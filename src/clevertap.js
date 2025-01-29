@@ -28,7 +28,9 @@ import {
   COMMAND_REMOVE,
   COMMAND_DELETE,
   EVT_PUSH,
-  WZRK_FETCH
+  WZRK_FETCH,
+  WEBINBOX_CONFIG,
+  TIMER_FOR_NOTIF_BADGE_UPDATE
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -57,6 +59,7 @@ export default class CleverTap {
   #boundCheckPageChanged = this.#checkPageChanged.bind(this)
   #dismissSpamControl
   enablePersonalization
+  #pageChangeTimeoutId
 
   get spa () {
     return this.#isSpa
@@ -670,6 +673,9 @@ export default class CleverTap {
     if (this.#isSpa) {
       // listen to click on the document and check if URL has changed.
       document.addEventListener('click', this.#boundCheckPageChanged)
+
+      /* Listen for the Back and Forward buttons */
+      window.addEventListener('popstate', this.#boundCheckPageChanged)
     } else {
       // remove existing click listeners if any
       document.removeEventListener('click', this.#boundCheckPageChanged)
@@ -687,7 +693,7 @@ export default class CleverTap {
     this.notifications._processOldValues()
   }
 
-  #debounce (func, delay = 300) {
+  #debounce (func, delay = 50) {
     let timeout
     return function () {
       clearTimeout(timeout)
@@ -702,6 +708,47 @@ export default class CleverTap {
       }
     })
     debouncedPageChanged()
+  }
+
+  #updateUnviewedBadgePosition () {
+    try {
+      if (this.#pageChangeTimeoutId) {
+        clearTimeout(this.#pageChangeTimeoutId)
+      }
+
+      const unViewedBadge = document.getElementById('unviewedBadge')
+      if (!unViewedBadge) {
+        this.#logger.debug('unViewedBadge not found')
+        return
+      }
+
+      /* Reset to None */
+      unViewedBadge.style.display = 'none'
+
+      /* Set Timeout to let the page load and then update the position and display the badge */
+      this.#pageChangeTimeoutId = setTimeout(() => {
+        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+        const inboxNode = document.getElementById(config?.inboxSelector)
+        /* Creating a Local Variable to avoid reference to stale DOM Node */
+        const unViewedBadge = document.getElementById('unviewedBadge')
+
+        if (!unViewedBadge) {
+          this.#logger.debug('unViewedBadge not found')
+          return
+        }
+
+        if (inboxNode) {
+          const { top, right } = inboxNode.getBoundingClientRect()
+          if (Number(unViewedBadge.innerText) > 0) {
+            unViewedBadge.style.display = 'flex'
+          }
+          unViewedBadge.style.top = `${top - 8}px`
+          unViewedBadge.style.left = `${right - 8}px`
+        }
+      }, TIMER_FOR_NOTIF_BADGE_UPDATE)
+    } catch (error) {
+      this.#logger.debug('Error updating unviewed badge position:', error)
+    }
   }
 
   pageChanged () {
@@ -783,6 +830,8 @@ export default class CleverTap {
         }, CONTINUOUS_PING_FREQ_IN_MILLIS)
       }
     }, FIRST_PING_FREQ_IN_MILLIS)
+
+    this.#updateUnviewedBadgePosition()
   }
 
   #pingRequest () {
