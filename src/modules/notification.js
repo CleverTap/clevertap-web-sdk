@@ -9,7 +9,7 @@ import {
   urlBase64ToUint8Array
 } from '../util/encoder'
 import { setNotificationHandlerValues, processSoftPrompt } from './webPushPrompt/prompt'
-import { enablePush } from './webPushPrompt/prompt'
+
 import { isChrome, isFirefox, isSafari } from '../util/helpers'
 
 export default class NotificationHandler extends Array {
@@ -39,10 +39,6 @@ export default class NotificationHandler extends Array {
     this.#setUpWebPush(displayArgs)
   }
 
-  enable (options = {}) {
-    const { swPath, skipDialog } = options
-    enablePush(this.#logger, this.#account, this.#request, swPath, skipDialog, this.#fcmPublicKey)
-  }
   push (...displayArgs) {
   /*
     To handle a potential race condition, two flags are stored in Local Storage:
@@ -54,13 +50,15 @@ export default class NotificationHandler extends Array {
     - Otherwise, `notificationPushCalled` is set to true, and the rendering is deferred until the webPushConfig is received.
   */
     const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
+    const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie('applicationServerKeyReceived')
     setNotificationHandlerValues({
       logger: this.#logger,
       account: this.#account,
       request: this.#request,
-      displayArgs
+      displayArgs,
+      fcmPublicKey: this.#fcmPublicKey
     })
-    if (isWebPushConfigPresent) {
+    if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
       processSoftPrompt()
     } else {
       StorageManager.saveToLSorCookie('notificationPushCalled', true)
@@ -529,7 +527,6 @@ export default class NotificationHandler extends Array {
     if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
       this.#handleNotificationRegistration($ct.notifApi.displayArgs)
     } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-      this.#logger.error('Ensure that web push notifications are fully enabled and integrated before requesting them')
     }
   }
 }

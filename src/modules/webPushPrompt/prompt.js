@@ -13,12 +13,14 @@ let logger = null
 let account = null
 let request = null
 let displayArgs = null
+let fcmPublicKey = null
 
 export const setNotificationHandlerValues = (notificationValues = {}) => {
   logger = notificationValues.logger
   account = notificationValues.account
   request = notificationValues.request
   displayArgs = notificationValues.displayArgs
+  fcmPublicKey = notificationValues.fcmPublicKey
 }
 
 export const processWebPushConfig = (webPushConfig, logger, request) => {
@@ -31,7 +33,7 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
 
   if (webPushConfig.isPreview) {
     updatePushConfig()
-    enablePush(logger, null, request)
+    enablePush({ logger, request })
   } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
     updatePushConfig()
     try {
@@ -41,7 +43,7 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
         processSoftPrompt()
       }
     } catch (error) {
-      logger?.error('Failed to process web push config:', error)
+      logger.error('Failed to process web push config:', error)
       // Fallback: Attempt to process soft prompt anyway
       processSoftPrompt()
     }
@@ -50,33 +52,46 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
 
 export const processSoftPrompt = () => {
   const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
-  const notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
+  notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
+
   if (!(Object.keys(webPushConfig).length > 0)) {
     notificationHandler.setApplicationServerKey(appServerKey)
     notificationHandler.setupWebPush(displayArgs)
     return
   }
   const { showBox, showBellIcon, boxType } = webPushConfig
-  const { serviceWorkerPath, skipDialog } = parseDisplayArgs(displayArgs)
-  if (showBellIcon || (showBox && boxType === 'new')) {
-    enablePush(logger, account, request, serviceWorkerPath, skipDialog)
-  }
 
+  const { serviceWorkerPath, skipDialog, okCallback, subscriptionCallback, rejectCallback } = parseDisplayArgs(displayArgs)
+  if (showBellIcon || (showBox && boxType === 'new')) {
+    const enablePushParams = { serviceWorkerPath, skipDialog, okCallback, subscriptionCallback, rejectCallback, logger, request, account, fcmPublicKey }
+    enablePush(enablePushParams)
+  }
   if (showBox && boxType === 'old') {
     notificationHandler.setApplicationServerKey(appServerKey)
     notificationHandler.setupWebPush(displayArgs)
   }
+  StorageManager.saveToLSorCookie('notificationPushCalled', false)
+  StorageManager.saveToLSorCookie('applicationServerKeyReceived', false)
 }
+
 export const parseDisplayArgs = (displayArgs) => {
   if (displayArgs.length === 1 && isObject(displayArgs[0])) {
-    const { serviceWorkerPath, skipDialog } = displayArgs[0]
-    return { serviceWorkerPath, skipDialog }
+    const { serviceWorkerPath, skipDialog, okCallback, subscriptionCallback, rejectCallback } = displayArgs[0]
+    return { serviceWorkerPath, skipDialog, okCallback, subscriptionCallback, rejectCallback }
   }
 
-  return { serviceWorkerPath: undefined, skipDialog: displayArgs[5] }
+  return {
+    serviceWorkerPath: undefined,
+    skipDialog: displayArgs[5] ?? undefined,
+    okCallback: undefined,
+    subscriptionCallback: undefined,
+    rejectCallback: undefined
+  }
 }
 
-export const enablePush = (logger, account, request, customSwPath, skipDialog, fcmPublicKey) => {
+export const enablePush = (enablePushParams) => {
+  const { serviceWorkerPath: customSwPath, okCallback, subscriptionCallback, rejectCallback, logger, fcmPublicKey } = enablePushParams
+  let { skipDialog } = enablePushParams
   const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
   $ct.pushConfig = _pushConfig
   if (!$ct.pushConfig) {
@@ -90,11 +105,10 @@ export const enablePush = (logger, account, request, customSwPath, skipDialog, f
     skipDialog = false
   }
 
-  notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
-
+  // notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
   if (skipDialog) {
     notificationHandler.setApplicationServerKey(appServerKey)
-    notificationHandler.setUpWebPushNotifications(null, swPath, null, null)
+    notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, null, null)
     return
   }
 
@@ -104,7 +118,7 @@ export const enablePush = (logger, account, request, customSwPath, skipDialog, f
     if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey)
     if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig)
   } else {
-    if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey)
+    if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback)
     if (showBellIcon) createBellIcon($ct.pushConfig)
   }
 }
@@ -117,7 +131,7 @@ const createElementWithAttributes = (tag, attributes = {}) => {
   return element
 }
 
-export const createNotificationBox = (configData, fcmPublicKey) => {
+export const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback) => {
   if (document.getElementById('pnWrapper')) return
 
   const { boxConfig: { content, style } } = configData
@@ -170,7 +184,7 @@ export const createNotificationBox = (configData, fcmPublicKey) => {
     if ('Notification' in window && Notification !== null) {
       if (Notification.permission === 'granted') {
         notificationHandler.setApplicationServerKey(appServerKey)
-        notificationHandler.setUpWebPushNotifications(null, swPath, null, null)
+        notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, null, null)
         return
       } else if (Notification.permission === 'denied') {
         return
@@ -188,14 +202,14 @@ export const createNotificationBox = (configData, fcmPublicKey) => {
       document.body.appendChild(wrapper)
       if (!configData.isPreview) {
         StorageManager.setMetaProp('webpush_last_notif_time', now)
-        addEventListeners(wrapper)
+        addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback)
       }
     } else {
       const vapidSupportedAndNotMigrated = ('PushManager' in window) && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null
       if (vapidSupportedAndNotMigrated) {
         document.body.appendChild(wrapper)
         if (!configData.isPreview) {
-          addEventListeners(wrapper)
+          addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback)
           StorageManager.setMetaProp('webpush_last_notif_time', now)
         }
       }
@@ -252,7 +266,7 @@ export const setServerKey = (serverKey) => {
   appServerKey = serverKey
 }
 
-export const addEventListeners = (wrapper) => {
+export const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback) => {
   const primaryButton = wrapper.querySelector('#primaryButton')
   const secondaryButton = wrapper.querySelector('#secondaryButton')
 
@@ -261,22 +275,28 @@ export const addEventListeners = (wrapper) => {
   primaryButton.addEventListener('click', () => {
     removeWrapper()
     notificationHandler.setApplicationServerKey(appServerKey)
-    notificationHandler.setUpWebPushNotifications(null, swPath, null, null)
+    notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, null, null)
+    if (typeof okCallback === 'function') {
+      okCallback()
+    }
   })
 
   secondaryButton.addEventListener('click', () => {
     removeWrapper()
+    if (typeof rejectCallback === 'function') {
+      rejectCallback()
+    }
   })
 }
 
-export const addBellEventListeners = (bellWrapper) => {
+export const addBellEventListeners = (bellWrapper, subscriptionCallback) => {
   const bellIcon = bellWrapper.querySelector('#bell_icon')
   bellIcon.addEventListener('click', () => {
     if (Notification.permission === 'denied') {
       toggleGifModal(bellWrapper)
     } else {
       notificationHandler.setApplicationServerKey(appServerKey)
-      notificationHandler.setUpWebPushNotifications(null, swPath, null, null)
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, null, null)
       if (Notification.permission === 'granted') {
         bellWrapper.remove()
       }

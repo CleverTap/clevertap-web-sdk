@@ -43,7 +43,7 @@ import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWe
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
 import { checkBuilder, addAntiFlicker } from './modules/visualBuilder/pageBuilder'
-import { setServerKey } from './modules/webPushPrompt/prompt'
+import { processSoftPrompt, setServerKey } from './modules/webPushPrompt/prompt'
 
 export default class CleverTap {
   #logger
@@ -547,8 +547,17 @@ export default class CleverTap {
       closeIframe(campaignId, divIdIgnored, this.#session.sessionId)
     }
     api.enableWebPush = (enabled, applicationServerKey) => {
+      console.log('api enableWebPush', applicationServerKey)
       setServerKey(applicationServerKey)
+      StorageManager.saveToLSorCookie('applicationServerKeyReceived', true)
       this.notifications._enableWebPush(enabled, applicationServerKey)
+      const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled')
+      console.log('isWebPushConfigPresent', isWebPushConfigPresent)
+      console.log('isNotificationPushCalled', isNotificationPushCalled)
+      if (isWebPushConfigPresent && isNotificationPushCalled) {
+        processSoftPrompt()
+      }
     }
     api.tr = (msg) => {
       _tr(msg, {
