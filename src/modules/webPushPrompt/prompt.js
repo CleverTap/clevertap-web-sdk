@@ -82,7 +82,7 @@ export const parseDisplayArgs = (displayArgs) => {
 
   return {
     serviceWorkerPath: undefined,
-    skipDialog: displayArgs[5] ?? undefined,
+    skipDialog: displayArgs[5],
     okCallback: undefined,
     subscriptionCallback: undefined,
     rejectCallback: undefined
