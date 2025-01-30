@@ -5334,6 +5334,10 @@
     }
 
     setupWebPush(displayArgs) {
+      /* 
+        A method in notification.js which can be accessed in prompt.js file to call the
+        private method this.#setUpWebPush
+      */
       _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
     }
 
@@ -5974,8 +5978,6 @@
     StorageManager.saveToLSorCookie('applicationServerKeyReceived', false);
   };
   const parseDisplayArgs = displayArgs => {
-    var _displayArgs$;
-
     if (displayArgs.length === 1 && isObject(displayArgs[0])) {
       const {
         serviceWorkerPath,
@@ -5995,7 +5997,7 @@
 
     return {
       serviceWorkerPath: undefined,
-      skipDialog: (_displayArgs$ = displayArgs[5]) !== null && _displayArgs$ !== void 0 ? _displayArgs$ : undefined,
+      skipDialog: displayArgs[5],
       okCallback: undefined,
       subscriptionCallback: undefined,
       rejectCallback: undefined
@@ -9150,15 +9152,19 @@
 
       api.enableWebPush = (enabled, applicationServerKey) => {
         setServerKey(applicationServerKey);
-        StorageManager.saveToLSorCookie('applicationServerKeyReceived', true);
 
         this.notifications._enableWebPush(enabled, applicationServerKey);
 
-        const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
-        const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled');
+        try {
+          StorageManager.saveToLSorCookie('applicationServerKeyReceived', true);
+          const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
+          const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled');
 
-        if (isWebPushConfigPresent && isNotificationPushCalled) {
-          processSoftPrompt();
+          if (isWebPushConfigPresent && isNotificationPushCalled) {
+            processSoftPrompt();
+          }
+        } catch (error) {
+          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Could not read value from local storage', error);
         }
       };
 

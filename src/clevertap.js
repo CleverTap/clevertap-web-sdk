@@ -550,15 +550,15 @@ export default class CleverTap {
       setServerKey(applicationServerKey)
       this.notifications._enableWebPush(enabled, applicationServerKey)
       try {
-          StorageManager.saveToLSorCookie('applicationServerKeyReceived', true)
-          const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
-          const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled')
-          if (isWebPushConfigPresent && isNotificationPushCalled) {
-            processSoftPrompt()
-          }
-        } catch (error) {
-          this.#logger.error('Could not read value from local storage', error)
+        StorageManager.saveToLSorCookie('applicationServerKeyReceived', true)
+        const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
+        const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled')
+        if (isWebPushConfigPresent && isNotificationPushCalled) {
+          processSoftPrompt()
         }
+      } catch (error) {
+        this.#logger.error('Could not read value from local storage', error)
+      }
     }
     api.tr = (msg) => {
       _tr(msg, {

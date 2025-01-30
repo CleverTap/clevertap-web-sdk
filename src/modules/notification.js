@@ -36,7 +36,7 @@ export default class NotificationHandler extends Array {
   }
 
   setupWebPush (displayArgs) {
-  /* 
+  /*
     A method in notification.js which can be accessed in prompt.js file to call the
     private method this.#setUpWebPush
   */
