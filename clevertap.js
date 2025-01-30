@@ -5042,6 +5042,71 @@
     });
     document.dispatchEvent(kvPairsEvent);
   };
+  const renderCustomHtml = (targetingMsgJson, logger) => {
+    const {
+      display,
+      wzrk_id: wzrkId,
+      wzrk_pivot: wzrkPivot
+    } = targetingMsgJson || {};
+    const divId = display.divId || {};
+    const details = display.details[0];
+    const html = details.html;
+
+    if (!divId || !html) {
+      logger.error('No div Id or no html found');
+      return;
+    }
+
+    let notificationViewed = false;
+    const payload = {
+      msgId: wzrkId,
+      pivotId: wzrkPivot
+    };
+
+    const raiseViewed = () => {
+      if (!notificationViewed) {
+        notificationViewed = true;
+        window.clevertap.renderNotificationViewed(payload);
+      }
+    };
+
+    const tryFindingElement = divId => {
+      let count = 0;
+      const intervalId = setInterval(() => {
+        const retryElement = document.querySelector(divId);
+
+        if (retryElement) {
+          raiseViewed();
+          retryElement.outerHTML = html;
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          logger.log("No element present on DOM with divId '".concat(divId, "'."));
+          clearInterval(intervalId);
+        }
+      }, 500);
+    };
+
+    tryFindingElement(divId);
+  };
+  const handleJson = targetingMsgJson => {
+    const inaObj = {};
+    inaObj.msgId = targetingMsgJson.wzrk_id;
+    const details = targetingMsgJson.display.details[0];
+    const json = details.json;
+
+    if (targetingMsgJson.wzrk_pivot) {
+      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+    }
+
+    if (targetingMsgJson.display.json != null) {
+      inaObj.json = json;
+    }
+
+    const jsonEvent = new CustomEvent('CT_web_native_display_json', {
+      detail: inaObj
+    });
+    document.dispatchEvent(jsonEvent);
+  };
 
   const invokeExternalJs = (jsFunc, targetingMsgJson) => {
     const func = window.parent[jsFunc];
@@ -7085,6 +7150,10 @@
             }
           } else if (targetNotif.msgContent.type === 4) {
             renderVisualBuilder(targetNotif, false);
+          } else if (targetNotif.msgContent.type === 5) {
+            renderCustomHtml(targetNotif, _logger);
+          } else if (targetNotif.msgContent.type === 6) {
+            handleJson(targetNotif);
           } else {
             showFooterNotification(targetNotif);
           }
