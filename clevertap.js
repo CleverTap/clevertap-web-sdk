@@ -4406,7 +4406,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.12.0';
+        const sdkVersion = '1.12.1';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -5041,6 +5041,71 @@
       detail: inaObj
     });
     document.dispatchEvent(kvPairsEvent);
+  };
+  const renderCustomHtml = (targetingMsgJson, logger) => {
+    const {
+      display,
+      wzrk_id: wzrkId,
+      wzrk_pivot: wzrkPivot
+    } = targetingMsgJson || {};
+    const divId = display.divId || {};
+    const details = display.details[0];
+    const html = details.html;
+
+    if (!divId || !html) {
+      logger.error('No div Id or no html found');
+      return;
+    }
+
+    let notificationViewed = false;
+    const payload = {
+      msgId: wzrkId,
+      pivotId: wzrkPivot
+    };
+
+    const raiseViewed = () => {
+      if (!notificationViewed) {
+        notificationViewed = true;
+        window.clevertap.renderNotificationViewed(payload);
+      }
+    };
+
+    const tryFindingElement = divId => {
+      let count = 0;
+      const intervalId = setInterval(() => {
+        const retryElement = document.querySelector(divId);
+
+        if (retryElement) {
+          raiseViewed();
+          retryElement.outerHTML = html;
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          logger.log("No element present on DOM with divId '".concat(divId, "'."));
+          clearInterval(intervalId);
+        }
+      }, 500);
+    };
+
+    tryFindingElement(divId);
+  };
+  const handleJson = targetingMsgJson => {
+    const inaObj = {};
+    inaObj.msgId = targetingMsgJson.wzrk_id;
+    const details = targetingMsgJson.display.details[0];
+    const json = details.json;
+
+    if (targetingMsgJson.wzrk_pivot) {
+      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+    }
+
+    if (targetingMsgJson.display.json != null) {
+      inaObj.json = json;
+    }
+
+    const jsonEvent = new CustomEvent('CT_web_native_display_json', {
+      detail: inaObj
+    });
+    document.dispatchEvent(jsonEvent);
   };
 
   const invokeExternalJs = (jsFunc, targetingMsgJson) => {
@@ -7085,6 +7150,10 @@
             }
           } else if (targetNotif.msgContent.type === 4) {
             renderVisualBuilder(targetNotif, false);
+          } else if (targetNotif.msgContent.type === 5) {
+            renderCustomHtml(targetNotif, _logger);
+          } else if (targetNotif.msgContent.type === 6) {
+            handleJson(targetNotif);
           } else {
             showFooterNotification(targetNotif);
           }
@@ -7531,6 +7600,14 @@
             _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('Processing backup event : ' + backupEvent.q);
 
             if (typeof backupEvent.q !== 'undefined') {
+              /* For extremely slow networks we often recreate the session from the SE hence appending
+              the session to the request */
+              const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
+
+              if (session === null || session === void 0 ? void 0 : session.s) {
+                backupEvent.q = backupEvent.q + '&s=' + session.s;
+              }
+
               RequestDispatcher.fireRequest(backupEvent.q);
             }
 
@@ -7569,7 +7646,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.12.0',
+        lib: 'web-sdk-v1.12.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9293,7 +9370,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.12.0';
+      return 'web-sdk-v1.12.1';
     }
 
     defineVariable(name, defaultValue) {
