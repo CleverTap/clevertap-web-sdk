@@ -43,7 +43,7 @@ import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWe
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
 import { checkBuilder, addAntiFlicker } from './modules/visualBuilder/pageBuilder'
-import { setServerKey } from './modules/webPushPrompt/prompt'
+import { processSoftPrompt, setServerKey } from './modules/webPushPrompt/prompt'
 
 export default class CleverTap {
   #logger
@@ -549,6 +549,16 @@ export default class CleverTap {
     api.enableWebPush = (enabled, applicationServerKey) => {
       setServerKey(applicationServerKey)
       this.notifications._enableWebPush(enabled, applicationServerKey)
+      try {
+        StorageManager.saveToLSorCookie('applicationServerKeyReceived', true)
+        const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
+        const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled')
+        if (isWebPushConfigPresent && isNotificationPushCalled) {
+          processSoftPrompt()
+        }
+      } catch (error) {
+        this.#logger.error('Could not read value from local storage', error)
+      }
     }
     api.tr = (msg) => {
       _tr(msg, {

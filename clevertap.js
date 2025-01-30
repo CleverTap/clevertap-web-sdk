@@ -5333,23 +5333,43 @@
       _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
     }
 
+    setupWebPush(displayArgs) {
+      /* 
+        A method in notification.js which can be accessed in prompt.js file to call the
+        private method this.#setUpWebPush
+      */
+      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+    }
+
     push() {
+      /*
+        To handle a potential race condition, two flags are stored in Local Storage:
+        - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
+        - `notificationPushCalled`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+         This ensures the soft prompt is rendered correctly:
+        - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
+        - Otherwise, `notificationPushCalled` is set to true, and the rendering is deferred until the webPushConfig is received.
+      */
+      const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
+      const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie('applicationServerKeyReceived');
+
       for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
         displayArgs[_key] = arguments[_key];
       }
 
-      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+      setNotificationHandlerValues({
+        logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+        account: _classPrivateFieldLooseBase(this, _account$2)[_account$2],
+        request: _classPrivateFieldLooseBase(this, _request$4)[_request$4],
+        displayArgs,
+        fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
+      });
 
-      return 0;
-    }
-
-    enable() {
-      let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-      const {
-        swPath,
-        skipDialog
-      } = options;
-      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, skipDialog, _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
+      if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
+        processSoftPrompt();
+      } else {
+        StorageManager.saveToLSorCookie('notificationPushCalled', true);
+      }
     }
 
     _processOldValues() {
@@ -5381,8 +5401,6 @@
 
       if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
       }
     }
 
@@ -5542,6 +5560,8 @@
           subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
         }
 
+        const softPromptCard = document.getElementById('pnWrapper');
+        const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
           _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
 
@@ -5573,6 +5593,14 @@
           if (existingBellWrapper) {
             existingBellWrapper.parentNode.removeChild(existingBellWrapper);
           }
+
+          if (softPromptCard) {
+            softPromptCard.parentNode.removeChild(softPromptCard);
+          }
+
+          if (oldSoftPromptCard) {
+            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+          }
         }).catch(error => {
           // unsubscribe from webpush if error
           serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
@@ -5592,6 +5620,14 @@
           });
 
           _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error subscribing: ' + error);
+
+          if (softPromptCard) {
+            softPromptCard.parentNode.removeChild(softPromptCard);
+          }
+
+          if (oldSoftPromptCard) {
+            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+          }
         });
       }).catch(err => {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('error registering service worker: ' + err);
@@ -5846,6 +5882,19 @@
   let appServerKey = null;
   let swPath = '/clevertap_sw.js';
   let notificationHandler = null;
+  let logger = null;
+  let account = null;
+  let request = null;
+  let displayArgs = null;
+  let fcmPublicKey = null;
+  const setNotificationHandlerValues = function () {
+    let notificationValues = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    logger = notificationValues.logger;
+    account = notificationValues.account;
+    request = notificationValues.request;
+    displayArgs = notificationValues.displayArgs;
+    fcmPublicKey = notificationValues.fcmPublicKey;
+  };
   const processWebPushConfig = (webPushConfig, logger, request) => {
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
@@ -5856,12 +5905,117 @@
 
     if (webPushConfig.isPreview) {
       updatePushConfig();
-      enablePush(logger, null, request);
+      enablePush({
+        logger,
+        request
+      });
     } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
       updatePushConfig();
+
+      try {
+        StorageManager.saveToLSorCookie('webPushConfigResponseReceived', true);
+        const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled');
+
+        if (isNotificationPushCalled) {
+          processSoftPrompt();
+        }
+      } catch (error) {
+        logger.error('Failed to process web push config:', error); // Fallback: Attempt to process soft prompt anyway
+
+        processSoftPrompt();
+      }
     }
   };
-  const enablePush = (logger, account, request, customSwPath, skipDialog, fcmPublicKey) => {
+  const processSoftPrompt = () => {
+    const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+    notificationHandler = new NotificationHandler({
+      logger,
+      session: {},
+      request,
+      account
+    });
+
+    if (!(Object.keys(webPushConfig).length > 0)) {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setupWebPush(displayArgs);
+      return;
+    }
+
+    const {
+      showBox,
+      showBellIcon,
+      boxType
+    } = webPushConfig;
+    const {
+      serviceWorkerPath,
+      skipDialog,
+      okCallback,
+      subscriptionCallback,
+      rejectCallback
+    } = parseDisplayArgs(displayArgs);
+
+    if (showBellIcon || showBox && boxType === 'new') {
+      const enablePushParams = {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        logger,
+        request,
+        account,
+        fcmPublicKey
+      };
+      enablePush(enablePushParams);
+    }
+
+    if (showBox && boxType === 'old') {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setupWebPush(displayArgs);
+    }
+
+    StorageManager.saveToLSorCookie('notificationPushCalled', false);
+    StorageManager.saveToLSorCookie('applicationServerKeyReceived', false);
+  };
+  const parseDisplayArgs = displayArgs => {
+    if (displayArgs.length === 1 && isObject(displayArgs[0])) {
+      const {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback
+      } = displayArgs[0];
+      return {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback
+      };
+    }
+
+    return {
+      serviceWorkerPath: undefined,
+      skipDialog: displayArgs[5],
+      okCallback: undefined,
+      subscriptionCallback: undefined,
+      rejectCallback: undefined
+    };
+  };
+  const enablePush = enablePushParams => {
+    const {
+      serviceWorkerPath: customSwPath,
+      okCallback,
+      subscriptionCallback,
+      rejectCallback,
+      logger,
+      fcmPublicKey
+    } = enablePushParams;
+    let {
+      skipDialog
+    } = enablePushParams;
+
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     $ct.pushConfig = _pushConfig;
@@ -5875,16 +6029,14 @@
       swPath = customSwPath;
     }
 
-    notificationHandler = new NotificationHandler({
-      logger,
-      session: {},
-      request,
-      account
-    });
+    if (skipDialog === null) {
+      skipDialog = false;
+    } // notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
+
 
     if (skipDialog) {
       notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, null, null);
       return;
     }
 
@@ -5899,7 +6051,7 @@
       if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey);
       if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
     } else {
-      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey);
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback);
       if (showBellIcon) createBellIcon($ct.pushConfig);
     }
   };
@@ -5914,7 +6066,7 @@
     return element;
   };
 
-  const createNotificationBox = (configData, fcmPublicKey) => {
+  const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback) => {
     if (document.getElementById('pnWrapper')) return;
     const {
       boxConfig: {
@@ -5980,7 +6132,7 @@
       if ('Notification' in window && Notification !== null) {
         if (Notification.permission === 'granted') {
           notificationHandler.setApplicationServerKey(appServerKey);
-          notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+          notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, null, null);
           return;
         } else if (Notification.permission === 'denied') {
           return;
@@ -6000,7 +6152,7 @@
 
         if (!configData.isPreview) {
           StorageManager.setMetaProp('webpush_last_notif_time', now);
-          addEventListeners(wrapper);
+          addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback);
         }
       } else {
         const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
@@ -6009,7 +6161,7 @@
           document.body.appendChild(wrapper);
 
           if (!configData.isPreview) {
-            addEventListeners(wrapper);
+            addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback);
             StorageManager.setMetaProp('webpush_last_notif_time', now);
           }
         }
@@ -6074,7 +6226,7 @@
   const setServerKey = serverKey => {
     appServerKey = serverKey;
   };
-  const addEventListeners = wrapper => {
+  const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback) => {
     const primaryButton = wrapper.querySelector('#primaryButton');
     const secondaryButton = wrapper.querySelector('#secondaryButton');
 
@@ -6087,20 +6239,28 @@
     primaryButton.addEventListener('click', () => {
       removeWrapper();
       notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, null, null);
+
+      if (typeof okCallback === 'function') {
+        okCallback();
+      }
     });
     secondaryButton.addEventListener('click', () => {
       removeWrapper();
+
+      if (typeof rejectCallback === 'function') {
+        rejectCallback();
+      }
     });
   };
-  const addBellEventListeners = bellWrapper => {
+  const addBellEventListeners = (bellWrapper, subscriptionCallback) => {
     const bellIcon = bellWrapper.querySelector('#bell_icon');
     bellIcon.addEventListener('click', () => {
       if (Notification.permission === 'denied') {
         toggleGifModal(bellWrapper);
       } else {
         notificationHandler.setApplicationServerKey(appServerKey);
-        notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+        notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, null, null);
 
         if (Notification.permission === 'granted') {
           bellWrapper.remove();
@@ -8994,6 +9154,18 @@
         setServerKey(applicationServerKey);
 
         this.notifications._enableWebPush(enabled, applicationServerKey);
+
+        try {
+          StorageManager.saveToLSorCookie('applicationServerKeyReceived', true);
+          const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
+          const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled');
+
+          if (isWebPushConfigPresent && isNotificationPushCalled) {
+            processSoftPrompt();
+          }
+        } catch (error) {
+          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Could not read value from local storage', error);
+        }
       };
 
       api.tr = msg => {
