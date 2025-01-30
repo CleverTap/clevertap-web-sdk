@@ -10,6 +10,7 @@ export const KCOOKIE_NAME = 'WZRK_K'
 export const CAMP_COOKIE_NAME = 'WZRK_CAMP'
 export const CAMP_COOKIE_G = 'WZRK_CAMP_G'// cookie for storing campaign details against guid
 export const SCOOKIE_PREFIX = 'WZRK_S'
+export const ENCRYPTION_KEY = 'WZRK_E'
 export const SCOOKIE_EXP_TIME_IN_SECS = 60 * 20 // 20 mins
 export const EV_COOKIE = 'WZRK_EV'
 export const META_COOKIE = 'WZRK_META'
@@ -67,4 +68,10 @@ export const SYSTEM_EVENTS = [
   'Notification Sent',
   NOTIFICATION_VIEWED,
   NOTIFICATION_CLICKED
+]
+
+export const KEYS_TO_ENCRYPT = [
+  KCOOKIE_NAME,
+  LRU_CACHE,
+  PR_COOKIE
 ]

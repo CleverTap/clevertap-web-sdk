@@ -29,7 +29,8 @@ import {
   COMMAND_DELETE,
   EVT_PUSH,
   WZRK_FETCH,
-  WEBINBOX_CONFIG
+  WEBINBOX_CONFIG,
+  ENCRYPTION_KEY
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -43,6 +44,7 @@ import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
 import { checkBuilder, addAntiFlicker } from './modules/visualBuilder/pageBuilder'
 import { setServerKey } from './modules/webPushPrompt/prompt'
+import encryption from './modules/security/Encryption'
 
 export default class CleverTap {
   #logger
@@ -92,6 +94,8 @@ export default class CleverTap {
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
+    console.log(clevertap.account?.[0].id)
+    encryption.key = clevertap.account?.[0].id
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
@@ -160,6 +164,10 @@ export default class CleverTap {
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
     })
+
+    encryption.logger = this.#logger
+    // to maintain non null values
+    StorageManager.save(ENCRYPTION_KEY, false)
 
     this.session = {
       getTimeElapsed: () => {
@@ -475,6 +483,14 @@ export default class CleverTap {
       this.profile._handleMultiValueDelete(key, COMMAND_DELETE)
     }
 
+    this.encryptLocalStorage = (value) => {
+      encryption.encryptLocalStorage = value
+    }
+
+    this.isLocalStorageEncrypted = () => {
+      return encryption.encryptLocalStorage
+    }
+
     const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
       handleEmailSubscription(subscription, reEncoded, fetchGroups, this.#account, this.#logger)
     }
@@ -624,6 +640,10 @@ export default class CleverTap {
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
+    }
+
+    if (accountId) {
+      encryption.key = accountId
     }
 
     StorageManager.removeCookie('WZRK_P', window.location.hostname)
