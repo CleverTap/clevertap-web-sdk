@@ -614,6 +614,7 @@ export default class CleverTap {
       // The accountId is present so can init with empty values.
       // Needed to maintain backward compatability with legacy implementations.
       // Npm imports/require will need to call init explictly with accountId
+      localStorage.setItem('WZRK_ACCOUNT_ID', clevertap.account?.[0].id)
       this.init()
     }
   }
@@ -635,6 +636,7 @@ export default class CleverTap {
         return
       }
       this.#account.id = accountId
+      localStorage.setItem('WZRK_ACCOUNT_ID', accountId)
     }
     checkBuilder(this.#logger, this.#account.id)
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id

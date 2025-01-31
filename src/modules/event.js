@@ -19,8 +19,12 @@ export default class EventHandler extends Array {
   }
 
   push (...eventsArr) {
-    this.#processEventArray(eventsArr)
-    return 0
+    if (localStorage.getItem('WZRK_ACCOUNT_ID')) {
+      this.#processEventArray(eventsArr)
+      return 0
+    } else {
+      this.#logger.error('Account ID is not set')
+    }
   }
 
   _processOldValues () {
