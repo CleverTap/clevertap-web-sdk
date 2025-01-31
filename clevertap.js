@@ -5403,13 +5403,17 @@
     }
 
     push() {
-      for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
-        displayArgs[_key] = arguments[_key];
+      if (localStorage.getItem('WZRK_ACCOUNT_ID')) {
+        for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
+          displayArgs[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+
+        return 0;
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Account ID is not set');
       }
-
-      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
-
-      return 0;
     }
 
     enable() {
@@ -9161,7 +9165,7 @@
         // The accountId is present so can init with empty values.
         // Needed to maintain backward compatability with legacy implementations.
         // Npm imports/require will need to call init explictly with accountId
-        localStorage.setItem("WZRK_ACCOUNT_ID", (_clevertap$account6 = clevertap.account) === null || _clevertap$account6 === void 0 ? void 0 : _clevertap$account6[0].id);
+        localStorage.setItem('WZRK_ACCOUNT_ID', (_clevertap$account6 = clevertap.account) === null || _clevertap$account6 === void 0 ? void 0 : _clevertap$account6[0].id);
         this.init();
       }
     } // starts here
@@ -9189,7 +9193,7 @@
         }
 
         _classPrivateFieldLooseBase(this, _account$6)[_account$6].id = accountId;
-        localStorage.setItem("WZRK_ACCOUNT_ID", accountId);
+        localStorage.setItem('WZRK_ACCOUNT_ID', accountId);
       }
 
       checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);

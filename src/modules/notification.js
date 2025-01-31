@@ -35,8 +35,12 @@ export default class NotificationHandler extends Array {
   }
 
   push (...displayArgs) {
-    this.#setUpWebPush(displayArgs)
-    return 0
+    if (localStorage.getItem('WZRK_ACCOUNT_ID')) {
+      this.#setUpWebPush(displayArgs)
+      return 0
+    } else {
+      this.#logger.error('Account ID is not set')
+    }
   }
 
   enable (options = {}) {
