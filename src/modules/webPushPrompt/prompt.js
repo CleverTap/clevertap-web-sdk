@@ -38,7 +38,7 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
     updatePushConfig()
     try {
       StorageManager.saveToLSorCookie('webPushConfigResponseReceived', true)
-      const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled')
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie('isNotificationPushCallDeferred')
       if (isNotificationPushCalled) {
         processSoftPrompt()
       }
@@ -62,15 +62,18 @@ export const processSoftPrompt = () => {
   const { showBox, showBellIcon, boxType } = webPushConfig
 
   const { serviceWorkerPath, skipDialog, okCallback, subscriptionCallback, rejectCallback } = parseDisplayArgs(displayArgs)
-  if (showBellIcon || (showBox && boxType === 'new')) {
+  const isSoftPromptNew = showBellIcon || (showBox && boxType === 'new')
+
+  if (isSoftPromptNew) {
     const enablePushParams = { serviceWorkerPath, skipDialog, okCallback, subscriptionCallback, rejectCallback, logger, request, account, fcmPublicKey }
     enablePush(enablePushParams)
   }
+
   if (showBox && boxType === 'old') {
     notificationHandler.setApplicationServerKey(appServerKey)
     notificationHandler.setupWebPush(displayArgs)
   }
-  StorageManager.saveToLSorCookie('notificationPushCalled', false)
+  StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', false)
   StorageManager.saveToLSorCookie('applicationServerKeyReceived', false)
 }
 

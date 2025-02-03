@@ -36,23 +36,23 @@ export default class NotificationHandler extends Array {
   }
 
   setupWebPush (displayArgs) {
-  /*
-    A method in notification.js which can be accessed in prompt.js file to call the
-    private method this.#setUpWebPush
-  */
+    /*
+      A method in notification.js which can be accessed in prompt.js file to call the
+      private method this.#setUpWebPush
+    */
     this.#setUpWebPush(displayArgs)
   }
 
   push (...displayArgs) {
-  /*
-    To handle a potential race condition, two flags are stored in Local Storage:
-    - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
-    - `notificationPushCalled`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+    /*
+      To handle a potential race condition, two flags are stored in Local Storage:
+      - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
+      - `isNotificationPushCallDeferred`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
 
-    This ensures the soft prompt is rendered correctly:
-    - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
-    - Otherwise, `notificationPushCalled` is set to true, and the rendering is deferred until the webPushConfig is received.
-  */
+      This ensures the soft prompt is rendered correctly:
+      - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
+      - Otherwise, `isNotificationPushCallDeferred` is set to true, and the rendering is deferred until the webPushConfig is received.
+    */
     const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
     const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie('applicationServerKeyReceived')
     setNotificationHandlerValues({
@@ -65,7 +65,7 @@ export default class NotificationHandler extends Array {
     if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
       processSoftPrompt()
     } else {
-      StorageManager.saveToLSorCookie('notificationPushCalled', true)
+      StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', true)
     }
   }
 

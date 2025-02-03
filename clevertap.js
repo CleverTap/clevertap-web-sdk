@@ -5334,7 +5334,7 @@
     }
 
     setupWebPush(displayArgs) {
-      /* 
+      /*
         A method in notification.js which can be accessed in prompt.js file to call the
         private method this.#setUpWebPush
       */
@@ -5345,10 +5345,10 @@
       /*
         To handle a potential race condition, two flags are stored in Local Storage:
         - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
-        - `notificationPushCalled`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
-         This ensures the soft prompt is rendered correctly:
+        - `isNotificationPushCallDeferred`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+           This ensures the soft prompt is rendered correctly:
         - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
-        - Otherwise, `notificationPushCalled` is set to true, and the rendering is deferred until the webPushConfig is received.
+        - Otherwise, `isNotificationPushCallDeferred` is set to true, and the rendering is deferred until the webPushConfig is received.
       */
       const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
       const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie('applicationServerKeyReceived');
@@ -5368,7 +5368,7 @@
       if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
         processSoftPrompt();
       } else {
-        StorageManager.saveToLSorCookie('notificationPushCalled', true);
+        StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', true);
       }
     }
 
@@ -5914,7 +5914,7 @@
 
       try {
         StorageManager.saveToLSorCookie('webPushConfigResponseReceived', true);
-        const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled');
+        const isNotificationPushCalled = StorageManager.readFromLSorCookie('isNotificationPushCallDeferred');
 
         if (isNotificationPushCalled) {
           processSoftPrompt();
@@ -5953,8 +5953,9 @@
       subscriptionCallback,
       rejectCallback
     } = parseDisplayArgs(displayArgs);
+    const isSoftPromptNew = showBellIcon || showBox && boxType === 'new';
 
-    if (showBellIcon || showBox && boxType === 'new') {
+    if (isSoftPromptNew) {
       const enablePushParams = {
         serviceWorkerPath,
         skipDialog,
@@ -5974,7 +5975,7 @@
       notificationHandler.setupWebPush(displayArgs);
     }
 
-    StorageManager.saveToLSorCookie('notificationPushCalled', false);
+    StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', false);
     StorageManager.saveToLSorCookie('applicationServerKeyReceived', false);
   };
   const parseDisplayArgs = displayArgs => {
@@ -9158,7 +9159,7 @@
         try {
           StorageManager.saveToLSorCookie('applicationServerKeyReceived', true);
           const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
-          const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled');
+          const isNotificationPushCalled = StorageManager.readFromLSorCookie('isNotificationPushCallDeferred');
 
           if (isWebPushConfigPresent && isNotificationPushCalled) {
             processSoftPrompt();

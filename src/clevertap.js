@@ -552,7 +552,7 @@ export default class CleverTap {
       try {
         StorageManager.saveToLSorCookie('applicationServerKeyReceived', true)
         const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
-        const isNotificationPushCalled = StorageManager.readFromLSorCookie('notificationPushCalled')
+        const isNotificationPushCalled = StorageManager.readFromLSorCookie('isNotificationPushCallDeferred')
         if (isWebPushConfigPresent && isNotificationPushCalled) {
           processSoftPrompt()
         }
