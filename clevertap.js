@@ -2394,13 +2394,17 @@
     }
 
     push() {
-      for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
-        profilesArr[_key] = arguments[_key];
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          profilesArr[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](profilesArr);
+
+        return 0;
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error('Account ID is not set');
       }
-
-      _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](profilesArr);
-
-      return 0;
     }
 
     _processOldValues() {
@@ -7900,7 +7904,8 @@
       _classPrivateFieldLooseBase(this, _request$5)[_request$5] = request;
       _classPrivateFieldLooseBase(this, _account$4)[_account$4] = account;
       _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = values;
-    }
+    } // TODO : Do we need to check if account id is set or not here?
+
 
     push() {
       for (var _len = arguments.length, privacyArr = new Array(_len), _key = 0; _key < _len; _key++) {
