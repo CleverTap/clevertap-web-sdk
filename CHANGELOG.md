@@ -1,13 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.12.2] 4th Feb, 2025
-- Support for ChangeL Log in Visual Builder
-- Support for insert elements in Visual Builder
-
 ## [1.12.1] 28th Jan, 2025
 - Added WebNative Custom Html and Json templates Support
 - Fixed duplicate session issue for extremely slow networks
+- Support for ChangeL Log in Visual Builder
+- Support for insert elements in Visual Builder
 
 ## [1.12.0] 27th Jan, 2025
 - Added Support for Vapid Web Push for Safari Mac
