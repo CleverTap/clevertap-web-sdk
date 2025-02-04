@@ -370,6 +370,10 @@ export default class NotificationHandler extends Array {
         return
       }
 
+      if (isSafari() && this.#fcmPublicKey !== null) {
+        StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
+      }
+
       if (skipDialog) {
         this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
         return

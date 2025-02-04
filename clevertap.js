@@ -5890,6 +5890,10 @@
         return;
       }
 
+      if (isSafari() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
+        StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
+      }
+
       if (skipDialog) {
         this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
         return;
@@ -7824,6 +7828,7 @@
 
         window.oulReqN = $ct.globalCache.REQ_N;
         RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
+        StorageManager.removeBackup($ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
       } else {
         _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
       }
