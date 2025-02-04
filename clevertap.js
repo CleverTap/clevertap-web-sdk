@@ -4320,56 +4320,59 @@
   const updateFormData = function (element, formStyle, payload) {
     let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
-    // Update the element style
-    if (formStyle.style !== undefined) {
-      Object.keys(formStyle.style).forEach(property => {
-        element.style.setProperty(property, formStyle.style[property]);
-      });
-    } // Update underline for element
+    if (formStyle !== undefined) {
+      // Update the element style
+      if (formStyle.style !== undefined) {
+        Object.keys(formStyle.style).forEach(property => {
+          element.style.setProperty(property, formStyle.style[property]);
+        });
+      } // Update underline for element
 
 
-    if (formStyle.underline !== undefined) {
-      const curTextDecoration = element.style.textDecoration;
+      if (formStyle.underline !== undefined) {
+        const curTextDecoration = element.style.textDecoration;
 
-      if (formStyle.underline) {
-        element.style.textDecoration = "".concat(curTextDecoration, " underline").trim();
-      } else {
-        element.style.textDecoration = curTextDecoration.replace('underline', '').trim();
+        if (formStyle.underline) {
+          element.style.textDecoration = "".concat(curTextDecoration, " underline").trim();
+        } else {
+          element.style.textDecoration = curTextDecoration.replace('underline', '').trim();
+        }
+      } // Update element text
+
+
+      if (formStyle.text !== undefined) {
+        element.innerText = isPreview ? formStyle.text.text : formStyle.text;
+      } // Handle element onClick
+
+
+      if (formStyle.clickDetails !== undefined) {
+        const url = formStyle.clickDetails.clickUrl;
+        element.onclick = formStyle.clickDetails.newTab ? () => {
+          if (!isPreview) {
+            window.clevertap.raiseNotificationClicked(payload);
+          }
+
+          window.open(url, '_blank').focus();
+        } : () => {
+          if (!isPreview) {
+            window.clevertap.raiseNotificationClicked(payload);
+          }
+
+          window.location.href = url;
+        };
+      } // Set the image source
+
+
+      if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
+        element.src = formStyle.imgURL;
       }
-    } // Update element text
-
-
-    if (formStyle.text !== undefined) {
-      element.innerText = isPreview ? formStyle.text.text : formStyle.text;
-    } // Handle element onClick
-
-
-    if (formStyle.clickDetails !== undefined) {
-      const url = formStyle.clickDetails.clickUrl;
-      element.onclick = formStyle.clickDetails.newTab ? () => {
-        if (!isPreview) {
-          window.clevertap.raiseNotificationClicked(payload);
-        }
-
-        window.open(url, '_blank').focus();
-      } : () => {
-        if (!isPreview) {
-          window.clevertap.raiseNotificationClicked(payload);
-        }
-
-        window.location.href = url;
-      };
-    } // Set the image source
-
-
-    if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
-      element.src = formStyle.imgURL;
-    } // Handle elementCss
-
-
-    if (formStyle.elementCss !== undefined) {
+    }
+  };
+  const updateElementCSS = element => {
+    // Handle elementCss
+    if (element.elementCSS !== undefined) {
       const style = document.createElement('style');
-      style.innerHTML = formStyle.elementCss;
+      style.innerHTML = element.elementCSS;
       document.head.appendChild(style);
     }
   };
@@ -4406,7 +4409,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.12.1';
+        const sdkVersion = '1.12.2';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -4551,6 +4554,7 @@
 
 
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+    const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let notificationViewed = false;
     const payload = {
@@ -4565,31 +4569,63 @@
       }
     };
 
+    const raiseClicked = payload => {
+      window.clevertap.renderNotificationClicked(payload);
+    };
+
     const processElement = (element, selector) => {
-      var _selector$values;
+      var _selector$isTrackingC;
 
-      if (!selector.values) return;
+      if (selector.elementCSS) {
+        updateElementCSS(selector);
+      }
 
-      if (selector.values.html) {
-        if (isPreview) {
-          element.outerHTML = selector.values.html.text;
-        } else {
-          element.outerHTML = selector.values.html;
+      if ((_selector$isTrackingC = selector.isTrackingClicks) === null || _selector$isTrackingC === void 0 ? void 0 : _selector$isTrackingC.name) {
+        element.addEventListener('click', () => {
+          const clickedPayload = {
+            msgId: targetingMsgJson.wzrk_id,
+            pivotId: targetingMsgJson.wzrk_pivot,
+            msgCTkv: {
+              wzrk_selector: selector.isTrackingClicks.name
+            }
+          };
+          raiseClicked(clickedPayload);
+        });
+      }
+
+      if (selector.values) {
+        switch (selector.values.editor) {
+          case 'html':
+            if (isPreview) {
+              element.outerHTML = selector.values.html.text;
+            } else {
+              element.outerHTML = selector.values.html;
+            }
+
+            break;
+
+          case 'json':
+            dispatchJsonData(targetingMsgJson, selector.values, isPreview);
+            break;
+
+          case 'form':
+            payload.msgCTkv = {
+              wzrk_selector: selector.selector
+            };
+            updateFormData(element, selector.values.form, payload, isPreview);
+            break;
         }
-      } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
-        dispatchJsonData(targetingMsgJson, selector.values, isPreview);
-      } else {
-        payload.msgCTkv = {
-          wzrk_selector: selector.selector
-        };
-        updateFormData(element, selector.values.form, payload, isPreview);
       }
     };
 
     const tryFindingElement = selector => {
       let count = 0;
       const intervalId = setInterval(() => {
-        const retryElement = document.querySelector(selector.selector);
+        let retryElement;
+
+        try {
+          retryElement = document.querySelector(selector.selector);
+        } catch (_) {}
 
         if (retryElement) {
           raiseViewed();
@@ -4605,24 +4641,97 @@
     details.forEach(d => {
       if (d.url === window.location.href.split('?')[0]) {
         d.selectorData.forEach(s => {
-          const element = document.querySelector(s.selector);
-
-          if (element) {
-            raiseViewed();
-            processElement(element, s);
+          if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
+            insertedElements.push(s);
           } else {
-            tryFindingElement(s);
+            let element;
+
+            try {
+              element = document.querySelector(s.selector);
+            } catch (_) {}
+
+            if (element) {
+              raiseViewed();
+              processElement(element, s);
+            } else {
+              tryFindingElement(s);
+            }
           }
         });
       }
     });
+
+    const addNewEl = selector => {
+      const {
+        pos,
+        sibling
+      } = findSiblingSelector(selector.selector);
+      let count = 0;
+      const intervalId = setInterval(() => {
+        let element = null;
+
+        try {
+          const siblingEl = document.querySelector(sibling);
+          const ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+          element = ctEl || siblingEl;
+        } catch (_) {
+          element = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+        }
+
+        if (element) {
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = selector.values.initialHtml;
+          const newElement = tempDiv.firstElementChild;
+          element.insertAdjacentElement(pos, newElement);
+
+          if (!element.getAttribute('ct-selector')) {
+            element.setAttribute('ct-selector', sibling);
+          }
+
+          const insertedElement = document.querySelector("[ct-selector=\"".concat(selector.selector, "\"]"));
+          raiseViewed();
+          processElement(insertedElement, selector);
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          console.log("No element present on DOM with selector '".concat(sibling, "'."));
+          clearInterval(intervalId);
+        }
+      }, 500);
+    };
+
+    if (insertedElements.length > 0) {
+      const sortedArr = insertedElements.sort((a, b) => {
+        const numA = parseInt(a.selector.split('-')[0], 10);
+        const numB = parseInt(b.selector.split('-')[0], 10);
+        return numA - numB;
+      });
+      sortedArr.forEach(addNewEl);
+    }
   };
+
+  function findSiblingSelector(input) {
+    const regex = /^(\d+)-(afterend|beforebegin)-(.+)$/;
+    const match = input.match(regex);
+
+    if (match) {
+      return {
+        pos: match[2],
+        sibling: match[3]
+      };
+    }
+
+    return {
+      pos: 'beforebegin',
+      sibling: ''
+    };
+  }
   /**
    * Dispatches JSON data.
    * @param {Object} targetingMsgJson - The point and click campaign JSON object.
    * @param {Object} selector - The selector object.
    * @param {boolean} isPreview - If preview different handling
    */
+
 
   function dispatchJsonData(targetingMsgJson, selector) {
     let isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
@@ -7646,7 +7755,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.12.1',
+        lib: 'web-sdk-v1.12.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9370,7 +9479,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.12.1';
+      return 'web-sdk-v1.12.2';
     }
 
     defineVariable(name, defaultValue) {
