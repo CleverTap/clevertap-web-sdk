@@ -59,6 +59,7 @@ export const WZRK_FETCH = 'wzrk_fetch'
 export const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG'
 export const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown'
 export const NOTIF_LAST_TIME = 'notif_last_time'
+export const TIMER_FOR_NOTIF_BADGE_UPDATE = 300
 
 export const SYSTEM_EVENTS = [
   'Stayed',

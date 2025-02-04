@@ -341,18 +341,15 @@ export default class NotificationHandler extends Array {
       return
     }
 
-    // right now, we only support Chrome V50 & higher & Firefox
-    if (isChrome()) {
-      const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/)
-      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) { return }
-    } else if (isFirefox()) {
-      const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/)
-      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) { return }
-    } else if (isSafari()) {
-      const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/)
-      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) { return }
-    } else {
-      return
+    /*
+       If it is chrome or firefox and the nativeWebPush is not supported then return
+       For Safari the APNs route is open if nativeWebPush is not supported
+    */
+    if (isChrome() || isFirefox()) {
+      if (!this.#isNativeWebPushSupported()) {
+        this.#logger.error('Web Push Notification is not supported on this browser')
+        return
+      }
     }
 
     // we check for the cookie in setUpChromeNotifications() the tokens may have changed

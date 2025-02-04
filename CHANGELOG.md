@@ -1,10 +1,17 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.12.0] 22nd Jan, 2025
+## [1.12.1] 28th Jan, 2025
+- Added WebNative Custom Html and Json templates Support
+- Fixed duplicate session issue for extremely slow networks
+
+## [1.12.0] 27th Jan, 2025
 - Added Support for Vapid Web Push for Safari Mac
 - Added Support for Web Push on Safari IOS 
 - Fixed Browser Identification methods
+- Fixed mobile issue marking all messages as read; added sticky header to web inbox.
+- Improved PWA route detection for browser back/forward buttons.
+- Optimized badge updates in SPA with delayed DOM checks on route changes.
 
 ## [1.11.16] 20nd Jan, 2025
 - Fixed Web Inbox Notification for SPA route changes

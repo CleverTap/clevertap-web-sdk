@@ -209,6 +209,7 @@
   const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
   const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
   const NOTIF_LAST_TIME = 'notif_last_time';
+  const TIMER_FOR_NOTIF_BADGE_UPDATE = 300;
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -3417,7 +3418,7 @@
       selectedCategoryBorderColor,
       headerCategoryHeight
     } = _ref2;
-    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n        }\n\n        @media only screen and (min-width: 480px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
+    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, ";\n          position: sticky;\n          top: 0;\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n          z-index: -1;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n          height: 100%;\n          overflow: scroll;\n        }\n\n        @media only screen and (min-width: 480px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
   };
 
   class Inbox extends HTMLElement {
@@ -4408,7 +4409,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.12.0';
+        const sdkVersion = '1.12.1';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -5150,6 +5151,71 @@
     });
     document.dispatchEvent(kvPairsEvent);
   };
+  const renderCustomHtml = (targetingMsgJson, logger) => {
+    const {
+      display,
+      wzrk_id: wzrkId,
+      wzrk_pivot: wzrkPivot
+    } = targetingMsgJson || {};
+    const divId = display.divId || {};
+    const details = display.details[0];
+    const html = details.html;
+
+    if (!divId || !html) {
+      logger.error('No div Id or no html found');
+      return;
+    }
+
+    let notificationViewed = false;
+    const payload = {
+      msgId: wzrkId,
+      pivotId: wzrkPivot
+    };
+
+    const raiseViewed = () => {
+      if (!notificationViewed) {
+        notificationViewed = true;
+        window.clevertap.renderNotificationViewed(payload);
+      }
+    };
+
+    const tryFindingElement = divId => {
+      let count = 0;
+      const intervalId = setInterval(() => {
+        const retryElement = document.querySelector(divId);
+
+        if (retryElement) {
+          raiseViewed();
+          retryElement.outerHTML = html;
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          logger.log("No element present on DOM with divId '".concat(divId, "'."));
+          clearInterval(intervalId);
+        }
+      }, 500);
+    };
+
+    tryFindingElement(divId);
+  };
+  const handleJson = targetingMsgJson => {
+    const inaObj = {};
+    inaObj.msgId = targetingMsgJson.wzrk_id;
+    const details = targetingMsgJson.display.details[0];
+    const json = details.json;
+
+    if (targetingMsgJson.wzrk_pivot) {
+      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+    }
+
+    if (targetingMsgJson.display.json != null) {
+      inaObj.json = json;
+    }
+
+    const jsonEvent = new CustomEvent('CT_web_native_display_json', {
+      detail: inaObj
+    });
+    document.dispatchEvent(jsonEvent);
+  };
 
   const invokeExternalJs = (jsFunc, targetingMsgJson) => {
     const func = window.parent[jsFunc];
@@ -5789,29 +5855,19 @@
       _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure you are https or localhost to register for notifications');
 
       return;
-    } // right now, we only support Chrome V50 & higher & Firefox
+    }
+    /*
+       If it is chrome or firefox and the nativeWebPush is not supported then return
+       For Safari the APNs route is open if nativeWebPush is not supported
+    */
 
 
-    if (isChrome()) {
-      const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/);
+    if (isChrome() || isFirefox()) {
+      if (!_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]()) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Web Push Notification is not supported on this browser');
 
-      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) {
         return;
       }
-    } else if (isFirefox()) {
-      const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/);
-
-      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) {
-        return;
-      }
-    } else if (isSafari()) {
-      const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/);
-
-      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) {
-        return;
-      }
-    } else {
-      return;
     } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
 
@@ -7203,6 +7259,10 @@
             }
           } else if (targetNotif.msgContent.type === 4) {
             renderVisualBuilder(targetNotif, false);
+          } else if (targetNotif.msgContent.type === 5) {
+            renderCustomHtml(targetNotif, _logger);
+          } else if (targetNotif.msgContent.type === 6) {
+            handleJson(targetNotif);
           } else {
             showFooterNotification(targetNotif);
           }
@@ -7649,6 +7709,14 @@
             _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('Processing backup event : ' + backupEvent.q);
 
             if (typeof backupEvent.q !== 'undefined') {
+              /* For extremely slow networks we often recreate the session from the SE hence appending
+              the session to the request */
+              const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
+
+              if (session === null || session === void 0 ? void 0 : session.s) {
+                backupEvent.q = backupEvent.q + '&s=' + session.s;
+              }
+
               RequestDispatcher.fireRequest(backupEvent.q);
             }
 
@@ -7687,7 +7755,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.12.0',
+        lib: 'web-sdk-v1.12.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -8443,6 +8511,8 @@
 
   var _dismissSpamControl = _classPrivateFieldLooseKey("dismissSpamControl");
 
+  var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _debounce = _classPrivateFieldLooseKey("debounce");
@@ -8566,6 +8636,10 @@
         value: void 0
       });
       this.enablePersonalization = void 0;
+      Object.defineProperty(this, _pageChangeTimeoutId, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
@@ -9261,6 +9335,9 @@
       if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa]) {
         // listen to click on the document and check if URL has changed.
         document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+        /* Listen for the Back and Forward buttons */
+
+        window.addEventListener('popstate', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
       } else {
         // remove existing click listeners if any
         document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
@@ -9402,7 +9479,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.12.0';
+      return 'web-sdk-v1.12.1';
     }
 
     defineVariable(name, defaultValue) {
@@ -9468,25 +9545,50 @@
 
   var _updateUnviewedBadgePosition2 = function _updateUnviewedBadgePosition2() {
     try {
-      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-      const inboxNode = document.getElementById(config.inboxSelector);
+      if (_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]) {
+        clearTimeout(_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]);
+      }
+
       const unViewedBadge = document.getElementById('unviewedBadge');
 
-      if (!inboxNode) {
-        unViewedBadge.style.display = 'none';
-      } else {
-        const {
-          top,
-          right
-        } = inboxNode.getBoundingClientRect();
+      if (!unViewedBadge) {
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('unViewedBadge not found');
 
-        if (Number(unViewedBadge.innerText) > 0) {
-          unViewedBadge.style.display = 'flex';
+        return;
+      }
+      /* Reset to None */
+
+
+      unViewedBadge.style.display = 'none';
+      /* Set Timeout to let the page load and then update the position and display the badge */
+
+      _classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId] = setTimeout(() => {
+        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+        const inboxNode = document.getElementById(config === null || config === void 0 ? void 0 : config.inboxSelector);
+        /* Creating a Local Variable to avoid reference to stale DOM Node */
+
+        const unViewedBadge = document.getElementById('unviewedBadge');
+
+        if (!unViewedBadge) {
+          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('unViewedBadge not found');
+
+          return;
         }
 
-        unViewedBadge.style.top = "".concat(top - 8, "px");
-        unViewedBadge.style.left = "".concat(right - 8, "px");
-      }
+        if (inboxNode) {
+          const {
+            top,
+            right
+          } = inboxNode.getBoundingClientRect();
+
+          if (Number(unViewedBadge.innerText) > 0) {
+            unViewedBadge.style.display = 'flex';
+          }
+
+          unViewedBadge.style.top = "".concat(top - 8, "px");
+          unViewedBadge.style.left = "".concat(right - 8, "px");
+        }
+      }, TIMER_FOR_NOTIF_BADGE_UPDATE);
     } catch (error) {
       _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('Error updating unviewed badge position:', error);
     }
