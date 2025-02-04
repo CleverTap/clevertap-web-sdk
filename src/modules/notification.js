@@ -5,7 +5,8 @@ import {
   VAPID_MIGRATION_PROMPT_SHOWN,
   NOTIF_LAST_TIME,
   ACCOUNT_ID,
-  POPUP_LOADING
+  POPUP_LOADING,
+  OLD_SOFT_PROMPT_SELCTOR_ID
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
@@ -433,7 +434,7 @@ export default class NotificationHandler extends Array {
           }
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
-              if (StorageManager.readFromLSorCookie(POPUP_LOADING)) {
+              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
                 this.#logger.debug('Soft prompt wrapper is already loading or loaded')
                 return
               }
@@ -468,7 +469,7 @@ export default class NotificationHandler extends Array {
         }
       }, false)
     } else {
-      if (StorageManager.readFromLSorCookie(POPUP_LOADING)) {
+      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
         this.#logger.debug('Soft prompt wrapper is already loading or loaded')
         return
       }

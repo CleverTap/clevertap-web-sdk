@@ -211,6 +211,7 @@
   const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
   const NOTIF_LAST_TIME = 'notif_last_time';
   const TIMER_FOR_NOTIF_BADGE_UPDATE = 300;
+  const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
@@ -5859,7 +5860,7 @@
 
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
-              if (StorageManager.readFromLSorCookie(POPUP_LOADING)) {
+              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
                 _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
 
                 return;
@@ -5899,7 +5900,7 @@
         }
       }, false);
     } else {
-      if (StorageManager.readFromLSorCookie(POPUP_LOADING)) {
+      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
 
         return;
