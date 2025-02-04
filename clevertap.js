@@ -5346,7 +5346,7 @@
         To handle a potential race condition, two flags are stored in Local Storage:
         - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
         - `isNotificationPushCallDeferred`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
-           This ensures the soft prompt is rendered correctly:
+         This ensures the soft prompt is rendered correctly:
         - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
         - Otherwise, `isNotificationPushCallDeferred` is set to true, and the rendering is deferred until the webPushConfig is received.
       */
@@ -5951,7 +5951,9 @@
       skipDialog,
       okCallback,
       subscriptionCallback,
-      rejectCallback
+      rejectCallback,
+      apnsWebPushId,
+      apnsWebPushServiceUrl
     } = parseDisplayArgs(displayArgs);
     const isSoftPromptNew = showBellIcon || showBox && boxType === 'new';
 
@@ -5965,7 +5967,9 @@
         logger,
         request,
         account,
-        fcmPublicKey
+        fcmPublicKey,
+        apnsWebPushId,
+        apnsWebPushServiceUrl
       };
       enablePush(enablePushParams);
     }
@@ -5985,14 +5989,18 @@
         skipDialog,
         okCallback,
         subscriptionCallback,
-        rejectCallback
+        rejectCallback,
+        apnsWebPushServiceUrl,
+        apnsWebPushId
       } = displayArgs[0];
       return {
         serviceWorkerPath,
         skipDialog,
         okCallback,
         subscriptionCallback,
-        rejectCallback
+        rejectCallback,
+        apnsWebPushServiceUrl,
+        apnsWebPushId
       };
     }
 
@@ -6001,7 +6009,9 @@
       skipDialog: displayArgs[5],
       okCallback: undefined,
       subscriptionCallback: undefined,
-      rejectCallback: undefined
+      rejectCallback: undefined,
+      apnsWebPushServiceUrl: undefined,
+      apnsWebPushId: undefined
     };
   };
   const enablePush = enablePushParams => {
@@ -6011,7 +6021,9 @@
       subscriptionCallback,
       rejectCallback,
       logger,
-      fcmPublicKey
+      fcmPublicKey,
+      apnsWebPushId,
+      apnsWebPushServiceUrl
     } = enablePushParams;
     let {
       skipDialog
@@ -6037,7 +6049,7 @@
 
     if (skipDialog) {
       notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, null, null);
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
       return;
     }
 
@@ -6052,8 +6064,8 @@
       if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey);
       if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
     } else {
-      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback);
-      if (showBellIcon) createBellIcon($ct.pushConfig);
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+      if (showBellIcon) createBellIcon($ct.pushConfig, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
     }
   };
 
@@ -6067,7 +6079,7 @@
     return element;
   };
 
-  const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback) => {
+  const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     if (document.getElementById('pnWrapper')) return;
     const {
       boxConfig: {
@@ -6133,7 +6145,7 @@
       if ('Notification' in window && Notification !== null) {
         if (Notification.permission === 'granted') {
           notificationHandler.setApplicationServerKey(appServerKey);
-          notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, null, null);
+          notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
           return;
         } else if (Notification.permission === 'denied') {
           return;
@@ -6153,7 +6165,7 @@
 
         if (!configData.isPreview) {
           StorageManager.setMetaProp('webpush_last_notif_time', now);
-          addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback);
+          addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
         }
       } else {
         const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
@@ -6162,14 +6174,14 @@
           document.body.appendChild(wrapper);
 
           if (!configData.isPreview) {
-            addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback);
+            addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
             StorageManager.setMetaProp('webpush_last_notif_time', now);
           }
         }
       }
     }
   };
-  const createBellIcon = configData => {
+  const createBellIcon = (configData, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return;
     const {
       bellIconConfig: {
@@ -6219,7 +6231,7 @@
     document.body.appendChild(bellWrapper);
 
     if (!configData.isPreview) {
-      addBellEventListeners(bellWrapper);
+      addBellEventListeners(bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
     }
 
     return bellWrapper;
@@ -6227,7 +6239,7 @@
   const setServerKey = serverKey => {
     appServerKey = serverKey;
   };
-  const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback) => {
+  const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     const primaryButton = wrapper.querySelector('#primaryButton');
     const secondaryButton = wrapper.querySelector('#secondaryButton');
 
@@ -6240,7 +6252,7 @@
     primaryButton.addEventListener('click', () => {
       removeWrapper();
       notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, null, null);
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
 
       if (typeof okCallback === 'function') {
         okCallback();
@@ -6254,14 +6266,14 @@
       }
     });
   };
-  const addBellEventListeners = (bellWrapper, subscriptionCallback) => {
+  const addBellEventListeners = (bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     const bellIcon = bellWrapper.querySelector('#bell_icon');
     bellIcon.addEventListener('click', () => {
       if (Notification.permission === 'denied') {
         toggleGifModal(bellWrapper);
       } else {
         notificationHandler.setApplicationServerKey(appServerKey);
-        notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, null, null);
+        notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
 
         if (Notification.permission === 'granted') {
           bellWrapper.remove();
