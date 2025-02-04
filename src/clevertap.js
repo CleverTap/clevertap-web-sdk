@@ -638,6 +638,7 @@ export default class CleverTap {
       }
       this.#account.id = accountId
       StorageManager.saveToLSorCookie(ACCOUNT_ID, accountId)
+      this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
     checkBuilder(this.#logger, this.#account.id)
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id

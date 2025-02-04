@@ -9219,6 +9219,8 @@
 
         _classPrivateFieldLooseBase(this, _account$6)[_account$6].id = accountId;
         StorageManager.saveToLSorCookie(ACCOUNT_ID, accountId);
+
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('CT Initialized with Account ID: ' + _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
       }
 
       checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
