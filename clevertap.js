@@ -9626,7 +9626,7 @@
             right
           } = inboxNode.getBoundingClientRect();
 
-          if (Number(unViewedBadge.innerText) > 0) {
+          if (Number(unViewedBadge.innerText) > 0 || unViewedBadge.innerText === '9+') {
             unViewedBadge.style.display = 'flex';
           }
 
