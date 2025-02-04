@@ -359,6 +359,10 @@ export default class NotificationHandler extends Array {
       }
     }
 
+    if (isSafari() && this.#fcmPublicKey !== null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
+    }
+
     // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
     if (!isHTTP) {
