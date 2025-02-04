@@ -5868,6 +5868,10 @@
 
         return;
       }
+    }
+
+    if (isSafari() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
     } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
 
@@ -5888,10 +5892,6 @@
       } else if (Notification.permission === 'denied') {
         // we've lost this profile :'(
         return;
-      }
-
-      if (isSafari() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
-        StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
       }
 
       if (skipDialog) {
@@ -7828,7 +7828,6 @@
 
         window.oulReqN = $ct.globalCache.REQ_N;
         RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
-        StorageManager.removeBackup($ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
       } else {
         _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
       }
@@ -9473,14 +9472,15 @@
       if (typeof arg !== 'boolean') {
         console.error('setOffline should be called with a value of type boolean');
         return;
-      }
+      } // Check if the offline state is changing from true to false
+      // If offline is being disabled (arg is false), process any cached events
 
-      $ct.offline = arg; // if offline is disabled
-      // process events from cache
 
-      if (!arg) {
+      if ($ct.offline !== arg && !arg) {
         _classPrivateFieldLooseBase(this, _request$7)[_request$7].processBackupEvents();
       }
+
+      $ct.offline = arg;
     }
 
     getSDKVersion() {

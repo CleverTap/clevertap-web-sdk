@@ -141,7 +141,6 @@ export default class RequestManager {
       }
       window.oulReqN = $ct.globalCache.REQ_N
       RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName)
-      StorageManager.removeBackup($ct.globalCache.REQ_N, this.#logger)
     } else {
       this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)
     }
