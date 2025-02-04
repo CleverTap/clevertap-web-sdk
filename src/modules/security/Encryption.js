@@ -1,6 +1,6 @@
 import { AES, enc } from 'crypto-js'
 import { KEYS_TO_ENCRYPT, ENCRYPTION_KEY } from '../../util/constants'
-import { StorageManager } from '../../util/storage'
+// import { StorageManager } from '../../util/storage'
 
 class Encryption {
   #key
@@ -25,7 +25,6 @@ class Encryption {
 
   set encryptLocalStorage (value) {
     this.#encryptLocalStorage = value
-    StorageManager.save(ENCRYPTION_KEY, value)
   }
 
   get encryptLocalStorage () {
@@ -36,12 +35,14 @@ class Encryption {
     return this.#encryptLocalStorage && KEYS_TO_ENCRYPT.includes(key)
   }
 
+  // For backwards compatibility, we should decrypt even if encrypt is false.
+  // This means someone switched it on and then off.
   shouldDecrypt (key) {
     // TODO: why not use StorageManager.read()?
     // because it will introduce a circular dependency since we are
     // calling this function within read() as well.
     // Possibly will think of a workaround.
-    return (JSON.parse(localStorage.getItem(ENCRYPTION_KEY)) ?? false) && KEYS_TO_ENCRYPT.includes(key)
+    return (JSON.parse(localStorage.getItem(ENCRYPTION_KEY)) ?? true) && KEYS_TO_ENCRYPT.includes(key)
   }
 
   encrypt (data) {
@@ -49,7 +50,12 @@ class Encryption {
   }
 
   decrypt (data) {
-    return AES.decrypt(data, this.key).toString(enc.Utf8)
+    const decryptedData = AES.decrypt(data, this.key).toString(enc.Utf8)
+    if (decryptedData === '') {
+      return data
+    } else {
+      return decryptedData
+    }
   }
 }
 

@@ -7071,7 +7071,6 @@
 
     set encryptLocalStorage(value) {
       _classPrivateFieldLooseBase(this, _encryptLocalStorage)[_encryptLocalStorage] = value;
-      StorageManager.save(ENCRYPTION_KEY, value);
     }
 
     get encryptLocalStorage() {
@@ -7080,7 +7079,9 @@
 
     shouldEncrypt(key) {
       return _classPrivateFieldLooseBase(this, _encryptLocalStorage)[_encryptLocalStorage] && KEYS_TO_ENCRYPT.includes(key);
-    }
+    } // For backwards compatibility, we should decrypt even if encrypt is false.
+    // This means someone switched it on and then off.
+
 
     shouldDecrypt(key) {
       var _JSON$parse;
@@ -7089,7 +7090,7 @@
       // because it will introduce a circular dependency since we are
       // calling this function within read() as well.
       // Possibly will think of a workaround.
-      return ((_JSON$parse = JSON.parse(localStorage.getItem(ENCRYPTION_KEY))) !== null && _JSON$parse !== void 0 ? _JSON$parse : false) && KEYS_TO_ENCRYPT.includes(key);
+      return ((_JSON$parse = JSON.parse(localStorage.getItem(ENCRYPTION_KEY))) !== null && _JSON$parse !== void 0 ? _JSON$parse : true) && KEYS_TO_ENCRYPT.includes(key);
     }
 
     encrypt(data) {
@@ -7097,7 +7098,13 @@
     }
 
     decrypt(data) {
-      return cryptoJsExports.AES.decrypt(data, this.key).toString(cryptoJsExports.enc.Utf8);
+      const decryptedData = cryptoJsExports.AES.decrypt(data, this.key).toString(cryptoJsExports.enc.Utf8);
+
+      if (decryptedData === '') {
+        return data;
+      } else {
+        return decryptedData;
+      }
     }
 
   }
