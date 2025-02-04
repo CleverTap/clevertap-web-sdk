@@ -37,6 +37,7 @@ export default class Privacy extends Array {
     this.#oldValues = values
   }
 
+  // TODO : Do we need to check if account id is set or not here?
   push (...privacyArr) {
     if ($ct.isPrivacyArrPushed) {
       this.#processPrivacyArray($ct.privacyArray.length > 0 ? $ct.privacyArray : privacyArr)

@@ -162,6 +162,7 @@
   const EV_COOKIE = 'WZRK_EV';
   const META_COOKIE = 'WZRK_META';
   const PR_COOKIE = 'WZRK_PR';
+  const ACCOUNT_ID = 'WZRK_ACCOUNT_ID';
   const ARP_COOKIE = 'WZRK_ARP';
   const LCOOKIE_NAME = 'WZRK_L';
   const GLOBAL = 'global'; // used for email unsubscribe also
@@ -210,6 +211,9 @@
   const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
   const NOTIF_LAST_TIME = 'notif_last_time';
   const TIMER_FOR_NOTIF_BADGE_UPDATE = 300;
+  const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
+  const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
+  const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -1128,13 +1132,17 @@
     }
 
     push() {
-      for (var _len = arguments.length, eventsArr = new Array(_len), _key = 0; _key < _len; _key++) {
-        eventsArr[_key] = arguments[_key];
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        for (var _len = arguments.length, eventsArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          eventsArr[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](eventsArr);
+
+        return 0;
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].error('Account ID is not set');
       }
-
-      _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](eventsArr);
-
-      return 0;
     }
 
     _processOldValues() {
@@ -2387,13 +2395,17 @@
     }
 
     push() {
-      for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
-        profilesArr[_key] = arguments[_key];
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          profilesArr[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](profilesArr);
+
+        return 0;
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error('Account ID is not set');
       }
-
-      _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](profilesArr);
-
-      return 0;
     }
 
     _processOldValues() {
@@ -4409,7 +4421,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.12.1';
+        const sdkVersion = '1.12.3';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -5508,13 +5520,17 @@
     }
 
     push() {
-      for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
-        displayArgs[_key] = arguments[_key];
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
+          displayArgs[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+
+        return 0;
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Account ID is not set');
       }
-
-      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
-
-      return 0;
     }
 
     enable() {
@@ -5957,8 +5973,16 @@
 
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
+              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
+
+                return;
+              }
+
+              StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
               _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-                // create our wizrocket popup
+                StorageManager.saveToLSorCookie(POPUP_LOADING, false);
                 window.wzrkPermissionPopup.wizAlert({
                   title: titleText,
                   body: bodyText,
@@ -5989,8 +6013,17 @@
         }
       }, false);
     } else {
+      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
+
+        return;
+      }
+
+      StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
       _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-        // create our wizrocket popup
+        StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
+
         window.wzrkPermissionPopup.wizAlert({
           title: titleText,
           body: bodyText,
@@ -6093,7 +6126,7 @@
   };
 
   const createNotificationBox = (configData, fcmPublicKey) => {
-    if (document.getElementById('pnWrapper')) return;
+    if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
     const {
       boxConfig: {
         content,
@@ -6102,7 +6135,7 @@
     } = configData; // Create the wrapper div
 
     const wrapper = createElementWithAttributes('div', {
-      id: 'pnWrapper'
+      id: NEW_SOFT_PROMPT_SELCTOR_ID
     });
     const overlayDiv = createElementWithAttributes('div', {
       id: 'pnOverlay'
@@ -7759,7 +7792,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.12.1',
+        lib: 'web-sdk-v1.12.3',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -7990,7 +8023,8 @@
       _classPrivateFieldLooseBase(this, _request$5)[_request$5] = request;
       _classPrivateFieldLooseBase(this, _account$4)[_account$4] = account;
       _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = values;
-    }
+    } // TODO : Do we need to check if account id is set or not here?
+
 
     push() {
       for (var _len = arguments.length, privacyArr = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -9265,9 +9299,12 @@
       window.$CLTP_WR = window.$WZRK_WR = api;
 
       if ((_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id) {
+        var _clevertap$account6;
+
         // The accountId is present so can init with empty values.
         // Needed to maintain backward compatability with legacy implementations.
         // Npm imports/require will need to call init explictly with accountId
+        StorageManager.saveToLSorCookie(ACCOUNT_ID, (_clevertap$account6 = clevertap.account) === null || _clevertap$account6 === void 0 ? void 0 : _clevertap$account6[0].id);
         this.init();
       }
     } // starts here
@@ -9295,6 +9332,9 @@
         }
 
         _classPrivateFieldLooseBase(this, _account$6)[_account$6].id = accountId;
+        StorageManager.saveToLSorCookie(ACCOUNT_ID, accountId);
+
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('CT Initialized with Account ID: ' + _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
       }
 
       checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
@@ -9484,7 +9524,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.12.1';
+      return 'web-sdk-v1.12.3';
     }
 
     defineVariable(name, defaultValue) {
