@@ -63,6 +63,7 @@ export const NOTIF_LAST_TIME = 'notif_last_time'
 export const TIMER_FOR_NOTIF_BADGE_UPDATE = 300
 export const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper'
 export const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper'
+export const POPUP_LOADING = 'WZRK_POPUP_LOADING'
 
 export const SYSTEM_EVENTS = [
   'Stayed',

@@ -211,8 +211,8 @@
   const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
   const NOTIF_LAST_TIME = 'notif_last_time';
   const TIMER_FOR_NOTIF_BADGE_UPDATE = 300;
-  const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
+  const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -4417,7 +4417,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.12.1';
+        const sdkVersion = '1.12.3';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -5859,14 +5859,16 @@
 
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
-              if (document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper already exists in the DOM');
+              if (StorageManager.readFromLSorCookie(POPUP_LOADING)) {
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
 
                 return;
               }
 
+              StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
               _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-                // create our wizrocket popup
+                StorageManager.saveToLSorCookie(POPUP_LOADING, false);
                 window.wzrkPermissionPopup.wizAlert({
                   title: titleText,
                   body: bodyText,
@@ -5897,14 +5899,17 @@
         }
       }, false);
     } else {
-      if (document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper already exists in the DOM');
+      if (StorageManager.readFromLSorCookie(POPUP_LOADING)) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
 
         return;
       }
 
+      StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
       _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-        // create our wizrocket popup
+        StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
+
         window.wzrkPermissionPopup.wizAlert({
           title: titleText,
           body: bodyText,
@@ -7673,7 +7678,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.12.1',
+        lib: 'web-sdk-v1.12.3',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -9402,7 +9407,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.12.1';
+      return 'web-sdk-v1.12.3';
     }
 
     defineVariable(name, defaultValue) {

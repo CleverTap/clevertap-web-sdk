@@ -5,7 +5,7 @@ import {
   VAPID_MIGRATION_PROMPT_SHOWN,
   NOTIF_LAST_TIME,
   ACCOUNT_ID,
-  OLD_SOFT_PROMPT_SELCTOR_ID
+  POPUP_LOADING
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
@@ -433,13 +433,14 @@ export default class NotificationHandler extends Array {
           }
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
-              if (document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-                this.#logger.debug('Soft prompt wrapper already exists in the DOM')
+              if (StorageManager.readFromLSorCookie(POPUP_LOADING)) {
+                this.#logger.debug('Soft prompt wrapper is already loading or loaded')
                 return
               }
 
+              StorageManager.saveToLSorCookie(POPUP_LOADING, true)
               this.#addWizAlertJS().onload = () => {
-                // create our wizrocket popup
+                StorageManager.saveToLSorCookie(POPUP_LOADING, false)
                 window.wzrkPermissionPopup.wizAlert({
                   title: titleText,
                   body: bodyText,
@@ -467,12 +468,14 @@ export default class NotificationHandler extends Array {
         }
       }, false)
     } else {
-      if (document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-        this.#logger.debug('Soft prompt wrapper already exists in the DOM')
+      if (StorageManager.readFromLSorCookie(POPUP_LOADING)) {
+        this.#logger.debug('Soft prompt wrapper is already loading or loaded')
         return
       }
 
+      StorageManager.saveToLSorCookie(POPUP_LOADING, true)
       this.#addWizAlertJS().onload = () => {
+        StorageManager.saveToLSorCookie(POPUP_LOADING, false)
         // create our wizrocket popup
         window.wzrkPermissionPopup.wizAlert({
           title: titleText,
