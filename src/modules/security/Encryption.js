@@ -1,5 +1,5 @@
 import { AES, enc } from 'crypto-js'
-import { KEYS_TO_ENCRYPT, ENCRYPTION_KEY } from '../../util/constants'
+import { KEYS_TO_ENCRYPT } from '../../util/constants'
 // import { StorageManager } from '../../util/storage'
 
 class Encryption {
@@ -38,11 +38,7 @@ class Encryption {
   // For backwards compatibility, we should decrypt even if encrypt is false.
   // This means someone switched it on and then off.
   shouldDecrypt (key) {
-    // TODO: why not use StorageManager.read()?
-    // because it will introduce a circular dependency since we are
-    // calling this function within read() as well.
-    // Possibly will think of a workaround.
-    return (JSON.parse(localStorage.getItem(ENCRYPTION_KEY)) ?? true) && KEYS_TO_ENCRYPT.includes(key)
+    return KEYS_TO_ENCRYPT.includes(key)
   }
 
   encrypt (data) {

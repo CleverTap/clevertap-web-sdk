@@ -7084,13 +7084,7 @@
 
 
     shouldDecrypt(key) {
-      var _JSON$parse;
-
-      // TODO: why not use StorageManager.read()?
-      // because it will introduce a circular dependency since we are
-      // calling this function within read() as well.
-      // Possibly will think of a workaround.
-      return ((_JSON$parse = JSON.parse(localStorage.getItem(ENCRYPTION_KEY))) !== null && _JSON$parse !== void 0 ? _JSON$parse : true) && KEYS_TO_ENCRYPT.includes(key);
+      return KEYS_TO_ENCRYPT.includes(key);
     }
 
     encrypt(data) {
