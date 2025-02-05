@@ -359,7 +359,7 @@ export default class NotificationHandler extends Array {
       }
     }
 
-    if (isSafari() && this.#fcmPublicKey !== null) {
+    if (isSafari() && this.#isNativeWebPushSupported() && this.#fcmPublicKey !== null) {
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
     }
 
