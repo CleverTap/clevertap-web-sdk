@@ -915,12 +915,12 @@ export default class CleverTap {
       console.error('setOffline should be called with a value of type boolean')
       return
     }
-    $ct.offline = arg
-    // if offline is disabled
-    // process events from cache
-    if (!arg) {
+    // Check if the offline state is changing from true to false
+    // If offline is being disabled (arg is false), process any cached events
+    if ($ct.offline !== arg && !arg) {
       this.#request.processBackupEvents()
     }
+    $ct.offline = arg
   }
 
   getSDKVersion () {
