@@ -5886,7 +5886,7 @@
       }
     }
 
-    if (isSafari() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
+    if (isSafari() && _classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
     } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
