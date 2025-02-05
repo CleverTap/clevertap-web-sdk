@@ -3,7 +3,10 @@ import { isObject } from '../util/datatypes'
 import {
   PUSH_SUBSCRIPTION_DATA,
   VAPID_MIGRATION_PROMPT_SHOWN,
-  NOTIF_LAST_TIME
+  NOTIF_LAST_TIME,
+  ACCOUNT_ID,
+  POPUP_LOADING,
+  OLD_SOFT_PROMPT_SELCTOR_ID
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
@@ -35,8 +38,12 @@ export default class NotificationHandler extends Array {
   }
 
   push (...displayArgs) {
-    this.#setUpWebPush(displayArgs)
-    return 0
+    if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+      this.#setUpWebPush(displayArgs)
+      return 0
+    } else {
+      this.#logger.error('Account ID is not set')
+    }
   }
 
   enable (options = {}) {
@@ -352,6 +359,10 @@ export default class NotificationHandler extends Array {
       }
     }
 
+    if (isSafari() && this.#fcmPublicKey !== null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
+    }
+
     // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
     if (!isHTTP) {
@@ -427,8 +438,14 @@ export default class NotificationHandler extends Array {
           }
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
+              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+                this.#logger.debug('Soft prompt wrapper is already loading or loaded')
+                return
+              }
+
+              StorageManager.saveToLSorCookie(POPUP_LOADING, true)
               this.#addWizAlertJS().onload = () => {
-                // create our wizrocket popup
+                StorageManager.saveToLSorCookie(POPUP_LOADING, false)
                 window.wzrkPermissionPopup.wizAlert({
                   title: titleText,
                   body: bodyText,
@@ -456,7 +473,14 @@ export default class NotificationHandler extends Array {
         }
       }, false)
     } else {
+      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+        this.#logger.debug('Soft prompt wrapper is already loading or loaded')
+        return
+      }
+
+      StorageManager.saveToLSorCookie(POPUP_LOADING, true)
       this.#addWizAlertJS().onload = () => {
+        StorageManager.saveToLSorCookie(POPUP_LOADING, false)
         // create our wizrocket popup
         window.wzrkPermissionPopup.wizAlert({
           title: titleText,
