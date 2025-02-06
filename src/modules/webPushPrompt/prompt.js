@@ -1,6 +1,6 @@
 import { getBellIconStyles, getBoxPromptStyles } from './promptStyles.js'
 import { isObject } from '../../util/datatypes.js'
-import { WEBPUSH_CONFIG, VAPID_MIGRATION_PROMPT_SHOWN } from '../../util/constants.js'
+import { WEBPUSH_CONFIG, VAPID_MIGRATION_PROMPT_SHOWN, NEW_SOFT_PROMPT_SELCTOR_ID } from '../../util/constants.js'
 import { StorageManager, $ct } from '../../util/storage.js'
 import NotificationHandler from '../notification.js'
 import { BELL_BASE64, PROMPT_BELL_BASE64 } from './promptConstants.js'
@@ -152,12 +152,12 @@ const createElementWithAttributes = (tag, attributes = {}) => {
 }
 
 export const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
-  if (document.getElementById('pnWrapper')) return
+  if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return
 
   const { boxConfig: { content, style } } = configData
 
   // Create the wrapper div
-  const wrapper = createElementWithAttributes('div', { id: 'pnWrapper' })
+  const wrapper = createElementWithAttributes('div', { id: NEW_SOFT_PROMPT_SELCTOR_ID })
   const overlayDiv = createElementWithAttributes('div', { id: 'pnOverlay' })
   const pnCard = createElementWithAttributes('div', { id: 'pnCard' })
 

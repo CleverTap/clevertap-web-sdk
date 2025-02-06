@@ -8,6 +8,7 @@ import {
   addToLocalProfileMap
 } from '../util/clevertap'
 import {
+  ACCOUNT_ID,
   COMMAND_DELETE,
   COMMAND_INCREMENT,
   EVT_PUSH,
@@ -43,8 +44,12 @@ export default class ProfileHandler extends Array {
   }
 
   push (...profilesArr) {
-    this.#processProfileArray(profilesArr)
-    return 0
+    if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+      this.#processProfileArray(profilesArr)
+      return 0
+    } else {
+      this.#logger.error('Account ID is not set')
+    }
   }
 
   _processOldValues () {

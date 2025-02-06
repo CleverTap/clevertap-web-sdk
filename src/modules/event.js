@@ -1,6 +1,6 @@
 import { isString, isObject, sanitize } from '../util/datatypes'
 import { EVENT_ERROR } from '../util/messages'
-import { EV_COOKIE, SYSTEM_EVENTS, unsupportedKeyCharRegex } from '../util/constants'
+import { ACCOUNT_ID, EV_COOKIE, SYSTEM_EVENTS, unsupportedKeyCharRegex } from '../util/constants'
 import { isChargedEventStructureValid, isEventStructureFlat } from '../util/validator'
 import { StorageManager, $ct } from '../util/storage'
 
@@ -19,8 +19,12 @@ export default class EventHandler extends Array {
   }
 
   push (...eventsArr) {
-    this.#processEventArray(eventsArr)
-    return 0
+    if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+      this.#processEventArray(eventsArr)
+      return 0
+    } else {
+      this.#logger.error('Account ID is not set')
+    }
   }
 
   _processOldValues () {

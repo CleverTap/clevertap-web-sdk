@@ -3,7 +3,10 @@ import { isObject } from '../util/datatypes'
 import {
   PUSH_SUBSCRIPTION_DATA,
   VAPID_MIGRATION_PROMPT_SHOWN,
-  NOTIF_LAST_TIME
+  NOTIF_LAST_TIME,
+  ACCOUNT_ID,
+  POPUP_LOADING,
+  OLD_SOFT_PROMPT_SELCTOR_ID
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
@@ -44,6 +47,7 @@ export default class NotificationHandler extends Array {
   }
 
   push (...displayArgs) {
+    if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
     /*
       To handle a potential race condition, two flags are stored in Local Storage:
       - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
@@ -53,19 +57,22 @@ export default class NotificationHandler extends Array {
       - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
       - Otherwise, `isNotificationPushCallDeferred` is set to true, and the rendering is deferred until the webPushConfig is received.
     */
-    const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
-    const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie('applicationServerKeyReceived')
-    setNotificationHandlerValues({
-      logger: this.#logger,
-      account: this.#account,
-      request: this.#request,
-      displayArgs,
-      fcmPublicKey: this.#fcmPublicKey
-    })
-    if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
-      processSoftPrompt()
+      const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
+      const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie('applicationServerKeyReceived')
+      setNotificationHandlerValues({
+        logger: this.#logger,
+        account: this.#account,
+        request: this.#request,
+        displayArgs,
+        fcmPublicKey: this.#fcmPublicKey
+      })
+      if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
+        processSoftPrompt()
+      } else {
+        StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', true)
+      }
     } else {
-      StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', true)
+      this.#logger.error('Account ID is not set')
     }
   }
 
@@ -330,7 +337,6 @@ export default class NotificationHandler extends Array {
     let httpsIframePath
     let apnsWebPushId
     let apnsWebPushServiceUrl
-    const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && this.#fcmPublicKey !== null
 
     if (displayArgs.length === 1) {
       if (isObject(displayArgs[0])) {
@@ -393,6 +399,12 @@ export default class NotificationHandler extends Array {
       }
     }
 
+    if (isSafari() && this.#isNativeWebPushSupported() && this.#fcmPublicKey !== null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
+    }
+
+    const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && this.#fcmPublicKey !== null
+
     // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
     if (!isHTTP) {
@@ -402,7 +414,7 @@ export default class NotificationHandler extends Array {
         return
       }
       // handle migrations from other services -> chrome notifications may have already been asked for before
-      if (Notification.permission === 'granted' && vapidSupportedAndMigrated) {
+      if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
         // skip the dialog and register
         this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
         return
@@ -468,8 +480,14 @@ export default class NotificationHandler extends Array {
           }
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
+              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+                this.#logger.debug('Soft prompt wrapper is already loading or loaded')
+                return
+              }
+
+              StorageManager.saveToLSorCookie(POPUP_LOADING, true)
               this.#addWizAlertJS().onload = () => {
-                // create our wizrocket popup
+                StorageManager.saveToLSorCookie(POPUP_LOADING, false)
                 window.wzrkPermissionPopup.wizAlert({
                   title: titleText,
                   body: bodyText,
@@ -497,7 +515,14 @@ export default class NotificationHandler extends Array {
         }
       }, false)
     } else {
+      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+        this.#logger.debug('Soft prompt wrapper is already loading or loaded')
+        return
+      }
+
+      StorageManager.saveToLSorCookie(POPUP_LOADING, true)
       this.#addWizAlertJS().onload = () => {
+        StorageManager.saveToLSorCookie(POPUP_LOADING, false)
         // create our wizrocket popup
         window.wzrkPermissionPopup.wizAlert({
           title: titleText,
