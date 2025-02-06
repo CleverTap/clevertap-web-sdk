@@ -5885,10 +5885,6 @@
       }
     }
 
-    if (isSafari() && _classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
-      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
-    }
-
     const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null; // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
     if (!isHTTP) {
@@ -5952,6 +5948,10 @@
       } else {
         StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
       }
+    }
+
+    if (isSafari() && _classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
     }
 
     if (isHTTP) {

@@ -358,10 +358,6 @@ export default class NotificationHandler extends Array {
       }
     }
 
-    if (isSafari() && this.#isNativeWebPushSupported() && this.#fcmPublicKey !== null) {
-      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
-    }
-
     const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && this.#fcmPublicKey !== null
 
     // we check for the cookie in setUpChromeNotifications() the tokens may have changed
@@ -420,6 +416,10 @@ export default class NotificationHandler extends Array {
       } else {
         StorageManager.setMetaProp(NOTIF_LAST_TIME, now)
       }
+    }
+
+    if (isSafari() && this.#isNativeWebPushSupported() && this.#fcmPublicKey !== null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
     }
 
     if (isHTTP) {
