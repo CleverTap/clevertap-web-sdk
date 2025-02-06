@@ -30,7 +30,8 @@ import {
   EVT_PUSH,
   WZRK_FETCH,
   WEBINBOX_CONFIG,
-  TIMER_FOR_NOTIF_BADGE_UPDATE
+  TIMER_FOR_NOTIF_BADGE_UPDATE,
+  ACCOUNT_ID
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -614,6 +615,7 @@ export default class CleverTap {
       // The accountId is present so can init with empty values.
       // Needed to maintain backward compatability with legacy implementations.
       // Npm imports/require will need to call init explictly with accountId
+      StorageManager.saveToLSorCookie(ACCOUNT_ID, clevertap.account?.[0].id)
       this.init()
     }
   }
@@ -635,6 +637,8 @@ export default class CleverTap {
         return
       }
       this.#account.id = accountId
+      StorageManager.saveToLSorCookie(ACCOUNT_ID, accountId)
+      this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
     checkBuilder(this.#logger, this.#account.id)
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
@@ -739,7 +743,7 @@ export default class CleverTap {
 
         if (inboxNode) {
           const { top, right } = inboxNode.getBoundingClientRect()
-          if (Number(unViewedBadge.innerText) > 0) {
+          if (Number(unViewedBadge.innerText) > 0 || unViewedBadge.innerText === '9+') {
             unViewedBadge.style.display = 'flex'
           }
           unViewedBadge.style.top = `${top - 8}px`
@@ -911,12 +915,12 @@ export default class CleverTap {
       console.error('setOffline should be called with a value of type boolean')
       return
     }
-    $ct.offline = arg
-    // if offline is disabled
-    // process events from cache
-    if (!arg) {
+    // Check if the offline state is changing from true to false
+    // If offline is being disabled (arg is false), process any cached events
+    if ($ct.offline !== arg && !arg) {
       this.#request.processBackupEvents()
     }
+    $ct.offline = arg
   }
 
   getSDKVersion () {

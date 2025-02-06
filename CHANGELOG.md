@@ -1,6 +1,16 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.12.1] 28th Jan, 2025
+- Added WebNative Custom Html and Json templates Support
+- Fixed duplicate session issue for extremely slow networks
+- Support for Change Log in Visual Builder
+- Support for insert elements in Visual Builder
+- Added Check for Soft prompt to not show if already exists
+- Added Check before events & notifications push for AccountId
+- Changed setOffline to process events if state changes
+- Fixed SPA unviewed badge issue
+
 ## [1.12.0] 27th Jan, 2025
 - Added Support for Vapid Web Push for Safari Mac
 - Added Support for Web Push on Safari IOS 

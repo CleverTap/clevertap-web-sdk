@@ -162,6 +162,7 @@
   const EV_COOKIE = 'WZRK_EV';
   const META_COOKIE = 'WZRK_META';
   const PR_COOKIE = 'WZRK_PR';
+  const ACCOUNT_ID = 'WZRK_ACCOUNT_ID';
   const ARP_COOKIE = 'WZRK_ARP';
   const LCOOKIE_NAME = 'WZRK_L';
   const GLOBAL = 'global'; // used for email unsubscribe also
@@ -210,6 +211,9 @@
   const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
   const NOTIF_LAST_TIME = 'notif_last_time';
   const TIMER_FOR_NOTIF_BADGE_UPDATE = 300;
+  const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
+  const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
+  const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -1128,13 +1132,17 @@
     }
 
     push() {
-      for (var _len = arguments.length, eventsArr = new Array(_len), _key = 0; _key < _len; _key++) {
-        eventsArr[_key] = arguments[_key];
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        for (var _len = arguments.length, eventsArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          eventsArr[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](eventsArr);
+
+        return 0;
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].error('Account ID is not set');
       }
-
-      _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](eventsArr);
-
-      return 0;
     }
 
     _processOldValues() {
@@ -2387,13 +2395,17 @@
     }
 
     push() {
-      for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
-        profilesArr[_key] = arguments[_key];
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          profilesArr[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](profilesArr);
+
+        return 0;
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].error('Account ID is not set');
       }
-
-      _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](profilesArr);
-
-      return 0;
     }
 
     _processOldValues() {
@@ -4320,56 +4332,59 @@
   const updateFormData = function (element, formStyle, payload) {
     let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
-    // Update the element style
-    if (formStyle.style !== undefined) {
-      Object.keys(formStyle.style).forEach(property => {
-        element.style.setProperty(property, formStyle.style[property]);
-      });
-    } // Update underline for element
+    if (formStyle !== undefined) {
+      // Update the element style
+      if (formStyle.style !== undefined) {
+        Object.keys(formStyle.style).forEach(property => {
+          element.style.setProperty(property, formStyle.style[property]);
+        });
+      } // Update underline for element
 
 
-    if (formStyle.underline !== undefined) {
-      const curTextDecoration = element.style.textDecoration;
+      if (formStyle.underline !== undefined) {
+        const curTextDecoration = element.style.textDecoration;
 
-      if (formStyle.underline) {
-        element.style.textDecoration = "".concat(curTextDecoration, " underline").trim();
-      } else {
-        element.style.textDecoration = curTextDecoration.replace('underline', '').trim();
+        if (formStyle.underline) {
+          element.style.textDecoration = "".concat(curTextDecoration, " underline").trim();
+        } else {
+          element.style.textDecoration = curTextDecoration.replace('underline', '').trim();
+        }
+      } // Update element text
+
+
+      if (formStyle.text !== undefined) {
+        element.innerText = isPreview ? formStyle.text.text : formStyle.text;
+      } // Handle element onClick
+
+
+      if (formStyle.clickDetails !== undefined) {
+        const url = formStyle.clickDetails.clickUrl;
+        element.onclick = formStyle.clickDetails.newTab ? () => {
+          if (!isPreview) {
+            window.clevertap.raiseNotificationClicked(payload);
+          }
+
+          window.open(url, '_blank').focus();
+        } : () => {
+          if (!isPreview) {
+            window.clevertap.raiseNotificationClicked(payload);
+          }
+
+          window.location.href = url;
+        };
+      } // Set the image source
+
+
+      if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
+        element.src = formStyle.imgURL;
       }
-    } // Update element text
-
-
-    if (formStyle.text !== undefined) {
-      element.innerText = isPreview ? formStyle.text.text : formStyle.text;
-    } // Handle element onClick
-
-
-    if (formStyle.clickDetails !== undefined) {
-      const url = formStyle.clickDetails.clickUrl;
-      element.onclick = formStyle.clickDetails.newTab ? () => {
-        if (!isPreview) {
-          window.clevertap.raiseNotificationClicked(payload);
-        }
-
-        window.open(url, '_blank').focus();
-      } : () => {
-        if (!isPreview) {
-          window.clevertap.raiseNotificationClicked(payload);
-        }
-
-        window.location.href = url;
-      };
-    } // Set the image source
-
-
-    if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
-      element.src = formStyle.imgURL;
-    } // Handle elementCss
-
-
-    if (formStyle.elementCss !== undefined) {
+    }
+  };
+  const updateElementCSS = element => {
+    // Handle elementCss
+    if (element.elementCSS !== undefined) {
       const style = document.createElement('style');
-      style.innerHTML = formStyle.elementCss;
+      style.innerHTML = element.elementCSS;
       document.head.appendChild(style);
     }
   };
@@ -4406,7 +4421,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.12.0';
+        const sdkVersion = '1.12.1';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -4551,6 +4566,7 @@
 
 
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+    const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let notificationViewed = false;
     const payload = {
@@ -4565,31 +4581,63 @@
       }
     };
 
+    const raiseClicked = payload => {
+      window.clevertap.renderNotificationClicked(payload);
+    };
+
     const processElement = (element, selector) => {
-      var _selector$values;
+      var _selector$isTrackingC;
 
-      if (!selector.values) return;
+      if (selector.elementCSS) {
+        updateElementCSS(selector);
+      }
 
-      if (selector.values.html) {
-        if (isPreview) {
-          element.outerHTML = selector.values.html.text;
-        } else {
-          element.outerHTML = selector.values.html;
+      if ((_selector$isTrackingC = selector.isTrackingClicks) === null || _selector$isTrackingC === void 0 ? void 0 : _selector$isTrackingC.name) {
+        element.addEventListener('click', () => {
+          const clickedPayload = {
+            msgId: targetingMsgJson.wzrk_id,
+            pivotId: targetingMsgJson.wzrk_pivot,
+            msgCTkv: {
+              wzrk_selector: selector.isTrackingClicks.name
+            }
+          };
+          raiseClicked(clickedPayload);
+        });
+      }
+
+      if (selector.values) {
+        switch (selector.values.editor) {
+          case 'html':
+            if (isPreview) {
+              element.outerHTML = selector.values.html.text;
+            } else {
+              element.outerHTML = selector.values.html;
+            }
+
+            break;
+
+          case 'json':
+            dispatchJsonData(targetingMsgJson, selector.values, isPreview);
+            break;
+
+          case 'form':
+            payload.msgCTkv = {
+              wzrk_selector: selector.selector
+            };
+            updateFormData(element, selector.values.form, payload, isPreview);
+            break;
         }
-      } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
-        dispatchJsonData(targetingMsgJson, selector.values, isPreview);
-      } else {
-        payload.msgCTkv = {
-          wzrk_selector: selector.selector
-        };
-        updateFormData(element, selector.values.form, payload, isPreview);
       }
     };
 
     const tryFindingElement = selector => {
       let count = 0;
       const intervalId = setInterval(() => {
-        const retryElement = document.querySelector(selector.selector);
+        let retryElement;
+
+        try {
+          retryElement = document.querySelector(selector.selector);
+        } catch (_) {}
 
         if (retryElement) {
           raiseViewed();
@@ -4605,24 +4653,97 @@
     details.forEach(d => {
       if (d.url === window.location.href.split('?')[0]) {
         d.selectorData.forEach(s => {
-          const element = document.querySelector(s.selector);
-
-          if (element) {
-            raiseViewed();
-            processElement(element, s);
+          if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
+            insertedElements.push(s);
           } else {
-            tryFindingElement(s);
+            let element;
+
+            try {
+              element = document.querySelector(s.selector);
+            } catch (_) {}
+
+            if (element) {
+              raiseViewed();
+              processElement(element, s);
+            } else {
+              tryFindingElement(s);
+            }
           }
         });
       }
     });
+
+    const addNewEl = selector => {
+      const {
+        pos,
+        sibling
+      } = findSiblingSelector(selector.selector);
+      let count = 0;
+      const intervalId = setInterval(() => {
+        let element = null;
+
+        try {
+          const siblingEl = document.querySelector(sibling);
+          const ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+          element = ctEl || siblingEl;
+        } catch (_) {
+          element = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+        }
+
+        if (element) {
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = selector.values.initialHtml;
+          const newElement = tempDiv.firstElementChild;
+          element.insertAdjacentElement(pos, newElement);
+
+          if (!element.getAttribute('ct-selector')) {
+            element.setAttribute('ct-selector', sibling);
+          }
+
+          const insertedElement = document.querySelector("[ct-selector=\"".concat(selector.selector, "\"]"));
+          raiseViewed();
+          processElement(insertedElement, selector);
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          console.log("No element present on DOM with selector '".concat(sibling, "'."));
+          clearInterval(intervalId);
+        }
+      }, 500);
+    };
+
+    if (insertedElements.length > 0) {
+      const sortedArr = insertedElements.sort((a, b) => {
+        const numA = parseInt(a.selector.split('-')[0], 10);
+        const numB = parseInt(b.selector.split('-')[0], 10);
+        return numA - numB;
+      });
+      sortedArr.forEach(addNewEl);
+    }
   };
+
+  function findSiblingSelector(input) {
+    const regex = /^(\d+)-(afterend|beforebegin)-(.+)$/;
+    const match = input.match(regex);
+
+    if (match) {
+      return {
+        pos: match[2],
+        sibling: match[3]
+      };
+    }
+
+    return {
+      pos: 'beforebegin',
+      sibling: ''
+    };
+  }
   /**
    * Dispatches JSON data.
    * @param {Object} targetingMsgJson - The point and click campaign JSON object.
    * @param {Object} selector - The selector object.
    * @param {boolean} isPreview - If preview different handling
    */
+
 
   function dispatchJsonData(targetingMsgJson, selector) {
     let isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
@@ -5042,6 +5163,71 @@
     });
     document.dispatchEvent(kvPairsEvent);
   };
+  const renderCustomHtml = (targetingMsgJson, logger) => {
+    const {
+      display,
+      wzrk_id: wzrkId,
+      wzrk_pivot: wzrkPivot
+    } = targetingMsgJson || {};
+    const divId = display.divId || {};
+    const details = display.details[0];
+    const html = details.html;
+
+    if (!divId || !html) {
+      logger.error('No div Id or no html found');
+      return;
+    }
+
+    let notificationViewed = false;
+    const payload = {
+      msgId: wzrkId,
+      pivotId: wzrkPivot
+    };
+
+    const raiseViewed = () => {
+      if (!notificationViewed) {
+        notificationViewed = true;
+        window.clevertap.renderNotificationViewed(payload);
+      }
+    };
+
+    const tryFindingElement = divId => {
+      let count = 0;
+      const intervalId = setInterval(() => {
+        const retryElement = document.querySelector(divId);
+
+        if (retryElement) {
+          raiseViewed();
+          retryElement.outerHTML = html;
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          logger.log("No element present on DOM with divId '".concat(divId, "'."));
+          clearInterval(intervalId);
+        }
+      }, 500);
+    };
+
+    tryFindingElement(divId);
+  };
+  const handleJson = targetingMsgJson => {
+    const inaObj = {};
+    inaObj.msgId = targetingMsgJson.wzrk_id;
+    const details = targetingMsgJson.display.details[0];
+    const json = details.json;
+
+    if (targetingMsgJson.wzrk_pivot) {
+      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+    }
+
+    if (targetingMsgJson.display.json != null) {
+      inaObj.json = json;
+    }
+
+    const jsonEvent = new CustomEvent('CT_web_native_display_json', {
+      detail: inaObj
+    });
+    document.dispatchEvent(jsonEvent);
+  };
 
   const invokeExternalJs = (jsFunc, targetingMsgJson) => {
     const func = window.parent[jsFunc];
@@ -5334,13 +5520,17 @@
     }
 
     push() {
-      for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
-        displayArgs[_key] = arguments[_key];
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
+          displayArgs[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+
+        return 0;
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Account ID is not set');
       }
-
-      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
-
-      return 0;
     }
 
     enable() {
@@ -5707,7 +5897,7 @@
       } // handle migrations from other services -> chrome notifications may have already been asked for before
 
 
-      if (Notification.permission === 'granted' && vapidSupportedAndMigrated) {
+      if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
         // skip the dialog and register
         this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
         return;
@@ -5750,14 +5940,19 @@
       if (now - notifLastTime < askAgainTimeInSeconds) {
         if (!isSafari()) {
           return;
-        }
+        } // If Safari is migrated already or only APNS, then return
 
-        if (vapidSupportedAndMigrated) {
+
+        if (vapidSupportedAndMigrated || _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] === null) {
           return;
         }
       } else {
         StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
       }
+    }
+
+    if (isSafari() && _classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
     }
 
     if (isHTTP) {
@@ -5779,8 +5974,16 @@
 
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
+              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
+
+                return;
+              }
+
+              StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
               _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-                // create our wizrocket popup
+                StorageManager.saveToLSorCookie(POPUP_LOADING, false);
                 window.wzrkPermissionPopup.wizAlert({
                   title: titleText,
                   body: bodyText,
@@ -5811,8 +6014,17 @@
         }
       }, false);
     } else {
+      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
+
+        return;
+      }
+
+      StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
       _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-        // create our wizrocket popup
+        StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
+
         window.wzrkPermissionPopup.wizAlert({
           title: titleText,
           body: bodyText,
@@ -5915,7 +6127,7 @@
   };
 
   const createNotificationBox = (configData, fcmPublicKey) => {
-    if (document.getElementById('pnWrapper')) return;
+    if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
     const {
       boxConfig: {
         content,
@@ -5924,7 +6136,7 @@
     } = configData; // Create the wrapper div
 
     const wrapper = createElementWithAttributes('div', {
-      id: 'pnWrapper'
+      id: NEW_SOFT_PROMPT_SELCTOR_ID
     });
     const overlayDiv = createElementWithAttributes('div', {
       id: 'pnOverlay'
@@ -7085,6 +7297,10 @@
             }
           } else if (targetNotif.msgContent.type === 4) {
             renderVisualBuilder(targetNotif, false);
+          } else if (targetNotif.msgContent.type === 5) {
+            renderCustomHtml(targetNotif, _logger);
+          } else if (targetNotif.msgContent.type === 6) {
+            handleJson(targetNotif);
           } else {
             showFooterNotification(targetNotif);
           }
@@ -7531,6 +7747,14 @@
             _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].debug('Processing backup event : ' + backupEvent.q);
 
             if (typeof backupEvent.q !== 'undefined') {
+              /* For extremely slow networks we often recreate the session from the SE hence appending
+              the session to the request */
+              const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
+
+              if (session === null || session === void 0 ? void 0 : session.s) {
+                backupEvent.q = backupEvent.q + '&s=' + session.s;
+              }
+
               RequestDispatcher.fireRequest(backupEvent.q);
             }
 
@@ -7569,7 +7793,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.12.0',
+        lib: 'web-sdk-v1.12.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -7800,7 +8024,8 @@
       _classPrivateFieldLooseBase(this, _request$5)[_request$5] = request;
       _classPrivateFieldLooseBase(this, _account$4)[_account$4] = account;
       _classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4] = values;
-    }
+    } // TODO : Do we need to check if account id is set or not here?
+
 
     push() {
       for (var _len = arguments.length, privacyArr = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -9075,9 +9300,12 @@
       window.$CLTP_WR = window.$WZRK_WR = api;
 
       if ((_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id) {
+        var _clevertap$account6;
+
         // The accountId is present so can init with empty values.
         // Needed to maintain backward compatability with legacy implementations.
         // Npm imports/require will need to call init explictly with accountId
+        StorageManager.saveToLSorCookie(ACCOUNT_ID, (_clevertap$account6 = clevertap.account) === null || _clevertap$account6 === void 0 ? void 0 : _clevertap$account6[0].id);
         this.init();
       }
     } // starts here
@@ -9105,6 +9333,9 @@
         }
 
         _classPrivateFieldLooseBase(this, _account$6)[_account$6].id = accountId;
+        StorageManager.saveToLSorCookie(ACCOUNT_ID, accountId);
+
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('CT Initialized with Account ID: ' + _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
       }
 
       checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
@@ -9282,18 +9513,19 @@
       if (typeof arg !== 'boolean') {
         console.error('setOffline should be called with a value of type boolean');
         return;
-      }
+      } // Check if the offline state is changing from true to false
+      // If offline is being disabled (arg is false), process any cached events
 
-      $ct.offline = arg; // if offline is disabled
-      // process events from cache
 
-      if (!arg) {
+      if ($ct.offline !== arg && !arg) {
         _classPrivateFieldLooseBase(this, _request$7)[_request$7].processBackupEvents();
       }
+
+      $ct.offline = arg;
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.12.0';
+      return 'web-sdk-v1.12.1';
     }
 
     defineVariable(name, defaultValue) {
@@ -9395,7 +9627,7 @@
             right
           } = inboxNode.getBoundingClientRect();
 
-          if (Number(unViewedBadge.innerText) > 0) {
+          if (Number(unViewedBadge.innerText) > 0 || unViewedBadge.innerText === '9+') {
             unViewedBadge.style.display = 'flex';
           }
 
