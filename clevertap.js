@@ -5821,7 +5821,6 @@
     let httpsIframePath;
     let apnsWebPushId;
     let apnsWebPushServiceUrl;
-    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
 
     if (displayArgs.length === 1) {
       if (isObject(displayArgs[0])) {
@@ -5888,8 +5887,9 @@
 
     if (isSafari() && _classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
-    } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
+    }
 
+    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null; // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
     if (!isHTTP) {
       const hasNotification = ('Notification' in window);
@@ -5901,7 +5901,7 @@
       } // handle migrations from other services -> chrome notifications may have already been asked for before
 
 
-      if (Notification.permission === 'granted' && vapidSupportedAndMigrated) {
+      if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
         // skip the dialog and register
         this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
         return;
