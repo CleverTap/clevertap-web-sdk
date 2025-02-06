@@ -753,7 +753,7 @@ export default class CleverTap {
 
         if (inboxNode) {
           const { top, right } = inboxNode.getBoundingClientRect()
-          if (Number(unViewedBadge.innerText) > 0) {
+          if (Number(unViewedBadge.innerText) > 0 || unViewedBadge.innerText === '9+') {
             unViewedBadge.style.display = 'flex'
           }
           unViewedBadge.style.top = `${top - 8}px`
