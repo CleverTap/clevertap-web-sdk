@@ -5529,22 +5529,36 @@
 
     push() {
       if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        /*
+          To handle a potential race condition, two flags are stored in Local Storage:
+          - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
+          - `isNotificationPushCallDeferred`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+           This ensures the soft prompt is rendered correctly:
+          - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
+          - Otherwise, `isNotificationPushCallDeferred` is set to true, and the rendering is deferred until the webPushConfig is received.
+        */
+        const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
+        const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie('applicationServerKeyReceived');
+
         for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
           displayArgs[_key] = arguments[_key];
         }
 
-        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+        setNotificationHandlerValues({
+          logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+          account: _classPrivateFieldLooseBase(this, _account$2)[_account$2],
+          request: _classPrivateFieldLooseBase(this, _request$4)[_request$4],
+          displayArgs,
+          fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
+        });
 
-        return 0;
+        if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
+          processSoftPrompt();
+        } else {
+          StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', true);
+        }
       } else {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Account ID is not set');
-      }
-    }
-
-      if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
-        processSoftPrompt();
-      } else {
-        StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', true);
       }
     }
 
@@ -6276,7 +6290,7 @@
     return element;
   };
 
-  const createNotificationBox = (configData, fcmPublicKey) => {
+  const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
     const {
       boxConfig: {
