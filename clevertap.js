@@ -6372,14 +6372,19 @@
     const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
 
     if (shouldShowNotification) {
-      if (!isSafari()) {
-        document.body.appendChild(wrapper);
+      document.body.appendChild(wrapper);
 
-        if (!configData.isPreview) {
-          StorageManager.setMetaProp('webpush_last_notif_time', now);
-          addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+      if (!configData.isPreview) {
+        StorageManager.setMetaProp('webpush_last_notif_time', now);
+        addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+
+        if (isSafari() && 'PushManager' in window && fcmPublicKey != null) {
+          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
         }
-      } else {
+      }
+    } else {
+      if (isSafari()) {
+        // This is for migration case for safari from apns to vapid, show popup even when timer is not expired.
         const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
 
         if (vapidSupportedAndNotMigrated) {
@@ -6388,6 +6393,7 @@
           if (!configData.isPreview) {
             addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
             StorageManager.setMetaProp('webpush_last_notif_time', now);
+            StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
           }
         }
       }
