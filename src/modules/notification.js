@@ -296,6 +296,7 @@ export default class NotificationHandler extends Array {
     let httpsIframePath
     let apnsWebPushId
     let apnsWebPushServiceUrl
+    const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && this.#fcmPublicKey !== null
 
     if (displayArgs.length === 1) {
       if (isObject(displayArgs[0])) {
@@ -358,8 +359,6 @@ export default class NotificationHandler extends Array {
       }
     }
 
-    const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && this.#fcmPublicKey !== null
-
     // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
     if (!isHTTP) {
@@ -410,7 +409,8 @@ export default class NotificationHandler extends Array {
         if (!isSafari()) {
           return
         }
-        if (vapidSupportedAndMigrated) {
+        // If Safari is migrated already or only APNS, then return
+        if (vapidSupportedAndMigrated || this.#fcmPublicKey === null) {
           return
         }
       } else {
