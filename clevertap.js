@@ -5646,9 +5646,19 @@
                 }
 
                 const existingBellWrapper = document.getElementById('bell_wrapper');
+                const softPromptCard = document.getElementById('pnWrapper');
+                const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
 
                 if (existingBellWrapper) {
                   existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+                }
+
+                if (softPromptCard) {
+                  softPromptCard.parentNode.removeChild(softPromptCard);
+                }
+
+                if (oldSoftPromptCard) {
+                  oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
                 }
               });
             };
@@ -5667,6 +5677,19 @@
                   subscribeForPush();
                 }
               });
+            }
+          } else if (permission === 'denied') {
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+
+            const softPromptCard = document.getElementById('pnWrapper');
+            const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
             }
           }
         });
@@ -5695,6 +5718,22 @@
 
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
 
+            const existingBellWrapper = document.getElementById('bell_wrapper');
+            const softPromptCard = document.getElementById('pnWrapper');
+            const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+
+            if (existingBellWrapper) {
+              existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+            }
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+            }
+
             StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
             _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
@@ -5702,6 +5741,17 @@
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
           } else if (subscription.permission === 'denied') {
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+
+            const softPromptCard = document.getElementById('pnWrapper');
+            const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+            }
           }
         });
       }

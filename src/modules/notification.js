@@ -111,6 +111,8 @@ export default class NotificationHandler extends Array {
   }
 
   #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
+    const softPromptCard = document.getElementById('pnWrapper')
+    const oldSoftPromptCard = document.getElementById('wzrk_wrapper')
     if (this.#isNativeWebPushSupported() && this.#fcmPublicKey != null) {
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
       navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
@@ -143,6 +145,12 @@ export default class NotificationHandler extends Array {
                 if (existingBellWrapper) {
                   existingBellWrapper.parentNode.removeChild(existingBellWrapper)
                 }
+                if (softPromptCard) {
+                  softPromptCard.parentNode.removeChild(softPromptCard)
+                }
+                if (oldSoftPromptCard) {
+                  oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+                }
               })
             }
 
@@ -158,6 +166,14 @@ export default class NotificationHandler extends Array {
                   subscribeForPush()
                 }
               })
+            }
+          } else if (permission === 'denied') {
+            this.#logger.info('Error subscribing to Safari web push')
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard)
+            }
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
             }
           }
         })
@@ -183,13 +199,28 @@ export default class NotificationHandler extends Array {
                 apnsWebPushId
               }))
               this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
-
+              const existingBellWrapper = document.getElementById('bell_wrapper')
+              if (existingBellWrapper) {
+                existingBellWrapper.parentNode.removeChild(existingBellWrapper)
+              }
+              if (softPromptCard) {
+                softPromptCard.parentNode.removeChild(softPromptCard)
+              }
+              if (oldSoftPromptCard) {
+                oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+              }
               StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
 
               this.#request.registerToken(subscriptionData)
               this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
             } else if (subscription.permission === 'denied') {
               this.#logger.info('Error subscribing to Safari web push')
+              if (softPromptCard) {
+                softPromptCard.parentNode.removeChild(softPromptCard)
+              }
+              if (oldSoftPromptCard) {
+                oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+              }
             }
           })
       }
