@@ -5519,27 +5519,47 @@
       _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
     }
 
+    setupWebPush(displayArgs) {
+      /*
+        A method in notification.js which can be accessed in prompt.js file to call the
+        private method this.#setUpWebPush
+      */
+      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+    }
+
     push() {
       if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        /*
+          To handle a potential race condition, two flags are stored in Local Storage:
+          - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
+          - `isNotificationPushCallDeferred`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+           This ensures the soft prompt is rendered correctly:
+          - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
+          - Otherwise, `isNotificationPushCallDeferred` is set to true, and the rendering is deferred until the webPushConfig is received.
+        */
+        const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
+        const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie('applicationServerKeyReceived');
+
         for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
           displayArgs[_key] = arguments[_key];
         }
 
-        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+        setNotificationHandlerValues({
+          logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+          account: _classPrivateFieldLooseBase(this, _account$2)[_account$2],
+          request: _classPrivateFieldLooseBase(this, _request$4)[_request$4],
+          displayArgs,
+          fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
+        });
 
-        return 0;
+        if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
+          processSoftPrompt();
+        } else {
+          StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', true);
+        }
       } else {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Account ID is not set');
       }
-    }
-
-    enable() {
-      let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-      const {
-        swPath,
-        skipDialog
-      } = options;
-      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, skipDialog, _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
     }
 
     _processOldValues() {
@@ -5571,8 +5591,6 @@
 
       if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
       }
     }
 
@@ -5628,9 +5646,19 @@
                 }
 
                 const existingBellWrapper = document.getElementById('bell_wrapper');
+                const softPromptCard = document.getElementById('pnWrapper');
+                const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
 
                 if (existingBellWrapper) {
                   existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+                }
+
+                if (softPromptCard) {
+                  softPromptCard.parentNode.removeChild(softPromptCard);
+                }
+
+                if (oldSoftPromptCard) {
+                  oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
                 }
               });
             };
@@ -5649,6 +5677,19 @@
                   subscribeForPush();
                 }
               });
+            }
+          } else if (permission === 'denied') {
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+
+            const softPromptCard = document.getElementById('pnWrapper');
+            const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
             }
           }
         });
@@ -5677,6 +5718,22 @@
 
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
 
+            const existingBellWrapper = document.getElementById('bell_wrapper');
+            const softPromptCard = document.getElementById('pnWrapper');
+            const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+
+            if (existingBellWrapper) {
+              existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+            }
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+            }
+
             StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
             _classPrivateFieldLooseBase(this, _request$4)[_request$4].registerToken(subscriptionData);
@@ -5684,6 +5741,17 @@
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
           } else if (subscription.permission === 'denied') {
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+
+            const softPromptCard = document.getElementById('pnWrapper');
+            const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+            }
           }
         });
       }
@@ -5732,6 +5800,8 @@
           subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
         }
 
+        const softPromptCard = document.getElementById('pnWrapper');
+        const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
           _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
 
@@ -5763,6 +5833,14 @@
           if (existingBellWrapper) {
             existingBellWrapper.parentNode.removeChild(existingBellWrapper);
           }
+
+          if (softPromptCard) {
+            softPromptCard.parentNode.removeChild(softPromptCard);
+          }
+
+          if (oldSoftPromptCard) {
+            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+          }
         }).catch(error => {
           // unsubscribe from webpush if error
           serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
@@ -5782,6 +5860,14 @@
           });
 
           _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error subscribing: ' + error);
+
+          if (softPromptCard) {
+            softPromptCard.parentNode.removeChild(softPromptCard);
+          }
+
+          if (oldSoftPromptCard) {
+            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+          }
         });
       }).catch(err => {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('error registering service worker: ' + err);
@@ -6058,6 +6144,19 @@
   let appServerKey = null;
   let swPath = '/clevertap_sw.js';
   let notificationHandler = null;
+  let logger = null;
+  let account = null;
+  let request = null;
+  let displayArgs = null;
+  let fcmPublicKey = null;
+  const setNotificationHandlerValues = function () {
+    let notificationValues = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    logger = notificationValues.logger;
+    account = notificationValues.account;
+    request = notificationValues.request;
+    displayArgs = notificationValues.displayArgs;
+    fcmPublicKey = notificationValues.fcmPublicKey;
+  };
   const processWebPushConfig = (webPushConfig, logger, request) => {
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
@@ -6068,12 +6167,130 @@
 
     if (webPushConfig.isPreview) {
       updatePushConfig();
-      enablePush(logger, null, request);
+      enablePush({
+        logger,
+        request
+      });
     } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
       updatePushConfig();
+
+      try {
+        StorageManager.saveToLSorCookie('webPushConfigResponseReceived', true);
+        const isNotificationPushCalled = StorageManager.readFromLSorCookie('isNotificationPushCallDeferred');
+
+        if (isNotificationPushCalled) {
+          processSoftPrompt();
+        }
+      } catch (error) {
+        logger.error('Failed to process web push config:', error); // Fallback: Attempt to process soft prompt anyway
+
+        processSoftPrompt();
+      }
     }
   };
-  const enablePush = (logger, account, request, customSwPath, skipDialog, fcmPublicKey) => {
+  const processSoftPrompt = () => {
+    const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+    notificationHandler = new NotificationHandler({
+      logger,
+      session: {},
+      request,
+      account
+    });
+
+    if (!(Object.keys(webPushConfig).length > 0)) {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setupWebPush(displayArgs);
+      return;
+    }
+
+    const {
+      showBox,
+      showBellIcon,
+      boxType
+    } = webPushConfig;
+    const {
+      serviceWorkerPath,
+      skipDialog,
+      okCallback,
+      subscriptionCallback,
+      rejectCallback,
+      apnsWebPushId,
+      apnsWebPushServiceUrl
+    } = parseDisplayArgs(displayArgs);
+    const isSoftPromptNew = showBellIcon || showBox && boxType === 'new';
+
+    if (isSoftPromptNew) {
+      const enablePushParams = {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        logger,
+        request,
+        account,
+        fcmPublicKey,
+        apnsWebPushId,
+        apnsWebPushServiceUrl
+      };
+      enablePush(enablePushParams);
+    }
+
+    if (showBox && boxType === 'old') {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setupWebPush(displayArgs);
+    }
+
+    StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', false);
+    StorageManager.saveToLSorCookie('applicationServerKeyReceived', false);
+  };
+  const parseDisplayArgs = displayArgs => {
+    if (displayArgs.length === 1 && isObject(displayArgs[0])) {
+      const {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        apnsWebPushServiceUrl,
+        apnsWebPushId
+      } = displayArgs[0];
+      return {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        apnsWebPushServiceUrl,
+        apnsWebPushId
+      };
+    }
+
+    return {
+      serviceWorkerPath: undefined,
+      skipDialog: displayArgs[5],
+      okCallback: undefined,
+      subscriptionCallback: undefined,
+      rejectCallback: undefined,
+      apnsWebPushServiceUrl: undefined,
+      apnsWebPushId: undefined
+    };
+  };
+  const enablePush = enablePushParams => {
+    const {
+      serviceWorkerPath: customSwPath,
+      okCallback,
+      subscriptionCallback,
+      rejectCallback,
+      logger,
+      fcmPublicKey,
+      apnsWebPushId,
+      apnsWebPushServiceUrl
+    } = enablePushParams;
+    let {
+      skipDialog
+    } = enablePushParams;
+
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     $ct.pushConfig = _pushConfig;
@@ -6087,16 +6304,14 @@
       swPath = customSwPath;
     }
 
-    notificationHandler = new NotificationHandler({
-      logger,
-      session: {},
-      request,
-      account
-    });
+    if (skipDialog === null) {
+      skipDialog = false;
+    } // notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
+
 
     if (skipDialog) {
       notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
       return;
     }
 
@@ -6111,8 +6326,8 @@
       if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey);
       if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
     } else {
-      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey);
-      if (showBellIcon) createBellIcon($ct.pushConfig);
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+      if (showBellIcon) createBellIcon($ct.pushConfig, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
     }
   };
 
@@ -6126,7 +6341,7 @@
     return element;
   };
 
-  const createNotificationBox = (configData, fcmPublicKey) => {
+  const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
     const {
       boxConfig: {
@@ -6192,7 +6407,7 @@
       if ('Notification' in window && Notification !== null) {
         if (Notification.permission === 'granted') {
           notificationHandler.setApplicationServerKey(appServerKey);
-          notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+          notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
           return;
         } else if (Notification.permission === 'denied') {
           return;
@@ -6207,28 +6422,34 @@
     const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
 
     if (shouldShowNotification) {
-      if (!isSafari()) {
-        document.body.appendChild(wrapper);
+      document.body.appendChild(wrapper);
 
-        if (!configData.isPreview) {
-          StorageManager.setMetaProp('webpush_last_notif_time', now);
-          addEventListeners(wrapper);
+      if (!configData.isPreview) {
+        StorageManager.setMetaProp('webpush_last_notif_time', now);
+        addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+
+        if (isSafari() && 'PushManager' in window && fcmPublicKey != null) {
+          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
         }
-      } else {
+      }
+    } else {
+      if (isSafari()) {
+        // This is for migration case for safari from apns to vapid, show popup even when timer is not expired.
         const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
 
         if (vapidSupportedAndNotMigrated) {
           document.body.appendChild(wrapper);
 
           if (!configData.isPreview) {
-            addEventListeners(wrapper);
+            addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
             StorageManager.setMetaProp('webpush_last_notif_time', now);
+            StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
           }
         }
       }
     }
   };
-  const createBellIcon = configData => {
+  const createBellIcon = (configData, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return;
     const {
       bellIconConfig: {
@@ -6278,7 +6499,7 @@
     document.body.appendChild(bellWrapper);
 
     if (!configData.isPreview) {
-      addBellEventListeners(bellWrapper);
+      addBellEventListeners(bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
     }
 
     return bellWrapper;
@@ -6286,7 +6507,7 @@
   const setServerKey = serverKey => {
     appServerKey = serverKey;
   };
-  const addEventListeners = wrapper => {
+  const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     const primaryButton = wrapper.querySelector('#primaryButton');
     const secondaryButton = wrapper.querySelector('#secondaryButton');
 
@@ -6299,20 +6520,28 @@
     primaryButton.addEventListener('click', () => {
       removeWrapper();
       notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
+
+      if (typeof okCallback === 'function') {
+        okCallback();
+      }
     });
     secondaryButton.addEventListener('click', () => {
       removeWrapper();
+
+      if (typeof rejectCallback === 'function') {
+        rejectCallback();
+      }
     });
   };
-  const addBellEventListeners = bellWrapper => {
+  const addBellEventListeners = (bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     const bellIcon = bellWrapper.querySelector('#bell_icon');
     bellIcon.addEventListener('click', () => {
       if (Notification.permission === 'denied') {
         toggleGifModal(bellWrapper);
       } else {
         notificationHandler.setApplicationServerKey(appServerKey);
-        notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+        notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
 
         if (Notification.permission === 'granted') {
           bellWrapper.remove();
@@ -9219,6 +9448,18 @@
         setServerKey(applicationServerKey);
 
         this.notifications._enableWebPush(enabled, applicationServerKey);
+
+        try {
+          StorageManager.saveToLSorCookie('applicationServerKeyReceived', true);
+          const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
+          const isNotificationPushCalled = StorageManager.readFromLSorCookie('isNotificationPushCallDeferred');
+
+          if (isWebPushConfigPresent && isNotificationPushCalled) {
+            processSoftPrompt();
+          }
+        } catch (error) {
+          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Could not read value from local storage', error);
+        }
       };
 
       api.tr = msg => {
