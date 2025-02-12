@@ -214,6 +214,24 @@
   const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
+  const WEB_NATIVE_TEMPLATES = {
+    KV_PAIR: 1,
+    BANNER: 2,
+    CAROUSEL: 3,
+    VISUAL_BUILDER: 4,
+    CUSTOM_HTML: 5,
+    JSON: 6
+  };
+  const WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES = {
+    HTML: 'form',
+    JSON: 'json'
+  };
+  const CAMPAIGN_TYPES = {
+    EXIT_INTENT: 1,
+    WEB_NATIVE_DISPLAY: 2,
+    FOOTER_NOTIFICATION: 0,
+    FOOTER_NOTIFICATION_2: null
+  };
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
 
@@ -11564,8 +11582,9 @@
       }
     }
 
-    const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', {
-      detail: inaObj
+    const kvPairsEvent = new CustomEvent('CT_web_native_display', {
+      detail: inaObj,
+      type: 'builder'
     });
     document.dispatchEvent(kvPairsEvent);
   }
@@ -11958,10 +11977,12 @@
 
     if (targetingMsgJson.msgContent.kv != null) {
       inaObj.kv = targetingMsgJson.msgContent.kv;
-    }
+    } // combine all events from web native display under single event and add type
+
 
     const kvPairsEvent = new CustomEvent('CT_web_native_display', {
-      detail: inaObj
+      detail: inaObj,
+      type: 'kvpair'
     });
     document.dispatchEvent(kvPairsEvent);
   };
@@ -12025,8 +12046,9 @@
       inaObj.json = json;
     }
 
-    const jsonEvent = new CustomEvent('CT_web_native_display_json', {
-      detail: inaObj
+    const jsonEvent = new CustomEvent('CT_web_native_display', {
+      detail: inaObj,
+      type: 'json'
     });
     document.dispatchEvent(jsonEvent);
   };
@@ -12195,6 +12217,63 @@
     const scookieObj = _session.getSessionCookieObject();
 
     return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
+  };
+  const webNativeDisplayCampaignUtils = {
+    /**
+     * Checks if a campaign triggers a custom event push based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to evaluate.
+     * @returns {boolean} - Returns true if the campaign pushes a custom event, otherwise false.
+     */
+    doesCampaignPushCustomEvent: campaign => {
+      return [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(campaign.msgContent.type) || campaign.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && campaign.display.details[0].selectorData.map(s => s.values.editor).includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON);
+    },
+
+    /**
+     * Determines if a campaign mutates the DOM node based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to evaluate.
+     * @returns {boolean} - Returns true if the campaign mutates the DOM node, otherwise false.
+     */
+    doesCampaignMutateDOMNode: campaign => {
+      return [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL, WEB_NATIVE_TEMPLATES.CUSTOM_HTML].includes(campaign.msgContent.type) || WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === campaign.msgContent.type && campaign.display.details[0].selectorData.map(s => s.values.editor).includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML);
+    },
+
+    /**
+     * Sorts campaigns based on their priority in descending order.
+     *
+     * @param {Array<Object>} campaigns - The list of campaign objects.
+     * @returns {Array<Object>} - A new array of campaigns sorted by priority.
+     */
+    sortCampaignsByPriority: campaigns => {
+      // TODO: Remove this after testing
+      campaigns.forEach(c => {
+        c.priority = Math.floor(Math.random() * 100);
+      });
+      return campaigns.sort((a, b) => b.priority - a.priority);
+    },
+
+    /**
+     * Retrieves the DOM nodes associated with a campaign based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to extract nodes from.
+     * @returns {Array<string>} - An array of DOM node selectors or IDs associated with the campaign.
+     */
+    getCampaignNodes: campaign => {
+      var _campaign$display$det;
+
+      if ([WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL].includes(campaign.msgContent.type)) {
+        return [campaign.display.divSelector];
+      } else if (campaign.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
+        return [campaign.display.divId];
+      } else if (campaign.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && ((_campaign$display$det = campaign.display.details[0].selectorData.filter(s => s.values.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML)) === null || _campaign$display$det === void 0 ? void 0 : _campaign$display$det.length) > 0) {
+        var _campaign$display$det2, _campaign$display$det3, _campaign$display$det4, _campaign$display$det5;
+
+        return (_campaign$display$det2 = campaign.display.details) === null || _campaign$display$det2 === void 0 ? void 0 : (_campaign$display$det3 = _campaign$display$det2[0]) === null || _campaign$display$det3 === void 0 ? void 0 : (_campaign$display$det4 = _campaign$display$det3.selectorData) === null || _campaign$display$det4 === void 0 ? void 0 : (_campaign$display$det5 = _campaign$display$det4.filter(s => s.values.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML)) === null || _campaign$display$det5 === void 0 ? void 0 : _campaign$display$det5.map(s => s.selector);
+      }
+
+      return [];
+    }
   };
 
   const renderPopUpImageOnly = (targetingMsgJson, _session) => {
@@ -14074,34 +14153,69 @@
 
     if (msg.inapp_notifs != null) {
       const arrInAppNotifs = {};
+      const sortedCampaigns = webNativeDisplayCampaignUtils.sortCampaignsByPriority(msg.inapp_notifs);
+      console.log({
+        sortedCampaigns
+      });
+      const executedTargets = {
+        nodes: [],
+        customEvents: []
+      };
 
-      for (let index = 0; index < msg.inapp_notifs.length; index++) {
-        const targetNotif = msg.inapp_notifs[index];
+      for (let index = 0; index < sortedCampaigns.length; index++) {
+        const targetNotif = sortedCampaigns[index];
 
-        if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
+        if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
           showFooterNotification(targetNotif);
-        } else if (targetNotif.display.wtarget_type === 1) {
+        } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
           window.document.body.onmouseleave = showExitIntent;
-        } else if (targetNotif.display.wtarget_type === 2) {
+        } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
-          if (targetNotif.msgContent.type === 1) {
+
+          /* Skip current campaign if we have already executed one with same CustomEvent and type it */
+          if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif) && executedTargets.customEvents.includes(targetNotif.msgContent.type)) {
+            continue;
+          }
+          /* Skip current campaign if we have already executed one with same DOM Node */
+
+
+          if (webNativeDisplayCampaignUtils.doesCampaignMutateDOMNode(targetNotif) && executedTargets.nodes.some(node => {
+            var _webNativeDisplayCamp;
+
+            return (_webNativeDisplayCamp = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif)) === null || _webNativeDisplayCamp === void 0 ? void 0 : _webNativeDisplayCamp.includes(node);
+          })) {
+            continue;
+          }
+
+          if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif)) {
+            /*
+              This basically stores the CustomEvents with their type that we will push so that
+              the next time we receive a CustomEvent with the same type we can skip it
+            */
+            executedTargets.customEvents.push(targetNotif.msgContent.type);
+          } else if (webNativeDisplayCampaignUtils.doesCampaignMutateDOMNode(targetNotif)) {
+            const nodes = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif);
+            executedTargets.nodes.push(...nodes);
+          }
+
+          if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR) {
             handleKVpairCampaign(targetNotif);
-          } else if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER || targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CAROUSEL) {
             // Check for banner and carousel
             const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
 
             if (element !== null) {
-              targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
+              targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
             } else {
               arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
             }
-          } else if (targetNotif.msgContent.type === 4) {
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
             renderVisualBuilder(targetNotif, false);
-          } else if (targetNotif.msgContent.type === 5) {
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
             renderCustomHtml(targetNotif, _logger);
-          } else if (targetNotif.msgContent.type === 6) {
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
             handleJson(targetNotif);
           } else {
             showFooterNotification(targetNotif);
@@ -14595,7 +14709,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.13.0',
+        lib: 'web-sdk-v1.12.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -16341,7 +16455,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.13.0';
+      return 'web-sdk-v1.12.2';
     }
 
     defineVariable(name, defaultValue) {
