@@ -1,3 +1,4 @@
+import { CUSTOM_EVENT_KEYS, CUSTOM_EVENTS_CAMPAIGN_SOURCES } from '../../util/constants'
 import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_QUERY_PARAMS } from './builder_constants'
 import { updateFormData, updateElementCSS } from './dataUpdate'
 
@@ -241,6 +242,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
   }
 
   details.forEach(d => {
+    // TODO: Check if this condition is needed, as we might have scenarios where the customer might be on the same url but might have ?queryParams or #pageAnchors
     if (d.url === url) {
       d.selectorData.forEach(s => {
         if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) &&
@@ -332,7 +334,11 @@ function dispatchJsonData (targetingMsgJson, selector, isPreview = false) {
       inaObj.json = selector.json
     }
   }
-  const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', { detail: inaObj })
+  const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
+    detail: {
+      campaignDetails: inaObj, campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.VISUAL_BUILDER
+    }
+  })
   document.dispatchEvent(kvPairsEvent)
 }
 
