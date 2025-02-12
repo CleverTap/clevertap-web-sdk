@@ -832,8 +832,30 @@ const _tr = (msg, {
 
   if (msg.inapp_notifs != null) {
     const arrInAppNotifs = {}
-    for (let index = 0; index < msg.inapp_notifs.length; index++) {
-      const targetNotif = msg.inapp_notifs[index]
+    const campaigns = groupCampaigns(msg.inapp_notifs)
+
+    const listOfTopCampaigns = []
+    for (const key in campaigns) {
+      const currentList = campaigns[key]
+
+      let maxPriority = -1
+      let campaignWithTopPriority = {}
+      for (const item in currentList) {
+        if (maxPriority < currentList[item].display.priority) {
+          maxPriority = currentList[item].display.priority
+          campaignWithTopPriority = currentList[item]
+        } else if (currentList[item]?.msgContent?.templateType === 'custom-key-values') {
+          /* Pushing all KV Campaigns to the final list as they do not need to be eliminated based on priority */
+          listOfTopCampaigns.push(currentList[item])
+        }
+      }
+      listOfTopCampaigns.push(campaignWithTopPriority)
+    }
+
+    console.log({ listOfTopCampaigns })
+
+    for (let index = 0; index < listOfTopCampaigns.length; index++) {
+      const targetNotif = listOfTopCampaigns[index]
       if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
         showFooterNotification(targetNotif)
       } else if (targetNotif.display.wtarget_type === 1) { // if display['wtarget_type']==1 then exit intent
@@ -868,6 +890,48 @@ const _tr = (msg, {
         addLoadListener(arrInAppNotifs)
       }
     }
+  }
+
+  function groupCampaigns (campaigns) {
+    const grouped = {} // Initialize an empty object to hold the groups
+
+    for (const campaign of campaigns) {
+      if (!campaign || !campaign.display) continue // Skip invalid campaign objects
+
+      // TODO: Adding this to test priority: Remove in production
+      campaign.display.priority = Math.floor(Math.random() * 100)
+
+      const key = getCampaignKey(campaign)
+
+      if (!grouped[key]) {
+        grouped[key] = [] // Initialize an array if key doesn't exist
+      }
+
+      grouped[key].push(campaign) // Add the campaign to the respective group
+    }
+
+    return grouped // Return the grouped campaigns
+  }
+
+  // Helper function to extract the correct grouping key
+  function getCampaignKey (campaign) {
+    if (campaign.display?.divId) {
+      return campaign.display.divId.trim() // for Custom Web Template
+    }
+
+    if (campaign.display?.divSelector) {
+      return campaign.display.divSelector.trim() // Use divSelector if available
+    }
+
+    const details = campaign.display.details
+    if (Array.isArray(details) && details.length > 0) {
+      const selectorData = details[0].selectorData
+      if (Array.isArray(selectorData) && selectorData.length > 0 && selectorData[0].selector) {
+        return selectorData[0].selector.trim() // Use the first selector if valid
+      }
+    }
+
+    return `key-${campaign.wzrk_id}` // Fallback unique key for non-selector campaigns
   }
 
   const handleInboxNotifications = () => {
