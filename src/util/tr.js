@@ -341,7 +341,7 @@ const _tr = (msg, {
     if (onClick !== '' && onClick != null) {
       pointerCss = 'cursor:pointer;'
     }
-    if (displayObj.preview && displayObj['custom-editor']) {
+    if (displayObj.preview) {
       iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
     }
 
