@@ -318,7 +318,7 @@ function dispatchJsonData (targetingMsgJson, selector, isPreview = false) {
       inaObj.json = selector.json
     }
   }
-  const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', { detail: inaObj })
+  const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj, type: 'builder' })
   document.dispatchEvent(kvPairsEvent)
 }
 

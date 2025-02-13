@@ -214,6 +214,20 @@
   const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
+  const WEB_NATIVE_TEMPLATES = {
+    KV_PAIR: 1,
+    BANNER: 2,
+    CAROUSEL: 3,
+    VISUAL_BUILDER: 4,
+    CUSTOM_HTML: 5,
+    JSON: 6
+  };
+  const CAMPAIGN_TYPES = {
+    EXIT_INTENT: 1,
+    WEB_NATIVE_DISPLAY: 2,
+    FOOTER_NOTIFICATION: 0,
+    FOOTER_NOTIFICATION_2: null
+  };
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -4762,8 +4776,9 @@
       }
     }
 
-    const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', {
-      detail: inaObj
+    const kvPairsEvent = new CustomEvent('CT_web_native_display', {
+      detail: inaObj,
+      type: 'builder'
     });
     document.dispatchEvent(kvPairsEvent);
   }
@@ -5156,10 +5171,12 @@
 
     if (targetingMsgJson.msgContent.kv != null) {
       inaObj.kv = targetingMsgJson.msgContent.kv;
-    }
+    } // combine all events from web native display under single event and add type
+
 
     const kvPairsEvent = new CustomEvent('CT_web_native_display', {
-      detail: inaObj
+      detail: inaObj,
+      type: 'kvpair'
     });
     document.dispatchEvent(kvPairsEvent);
   };
@@ -5223,8 +5240,9 @@
       inaObj.json = json;
     }
 
-    const jsonEvent = new CustomEvent('CT_web_native_display_json', {
-      detail: inaObj
+    const jsonEvent = new CustomEvent('CT_web_native_display', {
+      detail: inaObj,
+      type: 'json'
     });
     document.dispatchEvent(jsonEvent);
   };
@@ -5394,6 +5412,123 @@
 
     return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
   };
+  /**
+     * Groups campaigns by their target identifiers.
+     *
+     * @param {Array<Object>} campaigns - The list of campaign objects.
+     * @returns {Object<string, Array<Object>>} - An object grouping campaigns by their respective keys.
+     */
+
+  function groupCampaignsByTargets(campaigns) {
+    const grouped = {};
+
+    for (const campaign of campaigns) {
+      if (!isValidCampaign(campaign)) continue; // TODO: Remove this priority assignment in production
+
+      campaign.display.priority = generateRandomPriority();
+      const key = getCampaignKey(campaign);
+
+      if (!grouped[key]) {
+        grouped[key] = [];
+      }
+
+      grouped[key].push(campaign);
+    }
+
+    return grouped;
+  }
+  /**
+     * Validates whether the given campaign object is valid.
+     *
+     * @param {Object} campaign - The campaign object to validate.
+     * @returns {boolean} - True if valid, false otherwise.
+     */
+
+  function isValidCampaign(campaign) {
+    return Boolean(campaign && campaign.display);
+  }
+  /**
+     * Generates a random priority value.
+     *
+     * @returns {number} - A random integer between 0 and 99.
+     */
+
+
+  function generateRandomPriority() {
+    return Math.floor(Math.random() * 100);
+  }
+  /**
+     * Extracts the appropriate key for grouping a campaign.
+     *
+     * @param {Object} campaign - The campaign object.
+     * @returns {string} - The determined key for grouping.
+     */
+
+
+  function getCampaignKey(campaign) {
+    var _campaign$display, _campaign$display2;
+
+    if ((_campaign$display = campaign.display) === null || _campaign$display === void 0 ? void 0 : _campaign$display.divId) {
+      return campaign.display.divId.trim();
+    }
+
+    if ((_campaign$display2 = campaign.display) === null || _campaign$display2 === void 0 ? void 0 : _campaign$display2.divSelector) {
+      return campaign.display.divSelector.trim();
+    }
+
+    const details = campaign.display.details;
+
+    if (Array.isArray(details) && details.length > 0) {
+      const selectorData = details[0].selectorData;
+
+      if (Array.isArray(selectorData) && selectorData.length > 0 && selectorData[0].selector) {
+        return selectorData[0].selector.trim();
+      }
+    }
+
+    return "key-".concat(campaign.wzrk_id); // Fallback unique key
+  }
+  /**
+   * Retrieves a list of top-priority campaigns from grouped campaigns.
+   *
+   * @param {Object<string, Array<Object>>} campaigns - The grouped campaigns object.
+   * @returns {Array<Object>} - The list of top-priority campaigns.
+   */
+
+
+  function getListOfTopCampaigns(campaigns, logger) {
+    const listOfTopCampaigns = [];
+
+    for (const key in campaigns) {
+      const currentList = campaigns[key];
+      if (!Array.isArray(currentList) || currentList.length === 0) continue;
+      let maxPriority = -1;
+      let campaignWithTopPriority = {};
+
+      for (const item of currentList) {
+        /*
+          * If the grouped list has size one just add it to the final list,
+          * * This can happen for the Campaigns where the selector is targetted by only one Campaign and also for Custom Key Value Campaigns
+          * * Because they will always be single campaign group as seen in Function `getCampaignKey`
+          * If the grouped list has many campaigns then pick the one with highest priority
+          * In the grouped campaign if it is a json campaign
+        */
+        if (currentList.length === 1) {
+          campaignWithTopPriority = item;
+          continue;
+        } else if (item.display.priority > maxPriority) {
+          maxPriority = item.display.priority;
+          campaignWithTopPriority = item;
+        }
+      }
+
+      if (Object.keys(campaignWithTopPriority).length > 0) {
+        listOfTopCampaigns.push(campaignWithTopPriority);
+      }
+    }
+
+    return listOfTopCampaigns;
+  }
 
   const renderPopUpImageOnly = (targetingMsgJson, _session) => {
     const divId = 'wzrkImageOnlyDiv';
@@ -7272,34 +7407,39 @@
 
     if (msg.inapp_notifs != null) {
       const arrInAppNotifs = {};
+      const groupedCampaigns = groupCampaignsByTargets(msg.inapp_notifs);
+      const listOfTopCampaigns = getListOfTopCampaigns(groupedCampaigns);
+      console.log({
+        listOfTopCampaigns
+      });
 
-      for (let index = 0; index < msg.inapp_notifs.length; index++) {
-        const targetNotif = msg.inapp_notifs[index];
+      for (let index = 0; index < listOfTopCampaigns.length; index++) {
+        const targetNotif = listOfTopCampaigns[index];
 
-        if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
+        if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
           showFooterNotification(targetNotif);
-        } else if (targetNotif.display.wtarget_type === 1) {
+        } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
           window.document.body.onmouseleave = showExitIntent;
-        } else if (targetNotif.display.wtarget_type === 2) {
+        } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
-          if (targetNotif.msgContent.type === 1) {
+          if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR) {
             handleKVpairCampaign(targetNotif);
-          } else if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER || targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CAROUSEL) {
             // Check for banner and carousel
             const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
 
             if (element !== null) {
-              targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
+              targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
             } else {
               arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
             }
-          } else if (targetNotif.msgContent.type === 4) {
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
             renderVisualBuilder(targetNotif, false);
-          } else if (targetNotif.msgContent.type === 5) {
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
             renderCustomHtml(targetNotif, _logger);
-          } else if (targetNotif.msgContent.type === 6) {
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
             handleJson(targetNotif);
           } else {
             showFooterNotification(targetNotif);

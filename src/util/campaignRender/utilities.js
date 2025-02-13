@@ -170,3 +170,111 @@ export const getCookieParams = (_device, _session) => {
   const scookieObj = _session.getSessionCookieObject()
   return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s))
 }
+
+/**
+   * Groups campaigns by their target identifiers.
+   *
+   * @param {Array<Object>} campaigns - The list of campaign objects.
+   * @returns {Object<string, Array<Object>>} - An object grouping campaigns by their respective keys.
+   */
+export function groupCampaignsByTargets (campaigns) {
+  const grouped = {}
+
+  for (const campaign of campaigns) {
+    if (!isValidCampaign(campaign)) continue
+
+    // TODO: Remove this priority assignment in production
+    campaign.display.priority = generateRandomPriority()
+
+    const key = getCampaignKey(campaign)
+    if (!grouped[key]) {
+      grouped[key] = []
+    }
+    grouped[key].push(campaign)
+  }
+
+  return grouped
+}
+
+/**
+   * Validates whether the given campaign object is valid.
+   *
+   * @param {Object} campaign - The campaign object to validate.
+   * @returns {boolean} - True if valid, false otherwise.
+   */
+function isValidCampaign (campaign) {
+  return Boolean(campaign && campaign.display)
+}
+
+/**
+   * Generates a random priority value.
+   *
+   * @returns {number} - A random integer between 0 and 99.
+   */
+function generateRandomPriority () {
+  return Math.floor(Math.random() * 100)
+}
+
+/**
+   * Extracts the appropriate key for grouping a campaign.
+   *
+   * @param {Object} campaign - The campaign object.
+   * @returns {string} - The determined key for grouping.
+   */
+function getCampaignKey (campaign) {
+  if (campaign.display?.divId) {
+    return campaign.display.divId.trim()
+  }
+  if (campaign.display?.divSelector) {
+    return campaign.display.divSelector.trim()
+  }
+  const details = campaign.display.details
+  if (Array.isArray(details) && details.length > 0) {
+    const selectorData = details[0].selectorData
+    if (Array.isArray(selectorData) && selectorData.length > 0 && selectorData[0].selector) {
+      return selectorData[0].selector.trim()
+    }
+  }
+  return `key-${campaign.wzrk_id}` // Fallback unique key
+}
+
+/**
+ * Retrieves a list of top-priority campaigns from grouped campaigns.
+ *
+ * @param {Object<string, Array<Object>>} campaigns - The grouped campaigns object.
+ * @returns {Array<Object>} - The list of top-priority campaigns.
+ */
+export function getListOfTopCampaigns (campaigns, logger) {
+  const listOfTopCampaigns = []
+
+  for (const key in campaigns) {
+    const currentList = campaigns[key]
+    if (!Array.isArray(currentList) || currentList.length === 0) continue
+
+    let maxPriority = -1
+    let campaignWithTopPriority = {}
+
+    for (const item of currentList) {
+      /*
+        * If the grouped list has size one just add it to the final list,
+        * * This can happen for the Campaigns where the selector is targetted by only one Campaign and also for Custom Key Value Campaigns
+        * * Because they will always be single campaign group as seen in Function `getCampaignKey`
+        * If the grouped list has many campaigns then pick the one with highest priority
+        * In the grouped campaign if it is a json campaign
+      */
+      if (currentList.length === 1) {
+        campaignWithTopPriority = item
+        continue
+      } else if (item.display.priority > maxPriority) {
+        maxPriority = item.display.priority
+        campaignWithTopPriority = item
+      }
+    }
+
+    if (Object.keys(campaignWithTopPriority).length > 0) {
+      listOfTopCampaigns.push(campaignWithTopPriority)
+    }
+  }
+
+  return listOfTopCampaigns
+}
