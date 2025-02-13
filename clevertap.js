@@ -4762,8 +4762,9 @@
       }
     }
 
-    const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', {
-      detail: inaObj
+    const kvPairsEvent = new CustomEvent('CT_web_native_display', {
+      detail: inaObj,
+      type: 'builder'
     });
     document.dispatchEvent(kvPairsEvent);
   }
@@ -5160,7 +5161,8 @@
 
 
     const kvPairsEvent = new CustomEvent('CT_web_native_display', {
-      detail: inaObj
+      detail: inaObj,
+      type: 'kvpair'
     });
     document.dispatchEvent(kvPairsEvent);
   };
@@ -5224,8 +5226,9 @@
       inaObj.json = json;
     }
 
-    const jsonEvent = new CustomEvent('CT_web_native_display_json', {
-      detail: inaObj
+    const jsonEvent = new CustomEvent('CT_web_native_display', {
+      detail: inaObj,
+      type: 'json'
     });
     document.dispatchEvent(jsonEvent);
   };

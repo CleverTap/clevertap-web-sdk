@@ -38,7 +38,7 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
     inaObj.kv = targetingMsgJson.msgContent.kv
   }
   // combine all events from web native display under single event and add type
-  const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
+  const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj, type: 'kvpair' })
   document.dispatchEvent(kvPairsEvent)
 }
 
@@ -96,6 +96,6 @@ export const handleJson = (targetingMsgJson) => {
   if (targetingMsgJson.display.json != null) {
     inaObj.json = json
   }
-  const jsonEvent = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
+  const jsonEvent = new CustomEvent('CT_web_native_display', { detail: inaObj, type: 'json' })
   document.dispatchEvent(jsonEvent)
 }
