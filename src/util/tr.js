@@ -26,7 +26,7 @@ import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
 import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel, renderCustomHtml, handleJson } from './campaignRender/nativeDisplay'
-import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate } from './campaignRender/utilities'
+import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate, groupCampaignsByTargets, getListOfTopCampaigns } from './campaignRender/utilities'
 import { renderPopUpImageOnly } from './campaignRender/webPopup'
 import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 
@@ -832,26 +832,8 @@ const _tr = (msg, {
 
   if (msg.inapp_notifs != null) {
     const arrInAppNotifs = {}
-    const campaigns = groupCampaigns(msg.inapp_notifs)
-
-    const listOfTopCampaigns = []
-    for (const key in campaigns) {
-      const currentList = campaigns[key]
-
-      let maxPriority = -1
-      let campaignWithTopPriority = {}
-      for (const item in currentList) {
-        if (maxPriority < currentList[item].display.priority) {
-          maxPriority = currentList[item].display.priority
-          campaignWithTopPriority = currentList[item]
-        } else if (currentList[item]?.msgContent?.templateType === 'custom-key-values') {
-          /* Pushing all KV Campaigns to the final list as they do not need to be eliminated based on priority */
-          listOfTopCampaigns.push(currentList[item])
-        }
-      }
-      listOfTopCampaigns.push(campaignWithTopPriority)
-    }
-
+    const groupedCampaigns = groupCampaignsByTargets(msg.inapp_notifs)
+    const listOfTopCampaigns = getListOfTopCampaigns(groupedCampaigns, _logger)
     console.log({ listOfTopCampaigns })
 
     for (let index = 0; index < listOfTopCampaigns.length; index++) {
@@ -890,48 +872,6 @@ const _tr = (msg, {
         addLoadListener(arrInAppNotifs)
       }
     }
-  }
-
-  function groupCampaigns (campaigns) {
-    const grouped = {} // Initialize an empty object to hold the groups
-
-    for (const campaign of campaigns) {
-      if (!campaign || !campaign.display) continue // Skip invalid campaign objects
-
-      // TODO: Adding this to test priority: Remove in production
-      campaign.display.priority = Math.floor(Math.random() * 100)
-
-      const key = getCampaignKey(campaign)
-
-      if (!grouped[key]) {
-        grouped[key] = [] // Initialize an array if key doesn't exist
-      }
-
-      grouped[key].push(campaign) // Add the campaign to the respective group
-    }
-
-    return grouped // Return the grouped campaigns
-  }
-
-  // Helper function to extract the correct grouping key
-  function getCampaignKey (campaign) {
-    if (campaign.display?.divId) {
-      return campaign.display.divId.trim() // for Custom Web Template
-    }
-
-    if (campaign.display?.divSelector) {
-      return campaign.display.divSelector.trim() // Use divSelector if available
-    }
-
-    const details = campaign.display.details
-    if (Array.isArray(details) && details.length > 0) {
-      const selectorData = details[0].selectorData
-      if (Array.isArray(selectorData) && selectorData.length > 0 && selectorData[0].selector) {
-        return selectorData[0].selector.trim() // Use the first selector if valid
-      }
-    }
-
-    return `key-${campaign.wzrk_id}` // Fallback unique key for non-selector campaigns
   }
 
   const handleInboxNotifications = () => {

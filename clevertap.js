@@ -5398,6 +5398,142 @@
 
     return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
   };
+  /**
+     * Groups campaigns by their target identifiers.
+     *
+     * @param {Array<Object>} campaigns - The list of campaign objects.
+     * @returns {Object<string, Array<Object>>} - An object grouping campaigns by their respective keys.
+     */
+
+  function groupCampaignsByTargets(campaigns) {
+    const grouped = {};
+
+    for (const campaign of campaigns) {
+      if (!isValidCampaign(campaign)) continue; // TODO: Remove this priority assignment in production
+
+      campaign.display.priority = generateRandomPriority();
+      const key = getCampaignKey(campaign);
+
+      if (!grouped[key]) {
+        grouped[key] = [];
+      }
+
+      grouped[key].push(campaign);
+    }
+
+    return grouped;
+  }
+  /**
+     * Validates whether the given campaign object is valid.
+     *
+     * @param {Object} campaign - The campaign object to validate.
+     * @returns {boolean} - True if valid, false otherwise.
+     */
+
+  function isValidCampaign(campaign) {
+    return Boolean(campaign && campaign.display);
+  }
+  /**
+     * Generates a random priority value.
+     *
+     * @returns {number} - A random integer between 0 and 99.
+     */
+
+
+  function generateRandomPriority() {
+    return Math.floor(Math.random() * 100);
+  }
+  /**
+     * Extracts the appropriate key for grouping a campaign.
+     *
+     * @param {Object} campaign - The campaign object.
+     * @returns {string} - The determined key for grouping.
+     */
+
+
+  function getCampaignKey(campaign) {
+    var _campaign$display, _campaign$display2;
+
+    if ((_campaign$display = campaign.display) === null || _campaign$display === void 0 ? void 0 : _campaign$display.divId) {
+      return campaign.display.divId.trim();
+    }
+
+    if ((_campaign$display2 = campaign.display) === null || _campaign$display2 === void 0 ? void 0 : _campaign$display2.divSelector) {
+      return campaign.display.divSelector.trim();
+    }
+
+    const details = campaign.display.details;
+
+    if (Array.isArray(details) && details.length > 0) {
+      const selectorData = details[0].selectorData;
+
+      if (Array.isArray(selectorData) && selectorData.length > 0 && selectorData[0].selector) {
+        return selectorData[0].selector.trim();
+      }
+    }
+
+    return "key-".concat(campaign.wzrk_id); // Fallback unique key
+  } // export function getListOfTopCampaigns (campaigns) {
+  //   const listOfTopCampaigns = []
+  //   for (const key in campaigns) {
+  //     const currentList = campaigns[key]
+  //     let maxPriority = -1
+  //     let campaignWithTopPriority = {}
+  //     for (const item in currentList) {
+  //       if (maxPriority < currentList[item].display.priority) {
+  //         maxPriority = currentList[item].display.priority
+  //         campaignWithTopPriority = currentList[item]
+  //       } else if (currentList[item]?.msgContent?.templateType === 'custom-key-values') {
+  //         /* Pushing all KV Campaigns to the final list as they do not need to be eliminated based on priority */
+  //         listOfTopCampaigns.push(currentList[item])
+  //       }
+  //     }
+  //     listOfTopCampaigns.push(campaignWithTopPriority)
+  //   }
+  //   return listOfTopCampaigns
+  // }
+
+  /**
+   * Retrieves a list of top-priority campaigns from grouped campaigns.
+   *
+   * @param {Object<string, Array<Object>>} campaigns - The grouped campaigns object.
+   * @returns {Array<Object>} - The list of top-priority campaigns.
+   */
+
+
+  function getListOfTopCampaigns(campaigns, logger) {
+    const listOfTopCampaigns = [];
+
+    for (const key in campaigns) {
+      const currentList = campaigns[key];
+      if (!Array.isArray(currentList) || currentList.length === 0) continue;
+      let maxPriority = -1;
+      let campaignWithTopPriority = {};
+
+      for (const item of currentList) {
+        /* 
+          * If the grouped list has size one just add it to the final list, 
+          * * This can happen for the Campaigns where the selector is targetted by only one Campaign and also for Custom Key Value Campaigns
+          * * Because they will always be single campaign group as seen in Function `getCampaignKey`
+          * If the grouped list has many campaigns then pick the one with highest priority
+          * In the grouped campaign if it is a json campaign 
+        */
+        if (currentList.length === 1) {
+          campaignWithTopPriority = item;
+          continue;
+        } else if (item.display.priority > maxPriority) {
+          maxPriority = item.display.priority;
+          campaignWithTopPriority = item;
+        }
+      }
+
+      if (Object.keys(campaignWithTopPriority).length > 0) {
+        listOfTopCampaigns.push(campaignWithTopPriority);
+      }
+    }
+
+    return listOfTopCampaigns;
+  }
 
   const renderPopUpImageOnly = (targetingMsgJson, _session) => {
     const divId = 'wzrkImageOnlyDiv';
@@ -7276,29 +7412,8 @@
 
     if (msg.inapp_notifs != null) {
       const arrInAppNotifs = {};
-      const campaigns = groupCampaigns(msg.inapp_notifs);
-      const listOfTopCampaigns = [];
-
-      for (const key in campaigns) {
-        const currentList = campaigns[key];
-        let maxPriority = -1;
-        let campaignWithTopPriority = {};
-
-        for (const item in currentList) {
-          var _currentList$item, _currentList$item$msg;
-
-          if (maxPriority < currentList[item].display.priority) {
-            maxPriority = currentList[item].display.priority;
-            campaignWithTopPriority = currentList[item];
-          } else if (((_currentList$item = currentList[item]) === null || _currentList$item === void 0 ? void 0 : (_currentList$item$msg = _currentList$item.msgContent) === null || _currentList$item$msg === void 0 ? void 0 : _currentList$item$msg.templateType) === 'custom-key-values') {
-            /* Pushing all KV Campaigns to the final list as they do not need to be eliminated based on priority */
-            listOfTopCampaigns.push(currentList[item]);
-          }
-        }
-
-        listOfTopCampaigns.push(campaignWithTopPriority);
-      }
-
+      const groupedCampaigns = groupCampaignsByTargets(msg.inapp_notifs);
+      const listOfTopCampaigns = getListOfTopCampaigns(groupedCampaigns);
       console.log({
         listOfTopCampaigns
       });
@@ -7345,51 +7460,6 @@
           addLoadListener(arrInAppNotifs);
         }
       }
-    }
-
-    function groupCampaigns(campaigns) {
-      const grouped = {}; // Initialize an empty object to hold the groups
-
-      for (const campaign of campaigns) {
-        if (!campaign || !campaign.display) continue; // Skip invalid campaign objects
-        // TODO: Adding this to test priority: Remove in production
-
-        campaign.display.priority = Math.floor(Math.random() * 100);
-        const key = getCampaignKey(campaign);
-
-        if (!grouped[key]) {
-          grouped[key] = []; // Initialize an array if key doesn't exist
-        }
-
-        grouped[key].push(campaign); // Add the campaign to the respective group
-      }
-
-      return grouped; // Return the grouped campaigns
-    } // Helper function to extract the correct grouping key
-
-
-    function getCampaignKey(campaign) {
-      var _campaign$display, _campaign$display2;
-
-      if ((_campaign$display = campaign.display) === null || _campaign$display === void 0 ? void 0 : _campaign$display.divId) {
-        return campaign.display.divId.trim(); // for Custom Web Template
-      }
-
-      if ((_campaign$display2 = campaign.display) === null || _campaign$display2 === void 0 ? void 0 : _campaign$display2.divSelector) {
-        return campaign.display.divSelector.trim(); // Use divSelector if available
-      }
-
-      const details = campaign.display.details;
-
-      if (Array.isArray(details) && details.length > 0) {
-        const selectorData = details[0].selectorData;
-
-        if (Array.isArray(selectorData) && selectorData.length > 0 && selectorData[0].selector) {
-          return selectorData[0].selector.trim(); // Use the first selector if valid
-        }
-      }
-
-      return "key-".concat(campaign.wzrk_id); // Fallback unique key for non-selector campaigns
     }
 
     const handleInboxNotifications = () => {

@@ -65,6 +65,15 @@ export const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper'
 export const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper'
 export const POPUP_LOADING = 'WZRK_POPUP_LOADING'
 
+export const WEB_NATIVE_TEMPLATES = {
+  KV_PAIR: 1,
+  BANNER: 2,
+  CAROUSEL: 3,
+  VISUAL_BUILDER: 4,
+  CUSTOM_HTML: 5,
+  JSON: 6
+}
+
 export const SYSTEM_EVENTS = [
   'Stayed',
   'UTM Visited',
