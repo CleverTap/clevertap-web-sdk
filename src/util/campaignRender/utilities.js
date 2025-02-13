@@ -238,27 +238,6 @@ function getCampaignKey (campaign) {
   return `key-${campaign.wzrk_id}` // Fallback unique key
 }
 
-// export function getListOfTopCampaigns (campaigns) {
-//   const listOfTopCampaigns = []
-//   for (const key in campaigns) {
-//     const currentList = campaigns[key]
-
-//     let maxPriority = -1
-//     let campaignWithTopPriority = {}
-//     for (const item in currentList) {
-//       if (maxPriority < currentList[item].display.priority) {
-//         maxPriority = currentList[item].display.priority
-//         campaignWithTopPriority = currentList[item]
-//       } else if (currentList[item]?.msgContent?.templateType === 'custom-key-values') {
-//         /* Pushing all KV Campaigns to the final list as they do not need to be eliminated based on priority */
-//         listOfTopCampaigns.push(currentList[item])
-//       }
-//     }
-//     listOfTopCampaigns.push(campaignWithTopPriority)
-//   }
-//   return listOfTopCampaigns
-// }
-
 /**
  * Retrieves a list of top-priority campaigns from grouped campaigns.
  *

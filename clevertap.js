@@ -214,6 +214,20 @@
   const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
+  const WEB_NATIVE_TEMPLATES = {
+    KV_PAIR: 1,
+    BANNER: 2,
+    CAROUSEL: 3,
+    VISUAL_BUILDER: 4,
+    CUSTOM_HTML: 5,
+    JSON: 6
+  };
+  const CAMPAIGN_TYPES = {
+    EXIT_INTENT: 1,
+    WEB_NATIVE_DISPLAY: 2,
+    FOOTER_NOTIFICATION: 0,
+    FOOTER_NOTIFICATION_2: null
+  };
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   const isString = input => {
@@ -5473,26 +5487,7 @@
     }
 
     return "key-".concat(campaign.wzrk_id); // Fallback unique key
-  } // export function getListOfTopCampaigns (campaigns) {
-  //   const listOfTopCampaigns = []
-  //   for (const key in campaigns) {
-  //     const currentList = campaigns[key]
-  //     let maxPriority = -1
-  //     let campaignWithTopPriority = {}
-  //     for (const item in currentList) {
-  //       if (maxPriority < currentList[item].display.priority) {
-  //         maxPriority = currentList[item].display.priority
-  //         campaignWithTopPriority = currentList[item]
-  //       } else if (currentList[item]?.msgContent?.templateType === 'custom-key-values') {
-  //         /* Pushing all KV Campaigns to the final list as they do not need to be eliminated based on priority */
-  //         listOfTopCampaigns.push(currentList[item])
-  //       }
-  //     }
-  //     listOfTopCampaigns.push(campaignWithTopPriority)
-  //   }
-  //   return listOfTopCampaigns
-  // }
-
+  }
   /**
    * Retrieves a list of top-priority campaigns from grouped campaigns.
    *
@@ -5511,12 +5506,12 @@
       let campaignWithTopPriority = {};
 
       for (const item of currentList) {
-        /* 
-          * If the grouped list has size one just add it to the final list, 
+        /*
+          * If the grouped list has size one just add it to the final list,
           * * This can happen for the Campaigns where the selector is targetted by only one Campaign and also for Custom Key Value Campaigns
           * * Because they will always be single campaign group as seen in Function `getCampaignKey`
           * If the grouped list has many campaigns then pick the one with highest priority
-          * In the grouped campaign if it is a json campaign 
+          * In the grouped campaign if it is a json campaign
         */
         if (currentList.length === 1) {
           campaignWithTopPriority = item;
@@ -7421,30 +7416,30 @@
       for (let index = 0; index < listOfTopCampaigns.length; index++) {
         const targetNotif = listOfTopCampaigns[index];
 
-        if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
+        if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
           showFooterNotification(targetNotif);
-        } else if (targetNotif.display.wtarget_type === 1) {
+        } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
           window.document.body.onmouseleave = showExitIntent;
-        } else if (targetNotif.display.wtarget_type === 2) {
+        } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
-          if (targetNotif.msgContent.type === 1) {
+          if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR) {
             handleKVpairCampaign(targetNotif);
-          } else if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) {
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER || targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CAROUSEL) {
             // Check for banner and carousel
             const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
 
             if (element !== null) {
-              targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
+              targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
             } else {
               arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
             }
-          } else if (targetNotif.msgContent.type === 4) {
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
             renderVisualBuilder(targetNotif, false);
-          } else if (targetNotif.msgContent.type === 5) {
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
             renderCustomHtml(targetNotif, _logger);
-          } else if (targetNotif.msgContent.type === 6) {
+          } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
             handleJson(targetNotif);
           } else {
             showFooterNotification(targetNotif);

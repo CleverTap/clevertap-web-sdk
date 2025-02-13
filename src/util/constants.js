@@ -74,6 +74,14 @@ export const WEB_NATIVE_TEMPLATES = {
   JSON: 6
 }
 
+export const CAMPAIGN_TYPES = {
+  EXIT_INTENT: 1,
+  WEB_NATIVE_DISPLAY: 2,
+  FOOTER_NOTIFICATION: 0,
+  FOOTER_NOTIFICATION_2: null
+
+}
+
 export const SYSTEM_EVENTS = [
   'Stayed',
   'UTM Visited',
