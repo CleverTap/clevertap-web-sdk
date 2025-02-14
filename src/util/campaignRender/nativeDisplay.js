@@ -1,5 +1,5 @@
-import {CTWebPersonalisationBanner} from '../web-personalisation/banner'
-import {CTWebPersonalisationCarousel} from '../web-personalisation/carousel'
+import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
+import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
 
 export const renderPersonalisationBanner = (targetingMsgJson) => {
   if (customElements.get('ct-web-personalisation-banner') === undefined) {
@@ -16,7 +16,6 @@ export const renderPersonalisationBanner = (targetingMsgJson) => {
   containerEl.appendChild(bannerEl)
 }
 
-
 export const renderPersonalisationCarousel = (targetingMsgJson) => {
   if (customElements.get('ct-web-personalisation-carousel') === undefined) {
     customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel)
@@ -29,7 +28,6 @@ export const renderPersonalisationCarousel = (targetingMsgJson) => {
   container.appendChild(carousel)
 }
 
-
 export const handleKVpairCampaign = (targetingMsgJson) => {
   const inaObj = {}
   inaObj.msgId = targetingMsgJson.wzrk_id
@@ -39,29 +37,25 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
   if (targetingMsgJson.msgContent.kv != null) {
     inaObj.kv = targetingMsgJson.msgContent.kv
   }
-  const kvPairsEvent = new CustomEvent('CT_web_native_display', {detail: inaObj})
+  const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
   document.dispatchEvent(kvPairsEvent)
 }
 
-
 export const renderCustomHtml = (targetingMsgJson) => {
   console.log('renderCustomHtml targetingMsgJson', targetingMsgJson)
-  const {display, wzrk_id: wzrkId, wzrk_pivot: wzrkPivot} = targetingMsgJson || {}
+  const { display, wzrk_id: wzrkId, wzrk_pivot: wzrkPivot } = targetingMsgJson || {}
 
-
-  const {divId, preview: isPreview, url, divSelector} = display || {}
+  const { divId, preview: isPreview, url, divSelector } = display || {}
   const details = display.details[0]
   const html = details.html
   // const divId = targetingMsgJson.display.divId
   // const html = targetingMsgJson.display.html
   // const isPreview = targetingMsgJson.display.preview
 
-
   if (!divId || !html) {
     console.error('No div Id or no html found')
     return
   }
-
 
   if (isPreview) {
     renderPreviewIframe(url, divSelector, divId, html)
@@ -80,7 +74,6 @@ export const renderCustomHtml = (targetingMsgJson) => {
     // containerElement.innerHTML = ''
     // containerElement.appendChild(iframe)
 
-
     // const findIframeElement = () => {
     //   let count = 0
     //   const intervalId = setInterval(() => {
@@ -89,7 +82,6 @@ export const renderCustomHtml = (targetingMsgJson) => {
     //       // Access the iframe's document and query for a div inside
     //       const divInsideIframe = iframe.contentDocument.querySelector(divId);
     //       processElement(iframeElement)
-
 
     //       clearInterval(intervalId)
     //       console.log('divInsideIframe', divInsideIframe);
@@ -102,13 +94,11 @@ export const renderCustomHtml = (targetingMsgJson) => {
     // findIframeElement()
   }
 
-
   let notificationViewed = false
   const payload = {
     msgId: wzrkId,
     pivotId: wzrkPivot
   }
-
 
   const raiseViewed = () => {
     if (!notificationViewed) {
@@ -116,7 +106,6 @@ export const renderCustomHtml = (targetingMsgJson) => {
       window.clevertap.renderNotificationViewed(payload)
     }
   }
-
 
   const tryFindingElement = (divId) => {
     let count = 0
@@ -127,7 +116,7 @@ export const renderCustomHtml = (targetingMsgJson) => {
         processElement(retryElement, html)
         clearInterval(intervalId)
       } else if (++count >= 20) {
-        console.log(`No element present on DOM with divId '${ divId }'.`)
+        console.log(`No element present on DOM with divId '${divId}'.`)
         clearInterval(intervalId)
       }
     }, 500)
@@ -135,7 +124,6 @@ export const renderCustomHtml = (targetingMsgJson) => {
 
   tryFindingElement(divId)
 }
-
 
 const processElement = (element, html) => {
   console.log('processElement element', element)
@@ -145,27 +133,26 @@ const processElement = (element, html) => {
   }
 }
 
-
 const renderPreviewIframe = async (url, divSelector, divId, html) => {
   const containerElement = document.querySelector(divSelector)
   console.log('containerElement', containerElement)
   containerElement.style.height = 'calc(100% - 52px)'
   if (!containerElement) {
-    console.error(`No element found for selector: ${ divSelector }`)
+    console.error(`No element found for selector: ${divSelector}`)
     return
   }
 
-  const response = await fetch(url);
+  const response = await fetch(url)
   if (!response.ok || !response.body) {
-    return;
+    return
   }
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let htmlString = '';
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let htmlString = ''
   while (true) {
-    const {done, value} = await reader.read();
-    if (done) break;
-    htmlString += decoder.decode(value, {stream: true});
+    const { done, value } = await reader.read()
+    if (done) break
+    htmlString += decoder.decode(value, { stream: true })
   }
   htmlString += decoder.decode()
   const iframe = document.createElement('iframe')
@@ -175,12 +162,10 @@ const renderPreviewIframe = async (url, divSelector, divId, html) => {
   iframe.sandbox = 'allow-scripts allow-same-origin'
   iframe.id = 'wiz-custom-html-preview'
 
-
   console.log('iframe', iframe)
 
   containerElement.innerHTML = ''
   containerElement.appendChild(iframe)
-
 
   // findIframeElement(() => {
   //   const divInsideIframe = iframe.contentDocument?.querySelector(divId);
@@ -196,7 +181,6 @@ const renderPreviewIframe = async (url, divSelector, divId, html) => {
     findIframeElement(divId, html, iframe)
   }
 }
-
 
 const findIframeElement = (divId, html, iframeElement) => {
   console.log('findIframeElement divId', divId)
@@ -219,7 +203,6 @@ const findIframeElement = (divId, html, iframeElement) => {
   }, 500)
 }
 
-
 export const handleJson = (targetingMsgJson) => {
   const inaObj = {}
   inaObj.msgId = targetingMsgJson.wzrk_id
@@ -231,6 +214,40 @@ export const handleJson = (targetingMsgJson) => {
   if (targetingMsgJson.display.json != null) {
     inaObj.json = json
   }
-  const jsonEvent = new CustomEvent('CT_web_native_display_json', {detail: inaObj})
+  const jsonEvent = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
   document.dispatchEvent(jsonEvent)
+}
+
+export const checkCustomHtmlNativeDisplayPreview = (logger, accountId) => {
+  console.log('checkCustomHtmlNativeDisplayPreview')
+  // const search = window.location.search
+  // const parentWindow = window.opener
+
+  // if (search === '?customHtmlPreview') {
+  //   // open in visual builder mode
+  //   logger.debug('open in visual builder mode')
+  //   window.addEventListener('message', handleMessageEvent, false)
+  //   if (parentWindow) {
+  //     parentWindow.postMessage({message: 'builder', originUrl: window.location.href}, '*')
+  //   }
+  //   return
+  // }
+  if (!window.opener) {
+    console.log('This tab was manually opened. Resetting window.name.')
+    window.name = '' // Reset to prevent incorrect flag detection
+    return
+  }
+  if (window.name === 'opened_from_my_tab') {
+    console.log('This tab was opened from the parent tab!')
+
+    // Now attach the event listener
+    window.addEventListener('message', (event) => {
+      // if (event.origin !== "http://localhost:8083") return; // Security check
+
+      console.log('Received message from parent:', event.data)
+      // Perform actions based on the received data
+    })
+  } else {
+    console.log('This tab was opened manually, not by the parent tab.')
+  }
 }
