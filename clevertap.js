@@ -4574,6 +4574,14 @@
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
+    let url = window.location.href;
+
+    if (isPreview) {
+      const currentUrl = new URL(url);
+      currentUrl.searchParams.delete('ctActionMode');
+      url = currentUrl.toString();
+    }
+
     let notificationViewed = false;
     const payload = {
       msgId: targetingMsgJson.wzrk_id,
@@ -4657,7 +4665,7 @@
     };
 
     details.forEach(d => {
-      if (d.url === window.location.href) {
+      if (d.url === url) {
         d.selectorData.forEach(s => {
           if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
             insertedElements.push(s);
