@@ -1,37 +1,41 @@
 import { CSS_PATH, OVERLAY_PATH, WVE_CLASS } from './builder_constants'
 import { updateFormData, updateElementCSS } from './dataUpdate'
 
-export const checkBuilder = (logger, accountId) => {
-  const search = window.location.search
-  const parentWindow = window.opener
+export const handleActionMode = (logger, accountId) => {
+  const searchParams = new URLSearchParams(window.location.search)
+  const ctType = searchParams.get('ctActionMode')
 
-  if (search === '?ctBuilder') {
-    // open in visual builder mode
-    logger.debug('open in visual builder mode')
-    window.addEventListener('message', handleMessageEvent, false)
-    if (parentWindow) {
-      parentWindow.postMessage({ message: 'builder', originUrl: window.location.href }, '*')
-    }
-    return
-  }
-  if (search === '?ctBuilderPreview') {
-    window.addEventListener('message', handleMessageEvent, false)
-    if (parentWindow) {
-      parentWindow.postMessage({ message: 'preview', originUrl: window.location.href }, '*')
-    }
-  }
-
-  if (search === '?ctBuilderSDKCheck') {
-    if (parentWindow) {
-      const sdkVersion = '$$PACKAGE_VERSION$$'
-      parentWindow.postMessage({
-        message: 'SDKVersion',
-        accountId,
-        originUrl: window.location.href,
-        sdkVersion
-      },
-      '*'
-      )
+  if (ctType) {
+    const parentWindow = window.opener
+    switch (ctType) {
+      case 'ctBuilder':
+        logger.debug('open in visual builder mode')
+        window.addEventListener('message', handleMessageEvent, false)
+        if (parentWindow) {
+          parentWindow.postMessage({ message: 'builder', originUrl: window.location.href }, '*')
+        }
+        return
+      case 'ctBuilderPreview':
+        window.addEventListener('message', handleMessageEvent, false)
+        if (parentWindow) {
+          parentWindow.postMessage({ message: 'preview', originUrl: window.location.href }, '*')
+        }
+        return
+      case 'ctBuilderSDKCheck':
+        if (parentWindow) {
+          const sdkVersion = '$$PACKAGE_VERSION$$'
+          parentWindow.postMessage({
+            message: 'SDKVersion',
+            accountId,
+            originUrl: window.location.href,
+            sdkVersion
+          },
+          '*'
+          )
+        }
+        break
+      default:
+        break
     }
   }
 }
@@ -227,7 +231,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
   }
 
   details.forEach(d => {
-    if (d.url === window.location.href.split('?')[0]) {
+    if (d.url === window.location.href) {
       d.selectorData.forEach(s => {
         if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) &&
           s.values.initialHtml) {
