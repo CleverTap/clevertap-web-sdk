@@ -5380,7 +5380,7 @@
       return;
     }
 
-    if (window.name === 'opened_from_my_tab') {
+    if (window.opener) {
       console.log('This tab was opened from the parent tab!'); // Now attach the event listener
 
       window.addEventListener('message', event => {
