@@ -6757,7 +6757,7 @@
       }
 
       if (displayObj.preview) {
-        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
+        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin';
       }
 
       let html; // direct html
