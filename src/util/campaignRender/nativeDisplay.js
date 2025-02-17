@@ -218,9 +218,8 @@ export const handleJson = (targetingMsgJson) => {
   document.dispatchEvent(jsonEvent)
 }
 
-export const checkCustomHtmlNativeDisplayPreview = (logger, accountId) => {
+export const checkCustomHtmlNativeDisplayPreview = (logger) => {
   console.log('checkCustomHtmlNativeDisplayPreview')
-  // const search = window.location.search
   // const parentWindow = window.opener
 
   // if (search === '?customHtmlPreview') {
@@ -232,22 +231,26 @@ export const checkCustomHtmlNativeDisplayPreview = (logger, accountId) => {
   //   }
   //   return
   // }
-  if (!window.opener) {
-    console.log('This tab was manually opened. Resetting window.name.')
-    window.name = '' // Reset to prevent incorrect flag detection
-    return
-  }
-  if (window.opener) {
-    console.log('This tab was opened from the parent tab!')
-
-    // Now attach the event listener
-    window.addEventListener('message', (event) => {
-      // if (event.origin !== "http://localhost:8083") return; // Security check
-
-      console.log('Received message from parent:', event.data)
-      // Perform actions based on the received data
-    })
-  } else {
-    console.log('This tab was opened manually, not by the parent tab.')
+  // if (!parentWindow) {
+  //   console.log('This tab was manually opened. Resetting window.name.')
+  //   window.name = '' // Reset to prevent incorrect flag detection
+  //   return
+  // }
+  const searchParams = new URLSearchParams(window.location.search)
+  const ctType = searchParams.get('ctActionMode')
+  if (ctType) {
+    const parentWindow = window.opener
+    switch (ctType) {
+      case 'ctCustomHtmlPreview':
+        logger.debug('open in preview mode')
+        if (parentWindow) {
+          window.addEventListener('message', (event) => {
+            console.log('event', event)
+          }, false)
+        }
+        break
+      default:
+        break
+    }
   }
 }

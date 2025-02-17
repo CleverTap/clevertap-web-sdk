@@ -6,7 +6,7 @@ import ProfileHandler from './modules/profile'
 import UserLoginHandler from './modules/userLogin'
 import _tr from './util/tr'
 import User from './modules/user'
-import {Logger, logLevels} from './modules/logger'
+import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
 import {
@@ -33,19 +33,19 @@ import {
   TIMER_FOR_NOTIF_BADGE_UPDATE,
   ACCOUNT_ID
 } from './util/constants'
-import {EMBED_ERROR} from './util/messages'
-import {StorageManager, $ct} from './util/storage'
-import {addToURL, getDomain, getURLParams} from './util/url'
-import {getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe} from './util/clevertap'
-import {compressData} from './util/encoder'
+import { EMBED_ERROR } from './util/messages'
+import { StorageManager, $ct } from './util/storage'
+import { addToURL, getDomain, getURLParams } from './util/url'
+import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe } from './util/clevertap'
+import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
-import {hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages} from './modules/web-inbox/helper'
-import {Variable} from './modules/variables/variable'
+import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
+import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
-import {addAntiFlicker, handleActionMode} from './modules/visualBuilder/pageBuilder'
-import {setServerKey} from './modules/webPushPrompt/prompt'
-import {checkCustomHtmlNativeDisplayPreview} from './util/campaignRender/nativeDisplay'
+import { addAntiFlicker, handleActionMode } from './modules/visualBuilder/pageBuilder'
+import { setServerKey } from './modules/webPushPrompt/prompt'
+import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
 
 export default class CleverTap {
   #logger
@@ -90,13 +90,13 @@ export default class CleverTap {
     $ct.dismissSpamControl = dismissSpamControl
   }
 
-  constructor(clevertap = {}) {
+  constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.raiseNotificationClicked = () => {}
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
-    this.#device = new DeviceManager({logger: this.#logger})
+    this.#device = new DeviceManager({ logger: this.#logger })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#session = new SessionManager({
@@ -196,14 +196,14 @@ export default class CleverTap {
     }
 
     this.setLibrary = (libName, libVersion) => {
-      $ct.flutterVersion = {[libName]: libVersion}
+      $ct.flutterVersion = { [libName]: libVersion }
     }
 
     // Set the Signed Call sdk version and fire request
     this.setSCSDKVersion = (ver) => {
       this.#account.scSDKVersion = ver
       const data = {}
-      data.af = {scv: 'sc-sdk-v' + this.#account.scSDKVersion}
+      data.af = { scv: 'sc-sdk-v' + this.#account.scSDKVersion }
       let pageLoadUrl = this.#account.dataPostURL
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
@@ -317,7 +317,7 @@ export default class CleverTap {
           unViewedBadge.innerText = counter
           unViewedBadge.style.display = counter > 0 ? 'flex' : 'none'
         }
-        window.clevertap.renderNotificationViewed({msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId})
+        window.clevertap.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
         $ct.inbox.unviewedCounter--
         delete $ct.inbox.unviewedMessages[messageId]
         saveInboxMessages(messages)
@@ -353,7 +353,7 @@ export default class CleverTap {
             }
           }
           messages[key].viewed = 1
-          window.clevertap.renderNotificationViewed({msgId: messages[key].wzrk_id, pivotId: messages[key].wzrk_pivot})
+          window.clevertap.renderNotificationViewed({ msgId: messages[key].wzrk_id, pivotId: messages[key].wzrk_pivot })
         })
         const unViewedBadge = document.getElementById('unviewedBadge')
         if (unViewedBadge) {
@@ -381,25 +381,25 @@ export default class CleverTap {
     }
 
     const processNotificationEvent = (eventName, eventDetail) => {
-      if (!eventDetail || !eventDetail.msgId) {return }
+      if (!eventDetail || !eventDetail.msgId) { return }
       const data = {}
       data.type = 'event'
       data.evtName = eventName
-      data.evtData = {[WZRK_ID]: eventDetail.msgId}
+      data.evtData = { [WZRK_ID]: eventDetail.msgId }
 
       if (eventDetail.pivotId) {
-        data.evtData = {...data.evtData, wzrk_pivot: eventDetail.pivotId}
+        data.evtData = { ...data.evtData, wzrk_pivot: eventDetail.pivotId }
       }
 
       if (eventDetail.wzrk_slideNo) {
-        data.evtData = {...data.evtData, wzrk_slideNo: eventDetail.wzrk_slideNo}
+        data.evtData = { ...data.evtData, wzrk_slideNo: eventDetail.wzrk_slideNo }
       }
 
       // Adding kv pair to event data
       if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
         for (const key in eventDetail.kv) {
           if (key.startsWith(WZRK_PREFIX)) {
-            data.evtData = {...data.evtData, [key]: eventDetail.kv[key]}
+            data.evtData = { ...data.evtData, [key]: eventDetail.kv[key] }
           }
         }
       }
@@ -408,7 +408,7 @@ export default class CleverTap {
       if (eventDetail.msgCTkv && eventDetail.msgCTkv !== null && eventDetail.msgCTkv !== undefined) {
         for (const key in eventDetail.msgCTkv) {
           if (key.startsWith(WZRK_PREFIX)) {
-            data.evtData = {...data.evtData, [key]: eventDetail.msgCTkv[key]}
+            data.evtData = { ...data.evtData, [key]: eventDetail.msgCTkv[key] }
           }
         }
       }
@@ -507,8 +507,8 @@ export default class CleverTap {
           console.log('A valid longitude must range between -180 and 180')
           return
         }
-        $ct.location = {Latitude: lat, Longitude: lng}
-        this.#sendLocationData({Latitude: lat, Longitude: lng})
+        $ct.location = { Latitude: lat, Longitude: lng }
+        this.#sendLocationData({ Latitude: lat, Longitude: lng })
       } else {
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError)
@@ -521,8 +521,8 @@ export default class CleverTap {
     function showPosition (position) {
       var lat = position.coords.latitude
       var lng = position.coords.longitude
-      $ct.location = {Latitude: lat, Longitude: lng}
-      this.#sendLocationData({Latitude: lat, Longitude: lng})
+      $ct.location = { Latitude: lat, Longitude: lng }
+      this.#sendLocationData({ Latitude: lat, Longitude: lng })
     }
 
     function showError (error) {
@@ -582,7 +582,7 @@ export default class CleverTap {
       for (let i = 0; i < elements.length; i++) {
         const element = elements[i]
         if (element.name) {
-          const data = {name: element.name, isUnsubscribed: element.checked}
+          const data = { name: element.name, isUnsubscribed: element.checked }
           $ct.unsubGroups.push(data)
         }
       }
@@ -642,6 +642,7 @@ export default class CleverTap {
       this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
     handleActionMode(this.#logger, this.#account.id)
+    checkCustomHtmlNativeDisplayPreview(this.#logger)
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
 
     if (region) {
@@ -743,12 +744,12 @@ export default class CleverTap {
         }
 
         if (inboxNode) {
-          const {top, right} = inboxNode.getBoundingClientRect()
+          const { top, right } = inboxNode.getBoundingClientRect()
           if (Number(unViewedBadge.innerText) > 0 || unViewedBadge.innerText === '9+') {
             unViewedBadge.style.display = 'flex'
           }
-          unViewedBadge.style.top = `${ top - 8 }px`
-          unViewedBadge.style.left = `${ right - 8 }px`
+          unViewedBadge.style.top = `${top - 8}px`
+          unViewedBadge.style.left = `${right - 8}px`
         }
       }, TIMER_FOR_NOTIF_BADGE_UPDATE)
     } catch (error) {
@@ -819,7 +820,7 @@ export default class CleverTap {
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
 
     if (parseInt(data.pg) === 1) {
-      this.event.push(WZRK_FETCH, {t: 4})
+      this.event.push(WZRK_FETCH, { t: 4 })
     }
 
     this.#previousUrl = currLocation
@@ -892,7 +893,7 @@ export default class CleverTap {
       })
     }
     if ($ct.location) {
-      data.af = {...data.af, ...$ct.location}
+      data.af = { ...data.af, ...$ct.location }
     }
     data = this.#request.addSystemDataToObject(data, true)
     this.#request.addFlags(data)
