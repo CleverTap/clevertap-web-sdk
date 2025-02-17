@@ -163,6 +163,7 @@
   const EV_COOKIE = 'WZRK_EV';
   const META_COOKIE = 'WZRK_META';
   const PR_COOKIE = 'WZRK_PR';
+  const ACCOUNT_ID = 'WZRK_ACCOUNT_ID';
   const ARP_COOKIE = 'WZRK_ARP';
   const LCOOKIE_NAME = 'WZRK_L';
   const GLOBAL = 'global'; // used for email unsubscribe also
@@ -210,6 +211,10 @@
   const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
   const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
   const NOTIF_LAST_TIME = 'notif_last_time';
+  const TIMER_FOR_NOTIF_BADGE_UPDATE = 300;
+  const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
+  const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
+  const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
 
@@ -7930,13 +7935,17 @@
     }
 
     push() {
-      for (var _len = arguments.length, eventsArr = new Array(_len), _key = 0; _key < _len; _key++) {
-        eventsArr[_key] = arguments[_key];
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        for (var _len = arguments.length, eventsArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          eventsArr[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](eventsArr);
+
+        return 0;
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error('Account ID is not set');
       }
-
-      _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](eventsArr);
-
-      return 0;
     }
 
     _processOldValues() {
@@ -9189,13 +9198,17 @@
     }
 
     push() {
-      for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
-        profilesArr[_key] = arguments[_key];
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          profilesArr[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](profilesArr);
+
+        return 0;
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Account ID is not set');
       }
-
-      _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](profilesArr);
-
-      return 0;
     }
 
     _processOldValues() {
@@ -10220,7 +10233,7 @@
       selectedCategoryBorderColor,
       headerCategoryHeight
     } = _ref2;
-    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, "\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n        }\n\n        @media only screen and (min-width: 480px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
+    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, ";\n          position: sticky;\n          top: 0;\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n          z-index: -1;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n          height: 100%;\n          overflow: scroll;\n        }\n\n        @media only screen and (min-width: 480px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
   };
 
   class Inbox extends HTMLElement {
@@ -11122,56 +11135,59 @@
   const updateFormData = function (element, formStyle, payload) {
     let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
-    // Update the element style
-    if (formStyle.style !== undefined) {
-      Object.keys(formStyle.style).forEach(property => {
-        element.style.setProperty(property, formStyle.style[property]);
-      });
-    } // Update underline for element
+    if (formStyle !== undefined) {
+      // Update the element style
+      if (formStyle.style !== undefined) {
+        Object.keys(formStyle.style).forEach(property => {
+          element.style.setProperty(property, formStyle.style[property]);
+        });
+      } // Update underline for element
 
 
-    if (formStyle.underline !== undefined) {
-      const curTextDecoration = element.style.textDecoration;
+      if (formStyle.underline !== undefined) {
+        const curTextDecoration = element.style.textDecoration;
 
-      if (formStyle.underline) {
-        element.style.textDecoration = "".concat(curTextDecoration, " underline").trim();
-      } else {
-        element.style.textDecoration = curTextDecoration.replace('underline', '').trim();
+        if (formStyle.underline) {
+          element.style.textDecoration = "".concat(curTextDecoration, " underline").trim();
+        } else {
+          element.style.textDecoration = curTextDecoration.replace('underline', '').trim();
+        }
+      } // Update element text
+
+
+      if (formStyle.text !== undefined) {
+        element.innerText = isPreview ? formStyle.text.text : formStyle.text;
+      } // Handle element onClick
+
+
+      if (formStyle.clickDetails !== undefined) {
+        const url = formStyle.clickDetails.clickUrl;
+        element.onclick = formStyle.clickDetails.newTab ? () => {
+          if (!isPreview) {
+            window.clevertap.raiseNotificationClicked(payload);
+          }
+
+          window.open(url, '_blank').focus();
+        } : () => {
+          if (!isPreview) {
+            window.clevertap.raiseNotificationClicked(payload);
+          }
+
+          window.location.href = url;
+        };
+      } // Set the image source
+
+
+      if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
+        element.src = formStyle.imgURL;
       }
-    } // Update element text
-
-
-    if (formStyle.text !== undefined) {
-      element.innerText = isPreview ? formStyle.text.text : formStyle.text;
-    } // Handle element onClick
-
-
-    if (formStyle.clickDetails !== undefined) {
-      const url = formStyle.clickDetails.clickUrl;
-      element.onclick = formStyle.clickDetails.newTab ? () => {
-        if (!isPreview) {
-          window.clevertap.raiseNotificationClicked(payload);
-        }
-
-        window.open(url, '_blank').focus();
-      } : () => {
-        if (!isPreview) {
-          window.clevertap.raiseNotificationClicked(payload);
-        }
-
-        window.location.href = url;
-      };
-    } // Set the image source
-
-
-    if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
-      element.src = formStyle.imgURL;
-    } // Handle elementCss
-
-
-    if (formStyle.elementCss !== undefined) {
+    }
+  };
+  const updateElementCSS = element => {
+    // Handle elementCss
+    if (element.elementCSS !== undefined) {
       const style = document.createElement('style');
-      style.innerHTML = formStyle.elementCss;
+      style.innerHTML = element.elementCSS;
       document.head.appendChild(style);
     }
   };
@@ -11208,7 +11224,7 @@
 
     if (search === '?ctBuilderSDKCheck') {
       if (parentWindow) {
-        const sdkVersion = '1.12.0';
+        const sdkVersion = '1.12.1';
         parentWindow.postMessage({
           message: 'SDKVersion',
           accountId,
@@ -11353,6 +11369,7 @@
 
 
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+    const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let notificationViewed = false;
     const payload = {
@@ -11367,31 +11384,63 @@
       }
     };
 
+    const raiseClicked = payload => {
+      window.clevertap.renderNotificationClicked(payload);
+    };
+
     const processElement = (element, selector) => {
-      var _selector$values;
+      var _selector$isTrackingC;
 
-      if (!selector.values) return;
+      if (selector.elementCSS) {
+        updateElementCSS(selector);
+      }
 
-      if (selector.values.html) {
-        if (isPreview) {
-          element.outerHTML = selector.values.html.text;
-        } else {
-          element.outerHTML = selector.values.html;
+      if ((_selector$isTrackingC = selector.isTrackingClicks) === null || _selector$isTrackingC === void 0 ? void 0 : _selector$isTrackingC.name) {
+        element.addEventListener('click', () => {
+          const clickedPayload = {
+            msgId: targetingMsgJson.wzrk_id,
+            pivotId: targetingMsgJson.wzrk_pivot,
+            msgCTkv: {
+              wzrk_selector: selector.isTrackingClicks.name
+            }
+          };
+          raiseClicked(clickedPayload);
+        });
+      }
+
+      if (selector.values) {
+        switch (selector.values.editor) {
+          case 'html':
+            if (isPreview) {
+              element.outerHTML = selector.values.html.text;
+            } else {
+              element.outerHTML = selector.values.html;
+            }
+
+            break;
+
+          case 'json':
+            dispatchJsonData(targetingMsgJson, selector.values, isPreview);
+            break;
+
+          case 'form':
+            payload.msgCTkv = {
+              wzrk_selector: selector.selector
+            };
+            updateFormData(element, selector.values.form, payload, isPreview);
+            break;
         }
-      } else if ((_selector$values = selector.values) === null || _selector$values === void 0 ? void 0 : _selector$values.json) {
-        dispatchJsonData(targetingMsgJson, selector.values, isPreview);
-      } else {
-        payload.msgCTkv = {
-          wzrk_selector: selector.selector
-        };
-        updateFormData(element, selector.values.form, payload, isPreview);
       }
     };
 
     const tryFindingElement = selector => {
       let count = 0;
       const intervalId = setInterval(() => {
-        const retryElement = document.querySelector(selector.selector);
+        let retryElement;
+
+        try {
+          retryElement = document.querySelector(selector.selector);
+        } catch (_) {}
 
         if (retryElement) {
           raiseViewed();
@@ -11407,24 +11456,97 @@
     details.forEach(d => {
       if (d.url === window.location.href.split('?')[0]) {
         d.selectorData.forEach(s => {
-          const element = document.querySelector(s.selector);
-
-          if (element) {
-            raiseViewed();
-            processElement(element, s);
+          if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
+            insertedElements.push(s);
           } else {
-            tryFindingElement(s);
+            let element;
+
+            try {
+              element = document.querySelector(s.selector);
+            } catch (_) {}
+
+            if (element) {
+              raiseViewed();
+              processElement(element, s);
+            } else {
+              tryFindingElement(s);
+            }
           }
         });
       }
     });
+
+    const addNewEl = selector => {
+      const {
+        pos,
+        sibling
+      } = findSiblingSelector(selector.selector);
+      let count = 0;
+      const intervalId = setInterval(() => {
+        let element = null;
+
+        try {
+          const siblingEl = document.querySelector(sibling);
+          const ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+          element = ctEl || siblingEl;
+        } catch (_) {
+          element = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+        }
+
+        if (element) {
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = selector.values.initialHtml;
+          const newElement = tempDiv.firstElementChild;
+          element.insertAdjacentElement(pos, newElement);
+
+          if (!element.getAttribute('ct-selector')) {
+            element.setAttribute('ct-selector', sibling);
+          }
+
+          const insertedElement = document.querySelector("[ct-selector=\"".concat(selector.selector, "\"]"));
+          raiseViewed();
+          processElement(insertedElement, selector);
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          console.log("No element present on DOM with selector '".concat(sibling, "'."));
+          clearInterval(intervalId);
+        }
+      }, 500);
+    };
+
+    if (insertedElements.length > 0) {
+      const sortedArr = insertedElements.sort((a, b) => {
+        const numA = parseInt(a.selector.split('-')[0], 10);
+        const numB = parseInt(b.selector.split('-')[0], 10);
+        return numA - numB;
+      });
+      sortedArr.forEach(addNewEl);
+    }
   };
+
+  function findSiblingSelector(input) {
+    const regex = /^(\d+)-(afterend|beforebegin)-(.+)$/;
+    const match = input.match(regex);
+
+    if (match) {
+      return {
+        pos: match[2],
+        sibling: match[3]
+      };
+    }
+
+    return {
+      pos: 'beforebegin',
+      sibling: ''
+    };
+  }
   /**
    * Dispatches JSON data.
    * @param {Object} targetingMsgJson - The point and click campaign JSON object.
    * @param {Object} selector - The selector object.
    * @param {boolean} isPreview - If preview different handling
    */
+
 
   function dispatchJsonData(targetingMsgJson, selector) {
     let isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
@@ -11844,6 +11966,71 @@
     });
     document.dispatchEvent(kvPairsEvent);
   };
+  const renderCustomHtml = (targetingMsgJson, logger) => {
+    const {
+      display,
+      wzrk_id: wzrkId,
+      wzrk_pivot: wzrkPivot
+    } = targetingMsgJson || {};
+    const divId = display.divId || {};
+    const details = display.details[0];
+    const html = details.html;
+
+    if (!divId || !html) {
+      logger.error('No div Id or no html found');
+      return;
+    }
+
+    let notificationViewed = false;
+    const payload = {
+      msgId: wzrkId,
+      pivotId: wzrkPivot
+    };
+
+    const raiseViewed = () => {
+      if (!notificationViewed) {
+        notificationViewed = true;
+        window.clevertap.renderNotificationViewed(payload);
+      }
+    };
+
+    const tryFindingElement = divId => {
+      let count = 0;
+      const intervalId = setInterval(() => {
+        const retryElement = document.querySelector(divId);
+
+        if (retryElement) {
+          raiseViewed();
+          retryElement.outerHTML = html;
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          logger.log("No element present on DOM with divId '".concat(divId, "'."));
+          clearInterval(intervalId);
+        }
+      }, 500);
+    };
+
+    tryFindingElement(divId);
+  };
+  const handleJson = targetingMsgJson => {
+    const inaObj = {};
+    inaObj.msgId = targetingMsgJson.wzrk_id;
+    const details = targetingMsgJson.display.details[0];
+    const json = details.json;
+
+    if (targetingMsgJson.wzrk_pivot) {
+      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+    }
+
+    if (targetingMsgJson.display.json != null) {
+      inaObj.json = json;
+    }
+
+    const jsonEvent = new CustomEvent('CT_web_native_display_json', {
+      detail: inaObj
+    });
+    document.dispatchEvent(jsonEvent);
+  };
 
   const invokeExternalJs = (jsFunc, targetingMsgJson) => {
     const func = window.parent[jsFunc];
@@ -12136,13 +12323,17 @@
     }
 
     push() {
-      for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
-        displayArgs[_key] = arguments[_key];
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
+          displayArgs[_key] = arguments[_key];
+        }
+
+        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+
+        return 0;
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Account ID is not set');
       }
-
-      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
-
-      return 0;
     }
 
     enable() {
@@ -12483,29 +12674,19 @@
       _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure you are https or localhost to register for notifications');
 
       return;
-    } // right now, we only support Chrome V50 & higher & Firefox
+    }
+    /*
+       If it is chrome or firefox and the nativeWebPush is not supported then return
+       For Safari the APNs route is open if nativeWebPush is not supported
+    */
 
 
-    if (isChrome()) {
-      const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/);
+    if (isChrome() || isFirefox()) {
+      if (!_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]()) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Web Push Notification is not supported on this browser');
 
-      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) {
         return;
       }
-    } else if (isFirefox()) {
-      const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/);
-
-      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) {
-        return;
-      }
-    } else if (isSafari()) {
-      const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/);
-
-      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) {
-        return;
-      }
-    } else {
-      return;
     } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
 
@@ -12519,7 +12700,7 @@
       } // handle migrations from other services -> chrome notifications may have already been asked for before
 
 
-      if (Notification.permission === 'granted' && vapidSupportedAndMigrated) {
+      if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
         // skip the dialog and register
         this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
         return;
@@ -12562,14 +12743,19 @@
       if (now - notifLastTime < askAgainTimeInSeconds) {
         if (!isSafari()) {
           return;
-        }
+        } // If Safari is migrated already or only APNS, then return
 
-        if (vapidSupportedAndMigrated) {
+
+        if (vapidSupportedAndMigrated || _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] === null) {
           return;
         }
       } else {
         StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
       }
+    }
+
+    if (isSafari() && _classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
     }
 
     if (isHTTP) {
@@ -12591,8 +12777,16 @@
 
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
+              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
+
+                return;
+              }
+
+              StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
               _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-                // create our wizrocket popup
+                StorageManager.saveToLSorCookie(POPUP_LOADING, false);
                 window.wzrkPermissionPopup.wizAlert({
                   title: titleText,
                   body: bodyText,
@@ -12623,8 +12817,17 @@
         }
       }, false);
     } else {
+      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
+
+        return;
+      }
+
+      StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
       _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-        // create our wizrocket popup
+        StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
+
         window.wzrkPermissionPopup.wizAlert({
           title: titleText,
           body: bodyText,
@@ -12727,7 +12930,7 @@
   };
 
   const createNotificationBox = (configData, fcmPublicKey) => {
-    if (document.getElementById('pnWrapper')) return;
+    if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
     const {
       boxConfig: {
         content,
@@ -12736,7 +12939,7 @@
     } = configData; // Create the wrapper div
 
     const wrapper = createElementWithAttributes('div', {
-      id: 'pnWrapper'
+      id: NEW_SOFT_PROMPT_SELCTOR_ID
     });
     const overlayDiv = createElementWithAttributes('div', {
       id: 'pnOverlay'
@@ -13897,6 +14100,10 @@
             }
           } else if (targetNotif.msgContent.type === 4) {
             renderVisualBuilder(targetNotif, false);
+          } else if (targetNotif.msgContent.type === 5) {
+            renderCustomHtml(targetNotif, _logger);
+          } else if (targetNotif.msgContent.type === 6) {
+            handleJson(targetNotif);
           } else {
             showFooterNotification(targetNotif);
           }
@@ -14343,6 +14550,14 @@
             _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Processing backup event : ' + backupEvent.q);
 
             if (typeof backupEvent.q !== 'undefined') {
+              /* For extremely slow networks we often recreate the session from the SE hence appending
+              the session to the request */
+              const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
+
+              if (session === null || session === void 0 ? void 0 : session.s) {
+                backupEvent.q = backupEvent.q + '&s=' + session.s;
+              }
+
               RequestDispatcher.fireRequest(backupEvent.q);
             }
 
@@ -14381,7 +14596,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.12.0',
+        lib: 'web-sdk-v1.12.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -14612,7 +14827,8 @@
       _classPrivateFieldLooseBase(this, _request$2)[_request$2] = request;
       _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
       _classPrivateFieldLooseBase(this, _oldValues)[_oldValues] = values;
-    }
+    } // TODO : Do we need to check if account id is set or not here?
+
 
     push() {
       for (var _len = arguments.length, privacyArr = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -15137,6 +15353,8 @@
 
   var _dismissSpamControl = _classPrivateFieldLooseKey("dismissSpamControl");
 
+  var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _debounce = _classPrivateFieldLooseKey("debounce");
@@ -15260,6 +15478,10 @@
         value: void 0
       });
       this.enablePersonalization = void 0;
+      Object.defineProperty(this, _pageChangeTimeoutId, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
@@ -15894,9 +16116,12 @@
       window.$CLTP_WR = window.$WZRK_WR = api;
 
       if ((_clevertap$account7 = clevertap.account) === null || _clevertap$account7 === void 0 ? void 0 : _clevertap$account7[0].id) {
+        var _clevertap$account8;
+
         // The accountId is present so can init with empty values.
         // Needed to maintain backward compatability with legacy implementations.
         // Npm imports/require will need to call init explictly with accountId
+        StorageManager.saveToLSorCookie(ACCOUNT_ID, (_clevertap$account8 = clevertap.account) === null || _clevertap$account8 === void 0 ? void 0 : _clevertap$account8[0].id);
         this.init();
       }
     } // starts here
@@ -15928,6 +16153,9 @@
         }
 
         _classPrivateFieldLooseBase(this, _account)[_account].id = accountId;
+        StorageManager.saveToLSorCookie(ACCOUNT_ID, accountId);
+
+        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('CT Initialized with Account ID: ' + _classPrivateFieldLooseBase(this, _account)[_account].id);
       }
 
       checkBuilder(_classPrivateFieldLooseBase(this, _logger)[_logger], _classPrivateFieldLooseBase(this, _account)[_account].id);
@@ -15972,6 +16200,9 @@
       if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa]) {
         // listen to click on the document and check if URL has changed.
         document.addEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
+        /* Listen for the Back and Forward buttons */
+
+        window.addEventListener('popstate', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
       } else {
         // remove existing click listeners if any
         document.removeEventListener('click', _classPrivateFieldLooseBase(this, _boundCheckPageChanged)[_boundCheckPageChanged]);
@@ -16102,18 +16333,19 @@
       if (typeof arg !== 'boolean') {
         console.error('setOffline should be called with a value of type boolean');
         return;
-      }
+      } // Check if the offline state is changing from true to false
+      // If offline is being disabled (arg is false), process any cached events
 
-      $ct.offline = arg; // if offline is disabled
-      // process events from cache
 
-      if (!arg) {
+      if ($ct.offline !== arg && !arg) {
         _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
       }
+
+      $ct.offline = arg;
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.12.0';
+      return 'web-sdk-v1.12.1';
     }
 
     defineVariable(name, defaultValue) {
@@ -16179,25 +16411,50 @@
 
   var _updateUnviewedBadgePosition2 = function _updateUnviewedBadgePosition2() {
     try {
-      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-      const inboxNode = document.getElementById(config.inboxSelector);
+      if (_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]) {
+        clearTimeout(_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]);
+      }
+
       const unViewedBadge = document.getElementById('unviewedBadge');
 
-      if (!inboxNode) {
-        unViewedBadge.style.display = 'none';
-      } else {
-        const {
-          top,
-          right
-        } = inboxNode.getBoundingClientRect();
+      if (!unViewedBadge) {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('unViewedBadge not found');
 
-        if (Number(unViewedBadge.innerText) > 0) {
-          unViewedBadge.style.display = 'flex';
+        return;
+      }
+      /* Reset to None */
+
+
+      unViewedBadge.style.display = 'none';
+      /* Set Timeout to let the page load and then update the position and display the badge */
+
+      _classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId] = setTimeout(() => {
+        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+        const inboxNode = document.getElementById(config === null || config === void 0 ? void 0 : config.inboxSelector);
+        /* Creating a Local Variable to avoid reference to stale DOM Node */
+
+        const unViewedBadge = document.getElementById('unviewedBadge');
+
+        if (!unViewedBadge) {
+          _classPrivateFieldLooseBase(this, _logger)[_logger].debug('unViewedBadge not found');
+
+          return;
         }
 
-        unViewedBadge.style.top = "".concat(top - 8, "px");
-        unViewedBadge.style.left = "".concat(right - 8, "px");
-      }
+        if (inboxNode) {
+          const {
+            top,
+            right
+          } = inboxNode.getBoundingClientRect();
+
+          if (Number(unViewedBadge.innerText) > 0 || unViewedBadge.innerText === '9+') {
+            unViewedBadge.style.display = 'flex';
+          }
+
+          unViewedBadge.style.top = "".concat(top - 8, "px");
+          unViewedBadge.style.left = "".concat(right - 8, "px");
+        }
+      }, TIMER_FOR_NOTIF_BADGE_UPDATE);
     } catch (error) {
       _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Error updating unviewed badge position:', error);
     }

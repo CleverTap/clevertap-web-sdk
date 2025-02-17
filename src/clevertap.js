@@ -30,7 +30,9 @@ import {
   EVT_PUSH,
   WZRK_FETCH,
   WEBINBOX_CONFIG,
-  ENCRYPTION_KEY
+  ENCRYPTION_KEY,
+  TIMER_FOR_NOTIF_BADGE_UPDATE,
+  ACCOUNT_ID
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -60,6 +62,7 @@ export default class CleverTap {
   #boundCheckPageChanged = this.#checkPageChanged.bind(this)
   #dismissSpamControl
   enablePersonalization
+  #pageChangeTimeoutId
 
   get spa () {
     return this.#isSpa
@@ -628,6 +631,7 @@ export default class CleverTap {
       // The accountId is present so can init with empty values.
       // Needed to maintain backward compatability with legacy implementations.
       // Npm imports/require will need to call init explictly with accountId
+      StorageManager.saveToLSorCookie(ACCOUNT_ID, clevertap.account?.[0].id)
       this.init()
     }
   }
@@ -653,6 +657,8 @@ export default class CleverTap {
         return
       }
       this.#account.id = accountId
+      StorageManager.saveToLSorCookie(ACCOUNT_ID, accountId)
+      this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
     checkBuilder(this.#logger, this.#account.id)
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
@@ -691,6 +697,9 @@ export default class CleverTap {
     if (this.#isSpa) {
       // listen to click on the document and check if URL has changed.
       document.addEventListener('click', this.#boundCheckPageChanged)
+
+      /* Listen for the Back and Forward buttons */
+      window.addEventListener('popstate', this.#boundCheckPageChanged)
     } else {
       // remove existing click listeners if any
       document.removeEventListener('click', this.#boundCheckPageChanged)
@@ -727,19 +736,40 @@ export default class CleverTap {
 
   #updateUnviewedBadgePosition () {
     try {
-      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
-      const inboxNode = document.getElementById(config.inboxSelector)
-      const unViewedBadge = document.getElementById('unviewedBadge')
-      if (!inboxNode) {
-        unViewedBadge.style.display = 'none'
-      } else {
-        const { top, right } = inboxNode.getBoundingClientRect()
-        if (Number(unViewedBadge.innerText) > 0) {
-          unViewedBadge.style.display = 'flex'
-        }
-        unViewedBadge.style.top = `${top - 8}px`
-        unViewedBadge.style.left = `${right - 8}px`
+      if (this.#pageChangeTimeoutId) {
+        clearTimeout(this.#pageChangeTimeoutId)
       }
+
+      const unViewedBadge = document.getElementById('unviewedBadge')
+      if (!unViewedBadge) {
+        this.#logger.debug('unViewedBadge not found')
+        return
+      }
+
+      /* Reset to None */
+      unViewedBadge.style.display = 'none'
+
+      /* Set Timeout to let the page load and then update the position and display the badge */
+      this.#pageChangeTimeoutId = setTimeout(() => {
+        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+        const inboxNode = document.getElementById(config?.inboxSelector)
+        /* Creating a Local Variable to avoid reference to stale DOM Node */
+        const unViewedBadge = document.getElementById('unviewedBadge')
+
+        if (!unViewedBadge) {
+          this.#logger.debug('unViewedBadge not found')
+          return
+        }
+
+        if (inboxNode) {
+          const { top, right } = inboxNode.getBoundingClientRect()
+          if (Number(unViewedBadge.innerText) > 0 || unViewedBadge.innerText === '9+') {
+            unViewedBadge.style.display = 'flex'
+          }
+          unViewedBadge.style.top = `${top - 8}px`
+          unViewedBadge.style.left = `${right - 8}px`
+        }
+      }, TIMER_FOR_NOTIF_BADGE_UPDATE)
     } catch (error) {
       this.#logger.debug('Error updating unviewed badge position:', error)
     }
@@ -905,12 +935,12 @@ export default class CleverTap {
       console.error('setOffline should be called with a value of type boolean')
       return
     }
-    $ct.offline = arg
-    // if offline is disabled
-    // process events from cache
-    if (!arg) {
+    // Check if the offline state is changing from true to false
+    // If offline is being disabled (arg is false), process any cached events
+    if ($ct.offline !== arg && !arg) {
       this.#request.processBackupEvents()
     }
+    $ct.offline = arg
   }
 
   getSDKVersion () {

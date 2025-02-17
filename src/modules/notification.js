@@ -3,7 +3,10 @@ import { isObject } from '../util/datatypes'
 import {
   PUSH_SUBSCRIPTION_DATA,
   VAPID_MIGRATION_PROMPT_SHOWN,
-  NOTIF_LAST_TIME
+  NOTIF_LAST_TIME,
+  ACCOUNT_ID,
+  POPUP_LOADING,
+  OLD_SOFT_PROMPT_SELCTOR_ID
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
@@ -35,8 +38,12 @@ export default class NotificationHandler extends Array {
   }
 
   push (...displayArgs) {
-    this.#setUpWebPush(displayArgs)
-    return 0
+    if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+      this.#setUpWebPush(displayArgs)
+      return 0
+    } else {
+      this.#logger.error('Account ID is not set')
+    }
   }
 
   enable (options = {}) {
@@ -341,18 +348,15 @@ export default class NotificationHandler extends Array {
       return
     }
 
-    // right now, we only support Chrome V50 & higher & Firefox
-    if (isChrome()) {
-      const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/)
-      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) { return }
-    } else if (isFirefox()) {
-      const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/)
-      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) { return }
-    } else if (isSafari()) {
-      const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/)
-      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) { return }
-    } else {
-      return
+    /*
+       If it is chrome or firefox and the nativeWebPush is not supported then return
+       For Safari the APNs route is open if nativeWebPush is not supported
+    */
+    if (isChrome() || isFirefox()) {
+      if (!this.#isNativeWebPushSupported()) {
+        this.#logger.error('Web Push Notification is not supported on this browser')
+        return
+      }
     }
 
     // we check for the cookie in setUpChromeNotifications() the tokens may have changed
@@ -364,7 +368,7 @@ export default class NotificationHandler extends Array {
         return
       }
       // handle migrations from other services -> chrome notifications may have already been asked for before
-      if (Notification.permission === 'granted' && vapidSupportedAndMigrated) {
+      if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
         // skip the dialog and register
         this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
         return
@@ -405,12 +409,17 @@ export default class NotificationHandler extends Array {
         if (!isSafari()) {
           return
         }
-        if (vapidSupportedAndMigrated) {
+        // If Safari is migrated already or only APNS, then return
+        if (vapidSupportedAndMigrated || this.#fcmPublicKey === null) {
           return
         }
       } else {
         StorageManager.setMetaProp(NOTIF_LAST_TIME, now)
       }
+    }
+
+    if (isSafari() && this.#isNativeWebPushSupported() && this.#fcmPublicKey !== null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
     }
 
     if (isHTTP) {
@@ -430,8 +439,14 @@ export default class NotificationHandler extends Array {
           }
           if (obj.state != null) {
             if (obj.from === 'ct' && obj.state === 'not') {
+              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+                this.#logger.debug('Soft prompt wrapper is already loading or loaded')
+                return
+              }
+
+              StorageManager.saveToLSorCookie(POPUP_LOADING, true)
               this.#addWizAlertJS().onload = () => {
-                // create our wizrocket popup
+                StorageManager.saveToLSorCookie(POPUP_LOADING, false)
                 window.wzrkPermissionPopup.wizAlert({
                   title: titleText,
                   body: bodyText,
@@ -459,7 +474,14 @@ export default class NotificationHandler extends Array {
         }
       }, false)
     } else {
+      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+        this.#logger.debug('Soft prompt wrapper is already loading or loaded')
+        return
+      }
+
+      StorageManager.saveToLSorCookie(POPUP_LOADING, true)
       this.#addWizAlertJS().onload = () => {
+        StorageManager.saveToLSorCookie(POPUP_LOADING, false)
         // create our wizrocket popup
         window.wzrkPermissionPopup.wizAlert({
           title: titleText,

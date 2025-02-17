@@ -1,5 +1,5 @@
 import { CSS_PATH, OVERLAY_PATH, WVE_CLASS } from './builder_constants'
-import { updateFormData } from './dataUpdate'
+import { updateFormData, updateElementCSS } from './dataUpdate'
 
 export const checkBuilder = (logger, accountId) => {
   const search = window.location.search
@@ -155,6 +155,7 @@ function loadOverlayScript (overlayPath, url, variant, details, personalisation)
  * @param {boolean} isPreview - Indicates if it's a preview.
  */
 export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+  const insertedElements = []
   const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details
   let notificationViewed = false
   const payload = {
@@ -169,26 +170,51 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     }
   }
 
+  const raiseClicked = (payload) => {
+    window.clevertap.renderNotificationClicked(payload)
+  }
+
   const processElement = (element, selector) => {
-    if (!selector.values) return
-    if (selector.values.html) {
-      if (isPreview) {
-        element.outerHTML = selector.values.html.text
-      } else {
-        element.outerHTML = selector.values.html
+    if (selector.elementCSS) {
+      updateElementCSS(selector)
+    }
+    if (selector.isTrackingClicks?.name) {
+      element.addEventListener('click', () => {
+        const clickedPayload = {
+          msgId: targetingMsgJson.wzrk_id,
+          pivotId: targetingMsgJson.wzrk_pivot,
+          msgCTkv: { wzrk_selector: selector.isTrackingClicks.name }
+        }
+        raiseClicked(clickedPayload)
+      })
+    }
+    if (selector.values) {
+      switch (selector.values.editor) {
+        case 'html':
+          if (isPreview) {
+            element.outerHTML = selector.values.html.text
+          } else {
+            element.outerHTML = selector.values.html
+          }
+          break
+        case 'json':
+          dispatchJsonData(targetingMsgJson, selector.values, isPreview)
+          break
+        case 'form':
+          payload.msgCTkv = { wzrk_selector: selector.selector }
+          updateFormData(element, selector.values.form, payload, isPreview)
+          break
       }
-    } else if (selector.values?.json) {
-      dispatchJsonData(targetingMsgJson, selector.values, isPreview)
-    } else {
-      payload.msgCTkv = { wzrk_selector: selector.selector }
-      updateFormData(element, selector.values.form, payload, isPreview)
     }
   }
 
   const tryFindingElement = (selector) => {
     let count = 0
     const intervalId = setInterval(() => {
-      const retryElement = document.querySelector(selector.selector)
+      let retryElement
+      try {
+        retryElement = document.querySelector(selector.selector)
+      } catch (_) {}
       if (retryElement) {
         raiseViewed()
         processElement(retryElement, selector)
@@ -203,16 +229,74 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
   details.forEach(d => {
     if (d.url === window.location.href.split('?')[0]) {
       d.selectorData.forEach(s => {
-        const element = document.querySelector(s.selector)
-        if (element) {
-          raiseViewed()
-          processElement(element, s)
+        if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) &&
+          s.values.initialHtml) {
+          insertedElements.push(s)
         } else {
-          tryFindingElement(s)
+          let element
+          try {
+            element = document.querySelector(s.selector)
+          } catch (_) {}
+          if (element) {
+            raiseViewed()
+            processElement(element, s)
+          } else {
+            tryFindingElement(s)
+          }
         }
       })
     }
   })
+
+  const addNewEl = (selector) => {
+    const { pos, sibling } = findSiblingSelector(selector.selector)
+    let count = 0
+    const intervalId = setInterval(() => {
+      let element = null
+      try {
+        const siblingEl = document.querySelector(sibling)
+        const ctEl = document.querySelector(`[ct-selector="${sibling}"]`)
+        element = ctEl || siblingEl
+      } catch (_) {
+        element = document.querySelector(`[ct-selector="${sibling}"]`)
+      }
+      if (element) {
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = selector.values.initialHtml
+        const newElement = tempDiv.firstElementChild
+        element.insertAdjacentElement(pos, newElement)
+        if (!element.getAttribute('ct-selector')) {
+          element.setAttribute('ct-selector', sibling)
+        }
+        const insertedElement = document.querySelector(`[ct-selector="${selector.selector}"]`)
+        raiseViewed()
+        processElement(insertedElement, selector)
+        clearInterval(intervalId)
+      } else if (++count >= 20) {
+        console.log(`No element present on DOM with selector '${sibling}'.`)
+        clearInterval(intervalId)
+      }
+    }, 500)
+  }
+
+  if (insertedElements.length > 0) {
+    const sortedArr = insertedElements.sort((a, b) => {
+      const numA = parseInt(a.selector.split('-')[0], 10)
+      const numB = parseInt(b.selector.split('-')[0], 10)
+      return numA - numB
+    })
+    sortedArr.forEach(addNewEl)
+  }
+}
+
+function findSiblingSelector (input) {
+  const regex = /^(\d+)-(afterend|beforebegin)-(.+)$/
+  const match = input.match(regex)
+
+  if (match) {
+    return { pos: match[2], sibling: match[3] }
+  }
+  return { pos: 'beforebegin', sibling: '' }
 }
 
 /**

@@ -15,6 +15,7 @@ export const SCOOKIE_EXP_TIME_IN_SECS = 60 * 20 // 20 mins
 export const EV_COOKIE = 'WZRK_EV'
 export const META_COOKIE = 'WZRK_META'
 export const PR_COOKIE = 'WZRK_PR'
+export const ACCOUNT_ID = 'WZRK_ACCOUNT_ID'
 export const ARP_COOKIE = 'WZRK_ARP'
 export const LCOOKIE_NAME = 'WZRK_L'
 export const NOTIF_COOKIE_NAME = 'WZRK_N'
@@ -60,6 +61,10 @@ export const WZRK_FETCH = 'wzrk_fetch'
 export const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG'
 export const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown'
 export const NOTIF_LAST_TIME = 'notif_last_time'
+export const TIMER_FOR_NOTIF_BADGE_UPDATE = 300
+export const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper'
+export const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper'
+export const POPUP_LOADING = 'WZRK_POPUP_LOADING'
 
 export const SYSTEM_EVENTS = [
   'Stayed',
