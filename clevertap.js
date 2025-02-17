@@ -5393,6 +5393,7 @@
 
     const searchParams = new URLSearchParams(window.location.search);
     const ctType = searchParams.get('ctActionMode');
+    console.log('ctType', ctType);
 
     if (ctType) {
       const parentWindow = window.opener;
