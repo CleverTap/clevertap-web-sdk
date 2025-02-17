@@ -1,16 +1,17 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.clevertap = factory());
-}(this, (function () { 'use strict';
+    typeof define === 'function' && define.amd ? define(factory) :
+      (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.clevertap = factory());
+}(this, (function () {
+  'use strict';
 
   var id = 0;
 
-  function _classPrivateFieldLooseKey(name) {
+  function _classPrivateFieldLooseKey (name) {
     return "__private_" + id++ + "_" + name;
   }
 
-  function _classPrivateFieldLooseBase(receiver, privateKey) {
+  function _classPrivateFieldLooseBase (receiver, privateKey) {
     if (!Object.prototype.hasOwnProperty.call(receiver, privateKey)) {
       throw new TypeError("attempted to use private field on non-instance");
     }
@@ -75,47 +76,47 @@
       }
     }
 
-    get id() {
+    get id () {
       return _classPrivateFieldLooseBase(this, _accountId)[_accountId];
     }
 
-    set id(accountId) {
+    set id (accountId) {
       _classPrivateFieldLooseBase(this, _accountId)[_accountId] = accountId;
     }
 
-    get region() {
+    get region () {
       return _classPrivateFieldLooseBase(this, _region)[_region];
     }
 
-    set region(region) {
+    set region (region) {
       _classPrivateFieldLooseBase(this, _region)[_region] = region;
     }
 
-    get dcSDKVersion() {
+    get dcSDKVersion () {
       return _classPrivateFieldLooseBase(this, _dcSdkversion)[_dcSdkversion];
     }
 
-    set dcSDKVersion(dcSDKVersion) {
+    set dcSDKVersion (dcSDKVersion) {
       _classPrivateFieldLooseBase(this, _dcSdkversion)[_dcSdkversion] = dcSDKVersion;
     }
 
-    get targetDomain() {
+    get targetDomain () {
       return _classPrivateFieldLooseBase(this, _targetDomain)[_targetDomain];
     }
 
-    set targetDomain(targetDomain) {
+    set targetDomain (targetDomain) {
       _classPrivateFieldLooseBase(this, _targetDomain)[_targetDomain] = targetDomain;
     }
 
-    get token() {
+    get token () {
       return _classPrivateFieldLooseBase(this, _token)[_token];
     }
 
-    set token(token) {
+    set token (token) {
       _classPrivateFieldLooseBase(this, _token)[_token] = token;
     }
 
-    get finalTargetDomain() {
+    get finalTargetDomain () {
       if (this.region) {
         return "".concat(this.region, ".").concat(this.targetDomain);
       } else {
@@ -127,19 +128,19 @@
       }
     }
 
-    get dataPostPEURL() {
+    get dataPostPEURL () {
       return "".concat(TARGET_PROTOCOL, "//").concat(this.finalTargetDomain, "/defineVars");
     }
 
-    get dataPostURL() {
+    get dataPostURL () {
       return "".concat(TARGET_PROTOCOL, "//").concat(this.finalTargetDomain, "/a?t=96");
     }
 
-    get recorderURL() {
+    get recorderURL () {
       return "".concat(TARGET_PROTOCOL, "//").concat(this.finalTargetDomain, "/r?r=1");
     }
 
-    get emailURL() {
+    get emailURL () {
       return "".concat(TARGET_PROTOCOL, "//").concat(this.finalTargetDomain, "/e?r=1");
     }
 
@@ -317,7 +318,7 @@
   };
 
   class StorageManager {
-    static save(key, value) {
+    static save (key, value) {
       if (!key || !value) {
         return false;
       }
@@ -328,7 +329,7 @@
       }
     }
 
-    static read(key) {
+    static read (key) {
       if (!key) {
         return false;
       }
@@ -348,7 +349,7 @@
       return data;
     }
 
-    static remove(key) {
+    static remove (key) {
       if (!key) {
         return false;
       }
@@ -359,7 +360,7 @@
       }
     }
 
-    static removeCookie(name, domain) {
+    static removeCookie (name, domain) {
       let cookieStr = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 
       if (domain) {
@@ -369,7 +370,7 @@
       document.cookie = cookieStr;
     }
 
-    static createCookie(name, value, seconds, domain) {
+    static createCookie (name, value, seconds, domain) {
       let expires = '';
       let domainStr = '';
 
@@ -387,7 +388,7 @@
       document.cookie = name + '=' + value + expires + domainStr + '; path=/';
     }
 
-    static readCookie(name) {
+    static readCookie (name) {
       const nameEQ = name + '=';
       const ca = document.cookie.split(';');
 
@@ -407,11 +408,11 @@
       return null;
     }
 
-    static _isLocalStorageSupported() {
+    static _isLocalStorageSupported () {
       return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function';
     }
 
-    static saveToLSorCookie(property, value) {
+    static saveToLSorCookie (property, value) {
       if (value == null) {
         return;
       }
@@ -431,7 +432,7 @@
       } catch (e) {}
     }
 
-    static readFromLSorCookie(property) {
+    static readFromLSorCookie (property) {
       let data;
 
       if ($ct.globalCache.hasOwnProperty(property)) {
@@ -458,7 +459,7 @@
       }
     }
 
-    static createBroadCookie(name, value, seconds, domain) {
+    static createBroadCookie (name, value, seconds, domain) {
       // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
       // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
       // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
@@ -511,7 +512,7 @@
       }
     }
 
-    static getMetaProp(property) {
+    static getMetaProp (property) {
       const metaObj = this.readFromLSorCookie(META_COOKIE);
 
       if (metaObj != null) {
@@ -519,7 +520,7 @@
       }
     }
 
-    static setMetaProp(property, value) {
+    static setMetaProp (property, value) {
       if (this._isLocalStorageSupported()) {
         let wzrkMetaObj = this.readFromLSorCookie(META_COOKIE);
 
@@ -537,13 +538,13 @@
       }
     }
 
-    static getAndClearMetaProp(property) {
+    static getAndClearMetaProp (property) {
       const value = this.getMetaProp(property);
       this.setMetaProp(property, undefined);
       return value;
     }
 
-    static setInstantDeleteFlagInK() {
+    static setInstantDeleteFlagInK () {
       let k = this.readFromLSorCookie(KCOOKIE_NAME);
 
       if (k == null) {
@@ -554,7 +555,7 @@
       this.saveToLSorCookie(KCOOKIE_NAME, k);
     }
 
-    static backupEvent(data, reqNo, logger) {
+    static backupEvent (data, reqNo, logger) {
       let backupArr = this.readFromLSorCookie(LCOOKIE_NAME);
 
       if (typeof backupArr === 'undefined') {
@@ -568,7 +569,7 @@
       logger.debug("stored in ".concat(LCOOKIE_NAME, " reqNo : ").concat(reqNo, " -> ").concat(data));
     }
 
-    static removeBackup(respNo, logger) {
+    static removeBackup (respNo, logger) {
       const backupMap = this.readFromLSorCookie(LCOOKIE_NAME);
 
       if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
@@ -652,7 +653,7 @@
       }
     }
 
-    get(key) {
+    get (key) {
       const item = this.cache[key];
 
       if (item) {
@@ -666,7 +667,7 @@
       return item;
     }
 
-    set(key, value) {
+    set (key, value) {
       const item = this.cache[key];
 
       const allKeys = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder];
@@ -686,7 +687,7 @@
       this.saveCacheToLS(this.cache);
     }
 
-    saveCacheToLS(cache) {
+    saveCacheToLS (cache) {
       const objToArray = [];
 
       const allKeys = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder];
@@ -705,7 +706,7 @@
       });
     }
 
-    getKey(value) {
+    getKey (value) {
       if (value === null) {
         return null;
       }
@@ -723,7 +724,7 @@
       return null;
     }
 
-    getSecondLastKey() {
+    getSecondLastKey () {
       const keysArr = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder];
 
       if (keysArr != null && keysArr.length > 1) {
@@ -733,7 +734,7 @@
       return -1;
     }
 
-    getLastKey() {
+    getLastKey () {
       const keysLength = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder].length;
 
       if (keysLength) {
@@ -743,7 +744,7 @@
 
   }
 
-  var _deleteFromObject2 = function _deleteFromObject2(key, obj) {
+  var _deleteFromObject2 = function _deleteFromObject2 (key, obj) {
     const allKeys = JSON.parse(JSON.stringify(_classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder]));
     const newCache = {};
     let indexToDelete;
@@ -811,7 +812,7 @@
      */
 
 
-    s(global, session, resume, respNumber, optOutResponse) {
+    s (global, session, resume, respNumber, optOutResponse) {
       let oulReq = false;
       let newGuid = false; // for a scenario when OUL request is true from client side
       // but resume is returned as false from server end
@@ -946,7 +947,7 @@
       this.gcookie = this.getGuid();
     }
 
-    getGuid() {
+    getGuid () {
       let guid = null;
 
       if (isValueValid(this.gcookie)) {
@@ -1131,7 +1132,7 @@
       _classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive] = isPersonalisationActive;
     }
 
-    push() {
+    push () {
       if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
         for (var _len = arguments.length, eventsArr = new Array(_len), _key = 0; _key < _len; _key++) {
           eventsArr[_key] = arguments[_key];
@@ -1145,7 +1146,7 @@
       }
     }
 
-    _processOldValues() {
+    _processOldValues () {
       if (_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]) {
         _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]);
       }
@@ -1153,7 +1154,7 @@
       _classPrivateFieldLooseBase(this, _oldValues)[_oldValues] = null;
     }
 
-    getDetails(evtName) {
+    getDetails (evtName) {
       if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive]()) {
         return;
       }
@@ -1179,7 +1180,7 @@
 
   }
 
-  var _processEventArray2 = function _processEventArray2(eventsArr) {
+  var _processEventArray2 = function _processEventArray2 (eventsArr) {
     if (Array.isArray(eventsArr)) {
       while (eventsArr.length > 0) {
         var eventName = eventsArr.shift();
@@ -1302,21 +1303,21 @@
   const compress = uncompressed => {
     if (uncompressed == null) return '';
     let i,
-        value,
-        context_dictionary = {},
-        context_dictionaryToCreate = {},
-        context_c = '',
-        context_wc = '',
-        context_w = '',
-        context_enlargeIn = 2,
-        // Compensate for the first entry which should not count
-    context_dictSize = 3,
-        context_numBits = 2,
-        context_data_string = '',
-        context_data_val = 0,
-        context_data_position = 0,
-        ii,
-        f = String.fromCharCode;
+      value,
+      context_dictionary = {},
+      context_dictionaryToCreate = {},
+      context_c = '',
+      context_wc = '',
+      context_w = '',
+      context_enlargeIn = 2,
+      // Compensate for the first entry which should not count
+      context_dictSize = 3,
+      context_numBits = 2,
+      context_data_string = '',
+      context_data_val = 0,
+      context_data_position = 0,
+      ii,
+      f = String.fromCharCode;
 
     for (ii = 0; ii < uncompressed.length; ii += 1) {
       context_c = uncompressed.charAt(ii);
@@ -1592,7 +1593,7 @@
       if (i % 2 == 0) {
         chr1 = input.charCodeAt(i / 2) >> 8;
         chr2 = input.charCodeAt(i / 2) & 255;
-        if (i / 2 + 1 < input.length) chr3 = input.charCodeAt(i / 2 + 1) >> 8;else chr3 = NaN;
+        if (i / 2 + 1 < input.length) chr3 = input.charCodeAt(i / 2 + 1) >> 8; else chr3 = NaN;
       } else {
         chr1 = input.charCodeAt((i - 1) / 2) & 255;
 
@@ -1640,11 +1641,11 @@
      * @param {*} skipARP
      * @param {boolean} sendOULFlag
      */
-    static fireRequest(url, skipARP, sendOULFlag, evtName) {
+    static fireRequest (url, skipARP, sendOULFlag, evtName) {
       _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
     }
 
-    getDelayFrequency() {
+    getDelayFrequency () {
       this.logger.debug('Network retry #' + this.networkRetryCount); // Retry with delay as 1s for first 10 retries
 
       if (this.networkRetryCount < 10) {
@@ -1677,7 +1678,7 @@
 
   }
 
-  var _addARPToRequest2 = function _addARPToRequest2(url, skipResARP) {
+  var _addARPToRequest2 = function _addARPToRequest2 (url, skipResARP) {
     if (skipResARP === true) {
       const _arp = {};
       _arp.skipResARP = true;
@@ -1691,7 +1692,7 @@
     return url;
   };
 
-  var _addUseIPToRequest2 = function _addUseIPToRequest2(pageLoadUrl) {
+  var _addUseIPToRequest2 = function _addUseIPToRequest2 (pageLoadUrl) {
     var useIP = StorageManager.getMetaProp(USEIP_KEY);
 
     if (typeof useIP !== 'boolean') {
@@ -1701,7 +1702,7 @@
     return addToURL(pageLoadUrl, USEIP_KEY, useIP ? 'true' : 'false');
   };
 
-  var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
+  var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2 () {
     if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
       $ct.isOptInRequest = false;
       return false;
@@ -1710,7 +1711,7 @@
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
   };
 
-  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
+  var _fireRequest2 = function _fireRequest2 (url, tries, skipARP, sendOULFlag, evtName) {
     var _window$clevertap, _window$wizrocket;
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
@@ -1838,7 +1839,8 @@
   };
   const saveCampaignObject = campaignObj => {
     if (StorageManager._isLocalStorageSupported()) {
-      const newObj = { ...getCampaignObject(),
+      const newObj = {
+        ...getCampaignObject(),
         ...campaignObj
       };
       const campObj = JSON.stringify(newObj);
@@ -1895,7 +1897,8 @@
                 }
               }
 
-              finalCampObj = { ...finalCampObj,
+              finalCampObj = {
+                ...finalCampObj,
                 [key]: campKeyObj
               };
             });
@@ -2394,7 +2397,7 @@
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
     }
 
-    push() {
+    push () {
       if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
         for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
           profilesArr[_key] = arguments[_key];
@@ -2408,7 +2411,7 @@
       }
     }
 
-    _processOldValues() {
+    _processOldValues () {
       if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
         _classPrivateFieldLooseBase(this, _processProfileArray)[_processProfileArray](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
       }
@@ -2416,7 +2419,7 @@
       _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = null;
     }
 
-    getAttribute(propName) {
+    getAttribute (propName) {
       if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
         return;
       }
@@ -2437,7 +2440,7 @@
      * @param {string} command
      * increases or decreases value of the number type properties in profile object
      */
-    _handleIncrementDecrementValue(key, value, command) {
+    _handleIncrementDecrementValue (key, value, command) {
       var _$ct$globalProfileMap;
 
       // Check if the value is greater than 0
@@ -2496,7 +2499,7 @@
      */
 
 
-    _handleMultiValueSet(key, arrayVal, command) {
+    _handleMultiValueSet (key, arrayVal, command) {
       const array = [];
 
       for (let i = 0; i < arrayVal.length; i++) {
@@ -2528,7 +2531,7 @@
      */
 
 
-    _handleMultiValueAdd(propKey, propVal, command) {
+    _handleMultiValueAdd (propKey, propVal, command) {
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
       }
@@ -2573,7 +2576,7 @@
      */
 
 
-    _handleMultiValueRemove(propKey, propVal, command) {
+    _handleMultiValueRemove (propKey, propVal, command) {
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
       }
@@ -2618,7 +2621,7 @@
      */
 
 
-    _handleMultiValueDelete(propKey, command) {
+    _handleMultiValueDelete (propKey, command) {
       var _$ct$globalProfileMap2;
 
       if ($ct.globalProfileMap == null) {
@@ -2635,7 +2638,7 @@
       this.sendMultiValueData(propKey, null, command);
     }
 
-    sendMultiValueData(propKey, propVal, command) {
+    sendMultiValueData (propKey, propVal, command) {
       // Send the updated value to LC
       let data = {};
       const profileObj = {};
@@ -2666,7 +2669,7 @@
 
   }
 
-  var _processProfileArray2 = function _processProfileArray2(profileArr) {
+  var _processProfileArray2 = function _processProfileArray2 (profileArr) {
     if (Array.isArray(profileArr) && profileArr.length > 0) {
       for (const index in profileArr) {
         if (profileArr.hasOwnProperty(index)) {
@@ -2804,7 +2807,7 @@
     } // On User Login
 
 
-    clear() {
+    clear () {
       _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('clear called. Reset flag has been set.');
 
       _classPrivateFieldLooseBase(this, _deleteUser)[_deleteUser]();
@@ -2812,7 +2815,7 @@
       StorageManager.setMetaProp(CLEAR, true);
     }
 
-    push() {
+    push () {
       for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
         profilesArr[_key] = arguments[_key];
       }
@@ -2822,7 +2825,7 @@
       return 0;
     }
 
-    _processOldValues() {
+    _processOldValues () {
       if (_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]) {
         _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]);
       }
@@ -2832,7 +2835,7 @@
 
   }
 
-  var _processOUL2 = function _processOUL2(profileArr) {
+  var _processOUL2 = function _processOUL2 (profileArr) {
     let sendOULFlag = true;
     StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
 
@@ -3018,7 +3021,7 @@
     }
   };
 
-  var _handleCookieFromCache2 = function _handleCookieFromCache2() {
+  var _handleCookieFromCache2 = function _handleCookieFromCache2 () {
     $ct.blockRequest = false;
     console.debug('Block request is false');
 
@@ -3038,7 +3041,7 @@
     _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
   };
 
-  var _deleteUser2 = function _deleteUser2() {
+  var _deleteUser2 = function _deleteUser2 () {
     $ct.blockRequest = true;
 
     _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Block request is true');
@@ -3070,7 +3073,7 @@
     _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
   };
 
-  var _processLoginArray2 = function _processLoginArray2(loginArr) {
+  var _processLoginArray2 = function _processLoginArray2 (loginArr) {
     if (Array.isArray(loginArr) && loginArr.length > 0) {
       const profileObj = loginArr.pop();
       const processProfile = profileObj != null && isObject(profileObj) && (profileObj.Site != null && Object.keys(profileObj.Site).length > 0 || profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0 || profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0);
@@ -3103,38 +3106,38 @@
       });
     }
 
-    get target() {
+    get target () {
       return this._target || '';
     }
 
-    set target(val) {
+    set target (val) {
       if (this._target === null) {
         this._target = val;
         this.renderImageOnlyPopup();
       }
     }
 
-    get session() {
+    get session () {
       return this._session || '';
     }
 
-    set session(val) {
+    set session (val) {
       this._session = val;
     }
 
-    get msgId() {
+    get msgId () {
       return this.target.wzrk_id;
     }
 
-    get pivotId() {
+    get pivotId () {
       return this.target.wzrk_pivot;
     }
 
-    get onClickUrl() {
+    get onClickUrl () {
       return this.target.display.onClickUrl;
     }
 
-    renderImageOnlyPopup() {
+    renderImageOnlyPopup () {
       const campaignId = this.target.wzrk_id.split('_')[0];
       const currentSessionId = this.session.sessionId;
       this.shadow.innerHTML = this.getImageOnlyPopupContent();
@@ -3180,16 +3183,16 @@
       }
     }
 
-    handleResize(popup, container) {
+    handleResize (popup, container) {
       const width = this.getRenderedImageWidth(popup);
       container.style.setProperty('width', "".concat(width, "px"));
     }
 
-    getImageOnlyPopupContent() {
+    getImageOnlyPopupContent () {
       return "\n        ".concat(this.target.msgContent.css, "\n        ").concat(this.target.msgContent.html, "\n      ");
     }
 
-    updateImageAndContainerWidth() {
+    updateImageAndContainerWidth () {
       return () => {
         const width = this.getRenderedImageWidth(this.popup);
         this.popup.style.setProperty('width', "".concat(width, "px"));
@@ -3202,7 +3205,7 @@
       };
     }
 
-    getRenderedImageWidth(img) {
+    getRenderedImageWidth (img) {
       const ratio = img.naturalWidth / img.naturalHeight;
       return img.height * ratio;
     }
@@ -3222,15 +3225,15 @@
       this.renderMessage(message);
     }
 
-    get pivotId() {
+    get pivotId () {
       return this.message.wzrk_pivot;
     }
 
-    get campaignId() {
+    get campaignId () {
       return this.message.wzrk_id;
     }
 
-    createEl(type, id, part) {
+    createEl (type, id, part) {
       const _el = document.createElement(type);
 
       _el.setAttribute('id', id);
@@ -3240,7 +3243,7 @@
       return _el;
     }
 
-    renderMessage(msg) {
+    renderMessage (msg) {
       this.wrapper = this.createEl('div', 'messageWrapper');
 
       switch (msg.templateType) {
@@ -3265,7 +3268,7 @@
       this.shadow.appendChild(this.wrapper);
     }
 
-    prepareBasicMessage(msg) {
+    prepareBasicMessage (msg) {
       const message = this.createEl('div', 'message');
 
       if (msg.imageUrl) {
@@ -3310,7 +3313,7 @@
       return message;
     }
 
-    addButtons() {
+    addButtons () {
       let buttons = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
       const buttonsContainer = this.createEl('div', 'buttonsContainer');
       let hasCopyAction = false;
@@ -3336,7 +3339,7 @@
       return buttonsContainer;
     }
 
-    addSnackbar(buttonsContainer) {
+    addSnackbar (buttonsContainer) {
       this.snackBar = this.createEl('div', "snackbar-".concat(this.campaignId), 'snackbar');
       this.snackBar.innerHTML = greenTickSvg;
       const clipboardMsg = this.createEl('span', "snackbar-msg-".concat(this.campaignId), 'snackbar-msg');
@@ -3345,7 +3348,7 @@
       buttonsContainer.appendChild(this.snackBar);
     }
 
-    addImage(url, type) {
+    addImage (url, type) {
       const imageContainer = this.createEl('div', "".concat(type, "Container"));
       const image = this.createEl('img', type);
       image.setAttribute('src', url); // images will be fetched as and when the element comes into the viewport
@@ -3355,7 +3358,7 @@
       return imageContainer;
     }
 
-    raiseClickedEvent(path, isPreview) {
+    raiseClickedEvent (path, isPreview) {
       switch (this.message.templateType) {
         case 'text-only':
         case 'text-with-icon':
@@ -3366,7 +3369,7 @@
       }
     }
 
-    raiseClickedForBasicTemplates(path, isPreview) {
+    raiseClickedForBasicTemplates (path, isPreview) {
       const msg = this.message.msg[0];
       const payload = {
         msgId: this.campaignId,
@@ -3503,11 +3506,11 @@
       });
     }
 
-    get incomingMessages() {
+    get incomingMessages () {
       return [];
     }
 
-    set incomingMessages(msgs) {
+    set incomingMessages (msgs) {
       if (msgs === void 0) {
         msgs = [];
       }
@@ -3517,11 +3520,11 @@
       }
     }
 
-    get incomingMessagesForPreview() {
+    get incomingMessagesForPreview () {
       return [];
     }
 
-    set incomingMessagesForPreview(msgs) {
+    set incomingMessagesForPreview (msgs) {
       if (msgs === void 0) {
         msgs = [];
       }
@@ -3543,11 +3546,11 @@
       }
     }
 
-    connectedCallback() {
+    connectedCallback () {
       this.init();
     }
 
-    init() {
+    init () {
       this.config = this.isPreview ? this.inboxConfigForPreview : StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
 
       if (Object.keys(this.config).length === 0) {
@@ -3580,7 +3583,7 @@
       this.shadow.appendChild(this.inbox);
     }
 
-    addMsgsToInboxFromLS() {
+    addMsgsToInboxFromLS () {
       const messages = this.deleteExpiredAndGetUnexpiredMsgs(false);
       const msgIds = messages ? Object.keys(messages) : [];
 
@@ -3617,7 +3620,7 @@
      */
 
 
-    deleteExpiredAndGetUnexpiredMsgs() {
+    deleteExpiredAndGetUnexpiredMsgs () {
       let deleteMsgsFromUI = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
       let messages = getInboxMessages();
       const now = Math.floor(Date.now() / 1000);
@@ -3649,7 +3652,7 @@
       return messages;
     }
 
-    updateInboxMessages() {
+    updateInboxMessages () {
       let msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
       const inboxMsgs = this.deleteExpiredAndGetUnexpiredMsgs();
       const date = Date.now();
@@ -3673,7 +3676,7 @@
       }
     }
 
-    createEl(type, id, part) {
+    createEl (type, id, part) {
       const _el = document.createElement(type);
 
       _el.setAttribute('id', id);
@@ -3683,7 +3686,7 @@
       return _el;
     }
 
-    addUnviewedBadge() {
+    addUnviewedBadge () {
       if (!this.unviewedBadge) {
         this.unviewedBadge = this.createEl('div', 'unviewedBadge'); // As this unviewedBadge element will be directly added to the DOM, we are defining inline styles
 
@@ -3698,7 +3701,7 @@
       });
     }
 
-    updateUnviewedBadgePosition() {
+    updateUnviewedBadgePosition () {
       try {
         const inboxNode = document.getElementById(this.config.inboxSelector) || this.inboxSelector;
         const {
@@ -3712,7 +3715,7 @@
       }
     }
 
-    createinbox() {
+    createinbox () {
       this.inbox = this.createEl('div', 'inbox');
       const header = this.createEl('div', 'header');
       const headerTitle = this.createEl('div', 'headerTitle');
@@ -3745,7 +3748,7 @@
       this.addMsgsToInboxFromLS();
     }
 
-    createCategories() {
+    createCategories () {
       const categoriesContainer = this.createEl('div', 'categoriesContainer');
       const leftArrow = this.createEl('div', 'leftArrow');
       leftArrow.innerHTML = arrowSvg;
@@ -3792,7 +3795,7 @@
       return categoriesContainer;
     }
 
-    categoryObserverCb(el, hide) {
+    categoryObserverCb (el, hide) {
       if (!el) {
         return;
       }
@@ -3800,7 +3803,7 @@
       el.style.display = hide ? 'none' : 'flex';
     }
 
-    updateActiveCategory(activeCategory) {
+    updateActiveCategory (activeCategory) {
       this.selectedCategory = activeCategory;
       this.inboxCard.scrollTop = 0;
       let counter = 0;
@@ -3824,7 +3827,7 @@
       }
     }
 
-    buildUIForMessages() {
+    buildUIForMessages () {
       var _this$config$maxMsgsI;
 
       let messages = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -3883,7 +3886,7 @@
      * @param {Event} e - The event object to check.
      * @returns {boolean} - Returns true if the event target is within the inboxSelector, otherwise false.
      */
-    checkForWebInbox(e) {
+    checkForWebInbox (e) {
       var _this$inboxSelector;
 
       const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
@@ -3896,7 +3899,7 @@
      */
 
 
-    handleMessageViewed(entries) {
+    handleMessageViewed (entries) {
       const raiseViewedEvent = !this.isPreview;
 
       if (this.isInboxOpen) {
@@ -3909,7 +3912,8 @@
                 msgId: e.target.campaignId,
                 pivotId: e.target.pivotId
               });
-              this.updateMessageInLS(e.target.id, { ...e.target.message,
+              this.updateMessageInLS(e.target.id, {
+                ...e.target.message,
                 viewed: 1
               });
               setTimeout(() => {
@@ -3930,7 +3934,7 @@
       }
     }
 
-    updateMessageInLS(key, value) {
+    updateMessageInLS (key, value) {
       if (!this.isPreview) {
         const messages = getInboxMessages();
         messages[key] = value;
@@ -3939,7 +3943,7 @@
     } // create a separte fn fro refactoring
 
 
-    toggleInbox(e) {
+    toggleInbox (e) {
       this.isInboxOpen = !this.isInboxOpen;
       this.isInboxFromFlutter = !!(e === null || e === void 0 ? void 0 : e.rect);
 
@@ -3962,7 +3966,7 @@
       }
     }
 
-    setInboxPosition(e) {
+    setInboxPosition (e) {
       const windowWidth = window.outerWidth;
       const customInboxStyles = getComputedStyle($ct.inbox);
       const top = customInboxStyles.getPropertyValue('--inbox-top');
@@ -3986,7 +3990,7 @@
      */
 
 
-    updateUnviewedBadgeCounter() {
+    updateUnviewedBadgeCounter () {
       if (this.isPreview) {
         this.setBadgeStyle(this.unviewedCounter);
         return;
@@ -4003,14 +4007,14 @@
       this.setBadgeStyle(counter);
     }
 
-    updateTSForRenderedMsgs() {
+    updateTSForRenderedMsgs () {
       this.inboxCard.querySelectorAll('ct-inbox-message').forEach(m => {
         const ts = m.id.split('_')[1];
         m.shadow.getElementById('timeStamp').firstChild.innerText = determineTimeStampText(ts);
       });
     }
 
-    getInboxStyles() {
+    getInboxStyles () {
       const headerHeight = 36;
       const categoriesHeight = this.config.categories.length ? 64 : 16;
       const styles = {
@@ -4110,7 +4114,8 @@
     }
 
     const storedInboxObj = getAndMigrateInboxMessages(guid);
-    const newObj = { ...storedInboxObj,
+    const newObj = {
+      ...storedInboxObj,
       [guid]: messages
     };
     StorageManager.saveToLSorCookie(WEBINBOX, newObj);
@@ -4389,45 +4394,51 @@
     }
   };
 
-  const checkBuilder = (logger, accountId) => {
-    const search = window.location.search;
-    const parentWindow = window.opener;
+  const handleActionMode = (logger, accountId) => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const ctType = searchParams.get('ctActionMode');
 
-    if (search === '?ctBuilder') {
-      // open in visual builder mode
-      logger.debug('open in visual builder mode');
-      window.addEventListener('message', handleMessageEvent, false);
+    if (ctType) {
+      const parentWindow = window.opener;
 
-      if (parentWindow) {
-        parentWindow.postMessage({
-          message: 'builder',
-          originUrl: window.location.href
-        }, '*');
-      }
+      switch (ctType) {
+        case 'ctBuilder':
+          logger.debug('open in visual builder mode');
+          window.addEventListener('message', handleMessageEvent, false);
 
-      return;
-    }
+          if (parentWindow) {
+            parentWindow.postMessage({
+              message: 'builder',
+              originUrl: window.location.href
+            }, '*');
+          }
 
-    if (search === '?ctBuilderPreview') {
-      window.addEventListener('message', handleMessageEvent, false);
+          return;
 
-      if (parentWindow) {
-        parentWindow.postMessage({
-          message: 'preview',
-          originUrl: window.location.href
-        }, '*');
-      }
-    }
+        case 'ctBuilderPreview':
+          window.addEventListener('message', handleMessageEvent, false);
 
-    if (search === '?ctBuilderSDKCheck') {
-      if (parentWindow) {
-        const sdkVersion = '1.12.1';
-        parentWindow.postMessage({
-          message: 'SDKVersion',
-          accountId,
-          originUrl: window.location.href,
-          sdkVersion
-        }, '*');
+          if (parentWindow) {
+            parentWindow.postMessage({
+              message: 'preview',
+              originUrl: window.location.href
+            }, '*');
+          }
+
+          return;
+
+        case 'ctBuilderSDKCheck':
+          if (parentWindow) {
+            const sdkVersion = '1.12.1';
+            parentWindow.postMessage({
+              message: 'SDKVersion',
+              accountId,
+              originUrl: window.location.href,
+              sdkVersion
+            }, '*');
+          }
+
+          break;
       }
     }
   };
@@ -4481,7 +4492,7 @@
    * Handles content load for Clevertap builder.
    */
 
-  function onContentLoad(url, variant, details, personalisation) {
+  function onContentLoad (url, variant, details, personalisation) {
     if (!contentLoaded) {
       if (window.Shopify) {
         isShopify = true;
@@ -4511,7 +4522,7 @@
    */
 
 
-  function loadCSS() {
+  function loadCSS () {
     var link = document.createElement('link');
     link.rel = 'stylesheet';
     link.type = 'text/css';
@@ -4529,7 +4540,7 @@
    */
 
 
-  function loadOverlayScript(overlayPath, url, variant, details, personalisation) {
+  function loadOverlayScript (overlayPath, url, variant, details, personalisation) {
     return new Promise((resolve, reject) => {
       var script = document.createElement('script');
       script.type = 'module';
@@ -4568,6 +4579,14 @@
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
+    let url = window.location.href;
+
+    if (isPreview) {
+      const currentUrl = new URL(url);
+      currentUrl.searchParams.delete('ctActionMode');
+      url = currentUrl.toString();
+    }
+
     let notificationViewed = false;
     const payload = {
       msgId: targetingMsgJson.wzrk_id,
@@ -4651,7 +4670,7 @@
     };
 
     details.forEach(d => {
-      if (d.url === window.location.href.split('?')[0]) {
+      if (d.url === url) {
         d.selectorData.forEach(s => {
           if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
             insertedElements.push(s);
@@ -4721,7 +4740,7 @@
     }
   };
 
-  function findSiblingSelector(input) {
+  function findSiblingSelector (input) {
     const regex = /^(\d+)-(afterend|beforebegin)-(.+)$/;
     const match = input.match(regex);
 
@@ -4745,7 +4764,7 @@
    */
 
 
-  function dispatchJsonData(targetingMsgJson, selector) {
+  function dispatchJsonData (targetingMsgJson, selector) {
     let isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
     const inaObj = {};
     inaObj.msgId = targetingMsgJson.wzrk_id;
@@ -4768,7 +4787,7 @@
     document.dispatchEvent(kvPairsEvent);
   }
 
-  function isValidUrl(string) {
+  function isValidUrl (string) {
     try {
       const url = new URL(string);
       return Boolean(url);
@@ -4777,7 +4796,7 @@
     }
   }
 
-  function addAntiFlicker(antiFlicker) {
+  function addAntiFlicker (antiFlicker) {
     const {
       personalizedSelectors = [],
       delayTime = 2000
@@ -4788,7 +4807,7 @@
 
     let retryInterval;
 
-    function isInViewport(element) {
+    function isInViewport (element) {
       const rect = element.getBoundingClientRect();
       const {
         innerHeight: windowHeight,
@@ -4810,8 +4829,8 @@
       }
     })();
 
-    function applyAntiFlicker(selectors) {
-      function processSelectors(selectorElements) {
+    function applyAntiFlicker (selectors) {
+      function processSelectors (selectorElements) {
         const elements = [];
         selectorElements.forEach(selector => {
           const matchedElements = document.querySelectorAll(selector);
@@ -4830,7 +4849,7 @@
         applyStyles(elements);
       }
 
-      function retryProcessing() {
+      function retryProcessing () {
         processSelectors(Object.keys(retryElements));
         retryCount++;
 
@@ -4847,7 +4866,7 @@
       }
     }
 
-    function applyStyles(elements) {
+    function applyStyles (elements) {
       elements.forEach(el => el.classList.add(WVE_CLASS.FLICKER_HIDE));
       setTimeout(() => {
         elements.forEach(el => {
@@ -4857,7 +4876,7 @@
       }, delayTime); // Apply styles after maxRenderTime
     }
 
-    function observeUrlChange() {
+    function observeUrlChange () {
       let previousHref = document.location.href;
       const observer = new MutationObserver(() => {
         if (previousHref !== document.location.href) {
@@ -4887,18 +4906,18 @@
       });
     }
 
-    get details() {
+    get details () {
       return this._details || '';
     }
 
-    set details(val) {
+    set details (val) {
       if (this._details === null) {
         this._details = val;
         this.renderBanner();
       }
     }
 
-    renderBanner() {
+    renderBanner () {
       this.shadow.innerHTML = this.getBannerContent();
 
       if (this.trackClick !== false) {
@@ -4922,7 +4941,7 @@
       });
     }
 
-    getBannerContent() {
+    getBannerContent () {
       return "\n      <style type=\"text/css\">\n        .banner {\n          position: relative;\n          cursor: ".concat(this.details.onClick ? 'pointer' : '', "\n        }\n        img {\n          height: ").concat(this.divHeight ? this.divHeight : 'auto', ";\n          width: 100%;\n        }\n        .wrapper:is(.left, .right, .center) {\n          display: flex;\n          justify-content: center;\n          flex-direction: column;\n          align-items: center;\n          position: absolute;\n          width: 100%;\n          height: 100%;\n          overflow: auto;\n          top: 0;\n        }\n        ").concat(this.details.css ? this.details.css : '', "\n      </style>\n      <div class=\"banner\">\n        <picture>\n          <source media=\"(min-width:480px)\" srcset=\"").concat(this.details.desktopImageURL, "\">\n          <source srcset=\"").concat(this.details.mobileImageURL, "\">\n          <img src=\"").concat(this.details.desktopImageURL, "\" alt=\"Please upload a picture\" style=\"width:100%;\" part=\"banner__img\">\n        </picture>\n        ").concat(this.details.html ? this.details.html : '', "\n      </div>\n    ");
     }
 
@@ -4948,26 +4967,26 @@
       }
     }
 
-    get target() {
+    get target () {
       return this._target || '';
     }
 
-    set target(val) {
+    set target (val) {
       if (this._target === null) {
         this._target = val;
         this.renderCarousel();
       }
     }
 
-    get details() {
+    get details () {
       return this.target.display.details;
     }
 
-    get display() {
+    get display () {
       return this.target.display;
     }
 
-    renderCarousel() {
+    renderCarousel () {
       this.slides = this.details.length;
       this.shadow.innerHTML = this.getStyles();
       const carousel = this.getCarouselContent();
@@ -4994,7 +5013,7 @@
       });
     }
 
-    setupClick() {
+    setupClick () {
       this._carousel.addEventListener('click', event => {
         const eventID = event.target.id;
 
@@ -5031,7 +5050,7 @@
       });
     }
 
-    setupOnHover() {
+    setupOnHover () {
       this._carousel.addEventListener('mouseenter', event => {
         this.stopAutoSlideTimeout = setTimeout(() => {
           this.autoSlide = clearInterval(this.autoSlide);
@@ -5047,7 +5066,7 @@
       });
     }
 
-    getCarouselContent() {
+    getCarouselContent () {
       const carousel = document.createElement('div');
       carousel.setAttribute('class', 'carousel');
       this.details.forEach((detail, i) => {
@@ -5061,13 +5080,13 @@
       return carousel;
     }
 
-    getStyles() {
+    getStyles () {
       var _this$target, _this$target$display;
 
       return "\n      <style>\n      .carousel {\n        position: relative;\n      }\n\n      .carousel__item {\n        display: none;\n        background-repeat: no-repeat;\n        background-size: cover;\n      }\n\n      ct-web-personalisation-banner::part(banner__img) {\n        height: ".concat((this === null || this === void 0 ? void 0 : (_this$target = this.target) === null || _this$target === void 0 ? void 0 : (_this$target$display = _this$target.display) === null || _this$target$display === void 0 ? void 0 : _this$target$display.divHeight) ? this.target.display.divHeight : 'auto', ";\n        width: 100%;\n        transition: 2s;\n      }\n\n      .carousel__item--selected {\n        display: block;\n      }\n      ").concat(this.display.navBtnsCss, "\n      ").concat(this.display.navArrowsCss, "\n      </style>\n  ");
     }
 
-    updateSelectedItem() {
+    updateSelectedItem () {
       if (this.previouslySelectedItem !== -1) {
         const prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
         const prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
@@ -5087,22 +5106,22 @@
       }
     }
 
-    startAutoSlide() {
+    startAutoSlide () {
       clearInterval(this.autoSlide);
       this.autoSlide = setInterval(() => {
         this.goToNext();
       }, this.display.sliderTime ? this.display.sliderTime * 1000 : 3000);
     }
 
-    goToNext() {
+    goToNext () {
       this.goTo(this.selectedItem, (this.selectedItem + 1) % this.slides);
     }
 
-    goToPrev() {
+    goToPrev () {
       this.goTo(this.selectedItem, this.selectedItem - 1);
     }
 
-    goTo(prev, cur) {
+    goTo (prev, cur) {
       this.previouslySelectedItem = prev;
       this.selectedItem = cur;
 
@@ -5465,7 +5484,8 @@
     };
 
     if (targetingMsgJson.wzrk_pivot) {
-      data.evtData = { ...data.evtData,
+      data.evtData = {
+        ...data.evtData,
         wzrk_pivot: targetingMsgJson.wzrk_pivot
       };
     }
@@ -5682,7 +5702,7 @@
       _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
     }
 
-    push() {
+    push () {
       if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
         for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
           displayArgs[_key] = arguments[_key];
@@ -5696,7 +5716,7 @@
       }
     }
 
-    enable() {
+    enable () {
       let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       const {
         swPath,
@@ -5705,7 +5725,7 @@
       enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$2)[_account$2], _classPrivateFieldLooseBase(this, _request$4)[_request$4], swPath, skipDialog, _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
     }
 
-    _processOldValues() {
+    _processOldValues () {
       if (_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]) {
         _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
       }
@@ -5713,7 +5733,7 @@
       _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3] = null;
     }
 
-    setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
+    setUpWebPushNotifications (subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
       if (isChrome() || isFirefox()) {
         _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
       } else if (isSafari()) {
@@ -5721,11 +5741,11 @@
       }
     }
 
-    setApplicationServerKey(applicationServerKey) {
+    setApplicationServerKey (applicationServerKey) {
       _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
     }
 
-    _enableWebPush(enabled, applicationServerKey) {
+    _enableWebPush (enabled, applicationServerKey) {
       $ct.webPushEnabled = enabled;
 
       if (applicationServerKey != null) {
@@ -5741,7 +5761,7 @@
 
   }
 
-  var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
+  var _setUpWebPush2 = function _setUpWebPush2 (displayArgs) {
     if ($ct.webPushEnabled && displayArgs.length > 0) {
       _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
     } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
@@ -5752,11 +5772,11 @@
     }
   };
 
-  var _isNativeWebPushSupported2 = function _isNativeWebPushSupported2() {
+  var _isNativeWebPushSupported2 = function _isNativeWebPushSupported2 () {
     return 'PushManager' in window;
   };
 
-  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
+  var _setUpSafariNotifications2 = function _setUpSafariNotifications2 (subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
     if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
       navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
@@ -5853,7 +5873,7 @@
     }
   };
 
-  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
+  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2 (subscriptionCallback, serviceWorkerPath) {
     let registrationScope = '';
 
     if ('serviceWorker' in navigator) {
@@ -5952,7 +5972,7 @@
     }
   };
 
-  var _addWizAlertJS2 = function _addWizAlertJS2() {
+  var _addWizAlertJS2 = function _addWizAlertJS2 () {
     const scriptTag = document.createElement('script');
     scriptTag.setAttribute('type', 'text/javascript');
     scriptTag.setAttribute('id', 'wzrk-alert-js');
@@ -5962,12 +5982,12 @@
     return scriptTag;
   };
 
-  var _removeWizAlertJS2 = function _removeWizAlertJS2() {
+  var _removeWizAlertJS2 = function _removeWizAlertJS2 () {
     const scriptTag = document.getElementById('wzrk-alert-js');
     scriptTag.parentNode.removeChild(scriptTag);
   };
 
-  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
+  var _handleNotificationRegistration2 = function _handleNotificationRegistration2 (displayArgs) {
     // make sure everything is specified
     let titleText;
     let bodyText;
@@ -6957,7 +6977,7 @@
 
         const onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'" + divId + "');";
         const title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<table cellpadding='0' cellspacing='0' border='0'>" + // "<tr><td colspan='2'></td></tr>"+
-        '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
+          '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
         const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>';
         html = css + title + body;
       }
@@ -7146,7 +7166,8 @@
             };
 
             if (targetingMsgJson.wzrk_pivot) {
-              eventData.evtData = { ...eventData.evtData,
+              eventData.evtData = {
+                ...eventData.evtData,
                 wzrk_pivot: notificationData.pivotId
               };
             } // WZRK PREFIX KEY VALUE PAIRS
@@ -7154,7 +7175,8 @@
 
             if (notificationData.msgCTkv) {
               for (var wzrkPrefixObj of notificationData.msgCTkv) {
-                eventData.evtData = { ...eventData.evtData,
+                eventData.evtData = {
+                  ...eventData.evtData,
                   ...wzrkPrefixObj
                 };
               }
@@ -7580,7 +7602,7 @@
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2] = isPersonalisationActive;
     }
 
-    getTotalVisits() {
+    getTotalVisits () {
       if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2]()) {
         return;
       }
@@ -7594,7 +7616,7 @@
       return visitCount;
     }
 
-    getLastVisit() {
+    getLastVisit () {
       if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2]()) {
         return;
       }
@@ -7640,39 +7662,39 @@
       this.wzrkError = {};
     }
 
-    get logLevel() {
+    get logLevel () {
       return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
     }
 
-    set logLevel(logLevel) {
+    set logLevel (logLevel) {
       _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
     }
 
-    error(message) {
+    error (message) {
       if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
         _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
       }
     }
 
-    info(message) {
+    info (message) {
       if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
         _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
       }
     }
 
-    debug(message) {
+    debug (message) {
       if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
         _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
       }
     }
 
-    debugPE(message) {
+    debugPE (message) {
       if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
         _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
       }
     }
 
-    reportError(code, description) {
+    reportError (code, description) {
       this.wzrkError.c = code;
       this.wzrkError.d = description;
       this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
@@ -7680,7 +7702,7 @@
 
   }
 
-  var _log2 = function _log2(level, message) {
+  var _log2 = function _log2 (level, message) {
     if (window.console) {
       try {
         const ts = new Date().getTime();
@@ -7725,15 +7747,15 @@
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3] = isPersonalisationActive;
     }
 
-    get sessionId() {
+    get sessionId () {
       return _classPrivateFieldLooseBase(this, _sessionId)[_sessionId];
     }
 
-    set sessionId(sessionId) {
+    set sessionId (sessionId) {
       _classPrivateFieldLooseBase(this, _sessionId)[_sessionId] = sessionId;
     }
 
-    getSessionCookieObject() {
+    getSessionCookieObject () {
       let scookieStr = StorageManager.readCookie(this.cookieName);
       let obj = {};
 
@@ -7764,12 +7786,12 @@
       return obj;
     }
 
-    setSessionCookieObject(obj) {
+    setSessionCookieObject (obj) {
       const objStr = JSON.stringify(obj);
       StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
     }
 
-    manageSession(session) {
+    manageSession (session) {
       // first time. check if current session id in localstorage is same
       // if not same then prev = current and current = this new session
       if (typeof this.sessionId === 'undefined' || this.sessionId !== session) {
@@ -7796,7 +7818,7 @@
       }
     }
 
-    getTimeElapsed() {
+    getTimeElapsed () {
       if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3]()) {
         return;
       }
@@ -7814,7 +7836,7 @@
       }
     }
 
-    getPageCount() {
+    getPageCount () {
       if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$3)[_isPersonalisationActive$3]()) {
         return;
       }
@@ -7893,7 +7915,7 @@
       RequestDispatcher.account = account;
     }
 
-    processBackupEvents() {
+    processBackupEvents () {
       const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
 
       if (typeof backupMap === 'undefined' || backupMap === null) {
@@ -7930,7 +7952,7 @@
       this.processingBackup = false;
     }
 
-    addSystemDataToObject(dataObject, ignoreTrim) {
+    addSystemDataToObject (dataObject, ignoreTrim) {
       // ignore trim for chrome notifications; undefined everywhere else
       if (typeof ignoreTrim === 'undefined') {
         dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
@@ -7955,7 +7977,8 @@
 
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
-      dataObject.af = { ...dataObject.af,
+      dataObject.af = {
+        ...dataObject.af,
         lib: 'web-sdk-v1.12.1',
         protocol: proto,
         ...$ct.flutterVersion
@@ -7968,7 +7991,7 @@
       return dataObject;
     }
 
-    addFlags(data) {
+    addFlags (data) {
       // check if cookie should be cleared.
       _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] = StorageManager.getAndClearMetaProp(CLEAR);
 
@@ -8003,7 +8026,7 @@
      */
 
 
-    saveAndFireRequest(url, override, sendOULFlag, evtName) {
+    saveAndFireRequest (url, override, sendOULFlag, evtName) {
       const now = getNow();
       url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
       const data = url + '&i=' + now + '&sn=' + seqNo;
@@ -8030,7 +8053,7 @@
       }
     }
 
-    unregisterTokenForGuid(givenGUID) {
+    unregisterTokenForGuid (givenGUID) {
       const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA); // Send unregister event only when token is available
 
       if (payload) {
@@ -8062,7 +8085,7 @@
       this.registerToken(payload);
     }
 
-    registerToken(payload) {
+    registerToken (payload) {
       if (!payload) return; // add gcookie etc to the payload
 
       payload = this.addSystemDataToObject(payload, true);
@@ -8077,7 +8100,7 @@
       StorageManager.save(WEBPUSH_LS_KEY, 'ok');
     }
 
-    processEvent(data) {
+    processEvent (data) {
       _classPrivateFieldLooseBase(this, _addToLocalEventMap)[_addToLocalEventMap](data.evtName);
 
       data = this.addSystemDataToObject(data, undefined);
@@ -8092,7 +8115,7 @@
       this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName);
     }
 
-    post(url, body) {
+    post (url, body) {
       return fetch(url, {
         method: 'post',
         headers: {
@@ -8118,7 +8141,7 @@
 
   }
 
-  var _addToLocalEventMap2 = function _addToLocalEventMap2(evtName) {
+  var _addToLocalEventMap2 = function _addToLocalEventMap2 (evtName) {
     if (StorageManager._isLocalStorageSupported()) {
       if (typeof $ct.globalEventsMap === 'undefined') {
         $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
@@ -8190,7 +8213,7 @@
     } // TODO : Do we need to check if account id is set or not here?
 
 
-    push() {
+    push () {
       for (var _len = arguments.length, privacyArr = new Array(_len), _key = 0; _key < _len; _key++) {
         privacyArr[_key] = arguments[_key];
       }
@@ -8204,7 +8227,7 @@
       return 0;
     }
 
-    _processOldValues() {
+    _processOldValues () {
       if (_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]) {
         _classPrivateFieldLooseBase(this, _processPrivacyArray)[_processPrivacyArray](_classPrivateFieldLooseBase(this, _oldValues$4)[_oldValues$4]);
       }
@@ -8214,9 +8237,10 @@
 
   }
 
-  var _processPrivacyArray2 = function _processPrivacyArray2(privacyArr) {
+  var _processPrivacyArray2 = function _processPrivacyArray2 (privacyArr) {
     if (Array.isArray(privacyArr) && privacyArr.length > 0) {
-      const privacyObj = privacyArr.reduce((prev, curr) => ({ ...prev,
+      const privacyObj = privacyArr.reduce((prev, curr) => ({
+        ...prev,
         ...curr
       }), {});
       let data = {};
@@ -8290,11 +8314,11 @@
       _classPrivateFieldLooseBase(this, _variableStore)[_variableStore] = variableStore;
     }
 
-    getValue() {
+    getValue () {
       return this.value;
     }
 
-    getdefaultValue() {
+    getdefaultValue () {
       return this.defaultValue;
     }
     /**
@@ -8307,7 +8331,7 @@
      */
 
 
-    static define(name, defaultValue, variableStore) {
+    static define (name, defaultValue, variableStore) {
       if (!name || typeof name !== 'string') {
         console.error('Empty or invalid name parameter provided.');
         return null;
@@ -8354,7 +8378,7 @@
      */
 
 
-    update(newValue) {
+    update (newValue) {
       const oldValue = this.value;
       this.value = newValue;
 
@@ -8376,7 +8400,7 @@
      */
 
 
-    triggerValueChanged() {
+    triggerValueChanged () {
       this.valueChangedCallbacks.forEach(onValueChanged => {
         onValueChanged(this);
       });
@@ -8387,7 +8411,7 @@
      */
 
 
-    addValueChangedCallback(onValueChanged) {
+    addValueChangedCallback (onValueChanged) {
       if (!onValueChanged) {
         console.log('Invalid callback parameter provided.');
         return;
@@ -8405,7 +8429,7 @@
      */
 
 
-    removeValueChangedCallback(onValueChanged) {
+    removeValueChangedCallback (onValueChanged) {
       const index = this.valueChangedCallbacks.indexOf(onValueChanged);
 
       if (index !== -1) {
@@ -8417,7 +8441,7 @@
      */
 
 
-    clearStartFlag() {
+    clearStartFlag () {
       this.hadStarted = false;
     }
 
@@ -8512,7 +8536,7 @@
      */
 
 
-    registerVariable(varInstance) {
+    registerVariable (varInstance) {
       const {
         name
       } = varInstance;
@@ -8526,11 +8550,11 @@
      */
 
 
-    getVariable(name) {
+    getVariable (name) {
       return _classPrivateFieldLooseBase(this, _variables)[_variables][name];
     }
 
-    hasVarsRequestCompleted() {
+    hasVarsRequestCompleted () {
       return _classPrivateFieldLooseBase(this, _hasVarsRequestCompleted)[_hasVarsRequestCompleted];
     }
     /**
@@ -8542,7 +8566,7 @@
      */
 
 
-    syncVariables(onSyncSuccess, onSyncFailure) {
+    syncVariables (onSyncSuccess, onSyncFailure) {
       if (!_classPrivateFieldLooseBase(this, _account$5)[_account$5].token) {
         const m = 'Account token is missing.';
 
@@ -8608,7 +8632,7 @@
      */
 
 
-    fetchVariables(onFetchCallback) {
+    fetchVariables (onFetchCallback) {
       _classPrivateFieldLooseBase(this, _event)[_event].push(WZRK_FETCH, {
         t: 4
       });
@@ -8618,7 +8642,7 @@
       }
     }
 
-    mergeVariables(vars) {
+    mergeVariables (vars) {
       console.log('msg vars is ', vars);
       _classPrivateFieldLooseBase(this, _hasVarsRequestCompleted)[_hasVarsRequestCompleted] = true;
       StorageManager.saveToLSorCookie(VARIABLES, vars);
@@ -8637,7 +8661,7 @@
       _classPrivateFieldLooseBase(this, _runVariablesChangedCallback)[_runVariablesChangedCallback]();
     }
 
-    addVariablesChangedCallback(callback) {
+    addVariablesChangedCallback (callback) {
       if (callback && typeof callback === 'function') {
         _classPrivateFieldLooseBase(this, _variablesChangedCallbacks)[_variablesChangedCallbacks].push(callback);
 
@@ -8649,7 +8673,7 @@
       }
     }
 
-    addOneTimeVariablesChangedCallback(callback) {
+    addOneTimeVariablesChangedCallback (callback) {
       if (callback && typeof callback === 'function') {
         if (this.hasVarsRequestCompleted()) {
           callback();
@@ -8659,7 +8683,7 @@
       }
     }
 
-    removeVariablesChangedCallback(callback) {
+    removeVariablesChangedCallback (callback) {
       const index = _classPrivateFieldLooseBase(this, _variablesChangedCallbacks)[_variablesChangedCallbacks].indexOf(callback);
 
       if (index !== -1) {
@@ -8667,7 +8691,7 @@
       }
     }
 
-    removeOneTimeVariablesChangedCallback(callback) {
+    removeOneTimeVariablesChangedCallback (callback) {
       const index = _classPrivateFieldLooseBase(this, _oneTimeVariablesChangedCallbacks)[_oneTimeVariablesChangedCallbacks].indexOf(callback);
 
       if (index !== -1) {
@@ -8677,7 +8701,7 @@
 
   }
 
-  var _runVariablesChangedCallback2 = function _runVariablesChangedCallback2() {
+  var _runVariablesChangedCallback2 = function _runVariablesChangedCallback2 () {
     for (var callback of _classPrivateFieldLooseBase(this, _variablesChangedCallbacks)[_variablesChangedCallbacks]) {
       callback();
     }
@@ -8732,11 +8756,11 @@
   var _sendLocationData = _classPrivateFieldLooseKey("sendLocationData");
 
   class CleverTap {
-    get spa() {
+    get spa () {
       return _classPrivateFieldLooseBase(this, _isSpa)[_isSpa];
     }
 
-    set spa(value) {
+    set spa (value) {
       const isSpa = value === true;
 
       if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa] !== isSpa && _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
@@ -8751,11 +8775,11 @@
       _classPrivateFieldLooseBase(this, _isSpa)[_isSpa] = isSpa;
     }
 
-    get dismissSpamControl() {
+    get dismissSpamControl () {
       return _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl];
     }
 
-    set dismissSpamControl(value) {
+    set dismissSpamControl (value) {
       const dismissSpamControl = value === true;
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
       $ct.dismissSpamControl = dismissSpamControl;
@@ -9182,13 +9206,15 @@
         };
 
         if (eventDetail.pivotId) {
-          data.evtData = { ...data.evtData,
+          data.evtData = {
+            ...data.evtData,
             wzrk_pivot: eventDetail.pivotId
           };
         }
 
         if (eventDetail.wzrk_slideNo) {
-          data.evtData = { ...data.evtData,
+          data.evtData = {
+            ...data.evtData,
             wzrk_slideNo: eventDetail.wzrk_slideNo
           };
         } // Adding kv pair to event data
@@ -9197,7 +9223,8 @@
         if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
           for (const key in eventDetail.kv) {
             if (key.startsWith(WZRK_PREFIX)) {
-              data.evtData = { ...data.evtData,
+              data.evtData = {
+                ...data.evtData,
                 [key]: eventDetail.kv[key]
               };
             }
@@ -9208,7 +9235,8 @@
         if (eventDetail.msgCTkv && eventDetail.msgCTkv !== null && eventDetail.msgCTkv !== undefined) {
           for (const key in eventDetail.msgCTkv) {
             if (key.startsWith(WZRK_PREFIX)) {
-              data.evtData = { ...data.evtData,
+              data.evtData = {
+                ...data.evtData,
                 [key]: eventDetail.msgCTkv[key]
               };
             }
@@ -9335,7 +9363,7 @@
         }
       };
 
-      function showPosition(position) {
+      function showPosition (position) {
         var lat = position.coords.latitude;
         var lng = position.coords.longitude;
         $ct.location = {
@@ -9349,7 +9377,7 @@
         });
       }
 
-      function showError(error) {
+      function showError (error) {
         switch (error.code) {
           case error.PERMISSION_DENIED:
             console.log('User denied the request for Geolocation.');
@@ -9474,7 +9502,7 @@
     } // starts here
 
 
-    init(accountId, region, targetDomain, token) {
+    init (accountId, region, targetDomain, token) {
       let antiFlicker = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
 
       if (Object.keys(antiFlicker).length > 0) {
@@ -9501,8 +9529,7 @@
         _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('CT Initialized with Account ID: ' + _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
       }
 
-      checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
-      checkCustomHtmlNativeDisplayPreview();
+      handleActionMode(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
       _classPrivateFieldLooseBase(this, _session$3)[_session$3].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$6)[_account$6].id;
 
       if (region) {
@@ -9557,7 +9584,7 @@
     // after its been initialized
 
 
-    pageChanged() {
+    pageChanged () {
       const currLocation = window.location.href;
       const urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
 
@@ -9652,12 +9679,12 @@
       _classPrivateFieldLooseBase(this, _updateUnviewedBadgePosition)[_updateUnviewedBadgePosition]();
     }
 
-    _isPersonalisationActive() {
+    _isPersonalisationActive () {
       return StorageManager._isLocalStorageSupported() && this.enablePersonalization;
     }
 
     // eslint-disable-next-line accessor-pairs
-    set popupCallback(callback) {
+    set popupCallback (callback) {
       this.popupCallbacks[this.popupCurrentWzrkId] = callback;
     }
     /**
@@ -9673,7 +9700,7 @@
      * but will not be sent to the server until offline is disabled by passing false
      * @param {boolean} arg
      */
-    setOffline(arg) {
+    setOffline (arg) {
       if (typeof arg !== 'boolean') {
         console.error('setOffline should be called with a value of type boolean');
         return;
@@ -9688,15 +9715,15 @@
       $ct.offline = arg;
     }
 
-    getSDKVersion() {
+    getSDKVersion () {
       return 'web-sdk-v1.12.1';
     }
 
-    defineVariable(name, defaultValue) {
+    defineVariable (name, defaultValue) {
       return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1]);
     }
 
-    syncVariables(onSyncSuccess, onSyncFailure) {
+    syncVariables (onSyncSuccess, onSyncFailure) {
       if (_classPrivateFieldLooseBase(this, _logger$a)[_logger$a].logLevel === 4) {
         return _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].syncVariables(onSyncSuccess, onSyncFailure);
       } else {
@@ -9708,21 +9735,21 @@
       }
     }
 
-    fetchVariables(onFetchCallback) {
+    fetchVariables (onFetchCallback) {
       _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].fetchVariables(onFetchCallback);
     }
 
-    addVariablesChangedCallback(callback) {
+    addVariablesChangedCallback (callback) {
       _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].addVariablesChangedCallback(callback);
     }
 
-    addOneTimeVariablesChangedCallback(callback) {
+    addOneTimeVariablesChangedCallback (callback) {
       _classPrivateFieldLooseBase(this, _variableStore$1)[_variableStore$1].addOneTimeVariablesChangedCallback(callback);
     }
 
   }
 
-  var _processOldValues2 = function _processOldValues2() {
+  var _processOldValues2 = function _processOldValues2 () {
     this.onUserLogin._processOldValues();
 
     this.privacy._processOldValues();
@@ -9734,7 +9761,7 @@
     this.notifications._processOldValues();
   };
 
-  var _debounce2 = function _debounce2(func) {
+  var _debounce2 = function _debounce2 (func) {
     let delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 50;
     let timeout;
     return function () {
@@ -9743,7 +9770,7 @@
     };
   };
 
-  var _checkPageChanged2 = function _checkPageChanged2() {
+  var _checkPageChanged2 = function _checkPageChanged2 () {
     const debouncedPageChanged = _classPrivateFieldLooseBase(this, _debounce)[_debounce](() => {
       if (_classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] !== location.href) {
         this.pageChanged();
@@ -9753,7 +9780,7 @@
     debouncedPageChanged();
   };
 
-  var _updateUnviewedBadgePosition2 = function _updateUnviewedBadgePosition2() {
+  var _updateUnviewedBadgePosition2 = function _updateUnviewedBadgePosition2 () {
     try {
       if (_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]) {
         clearTimeout(_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]);
@@ -9804,7 +9831,7 @@
     }
   };
 
-  var _pingRequest2 = function _pingRequest2() {
+  var _pingRequest2 = function _pingRequest2 () {
     let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
 
     let data = {};
@@ -9815,17 +9842,17 @@
     _classPrivateFieldLooseBase(this, _request$7)[_request$7].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
   };
 
-  var _isPingContinuous2 = function _isPingContinuous2() {
+  var _isPingContinuous2 = function _isPingContinuous2 () {
     return typeof window.wzrk_d !== 'undefined' && window.wzrk_d.ping === 'continuous';
   };
 
-  var _overrideDSyncFlag2 = function _overrideDSyncFlag2(data) {
+  var _overrideDSyncFlag2 = function _overrideDSyncFlag2 (data) {
     if (this._isPersonalisationActive()) {
       data.dsync = true;
     }
   };
 
-  var _sendLocationData2 = function _sendLocationData2(payload) {
+  var _sendLocationData2 = function _sendLocationData2 (payload) {
     // Send the updated value to LC
     let data = {};
     data.af = {};
@@ -9846,7 +9873,8 @@
     }
 
     if ($ct.location) {
-      data.af = { ...data.af,
+      data.af = {
+        ...data.af,
         ...$ct.location
       };
     }
