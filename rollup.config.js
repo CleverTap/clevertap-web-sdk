@@ -53,8 +53,9 @@ const getOutput = (mode) => {
 
 /**
  * returns the plugins array
+ * @param {('SERVICE_WORKER' | 'WEB')} mode
  */
-const getPlugins = () => {
+const getPlugins = (mode) => {
   return [
     resolve(),
     mode === 'WEB' && commonjs(),
