@@ -5183,12 +5183,10 @@
       display,
       wzrk_id: wzrkId,
       wzrk_pivot: wzrkPivot
-    } = targetingMsgJson || {};
+    } = targetingMsgJson || {}; // const { divId, preview: isPreview, url, divSelector } = display || {}
+
     const {
-      divId,
-      preview: isPreview,
-      url,
-      divSelector
+      divId
     } = display || {};
     const details = display.details[0];
     const html = details.html; // const divId = targetingMsgJson.display.divId
@@ -5198,41 +5196,41 @@
     if (!divId || !html) {
       console.error('No div Id or no html found');
       return;
-    }
+    } // if (isPreview) {
+    //   renderPreviewIframe(url, divSelector, divId, html)
+    //   return
+    // const iframe = document.createElement('iframe')
+    // // iframe.src = 'https://web-push-automation.vercel.app/?region=sk1&accountId=844-R9K-896Z'
+    // iframe.src = targetingMsgJson.display.url
+    // iframe.width = '100%'
+    // iframe.height = '500px'
+    // iframe.sandbox = 'allow-scripts allow-same-origin'
+    // iframe.id = 'wiz-custom-html-preview'
+    // const divSelector = targetingMsgJson.display.divSelector
+    // const containerElement = document.querySelector(divSelector)
+    // console.log('containerElement', containerElement)
+    // console.log('iframe', iframe)
+    // containerElement.innerHTML = ''
+    // containerElement.appendChild(iframe)
+    // const findIframeElement = () => {
+    //   let count = 0
+    //   const intervalId = setInterval(() => {
+    //     const iframeElement = document.getElementById('wiz-custom-html-preview');
+    //     if (iframeElement && iframe && iframe.contentDocument) {
+    //       // Access the iframe's document and query for a div inside
+    //       const divInsideIframe = iframe.contentDocument.querySelector(divId);
+    //       processElement(iframeElement)
+    //       clearInterval(intervalId)
+    //       console.log('divInsideIframe', divInsideIframe);
+    //     } else if (++count >= 20) {
+    //       console.log(`No iframe element found '${ divId }'.`)
+    //       clearInterval(intervalId)
+    //     }
+    //   }, 500)
+    // }
+    // findIframeElement()
+    // }
 
-    if (isPreview) {
-      renderPreviewIframe(url, divSelector, divId, html);
-      return; // const iframe = document.createElement('iframe')
-      // // iframe.src = 'https://web-push-automation.vercel.app/?region=sk1&accountId=844-R9K-896Z'
-      // iframe.src = targetingMsgJson.display.url
-      // iframe.width = '100%'
-      // iframe.height = '500px'
-      // iframe.sandbox = 'allow-scripts allow-same-origin'
-      // iframe.id = 'wiz-custom-html-preview'
-      // const divSelector = targetingMsgJson.display.divSelector
-      // const containerElement = document.querySelector(divSelector)
-      // console.log('containerElement', containerElement)
-      // console.log('iframe', iframe)
-      // containerElement.innerHTML = ''
-      // containerElement.appendChild(iframe)
-      // const findIframeElement = () => {
-      //   let count = 0
-      //   const intervalId = setInterval(() => {
-      //     const iframeElement = document.getElementById('wiz-custom-html-preview');
-      //     if (iframeElement && iframe && iframe.contentDocument) {
-      //       // Access the iframe's document and query for a div inside
-      //       const divInsideIframe = iframe.contentDocument.querySelector(divId);
-      //       processElement(iframeElement)
-      //       clearInterval(intervalId)
-      //       console.log('divInsideIframe', divInsideIframe);
-      //     } else if (++count >= 20) {
-      //       console.log(`No iframe element found '${ divId }'.`)
-      //       clearInterval(intervalId)
-      //     }
-      //   }, 500)
-      // }
-      // findIframeElement()
-    }
 
     let notificationViewed = false;
     const payload = {
@@ -5273,87 +5271,71 @@
     if (element) {
       element.outerHTML = html;
     }
-  };
+  }; // const renderPreviewIframe = async (url, divSelector, divId, html) => {
+  //   const containerElement = document.querySelector(divSelector)
+  //   console.log('containerElement', containerElement)
+  //   containerElement.style.height = 'calc(100% - 52px)'
+  //   if (!containerElement) {
+  //     console.error(`No element found for selector: ${divSelector}`)
+  //     return
+  //   }
+  //   const response = await fetch(url)
+  //   if (!response.ok || !response.body) {
+  //     return
+  //   }
+  //   const reader = response.body.getReader()
+  //   const decoder = new TextDecoder()
+  //   let htmlString = ''
+  //   while (true) {
+  //     const { done, value } = await reader.read()
+  //     if (done) break
+  //     htmlString += decoder.decode(value, { stream: true })
+  //   }
+  //   htmlString += decoder.decode()
+  //   const iframe = document.createElement('iframe')
+  //   iframe.srcdoc = htmlString
+  //   iframe.width = '100%'
+  //   iframe.height = '100%'
+  //   iframe.sandbox = 'allow-scripts allow-same-origin'
+  //   iframe.id = 'wiz-custom-html-preview'
+  //   console.log('iframe', iframe)
+  //   containerElement.innerHTML = ''
+  //   containerElement.appendChild(iframe)
+  //   // findIframeElement(() => {
+  //   //   const divInsideIframe = iframe.contentDocument?.querySelector(divId);
+  //   //   if (divInsideIframe) {
+  //   //     processElement(divInsideIframe, html)
+  //   //     console.log('Found div inside iframe:', divInsideIframe);
+  //   //   } else {
+  //   //     console.warn('No div found inside iframe.');
+  //   //   }
+  //   // });
+  //   iframe.onload = function () {
+  //     console.log('iframe onload')
+  //     findIframeElement(divId, html, iframe)
+  //   }
+  // }
+  // const findIframeElement = (divId, html, iframeElement) => {
+  //   console.log('findIframeElement divId', divId)
+  //   console.log('findIframeElement html', html)
+  //   console.log('findIframeElement iframeElement', iframeElement)
+  //   let count = 0
+  //   const intervalId = setInterval(() => {
+  //     console.log('count', count)
+  //     if (iframeElement && iframeElement.contentDocument) {
+  //       const divInsideIframe = iframeElement.contentDocument?.querySelector(divId)
+  //       if (divInsideIframe) {
+  //         processElement(divInsideIframe, html)
+  //         clearInterval(intervalId)
+  //         // callback();
+  //       }
+  //     } else if (++count >= 20) {
+  //       clearInterval(intervalId)
+  //       console.warn('Iframe element not found after 20 attempts.')
+  //     }
+  //   }, 500)
+  // }
 
-  const renderPreviewIframe = async (url, divSelector, divId, html) => {
-    const containerElement = document.querySelector(divSelector);
-    console.log('containerElement', containerElement);
-    containerElement.style.height = 'calc(100% - 52px)';
-
-    if (!containerElement) {
-      console.error("No element found for selector: ".concat(divSelector));
-      return;
-    }
-
-    const response = await fetch(url);
-
-    if (!response.ok || !response.body) {
-      return;
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let htmlString = '';
-
-    while (true) {
-      const {
-        done,
-        value
-      } = await reader.read();
-      if (done) break;
-      htmlString += decoder.decode(value, {
-        stream: true
-      });
-    }
-
-    htmlString += decoder.decode();
-    const iframe = document.createElement('iframe');
-    iframe.srcdoc = htmlString;
-    iframe.width = '100%';
-    iframe.height = '100%';
-    iframe.sandbox = 'allow-scripts allow-same-origin';
-    iframe.id = 'wiz-custom-html-preview';
-    console.log('iframe', iframe);
-    containerElement.innerHTML = '';
-    containerElement.appendChild(iframe); // findIframeElement(() => {
-    //   const divInsideIframe = iframe.contentDocument?.querySelector(divId);
-    //   if (divInsideIframe) {
-    //     processElement(divInsideIframe, html)
-    //     console.log('Found div inside iframe:', divInsideIframe);
-    //   } else {
-    //     console.warn('No div found inside iframe.');
-    //   }
-    // });
-
-    iframe.onload = function () {
-      console.log('iframe onload');
-      findIframeElement(divId, html, iframe);
-    };
-  };
-
-  const findIframeElement = (divId, html, iframeElement) => {
-    console.log('findIframeElement divId', divId);
-    console.log('findIframeElement html', html);
-    console.log('findIframeElement iframeElement', iframeElement);
-    let count = 0;
-    const intervalId = setInterval(() => {
-      console.log('count', count);
-
-      if (iframeElement && iframeElement.contentDocument) {
-        var _iframeElement$conten;
-
-        const divInsideIframe = (_iframeElement$conten = iframeElement.contentDocument) === null || _iframeElement$conten === void 0 ? void 0 : _iframeElement$conten.querySelector(divId);
-
-        if (divInsideIframe) {
-          processElement(divInsideIframe, html);
-          clearInterval(intervalId); // callback();
-        }
-      } else if (++count >= 20) {
-        clearInterval(intervalId);
-        console.warn('Iframe element not found after 20 attempts.');
-      }
-    }, 500);
-  };
 
   const handleJson = targetingMsgJson => {
     const inaObj = {};
