@@ -261,7 +261,7 @@ export const checkCustomHtmlNativeDisplayPreview = (logger) => {
             // const display = inAppNotifs[0].display
             console.log('msgContent', eventData.inapp_notifs[0].msgContent)
             if (eventData && msgContent.templateType === 'custom-html' && msgContent.type === 5) {
-              renderCustomHtml(inAppNotifs)
+              renderCustomHtml(inAppNotifs[0])
             }
             console.log('event', event)
           }, false)

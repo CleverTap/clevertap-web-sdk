@@ -5400,8 +5400,8 @@
 
               console.log('msgContent', eventData.inapp_notifs[0].msgContent);
 
-              if (eventData && msgContent['templateType'] === 'custom-html' && msgContent.type === 5) {
-                renderCustomHtml(inAppNotifs);
+              if (eventData && msgContent.templateType === 'custom-html' && msgContent.type === 5) {
+                renderCustomHtml(inAppNotifs[0]);
               }
 
               console.log('event', event);
