@@ -5214,7 +5214,7 @@
 
         if (retryElement) {
           raiseViewed();
-          processElement(retryElement, html);
+          retryElement.outerHTML = html;
           clearInterval(intervalId);
         } else if (++count >= 20) {
           console.log("No element present on DOM with divId '".concat(divId, "'."));
@@ -5225,13 +5225,6 @@
 
     tryFindingElement(divId);
   };
-
-  const processElement = (element, html) => {
-    if (element) {
-      element.outerHTML = html;
-    }
-  };
-
   const handleJson = targetingMsgJson => {
     const inaObj = {};
     inaObj.msgId = targetingMsgJson.wzrk_id;
