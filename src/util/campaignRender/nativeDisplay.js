@@ -249,10 +249,10 @@ export const checkCustomHtmlNativeDisplayPreview = (logger) => {
         if (parentWindow) {
           parentWindow.postMessage('asdasda', '*')
           window.addEventListener('message', (event) => {
-            const parentWindowUrl = event.origin
-            if (!parentWindowUrl.includes('clevertap')) {
-              return
-            }
+            // const parentWindowUrl = event.origin
+            // if (!parentWindowUrl.includes('clevertap')) {
+            //   return
+            // }
             const eventData = JSON.parse(event.data)
             console.log('inapp_notifs', eventData.inapp_notifs)
             console.log('0', eventData.inapp_notifs[0])
