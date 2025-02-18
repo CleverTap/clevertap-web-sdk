@@ -5413,11 +5413,13 @@
               // }
               const eventData = JSON.parse(event.data);
               console.log('inapp_notifs', eventData.inapp_notifs);
-              console.log('0', eventData.inapp_notifs[0]);
+              const inAppNotifs = eventData.inapp_notifs;
+              const msgContent = inAppNotifs[0].msgContent; // const display = inAppNotifs[0].display
+
               console.log('msgContent', eventData.inapp_notifs[0].msgContent);
 
-              if (eventData) {
-                renderCustomHtml(eventData.inapp_notifs[0].msgContent);
+              if (eventData && msgContent['template-type'] === 'custom-html' && msgContent.type === 5) {
+                renderCustomHtml(inAppNotifs);
               }
 
               console.log('event', event);
