@@ -5397,13 +5397,31 @@
 
     if (ctType) {
       const parentWindow = window.opener;
+      console.log('ctType', ctType);
+      console.log('parentWindow', parentWindow);
 
       switch (ctType) {
         case 'ctCustomHtmlPreview':
-          logger.debug('open in preview mode');
+          console.log('ctCustomHtmlPreview');
 
           if (parentWindow) {
+            parentWindow.postMessage('asdasda', "*");
             window.addEventListener('message', event => {
+              const parentWindowUrl = event.origin;
+
+              if (!parentWindowUrl.includes('clevertap')) {
+                return;
+              }
+
+              const eventData = JSON.parse(event.data);
+              console.log('inapp_notifs', eventData['inapp_notifs']);
+              console.log('0', eventData['inapp_notifs'][0]);
+              console.log('msgContent', eventData['inapp_notifs'][0]['msgContent']);
+
+              if (eventData) {
+                renderCustomHtml(eventData['inapp_notifs'][0]['msgContent']);
+              }
+
               console.log('event', event);
             }, false);
           }
