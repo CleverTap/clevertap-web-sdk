@@ -4389,45 +4389,51 @@
     }
   };
 
-  const checkBuilder = (logger, accountId) => {
-    const search = window.location.search;
-    const parentWindow = window.opener;
+  const handleActionMode = (logger, accountId) => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const ctType = searchParams.get('ctActionMode');
 
-    if (search === '?ctBuilder') {
-      // open in visual builder mode
-      logger.debug('open in visual builder mode');
-      window.addEventListener('message', handleMessageEvent, false);
+    if (ctType) {
+      const parentWindow = window.opener;
 
-      if (parentWindow) {
-        parentWindow.postMessage({
-          message: 'builder',
-          originUrl: window.location.href
-        }, '*');
-      }
+      switch (ctType) {
+        case 'ctBuilder':
+          logger.debug('open in visual builder mode');
+          window.addEventListener('message', handleMessageEvent, false);
 
-      return;
-    }
+          if (parentWindow) {
+            parentWindow.postMessage({
+              message: 'builder',
+              originUrl: window.location.href
+            }, '*');
+          }
 
-    if (search === '?ctBuilderPreview') {
-      window.addEventListener('message', handleMessageEvent, false);
+          return;
 
-      if (parentWindow) {
-        parentWindow.postMessage({
-          message: 'preview',
-          originUrl: window.location.href
-        }, '*');
-      }
-    }
+        case 'ctBuilderPreview':
+          window.addEventListener('message', handleMessageEvent, false);
 
-    if (search === '?ctBuilderSDKCheck') {
-      if (parentWindow) {
-        const sdkVersion = '1.12.1';
-        parentWindow.postMessage({
-          message: 'SDKVersion',
-          accountId,
-          originUrl: window.location.href,
-          sdkVersion
-        }, '*');
+          if (parentWindow) {
+            parentWindow.postMessage({
+              message: 'preview',
+              originUrl: window.location.href
+            }, '*');
+          }
+
+          return;
+
+        case 'ctBuilderSDKCheck':
+          if (parentWindow) {
+            const sdkVersion = '1.12.1';
+            parentWindow.postMessage({
+              message: 'SDKVersion',
+              accountId,
+              originUrl: window.location.href,
+              sdkVersion
+            }, '*');
+          }
+
+          break;
       }
     }
   };
@@ -4568,6 +4574,14 @@
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
+    let url = window.location.href;
+
+    if (isPreview) {
+      const currentUrl = new URL(url);
+      currentUrl.searchParams.delete('ctActionMode');
+      url = currentUrl.toString();
+    }
+
     let notificationViewed = false;
     const payload = {
       msgId: targetingMsgJson.wzrk_id,
@@ -4651,7 +4665,7 @@
     };
 
     details.forEach(d => {
-      if (d.url === window.location.href.split('?')[0]) {
+      if (d.url === url) {
         d.selectorData.forEach(s => {
           if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
             insertedElements.push(s);
@@ -5163,18 +5177,20 @@
     });
     document.dispatchEvent(kvPairsEvent);
   };
-  const renderCustomHtml = (targetingMsgJson, logger) => {
+  const renderCustomHtml = targetingMsgJson => {
     const {
       display,
       wzrk_id: wzrkId,
       wzrk_pivot: wzrkPivot
     } = targetingMsgJson || {};
-    const divId = display.divId || {};
+    const {
+      divId
+    } = display || {};
     const details = display.details[0];
     const html = details.html;
 
     if (!divId || !html) {
-      logger.error('No div Id or no html found');
+      console.error('No div Id or no html found');
       return;
     }
 
@@ -5201,7 +5217,7 @@
           retryElement.outerHTML = html;
           clearInterval(intervalId);
         } else if (++count >= 20) {
-          logger.log("No element present on DOM with divId '".concat(divId, "'."));
+          console.log("No element present on DOM with divId '".concat(divId, "'."));
           clearInterval(intervalId);
         }
       }, 500);
@@ -5227,6 +5243,32 @@
       detail: inaObj
     });
     document.dispatchEvent(jsonEvent);
+  };
+  const checkCustomHtmlNativeDisplayPreview = logger => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const ctType = searchParams.get('ctActionMode');
+
+    if (ctType) {
+      const parentWindow = window.opener;
+
+      switch (ctType) {
+        case 'ctCustomHtmlPreview':
+          if (parentWindow) {
+            parentWindow.postMessage('asdasda', '*');
+            window.addEventListener('message', event => {
+              const eventData = JSON.parse(event.data);
+              const inAppNotifs = eventData.inapp_notifs;
+              const msgContent = inAppNotifs[0].msgContent;
+
+              if (eventData && msgContent.templateType === 'custom-html' && msgContent.type === 5) {
+                renderCustomHtml(inAppNotifs[0]);
+              }
+            }, false);
+          }
+
+          break;
+      }
+    }
   };
 
   const invokeExternalJs = (jsFunc, targetingMsgJson) => {
@@ -7298,7 +7340,7 @@
           } else if (targetNotif.msgContent.type === 4) {
             renderVisualBuilder(targetNotif, false);
           } else if (targetNotif.msgContent.type === 5) {
-            renderCustomHtml(targetNotif, _logger);
+            renderCustomHtml(targetNotif);
           } else if (targetNotif.msgContent.type === 6) {
             handleJson(targetNotif);
           } else {
@@ -9338,7 +9380,8 @@
         _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug('CT Initialized with Account ID: ' + _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
       }
 
-      checkBuilder(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
+      handleActionMode(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a], _classPrivateFieldLooseBase(this, _account$6)[_account$6].id);
+      checkCustomHtmlNativeDisplayPreview(_classPrivateFieldLooseBase(this, _logger$a)[_logger$a]);
       _classPrivateFieldLooseBase(this, _session$3)[_session$3].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$6)[_account$6].id;
 
       if (region) {

@@ -43,8 +43,9 @@ import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
-import { checkBuilder, addAntiFlicker } from './modules/visualBuilder/pageBuilder'
+import { addAntiFlicker, handleActionMode } from './modules/visualBuilder/pageBuilder'
 import { setServerKey } from './modules/webPushPrompt/prompt'
+import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
 
 export default class CleverTap {
   #logger
@@ -92,7 +93,7 @@ export default class CleverTap {
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
-    this.raiseNotificationClicked = () => { }
+    this.raiseNotificationClicked = () => {}
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
     this.#device = new DeviceManager({ logger: this.#logger })
@@ -640,7 +641,8 @@ export default class CleverTap {
       StorageManager.saveToLSorCookie(ACCOUNT_ID, accountId)
       this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
-    checkBuilder(this.#logger, this.#account.id)
+    handleActionMode(this.#logger, this.#account.id)
+    checkCustomHtmlNativeDisplayPreview(this.#logger)
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
 
     if (region) {

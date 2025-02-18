@@ -41,15 +41,15 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
   document.dispatchEvent(kvPairsEvent)
 }
 
-export const renderCustomHtml = (targetingMsgJson, logger) => {
+export const renderCustomHtml = (targetingMsgJson) => {
   const { display, wzrk_id: wzrkId, wzrk_pivot: wzrkPivot } = targetingMsgJson || {}
 
-  const divId = display.divId || {}
+  const { divId } = display || {}
   const details = display.details[0]
   const html = details.html
 
   if (!divId || !html) {
-    logger.error('No div Id or no html found')
+    console.error('No div Id or no html found')
     return
   }
 
@@ -75,7 +75,7 @@ export const renderCustomHtml = (targetingMsgJson, logger) => {
         retryElement.outerHTML = html
         clearInterval(intervalId)
       } else if (++count >= 20) {
-        logger.log(`No element present on DOM with divId '${divId}'.`)
+        console.log(`No element present on DOM with divId '${divId}'.`)
         clearInterval(intervalId)
       }
     }, 500)
@@ -97,4 +97,29 @@ export const handleJson = (targetingMsgJson) => {
   }
   const jsonEvent = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
   document.dispatchEvent(jsonEvent)
+}
+
+export const checkCustomHtmlNativeDisplayPreview = (logger) => {
+  const searchParams = new URLSearchParams(window.location.search)
+  const ctType = searchParams.get('ctActionMode')
+  if (ctType) {
+    const parentWindow = window.opener
+    switch (ctType) {
+      case 'ctCustomHtmlPreview':
+        if (parentWindow) {
+          parentWindow.postMessage('asdasda', '*')
+          window.addEventListener('message', (event) => {
+            const eventData = JSON.parse(event.data)
+            const inAppNotifs = eventData.inapp_notifs
+            const msgContent = inAppNotifs[0].msgContent
+            if (eventData && msgContent.templateType === 'custom-html' && msgContent.type === 5) {
+              renderCustomHtml(inAppNotifs[0])
+            }
+          }, false)
+        }
+        break
+      default:
+        break
+    }
+  }
 }
