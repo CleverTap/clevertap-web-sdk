@@ -57,7 +57,7 @@ const getOutput = (mode) => {
 const getPlugins = () => {
   return [
     resolve(),
-    commonjs(),
+    mode === 'WEB' && commonjs(),
     sourcemaps(),
     eslint({
       fix: true,
@@ -80,7 +80,7 @@ const config = () => {
   return {
     input: getInput(mode),
     output: getOutput(mode),
-    plugins: getPlugins()
+    plugins: getPlugins(mode)
   }
 }
 
