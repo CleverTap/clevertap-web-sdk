@@ -489,7 +489,7 @@ export default class CleverTap {
       encryption.enableLocalStorageEncryption = value
     }
 
-    this.isLocalStorageEncrypted = () => {
+    this.isLocalStorageEncryptionEnabled = () => {
       return encryption.enableLocalStorageEncryption
     }
 
