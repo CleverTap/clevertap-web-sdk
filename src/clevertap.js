@@ -97,7 +97,6 @@ export default class CleverTap {
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
-    console.log(clevertap.account?.[0].id)
     encryption.key = clevertap.account?.[0].id
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
@@ -486,12 +485,12 @@ export default class CleverTap {
       this.profile._handleMultiValueDelete(key, COMMAND_DELETE)
     }
 
-    this.encryptLocalStorage = (value) => {
-      encryption.encryptLocalStorage = value
+    this.enableLocalStorageEncryption = (value) => {
+      encryption.enableLocalStorageEncryption = value
     }
 
     this.isLocalStorageEncrypted = () => {
-      return encryption.encryptLocalStorage
+      return encryption.enableLocalStorageEncryption
     }
 
     const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {

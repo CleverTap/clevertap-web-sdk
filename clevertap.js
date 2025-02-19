@@ -7074,11 +7074,11 @@
       return _classPrivateFieldLooseBase(this, _key)[_key];
     }
 
-    set encryptLocalStorage(value) {
+    set enableLocalStorageEncryption(value) {
       _classPrivateFieldLooseBase(this, _encryptLocalStorage)[_encryptLocalStorage] = value;
     }
 
-    get encryptLocalStorage() {
+    get enableLocalStorageEncryption() {
       return _classPrivateFieldLooseBase(this, _encryptLocalStorage)[_encryptLocalStorage];
     }
 
@@ -15402,7 +15402,7 @@
     }
 
     constructor() {
-      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$account6, _clevertap$account7;
+      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$account6;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
@@ -15491,8 +15491,7 @@
 
       _classPrivateFieldLooseBase(this, _logger)[_logger] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
-      console.log((_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id);
-      encryption.key = (_clevertap$account6 = clevertap.account) === null || _clevertap$account6 === void 0 ? void 0 : _clevertap$account6[0].id;
+      encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id;
       _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger]
       });
@@ -15930,12 +15929,12 @@
         this.profile._handleMultiValueDelete(key, COMMAND_DELETE);
       };
 
-      this.encryptLocalStorage = value => {
-        encryption.encryptLocalStorage = value;
+      this.enableLocalStorageEncryption = value => {
+        encryption.enableLocalStorageEncryption = value;
       };
 
       this.isLocalStorageEncrypted = () => {
-        return encryption.encryptLocalStorage;
+        return encryption.enableLocalStorageEncryption;
       };
 
       const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
@@ -16115,13 +16114,13 @@
 
       window.$CLTP_WR = window.$WZRK_WR = api;
 
-      if ((_clevertap$account7 = clevertap.account) === null || _clevertap$account7 === void 0 ? void 0 : _clevertap$account7[0].id) {
-        var _clevertap$account8;
+      if ((_clevertap$account6 = clevertap.account) === null || _clevertap$account6 === void 0 ? void 0 : _clevertap$account6[0].id) {
+        var _clevertap$account7;
 
         // The accountId is present so can init with empty values.
         // Needed to maintain backward compatability with legacy implementations.
         // Npm imports/require will need to call init explictly with accountId
-        StorageManager.saveToLSorCookie(ACCOUNT_ID, (_clevertap$account8 = clevertap.account) === null || _clevertap$account8 === void 0 ? void 0 : _clevertap$account8[0].id);
+        StorageManager.saveToLSorCookie(ACCOUNT_ID, (_clevertap$account7 = clevertap.account) === null || _clevertap$account7 === void 0 ? void 0 : _clevertap$account7[0].id);
         this.init();
       }
     } // starts here

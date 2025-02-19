@@ -1,6 +1,5 @@
 import { AES, enc } from 'crypto-js'
 import { KEYS_TO_ENCRYPT } from '../../util/constants'
-// import { StorageManager } from '../../util/storage'
 
 class Encryption {
   #key
@@ -23,11 +22,11 @@ class Encryption {
     return this.#key
   }
 
-  set encryptLocalStorage (value) {
+  set enableLocalStorageEncryption (value) {
     this.#encryptLocalStorage = value
   }
 
-  get encryptLocalStorage () {
+  get enableLocalStorageEncryption () {
     return this.#encryptLocalStorage
   }
 
