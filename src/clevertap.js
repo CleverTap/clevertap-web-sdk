@@ -45,6 +45,7 @@ import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
 import { checkBuilder, addAntiFlicker } from './modules/visualBuilder/pageBuilder'
 import { setServerKey } from './modules/webPushPrompt/prompt'
+import encryption from './modules/security/Encryption'
 
 export default class CleverTap {
   #logger
@@ -95,6 +96,7 @@ export default class CleverTap {
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
+    encryption.key = clevertap.account?.[0].id
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
@@ -163,6 +165,8 @@ export default class CleverTap {
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
     })
+
+    encryption.logger = this.#logger
 
     this.session = {
       getTimeElapsed: () => {
@@ -478,6 +482,14 @@ export default class CleverTap {
       this.profile._handleMultiValueDelete(key, COMMAND_DELETE)
     }
 
+    this.enableLocalStorageEncryption = (value) => {
+      encryption.enableLocalStorageEncryption = value
+    }
+
+    this.isLocalStorageEncryptionEnabled = () => {
+      return encryption.enableLocalStorageEncryption
+    }
+
     const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
       handleEmailSubscription(subscription, reEncoded, fetchGroups, this.#account, this.#logger)
     }
@@ -628,6 +640,10 @@ export default class CleverTap {
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
+    }
+
+    if (accountId) {
+      encryption.key = accountId
     }
 
     StorageManager.removeCookie('WZRK_P', window.location.hostname)
