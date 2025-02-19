@@ -30,7 +30,6 @@ import {
   EVT_PUSH,
   WZRK_FETCH,
   WEBINBOX_CONFIG,
-  ENCRYPTION_KEY,
   TIMER_FOR_NOTIF_BADGE_UPDATE,
   ACCOUNT_ID
 } from './util/constants'
@@ -168,8 +167,6 @@ export default class CleverTap {
     })
 
     encryption.logger = this.#logger
-    // to maintain non null values
-    StorageManager.save(ENCRYPTION_KEY, false)
 
     this.session = {
       getTimeElapsed: () => {

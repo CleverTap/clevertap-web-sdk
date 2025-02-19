@@ -157,7 +157,6 @@
   const CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
 
   const SCOOKIE_PREFIX = 'WZRK_S';
-  const ENCRYPTION_KEY = 'WZRK_E';
   const SCOOKIE_EXP_TIME_IN_SECS = 60 * 20; // 20 mins
 
   const EV_COOKIE = 'WZRK_EV';
@@ -15554,9 +15553,7 @@
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
-      encryption.logger = _classPrivateFieldLooseBase(this, _logger)[_logger]; // to maintain non null values
-
-      StorageManager.save(ENCRYPTION_KEY, false);
+      encryption.logger = _classPrivateFieldLooseBase(this, _logger)[_logger];
       this.session = {
         getTimeElapsed: () => {
           return _classPrivateFieldLooseBase(this, _session)[_session].getTimeElapsed();
