@@ -107,7 +107,7 @@ export const checkCustomHtmlNativeDisplayPreview = (logger) => {
     switch (ctType) {
       case 'ctCustomHtmlPreview':
         if (parentWindow) {
-          parentWindow.postMessage('asdasda', '*')
+          parentWindow.postMessage('ready', '*')
           window.addEventListener('message', (event) => {
             const eventData = JSON.parse(event.data)
             const inAppNotifs = eventData.inapp_notifs
