@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+
+## [1.13.1] 20th Feb, 2025
+- Web Native Display - Campaign Priority Support
+
 ## [1.13.0] 19th Feb, 2025
 - Added encryption support for PII data
 - Fixed: Jio XSS issue in web popup
