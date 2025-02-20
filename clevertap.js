@@ -11191,45 +11191,51 @@
     }
   };
 
-  const checkBuilder = (logger, accountId) => {
-    const search = window.location.search;
-    const parentWindow = window.opener;
+  const handleActionMode = (logger, accountId) => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const ctType = searchParams.get('ctActionMode');
 
-    if (search === '?ctBuilder') {
-      // open in visual builder mode
-      logger.debug('open in visual builder mode');
-      window.addEventListener('message', handleMessageEvent, false);
+    if (ctType) {
+      const parentWindow = window.opener;
 
-      if (parentWindow) {
-        parentWindow.postMessage({
-          message: 'builder',
-          originUrl: window.location.href
-        }, '*');
-      }
+      switch (ctType) {
+        case 'ctBuilder':
+          logger.debug('open in visual builder mode');
+          window.addEventListener('message', handleMessageEvent, false);
 
-      return;
-    }
+          if (parentWindow) {
+            parentWindow.postMessage({
+              message: 'builder',
+              originUrl: window.location.href
+            }, '*');
+          }
 
-    if (search === '?ctBuilderPreview') {
-      window.addEventListener('message', handleMessageEvent, false);
+          return;
 
-      if (parentWindow) {
-        parentWindow.postMessage({
-          message: 'preview',
-          originUrl: window.location.href
-        }, '*');
-      }
-    }
+        case 'ctBuilderPreview':
+          window.addEventListener('message', handleMessageEvent, false);
 
-    if (search === '?ctBuilderSDKCheck') {
-      if (parentWindow) {
-        const sdkVersion = '1.13.0';
-        parentWindow.postMessage({
-          message: 'SDKVersion',
-          accountId,
-          originUrl: window.location.href,
-          sdkVersion
-        }, '*');
+          if (parentWindow) {
+            parentWindow.postMessage({
+              message: 'preview',
+              originUrl: window.location.href
+            }, '*');
+          }
+
+          return;
+
+        case 'ctBuilderSDKCheck':
+          if (parentWindow) {
+            const sdkVersion = '1.13.1';
+            parentWindow.postMessage({
+              message: 'SDKVersion',
+              accountId,
+              originUrl: window.location.href,
+              sdkVersion
+            }, '*');
+          }
+
+          break;
       }
     }
   };
@@ -11370,6 +11376,14 @@
   const renderVisualBuilder = (targetingMsgJson, isPreview) => {
     const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
+    let url = window.location.href;
+
+    if (isPreview) {
+      const currentUrl = new URL(url);
+      currentUrl.searchParams.delete('ctActionMode');
+      url = currentUrl.toString();
+    }
+
     let notificationViewed = false;
     const payload = {
       msgId: targetingMsgJson.wzrk_id,
@@ -11453,7 +11467,7 @@
     };
 
     details.forEach(d => {
-      if (d.url === window.location.href.split('?')[0]) {
+      if (d.url === url) {
         d.selectorData.forEach(s => {
           if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
             insertedElements.push(s);
@@ -14595,7 +14609,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.13.0',
+        lib: 'web-sdk-v1.13.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -16154,7 +16168,7 @@
         _classPrivateFieldLooseBase(this, _logger)[_logger].debug('CT Initialized with Account ID: ' + _classPrivateFieldLooseBase(this, _account)[_account].id);
       }
 
-      checkBuilder(_classPrivateFieldLooseBase(this, _logger)[_logger], _classPrivateFieldLooseBase(this, _account)[_account].id);
+      handleActionMode(_classPrivateFieldLooseBase(this, _logger)[_logger], _classPrivateFieldLooseBase(this, _account)[_account].id);
       _classPrivateFieldLooseBase(this, _session)[_session].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account)[_account].id;
 
       if (region) {
@@ -16341,7 +16355,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.13.0';
+      return 'web-sdk-v1.13.1';
     }
 
     defineVariable(name, defaultValue) {
