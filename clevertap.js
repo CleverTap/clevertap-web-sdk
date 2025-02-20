@@ -11130,6 +11130,11 @@
     FLICKER_HIDE: 'wve-anti-flicker-hide',
     FLICKER_ID: 'wve-flicker-style'
   };
+  const WVE_QUERY_PARAMS = {
+    BUILDER: 'ctBuilder',
+    PREVIEW: 'ctBuilderPreview',
+    SDK_CHECK: 'ctBuilderSDKCheck'
+  };
 
   const updateFormData = function (element, formStyle, payload) {
     let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
@@ -11199,7 +11204,7 @@
       const parentWindow = window.opener;
 
       switch (ctType) {
-        case 'ctBuilder':
+        case WVE_QUERY_PARAMS.BUILDER:
           logger.debug('open in visual builder mode');
           window.addEventListener('message', handleMessageEvent, false);
 
@@ -11210,9 +11215,10 @@
             }, '*');
           }
 
-          return;
+          break;
 
-        case 'ctBuilderPreview':
+        case WVE_QUERY_PARAMS.PREVIEW:
+          logger.debug('preview of visual editor');
           window.addEventListener('message', handleMessageEvent, false);
 
           if (parentWindow) {
@@ -11222,10 +11228,11 @@
             }, '*');
           }
 
-          return;
+          break;
 
-        case 'ctBuilderSDKCheck':
+        case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
+            logger.debug('SDK version check');
             const sdkVersion = '1.13.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
@@ -11235,6 +11242,10 @@
             }, '*');
           }
 
+          break;
+
+        default:
+          logger.debug("unknown query param ".concat(ctType));
           break;
       }
     }
