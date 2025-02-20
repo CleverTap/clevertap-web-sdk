@@ -5,6 +5,7 @@ import { eslint } from 'rollup-plugin-eslint'
 import { terser } from 'rollup-plugin-terser'
 import { version } from './package.json'
 import sourcemaps from 'rollup-plugin-sourcemaps'
+import commonjs from '@rollup/plugin-commonjs';
 
 /**
  * Returns the input file path
@@ -52,10 +53,12 @@ const getOutput = (mode) => {
 
 /**
  * returns the plugins array
+ * @param {('SERVICE_WORKER' | 'WEB')} mode
  */
-const getPlugins = () => {
+const getPlugins = (mode) => {
   return [
     resolve(),
+    mode === 'WEB' && commonjs(),
     sourcemaps(),
     eslint({
       fix: true,
@@ -78,7 +81,7 @@ const config = () => {
   return {
     input: getInput(mode),
     output: getOutput(mode),
-    plugins: getPlugins()
+    plugins: getPlugins(mode)
   }
 }
 
