@@ -43,7 +43,7 @@ import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
-import { checkBuilder, addAntiFlicker } from './modules/visualBuilder/pageBuilder'
+import { addAntiFlicker, handleActionMode } from './modules/visualBuilder/pageBuilder'
 import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 
@@ -656,7 +656,7 @@ export default class CleverTap {
       StorageManager.saveToLSorCookie(ACCOUNT_ID, accountId)
       this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
-    checkBuilder(this.#logger, this.#account.id)
+    handleActionMode(this.#logger, this.#account.id)
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
 
     if (region) {

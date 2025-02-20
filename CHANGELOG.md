@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.13.1] 21st Feb, 2025
+- Added search parameter ctActionMode to handle all url query parameter
+
 ## [1.13.0] 19th Feb, 2025
 - Added encryption support for PII data
 - Fixed: Jio XSS issue in web popup
