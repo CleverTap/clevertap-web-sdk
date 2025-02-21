@@ -1,5 +1,5 @@
-import { StorageManager, $ct } from '../util/storage'
-import { isObject } from '../util/datatypes'
+import {StorageManager, $ct} from '../util/storage'
+import {isObject} from '../util/datatypes'
 import {
   PUSH_SUBSCRIPTION_DATA,
   VAPID_MIGRATION_PROMPT_SHOWN,
@@ -11,9 +11,9 @@ import {
 import {
   urlBase64ToUint8Array
 } from '../util/encoder'
-import { setNotificationHandlerValues, processSoftPrompt } from './webPushPrompt/prompt'
+import {setNotificationHandlerValues, processSoftPrompt} from './webPushPrompt/prompt'
 
-import { isChrome, isFirefox, isSafari } from '../util/helpers'
+import {isChrome, isFirefox, isSafari} from '../util/helpers'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -23,7 +23,7 @@ export default class NotificationHandler extends Array {
   #wizAlertJSPath
   #fcmPublicKey
 
-  constructor ({
+  constructor({
     logger,
     session,
     request,
@@ -47,16 +47,17 @@ export default class NotificationHandler extends Array {
   }
 
   push (...displayArgs) {
+    console.log('StorageManager.readFromLSorCookie(ACCOUNT_ID)', StorageManager.readFromLSorCookie(ACCOUNT_ID))
     if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
-    /*
-      To handle a potential race condition, two flags are stored in Local Storage:
-      - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
-      - `isNotificationPushCallDeferred`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+      /*
+        To handle a potential race condition, two flags are stored in Local Storage:
+        - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
+        - `isNotificationPushCallDeferred`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
 
-      This ensures the soft prompt is rendered correctly:
-      - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
-      - Otherwise, `isNotificationPushCallDeferred` is set to true, and the rendering is deferred until the webPushConfig is received.
-    */
+        This ensures the soft prompt is rendered correctly:
+        - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
+        - Otherwise, `isNotificationPushCallDeferred` is set to true, and the rendering is deferred until the webPushConfig is received.
+      */
       const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
       const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie('applicationServerKeyReceived')
       setNotificationHandlerValues({
@@ -261,7 +262,7 @@ export default class NotificationHandler extends Array {
         if (isFirefox() && Array.isArray(serviceWorkerRegistration)) {
           serviceWorkerRegistration = serviceWorkerRegistration.filter((i) => i.scope === registrationScope)[0]
         }
-        const subscribeObj = { userVisibleOnly: true }
+        const subscribeObj = {userVisibleOnly: true}
 
         if (this.#fcmPublicKey != null) {
           subscribeObj.applicationServerKey = urlBase64ToUint8Array(this.#fcmPublicKey)
@@ -584,6 +585,7 @@ export default class NotificationHandler extends Array {
     if (applicationServerKey != null) {
       this.setApplicationServerKey(applicationServerKey)
     }
+    console.log('$ct', $ct)
     if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
       this.#handleNotificationRegistration($ct.notifApi.displayArgs)
     } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {

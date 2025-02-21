@@ -25,7 +25,6 @@ export const setNotificationHandlerValues = (notificationValues = {}) => {
 
 export const processWebPushConfig = (webPushConfig, logger, request) => {
   const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
-
   const updatePushConfig = () => {
     $ct.pushConfig = webPushConfig
     StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)

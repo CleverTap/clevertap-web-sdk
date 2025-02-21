@@ -5528,6 +5528,8 @@
     }
 
     push() {
+      console.log('StorageManager.readFromLSorCookie(ACCOUNT_ID)', StorageManager.readFromLSorCookie(ACCOUNT_ID));
+
       if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
         /*
           To handle a potential race condition, two flags are stored in Local Storage:
@@ -5589,9 +5591,11 @@
         this.setApplicationServerKey(applicationServerKey);
       }
 
+      console.log('$ct', $ct);
+
       if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      }
+      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
     }
 
   }
@@ -5612,6 +5616,9 @@
   };
 
   var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
+    const softPromptCard = document.getElementById('pnWrapper');
+    const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+
     if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
       navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
@@ -5646,8 +5653,6 @@
                 }
 
                 const existingBellWrapper = document.getElementById('bell_wrapper');
-                const softPromptCard = document.getElementById('pnWrapper');
-                const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
 
                 if (existingBellWrapper) {
                   existingBellWrapper.parentNode.removeChild(existingBellWrapper);
@@ -5680,9 +5685,6 @@
             }
           } else if (permission === 'denied') {
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
-
-            const softPromptCard = document.getElementById('pnWrapper');
-            const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
 
             if (softPromptCard) {
               softPromptCard.parentNode.removeChild(softPromptCard);
@@ -5719,8 +5721,6 @@
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
 
             const existingBellWrapper = document.getElementById('bell_wrapper');
-            const softPromptCard = document.getElementById('pnWrapper');
-            const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
 
             if (existingBellWrapper) {
               existingBellWrapper.parentNode.removeChild(existingBellWrapper);
@@ -5741,9 +5741,6 @@
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
           } else if (subscription.permission === 'denied') {
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
-
-            const softPromptCard = document.getElementById('pnWrapper');
-            const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
 
             if (softPromptCard) {
               softPromptCard.parentNode.removeChild(softPromptCard);
