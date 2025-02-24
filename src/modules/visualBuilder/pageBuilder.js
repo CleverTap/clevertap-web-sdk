@@ -241,6 +241,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
   }
 
   details.forEach(d => {
+    // TODO: Check if this condition is needed, as we might have scenarios where the customer might be on the same url but might have ?queryParams or #pageAnchors
     if (d.url === url) {
       d.selectorData.forEach(s => {
         if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) &&

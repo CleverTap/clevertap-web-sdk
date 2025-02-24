@@ -11246,15 +11246,25 @@
             }, '*');
           }
 
-    if (search === '?ctBuilderSDKCheck') {
-      if (parentWindow) {
-        const sdkVersion = '1.13.1';
-        parentWindow.postMessage({
-          message: 'SDKVersion',
-          accountId,
-          originUrl: window.location.href,
-          sdkVersion
-        }, '*');
+          break;
+
+        case WVE_QUERY_PARAMS.SDK_CHECK:
+          if (parentWindow) {
+            logger.debug('SDK version check');
+            const sdkVersion = '1.13.1';
+            parentWindow.postMessage({
+              message: 'SDKVersion',
+              accountId,
+              originUrl: window.location.href,
+              sdkVersion
+            }, '*');
+          }
+
+          break;
+
+        default:
+          logger.debug("unknown query param ".concat(ctType));
+          break;
       }
     }
   }; // TODO: Add a guarding mechanism to skip postMessages from non trusted sources
@@ -11486,6 +11496,7 @@
     };
 
     details.forEach(d => {
+      // TODO: Check if this condition is needed, as we might have scenarios where the customer might be on the same url but might have ?queryParams or #pageAnchors
       if (d.url === url) {
         d.selectorData.forEach(s => {
           if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
@@ -12281,19 +12292,30 @@
      * @returns {Array<string>} - An array of DOM node selectors or IDs associated with the campaign.
      */
     getCampaignNodes: campaign => {
-      var _campaign$display$det;
+      var _display$details, _display$details$, _display$details$$sel;
 
-      if ([WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL].includes(campaign.msgContent.type)) {
-        return [campaign.display.divSelector];
-      } else if (campaign.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
-        return [campaign.display.divId];
-      } else if (campaign.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && ((_campaign$display$det = campaign.display.details[0].selectorData.filter(s => s.values.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML)) === null || _campaign$display$det === void 0 ? void 0 : _campaign$display$det.length) > 0) {
-        var _campaign$display$det2, _campaign$display$det3, _campaign$display$det4, _campaign$display$det5;
+      const {
+        msgContent,
+        display
+      } = campaign;
+      const {
+        type
+      } = msgContent;
 
-        return (_campaign$display$det2 = campaign.display.details) === null || _campaign$display$det2 === void 0 ? void 0 : (_campaign$display$det3 = _campaign$display$det2[0]) === null || _campaign$display$det3 === void 0 ? void 0 : (_campaign$display$det4 = _campaign$display$det3.selectorData) === null || _campaign$display$det4 === void 0 ? void 0 : (_campaign$display$det5 = _campaign$display$det4.filter(s => s.values.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML)) === null || _campaign$display$det5 === void 0 ? void 0 : _campaign$display$det5.map(s => s.selector);
+      switch (type) {
+        case WEB_NATIVE_TEMPLATES.BANNER:
+        case WEB_NATIVE_TEMPLATES.CAROUSEL:
+          return [display.divSelector];
+
+        case WEB_NATIVE_TEMPLATES.CUSTOM_HTML:
+          return [display.divId];
+
+        case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+          return ((_display$details = display.details) === null || _display$details === void 0 ? void 0 : (_display$details$ = _display$details[0]) === null || _display$details$ === void 0 ? void 0 : (_display$details$$sel = _display$details$.selectorData) === null || _display$details$$sel === void 0 ? void 0 : _display$details$$sel.filter(s => s.values.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML).map(s => s.selector)) || [];
+
+        default:
+          return [];
       }
-
-      return [];
     },
 
     /**
@@ -12317,17 +12339,16 @@
               shouldSkip = true;
             }
             break;
+          /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
 
-          /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
-            and can we inform the user the type of event they will receive in the editor
+          /* So we can not use Separated Campaigns logic for it, Hence skipping
+          case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+            shouldSkip = true
+            break
           */
 
-          /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
+          /* dispatchJsonData is not working for more than 1Visual Editor campaigns having JSON changes */
 
-          case WEB_NATIVE_TEMPLATES.JSON:
-          case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-            shouldSkip = true;
-            break;
         }
       }
 

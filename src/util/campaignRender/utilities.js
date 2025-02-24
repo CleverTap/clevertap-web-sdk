@@ -278,27 +278,25 @@ export const webNativeDisplayCampaignUtils = {
    * @returns {Array<string>} - An array of DOM node selectors or IDs associated with the campaign.
    */
   getCampaignNodes: (campaign) => {
-    if (
-      [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL].includes(
-        campaign.msgContent.type
-      )
-    ) {
-      return [campaign.display.divSelector]
-    } else if (campaign.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
-      return [campaign.display.divId]
-    } else if (
-      campaign.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER &&
-      campaign.display.details[0].selectorData.filter(
-        (s) => s.values.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML
-      )?.length > 0
-    ) {
-      return campaign.display.details?.[0]?.selectorData
-        ?.filter(
-          (s) => s.values.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML
-        )
-        ?.map((s) => s.selector)
+    const { msgContent, display } = campaign
+    const { type } = msgContent
+
+    switch (type) {
+      case WEB_NATIVE_TEMPLATES.BANNER:
+      case WEB_NATIVE_TEMPLATES.CAROUSEL:
+        return [display.divSelector]
+
+      case WEB_NATIVE_TEMPLATES.CUSTOM_HTML:
+        return [display.divId]
+
+      case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+        return display.details?.[0]?.selectorData
+          ?.filter((s) => s.values.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML)
+          .map((s) => s.selector) || []
+
+      default:
+        return []
     }
-    return []
   },
 
   /**
@@ -330,9 +328,14 @@ export const webNativeDisplayCampaignUtils = {
         */
         /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
         case WEB_NATIVE_TEMPLATES.JSON:
+
+        /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
+        /* So we can not use Separated Campaigns logic for it, Hence skipping
         case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
           shouldSkip = true
           break
+        */
+       /* dispatchJsonData is not working for more than 1Visual Editor campaigns having JSON changes */
       }
     }
     return shouldSkip
