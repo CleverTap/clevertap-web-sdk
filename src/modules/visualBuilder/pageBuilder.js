@@ -43,6 +43,7 @@ export const handleActionMode = (logger, accountId) => {
   }
 }
 
+// TODO: Add a guarding mechanism to skip postMessages from non trusted sources
 const handleMessageEvent = (event) => {
   if (event.data && isValidUrl(event.data.originUrl)) {
     const msgOrigin = new URL(event.data.originUrl).origin

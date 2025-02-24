@@ -11249,7 +11249,7 @@
           break;
       }
     }
-  };
+  }; // TODO: Add a guarding mechanism to skip postMessages from non trusted sources
 
   const handleMessageEvent = event => {
     if (event.data && isValidUrl(event.data.originUrl)) {
