@@ -4,12 +4,18 @@ import {
   KCOOKIE_NAME,
   LCOOKIE_NAME
 } from './constants'
+import encryption from '../modules/security/Encryption'
+
 export class StorageManager {
   static save (key, value) {
     if (!key || !value) {
       return false
     }
     if (this._isLocalStorageSupported()) {
+      if (encryption.shouldEncrypt(key)) {
+        localStorage.setItem(key, encryption.encrypt(value))
+        return true
+      }
       localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
       return true
     }
@@ -25,6 +31,9 @@ export class StorageManager {
     }
     if (data != null) {
       try {
+        if (encryption.shouldDecrypt(key)) {
+          data = encryption.decrypt(data)
+        }
         data = JSON.parse(data)
       } catch (e) {}
     }
