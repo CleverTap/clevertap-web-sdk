@@ -6,7 +6,10 @@ import {
   NOTIF_LAST_TIME,
   ACCOUNT_ID,
   POPUP_LOADING,
-  OLD_SOFT_PROMPT_SELCTOR_ID
+  OLD_SOFT_PROMPT_SELCTOR_ID,
+  APPLICATION_SERVER_KEY_RECEIVED,
+  NOTIFICATION_PUSH_METHOD_DEFERRED,
+  WEBPUSH_CONFIG_RECEIVED
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
@@ -52,14 +55,14 @@ export default class NotificationHandler extends Array {
       /*
         To handle a potential race condition, two flags are stored in Local Storage:
         - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
-        - `isNotificationPushCallDeferred`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+        - `NOTIFICATION_PUSH_METHOD_DEFERRED`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
 
         This ensures the soft prompt is rendered correctly:
         - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
-        - Otherwise, `isNotificationPushCallDeferred` is set to true, and the rendering is deferred until the webPushConfig is received.
+        - Otherwise, `NOTIFICATION_PUSH_METHOD_DEFERRED` is set to true, and the rendering is deferred until the webPushConfig is received.
       */
-      const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
-      const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie('applicationServerKeyReceived')
+      const isWebPushConfigPresent = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED)
+      const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED)
       setNotificationHandlerValues({
         logger: this.#logger,
         account: this.#account,
@@ -70,7 +73,7 @@ export default class NotificationHandler extends Array {
       if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
         processSoftPrompt()
       } else {
-        StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', true)
+        StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
       }
     } else {
       this.#logger.error('Account ID is not set')
@@ -79,6 +82,14 @@ export default class NotificationHandler extends Array {
 
   _processOldValues () {
     if (this.#oldValues) {
+      setNotificationHandlerValues({
+        logger: this.#logger,
+        account: this.#account,
+        request: this.#request,
+        displayArgs: this.#oldValues,
+        fcmPublicKey: this.#fcmPublicKey
+      })
+      StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
       this.#setUpWebPush(this.#oldValues)
     }
     this.#oldValues = null
@@ -585,7 +596,10 @@ export default class NotificationHandler extends Array {
     if (applicationServerKey != null) {
       this.setApplicationServerKey(applicationServerKey)
     }
-    console.log('$ct', $ct)
+    const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED)
+    if (isNotificationPushCalled) {
+      return
+    }
     if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
       this.#handleNotificationRegistration($ct.notifApi.displayArgs)
     } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {

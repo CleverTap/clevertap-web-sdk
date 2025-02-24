@@ -208,6 +208,9 @@
   const MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
   const WZRK_FETCH = 'wzrk_fetch';
   const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
+  const APPLICATION_SERVER_KEY_RECEIVED = 'WZRK_APPLICATION_SERVER_KEY_RECIEVED';
+  const WEBPUSH_CONFIG_RECEIVED = 'WZRK_WEB_PUSH_CONFIG_RECEIVED';
+  const NOTIFICATION_PUSH_METHOD_DEFERRED = 'WZRK_NOTIFICATION_PUSH_DEFERRED';
   const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
   const NOTIF_LAST_TIME = 'notif_last_time';
   const TIMER_FOR_NOTIF_BADGE_UPDATE = 300;
@@ -5534,13 +5537,13 @@
         /*
           To handle a potential race condition, two flags are stored in Local Storage:
           - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
-          - `isNotificationPushCallDeferred`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+          - `NOTIFICATION_PUSH_METHOD_DEFERRED`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
            This ensures the soft prompt is rendered correctly:
           - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
-          - Otherwise, `isNotificationPushCallDeferred` is set to true, and the rendering is deferred until the webPushConfig is received.
+          - Otherwise, `NOTIFICATION_PUSH_METHOD_DEFERRED` is set to true, and the rendering is deferred until the webPushConfig is received.
         */
-        const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
-        const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie('applicationServerKeyReceived');
+        const isWebPushConfigPresent = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED);
+        const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED);
 
         for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
           displayArgs[_key] = arguments[_key];
@@ -5557,7 +5560,7 @@
         if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
           processSoftPrompt();
         } else {
-          StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', true);
+          StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
         }
       } else {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Account ID is not set');
@@ -5565,7 +5568,18 @@
     }
 
     _processOldValues() {
+      console.log('_processOldValues this.#oldValues', _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
+
       if (_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]) {
+        setNotificationHandlerValues({
+          logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+          account: _classPrivateFieldLooseBase(this, _account$2)[_account$2],
+          request: _classPrivateFieldLooseBase(this, _request$4)[_request$4],
+          displayArgs: _classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3],
+          fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
+        });
+        StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
+
         _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$3)[_oldValues$3]);
       }
 
@@ -5591,11 +5605,15 @@
         this.setApplicationServerKey(applicationServerKey);
       }
 
-      console.log('$ct', $ct);
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
+
+      if (isNotificationPushCalled) {
+        return;
+      }
 
       if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
+      }
     }
 
   }
@@ -6160,6 +6178,7 @@
     const updatePushConfig = () => {
       $ct.pushConfig = webPushConfig;
       StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
+      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true);
     };
 
     if (webPushConfig.isPreview) {
@@ -6172,8 +6191,7 @@
       updatePushConfig();
 
       try {
-        StorageManager.saveToLSorCookie('webPushConfigResponseReceived', true);
-        const isNotificationPushCalled = StorageManager.readFromLSorCookie('isNotificationPushCallDeferred');
+        const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
 
         if (isNotificationPushCalled) {
           processSoftPrompt();
@@ -6238,8 +6256,8 @@
       notificationHandler.setupWebPush(displayArgs);
     }
 
-    StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', false);
-    StorageManager.saveToLSorCookie('applicationServerKeyReceived', false);
+    StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, false);
+    StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, false);
   };
   const parseDisplayArgs = displayArgs => {
     if (displayArgs.length === 1 && isObject(displayArgs[0])) {
@@ -9447,13 +9465,7 @@
         this.notifications._enableWebPush(enabled, applicationServerKey);
 
         try {
-          StorageManager.saveToLSorCookie('applicationServerKeyReceived', true);
-          const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived');
-          const isNotificationPushCalled = StorageManager.readFromLSorCookie('isNotificationPushCallDeferred');
-
-          if (isWebPushConfigPresent && isNotificationPushCalled) {
-            processSoftPrompt();
-          }
+          StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, true);
         } catch (error) {
           _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Could not read value from local storage', error);
         }

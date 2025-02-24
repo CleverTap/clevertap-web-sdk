@@ -1,6 +1,9 @@
 import { getBellIconStyles, getBoxPromptStyles } from './promptStyles.js'
 import { isObject } from '../../util/datatypes.js'
-import { WEBPUSH_CONFIG, VAPID_MIGRATION_PROMPT_SHOWN, NEW_SOFT_PROMPT_SELCTOR_ID } from '../../util/constants.js'
+import {
+  WEBPUSH_CONFIG, VAPID_MIGRATION_PROMPT_SHOWN, NEW_SOFT_PROMPT_SELCTOR_ID, APPLICATION_SERVER_KEY_RECEIVED,
+  NOTIFICATION_PUSH_METHOD_DEFERRED, WEBPUSH_CONFIG_RECEIVED
+} from '../../util/constants.js'
 import { StorageManager, $ct } from '../../util/storage.js'
 import NotificationHandler from '../notification.js'
 import { BELL_BASE64, PROMPT_BELL_BASE64 } from './promptConstants.js'
@@ -28,6 +31,7 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
   const updatePushConfig = () => {
     $ct.pushConfig = webPushConfig
     StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
+    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true)
   }
 
   if (webPushConfig.isPreview) {
@@ -36,8 +40,7 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
   } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
     updatePushConfig()
     try {
-      StorageManager.saveToLSorCookie('webPushConfigResponseReceived', true)
-      const isNotificationPushCalled = StorageManager.readFromLSorCookie('isNotificationPushCallDeferred')
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED)
       if (isNotificationPushCalled) {
         processSoftPrompt()
       }
@@ -84,8 +87,8 @@ export const processSoftPrompt = () => {
     notificationHandler.setApplicationServerKey(appServerKey)
     notificationHandler.setupWebPush(displayArgs)
   }
-  StorageManager.saveToLSorCookie('isNotificationPushCallDeferred', false)
-  StorageManager.saveToLSorCookie('applicationServerKeyReceived', false)
+  StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, false)
+  StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, false)
 }
 
 export const parseDisplayArgs = (displayArgs) => {

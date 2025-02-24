@@ -31,7 +31,8 @@ import {
   WZRK_FETCH,
   WEBINBOX_CONFIG,
   TIMER_FOR_NOTIF_BADGE_UPDATE,
-  ACCOUNT_ID
+  ACCOUNT_ID,
+  APPLICATION_SERVER_KEY_RECEIVED
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -44,7 +45,7 @@ import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWe
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
 import { checkBuilder, addAntiFlicker } from './modules/visualBuilder/pageBuilder'
-import { processSoftPrompt, setServerKey } from './modules/webPushPrompt/prompt'
+import { setServerKey } from './modules/webPushPrompt/prompt'
 
 export default class CleverTap {
   #logger
@@ -551,12 +552,7 @@ export default class CleverTap {
       setServerKey(applicationServerKey)
       this.notifications._enableWebPush(enabled, applicationServerKey)
       try {
-        StorageManager.saveToLSorCookie('applicationServerKeyReceived', true)
-        const isWebPushConfigPresent = StorageManager.readFromLSorCookie('webPushConfigResponseReceived')
-        const isNotificationPushCalled = StorageManager.readFromLSorCookie('isNotificationPushCallDeferred')
-        if (isWebPushConfigPresent && isNotificationPushCalled) {
-          processSoftPrompt()
-        }
+        StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, true)
       } catch (error) {
         this.#logger.error('Could not read value from local storage', error)
       }
