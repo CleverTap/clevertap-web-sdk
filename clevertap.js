@@ -12333,8 +12333,6 @@
     }
 
     push() {
-      console.log('StorageManager.readFromLSorCookie(ACCOUNT_ID)', StorageManager.readFromLSorCookie(ACCOUNT_ID));
-
       if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
         /*
           To handle a potential race condition, two flags are stored in Local Storage:
@@ -12353,8 +12351,8 @@
 
         setNotificationHandlerValues({
           logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
-          account: _classPrivateFieldLooseBase(this, _account$2)[_account$2],
-          request: _classPrivateFieldLooseBase(this, _request$4)[_request$4],
+          account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
+          request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
           displayArgs,
           fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
         });
@@ -12369,17 +12367,19 @@
       }
     }
 
-    enable() {
-      let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-      const {
-        swPath,
-        skipDialog
-      } = options;
-      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$4)[_account$4], _classPrivateFieldLooseBase(this, _request$3)[_request$3], swPath, skipDialog, _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
-    }
-
     _processOldValues() {
       if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
+        if (Array.isArray(_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) && _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1].length > 0) {
+          setNotificationHandlerValues({
+            logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+            account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
+            request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
+            displayArgs: _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1].slice(),
+            fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
+          });
+          StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
+        }
+
         _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
       }
 
@@ -12413,7 +12413,7 @@
 
       if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      }
+      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
     }
 
   }
@@ -12973,34 +12973,32 @@
     fcmPublicKey = notificationValues.fcmPublicKey;
   };
   const processWebPushConfig = (webPushConfig, logger, request) => {
-    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true);
 
     const updatePushConfig = () => {
       $ct.pushConfig = webPushConfig;
       StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
-      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true);
     };
 
+    updatePushConfig();
+
     if (webPushConfig.isPreview) {
-      updatePushConfig();
       enablePush({
         logger,
         request
       });
-    } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
-      updatePushConfig();
+    }
 
-      try {
-        const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
+    try {
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
 
-        if (isNotificationPushCalled) {
-          processSoftPrompt();
-        }
-      } catch (error) {
-        logger.error('Failed to process web push config:', error); // Fallback: Attempt to process soft prompt anyway
-
+      if (isNotificationPushCalled) {
         processSoftPrompt();
       }
+    } catch (error) {
+      logger.error('Failed to process web push config:', error); // Fallback: Attempt to process soft prompt anyway
+
+      processSoftPrompt();
     }
   };
   const processSoftPrompt = () => {
@@ -16277,7 +16275,7 @@
         try {
           StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, true);
         } catch (error) {
-          _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].error('Could not read value from local storage', error);
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('Could not read value from local storage', error);
         }
       };
 

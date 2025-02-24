@@ -27,28 +27,24 @@ export const setNotificationHandlerValues = (notificationValues = {}) => {
 }
 
 export const processWebPushConfig = (webPushConfig, logger, request) => {
-  const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
+  StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true)
   const updatePushConfig = () => {
     $ct.pushConfig = webPushConfig
     StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
-    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true)
   }
-
+  updatePushConfig()
   if (webPushConfig.isPreview) {
-    updatePushConfig()
     enablePush({ logger, request })
-  } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
-    updatePushConfig()
-    try {
-      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED)
-      if (isNotificationPushCalled) {
-        processSoftPrompt()
-      }
-    } catch (error) {
-      logger.error('Failed to process web push config:', error)
-      // Fallback: Attempt to process soft prompt anyway
+  }
+  try {
+    const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED)
+    if (isNotificationPushCalled) {
       processSoftPrompt()
     }
+  } catch (error) {
+    logger.error('Failed to process web push config:', error)
+    // Fallback: Attempt to process soft prompt anyway
+    processSoftPrompt()
   }
 }
 

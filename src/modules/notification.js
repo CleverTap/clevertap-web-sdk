@@ -1,5 +1,5 @@
-import {StorageManager, $ct} from '../util/storage'
-import {isObject} from '../util/datatypes'
+import { StorageManager, $ct } from '../util/storage'
+import { isObject } from '../util/datatypes'
 import {
   PUSH_SUBSCRIPTION_DATA,
   VAPID_MIGRATION_PROMPT_SHOWN,
@@ -14,9 +14,9 @@ import {
 import {
   urlBase64ToUint8Array
 } from '../util/encoder'
-import {setNotificationHandlerValues, processSoftPrompt} from './webPushPrompt/prompt'
+import { setNotificationHandlerValues, processSoftPrompt } from './webPushPrompt/prompt'
 
-import {isChrome, isFirefox, isSafari} from '../util/helpers'
+import { isChrome, isFirefox, isSafari } from '../util/helpers'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -26,7 +26,7 @@ export default class NotificationHandler extends Array {
   #wizAlertJSPath
   #fcmPublicKey
 
-  constructor({
+  constructor ({
     logger,
     session,
     request,
@@ -50,7 +50,6 @@ export default class NotificationHandler extends Array {
   }
 
   push (...displayArgs) {
-    console.log('StorageManager.readFromLSorCookie(ACCOUNT_ID)', StorageManager.readFromLSorCookie(ACCOUNT_ID))
     if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
       /*
         To handle a potential race condition, two flags are stored in Local Storage:
@@ -82,14 +81,17 @@ export default class NotificationHandler extends Array {
 
   _processOldValues () {
     if (this.#oldValues) {
-      setNotificationHandlerValues({
-        logger: this.#logger,
-        account: this.#account,
-        request: this.#request,
-        displayArgs: this.#oldValues,
-        fcmPublicKey: this.#fcmPublicKey
-      })
-      StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
+      if (Array.isArray(this.#oldValues) && this.#oldValues.length > 0) {
+        setNotificationHandlerValues({
+          logger: this.#logger,
+          account: this.#account,
+          request: this.#request,
+          displayArgs: this.#oldValues.slice(),
+          fcmPublicKey: this.#fcmPublicKey
+        })
+        StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
+      }
+
       this.#setUpWebPush(this.#oldValues)
     }
     this.#oldValues = null
@@ -273,7 +275,7 @@ export default class NotificationHandler extends Array {
         if (isFirefox() && Array.isArray(serviceWorkerRegistration)) {
           serviceWorkerRegistration = serviceWorkerRegistration.filter((i) => i.scope === registrationScope)[0]
         }
-        const subscribeObj = {userVisibleOnly: true}
+        const subscribeObj = { userVisibleOnly: true }
 
         if (this.#fcmPublicKey != null) {
           subscribeObj.applicationServerKey = urlBase64ToUint8Array(this.#fcmPublicKey)
