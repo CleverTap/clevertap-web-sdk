@@ -232,6 +232,14 @@
     FOOTER_NOTIFICATION: 0,
     FOOTER_NOTIFICATION_2: null
   };
+  const CUSTOM_EVENT_KEYS = {
+    WEB_NATIVE_DISPLAY: 'CT_web_native_display'
+  };
+  const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
+    KV_PAIR: 'KV_Pair',
+    JSON: 'JSON',
+    VISUAL_BUILDER: 'Visual_Builder'
+  };
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
 
@@ -11608,10 +11616,10 @@
       }
     }
 
-    const kvPairsEvent = new CustomEvent('CT_web_native_display', {
+    const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
       detail: {
         campaignDetails: inaObj,
-        campaignSource: 'builder'
+        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.VISUAL_BUILDER
       }
     });
     document.dispatchEvent(kvPairsEvent);
@@ -12008,10 +12016,10 @@
     } // combine all events from web native display under single event and add type
 
 
-    const kvPairsEvent = new CustomEvent('CT_web_native_display', {
+    const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
       detail: {
         campaignDetails: inaObj,
-        campaignSource: 'kvpair'
+        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.KV_PAIR
       }
     });
     document.dispatchEvent(kvPairsEvent);
@@ -12076,10 +12084,10 @@
       inaObj.json = json;
     }
 
-    const jsonEvent = new CustomEvent('CT_web_native_display', {
+    const jsonEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
       detail: {
         campaignDetails: inaObj,
-        campaignSource: 'json'
+        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.JSON
       }
     });
     document.dispatchEvent(jsonEvent);
@@ -12278,10 +12286,6 @@
      * @returns {Array<Object>} - A new array of campaigns sorted by priority.
      */
     sortCampaignsByPriority: campaigns => {
-      // TODO: Remove this after testing
-      campaigns.forEach(c => {
-        c.priority = Math.floor(Math.random() * 100);
-      });
       return campaigns.sort((a, b) => b.priority - a.priority);
     },
 
@@ -12339,16 +12343,21 @@
               shouldSkip = true;
             }
             break;
-          /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
 
-          /* So we can not use Separated Campaigns logic for it, Hence skipping
-          case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-            shouldSkip = true
-            break
+          /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
+            and can we inform the user the type of event they will receive in the editor
           */
 
-          /* dispatchJsonData is not working for more than 1Visual Editor campaigns having JSON changes */
+          /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
 
+          /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
+
+          /* So we can not use Separated Campaigns logic for it, Hence skipping */
+
+          case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+          case WEB_NATIVE_TEMPLATES.JSON:
+            shouldSkip = true;
+            break;
         }
       }
 

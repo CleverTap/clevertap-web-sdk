@@ -262,11 +262,6 @@ export const webNativeDisplayCampaignUtils = {
    * @returns {Array<Object>} - A new array of campaigns sorted by priority.
    */
   sortCampaignsByPriority: (campaigns) => {
-    // TODO: Remove this after testing
-    campaigns.forEach((c) => {
-      c.priority = Math.floor(Math.random() * 100)
-    })
-
     return campaigns
       .sort((a, b) => b.priority - a.priority)
   },
@@ -323,19 +318,17 @@ export const webNativeDisplayCampaignUtils = {
           };
           break
 
-        /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
+          /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
           and can we inform the user the type of event they will receive in the editor
         */
-        /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
-        case WEB_NATIVE_TEMPLATES.JSON:
+          /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
+          /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
+          /* So we can not use Separated Campaigns logic for it, Hence skipping */
 
-        /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
-        /* So we can not use Separated Campaigns logic for it, Hence skipping
         case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+        case WEB_NATIVE_TEMPLATES.JSON:
           shouldSkip = true
           break
-        */
-       /* dispatchJsonData is not working for more than 1Visual Editor campaigns having JSON changes */
       }
     }
     return shouldSkip
