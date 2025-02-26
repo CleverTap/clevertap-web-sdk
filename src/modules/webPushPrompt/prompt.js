@@ -52,7 +52,7 @@ export const processSoftPrompt = () => {
   const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
   notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
 
-  if (!(Object.keys(webPushConfig).length > 0)) {
+  if (webPushConfig && !(Object.keys(webPushConfig).length > 0)) {
     notificationHandler.setApplicationServerKey(appServerKey)
     notificationHandler.setupWebPush(displayArgs)
     return
