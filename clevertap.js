@@ -214,6 +214,7 @@
   const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
+  const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
 
@@ -11990,7 +11991,7 @@
     });
     document.dispatchEvent(kvPairsEvent);
   };
-  const renderCustomHtml = targetingMsgJson => {
+  const renderCustomHtml = (targetingMsgJson, logger) => {
     const {
       display,
       wzrk_id: wzrkId,
@@ -12003,7 +12004,7 @@
     const html = details.html;
 
     if (!divId || !html) {
-      console.error('No div Id or no html found');
+      logger.error('No div Id or no html found');
       return;
     }
 
@@ -12030,7 +12031,7 @@
           retryElement.outerHTML = html;
           clearInterval(intervalId);
         } else if (++count >= 20) {
-          console.log("No element present on DOM with divId '".concat(divId, "'."));
+          logger.log("No element present on DOM with divId '".concat(divId, "'."));
           clearInterval(intervalId);
         }
       }, 500);
@@ -12057,6 +12058,17 @@
     });
     document.dispatchEvent(jsonEvent);
   };
+
+  function handleCustomHtmlPreviewPostMessageEvent(event, logger) {
+    const eventData = JSON.parse(event.data);
+    const inAppNotifs = eventData.inapp_notifs;
+    const msgContent = inAppNotifs[0].msgContent;
+
+    if (eventData && msgContent && msgContent.templateType === 'custom-html' && msgContent.type === 5) {
+      renderCustomHtml(inAppNotifs[0], logger);
+    }
+  }
+
   const checkCustomHtmlNativeDisplayPreview = logger => {
     const searchParams = new URLSearchParams(window.location.search);
     const ctType = searchParams.get('ctActionMode');
@@ -12065,20 +12077,19 @@
       const parentWindow = window.opener;
 
       switch (ctType) {
-        case 'ctCustomHtmlPreview':
+        case CUSTOM_HTML_PREVIEW:
           if (parentWindow) {
             parentWindow.postMessage('ready', '*');
-            window.addEventListener('message', event => {
-              const eventData = JSON.parse(event.data);
-              const inAppNotifs = eventData.inapp_notifs;
-              const msgContent = inAppNotifs[0].msgContent;
 
-              if (eventData && msgContent.templateType === 'custom-html' && msgContent.type === 5) {
-                renderCustomHtml(inAppNotifs[0]);
-              }
-            }, false);
+            const eventHandler = event => handleCustomHtmlPreviewPostMessageEvent(event, logger);
+
+            window.addEventListener('message', eventHandler, false);
           }
 
+          break;
+
+        default:
+          logger.debug("unknown unknown query param ".concat(ctType));
           break;
       }
     }
@@ -14153,7 +14164,7 @@
           } else if (targetNotif.msgContent.type === 4) {
             renderVisualBuilder(targetNotif, false);
           } else if (targetNotif.msgContent.type === 5) {
-            renderCustomHtml(targetNotif);
+            renderCustomHtml(targetNotif, _logger);
           } else if (targetNotif.msgContent.type === 6) {
             handleJson(targetNotif);
           } else {
