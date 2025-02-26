@@ -12345,7 +12345,7 @@
             break;
 
           /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
-            and can we inform the user the type of event they will receive in the editor
+          and can we inform the user the type of event they will receive in the editor
           */
 
           /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
@@ -14244,9 +14244,6 @@
     if (msg.inapp_notifs != null) {
       const arrInAppNotifs = {};
       const sortedCampaigns = webNativeDisplayCampaignUtils.sortCampaignsByPriority(msg.inapp_notifs);
-      console.log({
-        sortedCampaigns
-      });
       const executedTargets = {
         nodes: [],
         customEvents: []
@@ -14266,6 +14263,8 @@
 
           /* Skip current campaign if we have already executed one with same CustomEvent and topic */
           if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif) && executedTargets.customEvents.length > 0 && webNativeDisplayCampaignUtils.shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets)) {
+            _logger.debug('Custom Event Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
+
             continue;
           }
           /* Skip current campaign if we have already executed one with same DOM Node */
@@ -14276,6 +14275,8 @@
 
             return (_webNativeDisplayCamp = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif)) === null || _webNativeDisplayCamp === void 0 ? void 0 : _webNativeDisplayCamp.includes(node);
           })) {
+            _logger.debug('DOM Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
+
             continue;
           }
 

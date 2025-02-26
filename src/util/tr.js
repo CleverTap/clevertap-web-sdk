@@ -836,7 +836,6 @@ const _tr = (msg, {
     const arrInAppNotifs = {}
 
     const sortedCampaigns = webNativeDisplayCampaignUtils.sortCampaignsByPriority(msg.inapp_notifs)
-    console.log({ sortedCampaigns })
 
     const executedTargets = {
       nodes: [],
@@ -857,6 +856,7 @@ const _tr = (msg, {
           executedTargets.customEvents.length > 0 &&
           webNativeDisplayCampaignUtils.shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets)
         ) {
+          _logger.debug('Custom Event Campaign Skipped with id :: ' + targetNotif?.wzrk_id)
           continue
         }
 
@@ -869,6 +869,7 @@ const _tr = (msg, {
               ?.includes(node)
           )
         ) {
+          _logger.debug('DOM Campaign Skipped with id :: ' + targetNotif?.wzrk_id)
           continue
         }
 
