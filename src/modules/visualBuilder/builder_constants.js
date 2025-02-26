@@ -5,3 +5,8 @@ export const WVE_CLASS = {
   FLICKER_HIDE: 'wve-anti-flicker-hide',
   FLICKER_ID: 'wve-flicker-style'
 }
+export const WVE_QUERY_PARAMS = {
+  BUILDER: 'ctBuilder',
+  PREVIEW: 'ctBuilderPreview',
+  SDK_CHECK: 'ctBuilderSDKCheck'
+}

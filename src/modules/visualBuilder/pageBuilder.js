@@ -1,4 +1,4 @@
-import { CSS_PATH, OVERLAY_PATH, WVE_CLASS } from './builder_constants'
+import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_QUERY_PARAMS } from './builder_constants'
 import { updateFormData, updateElementCSS } from './dataUpdate'
 
 export const handleActionMode = (logger, accountId) => {
@@ -8,21 +8,23 @@ export const handleActionMode = (logger, accountId) => {
   if (ctType) {
     const parentWindow = window.opener
     switch (ctType) {
-      case 'ctBuilder':
+      case WVE_QUERY_PARAMS.BUILDER:
         logger.debug('open in visual builder mode')
         window.addEventListener('message', handleMessageEvent, false)
         if (parentWindow) {
           parentWindow.postMessage({ message: 'builder', originUrl: window.location.href }, '*')
         }
-        return
-      case 'ctBuilderPreview':
+        break
+      case WVE_QUERY_PARAMS.PREVIEW:
+        logger.debug('preview of visual editor')
         window.addEventListener('message', handleMessageEvent, false)
         if (parentWindow) {
           parentWindow.postMessage({ message: 'preview', originUrl: window.location.href }, '*')
         }
-        return
-      case 'ctBuilderSDKCheck':
+        break
+      case WVE_QUERY_PARAMS.SDK_CHECK:
         if (parentWindow) {
+          logger.debug('SDK version check')
           const sdkVersion = '$$PACKAGE_VERSION$$'
           parentWindow.postMessage({
             message: 'SDKVersion',
@@ -35,11 +37,13 @@ export const handleActionMode = (logger, accountId) => {
         }
         break
       default:
+        logger.debug(`unknown query param ${ctType}`)
         break
     }
   }
 }
 
+// TODO: Add a guarding mechanism to skip postMessages from non trusted sources
 const handleMessageEvent = (event) => {
   if (event.data && isValidUrl(event.data.originUrl)) {
     const msgOrigin = new URL(event.data.originUrl).origin
