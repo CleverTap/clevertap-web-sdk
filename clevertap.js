@@ -214,6 +214,7 @@
   const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
+  const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
 
@@ -11233,7 +11234,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '1.13.1';
+            const sdkVersion = '1.13.2';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -11996,7 +11997,9 @@
       wzrk_id: wzrkId,
       wzrk_pivot: wzrkPivot
     } = targetingMsgJson || {};
-    const divId = display.divId || {};
+    const {
+      divId
+    } = display || {};
     const details = display.details[0];
     const html = details.html;
 
@@ -12054,6 +12057,42 @@
       detail: inaObj
     });
     document.dispatchEvent(jsonEvent);
+  };
+
+  function handleCustomHtmlPreviewPostMessageEvent(event, logger) {
+    const eventData = JSON.parse(event.data);
+    const inAppNotifs = eventData.inapp_notifs;
+    const msgContent = inAppNotifs[0].msgContent;
+
+    if (eventData && msgContent && msgContent.templateType === 'custom-html' && msgContent.type === 5) {
+      renderCustomHtml(inAppNotifs[0], logger);
+    }
+  }
+
+  const checkCustomHtmlNativeDisplayPreview = logger => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const ctType = searchParams.get('ctActionMode');
+
+    if (ctType) {
+      const parentWindow = window.opener;
+
+      switch (ctType) {
+        case CUSTOM_HTML_PREVIEW:
+          if (parentWindow) {
+            parentWindow.postMessage('ready', '*');
+
+            const eventHandler = event => handleCustomHtmlPreviewPostMessageEvent(event, logger);
+
+            window.addEventListener('message', eventHandler, false);
+          }
+
+          break;
+
+        default:
+          logger.debug("unknown unknown query param ".concat(ctType));
+          break;
+      }
+    }
   };
 
   const invokeExternalJs = (jsFunc, targetingMsgJson) => {
@@ -14620,7 +14659,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.13.1',
+        lib: 'web-sdk-v1.13.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -16180,6 +16219,7 @@
       }
 
       handleActionMode(_classPrivateFieldLooseBase(this, _logger)[_logger], _classPrivateFieldLooseBase(this, _account)[_account].id);
+      checkCustomHtmlNativeDisplayPreview(_classPrivateFieldLooseBase(this, _logger)[_logger]);
       _classPrivateFieldLooseBase(this, _session)[_session].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account)[_account].id;
 
       if (region) {
@@ -16366,7 +16406,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.13.1';
+      return 'web-sdk-v1.13.2';
     }
 
     defineVariable(name, defaultValue) {

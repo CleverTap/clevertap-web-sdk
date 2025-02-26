@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.13.1] 26th Feb, 2025
+- Added support to preview html for custom native html
+
 ## [1.13.1] 21st Feb, 2025
 - Added search parameter ctActionMode to handle all url query parameter
 
