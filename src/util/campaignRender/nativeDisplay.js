@@ -1,6 +1,7 @@
 import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
 import { CUSTOM_HTML_PREVIEW } from '../constants'
+import { appendScriptForCustomEvent } from '../campaignRender/utilities'
 
 export const renderPersonalisationBanner = (targetingMsgJson) => {
   if (customElements.get('ct-web-personalisation-banner') === undefined) {
@@ -47,11 +48,15 @@ export const renderCustomHtml = (targetingMsgJson, logger) => {
 
   const { divId } = display || {}
   const details = display.details[0]
-  const html = details.html
+  let html = details.html
 
   if (!divId || !html) {
     logger.error('No div Id or no html found')
     return
+  }
+
+  if (display['custom-html-click-track']) {
+    html = appendScriptForCustomEvent(targetingMsgJson, html)
   }
 
   let notificationViewed = false
@@ -76,7 +81,7 @@ export const renderCustomHtml = (targetingMsgJson, logger) => {
         retryElement.outerHTML = html
         clearInterval(intervalId)
       } else if (++count >= 20) {
-        logger.log(`No element present on DOM with divId '${divId}'.`)
+        logger.error(`No element present on DOM with divId '${ divId }'.`)
         clearInterval(intervalId)
       }
     }, 500)
@@ -123,7 +128,7 @@ export const checkCustomHtmlNativeDisplayPreview = (logger) => {
         }
         break
       default:
-        logger.debug(`unknown unknown query param ${ctType}`)
+        logger.debug(`unknown query param ${ ctType }`)
         break
     }
   }
