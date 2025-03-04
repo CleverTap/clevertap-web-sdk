@@ -7,7 +7,7 @@ import {
 import { StorageManager, $ct } from '../../util/storage.js'
 import NotificationHandler from '../notification.js'
 import { BELL_BASE64, PROMPT_BELL_BASE64 } from './promptConstants.js'
-import { isSafari } from '../../util/helpers.js'
+import { isFirefox, isSafari, isChrome } from '../../util/helpers.js'
 
 let appServerKey = null
 let swPath = '/clevertap_sw.js'
@@ -39,7 +39,12 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
   try {
     const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED)
     if (isNotificationPushCalled) {
-      processSoftPrompt()
+      try {
+        processSoftPrompt()
+      } catch (error) {
+        logger.error('processs soft prompt' + error)
+      }
+      return
     }
   } catch (error) {
     logger.error('Failed to process web push config:', error)
@@ -88,7 +93,7 @@ export const processSoftPrompt = () => {
 }
 
 export const parseDisplayArgs = (displayArgs) => {
-  if (displayArgs.length === 1 && isObject(displayArgs[0])) {
+  if (displayArgs && displayArgs.length === 1 && isObject(displayArgs[0])) {
     const { serviceWorkerPath, skipDialog, okCallback, subscriptionCallback, rejectCallback, apnsWebPushServiceUrl, apnsWebPushId } = displayArgs[0]
     return { serviceWorkerPath, skipDialog, okCallback, subscriptionCallback, rejectCallback, apnsWebPushServiceUrl, apnsWebPushId }
   }
@@ -198,9 +203,10 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
 
   setElementPosition(pnCard, style.card.position)
 
+  const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null
   if (!configData.isPreview) {
     if ('Notification' in window && Notification !== null) {
-      if (Notification.permission === 'granted') {
+      if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
         notificationHandler.setApplicationServerKey(appServerKey)
         notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl)
         return
@@ -214,7 +220,6 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
   const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time')
   const popupFrequency = content.popupFrequency || 7 // number of days
   const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60
-
   if (shouldShowNotification) {
     document.body.appendChild(wrapper)
     if (!configData.isPreview) {
@@ -227,14 +232,14 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
   } else {
     if (isSafari()) {
       // This is for migration case for safari from apns to vapid, show popup even when timer is not expired.
-      const vapidSupportedAndNotMigrated = ('PushManager' in window) && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null
-      if (vapidSupportedAndNotMigrated) {
+      if (vapidSupportedAndMigrated || fcmPublicKey === null) {
+        return
+      }
+      if (!configData.isPreview) {
         document.body.appendChild(wrapper)
-        if (!configData.isPreview) {
-          addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl)
-          StorageManager.setMetaProp('webpush_last_notif_time', now)
-          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
-        }
+        addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl)
+        StorageManager.setMetaProp('webpush_last_notif_time', now)
+        StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
       }
     }
   }
@@ -287,6 +292,7 @@ export const createBellIcon = (configData, subscriptionCallback, apnsWebPushId, 
 
 export const setServerKey = (serverKey) => {
   appServerKey = serverKey
+  fcmPublicKey = serverKey
 }
 
 export const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {

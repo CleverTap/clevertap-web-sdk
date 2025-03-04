@@ -13018,7 +13018,13 @@
       const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
 
       if (isNotificationPushCalled) {
-        processSoftPrompt();
+        try {
+          processSoftPrompt();
+        } catch (error) {
+          logger.error('processs soft prompt' + error);
+        }
+
+        return;
       }
     } catch (error) {
       logger.error('Failed to process web push config:', error); // Fallback: Attempt to process soft prompt anyway
@@ -13083,7 +13089,7 @@
     StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, false);
   };
   const parseDisplayArgs = displayArgs => {
-    if (displayArgs.length === 1 && isObject(displayArgs[0])) {
+    if (displayArgs && displayArgs.length === 1 && isObject(displayArgs[0])) {
       const {
         serviceWorkerPath,
         skipDialog,
@@ -13240,10 +13246,11 @@
     wrapper.appendChild(pnCard);
     wrapper.appendChild(overlayDiv);
     setElementPosition(pnCard, style.card.position);
+    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
 
     if (!configData.isPreview) {
       if ('Notification' in window && Notification !== null) {
-        if (Notification.permission === 'granted') {
+        if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
           notificationHandler.setApplicationServerKey(appServerKey);
           notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
           return;
@@ -13273,16 +13280,15 @@
     } else {
       if (isSafari()) {
         // This is for migration case for safari from apns to vapid, show popup even when timer is not expired.
-        const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
+        if (vapidSupportedAndMigrated || fcmPublicKey === null) {
+          return;
+        }
 
-        if (vapidSupportedAndNotMigrated) {
+        if (!configData.isPreview) {
           document.body.appendChild(wrapper);
-
-          if (!configData.isPreview) {
-            addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
-            StorageManager.setMetaProp('webpush_last_notif_time', now);
-            StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
-          }
+          addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+          StorageManager.setMetaProp('webpush_last_notif_time', now);
+          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
         }
       }
     }
@@ -13344,6 +13350,7 @@
   };
   const setServerKey = serverKey => {
     appServerKey = serverKey;
+    fcmPublicKey = serverKey;
   };
   const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     const primaryButton = wrapper.querySelector('#primaryButton');
