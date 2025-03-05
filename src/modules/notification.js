@@ -6,12 +6,16 @@ import {
   NOTIF_LAST_TIME,
   ACCOUNT_ID,
   POPUP_LOADING,
-  OLD_SOFT_PROMPT_SELCTOR_ID
+  OLD_SOFT_PROMPT_SELCTOR_ID,
+  APPLICATION_SERVER_KEY_RECEIVED,
+  NOTIFICATION_PUSH_METHOD_DEFERRED,
+  WEBPUSH_CONFIG_RECEIVED
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
 } from '../util/encoder'
-import { enablePush } from './webPushPrompt/prompt'
+import { setNotificationHandlerValues, processSoftPrompt } from './webPushPrompt/prompt'
+
 import { isChrome, isFirefox, isSafari } from '../util/helpers'
 
 export default class NotificationHandler extends Array {
@@ -37,22 +41,57 @@ export default class NotificationHandler extends Array {
     this.#account = account
   }
 
+  setupWebPush (displayArgs) {
+    /*
+      A method in notification.js which can be accessed in prompt.js file to call the
+      private method this.#setUpWebPush
+    */
+    this.#setUpWebPush(displayArgs)
+  }
+
   push (...displayArgs) {
     if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
-      this.#setUpWebPush(displayArgs)
-      return 0
+      /*
+        To handle a potential race condition, two flags are stored in Local Storage:
+        - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
+        - `NOTIFICATION_PUSH_METHOD_DEFERRED`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+
+        This ensures the soft prompt is rendered correctly:
+        - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
+        - Otherwise, `NOTIFICATION_PUSH_METHOD_DEFERRED` is set to true, and the rendering is deferred until the webPushConfig is received.
+      */
+      const isWebPushConfigPresent = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED)
+      const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED)
+      setNotificationHandlerValues({
+        logger: this.#logger,
+        account: this.#account,
+        request: this.#request,
+        displayArgs,
+        fcmPublicKey: this.#fcmPublicKey
+      })
+      if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
+        processSoftPrompt()
+      } else {
+        StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
+      }
     } else {
       this.#logger.error('Account ID is not set')
     }
   }
 
-  enable (options = {}) {
-    const { swPath, skipDialog } = options
-    enablePush(this.#logger, this.#account, this.#request, swPath, skipDialog, this.#fcmPublicKey)
-  }
-
   _processOldValues () {
     if (this.#oldValues) {
+      if (Array.isArray(this.#oldValues) && this.#oldValues.length > 0) {
+        setNotificationHandlerValues({
+          logger: this.#logger,
+          account: this.#account,
+          request: this.#request,
+          displayArgs: this.#oldValues.slice(),
+          fcmPublicKey: this.#fcmPublicKey
+        })
+        StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
+      }
+
       this.#setUpWebPush(this.#oldValues)
     }
     this.#oldValues = null
@@ -86,6 +125,8 @@ export default class NotificationHandler extends Array {
   }
 
   #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
+    const softPromptCard = document.getElementById('pnWrapper')
+    const oldSoftPromptCard = document.getElementById('wzrk_wrapper')
     if (this.#isNativeWebPushSupported() && this.#fcmPublicKey != null) {
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
       navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
@@ -118,6 +159,12 @@ export default class NotificationHandler extends Array {
                 if (existingBellWrapper) {
                   existingBellWrapper.parentNode.removeChild(existingBellWrapper)
                 }
+                if (softPromptCard) {
+                  softPromptCard.parentNode.removeChild(softPromptCard)
+                }
+                if (oldSoftPromptCard) {
+                  oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+                }
               })
             }
 
@@ -133,6 +180,14 @@ export default class NotificationHandler extends Array {
                   subscribeForPush()
                 }
               })
+            }
+          } else if (permission === 'denied') {
+            this.#logger.info('Error subscribing to Safari web push')
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard)
+            }
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
             }
           }
         })
@@ -158,13 +213,28 @@ export default class NotificationHandler extends Array {
                 apnsWebPushId
               }))
               this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
-
+              const existingBellWrapper = document.getElementById('bell_wrapper')
+              if (existingBellWrapper) {
+                existingBellWrapper.parentNode.removeChild(existingBellWrapper)
+              }
+              if (softPromptCard) {
+                softPromptCard.parentNode.removeChild(softPromptCard)
+              }
+              if (oldSoftPromptCard) {
+                oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+              }
               StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
 
               this.#request.registerToken(subscriptionData)
               this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
             } else if (subscription.permission === 'denied') {
               this.#logger.info('Error subscribing to Safari web push')
+              if (softPromptCard) {
+                softPromptCard.parentNode.removeChild(softPromptCard)
+              }
+              if (oldSoftPromptCard) {
+                oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+              }
             }
           })
       }
@@ -211,6 +281,9 @@ export default class NotificationHandler extends Array {
           subscribeObj.applicationServerKey = urlBase64ToUint8Array(this.#fcmPublicKey)
         }
 
+        const softPromptCard = document.getElementById('pnWrapper')
+        const oldSoftPromptCard = document.getElementById('wzrk_wrapper')
+
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj)
           .then((subscription) => {
             this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
@@ -235,8 +308,15 @@ export default class NotificationHandler extends Array {
               subscriptionCallback()
             }
             const existingBellWrapper = document.getElementById('bell_wrapper')
+
             if (existingBellWrapper) {
               existingBellWrapper.parentNode.removeChild(existingBellWrapper)
+            }
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard)
+            }
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
             }
           }).catch((error) => {
             // unsubscribe from webpush if error
@@ -255,6 +335,12 @@ export default class NotificationHandler extends Array {
               }
             })
             this.#logger.error('Error subscribing: ' + error)
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard)
+            }
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+            }
           })
       }).catch((err) => {
         this.#logger.error('error registering service worker: ' + err)
@@ -512,10 +598,13 @@ export default class NotificationHandler extends Array {
     if (applicationServerKey != null) {
       this.setApplicationServerKey(applicationServerKey)
     }
+    const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED)
+    if (isNotificationPushCalled) {
+      return
+    }
     if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
       this.#handleNotificationRegistration($ct.notifApi.displayArgs)
     } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-      this.#logger.error('Ensure that web push notifications are fully enabled and integrated before requesting them')
     }
   }
 }

@@ -31,7 +31,8 @@ import {
   WZRK_FETCH,
   WEBINBOX_CONFIG,
   TIMER_FOR_NOTIF_BADGE_UPDATE,
-  ACCOUNT_ID
+  ACCOUNT_ID,
+  APPLICATION_SERVER_KEY_RECEIVED
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -562,6 +563,11 @@ export default class CleverTap {
     api.enableWebPush = (enabled, applicationServerKey) => {
       setServerKey(applicationServerKey)
       this.notifications._enableWebPush(enabled, applicationServerKey)
+      try {
+        StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, true)
+      } catch (error) {
+        this.#logger.error('Could not read value from local storage', error)
+      }
     }
     api.tr = (msg) => {
       _tr(msg, {
