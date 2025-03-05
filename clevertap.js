@@ -208,6 +208,9 @@
   const MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
   const WZRK_FETCH = 'wzrk_fetch';
   const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
+  const APPLICATION_SERVER_KEY_RECEIVED = 'WZRK_APPLICATION_SERVER_KEY_RECIEVED';
+  const WEBPUSH_CONFIG_RECEIVED = 'WZRK_WEB_PUSH_CONFIG_RECEIVED';
+  const NOTIFICATION_PUSH_METHOD_DEFERRED = 'WZRK_NOTIFICATION_PUSH_DEFERRED';
   const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
   const NOTIF_LAST_TIME = 'notif_last_time';
   const TIMER_FOR_NOTIF_BADGE_UPDATE = 300;
@@ -11233,7 +11236,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '1.13.1';
+            const sdkVersion = '1.13.2';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -12238,7 +12241,7 @@
     const cardPadding = 16 * 2; // Left and right padding
 
     const cardContentWidth = 360 - cardPadding - totalBorderWidth;
-    return "\n    #pnWrapper {\n      width: 360px;\n    }\n\n    #pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
+    return "\n    #pnWrapper {\n      width: 360px;\n      font-family: proxima-nova, Arial, sans-serif;\n    }\n    \n    #pnWrapper * {\n       margin: 0px;\n       padding: 0px;\n       text-align: left;\n    }\n\n    #pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n      text-align: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
   };
   const getBellIconStyles = style => {
     return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
@@ -12346,31 +12349,62 @@
       _classPrivateFieldLooseBase(this, _account$4)[_account$4] = account;
     }
 
+    setupWebPush(displayArgs) {
+      /*
+        A method in notification.js which can be accessed in prompt.js file to call the
+        private method this.#setUpWebPush
+      */
+      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+    }
+
     push() {
       if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        /*
+          To handle a potential race condition, two flags are stored in Local Storage:
+          - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
+          - `NOTIFICATION_PUSH_METHOD_DEFERRED`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+           This ensures the soft prompt is rendered correctly:
+          - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
+          - Otherwise, `NOTIFICATION_PUSH_METHOD_DEFERRED` is set to true, and the rendering is deferred until the webPushConfig is received.
+        */
+        const isWebPushConfigPresent = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED);
+        const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED);
+
         for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
           displayArgs[_key] = arguments[_key];
         }
 
-        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+        setNotificationHandlerValues({
+          logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+          account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
+          request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
+          displayArgs,
+          fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
+        });
 
-        return 0;
+        if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
+          processSoftPrompt();
+        } else {
+          StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
+        }
       } else {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Account ID is not set');
       }
     }
 
-    enable() {
-      let options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-      const {
-        swPath,
-        skipDialog
-      } = options;
-      enablePush(_classPrivateFieldLooseBase(this, _logger$5)[_logger$5], _classPrivateFieldLooseBase(this, _account$4)[_account$4], _classPrivateFieldLooseBase(this, _request$3)[_request$3], swPath, skipDialog, _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
-    }
-
     _processOldValues() {
       if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
+        if (Array.isArray(_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) && _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1].length > 0) {
+          setNotificationHandlerValues({
+            logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+            account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
+            request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
+            displayArgs: _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1].slice(),
+            fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
+          });
+          StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
+        }
+
         _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
       }
 
@@ -12396,11 +12430,15 @@
         this.setApplicationServerKey(applicationServerKey);
       }
 
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
+
+      if (isNotificationPushCalled) {
+        return;
+      }
+
       if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that web push notifications are fully enabled and integrated before requesting them');
-      }
+      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
     }
 
   }
@@ -12421,6 +12459,9 @@
   };
 
   var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
+    const softPromptCard = document.getElementById('pnWrapper');
+    const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+
     if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
       navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
@@ -12459,6 +12500,14 @@
                 if (existingBellWrapper) {
                   existingBellWrapper.parentNode.removeChild(existingBellWrapper);
                 }
+
+                if (softPromptCard) {
+                  softPromptCard.parentNode.removeChild(softPromptCard);
+                }
+
+                if (oldSoftPromptCard) {
+                  oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+                }
               });
             };
 
@@ -12476,6 +12525,16 @@
                   subscribeForPush();
                 }
               });
+            }
+          } else if (permission === 'denied') {
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
             }
           }
         });
@@ -12504,6 +12563,20 @@
 
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
 
+            const existingBellWrapper = document.getElementById('bell_wrapper');
+
+            if (existingBellWrapper) {
+              existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+            }
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+            }
+
             StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
             _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
@@ -12511,6 +12584,14 @@
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
           } else if (subscription.permission === 'denied') {
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+            }
           }
         });
       }
@@ -12559,6 +12640,8 @@
           subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
         }
 
+        const softPromptCard = document.getElementById('pnWrapper');
+        const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
           _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
 
@@ -12590,6 +12673,14 @@
           if (existingBellWrapper) {
             existingBellWrapper.parentNode.removeChild(existingBellWrapper);
           }
+
+          if (softPromptCard) {
+            softPromptCard.parentNode.removeChild(softPromptCard);
+          }
+
+          if (oldSoftPromptCard) {
+            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+          }
         }).catch(error => {
           // unsubscribe from webpush if error
           serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
@@ -12609,6 +12700,14 @@
           });
 
           _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error subscribing: ' + error);
+
+          if (softPromptCard) {
+            softPromptCard.parentNode.removeChild(softPromptCard);
+          }
+
+          if (oldSoftPromptCard) {
+            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+          }
         });
       }).catch(err => {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('error registering service worker: ' + err);
@@ -12885,22 +12984,157 @@
   let appServerKey = null;
   let swPath = '/clevertap_sw.js';
   let notificationHandler = null;
+  let logger = null;
+  let account = null;
+  let request = null;
+  let displayArgs = null;
+  let fcmPublicKey = null;
+  const setNotificationHandlerValues = function () {
+    let notificationValues = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    logger = notificationValues.logger;
+    account = notificationValues.account;
+    request = notificationValues.request;
+    displayArgs = notificationValues.displayArgs;
+    fcmPublicKey = notificationValues.fcmPublicKey;
+  };
   const processWebPushConfig = (webPushConfig, logger, request) => {
-    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true);
 
     const updatePushConfig = () => {
       $ct.pushConfig = webPushConfig;
       StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
     };
 
+    updatePushConfig();
+
     if (webPushConfig.isPreview) {
-      updatePushConfig();
-      enablePush(logger, null, request);
-    } else if (JSON.stringify(_pushConfig) !== JSON.stringify(webPushConfig)) {
-      updatePushConfig();
+      enablePush({
+        logger,
+        request
+      });
+    }
+
+    try {
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
+
+      if (isNotificationPushCalled) {
+        try {
+          processSoftPrompt();
+        } catch (error) {
+          logger.error('processs soft prompt' + error);
+        }
+
+        return;
+      }
+    } catch (error) {
+      logger.error('Failed to process web push config:', error); // Fallback: Attempt to process soft prompt anyway
+
+      processSoftPrompt();
     }
   };
-  const enablePush = (logger, account, request, customSwPath, skipDialog, fcmPublicKey) => {
+  const processSoftPrompt = () => {
+    const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+    notificationHandler = new NotificationHandler({
+      logger,
+      session: {},
+      request,
+      account
+    });
+
+    if (webPushConfig && !(Object.keys(webPushConfig).length > 0)) {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setupWebPush(displayArgs);
+      return;
+    }
+
+    const {
+      showBox,
+      showBellIcon,
+      boxType
+    } = webPushConfig;
+    const {
+      serviceWorkerPath,
+      skipDialog,
+      okCallback,
+      subscriptionCallback,
+      rejectCallback,
+      apnsWebPushId,
+      apnsWebPushServiceUrl
+    } = parseDisplayArgs(displayArgs);
+    const isSoftPromptNew = showBellIcon || showBox && boxType === 'new';
+
+    if (isSoftPromptNew) {
+      const enablePushParams = {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        logger,
+        request,
+        account,
+        fcmPublicKey,
+        apnsWebPushId,
+        apnsWebPushServiceUrl
+      };
+      enablePush(enablePushParams);
+    }
+
+    if (showBox && boxType === 'old') {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setupWebPush(displayArgs);
+    }
+
+    StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, false);
+    StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, false);
+  };
+  const parseDisplayArgs = displayArgs => {
+    if (displayArgs && displayArgs.length === 1 && isObject(displayArgs[0])) {
+      const {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        apnsWebPushServiceUrl,
+        apnsWebPushId
+      } = displayArgs[0];
+      return {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        apnsWebPushServiceUrl,
+        apnsWebPushId
+      };
+    }
+
+    return {
+      serviceWorkerPath: undefined,
+      skipDialog: displayArgs[5],
+      okCallback: undefined,
+      subscriptionCallback: undefined,
+      rejectCallback: undefined,
+      apnsWebPushServiceUrl: undefined,
+      apnsWebPushId: undefined
+    };
+  };
+  const enablePush = enablePushParams => {
+    const {
+      serviceWorkerPath: customSwPath,
+      okCallback,
+      subscriptionCallback,
+      rejectCallback,
+      logger,
+      fcmPublicKey,
+      apnsWebPushId,
+      apnsWebPushServiceUrl
+    } = enablePushParams;
+    let {
+      skipDialog
+    } = enablePushParams;
+
     const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     $ct.pushConfig = _pushConfig;
@@ -12914,16 +13148,14 @@
       swPath = customSwPath;
     }
 
-    notificationHandler = new NotificationHandler({
-      logger,
-      session: {},
-      request,
-      account
-    });
+    if (skipDialog === null) {
+      skipDialog = false;
+    } // notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
+
 
     if (skipDialog) {
       notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
       return;
     }
 
@@ -12938,8 +13170,8 @@
       if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey);
       if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
     } else {
-      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey);
-      if (showBellIcon) createBellIcon($ct.pushConfig);
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+      if (showBellIcon) createBellIcon($ct.pushConfig, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
     }
   };
 
@@ -12953,7 +13185,7 @@
     return element;
   };
 
-  const createNotificationBox = (configData, fcmPublicKey) => {
+  const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
     const {
       boxConfig: {
@@ -13014,12 +13246,13 @@
     wrapper.appendChild(pnCard);
     wrapper.appendChild(overlayDiv);
     setElementPosition(pnCard, style.card.position);
+    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
 
     if (!configData.isPreview) {
       if ('Notification' in window && Notification !== null) {
-        if (Notification.permission === 'granted') {
+        if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
           notificationHandler.setApplicationServerKey(appServerKey);
-          notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+          notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
           return;
         } else if (Notification.permission === 'denied') {
           return;
@@ -13034,28 +13267,33 @@
     const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
 
     if (shouldShowNotification) {
-      if (!isSafari()) {
-        document.body.appendChild(wrapper);
+      document.body.appendChild(wrapper);
+
+      if (!configData.isPreview) {
+        StorageManager.setMetaProp('webpush_last_notif_time', now);
+        addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+
+        if (isSafari() && 'PushManager' in window && fcmPublicKey != null) {
+          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
+        }
+      }
+    } else {
+      if (isSafari()) {
+        // This is for migration case for safari from apns to vapid, show popup even when timer is not expired.
+        if (vapidSupportedAndMigrated || fcmPublicKey === null) {
+          return;
+        }
 
         if (!configData.isPreview) {
-          StorageManager.setMetaProp('webpush_last_notif_time', now);
-          addEventListeners(wrapper);
-        }
-      } else {
-        const vapidSupportedAndNotMigrated = 'PushManager' in window && !StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
-
-        if (vapidSupportedAndNotMigrated) {
           document.body.appendChild(wrapper);
-
-          if (!configData.isPreview) {
-            addEventListeners(wrapper);
-            StorageManager.setMetaProp('webpush_last_notif_time', now);
-          }
+          addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+          StorageManager.setMetaProp('webpush_last_notif_time', now);
+          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
         }
       }
     }
   };
-  const createBellIcon = configData => {
+  const createBellIcon = (configData, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return;
     const {
       bellIconConfig: {
@@ -13105,15 +13343,16 @@
     document.body.appendChild(bellWrapper);
 
     if (!configData.isPreview) {
-      addBellEventListeners(bellWrapper);
+      addBellEventListeners(bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
     }
 
     return bellWrapper;
   };
   const setServerKey = serverKey => {
     appServerKey = serverKey;
+    fcmPublicKey = serverKey;
   };
-  const addEventListeners = wrapper => {
+  const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     const primaryButton = wrapper.querySelector('#primaryButton');
     const secondaryButton = wrapper.querySelector('#secondaryButton');
 
@@ -13126,20 +13365,28 @@
     primaryButton.addEventListener('click', () => {
       removeWrapper();
       notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
+
+      if (typeof okCallback === 'function') {
+        okCallback();
+      }
     });
     secondaryButton.addEventListener('click', () => {
       removeWrapper();
+
+      if (typeof rejectCallback === 'function') {
+        rejectCallback();
+      }
     });
   };
-  const addBellEventListeners = bellWrapper => {
+  const addBellEventListeners = (bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     const bellIcon = bellWrapper.querySelector('#bell_icon');
     bellIcon.addEventListener('click', () => {
       if (Notification.permission === 'denied') {
         toggleGifModal(bellWrapper);
       } else {
         notificationHandler.setApplicationServerKey(appServerKey);
-        notificationHandler.setUpWebPushNotifications(null, swPath, null, null);
+        notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
 
         if (Notification.permission === 'granted') {
           bellWrapper.remove();
@@ -14620,7 +14867,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.13.1',
+        lib: 'web-sdk-v1.13.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -16056,6 +16303,12 @@
         setServerKey(applicationServerKey);
 
         this.notifications._enableWebPush(enabled, applicationServerKey);
+
+        try {
+          StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, true);
+        } catch (error) {
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('Could not read value from local storage', error);
+        }
       };
 
       api.tr = msg => {
@@ -16366,7 +16619,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.13.1';
+      return 'web-sdk-v1.13.2';
     }
 
     defineVariable(name, defaultValue) {

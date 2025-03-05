@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.13.2] 5th Mar, 2025
+- Deprecated notification.enable api, using notification.push api for rendering new prompt
+- Bug fixes/enhancements like clevertap not initialised, race conditions etc
+- Vapid migration and APNS support for new soft prompt
+
 ## [1.13.1] 21st Feb, 2025
 - Added search parameter ctActionMode to handle all url query parameter
 
