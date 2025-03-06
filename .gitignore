@@ -118,3 +118,10 @@ dist
 
 .DS_Store
 clevertap.min.js
+
+# build files
+
+clevertap.min.js
+clevertap.js.map
+clevertap.js
+sw_webpush.min.js

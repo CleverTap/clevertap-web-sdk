@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.13.4] 5th Mar, 2025
+- Fixed WebInbox Runtime Issues
+- Skipped WebInbox Retries when config not present
+- Cleaned up build files from source control and updated Build Pipelines & npm package entry point
+
 ## [1.13.3] 5th Mar, 2025
 - Web Native Display - Campaign Priority Support
 
