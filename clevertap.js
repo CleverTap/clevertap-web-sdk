@@ -10982,12 +10982,6 @@
 
       const checkElementCondition = () => {
         const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-
-        if (!config.inboxSelector) {
-          logger.debug('Inbox selector is not configured');
-          return false;
-        }
-
         return document.getElementById(config.inboxSelector) && $ct.inbox === null;
       };
 
@@ -10998,6 +10992,13 @@
       let retryStarted = false; // Guard flag
 
       const startRetry = () => {
+        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+
+        if (!config.inboxSelector) {
+          logger.debug('Web Inbox Retry Skipped, Inbox selector is not configured');
+          return false;
+        }
+
         if (!retryStarted) {
           retryStarted = true;
           retryUntil(checkElementCondition, 500, 20).then(() => {
@@ -16193,8 +16194,11 @@
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
           if (messages[messageId].viewed === 0) {
-            $ct.inbox.unviewedCounter--;
-            delete $ct.inbox.unviewedMessages[messageId];
+            if ($ct.inbox) {
+              $ct.inbox.unviewedCounter--;
+              delete $ct.inbox.unviewedMessages[messageId];
+            }
+
             const unViewedBadge = document.getElementById('unviewedBadge');
 
             if (unViewedBadge) {
@@ -16253,8 +16257,12 @@
             msgId: messages[messageId].wzrk_id,
             pivotId: messages[messageId].pivotId
           });
-          $ct.inbox.unviewedCounter--;
-          delete $ct.inbox.unviewedMessages[messageId];
+
+          if ($ct.inbox) {
+            $ct.inbox.unviewedCounter--;
+            delete $ct.inbox.unviewedMessages[messageId];
+          }
+
           saveInboxMessages(messages);
         } else {
           _classPrivateFieldLooseBase(this, _logger)[_logger].error('No message available for message Id ' + messageId);

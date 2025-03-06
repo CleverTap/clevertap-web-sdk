@@ -278,8 +278,10 @@ export default class CleverTap {
       const messages = getInboxMessages()
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
         if (messages[messageId].viewed === 0) {
-          $ct.inbox.unviewedCounter--
-          delete $ct.inbox.unviewedMessages[messageId]
+          if ($ct.inbox) {
+            $ct.inbox.unviewedCounter--
+            delete $ct.inbox.unviewedMessages[messageId]
+          }
           const unViewedBadge = document.getElementById('unviewedBadge')
           if (unViewedBadge) {
             unViewedBadge.innerText = $ct.inbox.unviewedCounter
@@ -323,8 +325,10 @@ export default class CleverTap {
           unViewedBadge.style.display = counter > 0 ? 'flex' : 'none'
         }
         window.clevertap.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
-        $ct.inbox.unviewedCounter--
-        delete $ct.inbox.unviewedMessages[messageId]
+        if ($ct.inbox) {
+          $ct.inbox.unviewedCounter--
+          delete $ct.inbox.unviewedMessages[messageId]
+        }
         saveInboxMessages(messages)
       } else {
         this.#logger.error('No message available for message Id ' + messageId)
