@@ -1,8 +1,16 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.13.1] 26th Feb, 2025
+## [1.13.4] 6th Mar, 2025
 - Added support to preview html for custom native html
+
+## [1.13.3] 5th Mar, 2025
+- Web Native Display - Campaign Priority Support
+
+## [1.13.2] 5th Mar, 2025
+- Deprecated notification.enable api, using notification.push api for rendering new prompt
+- Bug fixes/enhancements like clevertap not initialised, race conditions etc
+- Vapid migration and APNS support for new soft prompt
 
 ## [1.13.1] 21st Feb, 2025
 - Added search parameter ctActionMode to handle all url query parameter

@@ -58,6 +58,9 @@ export const PUSH_DELAY_MS = 1000
 export const MAX_DELAY_FREQUENCY = 1000 * 60 * 10
 export const WZRK_FETCH = 'wzrk_fetch'
 export const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG'
+export const APPLICATION_SERVER_KEY_RECEIVED = 'WZRK_APPLICATION_SERVER_KEY_RECIEVED'
+export const WEBPUSH_CONFIG_RECEIVED = 'WZRK_WEB_PUSH_CONFIG_RECEIVED'
+export const NOTIFICATION_PUSH_METHOD_DEFERRED = 'WZRK_NOTIFICATION_PUSH_DEFERRED'
 export const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown'
 export const NOTIF_LAST_TIME = 'notif_last_time'
 export const TIMER_FOR_NOTIF_BADGE_UPDATE = 300
@@ -65,6 +68,38 @@ export const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper'
 export const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper'
 export const POPUP_LOADING = 'WZRK_POPUP_LOADING'
 export const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview'
+
+export const WEB_NATIVE_TEMPLATES = {
+  KV_PAIR: 1,
+  BANNER: 2,
+  CAROUSEL: 3,
+  VISUAL_BUILDER: 4,
+  CUSTOM_HTML: 5,
+  JSON: 6
+}
+
+export const WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES = {
+  HTML: 'html',
+  FORM: 'form',
+  JSON: 'json'
+}
+
+export const CAMPAIGN_TYPES = {
+  EXIT_INTENT: 1,
+  WEB_NATIVE_DISPLAY: 2,
+  FOOTER_NOTIFICATION: 0,
+  FOOTER_NOTIFICATION_2: null
+}
+
+export const CUSTOM_EVENT_KEYS = {
+  WEB_NATIVE_DISPLAY: 'CT_web_native_display'
+}
+
+export const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
+  KV_PAIR: 'KV_Pair',
+  JSON: 'JSON',
+  VISUAL_BUILDER: 'Visual_Builder'
+}
 
 export const SYSTEM_EVENTS = [
   'Stayed',

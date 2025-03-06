@@ -1,3 +1,4 @@
+import { CUSTOM_EVENT_KEYS, CUSTOM_EVENTS_CAMPAIGN_SOURCES } from '../constants'
 import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
 import { CUSTOM_HTML_PREVIEW } from '../constants'
@@ -39,7 +40,12 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
   if (targetingMsgJson.msgContent.kv != null) {
     inaObj.kv = targetingMsgJson.msgContent.kv
   }
-  const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
+  // combine all events from web native display under single event and add type
+  const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
+    detail: {
+      campaignDetails: inaObj, campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.KV_PAIR
+    }
+  })
   document.dispatchEvent(kvPairsEvent)
 }
 
@@ -101,7 +107,11 @@ export const handleJson = (targetingMsgJson) => {
   if (targetingMsgJson.display.json != null) {
     inaObj.json = json
   }
-  const jsonEvent = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
+  const jsonEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
+    detail: {
+      campaignDetails: inaObj, campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.JSON
+    }
+  })
   document.dispatchEvent(jsonEvent)
 }
 
