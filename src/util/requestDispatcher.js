@@ -9,6 +9,7 @@ export default class RequestDispatcher {
   static logger
   static device
   static account
+  static enableFetchApi
   networkRetryCount = 0
   minDelayFrequency = 0
 
@@ -82,27 +83,37 @@ export default class RequestDispatcher {
     while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
     }
-
-    try {
-      const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
-      if (!response.ok) {
-        throw new Error(`Network response was not ok: ${response.statusText}`)
-      }
-      const jsonResponse = await response.json()
-      console.log('Response received:', jsonResponse)
-      const { tr, meta, wpe } = jsonResponse
-      if (tr) {
-        window.$WZRK_WR.tr(tr)
-      }
-      if (meta) {
-        window.$WZRK_WR.s(meta)
-      }
-      if (wpe) {
-        window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key)
-      }
+    if (!this.enableFetchApi) {
+      const s = document.createElement('script')
+      s.setAttribute('type', 'text/javascript')
+      s.setAttribute('src', url)
+      s.setAttribute('class', 'ct-jp-cb')
+      s.setAttribute('rel', 'nofollow')
+      s.async = true
+      document.getElementsByTagName('head')[0].appendChild(s)
       this.logger.debug('req snt -> url: ' + url)
-    } catch (error) {
-      console.error('Fetch error:', error)
+    } else {
+      try {
+        const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
+        if (!response.ok) {
+          throw new Error(`Network response was not ok: ${response.statusText}`)
+        }
+        const jsonResponse = await response.json()
+        console.log('Response received:', jsonResponse)
+        const { tr, meta, wpe } = jsonResponse
+        if (tr) {
+          window.$WZRK_WR.tr(tr)
+        }
+        if (meta) {
+          window.$WZRK_WR.s(meta)
+        }
+        if (wpe) {
+          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key)
+        }
+        this.logger.debug('req snt -> url: ' + url)
+      } catch (error) {
+        console.error('Fetch error:', error)
+      }
     }
   }
 

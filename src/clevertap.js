@@ -63,6 +63,7 @@ export default class CleverTap {
   #dismissSpamControl
   enablePersonalization
   #pageChangeTimeoutId
+  enableFetchApi
 
   get spa () {
     return this.#isSpa
@@ -101,6 +102,7 @@ export default class CleverTap {
     this.#device = new DeviceManager({ logger: this.#logger })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
+    this.enableFetchApi = clevertap.enableFetchApi || true
     this.#session = new SessionManager({
       logger: this.#logger,
       isPersonalisationActive: this._isPersonalisationActive
@@ -110,7 +112,8 @@ export default class CleverTap {
       account: this.#account,
       device: this.#device,
       session: this.#session,
-      isPersonalisationActive: this._isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive,
+      enableFetchApi: this.enableFetchApi
     })
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
