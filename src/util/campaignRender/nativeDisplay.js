@@ -1,7 +1,7 @@
-import { CUSTOM_EVENT_KEYS, CUSTOM_EVENTS_CAMPAIGN_SOURCES } from '../constants'
+import { CUSTOM_EVENT_KEYS, CUSTOM_EVENTS_CAMPAIGN_SOURCES, CUSTOM_HTML_PREVIEW } from '../constants'
 import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
-import { CUSTOM_HTML_PREVIEW } from '../constants'
+
 import { appendScriptForCustomEvent } from '../campaignRender/utilities'
 
 export const renderPersonalisationBanner = (targetingMsgJson) => {
@@ -87,7 +87,7 @@ export const renderCustomHtml = (targetingMsgJson, logger) => {
         retryElement.outerHTML = html
         clearInterval(intervalId)
       } else if (++count >= 20) {
-        logger.error(`No element present on DOM with divId '${ divId }'.`)
+        logger.error(`No element present on DOM with divId '${divId}'.`)
         clearInterval(intervalId)
       }
     }, 500)
@@ -138,7 +138,7 @@ export const checkCustomHtmlNativeDisplayPreview = (logger) => {
         }
         break
       default:
-        logger.debug(`unknown query param ${ ctType }`)
+        logger.debug(`unknown query param ${ctType}`)
         break
     }
   }
