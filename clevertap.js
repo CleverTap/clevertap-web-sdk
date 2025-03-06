@@ -8559,8 +8559,13 @@
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
   };
 
+<<<<<<< HEAD
   var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
     var _window$location$orig, _window, _window$location, _window2, _window2$location, _window$clevertap, _window$wizrocket;
+=======
+  var _fireRequest2 = async function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
+    var _window$clevertap, _window$wizrocket;
+>>>>>>> 3afb547 (fetch api changes)
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
@@ -8639,14 +8644,42 @@
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
     }
 
-    const s = document.createElement('script');
-    s.setAttribute('type', 'text/javascript');
-    s.setAttribute('src', url);
-    s.setAttribute('class', 'ct-jp-cb');
-    s.setAttribute('rel', 'nofollow');
-    s.async = true;
-    document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url);
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok: ".concat(response.statusText));
+      }
+
+      const jsonResponse = await response.json();
+      console.log('Response received:', jsonResponse);
+      const {
+        tr,
+        meta,
+        wpe
+      } = jsonResponse;
+
+      if (tr) {
+        window.$WZRK_WR.tr(tr);
+      }
+
+      if (meta) {
+        window.$WZRK_WR.s(meta);
+      }
+
+      if (wpe) {
+        window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key);
+      }
+
+      this.logger.debug('req snt -> url: ' + url);
+    } catch (error) {
+      console.error('Fetch error:', error);
+    }
   };
 
   RequestDispatcher.logger = void 0;
