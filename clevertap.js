@@ -217,6 +217,7 @@
   const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
+  const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -11263,7 +11264,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '1.13.3';
+            const sdkVersion = '1.13.4';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -11976,127 +11977,6 @@
 
   }
 
-  const renderPersonalisationBanner = targetingMsgJson => {
-    var _targetingMsgJson$dis;
-
-    if (customElements.get('ct-web-personalisation-banner') === undefined) {
-      customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
-    }
-
-    const divId = (_targetingMsgJson$dis = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis !== void 0 ? _targetingMsgJson$dis : targetingMsgJson.display.divSelector;
-    const bannerEl = document.createElement('ct-web-personalisation-banner');
-    bannerEl.msgId = targetingMsgJson.wzrk_id;
-    bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
-    bannerEl.divHeight = targetingMsgJson.display.divHeight;
-    bannerEl.details = targetingMsgJson.display.details[0];
-    const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
-    containerEl.innerHTML = '';
-    containerEl.appendChild(bannerEl);
-  };
-  const renderPersonalisationCarousel = targetingMsgJson => {
-    var _targetingMsgJson$dis2;
-
-    if (customElements.get('ct-web-personalisation-carousel') === undefined) {
-      customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
-    }
-
-    const divId = (_targetingMsgJson$dis2 = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis2 !== void 0 ? _targetingMsgJson$dis2 : targetingMsgJson.display.divSelector;
-    const carousel = document.createElement('ct-web-personalisation-carousel');
-    carousel.target = targetingMsgJson;
-    const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
-    container.innerHTML = '';
-    container.appendChild(carousel);
-  };
-  const handleKVpairCampaign = targetingMsgJson => {
-    const inaObj = {};
-    inaObj.msgId = targetingMsgJson.wzrk_id;
-
-    if (targetingMsgJson.wzrk_pivot) {
-      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
-    }
-
-    if (targetingMsgJson.msgContent.kv != null) {
-      inaObj.kv = targetingMsgJson.msgContent.kv;
-    } // combine all events from web native display under single event and add type
-
-
-    const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-      detail: {
-        campaignDetails: inaObj,
-        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.KV_PAIR
-      }
-    });
-    document.dispatchEvent(kvPairsEvent);
-  };
-  const renderCustomHtml = (targetingMsgJson, logger) => {
-    const {
-      display,
-      wzrk_id: wzrkId,
-      wzrk_pivot: wzrkPivot
-    } = targetingMsgJson || {};
-    const divId = display.divId || {};
-    const details = display.details[0];
-    const html = details.html;
-
-    if (!divId || !html) {
-      logger.error('No div Id or no html found');
-      return;
-    }
-
-    let notificationViewed = false;
-    const payload = {
-      msgId: wzrkId,
-      pivotId: wzrkPivot
-    };
-
-    const raiseViewed = () => {
-      if (!notificationViewed) {
-        notificationViewed = true;
-        window.clevertap.renderNotificationViewed(payload);
-      }
-    };
-
-    const tryFindingElement = divId => {
-      let count = 0;
-      const intervalId = setInterval(() => {
-        const retryElement = document.querySelector(divId);
-
-        if (retryElement) {
-          raiseViewed();
-          retryElement.outerHTML = html;
-          clearInterval(intervalId);
-        } else if (++count >= 20) {
-          logger.log("No element present on DOM with divId '".concat(divId, "'."));
-          clearInterval(intervalId);
-        }
-      }, 500);
-    };
-
-    tryFindingElement(divId);
-  };
-  const handleJson = targetingMsgJson => {
-    const inaObj = {};
-    inaObj.msgId = targetingMsgJson.wzrk_id;
-    const details = targetingMsgJson.display.details[0];
-    const json = details.json;
-
-    if (targetingMsgJson.wzrk_pivot) {
-      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
-    }
-
-    if (targetingMsgJson.display.json != null) {
-      inaObj.json = json;
-    }
-
-    const jsonEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-      detail: {
-        campaignDetails: inaObj,
-        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.JSON
-      }
-    });
-    document.dispatchEvent(jsonEvent);
-  };
-
   const invokeExternalJs = (jsFunc, targetingMsgJson) => {
     const func = window.parent[jsFunc];
 
@@ -12368,6 +12248,169 @@
       return shouldSkip;
     }
 
+  };
+
+  const renderPersonalisationBanner = targetingMsgJson => {
+    var _targetingMsgJson$dis;
+
+    if (customElements.get('ct-web-personalisation-banner') === undefined) {
+      customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
+    }
+
+    const divId = (_targetingMsgJson$dis = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis !== void 0 ? _targetingMsgJson$dis : targetingMsgJson.display.divSelector;
+    const bannerEl = document.createElement('ct-web-personalisation-banner');
+    bannerEl.msgId = targetingMsgJson.wzrk_id;
+    bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
+    bannerEl.divHeight = targetingMsgJson.display.divHeight;
+    bannerEl.details = targetingMsgJson.display.details[0];
+    const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
+    containerEl.innerHTML = '';
+    containerEl.appendChild(bannerEl);
+  };
+  const renderPersonalisationCarousel = targetingMsgJson => {
+    var _targetingMsgJson$dis2;
+
+    if (customElements.get('ct-web-personalisation-carousel') === undefined) {
+      customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
+    }
+
+    const divId = (_targetingMsgJson$dis2 = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis2 !== void 0 ? _targetingMsgJson$dis2 : targetingMsgJson.display.divSelector;
+    const carousel = document.createElement('ct-web-personalisation-carousel');
+    carousel.target = targetingMsgJson;
+    const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
+    container.innerHTML = '';
+    container.appendChild(carousel);
+  };
+  const handleKVpairCampaign = targetingMsgJson => {
+    const inaObj = {};
+    inaObj.msgId = targetingMsgJson.wzrk_id;
+
+    if (targetingMsgJson.wzrk_pivot) {
+      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+    }
+
+    if (targetingMsgJson.msgContent.kv != null) {
+      inaObj.kv = targetingMsgJson.msgContent.kv;
+    } // combine all events from web native display under single event and add type
+
+
+    const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
+      detail: {
+        campaignDetails: inaObj,
+        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.KV_PAIR
+      }
+    });
+    document.dispatchEvent(kvPairsEvent);
+  };
+  const renderCustomHtml = (targetingMsgJson, logger) => {
+    const {
+      display,
+      wzrk_id: wzrkId,
+      wzrk_pivot: wzrkPivot
+    } = targetingMsgJson || {};
+    const {
+      divId
+    } = display || {};
+    const details = display.details[0];
+    let html = details.html;
+
+    if (!divId || !html) {
+      logger.error('No div Id or no html found');
+      return;
+    }
+
+    if (display['custom-html-click-track']) {
+      html = appendScriptForCustomEvent(targetingMsgJson, html);
+    }
+
+    let notificationViewed = false;
+    const payload = {
+      msgId: wzrkId,
+      pivotId: wzrkPivot
+    };
+
+    const raiseViewed = () => {
+      if (!notificationViewed) {
+        notificationViewed = true;
+        window.clevertap.renderNotificationViewed(payload);
+      }
+    };
+
+    const tryFindingElement = divId => {
+      let count = 0;
+      const intervalId = setInterval(() => {
+        const retryElement = document.querySelector(divId);
+
+        if (retryElement) {
+          raiseViewed();
+          retryElement.outerHTML = html;
+          clearInterval(intervalId);
+        } else if (++count >= 20) {
+          logger.error("No element present on DOM with divId '".concat(divId, "'."));
+          clearInterval(intervalId);
+        }
+      }, 500);
+    };
+
+    tryFindingElement(divId);
+  };
+  const handleJson = targetingMsgJson => {
+    const inaObj = {};
+    inaObj.msgId = targetingMsgJson.wzrk_id;
+    const details = targetingMsgJson.display.details[0];
+    const json = details.json;
+
+    if (targetingMsgJson.wzrk_pivot) {
+      inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+    }
+
+    if (targetingMsgJson.display.json != null) {
+      inaObj.json = json;
+    }
+
+    const jsonEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
+      detail: {
+        campaignDetails: inaObj,
+        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.JSON
+      }
+    });
+    document.dispatchEvent(jsonEvent);
+  };
+
+  function handleCustomHtmlPreviewPostMessageEvent(event, logger) {
+    const eventData = JSON.parse(event.data);
+    const inAppNotifs = eventData.inapp_notifs;
+    const msgContent = inAppNotifs[0].msgContent;
+
+    if (eventData && msgContent && msgContent.templateType === 'custom-html' && msgContent.type === 5) {
+      renderCustomHtml(inAppNotifs[0], logger);
+    }
+  }
+
+  const checkCustomHtmlNativeDisplayPreview = logger => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const ctType = searchParams.get('ctActionMode');
+
+    if (ctType) {
+      const parentWindow = window.opener;
+
+      switch (ctType) {
+        case CUSTOM_HTML_PREVIEW:
+          if (parentWindow) {
+            parentWindow.postMessage('ready', '*');
+
+            const eventHandler = event => handleCustomHtmlPreviewPostMessageEvent(event, logger);
+
+            window.addEventListener('message', eventHandler, false);
+          }
+
+          break;
+
+        default:
+          logger.debug("unknown query param ".concat(ctType));
+          break;
+      }
+    }
   };
 
   const renderPopUpImageOnly = (targetingMsgJson, _session) => {
@@ -14018,7 +14061,7 @@
         html = css + title + body;
       }
 
-      iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
+      iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe); // Dispatch event for popup box/banner close
 
       const closeCampaign = new Event('CT_campaign_rendered');
@@ -15052,7 +15095,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.13.3',
+        lib: 'web-sdk-v1.13.4',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -16618,6 +16661,7 @@
       }
 
       handleActionMode(_classPrivateFieldLooseBase(this, _logger)[_logger], _classPrivateFieldLooseBase(this, _account)[_account].id);
+      checkCustomHtmlNativeDisplayPreview(_classPrivateFieldLooseBase(this, _logger)[_logger]);
       _classPrivateFieldLooseBase(this, _session)[_session].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account)[_account].id;
 
       if (region) {
@@ -16804,7 +16848,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.13.3';
+      return 'web-sdk-v1.13.4';
     }
 
     defineVariable(name, defaultValue) {
