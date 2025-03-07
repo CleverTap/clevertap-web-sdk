@@ -14061,7 +14061,7 @@
         html = css + title + body;
       }
 
-      iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
+      iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe); // Dispatch event for popup box/banner close
 
       const closeCampaign = new Event('CT_campaign_rendered');
