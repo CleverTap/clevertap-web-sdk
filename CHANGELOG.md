@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.13.4] 7th Mar, 2025
+- Fixed white background around web-popup
+
 ## [1.13.3] 5th Mar, 2025
 - Web Native Display - Campaign Priority Support
 
