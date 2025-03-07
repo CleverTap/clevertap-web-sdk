@@ -12,7 +12,9 @@ import {
   EV_COOKIE,
   NOTIFICATION_CLICKED,
   WZRK_PREFIX,
-  WZRK_ID
+  WZRK_ID,
+  WEB_NATIVE_TEMPLATES,
+  CAMPAIGN_TYPES
 } from './constants'
 
 import {
@@ -26,7 +28,7 @@ import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
 import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel, renderCustomHtml, handleJson } from './campaignRender/nativeDisplay'
-import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate } from './campaignRender/utilities'
+import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate, webNativeDisplayCampaignUtils } from './campaignRender/utilities'
 import { renderPopUpImageOnly } from './campaignRender/webPopup'
 import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 
@@ -400,7 +402,7 @@ const _tr = (msg, {
       html = css + title + body
     }
 
-    iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
+    iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
 
     // Dispatch event for popup box/banner close
@@ -832,28 +834,75 @@ const _tr = (msg, {
 
   if (msg.inapp_notifs != null) {
     const arrInAppNotifs = {}
-    for (let index = 0; index < msg.inapp_notifs.length; index++) {
-      const targetNotif = msg.inapp_notifs[index]
-      if (targetNotif.display.wtarget_type == null || targetNotif.display.wtarget_type === 0) {
+
+    const sortedCampaigns = webNativeDisplayCampaignUtils.sortCampaignsByPriority(msg.inapp_notifs)
+
+    const executedTargets = {
+      nodes: [],
+      customEvents: []
+    }
+
+    for (let index = 0; index < sortedCampaigns.length; index++) {
+      const targetNotif = sortedCampaigns[index]
+
+      if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
         showFooterNotification(targetNotif)
-      } else if (targetNotif.display.wtarget_type === 1) { // if display['wtarget_type']==1 then exit intent
+      } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) { // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif
         window.document.body.onmouseleave = showExitIntent
-      } else if (targetNotif.display.wtarget_type === 2) { // if display['wtarget_type']==2 then web native display
-        if (targetNotif.msgContent.type === 1) {
+      } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) { // if display['wtarget_type']==2 then web native display
+        /* Skip current campaign if we have already executed one with same CustomEvent and topic */
+        if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif) &&
+          executedTargets.customEvents.length > 0 &&
+          webNativeDisplayCampaignUtils.shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets)
+        ) {
+          _logger.debug('Custom Event Campaign Skipped with id :: ' + targetNotif?.wzrk_id)
+          continue
+        }
+
+        /* Skip current campaign if we have already executed one with same DOM Node */
+        if (
+          webNativeDisplayCampaignUtils.doesCampaignMutateDOMNode(targetNotif) &&
+          executedTargets.nodes.some((node) =>
+            webNativeDisplayCampaignUtils
+              .getCampaignNodes(targetNotif)
+              ?.includes(node)
+          )
+        ) {
+          _logger.debug('DOM Campaign Skipped with id :: ' + targetNotif?.wzrk_id)
+          continue
+        }
+
+        if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif)) {
+          /*
+            This basically stores the CustomEvents with their type that we will push so that
+            the next time we receive a CustomEvent with the same type we can skip it
+          */
+
+          const eventTopic = targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR ? targetNotif.display.kv.topic : null
+          executedTargets.customEvents.push({
+            customEventType: targetNotif.msgContent.type,
+            eventTopic
+          })
+        } else if (webNativeDisplayCampaignUtils.doesCampaignMutateDOMNode(targetNotif)) {
+          const nodes = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif)
+          executedTargets.nodes.push(...nodes)
+        }
+
+        if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR) {
           handleKVpairCampaign(targetNotif)
-        } else if (targetNotif.msgContent.type === 2 || targetNotif.msgContent.type === 3) { // Check for banner and carousel
+        } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER || targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CAROUSEL) { // Check for banner and carousel
           const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector)
           if (element !== null) {
-            targetNotif.msgContent.type === 2 ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
+            targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
           } else {
             arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
           }
-        } else if (targetNotif.msgContent.type === 4) {
+        } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
           renderVisualBuilder(targetNotif, false)
-        } else if (targetNotif.msgContent.type === 5) {
+        } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
           renderCustomHtml(targetNotif, _logger)
-        } else if (targetNotif.msgContent.type === 6) {
+        } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
           handleJson(targetNotif, false)
         } else {
           showFooterNotification(targetNotif)

@@ -1,6 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.13.4] 7th Mar, 2025
+- Added support to preview html for custom native html
+- Fixed white background around web-popup
+
+## [1.13.3] 5th Mar, 2025
+- Web Native Display - Campaign Priority Support
+
 ## [1.13.2] 5th Mar, 2025
 - Deprecated notification.enable api, using notification.push api for rendering new prompt
 - Bug fixes/enhancements like clevertap not initialised, race conditions etc
