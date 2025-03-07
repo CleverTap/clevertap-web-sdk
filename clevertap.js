@@ -8543,7 +8543,7 @@
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
   };
 
-  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
+  var _fireRequest2 = async function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
     var _window$clevertap, _window$wizrocket;
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
@@ -8621,19 +8621,59 @@
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
     }
 
-    const s = document.createElement('script');
-    s.setAttribute('type', 'text/javascript');
-    s.setAttribute('src', url);
-    s.setAttribute('class', 'ct-jp-cb');
-    s.setAttribute('rel', 'nofollow');
-    s.async = true;
-    document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url);
+    if (!this.enableFetchApi) {
+      const s = document.createElement('script');
+      s.setAttribute('type', 'text/javascript');
+      s.setAttribute('src', url);
+      s.setAttribute('class', 'ct-jp-cb');
+      s.setAttribute('rel', 'nofollow');
+      s.async = true;
+      document.getElementsByTagName('head')[0].appendChild(s);
+      this.logger.debug('req snt -> url: ' + url);
+    } else {
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Network response was not ok: ".concat(response.statusText));
+        }
+
+        const jsonResponse = await response.json();
+        console.log('Response received:', jsonResponse);
+        const {
+          tr,
+          meta,
+          wpe
+        } = jsonResponse;
+
+        if (tr) {
+          window.$WZRK_WR.tr(tr);
+        }
+
+        if (meta) {
+          window.$WZRK_WR.s(meta);
+        }
+
+        if (wpe) {
+          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key);
+        }
+
+        this.logger.debug('req snt -> url: ' + url);
+      } catch (error) {
+        console.error('Fetch error:', error);
+      }
+    }
   };
 
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
   RequestDispatcher.account = void 0;
+  RequestDispatcher.enableFetchApi = void 0;
   Object.defineProperty(RequestDispatcher, _fireRequest, {
     value: _fireRequest2
   });
@@ -14992,7 +15032,8 @@
         account,
         device,
         session,
-        isPersonalisationActive
+        isPersonalisationActive,
+        enableFetchApi
       } = _ref;
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
@@ -15030,6 +15071,7 @@
       RequestDispatcher.logger = logger;
       RequestDispatcher.device = device;
       RequestDispatcher.account = account;
+      RequestDispatcher.enableFetchApi = enableFetchApi;
     }
 
     processBackupEvents() {
@@ -15981,6 +16023,7 @@
         writable: true,
         value: void 0
       });
+      this.enableFetchApi = void 0;
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
@@ -15996,6 +16039,7 @@
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
+      this.enableFetchApi = clevertap.enableFetchApi || true;
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         isPersonalisationActive: this._isPersonalisationActive
@@ -16005,7 +16049,8 @@
         account: _classPrivateFieldLooseBase(this, _account)[_account],
         device: _classPrivateFieldLooseBase(this, _device)[_device],
         session: _classPrivateFieldLooseBase(this, _session)[_session],
-        isPersonalisationActive: this._isPersonalisationActive
+        isPersonalisationActive: this._isPersonalisationActive,
+        enableFetchApi: this.enableFetchApi
       });
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
