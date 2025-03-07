@@ -12150,7 +12150,13 @@
      * @returns {boolean} - Returns true if the campaign pushes a custom event, otherwise false.
      */
     doesCampaignPushCustomEvent: campaign => {
-      return [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(campaign.msgContent.type) || campaign.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && campaign.display.details[0].selectorData.map(s => s.values.editor).includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON);
+      var _campaign$msgContent, _campaign$msgContent2, _campaign$display, _campaign$display$det, _campaign$display$det2, _campaign$display$det3, _campaign$display$det4;
+
+      return [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent = campaign.msgContent) === null || _campaign$msgContent === void 0 ? void 0 : _campaign$msgContent.type) || (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent2 = campaign.msgContent) === null || _campaign$msgContent2 === void 0 ? void 0 : _campaign$msgContent2.type) === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display = campaign.display) === null || _campaign$display === void 0 ? void 0 : (_campaign$display$det = _campaign$display.details) === null || _campaign$display$det === void 0 ? void 0 : (_campaign$display$det2 = _campaign$display$det[0]) === null || _campaign$display$det2 === void 0 ? void 0 : (_campaign$display$det3 = _campaign$display$det2.selectorData) === null || _campaign$display$det3 === void 0 ? void 0 : (_campaign$display$det4 = _campaign$display$det3.map(s => {
+        var _s$values;
+
+        return s === null || s === void 0 ? void 0 : (_s$values = s.values) === null || _s$values === void 0 ? void 0 : _s$values.editor;
+      })) === null || _campaign$display$det4 === void 0 ? void 0 : _campaign$display$det4.includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON));
     },
 
     /**
@@ -12160,7 +12166,13 @@
      * @returns {boolean} - Returns true if the campaign mutates the DOM node, otherwise false.
      */
     doesCampaignMutateDOMNode: campaign => {
-      return [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL, WEB_NATIVE_TEMPLATES.CUSTOM_HTML].includes(campaign.msgContent.type) || WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === campaign.msgContent.type && campaign.display.details[0].selectorData.some(s => [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML, WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s.values.editor));
+      var _campaign$msgContent3, _campaign$msgContent4, _campaign$display2, _campaign$display2$de, _campaign$display2$de2, _campaign$display2$de3;
+
+      return [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL, WEB_NATIVE_TEMPLATES.CUSTOM_HTML].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent3 = campaign.msgContent) === null || _campaign$msgContent3 === void 0 ? void 0 : _campaign$msgContent3.type) || WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent4 = campaign.msgContent) === null || _campaign$msgContent4 === void 0 ? void 0 : _campaign$msgContent4.type) && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display2 = campaign.display) === null || _campaign$display2 === void 0 ? void 0 : (_campaign$display2$de = _campaign$display2.details) === null || _campaign$display2$de === void 0 ? void 0 : (_campaign$display2$de2 = _campaign$display2$de[0]) === null || _campaign$display2$de2 === void 0 ? void 0 : (_campaign$display2$de3 = _campaign$display2$de2.selectorData) === null || _campaign$display2$de3 === void 0 ? void 0 : _campaign$display2$de3.some(s => {
+        var _s$values2;
+
+        return [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML, WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s === null || s === void 0 ? void 0 : (_s$values2 = s.values) === null || _s$values2 === void 0 ? void 0 : _s$values2.editor);
+      }));
     },
 
     /**
@@ -12180,7 +12192,7 @@
      * @returns {Array<string>} - An array of DOM node selectors or IDs associated with the campaign.
      */
     getCampaignNodes: campaign => {
-      var _display$details, _display$details$, _display$details$$sel;
+      var _display$details, _display$details$, _display$details$$sel, _display$details$$sel2;
 
       const {
         msgContent,
@@ -12193,13 +12205,17 @@
       switch (type) {
         case WEB_NATIVE_TEMPLATES.BANNER:
         case WEB_NATIVE_TEMPLATES.CAROUSEL:
-          return [display.divSelector];
+          return [display === null || display === void 0 ? void 0 : display.divSelector];
 
         case WEB_NATIVE_TEMPLATES.CUSTOM_HTML:
-          return [display.divId];
+          return [display === null || display === void 0 ? void 0 : display.divId];
 
         case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-          return ((_display$details = display.details) === null || _display$details === void 0 ? void 0 : (_display$details$ = _display$details[0]) === null || _display$details$ === void 0 ? void 0 : (_display$details$$sel = _display$details$.selectorData) === null || _display$details$$sel === void 0 ? void 0 : _display$details$$sel.filter(s => s.values.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML).map(s => s.selector)) || [];
+          return (display === null || display === void 0 ? void 0 : (_display$details = display.details) === null || _display$details === void 0 ? void 0 : (_display$details$ = _display$details[0]) === null || _display$details$ === void 0 ? void 0 : (_display$details$$sel = _display$details$.selectorData) === null || _display$details$$sel === void 0 ? void 0 : (_display$details$$sel2 = _display$details$$sel.filter(s => {
+            var _s$values3;
+
+            return (s === null || s === void 0 ? void 0 : (_s$values3 = s.values) === null || _s$values3 === void 0 ? void 0 : _s$values3.editor) === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML;
+          })) === null || _display$details$$sel2 === void 0 ? void 0 : _display$details$$sel2.map(s => s === null || s === void 0 ? void 0 : s.selector)) || [];
 
         default:
           return [];
@@ -12214,16 +12230,20 @@
      * @returns {boolean} - Returns true if the current custom event campaign should be skipped, false otherwise.
     */
     shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets) {
-      var _currentSameTypeCampa;
+      var _targetNotif$msgConte2, _currentSameTypeCampa, _targetNotif$display, _targetNotif$display$;
 
-      const currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => customEvent.customEventType === targetNotif.msgContent.type);
+      const currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => {
+        var _targetNotif$msgConte;
+
+        return customEvent.customEventType === (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte = targetNotif.msgContent) === null || _targetNotif$msgConte === void 0 ? void 0 : _targetNotif$msgConte.type);
+      });
       let shouldSkip = false; // If KV Pair, check for topic and type
       // if visual builder or JSON, just check for the type of event, because we do not have `topic`
 
       if (currentSameTypeCampaigns === null || currentSameTypeCampaigns === void 0 ? void 0 : currentSameTypeCampaigns.length) {
-        switch (targetNotif.msgContent.type) {
+        switch (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte2 = targetNotif.msgContent) === null || _targetNotif$msgConte2 === void 0 ? void 0 : _targetNotif$msgConte2.type) {
           case WEB_NATIVE_TEMPLATES.KV_PAIR:
-            if ((_currentSameTypeCampa = currentSameTypeCampaigns.map(c => c.eventTopic)) === null || _currentSameTypeCampa === void 0 ? void 0 : _currentSameTypeCampa.includes(targetNotif.display.kv.topic)) {
+            if ((_currentSameTypeCampa = currentSameTypeCampaigns.map(c => c === null || c === void 0 ? void 0 : c.eventTopic)) === null || _currentSameTypeCampa === void 0 ? void 0 : _currentSameTypeCampa.includes(targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$display = targetNotif.display) === null || _targetNotif$display === void 0 ? void 0 : (_targetNotif$display$ = _targetNotif$display.kv) === null || _targetNotif$display$ === void 0 ? void 0 : _targetNotif$display$.topic)) {
               shouldSkip = true;
             }
             break;
