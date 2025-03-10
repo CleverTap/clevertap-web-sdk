@@ -134,8 +134,7 @@ export default class CleverTap {
       account: this.#account,
       device: this.#device,
       session: this.#session,
-      isPersonalisationActive: this._isPersonalisationActive,
-      enableFetchApi: this.#enableFetchApi
+      isPersonalisationActive: this._isPersonalisationActive
     })
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
