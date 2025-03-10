@@ -16687,8 +16687,8 @@
     } // starts here
 
 
-    init(accountId, region, targetDomain) {
-      let config = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {
+    init(accountId, region, targetDomain, token) {
+      let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
         antiFlicker: {}
       };
 
@@ -16732,8 +16732,8 @@
         _classPrivateFieldLooseBase(this, _account)[_account].targetDomain = targetDomain;
       }
 
-      if (config.token) {
-        _classPrivateFieldLooseBase(this, _account)[_account].token = config.token;
+      if (token) {
+        _classPrivateFieldLooseBase(this, _account)[_account].token = token;
       }
 
       if (config.enableFetchApi) {

@@ -653,7 +653,7 @@ export default class CleverTap {
   }
 
   // starts here
-  init (accountId, region, targetDomain, config = { antiFlicker: {} }) {
+  init (accountId, region, targetDomain, token, config = { antiFlicker: {} }) {
     if (config.antiFlicker && Object.keys(config.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
     }
@@ -686,8 +686,8 @@ export default class CleverTap {
     if (targetDomain) {
       this.#account.targetDomain = targetDomain
     }
-    if (config.token) {
-      this.#account.token = config.token
+    if (token) {
+      this.#account.token = token
     }
 
     if (config.enableFetchApi) {
