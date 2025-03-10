@@ -99,6 +99,7 @@ export default class CleverTap {
 
   set enableFetchApi (value) {
     this.#enableFetchApi = value
+    $ct.enableFetchApi = value
   }
 
   constructor (clevertap = {}) {
@@ -122,7 +123,7 @@ export default class CleverTap {
       device: this.#device,
       session: this.#session,
       isPersonalisationActive: this._isPersonalisationActive,
-      enableFetchApi: this.enableFetchApi
+      enableFetchApi: this.#enableFetchApi
     })
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
@@ -174,6 +175,7 @@ export default class CleverTap {
 
     this.spa = clevertap.spa
     this.dismissSpamControl = clevertap.dismissSpamControl
+    this.enableFetchApi = clevertap.enableFetchApi
 
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
@@ -651,9 +653,9 @@ export default class CleverTap {
   }
 
   // starts here
-  init (accountId, region, targetDomain, token, antiFlicker = {}) {
-    if (Object.keys(antiFlicker).length > 0) {
-      addAntiFlicker(antiFlicker)
+  init (accountId, region, targetDomain, config = { antiFlicker: {} }) {
+    if (config.antiFlicker && Object.keys(config.antiFlicker).length > 0) {
+      addAntiFlicker(config.antiFlicker)
     }
     if (this.#onloadcalled === 1) {
       // already initailsed
@@ -684,8 +686,13 @@ export default class CleverTap {
     if (targetDomain) {
       this.#account.targetDomain = targetDomain
     }
-    if (token) {
-      this.#account.token = token
+    if (config.token) {
+      this.#account.token = config.token
+    }
+
+    if (config.enableFetchApi) {
+      this.#enableFetchApi = config.enableFetchApi
+      $ct.enableFetchApi = config.enableFetchApi
     }
 
     const currLocation = location.href

@@ -7444,7 +7444,8 @@
     globalUnsubscribe: true,
     flutterVersion: null,
     variableStore: {},
-    pushConfig: null // domain: window.location.hostname, url -> getHostName()
+    pushConfig: null,
+    enableFetchApi: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -8621,7 +8622,7 @@
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
     }
 
-    if (!this.enableFetchApi) {
+    if (!$ct.enableFetchApi) {
       const s = document.createElement('script');
       s.setAttribute('type', 'text/javascript');
       s.setAttribute('src', url);
@@ -8673,7 +8674,6 @@
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
   RequestDispatcher.account = void 0;
-  RequestDispatcher.enableFetchApi = void 0;
   Object.defineProperty(RequestDispatcher, _fireRequest, {
     value: _fireRequest2
   });
@@ -15032,8 +15032,7 @@
         account,
         device,
         session,
-        isPersonalisationActive,
-        enableFetchApi
+        isPersonalisationActive
       } = _ref;
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
@@ -15071,7 +15070,6 @@
       RequestDispatcher.logger = logger;
       RequestDispatcher.device = device;
       RequestDispatcher.account = account;
-      RequestDispatcher.enableFetchApi = enableFetchApi;
     }
 
     processBackupEvents() {
@@ -15950,6 +15948,7 @@
 
     set enableFetchApi(value) {
       _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value;
+      $ct.enableFetchApi = value;
     }
 
     constructor() {
@@ -16063,7 +16062,7 @@
         device: _classPrivateFieldLooseBase(this, _device)[_device],
         session: _classPrivateFieldLooseBase(this, _session)[_session],
         isPersonalisationActive: this._isPersonalisationActive,
-        enableFetchApi: this.enableFetchApi
+        enableFetchApi: _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi]
       });
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
@@ -16108,6 +16107,7 @@
       });
       this.spa = clevertap.spa;
       this.dismissSpamControl = clevertap.dismissSpamControl;
+      this.enableFetchApi = clevertap.enableFetchApi;
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
@@ -16687,11 +16687,13 @@
     } // starts here
 
 
-    init(accountId, region, targetDomain, token) {
-      let antiFlicker = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
+    init(accountId, region, targetDomain) {
+      let config = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {
+        antiFlicker: {}
+      };
 
-      if (Object.keys(antiFlicker).length > 0) {
-        addAntiFlicker(antiFlicker);
+      if (config.antiFlicker && Object.keys(config.antiFlicker).length > 0) {
+        addAntiFlicker(config.antiFlicker);
       }
 
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
@@ -16730,8 +16732,13 @@
         _classPrivateFieldLooseBase(this, _account)[_account].targetDomain = targetDomain;
       }
 
-      if (token) {
-        _classPrivateFieldLooseBase(this, _account)[_account].token = token;
+      if (config.token) {
+        _classPrivateFieldLooseBase(this, _account)[_account].token = config.token;
+      }
+
+      if (config.enableFetchApi) {
+        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
+        $ct.enableFetchApi = config.enableFetchApi;
       }
 
       const currLocation = location.href;
