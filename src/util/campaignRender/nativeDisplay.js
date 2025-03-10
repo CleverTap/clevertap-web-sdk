@@ -1,6 +1,8 @@
-import { CUSTOM_EVENT_KEYS, CUSTOM_EVENTS_CAMPAIGN_SOURCES } from '../constants'
+import { CUSTOM_EVENT_KEYS, CUSTOM_EVENTS_CAMPAIGN_SOURCES, CUSTOM_HTML_PREVIEW } from '../constants'
 import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
+
+import { appendScriptForCustomEvent } from '../campaignRender/utilities'
 
 export const renderPersonalisationBanner = (targetingMsgJson) => {
   if (customElements.get('ct-web-personalisation-banner') === undefined) {
@@ -50,13 +52,17 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
 export const renderCustomHtml = (targetingMsgJson, logger) => {
   const { display, wzrk_id: wzrkId, wzrk_pivot: wzrkPivot } = targetingMsgJson || {}
 
-  const divId = display.divId || {}
+  const { divId } = display || {}
   const details = display.details[0]
-  const html = details.html
+  let html = details.html
 
   if (!divId || !html) {
     logger.error('No div Id or no html found')
     return
+  }
+
+  if (display['custom-html-click-track']) {
+    html = appendScriptForCustomEvent(targetingMsgJson, html)
   }
 
   let notificationViewed = false
@@ -81,7 +87,7 @@ export const renderCustomHtml = (targetingMsgJson, logger) => {
         retryElement.outerHTML = html
         clearInterval(intervalId)
       } else if (++count >= 20) {
-        logger.log(`No element present on DOM with divId '${divId}'.`)
+        logger.error(`No element present on DOM with divId '${divId}'.`)
         clearInterval(intervalId)
       }
     }, 500)
@@ -107,4 +113,33 @@ export const handleJson = (targetingMsgJson) => {
     }
   })
   document.dispatchEvent(jsonEvent)
+}
+
+function handleCustomHtmlPreviewPostMessageEvent (event, logger) {
+  const eventData = JSON.parse(event.data)
+  const inAppNotifs = eventData.inapp_notifs
+  const msgContent = inAppNotifs[0].msgContent
+  if (eventData && msgContent && msgContent.templateType === 'custom-html' && msgContent.type === 5) {
+    renderCustomHtml(inAppNotifs[0], logger)
+  }
+}
+
+export const checkCustomHtmlNativeDisplayPreview = (logger) => {
+  const searchParams = new URLSearchParams(window.location.search)
+  const ctType = searchParams.get('ctActionMode')
+  if (ctType) {
+    const parentWindow = window.opener
+    switch (ctType) {
+      case CUSTOM_HTML_PREVIEW:
+        if (parentWindow) {
+          parentWindow.postMessage('ready', '*')
+          const eventHandler = (event) => handleCustomHtmlPreviewPostMessageEvent(event, logger)
+          window.addEventListener('message', eventHandler, false)
+        }
+        break
+      default:
+        logger.debug(`unknown query param ${ctType}`)
+        break
+    }
+  }
 }
