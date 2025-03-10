@@ -17847,6 +17847,7 @@
       /* Only add Custom Id if no existing id is present */
 
 
+<<<<<<< HEAD
       if (_classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
         return;
       }
@@ -17872,6 +17873,10 @@
 =======
     init(accountId, region, targetDomain) {
       let config = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {
+=======
+    init(accountId, region, targetDomain, token) {
+      let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
+>>>>>>> d97c1d8 (reverted token config change)
         antiFlicker: {}
       };
 
@@ -17916,8 +17921,8 @@
         _classPrivateFieldLooseBase(this, _account)[_account].targetDomain = targetDomain;
       }
 
-      if (config.token) {
-        _classPrivateFieldLooseBase(this, _account)[_account].token = config.token;
+      if (token) {
+        _classPrivateFieldLooseBase(this, _account)[_account].token = token;
       }
 
       if (config.enableFetchApi) {
