@@ -15896,6 +15896,8 @@
 
   var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
 
+  var _enableFetchApi = _classPrivateFieldLooseKey("enableFetchApi");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _debounce = _classPrivateFieldLooseKey("debounce");
@@ -15940,6 +15942,14 @@
       const dismissSpamControl = value === true;
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
       $ct.dismissSpamControl = dismissSpamControl;
+    }
+
+    get enableFetchApi() {
+      return _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
+    }
+
+    set enableFetchApi(value) {
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value;
     }
 
     constructor() {
@@ -16023,7 +16033,10 @@
         writable: true,
         value: void 0
       });
-      this.enableFetchApi = void 0;
+      Object.defineProperty(this, _enableFetchApi, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
@@ -16039,7 +16052,7 @@
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
-      this.enableFetchApi = clevertap.enableFetchApi || true;
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = clevertap.enableFetchApi || false;
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         isPersonalisationActive: this._isPersonalisationActive
