@@ -101,38 +101,6 @@ export const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
   VISUAL_BUILDER: 'Visual_Builder'
 }
 
-export const WEB_NATIVE_TEMPLATES = {
-  KV_PAIR: 1,
-  BANNER: 2,
-  CAROUSEL: 3,
-  VISUAL_BUILDER: 4,
-  CUSTOM_HTML: 5,
-  JSON: 6
-}
-
-export const WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES = {
-  HTML: 'html',
-  FORM: 'form',
-  JSON: 'json'
-}
-
-export const CAMPAIGN_TYPES = {
-  EXIT_INTENT: 1,
-  WEB_NATIVE_DISPLAY: 2,
-  FOOTER_NOTIFICATION: 0,
-  FOOTER_NOTIFICATION_2: null
-}
-
-export const CUSTOM_EVENT_KEYS = {
-  WEB_NATIVE_DISPLAY: 'CT_web_native_display'
-}
-
-export const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
-  KV_PAIR: 'KV_Pair',
-  JSON: 'JSON',
-  VISUAL_BUILDER: 'Visual_Builder'
-}
-
 export const SYSTEM_EVENTS = [
   'Stayed',
   'UTM Visited',
