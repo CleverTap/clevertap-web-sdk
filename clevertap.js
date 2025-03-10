@@ -16061,8 +16061,7 @@
         account: _classPrivateFieldLooseBase(this, _account)[_account],
         device: _classPrivateFieldLooseBase(this, _device)[_device],
         session: _classPrivateFieldLooseBase(this, _session)[_session],
-        isPersonalisationActive: this._isPersonalisationActive,
-        enableFetchApi: _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi]
+        isPersonalisationActive: this._isPersonalisationActive
       });
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
