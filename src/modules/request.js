@@ -19,7 +19,7 @@ export default class RequestManager {
   #clearCookie = false
   processingBackup = false
 
-  constructor ({ logger, account, device, session, isPersonalisationActive, enableFetchApi }) {
+  constructor ({ logger, account, device, session, isPersonalisationActive }) {
     this.#logger = logger
     this.#account = account
     this.#device = device
@@ -29,7 +29,6 @@ export default class RequestManager {
     RequestDispatcher.logger = logger
     RequestDispatcher.device = device
     RequestDispatcher.account = account
-    RequestDispatcher.enableFetchApi = enableFetchApi
   }
 
   processBackupEvents () {

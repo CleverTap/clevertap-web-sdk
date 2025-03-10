@@ -103,6 +103,7 @@ export default class CleverTap {
 
   set enableFetchApi (value) {
     this.#enableFetchApi = value
+    $ct.enableFetchApi = value
   }
 
   constructor (clevertap = {}) {
@@ -134,7 +135,7 @@ export default class CleverTap {
       device: this.#device,
       session: this.#session,
       isPersonalisationActive: this._isPersonalisationActive,
-      enableFetchApi: this.enableFetchApi
+      enableFetchApi: this.#enableFetchApi
     })
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
@@ -185,7 +186,12 @@ export default class CleverTap {
     })
 
     this.spa = clevertap.spa
+<<<<<<< HEAD
     this.dismissSpamControl = clevertap.dismissSpamControl ?? true
+=======
+    this.dismissSpamControl = clevertap.dismissSpamControl
+    this.enableFetchApi = clevertap.enableFetchApi
+>>>>>>> ae3dc60 (refactored init and added global var)
 
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
@@ -667,6 +673,7 @@ export default class CleverTap {
     }
   }
 
+<<<<<<< HEAD
   createCustomIdIfValid (customId) {
     const result = validateCustomCleverTapID(customId)
 
@@ -690,6 +697,11 @@ export default class CleverTap {
 
   init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null }) {
     if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
+=======
+  // starts here
+  init (accountId, region, targetDomain, config = { antiFlicker: {} }) {
+    if (config.antiFlicker && Object.keys(config.antiFlicker).length > 0) {
+>>>>>>> ae3dc60 (refactored init and added global var)
       addAntiFlicker(config.antiFlicker)
     }
     if (this.#onloadcalled === 1) {
@@ -721,8 +733,13 @@ export default class CleverTap {
     if (targetDomain) {
       this.#account.targetDomain = targetDomain
     }
-    if (token) {
-      this.#account.token = token
+    if (config.token) {
+      this.#account.token = config.token
+    }
+
+    if (config.enableFetchApi) {
+      this.#enableFetchApi = config.enableFetchApi
+      $ct.enableFetchApi = config.enableFetchApi
     }
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)

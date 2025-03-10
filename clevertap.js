@@ -7459,7 +7459,8 @@
     globalUnsubscribe: true,
     flutterVersion: null,
     variableStore: {},
-    pushConfig: null // domain: window.location.hostname, url -> getHostName()
+    pushConfig: null,
+    enableFetchApi: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -8644,7 +8645,7 @@
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
     }
 
-    if (!this.enableFetchApi) {
+    if (!$ct.enableFetchApi) {
       const s = document.createElement('script');
       s.setAttribute('type', 'text/javascript');
       s.setAttribute('src', url);
@@ -8696,7 +8697,6 @@
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
   RequestDispatcher.account = void 0;
-  RequestDispatcher.enableFetchApi = void 0;
   Object.defineProperty(RequestDispatcher, _fireRequest, {
     value: _fireRequest2
   });
@@ -16113,8 +16113,7 @@
         account,
         device,
         session,
-        isPersonalisationActive,
-        enableFetchApi
+        isPersonalisationActive
       } = _ref;
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
@@ -16152,7 +16151,6 @@
       RequestDispatcher.logger = logger;
       RequestDispatcher.device = device;
       RequestDispatcher.account = account;
-      RequestDispatcher.enableFetchApi = enableFetchApi;
     }
 
     processBackupEvents() {
@@ -17082,6 +17080,7 @@
 
     set enableFetchApi(value) {
       _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value;
+      $ct.enableFetchApi = value;
     }
 
     constructor() {
@@ -17203,7 +17202,7 @@
         device: _classPrivateFieldLooseBase(this, _device)[_device],
         session: _classPrivateFieldLooseBase(this, _session)[_session],
         isPersonalisationActive: this._isPersonalisationActive,
-        enableFetchApi: this.enableFetchApi
+        enableFetchApi: _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi]
       });
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
@@ -17247,7 +17246,12 @@
         session: _classPrivateFieldLooseBase(this, _session)[_session]
       });
       this.spa = clevertap.spa;
+<<<<<<< HEAD
       this.dismissSpamControl = (_clevertap$dismissSpa2 = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa2 !== void 0 ? _clevertap$dismissSpa2 : true;
+=======
+      this.dismissSpamControl = clevertap.dismissSpamControl;
+      this.enableFetchApi = clevertap.enableFetchApi;
+>>>>>>> ae3dc60 (refactored init and added global var)
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
@@ -17857,6 +17861,7 @@
       }
     }
 
+<<<<<<< HEAD
     init(accountId, region, targetDomain, token) {
       let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
         antiFlicker: {},
@@ -17864,6 +17869,14 @@
       };
 
       if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
+=======
+    init(accountId, region, targetDomain) {
+      let config = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {
+        antiFlicker: {}
+      };
+
+      if (config.antiFlicker && Object.keys(config.antiFlicker).length > 0) {
+>>>>>>> ae3dc60 (refactored init and added global var)
         addAntiFlicker(config.antiFlicker);
       }
 
@@ -17903,8 +17916,13 @@
         _classPrivateFieldLooseBase(this, _account)[_account].targetDomain = targetDomain;
       }
 
-      if (token) {
-        _classPrivateFieldLooseBase(this, _account)[_account].token = token;
+      if (config.token) {
+        _classPrivateFieldLooseBase(this, _account)[_account].token = config.token;
+      }
+
+      if (config.enableFetchApi) {
+        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
+        $ct.enableFetchApi = config.enableFetchApi;
       }
 
       if (config === null || config === void 0 ? void 0 : config.customId) {

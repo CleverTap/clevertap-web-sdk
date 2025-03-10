@@ -9,7 +9,6 @@ export default class RequestDispatcher {
   static logger
   static device
   static account
-  static enableFetchApi
   networkRetryCount = 0
   minDelayFrequency = 0
 
@@ -84,7 +83,7 @@ export default class RequestDispatcher {
     while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
     }
-    if (!this.enableFetchApi) {
+    if (!$ct.enableFetchApi) {
       const s = document.createElement('script')
       s.setAttribute('type', 'text/javascript')
       s.setAttribute('src', url)
