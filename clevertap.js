@@ -15136,8 +15136,12 @@
         ...$ct.flutterVersion
       }; // app fields
 
-      if (sessionStorage.hasOwnProperty('WZRK_D')) {
-        dataObject.debug = true;
+      try {
+        if (sessionStorage.hasOwnProperty('WZRK_D') || sessionStorage.getItem('WZRK_D')) {
+          dataObject.debug = true;
+        }
+      } catch (e) {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Error in reading WZRK_D from session storage');
       }
 
       return dataObject;
