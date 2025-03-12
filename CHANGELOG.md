@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 - Added Null Checks for Web Native Campaigns Utils
 - Fixed WebInbox Runtime Issues
 - Skipped WebInbox Retries when config not present
+- Native Display KV_Pair Custom Event Paylaod Backward Compatibility
 
 ## [1.13.4] 7th Mar, 2025
 - Added support to preview html for custom native html
