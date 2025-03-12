@@ -98,10 +98,6 @@ export const initializeWebInbox = (logger) => {
 
     const checkElementCondition = () => {
       const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
-      if (!config.inboxSelector) {
-        logger.debug('Inbox selector is not configured')
-        return false
-      }
       return document.getElementById(config.inboxSelector) && $ct.inbox === null
     }
 
@@ -111,6 +107,12 @@ export const initializeWebInbox = (logger) => {
 
     let retryStarted = false // Guard flag
     const startRetry = () => {
+      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+      if (!config.inboxSelector) {
+        logger.debug('Web Inbox Retry Skipped, Inbox selector is not configured')
+        return false
+      }
+
       if (!retryStarted) {
         retryStarted = true
         retryUntil(checkElementCondition, 500, 20)

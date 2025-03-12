@@ -237,14 +237,6 @@
     FOOTER_NOTIFICATION: 0,
     FOOTER_NOTIFICATION_2: null
   };
-  const CUSTOM_EVENT_KEYS = {
-    WEB_NATIVE_DISPLAY: 'CT_web_native_display'
-  };
-  const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
-    KV_PAIR: 'KV_Pair',
-    JSON: 'JSON',
-    VISUAL_BUILDER: 'Visual_Builder'
-  };
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
 
@@ -10982,12 +10974,6 @@
 
       const checkElementCondition = () => {
         const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-
-        if (!config.inboxSelector) {
-          logger.debug('Inbox selector is not configured');
-          return false;
-        }
-
         return document.getElementById(config.inboxSelector) && $ct.inbox === null;
       };
 
@@ -10998,6 +10984,13 @@
       let retryStarted = false; // Guard flag
 
       const startRetry = () => {
+        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+
+        if (!config.inboxSelector) {
+          logger.debug('Web Inbox Retry Skipped, Inbox selector is not configured');
+          return false;
+        }
+
         if (!retryStarted) {
           retryStarted = true;
           retryUntil(checkElementCondition, 500, 20).then(() => {
@@ -11264,7 +11257,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '1.13.4';
+            const sdkVersion = '1.13.5';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -11621,11 +11614,8 @@
       }
     }
 
-    const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-      detail: {
-        campaignDetails: inaObj,
-        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.VISUAL_BUILDER
-      }
+    const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', {
+      detail: inaObj
     });
     document.dispatchEvent(kvPairsEvent);
   }
@@ -12150,7 +12140,13 @@
      * @returns {boolean} - Returns true if the campaign pushes a custom event, otherwise false.
      */
     doesCampaignPushCustomEvent: campaign => {
-      return [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(campaign.msgContent.type) || campaign.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && campaign.display.details[0].selectorData.map(s => s.values.editor).includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON);
+      var _campaign$msgContent, _campaign$msgContent2, _campaign$display, _campaign$display$det, _campaign$display$det2, _campaign$display$det3, _campaign$display$det4;
+
+      return [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent = campaign.msgContent) === null || _campaign$msgContent === void 0 ? void 0 : _campaign$msgContent.type) || (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent2 = campaign.msgContent) === null || _campaign$msgContent2 === void 0 ? void 0 : _campaign$msgContent2.type) === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display = campaign.display) === null || _campaign$display === void 0 ? void 0 : (_campaign$display$det = _campaign$display.details) === null || _campaign$display$det === void 0 ? void 0 : (_campaign$display$det2 = _campaign$display$det[0]) === null || _campaign$display$det2 === void 0 ? void 0 : (_campaign$display$det3 = _campaign$display$det2.selectorData) === null || _campaign$display$det3 === void 0 ? void 0 : (_campaign$display$det4 = _campaign$display$det3.map(s => {
+        var _s$values;
+
+        return s === null || s === void 0 ? void 0 : (_s$values = s.values) === null || _s$values === void 0 ? void 0 : _s$values.editor;
+      })) === null || _campaign$display$det4 === void 0 ? void 0 : _campaign$display$det4.includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON));
     },
 
     /**
@@ -12160,7 +12156,13 @@
      * @returns {boolean} - Returns true if the campaign mutates the DOM node, otherwise false.
      */
     doesCampaignMutateDOMNode: campaign => {
-      return [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL, WEB_NATIVE_TEMPLATES.CUSTOM_HTML].includes(campaign.msgContent.type) || WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === campaign.msgContent.type && campaign.display.details[0].selectorData.some(s => [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML, WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s.values.editor));
+      var _campaign$msgContent3, _campaign$msgContent4, _campaign$display2, _campaign$display2$de, _campaign$display2$de2, _campaign$display2$de3;
+
+      return [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL, WEB_NATIVE_TEMPLATES.CUSTOM_HTML].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent3 = campaign.msgContent) === null || _campaign$msgContent3 === void 0 ? void 0 : _campaign$msgContent3.type) || WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent4 = campaign.msgContent) === null || _campaign$msgContent4 === void 0 ? void 0 : _campaign$msgContent4.type) && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display2 = campaign.display) === null || _campaign$display2 === void 0 ? void 0 : (_campaign$display2$de = _campaign$display2.details) === null || _campaign$display2$de === void 0 ? void 0 : (_campaign$display2$de2 = _campaign$display2$de[0]) === null || _campaign$display2$de2 === void 0 ? void 0 : (_campaign$display2$de3 = _campaign$display2$de2.selectorData) === null || _campaign$display2$de3 === void 0 ? void 0 : _campaign$display2$de3.some(s => {
+        var _s$values2;
+
+        return [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML, WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s === null || s === void 0 ? void 0 : (_s$values2 = s.values) === null || _s$values2 === void 0 ? void 0 : _s$values2.editor);
+      }));
     },
 
     /**
@@ -12180,7 +12182,7 @@
      * @returns {Array<string>} - An array of DOM node selectors or IDs associated with the campaign.
      */
     getCampaignNodes: campaign => {
-      var _display$details, _display$details$, _display$details$$sel;
+      var _display$details, _display$details$, _display$details$$sel, _display$details$$sel2;
 
       const {
         msgContent,
@@ -12193,13 +12195,17 @@
       switch (type) {
         case WEB_NATIVE_TEMPLATES.BANNER:
         case WEB_NATIVE_TEMPLATES.CAROUSEL:
-          return [display.divSelector];
+          return [display === null || display === void 0 ? void 0 : display.divSelector];
 
         case WEB_NATIVE_TEMPLATES.CUSTOM_HTML:
-          return [display.divId];
+          return [display === null || display === void 0 ? void 0 : display.divId];
 
         case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-          return ((_display$details = display.details) === null || _display$details === void 0 ? void 0 : (_display$details$ = _display$details[0]) === null || _display$details$ === void 0 ? void 0 : (_display$details$$sel = _display$details$.selectorData) === null || _display$details$$sel === void 0 ? void 0 : _display$details$$sel.filter(s => s.values.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML).map(s => s.selector)) || [];
+          return (display === null || display === void 0 ? void 0 : (_display$details = display.details) === null || _display$details === void 0 ? void 0 : (_display$details$ = _display$details[0]) === null || _display$details$ === void 0 ? void 0 : (_display$details$$sel = _display$details$.selectorData) === null || _display$details$$sel === void 0 ? void 0 : (_display$details$$sel2 = _display$details$$sel.filter(s => {
+            var _s$values3;
+
+            return (s === null || s === void 0 ? void 0 : (_s$values3 = s.values) === null || _s$values3 === void 0 ? void 0 : _s$values3.editor) === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML;
+          })) === null || _display$details$$sel2 === void 0 ? void 0 : _display$details$$sel2.map(s => s === null || s === void 0 ? void 0 : s.selector)) || [];
 
         default:
           return [];
@@ -12214,16 +12220,20 @@
      * @returns {boolean} - Returns true if the current custom event campaign should be skipped, false otherwise.
     */
     shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets) {
-      var _currentSameTypeCampa;
+      var _targetNotif$msgConte2, _currentSameTypeCampa, _targetNotif$display, _targetNotif$display$;
 
-      const currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => customEvent.customEventType === targetNotif.msgContent.type);
+      const currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => {
+        var _targetNotif$msgConte;
+
+        return customEvent.customEventType === (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte = targetNotif.msgContent) === null || _targetNotif$msgConte === void 0 ? void 0 : _targetNotif$msgConte.type);
+      });
       let shouldSkip = false; // If KV Pair, check for topic and type
       // if visual builder or JSON, just check for the type of event, because we do not have `topic`
 
       if (currentSameTypeCampaigns === null || currentSameTypeCampaigns === void 0 ? void 0 : currentSameTypeCampaigns.length) {
-        switch (targetNotif.msgContent.type) {
+        switch (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte2 = targetNotif.msgContent) === null || _targetNotif$msgConte2 === void 0 ? void 0 : _targetNotif$msgConte2.type) {
           case WEB_NATIVE_TEMPLATES.KV_PAIR:
-            if ((_currentSameTypeCampa = currentSameTypeCampaigns.map(c => c.eventTopic)) === null || _currentSameTypeCampa === void 0 ? void 0 : _currentSameTypeCampa.includes(targetNotif.display.kv.topic)) {
+            if ((_currentSameTypeCampa = currentSameTypeCampaigns.map(c => c === null || c === void 0 ? void 0 : c.eventTopic)) === null || _currentSameTypeCampa === void 0 ? void 0 : _currentSameTypeCampa.includes(targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$display = targetNotif.display) === null || _targetNotif$display === void 0 ? void 0 : (_targetNotif$display$ = _targetNotif$display.kv) === null || _targetNotif$display$ === void 0 ? void 0 : _targetNotif$display$.topic)) {
               shouldSkip = true;
             }
             break;
@@ -12291,14 +12301,10 @@
 
     if (targetingMsgJson.msgContent.kv != null) {
       inaObj.kv = targetingMsgJson.msgContent.kv;
-    } // combine all events from web native display under single event and add type
+    }
 
-
-    const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-      detail: {
-        campaignDetails: inaObj,
-        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.KV_PAIR
-      }
+    const kvPairsEvent = new CustomEvent('CT_web_native_display', {
+      detail: inaObj
     });
     document.dispatchEvent(kvPairsEvent);
   };
@@ -12368,11 +12374,8 @@
       inaObj.json = json;
     }
 
-    const jsonEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-      detail: {
-        campaignDetails: inaObj,
-        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.JSON
-      }
+    const jsonEvent = new CustomEvent('CT_web_native_display_json', {
+      detail: inaObj
     });
     document.dispatchEvent(jsonEvent);
   };
@@ -15095,13 +15098,17 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.13.4',
+        lib: 'web-sdk-v1.13.5',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
 
-      if (sessionStorage.hasOwnProperty('WZRK_D')) {
-        dataObject.debug = true;
+      try {
+        if (sessionStorage.hasOwnProperty('WZRK_D') || sessionStorage.getItem('WZRK_D')) {
+          dataObject.debug = true;
+        }
+      } catch (e) {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Error in reading WZRK_D from session storage');
       }
 
       return dataObject;
@@ -16173,8 +16180,11 @@
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
           if (messages[messageId].viewed === 0) {
-            $ct.inbox.unviewedCounter--;
-            delete $ct.inbox.unviewedMessages[messageId];
+            if ($ct.inbox) {
+              $ct.inbox.unviewedCounter--;
+              delete $ct.inbox.unviewedMessages[messageId];
+            }
+
             const unViewedBadge = document.getElementById('unviewedBadge');
 
             if (unViewedBadge) {
@@ -16233,8 +16243,12 @@
             msgId: messages[messageId].wzrk_id,
             pivotId: messages[messageId].pivotId
           });
-          $ct.inbox.unviewedCounter--;
-          delete $ct.inbox.unviewedMessages[messageId];
+
+          if ($ct.inbox) {
+            $ct.inbox.unviewedCounter--;
+            delete $ct.inbox.unviewedMessages[messageId];
+          }
+
           saveInboxMessages(messages);
         } else {
           _classPrivateFieldLooseBase(this, _logger)[_logger].error('No message available for message Id ' + messageId);
@@ -16848,7 +16862,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.13.4';
+      return 'web-sdk-v1.13.5';
     }
 
     defineVariable(name, defaultValue) {
