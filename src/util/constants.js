@@ -91,10 +91,6 @@ export const CAMPAIGN_TYPES = {
   FOOTER_NOTIFICATION_2: null
 }
 
-export const CUSTOM_EVENT_KEYS = {
-  WEB_NATIVE_DISPLAY: 'CT_web_native_display'
-}
-
 export const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
   KV_PAIR: 'KV_Pair',
   JSON: 'JSON',

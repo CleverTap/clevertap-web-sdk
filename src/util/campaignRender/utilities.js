@@ -226,12 +226,12 @@ export const webNativeDisplayCampaignUtils = {
   doesCampaignPushCustomEvent: (campaign) => {
     return (
       [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(
-        campaign.msgContent.type
+        campaign?.msgContent?.type
       ) ||
-      (campaign.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER &&
-        campaign.display.details[0].selectorData
-          .map((s) => s.values.editor)
-          .includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON))
+      (campaign?.msgContent?.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER &&
+        campaign?.display?.details?.[0]?.selectorData
+          ?.map((s) => s?.values?.editor)
+          ?.includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON))
     )
   },
 
@@ -247,12 +247,12 @@ export const webNativeDisplayCampaignUtils = {
         WEB_NATIVE_TEMPLATES.BANNER,
         WEB_NATIVE_TEMPLATES.CAROUSEL,
         WEB_NATIVE_TEMPLATES.CUSTOM_HTML
-      ].includes(campaign.msgContent.type) ||
-      (WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === campaign.msgContent.type &&
-        campaign.display.details[0].selectorData
-          .some((s) =>
+      ].includes(campaign?.msgContent?.type) ||
+      (WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === campaign?.msgContent?.type &&
+        campaign?.display?.details?.[0]?.selectorData
+          ?.some((s) =>
             [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML,
-              WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s.values.editor)))
+              WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s?.values?.editor)))
     )
   },
 
@@ -280,15 +280,15 @@ export const webNativeDisplayCampaignUtils = {
     switch (type) {
       case WEB_NATIVE_TEMPLATES.BANNER:
       case WEB_NATIVE_TEMPLATES.CAROUSEL:
-        return [display.divSelector]
+        return [display?.divSelector]
 
       case WEB_NATIVE_TEMPLATES.CUSTOM_HTML:
-        return [display.divId]
+        return [display?.divId]
 
       case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-        return display.details?.[0]?.selectorData
-          ?.filter((s) => s.values.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML)
-          .map((s) => s.selector) || []
+        return display?.details?.[0]?.selectorData
+          ?.filter((s) => s?.values?.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML)
+          ?.map((s) => s?.selector) || []
 
       default:
         return []
@@ -304,7 +304,7 @@ export const webNativeDisplayCampaignUtils = {
   */
   shouldCurrentCustomEventCampaignBeSkipped (targetNotif, executedTargets) {
     const currentSameTypeCampaigns = executedTargets.customEvents.filter((customEvent) =>
-      customEvent.customEventType === targetNotif.msgContent.type
+      customEvent.customEventType === targetNotif?.msgContent?.type
     )
 
     let shouldSkip = false
@@ -312,9 +312,9 @@ export const webNativeDisplayCampaignUtils = {
     // If KV Pair, check for topic and type
     // if visual builder or JSON, just check for the type of event, because we do not have `topic`
     if (currentSameTypeCampaigns?.length) {
-      switch (targetNotif.msgContent.type) {
+      switch (targetNotif?.msgContent?.type) {
         case WEB_NATIVE_TEMPLATES.KV_PAIR:
-          if (currentSameTypeCampaigns.map(c => c.eventTopic)?.includes(targetNotif.display.kv.topic)) {
+          if (currentSameTypeCampaigns.map(c => c?.eventTopic)?.includes(targetNotif?.display?.kv?.topic)) {
             shouldSkip = true
           };
           break

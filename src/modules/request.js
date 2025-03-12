@@ -83,7 +83,13 @@ export default class RequestManager {
     let proto = document.location.protocol
     proto = proto.replace(':', '')
     dataObject.af = { ...dataObject.af, lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...$ct.flutterVersion } // app fields
-    if (sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
+    try {
+      if (sessionStorage.hasOwnProperty('WZRK_D') || sessionStorage.getItem('WZRK_D')) {
+        dataObject.debug = true
+      }
+    } catch (e) {
+      this.#logger.debug('Error in reading WZRK_D from session storage')
+    }
 
     return dataObject
   }
