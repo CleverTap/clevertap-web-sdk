@@ -1,4 +1,3 @@
-import { CUSTOM_EVENT_KEYS, CUSTOM_EVENTS_CAMPAIGN_SOURCES } from '../../util/constants'
 import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_QUERY_PARAMS } from './builder_constants'
 import { updateFormData, updateElementCSS } from './dataUpdate'
 
@@ -335,15 +334,7 @@ function dispatchJsonData (targetingMsgJson, selector, isPreview = false) {
     }
   }
 
-  // TODO: For Backwards compatibility, Need to announce and plan Deprecation of this event structure
-  const kvPairsEventOld = new CustomEvent('CT_web_native_display_buider', { detail: inaObj })
-  document.dispatchEvent(kvPairsEventOld)
-
-  const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-    detail: {
-      campaignDetails: inaObj, campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.VISUAL_BUILDER
-    }
-  })
+  const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', { detail: inaObj })
   document.dispatchEvent(kvPairsEvent)
 }
 

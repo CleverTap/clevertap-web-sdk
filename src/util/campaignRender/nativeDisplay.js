@@ -1,4 +1,4 @@
-import { CUSTOM_EVENT_KEYS, CUSTOM_EVENTS_CAMPAIGN_SOURCES, CUSTOM_HTML_PREVIEW } from '../constants'
+import { CUSTOM_HTML_PREVIEW } from '../constants'
 import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
 
@@ -41,16 +41,7 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
     inaObj.kv = targetingMsgJson.msgContent.kv
   }
 
-  // TODO: For Backwards compatibility, Need to announce and plan Deprecation of this event structure
-  const kvPairsEventOld = new CustomEvent('CT_web_native_display', { detail: inaObj })
-  document.dispatchEvent(kvPairsEventOld)
-
-  // combine all events from web native display under single event and add type
-  const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-    detail: {
-      campaignDetails: inaObj, campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.KV_PAIR
-    }
-  })
+  const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
   document.dispatchEvent(kvPairsEvent)
 }
 
@@ -113,15 +104,7 @@ export const handleJson = (targetingMsgJson) => {
     inaObj.json = json
   }
 
-  // TODO: For Backwards compatibility, Need to announce and plan Deprecation of this event structure
-  const jsonEventOld = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
-  document.dispatchEvent(jsonEventOld)
-
-  const jsonEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-    detail: {
-      campaignDetails: inaObj, campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.JSON
-    }
-  })
+  const jsonEvent = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
   document.dispatchEvent(jsonEvent)
 }
 
