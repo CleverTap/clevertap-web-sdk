@@ -238,7 +238,7 @@
     FOOTER_NOTIFICATION_2: null
   };
   const CUSTOM_EVENT_KEYS = {
-    WEB_NATIVE_DISPLAY: 'CT_web_native_display'
+    WEB_NATIVE_DISPLAY: 'CT_web_native_display_event'
   };
   const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
     KV_PAIR: 'KV_Pair',
@@ -11620,8 +11620,13 @@
       } else {
         inaObj.json = selector.json;
       }
-    }
+    } // TODO: For Backwards compatibility, Need to announce and plan Deprecation of this event structure
 
+
+    const kvPairsEventOld = new CustomEvent('CT_web_native_display_buider', {
+      detail: inaObj
+    });
+    document.dispatchEvent(kvPairsEventOld);
     const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
       detail: {
         campaignDetails: inaObj,
@@ -12312,8 +12317,13 @@
 
     if (targetingMsgJson.msgContent.kv != null) {
       inaObj.kv = targetingMsgJson.msgContent.kv;
-    } // combine all events from web native display under single event and add type
+    } // TODO: For Backwards compatibility, Need to announce and plan Deprecation of this event structure
 
+
+    const kvPairsEventOld = new CustomEvent('CT_web_native_display', {
+      detail: inaObj
+    });
+    document.dispatchEvent(kvPairsEventOld); // combine all events from web native display under single event and add type
 
     const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
       detail: {
@@ -12387,8 +12397,13 @@
 
     if (targetingMsgJson.display.json != null) {
       inaObj.json = json;
-    }
+    } // TODO: For Backwards compatibility, Need to announce and plan Deprecation of this event structure
 
+
+    const jsonEventOld = new CustomEvent('CT_web_native_display_json', {
+      detail: inaObj
+    });
+    document.dispatchEvent(jsonEventOld);
     const jsonEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
       detail: {
         campaignDetails: inaObj,

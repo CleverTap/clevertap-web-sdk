@@ -40,6 +40,11 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
   if (targetingMsgJson.msgContent.kv != null) {
     inaObj.kv = targetingMsgJson.msgContent.kv
   }
+
+  // TODO: For Backwards compatibility, Need to announce and plan Deprecation of this event structure
+  const kvPairsEventOld = new CustomEvent('CT_web_native_display', { detail: inaObj })
+  document.dispatchEvent(kvPairsEventOld)
+
   // combine all events from web native display under single event and add type
   const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
     detail: {
@@ -107,6 +112,11 @@ export const handleJson = (targetingMsgJson) => {
   if (targetingMsgJson.display.json != null) {
     inaObj.json = json
   }
+
+  // TODO: For Backwards compatibility, Need to announce and plan Deprecation of this event structure
+  const jsonEventOld = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
+  document.dispatchEvent(jsonEventOld)
+
   const jsonEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
     detail: {
       campaignDetails: inaObj, campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.JSON

@@ -92,7 +92,7 @@ export const CAMPAIGN_TYPES = {
 }
 
 export const CUSTOM_EVENT_KEYS = {
-  WEB_NATIVE_DISPLAY: 'CT_web_native_display'
+  WEB_NATIVE_DISPLAY: 'CT_web_native_display_event'
 }
 
 export const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
