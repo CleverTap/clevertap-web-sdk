@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.13.5] 12th Mar, 2025
+- Enhanced session storage check for WZRK_D with fallback and error handling.
+
 ## [1.13.4] 7th Mar, 2025
 - Added support to preview html for custom native html
 - Fixed white background around web-popup

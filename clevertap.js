@@ -11264,7 +11264,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '1.13.4';
+            const sdkVersion = '1.13.5';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -15095,13 +15095,17 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.13.4',
+        lib: 'web-sdk-v1.13.5',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
 
-      if (sessionStorage.hasOwnProperty('WZRK_D')) {
-        dataObject.debug = true;
+      try {
+        if (sessionStorage.hasOwnProperty('WZRK_D') || sessionStorage.getItem('WZRK_D')) {
+          dataObject.debug = true;
+        }
+      } catch (e) {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Error in reading WZRK_D from session storage');
       }
 
       return dataObject;
@@ -16848,7 +16852,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.13.4';
+      return 'web-sdk-v1.13.5';
     }
 
     defineVariable(name, defaultValue) {
