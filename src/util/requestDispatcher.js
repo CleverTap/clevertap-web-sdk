@@ -92,27 +92,7 @@ export default class RequestDispatcher {
       document.getElementsByTagName('head')[0].appendChild(s)
       this.logger.debug('req snt -> url: ' + url)
     } else {
-      try {
-        const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
-        if (!response.ok) {
-          throw new Error(`Network response was not ok: ${response.statusText}`)
-        }
-        const jsonResponse = await response.json()
-        console.log('Response received:', jsonResponse)
-        const { tr, meta, wpe } = jsonResponse
-        if (tr) {
-          window.$WZRK_WR.tr(tr)
-        }
-        if (meta) {
-          window.$WZRK_WR.s(meta)
-        }
-        if (wpe) {
-          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key)
-        }
-        this.logger.debug('req snt -> url: ' + url)
-      } catch (error) {
-        console.error('Fetch error:', error)
-      }
+      this.handleFetchResponse(url)
     }
   }
 
@@ -152,6 +132,30 @@ export default class RequestDispatcher {
       return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE)), this.logger))
     }
     return url
+  }
+
+  static async handleFetchResponse (url) {
+    try {
+      const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.statusText}`)
+      }
+      const jsonResponse = await response.json()
+      console.log('Response received:', jsonResponse)
+      const { tr, meta, wpe } = jsonResponse
+      if (tr) {
+        window.$WZRK_WR.tr(tr)
+      }
+      if (meta) {
+        window.$WZRK_WR.s(meta)
+      }
+      if (wpe) {
+        window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key)
+      }
+      this.logger.debug('req snt -> url: ' + url)
+    } catch (error) {
+      console.error('Fetch error:', error)
+    }
   }
 
   getDelayFrequency () {
