@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.13.6] 13th Mar, 2025
+- Fixed Overlay issue for soft prompt
+
 ## [1.13.5] 7th Mar, 2025
 - Added Null Checks for Web Native Campaigns Utils
 - Fixed WebInbox Runtime Issues

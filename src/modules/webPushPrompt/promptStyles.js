@@ -14,8 +14,7 @@ export const getBoxPromptStyles = (style) => {
        padding: 0px;
        text-align: left;
     }
-
-    #pnOverlay {
+    ${style.overlay.enabled ? `#pnOverlay {
       background-color: ${style.overlay.color || 'rgba(0, 0, 0, .15)'};
       position: fixed;
       left: 0;
@@ -24,7 +23,7 @@ export const getBoxPromptStyles = (style) => {
       bottom: 0;
       z-index: 10000
     }
-
+` : ''}
     #pnCard {
       background-color: ${style.card.color};
       border-radius: ${style.card.borderRadius}px;
