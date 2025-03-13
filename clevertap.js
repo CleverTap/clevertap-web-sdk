@@ -8494,6 +8494,45 @@
       _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
     }
 
+    static async handleFetchResponse(url) {
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Network response was not ok: ".concat(response.statusText));
+        }
+
+        const jsonResponse = await response.json();
+        console.log('Response received:', jsonResponse);
+        const {
+          tr,
+          meta,
+          wpe
+        } = jsonResponse;
+
+        if (tr) {
+          window.$WZRK_WR.tr(tr);
+        }
+
+        if (meta) {
+          window.$WZRK_WR.s(meta);
+        }
+
+        if (wpe) {
+          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key);
+        }
+
+        this.logger.debug('req snt -> url: ' + url);
+      } catch (error) {
+        console.error('Fetch error:', error);
+      }
+    }
+
     getDelayFrequency() {
       this.logger.debug('Network retry #' + this.networkRetryCount); // Retry with delay as 1s for first 10 retries
 
@@ -8655,42 +8694,7 @@
       document.getElementsByTagName('head')[0].appendChild(s);
       this.logger.debug('req snt -> url: ' + url);
     } else {
-      try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error("Network response was not ok: ".concat(response.statusText));
-        }
-
-        const jsonResponse = await response.json();
-        console.log('Response received:', jsonResponse);
-        const {
-          tr,
-          meta,
-          wpe
-        } = jsonResponse;
-
-        if (tr) {
-          window.$WZRK_WR.tr(tr);
-        }
-
-        if (meta) {
-          window.$WZRK_WR.s(meta);
-        }
-
-        if (wpe) {
-          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key);
-        }
-
-        this.logger.debug('req snt -> url: ' + url);
-      } catch (error) {
-        console.error('Fetch error:', error);
-      }
+      this.handleFetchResponse(url);
     }
   };
 
