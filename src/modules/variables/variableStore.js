@@ -1,5 +1,7 @@
 import { VARIABLES, WZRK_FETCH } from '../../util/constants'
 import { StorageManager, $ct } from '../../util/storage'
+import { flattenObjectToDotNotation } from '../../util/helpers'
+
 class VariableStore {
   #logger
   #account
@@ -70,9 +72,25 @@ class VariableStore {
     }
 
     for (const name in this.#variables) {
-      payload.vars[name] = {
-        defaultValue: this.#variables[name].defaultValue,
-        type: this.#variables[name].type
+      if (typeof this.#variables[name].defaultValue === 'object') {
+        const flattenedPayload = flattenObjectToDotNotation({
+          [this.#variables[name]?.name]: this.#variables[name].defaultValue
+        })
+        for (const key in flattenedPayload) {
+          payload.vars[key] = {
+            defaultValue: flattenedPayload[key].defaultValue,
+            type: flattenedPayload[key].type
+          }
+        }
+      } else if (this.#variables[name].type === 'file') {
+        payload.vars[name] = {
+          type: this.#variables[name].type
+        }
+      } else {
+        payload.vars[name] = {
+          defaultValue: this.#variables[name].defaultValue,
+          type: this.#variables[name].type
+        }
       }
     }
 

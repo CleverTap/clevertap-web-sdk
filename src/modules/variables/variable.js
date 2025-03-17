@@ -1,3 +1,5 @@
+import { objectHasNestedArrayOrFunction } from '../../util/helpers'
+
 export class Variable {
   #variableStore
 
@@ -50,8 +52,13 @@ export class Variable {
     }
 
     const typeOfDefaultValue = typeof defaultValue
-    if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean') {
+    if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean' && typeOfDefaultValue !== 'object') {
       console.error('Only primitive types (string, number, boolean) are accepted as value')
+      return null
+    }
+
+    if (typeOfDefaultValue === 'object' && objectHasNestedArrayOrFunction(defaultValue)) {
+      console.error('Nested arrays/functions are not supported in JSON variables')
       return null
     }
 
@@ -72,6 +79,24 @@ export class Variable {
       console.error(error)
     }
     return varInstance
+  }
+
+  static defineFileVar (name, variableStore) {
+    if (!name || typeof name !== 'string' || name.startsWith('.') || name.endsWith('.')) {
+      console.error('Empty or invalid name parameter provided.')
+      return null
+    }
+
+    const varInstance = new Variable({ variableStore })
+    try {
+      varInstance.name = name
+      varInstance.defaultValue = ''
+      varInstance.type = 'file'
+      variableStore.registerVariable(varInstance)
+      varInstance.update(varInstance.defaultValue)
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   /**
