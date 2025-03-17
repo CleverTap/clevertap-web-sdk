@@ -128,15 +128,18 @@ export class CTWebPopupImageOnly extends HTMLElement {
         case ACTION_TYPES.OPEN_LINK:
         default:
           targetMsg.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
+          this.removeImgOnlyPopup(targetMsg, false)
       }
     }
 
-    removeImgOnlyPopup (targetMsg) {
+    removeImgOnlyPopup (targetMsg, closePopup = true) {
       const campaignId = targetMsg.wzrk_id.split('_')[0]
       const currentSessionId = this.session.sessionId
-      this.resizeObserver.unobserve(this.popup)
-      document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
-      this.remove()
+      if (closePopup) {
+        this.resizeObserver.unobserve(this.popup)
+        document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
+        this.remove()
+      }
       if (campaignId != null && campaignId !== '-1') {
         if (StorageManager._isLocalStorageSupported()) {
           const campaignObj = getCampaignObject()
