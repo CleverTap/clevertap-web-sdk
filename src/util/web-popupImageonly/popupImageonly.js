@@ -63,12 +63,16 @@ export class CTWebPopupImageOnly extends HTMLElement {
       this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container))
       this.resizeObserver.observe(this.popup)
 
-      this.closeIcon.addEventListener('click', this.removeImgOnlyPopup)
+      this.closeIcon.addEventListener('click', () => {
+        this.removeImgOnlyPopup(this.target)
+      })
 
       window.clevertap.renderNotificationViewed({ msgId: this.msgId, pivotId: this.pivotId })
 
       if (this.onClickUrl) {
-        this.popup.addEventListener('click', this.handlePopupClick)
+        this.popup.addEventListener('click', () => {
+          this.handlePopupClick(this.target)
+        })
       }
     }
 
@@ -102,8 +106,8 @@ export class CTWebPopupImageOnly extends HTMLElement {
       return img.height * ratio
     }
 
-    handlePopupClick () {
-      if (!this.target.display.preview) {
+    handlePopupClick (targetMsg) {
+      if (!targetMsg.display.preview) {
         window.clevertap.renderNotificationClicked({
           msgId: this.msgId,
           pivotId: this.pivotId
@@ -111,24 +115,24 @@ export class CTWebPopupImageOnly extends HTMLElement {
       }
       switch (this.onClickAction) {
         case ACTION_TYPES.OPEN_LINK_AND_CLOSE:
-          this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
-          this.removeImgOnlyPopup()
+          targetMsg.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
+          this.removeImgOnlyPopup(targetMsg)
           break
         case ACTION_TYPES.PUSH_PROMPT:
           window.clevertap.notifications.push({
             skipDialog: true
           })
-          this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
-          this.removeImgOnlyPopup()
+          targetMsg.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
+          this.removeImgOnlyPopup(targetMsg)
           break
         case ACTION_TYPES.OPEN_LINK:
         default:
-          this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
+          targetMsg.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
       }
     }
 
-    removeImgOnlyPopup () {
-      const campaignId = this.target.wzrk_id.split('_')[0]
+    removeImgOnlyPopup (targetMsg) {
+      const campaignId = targetMsg.wzrk_id.split('_')[0]
       const currentSessionId = this.session.sessionId
       this.resizeObserver.unobserve(this.popup)
       document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
