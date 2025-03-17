@@ -8492,7 +8492,6 @@
         }
 
         const jsonResponse = await response.json();
-        console.log('Response received:', jsonResponse);
         const {
           tr,
           meta,
@@ -8513,7 +8512,7 @@
 
         this.logger.debug('req snt -> url: ' + url);
       } catch (error) {
-        console.error('Fetch error:', error);
+        this.logger.error('Fetch error:', error);
       }
     }
 

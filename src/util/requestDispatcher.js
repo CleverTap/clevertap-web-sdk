@@ -141,7 +141,6 @@ export default class RequestDispatcher {
         throw new Error(`Network response was not ok: ${response.statusText}`)
       }
       const jsonResponse = await response.json()
-      console.log('Response received:', jsonResponse)
       const { tr, meta, wpe } = jsonResponse
       if (tr) {
         window.$WZRK_WR.tr(tr)
@@ -154,7 +153,7 @@ export default class RequestDispatcher {
       }
       this.logger.debug('req snt -> url: ' + url)
     } catch (error) {
-      console.error('Fetch error:', error)
+      this.logger.error('Fetch error:', error)
     }
   }
 
