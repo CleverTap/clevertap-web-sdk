@@ -1,3 +1,5 @@
+import { objectHasNestedArray } from '../../util/helpers'
+
 export class Variable {
   #variableStore
 
@@ -50,8 +52,13 @@ export class Variable {
     }
 
     const typeOfDefaultValue = typeof defaultValue
-    if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean') {
+    if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean' && typeOfDefaultValue !== 'object') {
       console.error('Only primitive types (string, number, boolean) are accepted as value')
+      return null
+    }
+
+    if (typeOfDefaultValue === 'object' && objectHasNestedArray(defaultValue)) {
+      console.error('Nested arrays are not supported in JSON variables')
       return null
     }
 

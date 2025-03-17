@@ -12451,6 +12451,51 @@
 
     return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
   };
+  /**
+   * Recursively checks if an object contains an array at any level of nesting.
+   *
+   * @param {Object} obj - The object to check.
+   * @returns {boolean} - Returns `true` if the object contains an array, otherwise `false`.
+   */
+
+  const objectHasNestedArray = obj => {
+    if (!obj || typeof obj !== 'object') return false;
+    if (Array.isArray(obj)) return true;
+    return Object.values(obj).some(objectHasNestedArray);
+  };
+  /**
+   * Flattens a nested object into a single-level object using dot notation.
+   * Arrays are ignored in this transformation.
+   *
+   * @param {Object} obj - The object to be flattened.
+   * @param {string} [parentKey=""] - The parent key for recursion (used internally).
+   * @returns {Object} - The transformed object with dot notation keys.
+   */
+
+  const flattenObjectToDotNotation = function (obj) {
+    let parentKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+    const result = {};
+
+    for (const key in obj) {
+      if (Object.hasOwnProperty.call(obj, key)) {
+        const value = obj[key];
+        const newKey = parentKey ? "".concat(parentKey, ".").concat(key) : key;
+
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          // Recursively process nested objects
+          Object.assign(result, flattenObjectToDotNotation(value, newKey));
+        } else if (!Array.isArray(value)) {
+          // Assign non-array values directly
+          result[newKey] = {
+            defaultValue: value,
+            type: typeof value
+          };
+        }
+      }
+    }
+
+    return result;
+  };
 
   var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
 
@@ -15470,8 +15515,13 @@
 
       const typeOfDefaultValue = typeof defaultValue;
 
-      if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean') {
+      if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean' && typeOfDefaultValue !== 'object') {
         console.error('Only primitive types (string, number, boolean) are accepted as value');
+        return null;
+      }
+
+      if (typeOfDefaultValue === 'object' && objectHasNestedArray(defaultValue)) {
+        console.error('Nested arrays are not supported in JSON variables');
         return null;
       }
 
@@ -15707,10 +15757,25 @@
       };
 
       for (const name in _classPrivateFieldLooseBase(this, _variables)[_variables]) {
-        payload.vars[name] = {
-          defaultValue: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue,
-          type: _classPrivateFieldLooseBase(this, _variables)[_variables][name].type
-        };
+        if (typeof _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue === 'object') {
+          var _classPrivateFieldLoo;
+
+          const flattenedPayload = flattenObjectToDotNotation({
+            [(_classPrivateFieldLoo = _classPrivateFieldLooseBase(this, _variables)[_variables][name]) === null || _classPrivateFieldLoo === void 0 ? void 0 : _classPrivateFieldLoo.name]: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue
+          });
+
+          for (const key in flattenedPayload) {
+            payload.vars[key] = {
+              defaultValue: flattenedPayload[key].defaultValue,
+              type: flattenedPayload[key].type
+            };
+          }
+        } else {
+          payload.vars[name] = {
+            defaultValue: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue,
+            type: _classPrivateFieldLooseBase(this, _variables)[_variables][name].type
+          };
+        }
       } // Check if payload.vars is empty
 
 
