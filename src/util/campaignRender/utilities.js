@@ -185,17 +185,17 @@ export const setupClickEvent = (
             // Will get the url to open
             if (targetingMsgJson.display.window === 1) {
               window.open(onClick, '_blank')
-              if (targetingMsgJson.display['close-popup']) {
-                closeIframe(campaignId, divId, _session.sessionId)
-              }
-              if (!targetingMsgJson.display.preview) {
-                window.parent.clevertap.renderNotificationClicked({
-                  msgId: targetingMsgJson.wzrk_id,
-                  pivotId: targetingMsgJson.wzrk_pivot
-                })
-              }
             } else {
               window.location = onClick
+            }
+            if (targetingMsgJson.display['close-popup']) {
+              closeIframe(campaignId, divId, _session.sessionId)
+            }
+            if (!targetingMsgJson.display.preview) {
+              window.parent.clevertap.renderNotificationClicked({
+                msgId: targetingMsgJson.wzrk_id,
+                pivotId: targetingMsgJson.wzrk_pivot
+              })
             }
           }
         }

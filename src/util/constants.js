@@ -111,3 +111,9 @@ export const KEYS_TO_ENCRYPT = [
   LRU_CACHE,
   PR_COOKIE
 ]
+
+export const ACTION_TYPES = {
+  OPEN_LINK: 'url',
+  PUSH_PROMPT: 'pushPrompt',
+  OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
+}

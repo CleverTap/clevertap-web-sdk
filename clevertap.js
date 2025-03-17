@@ -239,6 +239,11 @@
   };
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
+  const ACTION_TYPES = {
+    OPEN_LINK: 'url',
+    PUSH_PROMPT: 'pushPrompt',
+    OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
+  };
 
   const isString = input => {
     return typeof input === 'string' || input instanceof String;
@@ -9959,9 +9964,11 @@
       return this.target.display.onClickUrl;
     }
 
+    get onClickAction() {
+      return this.target.display.onClickAction;
+    }
+
     renderImageOnlyPopup() {
-      const campaignId = this.target.wzrk_id.split('_')[0];
-      const currentSessionId = this.session.sessionId;
       this.shadow.innerHTML = this.getImageOnlyPopupContent();
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
       this.container = this.shadowRoot.getElementById('container');
@@ -9969,39 +9976,14 @@
       this.popup.addEventListener('load', this.updateImageAndContainerWidth());
       this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container));
       this.resizeObserver.observe(this.popup);
-      this.closeIcon.addEventListener('click', () => {
-        this.resizeObserver.unobserve(this.popup);
-        document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
-        this.remove();
-
-        if (campaignId != null && campaignId !== '-1') {
-          if (StorageManager._isLocalStorageSupported()) {
-            const campaignObj = getCampaignObject();
-            let sessionCampaignObj = campaignObj.wp[currentSessionId];
-
-            if (sessionCampaignObj == null) {
-              sessionCampaignObj = {};
-              campaignObj[currentSessionId] = sessionCampaignObj;
-            }
-
-            sessionCampaignObj[campaignId] = 'dnd';
-            saveCampaignObject(campaignObj);
-          }
-        }
-      });
+      this.closeIcon.addEventListener('click', this.removeImgOnlyPopup);
       window.clevertap.renderNotificationViewed({
         msgId: this.msgId,
         pivotId: this.pivotId
       });
 
       if (this.onClickUrl) {
-        this.popup.addEventListener('click', () => {
-          this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
-          window.clevertap.renderNotificationClicked({
-            msgId: this.msgId,
-            pivotId: this.pivotId
-          });
-        });
+        this.popup.addEventListener('click', this.handlePopupClick);
       }
     }
 
@@ -10030,6 +10012,57 @@
     getRenderedImageWidth(img) {
       const ratio = img.naturalWidth / img.naturalHeight;
       return img.height * ratio;
+    }
+
+    handlePopupClick() {
+      if (!this.target.display.preview) {
+        window.clevertap.renderNotificationClicked({
+          msgId: this.msgId,
+          pivotId: this.pivotId
+        });
+      }
+
+      switch (this.onClickAction) {
+        case ACTION_TYPES.OPEN_LINK_AND_CLOSE:
+          this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
+          this.removeImgOnlyPopup();
+          break;
+
+        case ACTION_TYPES.PUSH_PROMPT:
+          window.clevertap.notifications.push({
+            skipDialog: true
+          });
+          this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
+          this.removeImgOnlyPopup();
+          break;
+
+        case ACTION_TYPES.OPEN_LINK:
+        default:
+          this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
+      }
+    }
+
+    removeImgOnlyPopup() {
+      const campaignId = this.target.wzrk_id.split('_')[0];
+      const currentSessionId = this.session.sessionId;
+      this.resizeObserver.unobserve(this.popup);
+      document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
+      this.remove();
+
+      if (campaignId != null && campaignId !== '-1') {
+        if (StorageManager._isLocalStorageSupported()) {
+          const campaignObj = getCampaignObject();
+          let sessionCampaignObj = campaignObj.wp[currentSessionId];
+
+          if (sessionCampaignObj == null) {
+            sessionCampaignObj = {};
+            campaignObj[currentSessionId] = sessionCampaignObj;
+          }
+
+          sessionCampaignObj[campaignId] = 'dnd';
+          saveCampaignObject(campaignObj);
+        }
+      }
     }
 
   }
@@ -12105,19 +12138,19 @@
               // Will get the url to open
               if (targetingMsgJson.display.window === 1) {
                 window.open(onClick, '_blank');
-
-                if (targetingMsgJson.display['close-popup']) {
-                  closeIframe(campaignId, divId, _session.sessionId);
-                }
-
-                if (!targetingMsgJson.display.preview) {
-                  window.parent.clevertap.renderNotificationClicked({
-                    msgId: targetingMsgJson.wzrk_id,
-                    pivotId: targetingMsgJson.wzrk_pivot
-                  });
-                }
               } else {
                 window.location = onClick;
+              }
+
+              if (targetingMsgJson.display['close-popup']) {
+                closeIframe(campaignId, divId, _session.sessionId);
+              }
+
+              if (!targetingMsgJson.display.preview) {
+                window.parent.clevertap.renderNotificationClicked({
+                  msgId: targetingMsgJson.wzrk_id,
+                  pivotId: targetingMsgJson.wzrk_pivot
+                });
               }
             }
           }
