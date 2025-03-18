@@ -64,14 +64,45 @@ export class CTWebPopupImageOnly extends HTMLElement {
       this.resizeObserver.observe(this.popup)
 
       this.closeIcon.addEventListener('click', () => {
-        this.removeImgOnlyPopup(this.target)
+        const campaignId = this.target.wzrk_id.split('_')[0]
+        const currentSessionId = this.session.sessionId
+        this.resizeObserver.unobserve(this.popup)
+        document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
+        this.remove()
+        if (campaignId != null && campaignId !== '-1') {
+          if (StorageManager._isLocalStorageSupported()) {
+            const campaignObj = getCampaignObject()
+
+            let sessionCampaignObj = campaignObj.wp[currentSessionId]
+            if (sessionCampaignObj == null) {
+              sessionCampaignObj = {}
+              campaignObj[currentSessionId] = sessionCampaignObj
+            }
+            sessionCampaignObj[campaignId] = 'dnd'
+            saveCampaignObject(campaignObj)
+          }
+        }
       })
 
       window.clevertap.renderNotificationViewed({ msgId: this.msgId, pivotId: this.pivotId })
 
       if (this.onClickUrl) {
         this.popup.addEventListener('click', () => {
-          this.handlePopupClick(this.target)
+          if (!this.target.display.preview) {
+            window.clevertap.renderNotificationClicked({
+              msgId: this.msgId,
+              pivotId: this.pivotId
+            })
+          }
+          switch (this.onClickAction) {
+            case ACTION_TYPES.OPEN_LINK_AND_CLOSE:
+              this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
+              this.closeIcon.click()
+              break
+            case ACTION_TYPES.OPEN_LINK:
+            default:
+              this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
+          }
         })
       }
     }
@@ -104,47 +135,5 @@ export class CTWebPopupImageOnly extends HTMLElement {
     getRenderedImageWidth (img) {
       const ratio = img.naturalWidth / img.naturalHeight
       return img.height * ratio
-    }
-
-    handlePopupClick (targetMsg) {
-      if (!targetMsg.display.preview) {
-        window.clevertap.renderNotificationClicked({
-          msgId: this.msgId,
-          pivotId: this.pivotId
-        })
-      }
-      switch (this.onClickAction) {
-        case ACTION_TYPES.OPEN_LINK_AND_CLOSE:
-          targetMsg.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
-          this.removeImgOnlyPopup(targetMsg)
-          break
-        case ACTION_TYPES.OPEN_LINK:
-        default:
-          targetMsg.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
-          this.removeImgOnlyPopup(targetMsg, false)
-      }
-    }
-
-    removeImgOnlyPopup (targetMsg, closePopup = true) {
-      const campaignId = targetMsg.wzrk_id.split('_')[0]
-      const currentSessionId = this.session.sessionId
-      if (closePopup) {
-        this.resizeObserver.unobserve(this.popup)
-        document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
-        this.remove()
-      }
-      if (campaignId != null && campaignId !== '-1') {
-        if (StorageManager._isLocalStorageSupported()) {
-          const campaignObj = getCampaignObject()
-
-          let sessionCampaignObj = campaignObj.wp[currentSessionId]
-          if (sessionCampaignObj == null) {
-            sessionCampaignObj = {}
-            campaignObj[currentSessionId] = sessionCampaignObj
-          }
-          sessionCampaignObj[campaignId] = 'dnd'
-          saveCampaignObject(campaignObj)
-        }
-      }
     }
 }
