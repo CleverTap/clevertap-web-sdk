@@ -82,6 +82,10 @@ class VariableStore {
             type: flattenedPayload[key].type
           }
         }
+      } else if (this.#variables[name].type === 'file') {
+        payload.vars[name] = {
+          type: this.#variables[name].type
+        }
       } else {
         payload.vars[name] = {
           defaultValue: this.#variables[name].defaultValue,

@@ -12452,16 +12452,16 @@
     return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
   };
   /**
-   * Recursively checks if an object contains an array at any level of nesting.
+   * Recursively checks if an object contains an array or a function at any level of nesting.
    *
    * @param {Object} obj - The object to check.
-   * @returns {boolean} - Returns `true` if the object contains an array, otherwise `false`.
+   * @returns {boolean} - Returns `true` if the object contains an array or function, otherwise `false`.
    */
 
-  const objectHasNestedArray = obj => {
+  const objectHasNestedArrayOrFunction = obj => {
     if (!obj || typeof obj !== 'object') return false;
     if (Array.isArray(obj)) return true;
-    return Object.values(obj).some(objectHasNestedArray);
+    return Object.values(obj).some(value => typeof value === 'function' || objectHasNestedArrayOrFunction(value));
   };
   /**
    * Flattens a nested object into a single-level object using dot notation.
@@ -12491,6 +12491,36 @@
             type: typeof value
           };
         }
+      }
+    }
+
+    return result;
+  };
+  /**
+   * Reconstructs an object from a flat key-value structure using dot notation.
+   *
+   * @param {Object} payload - The input object with flat dot notation keys.
+   * @returns {Object} - The reconstructed object with proper nesting.
+   */
+
+  const reconstructNestedObject = payload => {
+    const result = {};
+
+    for (const key in payload) {
+      if (Object.hasOwnProperty.call(payload, key)) {
+        const value = payload[key];
+        const keys = key.split('.'); // Split keys on dot notation
+
+        let current = result;
+        keys.forEach((part, index) => {
+          if (index === keys.length - 1) {
+            // Assign value at the last key level
+            current[part] = value;
+          } else {
+            // Ensure intermediate levels exist
+            current = current[part] = current[part] || {};
+          }
+        });
       }
     }
 
@@ -15520,8 +15550,8 @@
         return null;
       }
 
-      if (typeOfDefaultValue === 'object' && objectHasNestedArray(defaultValue)) {
-        console.error('Nested arrays are not supported in JSON variables');
+      if (typeOfDefaultValue === 'object' && objectHasNestedArrayOrFunction(defaultValue)) {
+        console.error('Nested arrays/functions are not supported in JSON variables');
         return null;
       }
 
@@ -15547,6 +15577,27 @@
       }
 
       return varInstance;
+    }
+
+    static defineFileVar(name, variableStore) {
+      if (!name || typeof name !== 'string' || name.startsWith('.') || name.endsWith('.')) {
+        console.error('Empty or invalid name parameter provided.');
+        return null;
+      }
+
+      const varInstance = new Variable({
+        variableStore
+      });
+
+      try {
+        varInstance.name = name;
+        varInstance.defaultValue = '';
+        varInstance.type = 'file';
+        variableStore.registerVariable(varInstance);
+        varInstance.update(varInstance.defaultValue);
+      } catch (error) {
+        console.error(error);
+      }
     }
     /**
      * Updates the variable's value, triggering callbacks if hasVarsRequestCompleted is returned true.
@@ -15770,6 +15821,10 @@
               type: flattenedPayload[key].type
             };
           }
+        } else if (_classPrivateFieldLooseBase(this, _variables)[_variables][name].type === 'file') {
+          payload.vars[name] = {
+            type: _classPrivateFieldLooseBase(this, _variables)[_variables][name].type
+          };
         } else {
           payload.vars[name] = {
             defaultValue: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue,
@@ -16938,6 +16993,10 @@
       return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore]);
     }
 
+    defineFileVar(name) {
+      return Variable.defineFileVar(name, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore]);
+    }
+
     syncVariables(onSyncSuccess, onSyncFailure) {
       if (_classPrivateFieldLooseBase(this, _logger)[_logger].logLevel === 4) {
         return _classPrivateFieldLooseBase(this, _variableStore)[_variableStore].syncVariables(onSyncSuccess, onSyncFailure);
@@ -16952,6 +17011,23 @@
 
     fetchVariables(onFetchCallback) {
       _classPrivateFieldLooseBase(this, _variableStore)[_variableStore].fetchVariables(onFetchCallback);
+    }
+
+    getVariables() {
+      return reconstructNestedObject(JSON.parse(decodeURIComponent(localStorage.getItem(VARIABLES))));
+    }
+
+    getVariableValue(variableName) {
+      const variables = JSON.parse(decodeURIComponent(localStorage.getItem(VARIABLES)));
+      const reconstructedVariables = reconstructNestedObject(variables);
+
+      if (variables.hasOwnProperty(variableName)) {
+        return variables[variableName];
+      } else if (reconstructedVariables.hasOwnProperty(variableName)) {
+        return reconstructedVariables[variableName];
+      } else {
+        return null;
+      }
     }
 
     addVariablesChangedCallback(callback) {
