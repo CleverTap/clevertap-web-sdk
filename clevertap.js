@@ -10032,14 +10032,6 @@
           this.removeImgOnlyPopup(targetMsg);
           break;
 
-        case ACTION_TYPES.PUSH_PROMPT:
-          window.clevertap.notifications.push({
-            skipDialog: true
-          });
-          targetMsg.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
-          this.removeImgOnlyPopup(targetMsg);
-          break;
-
         case ACTION_TYPES.OPEN_LINK:
         default:
           targetMsg.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
@@ -12147,19 +12139,19 @@
               // Will get the url to open
               if (targetingMsgJson.display.window === 1) {
                 window.open(onClick, '_blank');
+
+                if (targetingMsgJson.display['close-popup']) {
+                  closeIframe(campaignId, divId, _session.sessionId);
+                }
+
+                if (!targetingMsgJson.display.preview) {
+                  window.parent.clevertap.renderNotificationClicked({
+                    msgId: targetingMsgJson.wzrk_id,
+                    pivotId: targetingMsgJson.wzrk_pivot
+                  });
+                }
               } else {
                 window.location = onClick;
-              }
-
-              if (targetingMsgJson.display['close-popup']) {
-                closeIframe(campaignId, divId, _session.sessionId);
-              }
-
-              if (!targetingMsgJson.display.preview) {
-                window.parent.clevertap.renderNotificationClicked({
-                  msgId: targetingMsgJson.wzrk_id,
-                  pivotId: targetingMsgJson.wzrk_pivot
-                });
               }
             }
           }

@@ -118,13 +118,6 @@ export class CTWebPopupImageOnly extends HTMLElement {
           targetMsg.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
           this.removeImgOnlyPopup(targetMsg)
           break
-        case ACTION_TYPES.PUSH_PROMPT:
-          window.clevertap.notifications.push({
-            skipDialog: true
-          })
-          targetMsg.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
-          this.removeImgOnlyPopup(targetMsg)
-          break
         case ACTION_TYPES.OPEN_LINK:
         default:
           targetMsg.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
