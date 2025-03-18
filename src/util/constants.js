@@ -114,6 +114,5 @@ export const KEYS_TO_ENCRYPT = [
 
 export const ACTION_TYPES = {
   OPEN_LINK: 'url',
-  PUSH_PROMPT: 'pushPrompt',
   OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
 }
