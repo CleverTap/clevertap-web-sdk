@@ -84,7 +84,12 @@ export class CTWebPopupImageOnly extends HTMLElement {
         }
       })
 
-      window.clevertap.renderNotificationViewed({ msgId: this.msgId, pivotId: this.pivotId })
+      if (!this.target.display.preview) {
+        window.clevertap.renderNotificationViewed({
+          msgId: this.msgId,
+          pivotId: this.pivotId
+        })
+      }
 
       if (this.onClickUrl) {
         this.popup.addEventListener('click', () => {
