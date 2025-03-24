@@ -41,24 +41,24 @@ export class Variable {
    * @param {VariableStore} variableStore - The VariableStore instance for registration.
    * @returns {Variable|null} - The created Variable instance or null if invalid parameters are provided.
    */
-  static define (name, defaultValue, variableStore) {
+  static define (name, defaultValue, variableStore, logger) {
     if (!name || typeof name !== 'string') {
-      console.error('Empty or invalid name parameter provided.')
+      logger.error('Empty or invalid name parameter provided.')
       return null
     }
     if (name.startsWith('.') || name.endsWith('.')) {
-      console.error('Variable name starts or ends with a `.` which is not allowed: ' + name)
+      logger.error('Variable name starts or ends with a `.` which is not allowed: ' + name)
       return null
     }
 
     const typeOfDefaultValue = typeof defaultValue
     if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean' && typeOfDefaultValue !== 'object') {
-      console.error('Only primitive types (string, number, boolean) are accepted as value')
+      logger.error('Only (string, number, boolean, objects) are accepted as value')
       return null
     }
 
     if (typeOfDefaultValue === 'object' && objectHasNestedArrayOrFunction(defaultValue)) {
-      console.error('Nested arrays/functions are not supported in JSON variables')
+      logger.error('Nested arrays/functions are not supported in JSON variables')
       return null
     }
 
@@ -76,14 +76,14 @@ export class Variable {
       variableStore.registerVariable(varInstance)
       varInstance.update(defaultValue)
     } catch (error) {
-      console.error(error)
+      logger.error(error)
     }
     return varInstance
   }
 
-  static defineFileVar (name, variableStore) {
+  static defineFileVar (name, variableStore, logger) {
     if (!name || typeof name !== 'string' || name.startsWith('.') || name.endsWith('.')) {
-      console.error('Empty or invalid name parameter provided.')
+      logger.error('Empty or invalid name parameter provided.')
       return null
     }
 
@@ -95,7 +95,7 @@ export class Variable {
       variableStore.registerVariable(varInstance)
       varInstance.update(varInstance.defaultValue)
     } catch (error) {
-      console.error(error)
+      logger.error(error)
     }
   }
 
@@ -131,9 +131,9 @@ export class Variable {
    * Adds a callback function to the array and triggers it immediately if variable requests have completed.
    * @param {Function} onValueChanged - The callback function to be added.
    */
-  addValueChangedCallback (onValueChanged) {
+  addValueChangedCallback (onValueChanged, logger) {
     if (!onValueChanged) {
-      console.log('Invalid callback parameter provided.')
+      logger.log('Invalid callback parameter provided.')
       return
     }
     this.valueChangedCallbacks.push(onValueChanged)

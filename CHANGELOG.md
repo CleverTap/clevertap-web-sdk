@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.13.8] 24th Mar, 2025
+## [1.14.0] 24th Mar, 2025
 - Added JSON and File Vars Support
 
 ## [1.13.7] 19th Mar, 2025

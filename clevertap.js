@@ -11280,7 +11280,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '1.13.8';
+            const sdkVersion = '1.14.0';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -15200,7 +15200,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.13.8',
+        lib: 'web-sdk-v1.14.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -15555,26 +15555,26 @@
      */
 
 
-    static define(name, defaultValue, variableStore) {
+    static define(name, defaultValue, variableStore, logger) {
       if (!name || typeof name !== 'string') {
-        console.error('Empty or invalid name parameter provided.');
+        logger.error('Empty or invalid name parameter provided.');
         return null;
       }
 
       if (name.startsWith('.') || name.endsWith('.')) {
-        console.error('Variable name starts or ends with a `.` which is not allowed: ' + name);
+        logger.error('Variable name starts or ends with a `.` which is not allowed: ' + name);
         return null;
       }
 
       const typeOfDefaultValue = typeof defaultValue;
 
       if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean' && typeOfDefaultValue !== 'object') {
-        console.error('Only primitive types (string, number, boolean) are accepted as value');
+        logger.error('Only (string, number, boolean, objects) are accepted as value');
         return null;
       }
 
       if (typeOfDefaultValue === 'object' && objectHasNestedArrayOrFunction(defaultValue)) {
-        console.error('Nested arrays/functions are not supported in JSON variables');
+        logger.error('Nested arrays/functions are not supported in JSON variables');
         return null;
       }
 
@@ -15596,15 +15596,15 @@
         variableStore.registerVariable(varInstance);
         varInstance.update(defaultValue);
       } catch (error) {
-        console.error(error);
+        logger.error(error);
       }
 
       return varInstance;
     }
 
-    static defineFileVar(name, variableStore) {
+    static defineFileVar(name, variableStore, logger) {
       if (!name || typeof name !== 'string' || name.startsWith('.') || name.endsWith('.')) {
-        console.error('Empty or invalid name parameter provided.');
+        logger.error('Empty or invalid name parameter provided.');
         return null;
       }
 
@@ -15619,7 +15619,7 @@
         variableStore.registerVariable(varInstance);
         varInstance.update(varInstance.defaultValue);
       } catch (error) {
-        console.error(error);
+        logger.error(error);
       }
     }
     /**
@@ -15661,9 +15661,9 @@
      */
 
 
-    addValueChangedCallback(onValueChanged) {
+    addValueChangedCallback(onValueChanged, logger) {
       if (!onValueChanged) {
-        console.log('Invalid callback parameter provided.');
+        logger.log('Invalid callback parameter provided.');
         return;
       }
 
@@ -17009,15 +17009,15 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.13.8';
+      return 'web-sdk-v1.14.0';
     }
 
     defineVariable(name, defaultValue) {
-      return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore]);
+      return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore], _classPrivateFieldLooseBase(this, _logger)[_logger]);
     }
 
     defineFileVariable(name) {
-      return Variable.defineFileVar(name, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore]);
+      return Variable.defineFileVar(name, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore], _classPrivateFieldLooseBase(this, _logger)[_logger]);
     }
 
     syncVariables(onSyncSuccess, onSyncFailure) {
@@ -17037,19 +17037,17 @@
     }
 
     getVariables() {
-      return reconstructNestedObject(JSON.parse(decodeURIComponent(localStorage.getItem(VARIABLES))));
+      return reconstructNestedObject(StorageManager.readFromLSorCookie(VARIABLES));
     }
 
     getVariableValue(variableName) {
-      const variables = JSON.parse(decodeURIComponent(localStorage.getItem(VARIABLES)));
+      const variables = StorageManager.readFromLSorCookie(VARIABLES);
       const reconstructedVariables = reconstructNestedObject(variables);
 
       if (variables.hasOwnProperty(variableName)) {
         return variables[variableName];
       } else if (reconstructedVariables.hasOwnProperty(variableName)) {
         return reconstructedVariables[variableName];
-      } else {
-        return null;
       }
     }
 

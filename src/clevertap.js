@@ -958,11 +958,11 @@ export default class CleverTap {
   }
 
   defineVariable (name, defaultValue) {
-    return Variable.define(name, defaultValue, this.#variableStore)
+    return Variable.define(name, defaultValue, this.#variableStore, this.#logger)
   }
 
   defineFileVariable (name) {
-    return Variable.defineFileVar(name, this.#variableStore)
+    return Variable.defineFileVar(name, this.#variableStore, this.#logger)
   }
 
   syncVariables (onSyncSuccess, onSyncFailure) {
@@ -981,19 +981,17 @@ export default class CleverTap {
 
   getVariables () {
     return reconstructNestedObject(
-      JSON.parse(decodeURIComponent(localStorage.getItem(VARIABLES)))
+      StorageManager.readFromLSorCookie(VARIABLES)
     )
   }
 
   getVariableValue (variableName) {
-    const variables = JSON.parse(decodeURIComponent(localStorage.getItem(VARIABLES)))
+    const variables = StorageManager.readFromLSorCookie(VARIABLES)
     const reconstructedVariables = reconstructNestedObject(variables)
     if (variables.hasOwnProperty(variableName)) {
       return variables[variableName]
     } else if (reconstructedVariables.hasOwnProperty(variableName)) {
       return reconstructedVariables[variableName]
-    } else {
-      return null
     }
   }
 
