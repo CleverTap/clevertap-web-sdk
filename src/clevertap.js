@@ -961,7 +961,7 @@ export default class CleverTap {
     return Variable.define(name, defaultValue, this.#variableStore)
   }
 
-  defineFileVar (name) {
+  defineFileVariable (name) {
     return Variable.defineFileVar(name, this.#variableStore)
   }
 

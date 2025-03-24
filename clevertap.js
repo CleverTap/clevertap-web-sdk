@@ -17016,7 +17016,7 @@
       return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore]);
     }
 
-    defineFileVar(name) {
+    defineFileVariable(name) {
       return Variable.defineFileVar(name, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore]);
     }
 
