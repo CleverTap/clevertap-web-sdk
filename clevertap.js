@@ -239,6 +239,10 @@
   };
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
+  const ACTION_TYPES = {
+    OPEN_LINK: 'url',
+    OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
+  };
 
   const isString = input => {
     return typeof input === 'string' || input instanceof String;
@@ -9959,9 +9963,11 @@
       return this.target.display.onClickUrl;
     }
 
+    get onClickAction() {
+      return this.target.display.onClickAction;
+    }
+
     renderImageOnlyPopup() {
-      const campaignId = this.target.wzrk_id.split('_')[0];
-      const currentSessionId = this.session.sessionId;
       this.shadow.innerHTML = this.getImageOnlyPopupContent();
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
       this.container = this.shadowRoot.getElementById('container');
@@ -9970,6 +9976,8 @@
       this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container));
       this.resizeObserver.observe(this.popup);
       this.closeIcon.addEventListener('click', () => {
+        const campaignId = this.target.wzrk_id.split('_')[0];
+        const currentSessionId = this.session.sessionId;
         this.resizeObserver.unobserve(this.popup);
         document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
         this.remove();
@@ -9989,18 +9997,33 @@
           }
         }
       });
-      window.clevertap.renderNotificationViewed({
-        msgId: this.msgId,
-        pivotId: this.pivotId
-      });
+
+      if (!this.target.display.preview) {
+        window.clevertap.renderNotificationViewed({
+          msgId: this.msgId,
+          pivotId: this.pivotId
+        });
+      }
 
       if (this.onClickUrl) {
         this.popup.addEventListener('click', () => {
-          this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
-          window.clevertap.renderNotificationClicked({
-            msgId: this.msgId,
-            pivotId: this.pivotId
-          });
+          if (!this.target.display.preview) {
+            window.clevertap.renderNotificationClicked({
+              msgId: this.msgId,
+              pivotId: this.pivotId
+            });
+          }
+
+          switch (this.onClickAction) {
+            case ACTION_TYPES.OPEN_LINK_AND_CLOSE:
+              this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
+              this.closeIcon.click();
+              break;
+
+            case ACTION_TYPES.OPEN_LINK:
+            default:
+              this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
+          }
         });
       }
     }
@@ -11257,7 +11280,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '1.13.6';
+            const sdkVersion = '1.13.7';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -15177,7 +15200,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.13.6',
+        lib: 'web-sdk-v1.13.7',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -16986,7 +17009,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.13.6';
+      return 'web-sdk-v1.13.7';
     }
 
     defineVariable(name, defaultValue) {
