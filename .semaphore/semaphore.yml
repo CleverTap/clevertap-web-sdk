@@ -8,6 +8,7 @@ blocks:
   - name: 'Block #1'
     task:
       jobs:
-        - name: 'Job #1'
+        - name: Checkout and Create Artifact
           commands:
             - checkout
+            - artifact push workflow .
