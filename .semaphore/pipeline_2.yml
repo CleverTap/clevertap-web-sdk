@@ -1,0 +1,16 @@
+version: v1.0
+name: Deploy
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu2004
+blocks:
+  - name: 'Block #1'
+    task:
+      jobs:
+        - name: Deploy Assets to S3 and Invalidate CloudFront Cache
+          commands:
+            - artifact pull workflow clevertap.min.js
+            - 'aws s3 cp clevertap.min.js s3://static.wizrocket.com/js/ --acl public-readaws s3 cp  /tmp/dist-js/widget.html s3://static.wizrocket.com/js/ --acl public-read --content-type "text/html" --cache-control "max-age=1800, private"'
+            - rm -r clevertap.min.js
+            - aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /js/clevertap.min.js

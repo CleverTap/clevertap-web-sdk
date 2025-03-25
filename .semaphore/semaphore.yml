@@ -1,5 +1,5 @@
 version: v1.0
-name: Initial Pipeline
+name: Build Pipeline
 agent:
   machine:
     type: f1-standard-2
@@ -12,3 +12,6 @@ blocks:
           commands:
             - checkout
             - artifact push workflow .
+promotions:
+  - name: Deploy
+    pipeline_file: pipeline_2.yml
