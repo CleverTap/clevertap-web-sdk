@@ -5,7 +5,7 @@ agent:
     type: f1-standard-2
     os_image: ubuntu2204
 blocks:
-  - name: 'Block #1'
+  - name: 'Build Assets'
     task:
       jobs:
         - name: Checkout and Create Artifact
@@ -14,4 +14,4 @@ blocks:
             - artifact push workflow clevertap.min.js
 promotions:
   - name: Deploy
-    pipeline_file: pipeline_2.yml
+    pipeline_file: deploy.yml
