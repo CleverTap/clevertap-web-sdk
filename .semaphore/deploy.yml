@@ -14,7 +14,7 @@ blocks:
             - |
               mkdir utils
               aws s3 cp s3://cfstack-init-sources3bucket-b5bxfzywj4ae/utils/generate_assumed_role_creds.py utils/generate_assumed_role_creds.py
-              eval $(python3 ../utils/generate_assumed_role_creds.py --role-arn ${PRODUCTION_ACCOUNT_IAM_ROLE_ARN} --session-name SemaphoreAgent)
+              eval $(python3 utils/generate_assumed_role_creds.py --role-arn ${PRODUCTION_ACCOUNT_IAM_ROLE_ARN} --session-name SemaphoreAgent)
               env | grep AWS
               aws sts get-caller-identity
             - 'aws s3 cp clevertap.min.js s3://static.wizrocket.com/js/ --acl public-read'
