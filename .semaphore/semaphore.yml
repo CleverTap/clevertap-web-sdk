@@ -5,7 +5,7 @@ agent:
     type: f1-standard-2
     os_image: ubuntu2204
 blocks:
-  - name: 'Build Assets'
+  - name: Build Assets
     task:
       jobs:
         - name: Checkout and Create Artifact

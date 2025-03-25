@@ -17,8 +17,12 @@ blocks:
               eval $(python3 ../utils/generate_assumed_role_creds.py --role-arn ${PRODUCTION_ACCOUNT_IAM_ROLE_ARN} --session-name SemaphoreAgent)
               env | grep AWS
               aws sts get-caller-identity
-            - aws s3 cp clevertap.min.js s3://static.wizrocket.com/js/ --acl public-read
+            - 'aws s3 cp clevertap.min.js s3://static.wizrocket.com/js/ --acl public-read'
             - rm -r clevertap.min.js
             - aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /js/clevertap.min.js
       secrets:
-            - name: ProductionAccountAwsCredentials
+        - name: ProductionAccountAwsCredentials
+      agent:
+        machine:
+          type: s1-t2-micro
+          os_image: ''
