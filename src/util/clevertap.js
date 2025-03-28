@@ -13,7 +13,8 @@ import {
   IS_OUL,
   categoryLongKey,
   CAMP_COOKIE_G,
-  GLOBAL
+  GLOBAL,
+  CAMPAIGN_TYPES
 } from './constants'
 import {
   GENDER_ERROR,
@@ -41,6 +42,8 @@ import {
   isValueValid
 } from './datatypes'
 
+import { deliveryPreferenceUtils } from '../../src/util/campaignRender/utilities'
+
 import { addToURL, getURLParams } from './url'
 import { compressData } from './encoder'
 import RequestDispatcher from './requestDispatcher'
@@ -63,6 +66,7 @@ export const getCampaignObject = () => {
   return finalcampObj
 }
 
+// Save Camp here
 export const saveCampaignObject = (campaignObj) => {
   if (StorageManager._isLocalStorageSupported()) {
     const newObj = { ...getCampaignObject(), ...campaignObj }
@@ -71,6 +75,46 @@ export const saveCampaignObject = (campaignObj) => {
     // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
     setCampaignObjectForGuid()
   }
+}
+
+export const addDeliveryPreferenceDetails = (campaignDetails, wtq) => {
+  let campaignObj = getCampaignObject()
+  const campaignId = campaignDetails.wzrk_id.split('_')[0]
+
+  if (
+    campaignDetails.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION
+  ) {
+    const wfc = campaignDetails?.display?.adp ? deliveryPreferenceUtils.updateTimestampTracker(
+      [campaignId],
+      campaignObj.wfc
+    ) : {}
+
+    campaignObj = {
+      ...campaignObj,
+      wsc: campaignObj?.wsc ? campaignObj.wsc + 1 : 1,
+      wfc
+    }
+  } else if (
+    campaignDetails.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY
+  ) {
+    const wndfc = campaignDetails?.display?.adp ? deliveryPreferenceUtils.updateTimestampTracker(
+      [campaignId],
+      campaignObj.wndfc
+    ) : {}
+
+    campaignObj = {
+      ...campaignObj,
+      wndsc: campaignObj?.wndsc ? campaignObj.wndsc + 1 : 1,
+      wndfc
+    }
+  }
+
+  console.log({ campaignObj })
+  StorageManager.save(
+    CAMP_COOKIE_NAME,
+    encodeURIComponent(JSON.stringify(campaignObj))
+  )
+  setCampaignObjectForGuid()
 }
 
 // set Campaign Object against the guid, with daily count and total count details
@@ -111,7 +155,16 @@ export const setCampaignObjectForGuid = () => {
                 }
               }
             }
-            finalCampObj = { ...finalCampObj, [key]: campKeyObj }
+            finalCampObj = {
+              ...finalCampObj,
+              [key]: campKeyObj,
+              wsc: campObj.wsc,
+              wfc: campObj.wfc,
+              woc: campObj.woc,
+              wndsc: campObj.wndsc,
+              wndfc: campObj.wndfc,
+              wndoc: campObj.wndoc
+            }
           })
           guidCampObj[guid] = finalCampObj
           StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
@@ -146,6 +199,23 @@ export const getCampaignObjForLc = () => {
       ? Object.values(parsedValue[guid].wi)
       : []
 
+    /* Ensure you sync from Global CAMP isntead */
+    const CAMP = JSON.parse(
+      decodeURIComponent(StorageManager.read(CAMP_COOKIE_NAME))
+    )
+
+    const webPopupDeliveryPreferenceDeatils = {
+      wsc: CAMP?.wsc ?? 0,
+      wfc: CAMP?.wfc ?? {},
+      woc: CAMP?.woc ?? {}
+    }
+
+    const webNativeDisplayDeliveryPreferenceDeatils = {
+      wndsc: CAMP?.wndsc ?? 0,
+      wndfc: CAMP?.wndfc ?? {},
+      wndoc: CAMP?.wndoc ?? {}
+    }
+
     const today = getToday()
     let todayCwp = 0
     let todayCwi = 0
@@ -155,11 +225,15 @@ export const getCampaignObjForLc = () => {
     if (campObj.wi && campObj.wi[today] && campObj.wi[today].tc !== 'undefined') {
       todayCwi = campObj.wi[today].tc
     }
+
+    // CAMP Is generated here
     resultObj = {
       wmp: todayCwp,
       wimp: todayCwi,
       tlc: resultObjWP,
-      witlc: resultObjWI
+      witlc: resultObjWI,
+      ...webPopupDeliveryPreferenceDeatils,
+      ...webNativeDisplayDeliveryPreferenceDeatils
     }
     return resultObj
   }

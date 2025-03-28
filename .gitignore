@@ -118,3 +118,5 @@ dist
 
 .DS_Store
 clevertap.min.js
+
+reference.js
