@@ -161,7 +161,7 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
 
   // Create the wrapper div
   const wrapper = createElementWithAttributes('div', { id: NEW_SOFT_PROMPT_SELCTOR_ID })
-  const overlayDiv = createElementWithAttributes('div', { id: 'pnOverlay' })
+  const overlayDiv = style.overlay.enabled ? createElementWithAttributes('div', { id: 'pnOverlay' }) : ''
   const pnCard = createElementWithAttributes('div', { id: 'pnCard' })
 
   const iconTitleDescWrapper = createElementWithAttributes('div', { id: 'iconTitleDescWrapper' })
@@ -199,7 +199,9 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
 
   wrapper.appendChild(styleElement)
   wrapper.appendChild(pnCard)
-  wrapper.appendChild(overlayDiv)
+  if (overlayDiv) {
+    wrapper.appendChild(overlayDiv)
+  }
 
   setElementPosition(pnCard, style.card.position)
 
