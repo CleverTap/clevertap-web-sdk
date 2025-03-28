@@ -15621,6 +15621,8 @@
       } catch (error) {
         logger.error(error);
       }
+
+      return varInstance;
     }
     /**
      * Updates the variable's value, triggering callbacks if hasVarsRequestCompleted is returned true.

@@ -97,6 +97,7 @@ export class Variable {
     } catch (error) {
       logger.error(error)
     }
+    return varInstance
   }
 
   /**
