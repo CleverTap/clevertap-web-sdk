@@ -196,7 +196,7 @@ export default class RequestManager {
     this.#addToLocalEventMap(data.evtName)
     data = this.addSystemDataToObject(data, undefined)
     this.addFlags(data)
-    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    data[CAMP_COOKIE_NAME] = getCampaignObjForLc(this.#session)
     const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)

@@ -835,7 +835,7 @@ export default class CleverTap {
     data = this.#request.addSystemDataToObject(data, undefined)
     data.cpg = currLocation
 
-    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    data[CAMP_COOKIE_NAME] = getCampaignObjForLc(this.#session)
     let pageLoadUrl = this.#account.dataPostURL
     this.#request.addFlags(data)
     // send dsync flag when page = 1
