@@ -1,0 +1,17 @@
+version: v1.0
+name: Build Pipeline
+agent:
+  machine:
+    type: f1-standard-2
+    os_image: ubuntu2204
+blocks:
+  - name: Build Assets
+    task:
+      jobs:
+        - name: Checkout and Create Artifact
+          commands:
+            - checkout
+            - artifact push workflow clevertap.min.js
+promotions:
+  - name: Deploy
+    pipeline_file: deploy.yml
