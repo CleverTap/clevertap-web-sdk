@@ -11280,7 +11280,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '1.14.0';
+            const sdkVersion = '1.14.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -11488,6 +11488,7 @@
               element.outerHTML = selector.values.html;
             }
 
+            executeScripts(selector.selector);
             break;
 
           case 'json':
@@ -11750,6 +11751,29 @@
       observeUrlChange();
     });
     applyAntiFlicker(personalizedSelectors);
+  }
+
+  function executeScripts(selector) {
+    try {
+      let newElement;
+
+      if (selector.includes('-afterend-') || selector.includes('-beforebegin-')) {
+        newElement = document.querySelector("[ct-selector=\"".concat(selector, "\"]"));
+      } else {
+        newElement = document.querySelector(selector);
+      }
+
+      if (!newElement) return;
+      const scripts = newElement.querySelectorAll('script');
+      scripts.forEach(script => {
+        const newScript = document.createElement('script');
+        newScript.textContent = script.textContent;
+        if (script.src) newScript.src = script.src;
+        newScript.async = script.async;
+        document.body.appendChild(newScript);
+        script.remove();
+      });
+    } catch (_) {}
   }
 
   class CTWebPersonalisationBanner extends HTMLElement {
@@ -15200,7 +15224,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.14.0',
+        lib: 'web-sdk-v1.14.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17011,7 +17035,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.14.0';
+      return 'web-sdk-v1.14.1';
     }
 
     defineVariable(name, defaultValue) {

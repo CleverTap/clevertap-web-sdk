@@ -210,6 +210,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
           } else {
             element.outerHTML = selector.values.html
           }
+          executeScripts(selector.selector)
           break
         case 'json':
           dispatchJsonData(targetingMsgJson, selector.values, isPreview)
@@ -434,4 +435,25 @@ export function addAntiFlicker (antiFlicker) {
     observeUrlChange()
   })
   applyAntiFlicker(personalizedSelectors)
+}
+
+function executeScripts (selector) {
+  try {
+    let newElement
+    if (selector.includes('-afterend-') || selector.includes('-beforebegin-')) {
+      newElement = document.querySelector(`[ct-selector="${selector}"]`)
+    } else {
+      newElement = document.querySelector(selector)
+    }
+    if (!newElement) return
+    const scripts = newElement.querySelectorAll('script')
+    scripts.forEach((script) => {
+      const newScript = document.createElement('script')
+      newScript.textContent = script.textContent
+      if (script.src) newScript.src = script.src
+      newScript.async = script.async
+      document.body.appendChild(newScript)
+      script.remove()
+    })
+  } catch (_) {}
 }
