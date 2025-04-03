@@ -1,9 +1,12 @@
 import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_QUERY_PARAMS } from './builder_constants'
 import { updateFormData, updateElementCSS } from './dataUpdate'
 
-export const handleActionMode = (logger, accountId) => {
+let logger = null
+
+export const handleActionMode = (_logger, accountId) => {
   const searchParams = new URLSearchParams(window.location.search)
   const ctType = searchParams.get('ctActionMode')
+  logger = _logger
 
   if (ctType) {
     const parentWindow = window.opener
@@ -104,14 +107,13 @@ function onContentLoad (url, variant, details, personalisation) {
     container.style.position = 'relative' // Ensure relative positioning for absolute positioning of form
     container.style.display = 'flex'
     document.body.appendChild(container)
-    const overlayPath = OVERLAY_PATH
-    loadOverlayScript(overlayPath, url, variant, details, personalisation)
+    loadOverlayScript(OVERLAY_PATH, url, variant, details, personalisation)
       .then(() => {
-        console.log('Overlay script loaded successfully.')
+        logger.debug('Overlay script loaded successfully.')
         contentLoaded = true
       })
       .catch((error) => {
-        console.error('Error loading overlay script:', error)
+        logger.debug('Error loading overlay script:', error)
       })
     loadCSS()
   }
@@ -161,8 +163,12 @@ function loadOverlayScript (overlayPath, url, variant, details, personalisation)
  * Renders the visual builder.
  * @param {Object} targetingMsgJson - The point and click campaign JSON object.
  * @param {boolean} isPreview - Indicates if it's a preview.
+ * @param _logger - instance of logger class
  */
-export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
+  if (_logger) {
+    logger = _logger
+  }
   const insertedElements = []
   const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details
   let url = window.location.href
@@ -235,7 +241,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
         processElement(retryElement, selector)
         clearInterval(intervalId)
       } else if (++count >= 20) {
-        console.log(`No element present on DOM with selector '${selector}'.`)
+        logger.debug(`No element present on DOM with selector '${selector}'.`)
         clearInterval(intervalId)
       }
     }, 500)
@@ -289,7 +295,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
         processElement(insertedElement, selector)
         clearInterval(intervalId)
       } else if (++count >= 20) {
-        console.log(`No element present on DOM with selector '${sibling}'.`)
+        logger.debug(`No element present on DOM with selector '${sibling}'.`)
         clearInterval(intervalId)
       }
     }, 500)
@@ -452,8 +458,15 @@ function executeScripts (selector) {
       newScript.textContent = script.textContent
       if (script.src) newScript.src = script.src
       newScript.async = script.async
+      Array.from(script.attributes).forEach(attr => {
+        if (attr.name !== 'src' && attr.name !== 'async') {
+          newScript.setAttribute(attr.name, attr.value)
+        }
+      })
       document.body.appendChild(newScript)
       script.remove()
     })
-  } catch (_) {}
+  } catch (error) {
+    logger.debug('Error loading script', error)
+  }
 }

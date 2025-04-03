@@ -11243,16 +11243,18 @@
     }
   };
 
-  const handleActionMode = (logger, accountId) => {
+  let logger$1 = null;
+  const handleActionMode = (_logger, accountId) => {
     const searchParams = new URLSearchParams(window.location.search);
     const ctType = searchParams.get('ctActionMode');
+    logger$1 = _logger;
 
     if (ctType) {
       const parentWindow = window.opener;
 
       switch (ctType) {
         case WVE_QUERY_PARAMS.BUILDER:
-          logger.debug('open in visual builder mode');
+          logger$1.debug('open in visual builder mode');
           window.addEventListener('message', handleMessageEvent, false);
 
           if (parentWindow) {
@@ -11265,7 +11267,7 @@
           break;
 
         case WVE_QUERY_PARAMS.PREVIEW:
-          logger.debug('preview of visual editor');
+          logger$1.debug('preview of visual editor');
           window.addEventListener('message', handleMessageEvent, false);
 
           if (parentWindow) {
@@ -11279,7 +11281,7 @@
 
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
-            logger.debug('SDK version check');
+            logger$1.debug('SDK version check');
             const sdkVersion = '1.14.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
@@ -11292,7 +11294,7 @@
           break;
 
         default:
-          logger.debug("unknown query param ".concat(ctType));
+          logger$1.debug("unknown query param ".concat(ctType));
           break;
       }
     }
@@ -11362,12 +11364,11 @@
 
       container.style.display = 'flex';
       document.body.appendChild(container);
-      const overlayPath = OVERLAY_PATH;
-      loadOverlayScript(overlayPath, url, variant, details, personalisation).then(() => {
-        console.log('Overlay script loaded successfully.');
+      loadOverlayScript(OVERLAY_PATH, url, variant, details, personalisation).then(() => {
+        logger$1.debug('Overlay script loaded successfully.');
         contentLoaded = true;
       }).catch(error => {
-        console.error('Error loading overlay script:', error);
+        logger$1.debug('Error loading overlay script:', error);
       });
       loadCSS();
     }
@@ -11428,10 +11429,15 @@
    * Renders the visual builder.
    * @param {Object} targetingMsgJson - The point and click campaign JSON object.
    * @param {boolean} isPreview - Indicates if it's a preview.
+   * @param _logger - instance of logger class
    */
 
 
-  const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+  const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
+    if (_logger) {
+      logger$1 = _logger;
+    }
+
     const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let url = window.location.href;
@@ -11519,7 +11525,7 @@
           processElement(retryElement, selector);
           clearInterval(intervalId);
         } else if (++count >= 20) {
-          console.log("No element present on DOM with selector '".concat(selector, "'."));
+          logger$1.debug("No element present on DOM with selector '".concat(selector, "'."));
           clearInterval(intervalId);
         }
       }, 500);
@@ -11581,7 +11587,7 @@
           processElement(insertedElement, selector);
           clearInterval(intervalId);
         } else if (++count >= 20) {
-          console.log("No element present on DOM with selector '".concat(sibling, "'."));
+          logger$1.debug("No element present on DOM with selector '".concat(sibling, "'."));
           clearInterval(intervalId);
         }
       }, 500);
@@ -11770,10 +11776,17 @@
         newScript.textContent = script.textContent;
         if (script.src) newScript.src = script.src;
         newScript.async = script.async;
+        Array.from(script.attributes).forEach(attr => {
+          if (attr.name !== 'src' && attr.name !== 'async') {
+            newScript.setAttribute(attr.name, attr.value);
+          }
+        });
         document.body.appendChild(newScript);
         script.remove();
       });
-    } catch (_) {}
+    } catch (error) {
+      logger$1.debug('Error loading script', error);
+    }
   }
 
   class CTWebPersonalisationBanner extends HTMLElement {
@@ -14727,7 +14740,7 @@
               arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
             }
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
-            renderVisualBuilder(targetNotif, false);
+            renderVisualBuilder(targetNotif, false, _logger);
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
             renderCustomHtml(targetNotif, _logger);
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
