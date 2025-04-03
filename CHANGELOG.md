@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.14.1] 2nd Apr, 2025
+- Added support to allow scripts tag  to work inside HTML Editor in Visual Editor
+
 ## [1.14.0] 24th Mar, 2025
 - Added JSON and File Vars Support
 
