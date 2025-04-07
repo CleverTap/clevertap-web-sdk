@@ -443,7 +443,10 @@ export function addAntiFlicker (antiFlicker) {
   applyAntiFlicker(personalizedSelectors)
 }
 
-function executeScripts (selector) {
+export function executeScripts (selector, _logger) {
+  if (_logger) {
+    logger = _logger
+  }
   try {
     let newElement
     if (selector.includes('-afterend-') || selector.includes('-beforebegin-')) {
