@@ -10,7 +10,9 @@ blocks:
       jobs:
         - name: Deploy Assets to S3 and Invalidate CloudFront Cache
           commands:
-            - artifact pull workflow clevertap.min.js clevertap.js clevertap.js.map
+            - artifact pull workflow clevertap.min.js 
+            - artifact pull workflow clevertap.js 
+            - artifact pull workflow clevertap.js.map
             - |
               mkdir utils
               aws s3 cp s3://cfstack-init-sources3bucket-b5bxfzywj4ae/utils/generate_assumed_role_creds.py utils/generate_assumed_role_creds.py
