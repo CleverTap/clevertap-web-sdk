@@ -3,7 +3,6 @@ import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
 
 import { appendScriptForCustomEvent } from '../campaignRender/utilities'
-import { executeScripts } from '../../modules/visualBuilder/pageBuilder'
 
 export const renderPersonalisationBanner = (targetingMsgJson) => {
   if (customElements.get('ct-web-personalisation-banner') === undefined) {
@@ -82,7 +81,6 @@ export const renderCustomHtml = (targetingMsgJson, logger) => {
       if (retryElement) {
         raiseViewed()
         retryElement.outerHTML = html
-        executeScripts(divId, logger)
         clearInterval(intervalId)
       } else if (++count >= 20) {
         logger.error(`No element present on DOM with divId '${divId}'.`)

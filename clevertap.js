@@ -11758,11 +11758,7 @@
     });
     applyAntiFlicker(personalizedSelectors);
   }
-  function executeScripts(selector, _logger) {
-    if (_logger) {
-      logger$1 = _logger;
-    }
-
+  function executeScripts(selector) {
     try {
       let newElement;
 
@@ -12413,7 +12409,6 @@
         if (retryElement) {
           raiseViewed();
           retryElement.outerHTML = html;
-          executeScripts(divId, logger);
           clearInterval(intervalId);
         } else if (++count >= 20) {
           logger.error("No element present on DOM with divId '".concat(divId, "'."));
