@@ -32,7 +32,8 @@ import {
   WEBINBOX_CONFIG,
   TIMER_FOR_NOTIF_BADGE_UPDATE,
   ACCOUNT_ID,
-  APPLICATION_SERVER_KEY_RECEIVED
+  APPLICATION_SERVER_KEY_RECEIVED,
+  VARIABLES
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -48,6 +49,7 @@ import { addAntiFlicker, handleActionMode } from './modules/visualBuilder/pageBu
 import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
+import { reconstructNestedObject } from './util/helpers'
 
 export default class CleverTap {
   #logger
@@ -956,7 +958,11 @@ export default class CleverTap {
   }
 
   defineVariable (name, defaultValue) {
-    return Variable.define(name, defaultValue, this.#variableStore)
+    return Variable.define(name, defaultValue, this.#variableStore, this.#logger)
+  }
+
+  defineFileVariable (name) {
+    return Variable.defineFileVar(name, this.#variableStore, this.#logger)
   }
 
   syncVariables (onSyncSuccess, onSyncFailure) {
@@ -971,6 +977,22 @@ export default class CleverTap {
 
   fetchVariables (onFetchCallback) {
     this.#variableStore.fetchVariables(onFetchCallback)
+  }
+
+  getVariables () {
+    return reconstructNestedObject(
+      StorageManager.readFromLSorCookie(VARIABLES)
+    )
+  }
+
+  getVariableValue (variableName) {
+    const variables = StorageManager.readFromLSorCookie(VARIABLES)
+    const reconstructedVariables = reconstructNestedObject(variables)
+    if (variables.hasOwnProperty(variableName)) {
+      return variables[variableName]
+    } else if (reconstructedVariables.hasOwnProperty(variableName)) {
+      return reconstructedVariables[variableName]
+    }
   }
 
   addVariablesChangedCallback (callback) {

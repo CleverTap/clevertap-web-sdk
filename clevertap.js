@@ -11723,7 +11723,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '1.13.7';
+            const sdkVersion = '1.14.0';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -12623,6 +12623,81 @@
     const ua = navigator.userAgent; // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
 
     return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
+  };
+  /**
+   * Recursively checks if an object contains an array or a function at any level of nesting.
+   *
+   * @param {Object} obj - The object to check.
+   * @returns {boolean} - Returns `true` if the object contains an array or function, otherwise `false`.
+   */
+
+  const objectHasNestedArrayOrFunction = obj => {
+    if (!obj || typeof obj !== 'object') return false;
+    if (Array.isArray(obj)) return true;
+    return Object.values(obj).some(value => typeof value === 'function' || objectHasNestedArrayOrFunction(value));
+  };
+  /**
+   * Flattens a nested object into a single-level object using dot notation.
+   * Arrays are ignored in this transformation.
+   *
+   * @param {Object} obj - The object to be flattened.
+   * @param {string} [parentKey=""] - The parent key for recursion (used internally).
+   * @returns {Object} - The transformed object with dot notation keys.
+   */
+
+  const flattenObjectToDotNotation = function (obj) {
+    let parentKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+    const result = {};
+
+    for (const key in obj) {
+      if (Object.hasOwnProperty.call(obj, key)) {
+        const value = obj[key];
+        const newKey = parentKey ? "".concat(parentKey, ".").concat(key) : key;
+
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          // Recursively process nested objects
+          Object.assign(result, flattenObjectToDotNotation(value, newKey));
+        } else if (!Array.isArray(value)) {
+          // Assign non-array values directly
+          result[newKey] = {
+            defaultValue: value,
+            type: typeof value
+          };
+        }
+      }
+    }
+
+    return result;
+  };
+  /**
+   * Reconstructs an object from a flat key-value structure using dot notation.
+   *
+   * @param {Object} payload - The input object with flat dot notation keys.
+   * @returns {Object} - The reconstructed object with proper nesting.
+   */
+
+  const reconstructNestedObject = payload => {
+    const result = {};
+
+    for (const key in payload) {
+      if (Object.hasOwnProperty.call(payload, key)) {
+        const value = payload[key];
+        const keys = key.split('.'); // Split keys on dot notation
+
+        let current = result;
+        keys.forEach((part, index) => {
+          if (index === keys.length - 1) {
+            // Assign value at the last key level
+            current[part] = value;
+          } else {
+            // Ensure intermediate levels exist
+            current = current[part] = current[part] || {};
+          }
+        });
+      }
+    }
+
+    return result;
   };
 
   var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
@@ -15347,7 +15422,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.13.7',
+        lib: 'web-sdk-v1.14.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -15702,21 +15777,26 @@
      */
 
 
-    static define(name, defaultValue, variableStore) {
+    static define(name, defaultValue, variableStore, logger) {
       if (!name || typeof name !== 'string') {
-        console.error('Empty or invalid name parameter provided.');
+        logger.error('Empty or invalid name parameter provided.');
         return null;
       }
 
       if (name.startsWith('.') || name.endsWith('.')) {
-        console.error('Variable name starts or ends with a `.` which is not allowed: ' + name);
+        logger.error('Variable name starts or ends with a `.` which is not allowed: ' + name);
         return null;
       }
 
       const typeOfDefaultValue = typeof defaultValue;
 
-      if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean') {
-        console.error('Only primitive types (string, number, boolean) are accepted as value');
+      if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean' && typeOfDefaultValue !== 'object') {
+        logger.error('Only (string, number, boolean, objects) are accepted as value');
+        return null;
+      }
+
+      if (typeOfDefaultValue === 'object' && objectHasNestedArrayOrFunction(defaultValue)) {
+        logger.error('Nested arrays/functions are not supported in JSON variables');
         return null;
       }
 
@@ -15738,7 +15818,30 @@
         variableStore.registerVariable(varInstance);
         varInstance.update(defaultValue);
       } catch (error) {
-        console.error(error);
+        logger.error(error);
+      }
+
+      return varInstance;
+    }
+
+    static defineFileVar(name, variableStore, logger) {
+      if (!name || typeof name !== 'string' || name.startsWith('.') || name.endsWith('.')) {
+        logger.error('Empty or invalid name parameter provided.');
+        return null;
+      }
+
+      const varInstance = new Variable({
+        variableStore
+      });
+
+      try {
+        varInstance.name = name;
+        varInstance.defaultValue = '';
+        varInstance.type = 'file';
+        variableStore.registerVariable(varInstance);
+        varInstance.update(varInstance.defaultValue);
+      } catch (error) {
+        logger.error(error);
       }
 
       return varInstance;
@@ -15782,9 +15885,9 @@
      */
 
 
-    addValueChangedCallback(onValueChanged) {
+    addValueChangedCallback(onValueChanged, logger) {
       if (!onValueChanged) {
-        console.log('Invalid callback parameter provided.');
+        logger.log('Invalid callback parameter provided.');
         return;
       }
 
@@ -15952,10 +16055,29 @@
       };
 
       for (const name in _classPrivateFieldLooseBase(this, _variables)[_variables]) {
-        payload.vars[name] = {
-          defaultValue: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue,
-          type: _classPrivateFieldLooseBase(this, _variables)[_variables][name].type
-        };
+        if (typeof _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue === 'object') {
+          var _classPrivateFieldLoo;
+
+          const flattenedPayload = flattenObjectToDotNotation({
+            [(_classPrivateFieldLoo = _classPrivateFieldLooseBase(this, _variables)[_variables][name]) === null || _classPrivateFieldLoo === void 0 ? void 0 : _classPrivateFieldLoo.name]: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue
+          });
+
+          for (const key in flattenedPayload) {
+            payload.vars[key] = {
+              defaultValue: flattenedPayload[key].defaultValue,
+              type: flattenedPayload[key].type
+            };
+          }
+        } else if (_classPrivateFieldLooseBase(this, _variables)[_variables][name].type === 'file') {
+          payload.vars[name] = {
+            type: _classPrivateFieldLooseBase(this, _variables)[_variables][name].type
+          };
+        } else {
+          payload.vars[name] = {
+            defaultValue: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue,
+            type: _classPrivateFieldLooseBase(this, _variables)[_variables][name].type
+          };
+        }
       } // Check if payload.vars is empty
 
 
@@ -17111,11 +17233,15 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.13.7';
+      return 'web-sdk-v1.14.0';
     }
 
     defineVariable(name, defaultValue) {
-      return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore]);
+      return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore], _classPrivateFieldLooseBase(this, _logger)[_logger]);
+    }
+
+    defineFileVariable(name) {
+      return Variable.defineFileVar(name, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore], _classPrivateFieldLooseBase(this, _logger)[_logger]);
     }
 
     syncVariables(onSyncSuccess, onSyncFailure) {
@@ -17132,6 +17258,21 @@
 
     fetchVariables(onFetchCallback) {
       _classPrivateFieldLooseBase(this, _variableStore)[_variableStore].fetchVariables(onFetchCallback);
+    }
+
+    getVariables() {
+      return reconstructNestedObject(StorageManager.readFromLSorCookie(VARIABLES));
+    }
+
+    getVariableValue(variableName) {
+      const variables = StorageManager.readFromLSorCookie(VARIABLES);
+      const reconstructedVariables = reconstructNestedObject(variables);
+
+      if (variables.hasOwnProperty(variableName)) {
+        return variables[variableName];
+      } else if (reconstructedVariables.hasOwnProperty(variableName)) {
+        return reconstructedVariables[variableName];
+      }
     }
 
     addVariablesChangedCallback(callback) {
