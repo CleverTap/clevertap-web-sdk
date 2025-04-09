@@ -14,7 +14,6 @@ blocks:
             - artifact push workflow clevertap.min.js
             - artifact push workflow clevertap.js
             - artifact push workflow clevertap.js.map
-            - apt install npm -y
             - npm install
             - npm run build_sw
             - artifact push workflow sw_webpush.js
