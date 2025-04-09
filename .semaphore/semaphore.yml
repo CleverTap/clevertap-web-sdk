@@ -12,6 +12,10 @@ blocks:
           commands:
             - checkout
             - artifact push workflow clevertap.min.js
+            - artifact push workflow clevertap.js
+            - artifact push workflow clevertap.js.map
 promotions:
-  - name: Deploy
-    pipeline_file: deploy.yml
+  - name: Production
+    pipeline_file: production-deploy.yml
+  - name: Staging
+    pipeline_file: staging-deploy.yml
