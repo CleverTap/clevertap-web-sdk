@@ -19,11 +19,6 @@ blocks:
             - npm run build_sw
             - artifact push workflow sw_webpush.js
             - artifact push workflow sw_webpush.min.js
-
-      agent:
-        machine:
-          type: s1-ultron-c5-large
-          os_image: ''
 promotions:
   - name: Production
     pipeline_file: production-deploy.yml
