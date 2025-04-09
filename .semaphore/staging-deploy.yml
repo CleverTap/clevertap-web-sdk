@@ -10,23 +10,27 @@ blocks:
       jobs:
         - name: Deploy Assets to S3 and Invalidate CloudFront Cache
           commands:
-            - artifact pull workflow clevertap.min.js
-            - artifact pull workflow clevertap.js
+            - artifact pull workflow clevertap.min.js 
+            - artifact pull workflow clevertap.js 
             - artifact pull workflow clevertap.js.map
+            - artifact pull workflow sw_webpush.js
+            - artifact pull workflow sw_webpush.min.js
             - |
               mkdir utils
               aws s3 cp s3://cfstack-init-sources3bucket-b5bxfzywj4ae/utils/generate_assumed_role_creds.py utils/generate_assumed_role_creds.py
               eval $(python3 utils/generate_assumed_role_creds.py --role-arn ${PRODUCTION_ACCOUNT_IAM_ROLE_ARN} --session-name SemaphoreAgent)
               env | grep AWS
               aws sts get-caller-identity
-              aws s3 cp ./clevertap.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_BRANCH}/js/ --acl public-read
-              aws s3 cp ./clevertap.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_BRANCH}/js/ --acl public-read
-              aws s3 cp ./clevertap.js.map s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_BRANCH}/js/ --acl public-read
-              rm -r clevertap.min.js clevertap.js clevertap.js.map
-              aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_BRANCH}/js/clevertap.min.js /staging/${SEMAPHORE_GIT_BRANCH}/js/clevertap.js /staging/${SEMAPHORE_GIT_BRANCH}/js/clevertap.js.map
+              aws s3 cp ./clevertap.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./clevertap.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./clevertap.js.map s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./sw_webpush.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./sw_webpush.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              rm -r clevertap.min.js clevertap.js clevertap.js.map sw_webpush.min.js sw_webpush.js
+              aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap.min.js /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap.js /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap.js.map /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/sw_webpush.min.js /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/sw_webpush.js
       secrets:
-        - name: ProductionAccountAwsCredentials
+        - name: ProductionAccountAwsCredentials 
       agent:
         machine:
-          type: s1-t2-micro
+          type: s1-ultron-c5-large
           os_image: ''
