@@ -1,5 +1,6 @@
 import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_QUERY_PARAMS } from './builder_constants'
 import { updateFormData, updateElementCSS } from './dataUpdate'
+import { addScriptTo } from '../../util/campaignRender/utilities'
 
 let logger = null
 
@@ -447,25 +448,15 @@ export function executeScripts (selector) {
   try {
     let newElement
     if (selector.includes('-afterend-') || selector.includes('-beforebegin-')) {
+      // doing this because inserted elements saved selectors do not follow normal conventions
+      // they start with numbers ex. 0-beforebegin-div#titleContainer
       newElement = document.querySelector(`[ct-selector="${selector}"]`)
     } else {
       newElement = document.querySelector(selector)
     }
     if (!newElement) return
     const scripts = newElement.querySelectorAll('script')
-    scripts.forEach((script) => {
-      const newScript = document.createElement('script')
-      newScript.textContent = script.textContent
-      if (script.src) newScript.src = script.src
-      newScript.async = script.async
-      Array.from(script.attributes).forEach(attr => {
-        if (attr.name !== 'src' && attr.name !== 'async') {
-          newScript.setAttribute(attr.name, attr.value)
-        }
-      })
-      document.body.appendChild(newScript)
-      script.remove()
-    })
+    scripts.forEach(addScriptTo)
   } catch (error) {
     logger.debug('Error loading script', error)
   }

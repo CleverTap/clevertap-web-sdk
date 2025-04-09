@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.14.1] 7th Apr, 2025
+## [1.14.1] 9th Apr, 2025
 - Added support for scripts tags in Web Native Display Visual Editor Template.
 
 ## [1.14.0] 24th Mar, 2025

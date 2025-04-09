@@ -11243,6 +11243,315 @@
     }
   };
 
+  const invokeExternalJs = (jsFunc, targetingMsgJson) => {
+    const func = window.parent[jsFunc];
+
+    if (typeof func === 'function') {
+      if (targetingMsgJson.display.kv != null) {
+        func(targetingMsgJson.display.kv);
+      } else {
+        func();
+      }
+    }
+  };
+  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
+    const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
+    return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
+  };
+  const staleDataUpdate = (staledata, campType) => {
+    const campObj = getCampaignObject();
+    const globalObj = campObj[campType].global;
+
+    if (globalObj != null && campType) {
+      for (const idx in staledata) {
+        if (staledata.hasOwnProperty(idx)) {
+          delete globalObj[staledata[idx]];
+
+          if (StorageManager.read(CAMP_COOKIE_G)) {
+            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+            if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
+              delete guidCampObj[guid][campType][staledata[idx]];
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+            }
+          }
+        }
+      }
+    }
+
+    saveCampaignObject(campObj);
+  };
+  const mergeEventMap = newEvtMap => {
+    if ($ct.globalEventsMap == null) {
+      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
+
+      if ($ct.globalEventsMap == null) {
+        $ct.globalEventsMap = newEvtMap;
+        return;
+      }
+    }
+
+    for (const key in newEvtMap) {
+      if (newEvtMap.hasOwnProperty(key)) {
+        const oldEvtObj = $ct.globalEventsMap[key];
+        const newEvtObj = newEvtMap[key];
+
+        if ($ct.globalEventsMap[key] != null) {
+          if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
+            $ct.globalEventsMap[key] = newEvtObj;
+          }
+        } else {
+          $ct.globalEventsMap[key] = newEvtObj;
+        }
+      }
+    }
+  };
+  const incrementImpression = (targetingMsgJson, _request) => {
+    const data = {};
+    data.type = 'event';
+    data.evtName = NOTIFICATION_VIEWED;
+    data.evtData = {
+      [WZRK_ID]: targetingMsgJson.wzrk_id
+    };
+
+    if (targetingMsgJson.wzrk_pivot) {
+      data.evtData = { ...data.evtData,
+        wzrk_pivot: targetingMsgJson.wzrk_pivot
+      };
+    }
+
+    _request.processEvent(data);
+  };
+  const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session) => {
+    if (onClick !== '' && onClick != null) {
+      let ctaElement;
+      let jsCTAElements;
+
+      if (isLegacy) {
+        ctaElement = contentDiv;
+      } else if (contentDiv !== null) {
+        jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
+
+        if (jsCTAElements != null && jsCTAElements.length === 1) {
+          ctaElement = jsCTAElements[0];
+        }
+      }
+
+      const jsFunc = targetingMsgJson.display.jsFunc;
+      const isPreview = targetingMsgJson.display.preview;
+
+      if (isPreview == null) {
+        onClick += getCookieParams(_device, _session);
+      }
+
+      if (ctaElement != null) {
+        ctaElement.onclick = () => {
+          // invoke js function call
+          if (jsFunc != null) {
+            // track notification clicked event
+            if (isPreview == null) {
+              RequestDispatcher.fireRequest(onClick);
+            }
+
+            invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
+
+            closeIframe('-1', divId, _session.sessionId);
+          } else {
+            const rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
+            const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+
+            if (rValue === 'pushPrompt') {
+              if (!targetingMsgJson.display.preview) {
+                window.parent.clevertap.renderNotificationClicked({
+                  msgId: targetingMsgJson.wzrk_id,
+                  pivotId: targetingMsgJson.wzrk_pivot
+                });
+              } // Open Web Push Soft prompt
+
+
+              window.clevertap.notifications.push({
+                skipDialog: true
+              });
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else if (rValue === 'none') {
+              // Close notification
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else {
+              // Will get the url to open
+              if (targetingMsgJson.display.window === 1) {
+                window.open(onClick, '_blank');
+
+                if (targetingMsgJson.display['close-popup']) {
+                  closeIframe(campaignId, divId, _session.sessionId);
+                }
+
+                if (!targetingMsgJson.display.preview) {
+                  window.parent.clevertap.renderNotificationClicked({
+                    msgId: targetingMsgJson.wzrk_id,
+                    pivotId: targetingMsgJson.wzrk_pivot
+                  });
+                }
+              } else {
+                window.location = onClick;
+              }
+            }
+          }
+        };
+      }
+    }
+  };
+  const getCookieParams = (_device, _session) => {
+    const gcookie = _device.getGuid();
+
+    const scookieObj = _session.getSessionCookieObject();
+
+    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
+  };
+  const webNativeDisplayCampaignUtils = {
+    /**
+     * Checks if a campaign triggers a custom event push based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to evaluate.
+     * @returns {boolean} - Returns true if the campaign pushes a custom event, otherwise false.
+     */
+    doesCampaignPushCustomEvent: campaign => {
+      var _campaign$msgContent, _campaign$msgContent2, _campaign$display, _campaign$display$det, _campaign$display$det2, _campaign$display$det3, _campaign$display$det4;
+
+      return [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent = campaign.msgContent) === null || _campaign$msgContent === void 0 ? void 0 : _campaign$msgContent.type) || (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent2 = campaign.msgContent) === null || _campaign$msgContent2 === void 0 ? void 0 : _campaign$msgContent2.type) === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display = campaign.display) === null || _campaign$display === void 0 ? void 0 : (_campaign$display$det = _campaign$display.details) === null || _campaign$display$det === void 0 ? void 0 : (_campaign$display$det2 = _campaign$display$det[0]) === null || _campaign$display$det2 === void 0 ? void 0 : (_campaign$display$det3 = _campaign$display$det2.selectorData) === null || _campaign$display$det3 === void 0 ? void 0 : (_campaign$display$det4 = _campaign$display$det3.map(s => {
+        var _s$values;
+
+        return s === null || s === void 0 ? void 0 : (_s$values = s.values) === null || _s$values === void 0 ? void 0 : _s$values.editor;
+      })) === null || _campaign$display$det4 === void 0 ? void 0 : _campaign$display$det4.includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON));
+    },
+
+    /**
+     * Determines if a campaign mutates the DOM node based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to evaluate.
+     * @returns {boolean} - Returns true if the campaign mutates the DOM node, otherwise false.
+     */
+    doesCampaignMutateDOMNode: campaign => {
+      var _campaign$msgContent3, _campaign$msgContent4, _campaign$display2, _campaign$display2$de, _campaign$display2$de2, _campaign$display2$de3;
+
+      return [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL, WEB_NATIVE_TEMPLATES.CUSTOM_HTML].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent3 = campaign.msgContent) === null || _campaign$msgContent3 === void 0 ? void 0 : _campaign$msgContent3.type) || WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent4 = campaign.msgContent) === null || _campaign$msgContent4 === void 0 ? void 0 : _campaign$msgContent4.type) && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display2 = campaign.display) === null || _campaign$display2 === void 0 ? void 0 : (_campaign$display2$de = _campaign$display2.details) === null || _campaign$display2$de === void 0 ? void 0 : (_campaign$display2$de2 = _campaign$display2$de[0]) === null || _campaign$display2$de2 === void 0 ? void 0 : (_campaign$display2$de3 = _campaign$display2$de2.selectorData) === null || _campaign$display2$de3 === void 0 ? void 0 : _campaign$display2$de3.some(s => {
+        var _s$values2;
+
+        return [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML, WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s === null || s === void 0 ? void 0 : (_s$values2 = s.values) === null || _s$values2 === void 0 ? void 0 : _s$values2.editor);
+      }));
+    },
+
+    /**
+     * Sorts campaigns based on their priority in descending order.
+     *
+     * @param {Array<Object>} campaigns - The list of campaign objects.
+     * @returns {Array<Object>} - A new array of campaigns sorted by priority.
+     */
+    sortCampaignsByPriority: campaigns => {
+      return campaigns.sort((a, b) => b.priority - a.priority);
+    },
+
+    /**
+     * Retrieves the DOM nodes associated with a campaign based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to extract nodes from.
+     * @returns {Array<string>} - An array of DOM node selectors or IDs associated with the campaign.
+     */
+    getCampaignNodes: campaign => {
+      var _display$details, _display$details$, _display$details$$sel, _display$details$$sel2;
+
+      const {
+        msgContent,
+        display
+      } = campaign;
+      const {
+        type
+      } = msgContent;
+
+      switch (type) {
+        case WEB_NATIVE_TEMPLATES.BANNER:
+        case WEB_NATIVE_TEMPLATES.CAROUSEL:
+          return [display === null || display === void 0 ? void 0 : display.divSelector];
+
+        case WEB_NATIVE_TEMPLATES.CUSTOM_HTML:
+          return [display === null || display === void 0 ? void 0 : display.divId];
+
+        case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+          return (display === null || display === void 0 ? void 0 : (_display$details = display.details) === null || _display$details === void 0 ? void 0 : (_display$details$ = _display$details[0]) === null || _display$details$ === void 0 ? void 0 : (_display$details$$sel = _display$details$.selectorData) === null || _display$details$$sel === void 0 ? void 0 : (_display$details$$sel2 = _display$details$$sel.filter(s => {
+            var _s$values3;
+
+            return (s === null || s === void 0 ? void 0 : (_s$values3 = s.values) === null || _s$values3 === void 0 ? void 0 : _s$values3.editor) === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML;
+          })) === null || _display$details$$sel2 === void 0 ? void 0 : _display$details$$sel2.map(s => s === null || s === void 0 ? void 0 : s.selector)) || [];
+
+        default:
+          return [];
+      }
+    },
+
+    /**
+     * Determines whether the current custom event campaign should be skipped based on existing executed targets.
+     *
+     * @param {Object} targetNotif - The current notification object containing campaign details.
+     * @param {ExecutedTargets} executedTargets - An object holding already executed custom events.
+     * @returns {boolean} - Returns true if the current custom event campaign should be skipped, false otherwise.
+    */
+    shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets) {
+      var _targetNotif$msgConte2, _currentSameTypeCampa, _targetNotif$display, _targetNotif$display$;
+
+      const currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => {
+        var _targetNotif$msgConte;
+
+        return customEvent.customEventType === (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte = targetNotif.msgContent) === null || _targetNotif$msgConte === void 0 ? void 0 : _targetNotif$msgConte.type);
+      });
+      let shouldSkip = false; // If KV Pair, check for topic and type
+      // if visual builder or JSON, just check for the type of event, because we do not have `topic`
+
+      if (currentSameTypeCampaigns === null || currentSameTypeCampaigns === void 0 ? void 0 : currentSameTypeCampaigns.length) {
+        switch (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte2 = targetNotif.msgContent) === null || _targetNotif$msgConte2 === void 0 ? void 0 : _targetNotif$msgConte2.type) {
+          case WEB_NATIVE_TEMPLATES.KV_PAIR:
+            if ((_currentSameTypeCampa = currentSameTypeCampaigns.map(c => c === null || c === void 0 ? void 0 : c.eventTopic)) === null || _currentSameTypeCampa === void 0 ? void 0 : _currentSameTypeCampa.includes(targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$display = targetNotif.display) === null || _targetNotif$display === void 0 ? void 0 : (_targetNotif$display$ = _targetNotif$display.kv) === null || _targetNotif$display$ === void 0 ? void 0 : _targetNotif$display$.topic)) {
+              shouldSkip = true;
+            }
+            break;
+
+          /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
+          and can we inform the user the type of event they will receive in the editor
+          */
+
+          /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
+
+          /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
+
+          /* So we can not use Separated Campaigns logic for it, Hence skipping */
+
+          case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+          case WEB_NATIVE_TEMPLATES.JSON:
+            shouldSkip = true;
+            break;
+        }
+      }
+
+      return shouldSkip;
+    }
+
+  };
+  function addScriptTo(script) {
+    let target = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'body';
+    const targetEl = document.querySelector(target);
+    if (!targetEl) return;
+    const newScript = document.createElement('script');
+    newScript.textContent = script.textContent;
+    if (script.src) newScript.src = script.src;
+    newScript.async = script.async;
+    Array.from(script.attributes).forEach(attr => {
+      if (attr.name !== 'src' && attr.name !== 'async') {
+        newScript.setAttribute(attr.name, attr.value);
+      }
+    });
+    targetEl.appendChild(newScript);
+    script.remove();
+  }
+
   let logger$1 = null;
   const handleActionMode = (_logger, accountId) => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -11763,6 +12072,8 @@
       let newElement;
 
       if (selector.includes('-afterend-') || selector.includes('-beforebegin-')) {
+        // doing this because inserted elements saved selectors do not follow normal conventions
+        // they start with numbers ex. 0-beforebegin-div#titleContainer
         newElement = document.querySelector("[ct-selector=\"".concat(selector, "\"]"));
       } else {
         newElement = document.querySelector(selector);
@@ -11770,19 +12081,7 @@
 
       if (!newElement) return;
       const scripts = newElement.querySelectorAll('script');
-      scripts.forEach(script => {
-        const newScript = document.createElement('script');
-        newScript.textContent = script.textContent;
-        if (script.src) newScript.src = script.src;
-        newScript.async = script.async;
-        Array.from(script.attributes).forEach(attr => {
-          if (attr.name !== 'src' && attr.name !== 'async') {
-            newScript.setAttribute(attr.name, attr.value);
-          }
-        });
-        document.body.appendChild(newScript);
-        script.remove();
-      });
+      scripts.forEach(addScriptTo);
     } catch (error) {
       logger$1.debug('Error loading script', error);
     }
@@ -12025,299 +12324,6 @@
     }
 
   }
-
-  const invokeExternalJs = (jsFunc, targetingMsgJson) => {
-    const func = window.parent[jsFunc];
-
-    if (typeof func === 'function') {
-      if (targetingMsgJson.display.kv != null) {
-        func(targetingMsgJson.display.kv);
-      } else {
-        func();
-      }
-    }
-  };
-  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
-    const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
-    return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
-  };
-  const staleDataUpdate = (staledata, campType) => {
-    const campObj = getCampaignObject();
-    const globalObj = campObj[campType].global;
-
-    if (globalObj != null && campType) {
-      for (const idx in staledata) {
-        if (staledata.hasOwnProperty(idx)) {
-          delete globalObj[staledata[idx]];
-
-          if (StorageManager.read(CAMP_COOKIE_G)) {
-            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-
-            if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
-              delete guidCampObj[guid][campType][staledata[idx]];
-              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
-            }
-          }
-        }
-      }
-    }
-
-    saveCampaignObject(campObj);
-  };
-  const mergeEventMap = newEvtMap => {
-    if ($ct.globalEventsMap == null) {
-      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
-
-      if ($ct.globalEventsMap == null) {
-        $ct.globalEventsMap = newEvtMap;
-        return;
-      }
-    }
-
-    for (const key in newEvtMap) {
-      if (newEvtMap.hasOwnProperty(key)) {
-        const oldEvtObj = $ct.globalEventsMap[key];
-        const newEvtObj = newEvtMap[key];
-
-        if ($ct.globalEventsMap[key] != null) {
-          if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
-            $ct.globalEventsMap[key] = newEvtObj;
-          }
-        } else {
-          $ct.globalEventsMap[key] = newEvtObj;
-        }
-      }
-    }
-  };
-  const incrementImpression = (targetingMsgJson, _request) => {
-    const data = {};
-    data.type = 'event';
-    data.evtName = NOTIFICATION_VIEWED;
-    data.evtData = {
-      [WZRK_ID]: targetingMsgJson.wzrk_id
-    };
-
-    if (targetingMsgJson.wzrk_pivot) {
-      data.evtData = { ...data.evtData,
-        wzrk_pivot: targetingMsgJson.wzrk_pivot
-      };
-    }
-
-    _request.processEvent(data);
-  };
-  const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session) => {
-    if (onClick !== '' && onClick != null) {
-      let ctaElement;
-      let jsCTAElements;
-
-      if (isLegacy) {
-        ctaElement = contentDiv;
-      } else if (contentDiv !== null) {
-        jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
-
-        if (jsCTAElements != null && jsCTAElements.length === 1) {
-          ctaElement = jsCTAElements[0];
-        }
-      }
-
-      const jsFunc = targetingMsgJson.display.jsFunc;
-      const isPreview = targetingMsgJson.display.preview;
-
-      if (isPreview == null) {
-        onClick += getCookieParams(_device, _session);
-      }
-
-      if (ctaElement != null) {
-        ctaElement.onclick = () => {
-          // invoke js function call
-          if (jsFunc != null) {
-            // track notification clicked event
-            if (isPreview == null) {
-              RequestDispatcher.fireRequest(onClick);
-            }
-
-            invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
-
-            closeIframe('-1', divId, _session.sessionId);
-          } else {
-            const rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
-            const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-
-            if (rValue === 'pushPrompt') {
-              if (!targetingMsgJson.display.preview) {
-                window.parent.clevertap.renderNotificationClicked({
-                  msgId: targetingMsgJson.wzrk_id,
-                  pivotId: targetingMsgJson.wzrk_pivot
-                });
-              } // Open Web Push Soft prompt
-
-
-              window.clevertap.notifications.push({
-                skipDialog: true
-              });
-              closeIframe(campaignId, divId, _session.sessionId);
-            } else if (rValue === 'none') {
-              // Close notification
-              closeIframe(campaignId, divId, _session.sessionId);
-            } else {
-              // Will get the url to open
-              if (targetingMsgJson.display.window === 1) {
-                window.open(onClick, '_blank');
-
-                if (targetingMsgJson.display['close-popup']) {
-                  closeIframe(campaignId, divId, _session.sessionId);
-                }
-
-                if (!targetingMsgJson.display.preview) {
-                  window.parent.clevertap.renderNotificationClicked({
-                    msgId: targetingMsgJson.wzrk_id,
-                    pivotId: targetingMsgJson.wzrk_pivot
-                  });
-                }
-              } else {
-                window.location = onClick;
-              }
-            }
-          }
-        };
-      }
-    }
-  };
-  const getCookieParams = (_device, _session) => {
-    const gcookie = _device.getGuid();
-
-    const scookieObj = _session.getSessionCookieObject();
-
-    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
-  };
-  const webNativeDisplayCampaignUtils = {
-    /**
-     * Checks if a campaign triggers a custom event push based on its template type.
-     *
-     * @param {Object} campaign - The campaign object to evaluate.
-     * @returns {boolean} - Returns true if the campaign pushes a custom event, otherwise false.
-     */
-    doesCampaignPushCustomEvent: campaign => {
-      var _campaign$msgContent, _campaign$msgContent2, _campaign$display, _campaign$display$det, _campaign$display$det2, _campaign$display$det3, _campaign$display$det4;
-
-      return [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent = campaign.msgContent) === null || _campaign$msgContent === void 0 ? void 0 : _campaign$msgContent.type) || (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent2 = campaign.msgContent) === null || _campaign$msgContent2 === void 0 ? void 0 : _campaign$msgContent2.type) === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display = campaign.display) === null || _campaign$display === void 0 ? void 0 : (_campaign$display$det = _campaign$display.details) === null || _campaign$display$det === void 0 ? void 0 : (_campaign$display$det2 = _campaign$display$det[0]) === null || _campaign$display$det2 === void 0 ? void 0 : (_campaign$display$det3 = _campaign$display$det2.selectorData) === null || _campaign$display$det3 === void 0 ? void 0 : (_campaign$display$det4 = _campaign$display$det3.map(s => {
-        var _s$values;
-
-        return s === null || s === void 0 ? void 0 : (_s$values = s.values) === null || _s$values === void 0 ? void 0 : _s$values.editor;
-      })) === null || _campaign$display$det4 === void 0 ? void 0 : _campaign$display$det4.includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON));
-    },
-
-    /**
-     * Determines if a campaign mutates the DOM node based on its template type.
-     *
-     * @param {Object} campaign - The campaign object to evaluate.
-     * @returns {boolean} - Returns true if the campaign mutates the DOM node, otherwise false.
-     */
-    doesCampaignMutateDOMNode: campaign => {
-      var _campaign$msgContent3, _campaign$msgContent4, _campaign$display2, _campaign$display2$de, _campaign$display2$de2, _campaign$display2$de3;
-
-      return [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL, WEB_NATIVE_TEMPLATES.CUSTOM_HTML].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent3 = campaign.msgContent) === null || _campaign$msgContent3 === void 0 ? void 0 : _campaign$msgContent3.type) || WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent4 = campaign.msgContent) === null || _campaign$msgContent4 === void 0 ? void 0 : _campaign$msgContent4.type) && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display2 = campaign.display) === null || _campaign$display2 === void 0 ? void 0 : (_campaign$display2$de = _campaign$display2.details) === null || _campaign$display2$de === void 0 ? void 0 : (_campaign$display2$de2 = _campaign$display2$de[0]) === null || _campaign$display2$de2 === void 0 ? void 0 : (_campaign$display2$de3 = _campaign$display2$de2.selectorData) === null || _campaign$display2$de3 === void 0 ? void 0 : _campaign$display2$de3.some(s => {
-        var _s$values2;
-
-        return [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML, WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s === null || s === void 0 ? void 0 : (_s$values2 = s.values) === null || _s$values2 === void 0 ? void 0 : _s$values2.editor);
-      }));
-    },
-
-    /**
-     * Sorts campaigns based on their priority in descending order.
-     *
-     * @param {Array<Object>} campaigns - The list of campaign objects.
-     * @returns {Array<Object>} - A new array of campaigns sorted by priority.
-     */
-    sortCampaignsByPriority: campaigns => {
-      return campaigns.sort((a, b) => b.priority - a.priority);
-    },
-
-    /**
-     * Retrieves the DOM nodes associated with a campaign based on its template type.
-     *
-     * @param {Object} campaign - The campaign object to extract nodes from.
-     * @returns {Array<string>} - An array of DOM node selectors or IDs associated with the campaign.
-     */
-    getCampaignNodes: campaign => {
-      var _display$details, _display$details$, _display$details$$sel, _display$details$$sel2;
-
-      const {
-        msgContent,
-        display
-      } = campaign;
-      const {
-        type
-      } = msgContent;
-
-      switch (type) {
-        case WEB_NATIVE_TEMPLATES.BANNER:
-        case WEB_NATIVE_TEMPLATES.CAROUSEL:
-          return [display === null || display === void 0 ? void 0 : display.divSelector];
-
-        case WEB_NATIVE_TEMPLATES.CUSTOM_HTML:
-          return [display === null || display === void 0 ? void 0 : display.divId];
-
-        case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-          return (display === null || display === void 0 ? void 0 : (_display$details = display.details) === null || _display$details === void 0 ? void 0 : (_display$details$ = _display$details[0]) === null || _display$details$ === void 0 ? void 0 : (_display$details$$sel = _display$details$.selectorData) === null || _display$details$$sel === void 0 ? void 0 : (_display$details$$sel2 = _display$details$$sel.filter(s => {
-            var _s$values3;
-
-            return (s === null || s === void 0 ? void 0 : (_s$values3 = s.values) === null || _s$values3 === void 0 ? void 0 : _s$values3.editor) === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML;
-          })) === null || _display$details$$sel2 === void 0 ? void 0 : _display$details$$sel2.map(s => s === null || s === void 0 ? void 0 : s.selector)) || [];
-
-        default:
-          return [];
-      }
-    },
-
-    /**
-     * Determines whether the current custom event campaign should be skipped based on existing executed targets.
-     *
-     * @param {Object} targetNotif - The current notification object containing campaign details.
-     * @param {ExecutedTargets} executedTargets - An object holding already executed custom events.
-     * @returns {boolean} - Returns true if the current custom event campaign should be skipped, false otherwise.
-    */
-    shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets) {
-      var _targetNotif$msgConte2, _currentSameTypeCampa, _targetNotif$display, _targetNotif$display$;
-
-      const currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => {
-        var _targetNotif$msgConte;
-
-        return customEvent.customEventType === (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte = targetNotif.msgContent) === null || _targetNotif$msgConte === void 0 ? void 0 : _targetNotif$msgConte.type);
-      });
-      let shouldSkip = false; // If KV Pair, check for topic and type
-      // if visual builder or JSON, just check for the type of event, because we do not have `topic`
-
-      if (currentSameTypeCampaigns === null || currentSameTypeCampaigns === void 0 ? void 0 : currentSameTypeCampaigns.length) {
-        switch (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte2 = targetNotif.msgContent) === null || _targetNotif$msgConte2 === void 0 ? void 0 : _targetNotif$msgConte2.type) {
-          case WEB_NATIVE_TEMPLATES.KV_PAIR:
-            if ((_currentSameTypeCampa = currentSameTypeCampaigns.map(c => c === null || c === void 0 ? void 0 : c.eventTopic)) === null || _currentSameTypeCampa === void 0 ? void 0 : _currentSameTypeCampa.includes(targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$display = targetNotif.display) === null || _targetNotif$display === void 0 ? void 0 : (_targetNotif$display$ = _targetNotif$display.kv) === null || _targetNotif$display$ === void 0 ? void 0 : _targetNotif$display$.topic)) {
-              shouldSkip = true;
-            }
-            break;
-
-          /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
-          and can we inform the user the type of event they will receive in the editor
-          */
-
-          /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
-
-          /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
-
-          /* So we can not use Separated Campaigns logic for it, Hence skipping */
-
-          case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-          case WEB_NATIVE_TEMPLATES.JSON:
-            shouldSkip = true;
-            break;
-        }
-      }
-
-      return shouldSkip;
-    }
-
-  };
 
   const renderPersonalisationBanner = targetingMsgJson => {
     var _targetingMsgJson$dis;
