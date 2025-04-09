@@ -14,10 +14,13 @@ blocks:
             - artifact push workflow clevertap.min.js
             - artifact push workflow clevertap.js
             - artifact push workflow clevertap.js.map
-            - npm install
             - npm run build_sw
-            - artifact push workflow sw_webpush.min.js 
+            - 'artifact push workflow sw_webpush.min.js '
             - artifact push workflow sw_webpush.js
+      agent:
+        machine:
+          type: s1-c5-large
+          os_image: ''
 promotions:
   - name: Production
     pipeline_file: production-deploy.yml
