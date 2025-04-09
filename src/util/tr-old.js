@@ -1,11 +1,10 @@
-import { renderPopUpImageOnly } from '../campaignRender/webPopup'
 import {
   addDeliveryPreferenceDetails,
   addToLocalProfileMap,
   arp,
   getCampaignObject,
   saveCampaignObject
-} from '../clevertap'
+} from './clevertap'
 
 import {
   CAMP_COOKIE_NAME,
@@ -17,28 +16,28 @@ import {
   WZRK_ID,
   WEB_NATIVE_TEMPLATES,
   CAMPAIGN_TYPES
-} from '../constants'
+} from './constants'
 
-import { getNow, getToday } from '../datetime'
+import { getNow, getToday } from './datetime'
 
-import { StorageManager, $ct } from '../storage'
-import RequestDispatcher from '../requestDispatcher'
-import { CTWebPopupImageOnly } from '../web-popupImageonly/popupImageonly'
+import { StorageManager, $ct } from './storage'
+import RequestDispatcher from './requestDispatcher'
+import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import {
   checkAndRegisterWebInboxElements,
   initializeWebInbox,
   processWebInboxSettings,
   hasWebInboxSettingsInLS,
   processInboxNotifs
-} from '../../modules/web-inbox/helper'
-import { renderVisualBuilder } from '../../modules/visualBuilder/pageBuilder'
+} from '../modules/web-inbox/helper'
+import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
 import {
   handleKVpairCampaign,
   renderPersonalisationBanner,
   renderPersonalisationCarousel,
   renderCustomHtml,
   handleJson
-} from '.././campaignRender/nativeDisplay'
+} from './campaignRender/nativeDisplay'
 import {
   appendScriptForCustomEvent,
   deliveryPreferenceUtils,
@@ -49,12 +48,27 @@ import {
   setupClickEvent,
   staleDataUpdate,
   webNativeDisplayCampaignUtils
-} from '.././campaignRender/utilities'
-import { CampaignContext } from './campaignContext'
-import _tr from '../tr.js'
+} from './campaignRender/utilities'
+import { renderPopUpImageOnly } from './campaignRender/webPopup'
+import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 
-export const houseKeepingUtils = {
-  doCampHouseKeeping (targetingMsgJson, logger) {
+const _tr = (msg, { device, session, request, logger }) => {
+  const _device = device
+  const _session = session
+  const _request = request
+  const _logger = logger
+  let _wizCounter = 0
+  // Campaign House keeping
+
+  deliveryPreferenceUtils.updateOccurenceCountsForPopupAndNativeDisplay(
+    device,
+    msg
+  )
+
+  deliveryPreferenceUtils.portTLC(_session)
+
+  // Done
+  const doCampHouseKeeping = (targetingMsgJson) => {
     // Extracts campaign ID from wzrk_id (e.g., "123_456" -> "123")
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     // Gets current date for daily capping
@@ -168,7 +182,7 @@ export const houseKeepingUtils = {
         totalInboxSessionLimit = parseInt(targetingMsgJson[DISPLAY].wimc, 10)
       }
       // Session-level capping: Checks if campaign exceeds session limits
-      var sessionObj = campTypeObj[CampaignContext.session.sessionId]
+      var sessionObj = campTypeObj[_session.sessionId]
       if (sessionObj) {
         const campaignSessionCount = sessionObj[campaignId]
         const totalSessionCount = sessionObj.tc
@@ -203,7 +217,7 @@ export const houseKeepingUtils = {
       } else {
         // Initializes session object if not present
         sessionObj = {}
-        campTypeObj[CampaignContext.session.sessionId] = sessionObj
+        campTypeObj[_session.sessionId] = sessionObj
       }
 
       // Daily-level capping: Checks if campaign exceeds daily limits
@@ -255,11 +269,11 @@ export const houseKeepingUtils = {
       const delay = displayObj.delay
       // Resets delay to prevent re-triggering
       displayObj.delay = 0
-      setTimeout(_tr, delay * 1000, CampaignContext.msg, {
-        device: CampaignContext.device,
-        session: CampaignContext.session,
-        request: CampaignContext.request,
-        logger: logger
+      setTimeout(_tr, delay * 1000, msg, {
+        device: _device,
+        session: _session,
+        request: _request,
+        logger: _logger
       })
       // Delays execution, skips immediate rendering
       return false
@@ -278,7 +292,7 @@ export const houseKeepingUtils = {
     if (campKey === 'wi') {
       // Updates campaign object with new counts and saves to storage
       const newCampObj = {}
-      newCampObj[CampaignContext.session.sessionId] = sessionObj
+      newCampObj[_session.sessionId] = sessionObj
       newCampObj[today] = dailyObj
       newCampObj[GLOBAL] = globalObj
       // Save CAMP to localstorage here
@@ -287,12 +301,19 @@ export const houseKeepingUtils = {
       /* For Web Native Display and Web Popup */
       addDeliveryPreferenceDetails(targetingMsgJson, logger)
     }
-  },
+  }
 
+  // Done
   // Sets up click tracking and impression increment for a campaign
-  setupClickUrl (onClick, targetingMsgJson, contentDiv, divId, isLegacy) {
+  const setupClickUrl = (
+    onClick,
+    targetingMsgJson,
+    contentDiv,
+    divId,
+    isLegacy
+  ) => {
     // Records an impression
-    incrementImpression(targetingMsgJson, CampaignContext.request)
+    incrementImpression(targetingMsgJson, _request)
     // Sets up click event listener
     setupClickEvent(
       onClick,
@@ -300,16 +321,17 @@ export const houseKeepingUtils = {
       contentDiv,
       divId,
       isLegacy,
-      CampaignContext.device,
-      CampaignContext.session
+      _device,
+      _session
     )
-  },
+  }
 
+  // Done
   // Handles rendering of image-only popup campaigns
-  handleImageOnlyPopup (targetingMsgJson) {
+  const handleImageOnlyPopup = (targetingMsgJson) => {
     const divId = 'wzrkImageOnlyDiv'
     // Skips if frequency limits are exceeded
-    if (houseKeepingUtils.doCampHouseKeeping(targetingMsgJson) === false) {
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
     // Removes existing popup if spam control is active
@@ -332,11 +354,12 @@ export const houseKeepingUtils = {
       customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly)
     }
     // Renders the popup
-    return renderPopUpImageOnly(targetingMsgJson, CampaignContext.session)
-  },
+    return renderPopUpImageOnly(targetingMsgJson, _session)
+  }
 
+  // Done
   // Checks if a campaign is already rendered in an iframe
-  isExistingCampaign (campaignId) {
+  const isExistingCampaign = (campaignId) => {
     const testIframe =
       document.getElementById('wiz-iframe-intent') ||
       document.getElementById('wiz-iframe')
@@ -346,26 +369,26 @@ export const houseKeepingUtils = {
       return iframeDocument.documentElement.innerHTML.includes(campaignId)
     }
     return false
-  },
+  }
 
   // Creates and renders campaign templates (e.g., exit intent, banners, popups)
-  createTemplate (targetingMsgJson, isExitIntent, wtq) {
+  const createTemplate = (targetingMsgJson, isExitIntent) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     const displayObj = targetingMsgJson.display
 
     // Handles specific layout types
     if (displayObj.layout === 1) {
       // Handling Web Exit Intent
-      return houseKeepingUtils.showExitIntent(undefined, targetingMsgJson, wtq)
+      return showExitIntent(undefined, targetingMsgJson)
     }
     if (displayObj.layout === 3) {
       // Handling Web Popup Image Only
-      houseKeepingUtils.handleImageOnlyPopup(targetingMsgJson)
+      handleImageOnlyPopup(targetingMsgJson)
       return
     }
 
     // Skips if frequency limits are exceeded
-    if (houseKeepingUtils.doCampHouseKeeping(targetingMsgJson) === false) {
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
 
@@ -384,7 +407,7 @@ export const houseKeepingUtils = {
       }
     }
     // Skips if campaign is already rendered
-    if (houseKeepingUtils.isExistingCampaign(campaignId)) return
+    if (isExistingCampaign(campaignId)) return
 
     if (document.getElementById(divId) != null) {
       // Skips if div already exists
@@ -608,13 +631,7 @@ export const houseKeepingUtils = {
           const contentDiv = document
             .getElementById('wiz-iframe')
             .contentDocument.getElementById('contentDiv')
-          houseKeepingUtils.setupClickUrl(
-            onClick,
-            targetingMsgJson,
-            contentDiv,
-            divId,
-            legacy
-          )
+          setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
         }
       } else {
         let inDoc = iframe.contentDocument || iframe.contentWindow
@@ -628,13 +645,7 @@ export const houseKeepingUtils = {
             const contentDiv = document
               .getElementById('wiz-iframe')
               .contentDocument.getElementById('contentDiv')
-            houseKeepingUtils.setupClickUrl(
-              onClick,
-              targetingMsgJson,
-              contentDiv,
-              divId,
-              legacy
-            )
+            setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
           }
         }, 300)
       }
@@ -645,24 +656,19 @@ export const houseKeepingUtils = {
         const contentDiv = document
           .getElementById('wiz-iframe')
           .contentDocument.getElementById('contentDiv')
-        houseKeepingUtils.setupClickUrl(
-          onClick,
-          targetingMsgJson,
-          contentDiv,
-          divId,
-          legacy
-        )
+        setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy)
       }
     }
-  },
-
+  }
   // Renders footer notification
-  renderFooterNotification (targetingMsgJson, exitintentObj) {
-    houseKeepingUtils.createTemplate(targetingMsgJson, false)
-  },
+  const renderFooterNotification = (targetingMsgJson) => {
+    createTemplate(targetingMsgJson, false)
+  }
+
+  let _callBackCalled = false
 
   // Displays footer notification with callback handling
-  showFooterNotification (targetingMsgJson, _callBackCalled, exitintentObj) {
+  const showFooterNotification = (targetingMsgJson) => {
     let onClick = targetingMsgJson.display.onClick
     const displayObj = targetingMsgJson.display
 
@@ -688,10 +694,7 @@ export const houseKeepingUtils = {
         window.clevertap.raiseNotificationClicked = () => {
           if (onClick !== '' && onClick != null) {
             const jsFunc = targetingMsgJson.display.jsFunc
-            onClick += getCookieParams(
-              CampaignContext.device,
-              CampaignContext.session
-            )
+            onClick += getCookieParams(_device, _session)
 
             // Invokes JS function or redirects based on click action
             if (jsFunc != null) {
@@ -720,30 +723,24 @@ export const houseKeepingUtils = {
       // Handles delivery triggers (inactivity, scroll, exit intent, delay)
       if (displayObj.deliveryTrigger) {
         if (displayObj.deliveryTrigger.inactive) {
-          houseKeepingUtils.triggerByInactivity(targetingMsgJson)
+          triggerByInactivity(targetingMsgJson)
         }
         if (displayObj.deliveryTrigger.scroll) {
-          houseKeepingUtils.triggerByScroll(targetingMsgJson)
+          triggerByScroll(targetingMsgJson)
         }
         if (displayObj.deliveryTrigger.isExitIntent) {
           exitintentObj = targetingMsgJson
-          window.document.body.onmouseleave = houseKeepingUtils.showExitIntent
+          window.document.body.onmouseleave = showExitIntent
         }
         const delay =
           displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed
         if (delay != null && delay > 0) {
           setTimeout(() => {
-            houseKeepingUtils.renderFooterNotification(
-              targetingMsgJson,
-              exitintentObj
-            )
+            renderFooterNotification(targetingMsgJson)
           }, delay * 1000)
         }
       } else {
-        houseKeepingUtils.renderFooterNotification(
-          targetingMsgJson,
-          exitintentObj
-        )
+        renderFooterNotification(targetingMsgJson)
       }
 
       // Handles popup-specific callbacks
@@ -809,15 +806,15 @@ export const houseKeepingUtils = {
             }
           }
 
-          CampaignContext.request.processEvent(eventData)
+          _request.processEvent(eventData)
         }
         popupCallback(inaObj)
       }
     }
-  },
+  }
 
   // Triggers campaign based on user inactivity
-  triggerByInactivity (targetNotif) {
+  const triggerByInactivity = (targetNotif) => {
     const IDLE_TIME_THRESHOLD =
       targetNotif.display.deliveryTrigger.inactive * 1000 // Convert to milliseconds
     let idleTimer
@@ -832,7 +829,7 @@ export const houseKeepingUtils = {
     const resetIdleTimer = () => {
       clearTimeout(idleTimer)
       idleTimer = setTimeout(() => {
-        houseKeepingUtils.renderFooterNotification(targetNotif)
+        renderFooterNotification(targetNotif)
         removeEventListeners()
       }, IDLE_TIME_THRESHOLD)
     }
@@ -853,10 +850,10 @@ export const houseKeepingUtils = {
     resetIdleTimer()
     // Returns cleanup function
     return removeEventListeners
-  },
+  }
 
   // Triggers campaign based on scroll percentage
-  triggerByScroll (targetNotif) {
+  const triggerByScroll = (targetNotif) => {
     const calculateScrollPercentage = () => {
       const { scrollHeight, clientHeight, scrollTop } =
         document.documentElement
@@ -865,7 +862,7 @@ export const houseKeepingUtils = {
     const scrollListener = () => {
       const scrollPercentage = calculateScrollPercentage()
       if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
-        houseKeepingUtils.renderFooterNotification(targetNotif)
+        renderFooterNotification(targetNotif)
         window.removeEventListener('scroll', throttledScrollListener)
       }
     }
@@ -888,10 +885,11 @@ export const houseKeepingUtils = {
     })
     // Returns cleanup function
     return () => window.removeEventListener('scroll', throttledScrollListener)
-  },
+  }
 
+  let exitintentObj
   // Handles exit intent campaigns (triggered when mouse leaves window)
-  showExitIntent (event, targetObj, wtq, exitintentObj) {
+  const showExitIntent = (event, targetObj) => {
     // Only triggers when mouse moves upward out of window
     if (event?.clientY > 0) return
     const targetingMsgJson = targetObj || exitintentObj
@@ -899,17 +897,17 @@ export const houseKeepingUtils = {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     const layout = targetingMsgJson.display.layout
     // Skips if campaign is already rendered
-    if (houseKeepingUtils.isExistingCampaign(campaignId)) return
+    if (isExistingCampaign(campaignId)) return
 
     if (
       targetingMsgJson.display.wtarget_type === 0 &&
       (layout === 0 || layout === 2 || layout === 3)
     ) {
-      houseKeepingUtils.createTemplate(targetingMsgJson, true)
+      createTemplate(targetingMsgJson, true)
       return
     }
     // Skips if frequency limits are exceeded
-    if (houseKeepingUtils.doCampHouseKeeping(targetingMsgJson) === false) {
+    if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
 
@@ -1102,7 +1100,7 @@ export const houseKeepingUtils = {
       const contentDiv = document
         .getElementById('wiz-iframe-intent')
         .contentDocument.getElementById('contentDiv')
-      houseKeepingUtils.setupClickUrl(
+      setupClickUrl(
         onClick,
         targetingMsgJson,
         contentDiv,
@@ -1110,10 +1108,23 @@ export const houseKeepingUtils = {
         legacy
       )
     }
-  },
+  }
 
+  // Retries processing if document.body isn't ready (up to 6 attempts)
+  if (!document.body) {
+    if (_wizCounter < 6) {
+      _wizCounter++
+      setTimeout(_tr, 1000, msg, {
+        device: _device,
+        session: _session,
+        request: _request,
+        logger: _logger
+      })
+    }
+    return
+  }
   // Processes native display campaigns (e.g., banners, carousels)
-  processNativeDisplayArr (arrInAppNotifs) {
+  const processNativeDisplayArr = (arrInAppNotifs) => {
     Object.keys(arrInAppNotifs).map((key) => {
       var elementId, id
       if (arrInAppNotifs[key].display.divId) {
@@ -1131,15 +1142,15 @@ export const houseKeepingUtils = {
         delete arrInAppNotifs[key]
       }
     })
-  },
+  }
 
   // Adds listener to process native displays after page load
-  addLoadListener (arrInAppNotifs) {
+  const addLoadListener = (arrInAppNotifs) => {
     window.addEventListener('load', () => {
       let count = 0
       if (count < 20) {
         const t = setInterval(() => {
-          houseKeepingUtils.processNativeDisplayArr(arrInAppNotifs)
+          processNativeDisplayArr(arrInAppNotifs)
           if (Object.keys(arrInAppNotifs).length === 0 || count === 20) {
             clearInterval(t)
             arrInAppNotifs = {}
@@ -1148,29 +1159,10 @@ export const houseKeepingUtils = {
         }, 500)
       }
     })
-  },
+  }
 
-  // Processes web inbox notifications
-  handleInboxNotifications (msg) {
-    if (msg.inbox_preview) {
-      processInboxNotifs(msg)
-      return
-    }
-    if (msg.inbox_notifs) {
-      const msgArr = []
-      for (let index = 0; index < msg.inbox_notifs.length; index++) {
-        if (
-          houseKeepingUtils.doCampHouseKeeping(msg.inbox_notifs[index]) !==
-          false
-        ) {
-          msgArr.push(msg.inbox_notifs[index])
-        }
-      }
-      processInboxNotifs(msgArr)
-    }
-  },
-
-  processCampaigns (msg, _callBackCalled, exitintentObj, logger) {
+  // Processes in-app notifications (e.g., footers, exit intents, native displays)
+  if (msg.inapp_notifs != null) {
     const arrInAppNotifs = {}
 
     const sortedCampaigns =
@@ -1190,17 +1182,13 @@ export const houseKeepingUtils = {
         targetNotif.display.wtarget_type ===
           CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2
       ) {
-        houseKeepingUtils.showFooterNotification(
-          targetNotif,
-          _callBackCalled,
-          exitintentObj
-        )
+        showFooterNotification(targetNotif)
       } else if (
         targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT
       ) {
         // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif
-        window.document.body.onmouseleave = houseKeepingUtils.showExitIntent
+        window.document.body.onmouseleave = showExitIntent
       } else if (
         targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY
       ) {
@@ -1216,7 +1204,7 @@ export const houseKeepingUtils = {
             executedTargets
           )
         ) {
-          logger.debug(
+          _logger.debug(
             'Custom Event Campaign Skipped with id :: ' + targetNotif?.wzrk_id
           )
           continue
@@ -1233,7 +1221,7 @@ export const houseKeepingUtils = {
               ?.includes(node)
           )
         ) {
-          logger.debug(
+          _logger.debug(
             'DOM Campaign Skipped with id :: ' + targetNotif?.wzrk_id
           )
           continue
@@ -1244,9 +1232,9 @@ export const houseKeepingUtils = {
           webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif)
         ) {
           /*
-              This basically stores the CustomEvents with their type that we will push so that
-              the next time we receive a CustomEvent with the same type we can skip it
-            */
+            This basically stores the CustomEvents with their type that we will push so that
+            the next time we receive a CustomEvent with the same type we can skip it
+          */
 
           const eventTopic =
             targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR
@@ -1287,88 +1275,113 @@ export const houseKeepingUtils = {
         } else if (
           targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER
         ) {
-          renderVisualBuilder(targetNotif, false)
+          renderVisualBuilder(targetNotif, false, _logger)
         } else if (
           targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML
         ) {
-          renderCustomHtml(targetNotif, logger)
+          renderCustomHtml(targetNotif, _logger)
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
           handleJson(targetNotif, false)
         } else {
-          houseKeepingUtils.showFooterNotification(
-            targetNotif,
-            _callBackCalled,
-            exitintentObj
-          )
+          showFooterNotification(targetNotif)
         }
       }
     }
     // Processes banner or carousel campaign array
     if (Object.keys(arrInAppNotifs).length) {
       if (document.readyState === 'complete') {
-        houseKeepingUtils.processNativeDisplayArr(arrInAppNotifs)
+        processNativeDisplayArr(arrInAppNotifs)
       } else {
-        houseKeepingUtils.addLoadListener(arrInAppNotifs)
+        addLoadListener(arrInAppNotifs)
       }
     }
-  },
+  }
 
-  handleWebInbox (msg, logger) {
+  // Processes web inbox notifications
+  const handleInboxNotifications = () => {
+    if (msg.inbox_preview) {
+      processInboxNotifs(msg)
+      return
+    }
+    if (msg.inbox_notifs) {
+      const msgArr = []
+      for (let index = 0; index < msg.inbox_notifs.length; index++) {
+        if (doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
+          msgArr.push(msg.inbox_notifs[index])
+        }
+      }
+      processInboxNotifs(msgArr)
+    }
+  }
+
+  // Initializes and processes web inbox settings and notifications
+  if (msg.webInboxSetting || msg.inbox_notifs != null) {
+    /**
+     * When the user visits a website for the 1st time after web inbox channel is setup,
+     * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
+     * as we would not have any entry related to webInboxSettings in the LS
+     */
+
     if (hasWebInboxSettingsInLS()) {
       checkAndRegisterWebInboxElements()
     }
     if ($ct.inbox === null) {
       msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
-      initializeWebInbox(logger)
+      initializeWebInbox(_logger)
         .then(() => {
-          houseKeepingUtils.handleInboxNotifications(msg)
+          handleInboxNotifications()
         })
         .catch((e) => {})
     } else {
-      houseKeepingUtils.handleInboxNotifications(msg)
+      handleInboxNotifications()
     }
-  },
+  }
 
-  persistsEventsAndProfileData (msg, logger) {
-    // Persists events and profile data to local storage
-    if (StorageManager._isLocalStorageSupported()) {
-      try {
-        if (msg.evpr != null) {
-          const eventsMap = msg.evpr.events
-          const profileMap = msg.evpr.profile
-          const syncExpiry = msg.evpr.expires_in
-          const now = getNow()
-          StorageManager.setMetaProp('lsTime', now)
-          StorageManager.setMetaProp('exTs', syncExpiry)
-          mergeEventMap(eventsMap)
-          StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap)
-          if ($ct.globalProfileMap == null) {
-            addToLocalProfileMap(profileMap, true)
-          } else {
-            addToLocalProfileMap(profileMap, false)
-          }
+  // Processes web push configuration
+  if (msg.webPushConfig) {
+    processWebPushConfig(msg.webPushConfig, logger, request)
+  }
+
+  // Merges variables into storage
+  if (msg.vars) {
+    $ct.variableStore.mergeVariables(msg.vars)
+    return
+  }
+
+  // Persists events and profile data to local storage
+  if (StorageManager._isLocalStorageSupported()) {
+    try {
+      if (msg.evpr != null) {
+        const eventsMap = msg.evpr.events
+        const profileMap = msg.evpr.profile
+        const syncExpiry = msg.evpr.expires_in
+        const now = getNow()
+        StorageManager.setMetaProp('lsTime', now)
+        StorageManager.setMetaProp('exTs', syncExpiry)
+        mergeEventMap(eventsMap)
+        StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap)
+        if ($ct.globalProfileMap == null) {
+          addToLocalProfileMap(profileMap, true)
+        } else {
+          addToLocalProfileMap(profileMap, false)
         }
-        if (msg.arp != null) {
-          arp(msg.arp)
-        }
-        if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
-          // Updates stale web popup data
-          staleDataUpdate(msg.inapp_stale, 'wp')
-        }
-        if (msg.inbox_stale != null && msg.inbox_stale.length > 0) {
-          // Updates stale web inbox data
-          staleDataUpdate(msg.inbox_stale, 'wi')
-        }
-      } catch (e) {
-        logger.error('Unable to persist evrp/arp: ' + e)
       }
-    }
-  },
-
-  handleVariables (msg) {
-    // Merges variables into storage
-    if (msg.vars) {
-      $ct.variableStore.mergeVariables(msg.vars)
+      if (msg.arp != null) {
+        arp(msg.arp)
+      }
+      if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
+        // Updates stale web popup data
+        /* TODO: Need to handle Stale Campaign CLeanups for Webpopups without wp */
+        staleDataUpdate(msg.inapp_stale, 'wp')
+      }
+      if (msg.inbox_stale != null && msg.inbox_stale.length > 0) {
+        // Updates stale web inbox data
+        staleDataUpdate(msg.inbox_stale, 'wi')
+      }
+    } catch (e) {
+      _logger.error('Unable to persist evrp/arp: ' + e)
     }
   }
 }
+
+export default _tr
