@@ -14,6 +14,10 @@ blocks:
             - artifact push workflow clevertap.min.js
             - artifact push workflow clevertap.js
             - artifact push workflow clevertap.js.map
+      agent:
+        machine:
+          type: s1-ultron-c5-large
+          os_image: ''
 promotions:
   - name: Production
     pipeline_file: production-deploy.yml
