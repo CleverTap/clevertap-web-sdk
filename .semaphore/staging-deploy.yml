@@ -24,8 +24,8 @@ blocks:
               aws s3 cp ./clevertap.js.map s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_BRANCH}/js/ --acl public-read
               aws s3 cp ./sw_webpush.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_BRANCH}/js/ --acl public-read
               aws s3 cp ./sw_webpush.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_BRANCH}/js/ --acl public-read
-              rm -r clevertap.min.js clevertap.js clevertap.js.map
-              aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_BRANCH}/js/clevertap.min.js /staging/${SEMAPHORE_GIT_BRANCH}/js/clevertap.js /staging/${SEMAPHORE_GIT_BRANCH}/js/clevertap.js.map
+              rm -r clevertap.min.js clevertap.js clevertap.js.map sw_webpush.min.js sw_webpush.js
+              aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_BRANCH}/js/clevertap.min.js /staging/${SEMAPHORE_GIT_BRANCH}/js/clevertap.js /staging/${SEMAPHORE_GIT_BRANCH}/js/clevertap.js.map /staging/${SEMAPHORE_GIT_BRANCH}/js/sw_webpush.min.js /staging/${SEMAPHORE_GIT_BRANCH}/js/sw_webpush.js
       secrets:
         - name: ProductionAccountAwsCredentials
       agent:
