@@ -336,6 +336,68 @@ export const webNativeDisplayCampaignUtils = {
   }
 }
 
+export const deliveryPreferenceUtils = {
+  /**
+   * Updates a frequency counter object based on the given array.
+   * If a key from the array exists in the object, its value is incremented.
+   * Otherwise, the key is added with an initial count of 1.
+   *
+   * @param {string[]} arr - The array of keys to process.
+   * @param {Object<string, number>} [obj={}] - The existing frequency counter object (optional).
+   * @returns {Object<string, number>} - The updated frequency counter object.
+   *
+   * @example
+   * let freq = updateFrequencyCounter(["a", "b", "c"]);
+   * console.log(freq); // { a: 1, b: 1, c: 1 }
+   *
+   * freq = updateFrequencyCounter(["a", "b"], freq);
+   * console.log(freq); // { a: 2, b: 2, c: 1 }
+   */
+  updateFrequencyCounter (arr, obj = {}) {
+    if (!arr || arr.length === 0) {
+      return obj
+    }
+
+    arr.forEach((key) => {
+      obj[key] = (obj[key] || 0) + 1
+    })
+    return obj
+  },
+
+  /**
+   * Updates a timestamp tracker object based on the given array of keys.
+   * If a key exists, it appends the current timestamp; otherwise, it starts a new array with the timestamp.
+   *
+   * @param {string[]} arr - The array of keys to process.
+   * @param {Object<string, number[]>} [obj={}] - The existing timestamp tracker object (optional).
+   * @returns {Object<string, number[]>} - The updated timestamp tracker object.
+   *
+   * @example
+   * let timestamps = updateTimestampTracker(["a", "b", "c"]);
+   * console.log(timestamps);
+   * // { a: [1712134567], b: [1712134567], c: [1712134567] }
+   *
+   * timestamps = updateTimestampTracker(["a", "b"], timestamps);
+   * console.log(timestamps);
+   * // { a: [1712134567, 1712134570], b: [1712134567, 1712134570], c: [1712134567] }
+   */
+  updateTimestampTracker (arr, obj = {}) {
+    if (!arr || arr.length === 0) {
+      return obj
+    }
+
+    const now = Math.floor(Date.now() / 1000) // Current timestamp in seconds (Epoch UTC)
+    arr.forEach((key) => {
+      if (!obj[key]) {
+        obj[key] = []
+      }
+      obj[key].push(now)
+    })
+
+    return obj
+  }
+}
+
 export function addScriptTo (script, target = 'body') {
   const targetEl = document.querySelector(target)
   if (!targetEl) return

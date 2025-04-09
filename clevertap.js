@@ -233,9 +233,15 @@
   };
   const CAMPAIGN_TYPES = {
     EXIT_INTENT: 1,
+
+    /* Deprecated */
     WEB_NATIVE_DISPLAY: 2,
     FOOTER_NOTIFICATION: 0,
+
+    /* Web Popup */
     FOOTER_NOTIFICATION_2: null
+    /* Web Popup */
+
   };
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
@@ -8066,51 +8072,6 @@
     }
   };
 
-  const getURLParams = url => {
-    const urlParams = {};
-    const idx = url.indexOf('?');
-
-    if (idx > 1) {
-      const uri = url.substring(idx + 1);
-      let match;
-      const pl = /\+/g; // Regex for replacing addition symbol with a space
-
-      const search = /([^&=]+)=?([^&]*)/g;
-
-      const decode = function (s) {
-        let replacement = s.replace(pl, ' ');
-
-        try {
-          replacement = decodeURIComponent(replacement);
-        } catch (e) {// eat
-        }
-
-        return replacement;
-      };
-
-      match = search.exec(uri);
-
-      while (match) {
-        urlParams[decode(match[1])] = decode(match[2]);
-        match = search.exec(uri);
-      }
-    }
-
-    return urlParams;
-  };
-  const getDomain = url => {
-    if (url === '') return '';
-    var a = document.createElement('a');
-    a.href = url;
-    return a.hostname;
-  };
-  const addToURL = (url, k, v) => {
-    return url + '&' + k + '=' + encodeURIComponent(v);
-  };
-  const getHostName = () => {
-    return window.location.hostname;
-  };
-
   /* eslint-disable */
   const urlBase64ToUint8Array = base64String => {
     let padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -8449,6 +8410,51 @@
     return output;
   };
 
+  const getURLParams = url => {
+    const urlParams = {};
+    const idx = url.indexOf('?');
+
+    if (idx > 1) {
+      const uri = url.substring(idx + 1);
+      let match;
+      const pl = /\+/g; // Regex for replacing addition symbol with a space
+
+      const search = /([^&=]+)=?([^&]*)/g;
+
+      const decode = function (s) {
+        let replacement = s.replace(pl, ' ');
+
+        try {
+          replacement = decodeURIComponent(replacement);
+        } catch (e) {// eat
+        }
+
+        return replacement;
+      };
+
+      match = search.exec(uri);
+
+      while (match) {
+        urlParams[decode(match[1])] = decode(match[2]);
+        match = search.exec(uri);
+      }
+    }
+
+    return urlParams;
+  };
+  const getDomain = url => {
+    if (url === '') return '';
+    var a = document.createElement('a');
+    a.href = url;
+    return a.hostname;
+  };
+  const addToURL = (url, k, v) => {
+    return url + '&' + k + '=' + encodeURIComponent(v);
+  };
+  const getHostName = () => {
+    return window.location.hostname;
+  };
+
   var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
 
   var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
@@ -8643,6 +8649,366 @@
     value: _addARPToRequest2
   });
 
+  const invokeExternalJs = (jsFunc, targetingMsgJson) => {
+    const func = window.parent[jsFunc];
+
+    if (typeof func === 'function') {
+      if (targetingMsgJson.display.kv != null) {
+        func(targetingMsgJson.display.kv);
+      } else {
+        func();
+      }
+    }
+  };
+  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
+    const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
+    return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
+  };
+  const staleDataUpdate = (staledata, campType) => {
+    const campObj = getCampaignObject();
+    const globalObj = campObj[campType].global;
+
+    if (globalObj != null && campType) {
+      for (const idx in staledata) {
+        if (staledata.hasOwnProperty(idx)) {
+          delete globalObj[staledata[idx]];
+
+          if (StorageManager.read(CAMP_COOKIE_G)) {
+            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+            if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
+              delete guidCampObj[guid][campType][staledata[idx]];
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+            }
+          }
+        }
+      }
+    }
+
+    saveCampaignObject(campObj);
+  };
+  const mergeEventMap = newEvtMap => {
+    if ($ct.globalEventsMap == null) {
+      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
+
+      if ($ct.globalEventsMap == null) {
+        $ct.globalEventsMap = newEvtMap;
+        return;
+      }
+    }
+
+    for (const key in newEvtMap) {
+      if (newEvtMap.hasOwnProperty(key)) {
+        const oldEvtObj = $ct.globalEventsMap[key];
+        const newEvtObj = newEvtMap[key];
+
+        if ($ct.globalEventsMap[key] != null) {
+          if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
+            $ct.globalEventsMap[key] = newEvtObj;
+          }
+        } else {
+          $ct.globalEventsMap[key] = newEvtObj;
+        }
+      }
+    }
+  };
+  const incrementImpression = (targetingMsgJson, _request) => {
+    const data = {};
+    data.type = 'event';
+    data.evtName = NOTIFICATION_VIEWED;
+    data.evtData = {
+      [WZRK_ID]: targetingMsgJson.wzrk_id
+    };
+
+    if (targetingMsgJson.wzrk_pivot) {
+      data.evtData = { ...data.evtData,
+        wzrk_pivot: targetingMsgJson.wzrk_pivot
+      };
+    }
+
+    _request.processEvent(data);
+  };
+  const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session) => {
+    if (onClick !== '' && onClick != null) {
+      let ctaElement;
+      let jsCTAElements;
+
+      if (isLegacy) {
+        ctaElement = contentDiv;
+      } else if (contentDiv !== null) {
+        jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
+
+        if (jsCTAElements != null && jsCTAElements.length === 1) {
+          ctaElement = jsCTAElements[0];
+        }
+      }
+
+      const jsFunc = targetingMsgJson.display.jsFunc;
+      const isPreview = targetingMsgJson.display.preview;
+
+      if (isPreview == null) {
+        onClick += getCookieParams(_device, _session);
+      }
+
+      if (ctaElement != null) {
+        ctaElement.onclick = () => {
+          // invoke js function call
+          if (jsFunc != null) {
+            // track notification clicked event
+            if (isPreview == null) {
+              RequestDispatcher.fireRequest(onClick);
+            }
+
+            invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
+
+            closeIframe('-1', divId, _session.sessionId);
+          } else {
+            const rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
+            const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+
+            if (rValue === 'pushPrompt') {
+              if (!targetingMsgJson.display.preview) {
+                window.parent.clevertap.renderNotificationClicked({
+                  msgId: targetingMsgJson.wzrk_id,
+                  pivotId: targetingMsgJson.wzrk_pivot
+                });
+              } // Open Web Push Soft prompt
+
+
+              window.clevertap.notifications.push({
+                skipDialog: true
+              });
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else if (rValue === 'none') {
+              // Close notification
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else {
+              // Will get the url to open
+              if (targetingMsgJson.display.window === 1) {
+                window.open(onClick, '_blank');
+
+                if (targetingMsgJson.display['close-popup']) {
+                  closeIframe(campaignId, divId, _session.sessionId);
+                }
+
+                if (!targetingMsgJson.display.preview) {
+                  window.parent.clevertap.renderNotificationClicked({
+                    msgId: targetingMsgJson.wzrk_id,
+                    pivotId: targetingMsgJson.wzrk_pivot
+                  });
+                }
+              } else {
+                window.location = onClick;
+              }
+            }
+          }
+        };
+      }
+    }
+  };
+  const getCookieParams = (_device, _session) => {
+    const gcookie = _device.getGuid();
+
+    const scookieObj = _session.getSessionCookieObject();
+
+    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
+  };
+  const webNativeDisplayCampaignUtils = {
+    /**
+     * Checks if a campaign triggers a custom event push based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to evaluate.
+     * @returns {boolean} - Returns true if the campaign pushes a custom event, otherwise false.
+     */
+    doesCampaignPushCustomEvent: campaign => {
+      var _campaign$msgContent, _campaign$msgContent2, _campaign$display, _campaign$display$det, _campaign$display$det2, _campaign$display$det3, _campaign$display$det4;
+
+      return [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent = campaign.msgContent) === null || _campaign$msgContent === void 0 ? void 0 : _campaign$msgContent.type) || (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent2 = campaign.msgContent) === null || _campaign$msgContent2 === void 0 ? void 0 : _campaign$msgContent2.type) === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display = campaign.display) === null || _campaign$display === void 0 ? void 0 : (_campaign$display$det = _campaign$display.details) === null || _campaign$display$det === void 0 ? void 0 : (_campaign$display$det2 = _campaign$display$det[0]) === null || _campaign$display$det2 === void 0 ? void 0 : (_campaign$display$det3 = _campaign$display$det2.selectorData) === null || _campaign$display$det3 === void 0 ? void 0 : (_campaign$display$det4 = _campaign$display$det3.map(s => {
+        var _s$values;
+
+        return s === null || s === void 0 ? void 0 : (_s$values = s.values) === null || _s$values === void 0 ? void 0 : _s$values.editor;
+      })) === null || _campaign$display$det4 === void 0 ? void 0 : _campaign$display$det4.includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON));
+    },
+
+    /**
+     * Determines if a campaign mutates the DOM node based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to evaluate.
+     * @returns {boolean} - Returns true if the campaign mutates the DOM node, otherwise false.
+     */
+    doesCampaignMutateDOMNode: campaign => {
+      var _campaign$msgContent3, _campaign$msgContent4, _campaign$display2, _campaign$display2$de, _campaign$display2$de2, _campaign$display2$de3;
+
+      return [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL, WEB_NATIVE_TEMPLATES.CUSTOM_HTML].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent3 = campaign.msgContent) === null || _campaign$msgContent3 === void 0 ? void 0 : _campaign$msgContent3.type) || WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent4 = campaign.msgContent) === null || _campaign$msgContent4 === void 0 ? void 0 : _campaign$msgContent4.type) && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display2 = campaign.display) === null || _campaign$display2 === void 0 ? void 0 : (_campaign$display2$de = _campaign$display2.details) === null || _campaign$display2$de === void 0 ? void 0 : (_campaign$display2$de2 = _campaign$display2$de[0]) === null || _campaign$display2$de2 === void 0 ? void 0 : (_campaign$display2$de3 = _campaign$display2$de2.selectorData) === null || _campaign$display2$de3 === void 0 ? void 0 : _campaign$display2$de3.some(s => {
+        var _s$values2;
+
+        return [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML, WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s === null || s === void 0 ? void 0 : (_s$values2 = s.values) === null || _s$values2 === void 0 ? void 0 : _s$values2.editor);
+      }));
+    },
+
+    /**
+     * Sorts campaigns based on their priority in descending order.
+     *
+     * @param {Array<Object>} campaigns - The list of campaign objects.
+     * @returns {Array<Object>} - A new array of campaigns sorted by priority.
+     */
+    sortCampaignsByPriority: campaigns => {
+      return campaigns.sort((a, b) => b.priority - a.priority);
+    },
+
+    /**
+     * Retrieves the DOM nodes associated with a campaign based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to extract nodes from.
+     * @returns {Array<string>} - An array of DOM node selectors or IDs associated with the campaign.
+     */
+    getCampaignNodes: campaign => {
+      var _display$details, _display$details$, _display$details$$sel, _display$details$$sel2;
+
+      const {
+        msgContent,
+        display
+      } = campaign;
+      const {
+        type
+      } = msgContent;
+
+      switch (type) {
+        case WEB_NATIVE_TEMPLATES.BANNER:
+        case WEB_NATIVE_TEMPLATES.CAROUSEL:
+          return [display === null || display === void 0 ? void 0 : display.divSelector];
+
+        case WEB_NATIVE_TEMPLATES.CUSTOM_HTML:
+          return [display === null || display === void 0 ? void 0 : display.divId];
+
+        case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+          return (display === null || display === void 0 ? void 0 : (_display$details = display.details) === null || _display$details === void 0 ? void 0 : (_display$details$ = _display$details[0]) === null || _display$details$ === void 0 ? void 0 : (_display$details$$sel = _display$details$.selectorData) === null || _display$details$$sel === void 0 ? void 0 : (_display$details$$sel2 = _display$details$$sel.filter(s => {
+            var _s$values3;
+
+            return (s === null || s === void 0 ? void 0 : (_s$values3 = s.values) === null || _s$values3 === void 0 ? void 0 : _s$values3.editor) === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML;
+          })) === null || _display$details$$sel2 === void 0 ? void 0 : _display$details$$sel2.map(s => s === null || s === void 0 ? void 0 : s.selector)) || [];
+
+        default:
+          return [];
+      }
+    },
+
+    /**
+     * Determines whether the current custom event campaign should be skipped based on existing executed targets.
+     *
+     * @param {Object} targetNotif - The current notification object containing campaign details.
+     * @param {ExecutedTargets} executedTargets - An object holding already executed custom events.
+     * @returns {boolean} - Returns true if the current custom event campaign should be skipped, false otherwise.
+    */
+    shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets) {
+      var _targetNotif$msgConte2, _currentSameTypeCampa, _targetNotif$display, _targetNotif$display$;
+
+      const currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => {
+        var _targetNotif$msgConte;
+
+        return customEvent.customEventType === (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte = targetNotif.msgContent) === null || _targetNotif$msgConte === void 0 ? void 0 : _targetNotif$msgConte.type);
+      });
+      let shouldSkip = false; // If KV Pair, check for topic and type
+      // if visual builder or JSON, just check for the type of event, because we do not have `topic`
+
+      if (currentSameTypeCampaigns === null || currentSameTypeCampaigns === void 0 ? void 0 : currentSameTypeCampaigns.length) {
+        switch (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte2 = targetNotif.msgContent) === null || _targetNotif$msgConte2 === void 0 ? void 0 : _targetNotif$msgConte2.type) {
+          case WEB_NATIVE_TEMPLATES.KV_PAIR:
+            if ((_currentSameTypeCampa = currentSameTypeCampaigns.map(c => c === null || c === void 0 ? void 0 : c.eventTopic)) === null || _currentSameTypeCampa === void 0 ? void 0 : _currentSameTypeCampa.includes(targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$display = targetNotif.display) === null || _targetNotif$display === void 0 ? void 0 : (_targetNotif$display$ = _targetNotif$display.kv) === null || _targetNotif$display$ === void 0 ? void 0 : _targetNotif$display$.topic)) {
+              shouldSkip = true;
+            }
+            break;
+
+          /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
+          and can we inform the user the type of event they will receive in the editor
+          */
+
+          /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
+
+          /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
+
+          /* So we can not use Separated Campaigns logic for it, Hence skipping */
+
+          case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+          case WEB_NATIVE_TEMPLATES.JSON:
+            shouldSkip = true;
+            break;
+        }
+      }
+
+      return shouldSkip;
+    }
+
+  };
+  const deliveryPreferenceUtils = {
+    /**
+     * Updates a frequency counter object based on the given array.
+     * If a key from the array exists in the object, its value is incremented.
+     * Otherwise, the key is added with an initial count of 1.
+     *
+     * @param {string[]} arr - The array of keys to process.
+     * @param {Object<string, number>} [obj={}] - The existing frequency counter object (optional).
+     * @returns {Object<string, number>} - The updated frequency counter object.
+     *
+     * @example
+     * let freq = updateFrequencyCounter(["a", "b", "c"]);
+     * console.log(freq); // { a: 1, b: 1, c: 1 }
+     *
+     * freq = updateFrequencyCounter(["a", "b"], freq);
+     * console.log(freq); // { a: 2, b: 2, c: 1 }
+     */
+    updateFrequencyCounter(arr) {
+      let obj = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+      if (!arr || arr.length === 0) {
+        return obj;
+      }
+
+      arr.forEach(key => {
+        obj[key] = (obj[key] || 0) + 1;
+      });
+      return obj;
+    },
+
+    /**
+     * Updates a timestamp tracker object based on the given array of keys.
+     * If a key exists, it appends the current timestamp; otherwise, it starts a new array with the timestamp.
+     *
+     * @param {string[]} arr - The array of keys to process.
+     * @param {Object<string, number[]>} [obj={}] - The existing timestamp tracker object (optional).
+     * @returns {Object<string, number[]>} - The updated timestamp tracker object.
+     *
+     * @example
+     * let timestamps = updateTimestampTracker(["a", "b", "c"]);
+     * console.log(timestamps);
+     * // { a: [1712134567], b: [1712134567], c: [1712134567] }
+     *
+     * timestamps = updateTimestampTracker(["a", "b"], timestamps);
+     * console.log(timestamps);
+     * // { a: [1712134567, 1712134570], b: [1712134567, 1712134570], c: [1712134567] }
+     */
+    updateTimestampTracker(arr) {
+      let obj = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+      if (!arr || arr.length === 0) {
+        return obj;
+      }
+
+      const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds (Epoch UTC)
+
+      arr.forEach(key => {
+        if (!obj[key]) {
+          obj[key] = [];
+        }
+
+        obj[key].push(now);
+      });
+      return obj;
+    }
+
+  };
+
   // CleverTap specific utilities
   const getCampaignObject = () => {
     let finalcampObj = {};
@@ -8664,7 +9030,8 @@
     }
 
     return finalcampObj;
-  };
+  }; // Save Camp here
+
   const saveCampaignObject = campaignObj => {
     if (StorageManager._isLocalStorageSupported()) {
       const newObj = { ...getCampaignObject(),
@@ -8674,6 +9041,67 @@
       StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj)); // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
 
       setCampaignObjectForGuid();
+    }
+  };
+  /**
+   * Updates campaign delivery preferences and tracking counters
+   *
+   * This function updates the campaign tracking object in the CAMP localstorage variables based on the campaign type,
+   * increments appropriate show counters, and updates frequency control timestamps.
+   *
+   * @param {CampaignDetails} campaignDetails - The campaign information object
+   * @param {any} wtq - Additional query parameters (if needed)
+   * @returns {void}
+   */
+
+  const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
+    try {
+      var _campaignDetails$disp, _campaignDetails$disp2;
+
+      if (!campaignDetails || !campaignDetails.wzrk_id) {
+        throw new Error('Invalid campaign details provided');
+      }
+
+      const campaignObj = getCampaignObject() || {};
+      const campaignIdParts = campaignDetails.wzrk_id.split('_');
+      const campaignId = campaignIdParts[0];
+
+      if (!campaignId) {
+        throw new Error('Failed to parse campaign ID');
+      }
+
+      const campaignType = campaignDetails === null || campaignDetails === void 0 ? void 0 : (_campaignDetails$disp = campaignDetails.display) === null || _campaignDetails$disp === void 0 ? void 0 : _campaignDetails$disp.wtarget_type;
+      const campaignTypeConfig = {
+        [CAMPAIGN_TYPES.FOOTER_NOTIFICATION]: {
+          showCountKey: 'wsc',
+          frequencyControlKey: 'wfc'
+        },
+        [CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY]: {
+          showCountKey: 'wndsc',
+          frequencyControlKey: 'wndfc'
+        }
+      };
+      const config = campaignTypeConfig[campaignType];
+
+      if (!config) {
+        throw new Error("Unsupported campaign type: ".concat(campaignType));
+      }
+
+      const showCountKey = config.showCountKey;
+      const currentShowCount = typeof campaignObj[showCountKey] === 'number' ? campaignObj[showCountKey] : 0;
+      campaignObj[showCountKey] = currentShowCount + 1;
+
+      if (campaignDetails === null || campaignDetails === void 0 ? void 0 : (_campaignDetails$disp2 = campaignDetails.display) === null || _campaignDetails$disp2 === void 0 ? void 0 : _campaignDetails$disp2.adp) {
+        const frequencyControlKey = config.frequencyControlKey;
+        campaignObj[frequencyControlKey] = deliveryPreferenceUtils.updateTimestampTracker([campaignId], campaignObj[frequencyControlKey] || {});
+      }
+
+      console.log({
+        campaignObj
+      });
+      saveCampaignObject(campaignObj);
+    } catch (error) {
+      logger.error("Campaign delivery preference update failed: ".concat(error.message));
     }
   }; // set Campaign Object against the guid, with daily count and total count details
 
@@ -8725,7 +9153,13 @@
               }
 
               finalCampObj = { ...finalCampObj,
-                [key]: campKeyObj
+                [key]: campKeyObj,
+                wsc: campObj.wsc,
+                wfc: campObj.wfc,
+                woc: campObj.woc,
+                wndsc: campObj.wndsc,
+                wndfc: campObj.wndfc,
+                wndoc: campObj.wndoc
               };
             });
             guidCampObj[guid] = finalCampObj;
@@ -8743,30 +9177,38 @@
     let campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
+      var _campObj$wsc, _campObj, _campObj$wfc, _campObj2, _campObj$woc, _campObj3, _campObj$wndsc, _campObj4, _campObj$wndfc, _campObj5, _campObj$wndoc, _campObj6;
+
       let resultObj = {};
       campObj = getCampaignObject();
       const storageValue = StorageManager.read(CAMP_COOKIE_G);
       const decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
       const parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
-      const resultObjWP = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wp ? Object.values(parsedValue[guid].wp) : [];
       const resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
-      const today = getToday();
-      let todayCwp = 0;
-      let todayCwi = 0;
+      const webPopupDeliveryPreferenceDeatils = {
+        wsc: (_campObj$wsc = (_campObj = campObj) === null || _campObj === void 0 ? void 0 : _campObj.wsc) !== null && _campObj$wsc !== void 0 ? _campObj$wsc : 0,
+        wfc: (_campObj$wfc = (_campObj2 = campObj) === null || _campObj2 === void 0 ? void 0 : _campObj2.wfc) !== null && _campObj$wfc !== void 0 ? _campObj$wfc : {},
+        woc: (_campObj$woc = (_campObj3 = campObj) === null || _campObj3 === void 0 ? void 0 : _campObj3.woc) !== null && _campObj$woc !== void 0 ? _campObj$woc : {}
+      };
+      const webNativeDisplayDeliveryPreferenceDeatils = {
+        wndsc: (_campObj$wndsc = (_campObj4 = campObj) === null || _campObj4 === void 0 ? void 0 : _campObj4.wndsc) !== null && _campObj$wndsc !== void 0 ? _campObj$wndsc : 0,
+        wndfc: (_campObj$wndfc = (_campObj5 = campObj) === null || _campObj5 === void 0 ? void 0 : _campObj5.wndfc) !== null && _campObj$wndfc !== void 0 ? _campObj$wndfc : {},
+        wndoc: (_campObj$wndoc = (_campObj6 = campObj) === null || _campObj6 === void 0 ? void 0 : _campObj6.wndoc) !== null && _campObj$wndoc !== void 0 ? _campObj$wndoc : {}
+      };
+      const today = getToday(); // let todayCwp = 0
 
-      if (campObj.wp && campObj.wp[today] && campObj.wp[today].tc !== 'undefined') {
-        todayCwp = campObj.wp[today].tc;
-      }
+      let todayCwi = 0;
 
       if (campObj.wi && campObj.wi[today] && campObj.wi[today].tc !== 'undefined') {
         todayCwi = campObj.wi[today].tc;
-      }
+      } // CAMP Is generated here
+
 
       resultObj = {
-        wmp: todayCwp,
         wimp: todayCwi,
-        tlc: resultObjWP,
-        witlc: resultObjWI
+        witlc: resultObjWI,
+        ...webPopupDeliveryPreferenceDeatils,
+        ...webNativeDisplayDeliveryPreferenceDeatils
       };
       return resultObj;
     }
@@ -9049,7 +9491,8 @@
   const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     if (campaignId != null && campaignId !== '-1') {
       if (StorageManager._isLocalStorageSupported()) {
-        const campaignObj = getCampaignObject();
+        const campaignObj = getCampaignObject(); // CurrentSesion Id is the problem
+
         let sessionCampaignObj = campaignObj.wp[currentSessionId];
 
         if (sessionCampaignObj == null) {
@@ -11590,8 +12033,8 @@
 
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
-            logger$1.debug('SDK version check');
-            const sdkVersion = '1.14.1';
+            logger.debug('SDK version check');
+            const sdkVersion = '1.15.0';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -12066,25 +12509,6 @@
       observeUrlChange();
     });
     applyAntiFlicker(personalizedSelectors);
-  }
-  function executeScripts(selector) {
-    try {
-      let newElement;
-
-      if (selector.includes('-afterend-') || selector.includes('-beforebegin-')) {
-        // doing this because inserted elements saved selectors do not follow normal conventions
-        // they start with numbers ex. 0-beforebegin-div#titleContainer
-        newElement = document.querySelector("[ct-selector=\"".concat(selector, "\"]"));
-      } else {
-        newElement = document.querySelector(selector);
-      }
-
-      if (!newElement) return;
-      const scripts = newElement.querySelectorAll('script');
-      scripts.forEach(addScriptTo);
-    } catch (error) {
-      logger$1.debug('Error loading script', error);
-    }
   }
 
   class CTWebPersonalisationBanner extends HTMLElement {
@@ -13813,24 +14237,40 @@
     const _request = request;
     const _logger = logger;
     let _wizCounter = 0; // Campaign House keeping
+    // If the guid is present in CAMP_G retain it instead of using the CAMP
+
+    const globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+    const currentIdCamp = globalCamp === null || globalCamp === void 0 ? void 0 : globalCamp[device === null || device === void 0 ? void 0 : device.gcookie];
+    let campaignObj = currentIdCamp && Object.keys(currentIdCamp).length === 0 ? currentIdCamp : getCampaignObject();
+    const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc);
+    const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc);
+    campaignObj = { ...campaignObj,
+      woc,
+      wndoc
+    };
+    saveCampaignObject(campaignObj);
 
     const doCampHouseKeeping = targetingMsgJson => {
-      const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-      const today = getToday();
+      // Extracts campaign ID from wzrk_id (e.g., "123_456" -> "123")
+      const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Gets current date for daily capping
+
+      const today = getToday(); // Helper function to increment campaign counters (session, daily, total)
 
       const incrCount = (obj, campaignId, excludeFromFreqCaps) => {
         let currentCount = 0;
         let totalCount = 0;
 
         if (obj[campaignId] != null) {
+          // Current count for this campaign
           currentCount = obj[campaignId];
         }
 
         currentCount++;
 
         if (obj.tc != null) {
+          // Total count across all campaigns
           totalCount = obj.tc;
-        } // if exclude from caps then dont add to total counts
+        } // If campaign is excluded from frequency caps, don't increment total count
 
 
         if (excludeFromFreqCaps < 0) {
@@ -13842,33 +14282,41 @@
       };
 
       if (StorageManager._isLocalStorageSupported()) {
+        // Clears old session storage for campaigns
         delete sessionStorage[CAMP_COOKIE_NAME];
-        var campTypeObj = {};
-        const campObj = getCampaignObject();
+        var campTypeObj = {}; // Retrieves stored campaign data from local storage
+
+        const campObj = getCampaignObject(); // Determines campaign type (web inbox or web popup) and fetches corresponding data
 
         if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
+          // Web inbox campaigns
           campTypeObj = campObj.wi;
         } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) {
+          // Web popup campaigns
           campTypeObj = campObj.wp;
         } else {
           campTypeObj = {};
         }
 
         if (campObj.hasOwnProperty('global')) {
+          // Merges global data if present
           campTypeObj.wp = campObj;
-        } // global session limit. default is 1
+        } // Sets default global session limits if not specified
 
 
         if (targetingMsgJson[DISPLAY].wmc == null) {
+          // Default web popup session limit
           targetingMsgJson[DISPLAY].wmc = 1;
-        } // global session limit for web inbox. default is 1
+        } // Sets default global session limit for web inbox if not specified
 
 
         if (targetingMsgJson[DISPLAY].wimc == null) {
+          // Default web inbox session limit
           targetingMsgJson[DISPLAY].wimc = 1;
-        }
+        } // Variables to store campaign frequency capping settings
 
-        var excludeFromFreqCaps = -1; // efc - Exclude from frequency caps
+
+        var excludeFromFreqCaps = -1; // efc - Exclude from frequency caps (-1 means not excluded)
 
         let campaignSessionLimit = -1; // mdc - Once per session
 
@@ -13880,6 +14328,7 @@
         let totalSessionLimit = -1; // wmc - Web Popup Global Session Limit
 
         let totalInboxSessionLimit = -1; // wimc - Web Inbox Global Session Limit
+        // Parses frequency capping settings from the message
 
         if (targetingMsgJson[DISPLAY].efc != null) {
           // exclude from frequency cap
@@ -13914,124 +14363,140 @@
         if (targetingMsgJson[DISPLAY].wimc != null) {
           // No of inbox campaigns per session
           totalInboxSessionLimit = parseInt(targetingMsgJson[DISPLAY].wimc, 10);
-        } // session level capping
+        } // Session-level capping: Checks if campaign exceeds session limits
 
 
         var sessionObj = campTypeObj[_session.sessionId];
 
         if (sessionObj) {
           const campaignSessionCount = sessionObj[campaignId];
-          const totalSessionCount = sessionObj.tc; // dnd
+          const totalSessionCount = sessionObj.tc; // If marked as "do not disturb" (dnd) and spam control isn't dismissed, skip
 
           if (campaignSessionCount === 'dnd' && !$ct.dismissSpamControl) {
             return false;
-          }
+          } // For web inbox campaigns
+
 
           if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
-            // Inbox session
+            // Inbox session limit check
             if (totalInboxSessionLimit > 0 && totalSessionCount >= totalInboxSessionLimit && excludeFromFreqCaps < 0) {
               return false;
             }
           } else {
-            // session
+            // Web popup session limit check
             if (totalSessionLimit > 0 && totalSessionCount >= totalSessionLimit && excludeFromFreqCaps < 0) {
               return false;
             }
-          } // campaign session
+          } // Campaign-specific session limit check
 
 
           if (campaignSessionLimit > 0 && campaignSessionCount >= campaignSessionLimit) {
             return false;
           }
         } else {
+          // Initializes session object if not present
           sessionObj = {};
           campTypeObj[_session.sessionId] = sessionObj;
-        } // daily level capping
+        } // Daily-level capping: Checks if campaign exceeds daily limits
 
 
         var dailyObj = campTypeObj[today];
 
         if (dailyObj != null) {
           const campaignDailyCount = dailyObj[campaignId];
-          const totalDailyCount = dailyObj.tc; // daily
+          const totalDailyCount = dailyObj.tc; // Total daily limit check
 
           if (totalDailyLimit > 0 && totalDailyCount >= totalDailyLimit && excludeFromFreqCaps < 0) {
             return false;
-          } // campaign daily
+          } // Campaign-specific daily limit check
 
 
           if (campaignDailyLimit > 0 && campaignDailyCount >= campaignDailyLimit) {
             return false;
           }
         } else {
+          // Initializes daily object if not present
           dailyObj = {};
           campTypeObj[today] = dailyObj;
-        }
+        } // Global-level capping: Checks lifetime limit for the campaign
+
 
         var globalObj = campTypeObj[GLOBAL];
 
         if (globalObj != null) {
-          const campaignTotalCount = globalObj[campaignId]; // campaign total
+          const campaignTotalCount = globalObj[campaignId]; // Campaign lifetime limit check
 
           if (campaignTotalLimit > 0 && campaignTotalCount >= campaignTotalLimit) {
             return false;
           }
         } else {
+          // Initializes global object if not present
           globalObj = {};
           campTypeObj[GLOBAL] = globalObj;
         }
-      } // delay
+      } // Handles delay in displaying the campaign
 
 
       const displayObj = targetingMsgJson.display;
 
       if (displayObj.delay != null && displayObj.delay > 0) {
-        const delay = displayObj.delay;
+        const delay = displayObj.delay; // Resets delay to prevent re-triggering
+
         displayObj.delay = 0;
         setTimeout(_tr, delay * 1000, msg, {
           device: _device,
           session: _session,
           request: _request,
           logger: _logger
-        });
+        }); // Delays execution, skips immediate rendering
+
         return false;
-      }
+      } // Increments counters for session, daily, and global objects
+
 
       incrCount(sessionObj, campaignId, excludeFromFreqCaps);
       incrCount(dailyObj, campaignId, excludeFromFreqCaps);
-      incrCount(globalObj, campaignId, excludeFromFreqCaps);
+      incrCount(globalObj, campaignId, excludeFromFreqCaps); // Determines storage key based on campaign type (web popup or inbox)
+
       let campKey = 'wp';
 
       if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
         campKey = 'wi';
-      } // get ride of stale sessions and day entries
+      } // Updates campaign object with new counts and saves to storage
 
 
       const newCampObj = {};
       newCampObj[_session.sessionId] = sessionObj;
       newCampObj[today] = dailyObj;
-      newCampObj[GLOBAL] = globalObj;
+      newCampObj[GLOBAL] = globalObj; // Save CAMP to localstorage here
+
       saveCampaignObject({
         [campKey]: newCampObj
       });
-    };
+      addDeliveryPreferenceDetails(targetingMsgJson, logger);
+    }; // Sets up click tracking and impression increment for a campaign
+
 
     const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
-      incrementImpression(targetingMsgJson, _request);
+      // Records an impression
+      incrementImpression(targetingMsgJson, _request); // Sets up click event listener
+
       setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session);
-    };
+    }; // Handles rendering of image-only popup campaigns
+
 
     const handleImageOnlyPopup = targetingMsgJson => {
-      const divId = 'wzrkImageOnlyDiv';
+      const divId = 'wzrkImageOnlyDiv'; // Skips if frequency limits are exceeded
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
-      }
+      } // Removes existing popup if spam control is active
+
 
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         const element = document.getElementById(divId);
         element.remove();
-      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist
+      } // Prevents coexistence with other popups (e.g., exit intent)
 
 
       if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
@@ -14040,14 +14505,16 @@
 
       const msgDiv = document.createElement('div');
       msgDiv.id = divId;
-      document.body.appendChild(msgDiv);
+      document.body.appendChild(msgDiv); // Registers custom element for image-only popup if not already defined
 
       if (customElements.get('ct-web-popup-imageonly') === undefined) {
         customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
-      }
+      } // Renders the popup
+
 
       return renderPopUpImageOnly(targetingMsgJson, _session);
-    };
+    }; // Checks if a campaign is already rendered in an iframe
+
 
     const isExistingCampaign = campaignId => {
       const testIframe = document.getElementById('wiz-iframe-intent') || document.getElementById('wiz-iframe');
@@ -14058,11 +14525,12 @@
       }
 
       return false;
-    };
+    }; // Creates and renders campaign templates (e.g., exit intent, banners, popups)
+
 
     const createTemplate = (targetingMsgJson, isExitIntent) => {
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-      const displayObj = targetingMsgJson.display;
+      const displayObj = targetingMsgJson.display; // Handles specific layout types
 
       if (displayObj.layout === 1) {
         // Handling Web Exit Intent
@@ -14073,14 +14541,15 @@
         // Handling Web Popup Image Only
         handleImageOnlyPopup(targetingMsgJson);
         return;
-      }
+      } // Skips if frequency limits are exceeded
+
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       }
 
       const divId = 'wizParDiv' + displayObj.layout;
-      const opacityDivId = 'intentOpacityDiv' + displayObj.layout;
+      const opacityDivId = 'intentOpacityDiv' + displayObj.layout; // Removes existing elements if spam control is active
 
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         const element = document.getElementById(divId);
@@ -14093,16 +14562,19 @@
         if (opacityElement) {
           opacityElement.remove();
         }
-      }
+      } // Skips if campaign is already rendered
+
 
       if (isExistingCampaign(campaignId)) return;
 
       if (document.getElementById(divId) != null) {
+        // Skips if div already exists
         return;
-      }
+      } // Maps campaign ID to div ID
+
 
       $ct.campaignDivMap[campaignId] = divId;
-      const isBanner = displayObj.layout === 2;
+      const isBanner = displayObj.layout === 2; // Adds opacity layer for exit intent campaigns
 
       if (isExitIntent) {
         const opacityDiv = document.createElement('div');
@@ -14117,7 +14589,7 @@
       msgDiv.id = divId;
       const viewHeight = window.innerHeight;
       const viewWidth = window.innerWidth;
-      let legacy = false;
+      let legacy = false; // Sets styling based on device type and layout
 
       if (!isBanner) {
         const marginBottom = viewHeight * 5 / 100;
@@ -14125,19 +14597,19 @@
         let right = viewWidth * 5 / 100;
         let bottomPosition = contentHeight + marginBottom;
         let width = viewWidth * 30 / 100 + 20;
-        let widthPerct = 'width:30%;'; // for small devices  - mobile phones
+        let widthPerct = 'width:30%;'; // Adjusts for mobile devices
 
         if ((/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent)) && /iPad/i.test(navigator.userAgent) === false) {
           width = viewWidth * 85 / 100 + 20;
           right = viewWidth * 5 / 100;
           bottomPosition = viewHeight * 5 / 100;
-          widthPerct = 'width:80%;'; // medium devices - tablets
+          widthPerct = 'width:80%;'; // Adjusts for tablets
         } else if ('ontouchstart' in window || /tablet/i.test(navigator.userAgent)) {
           width = viewWidth * 50 / 100 + 20;
           right = viewWidth * 5 / 100;
           bottomPosition = viewHeight * 5 / 100;
           widthPerct = 'width:50%;';
-        } // legacy footer notif
+        } // Applies legacy styling if proto is absent
 
 
         if (displayObj.proto == null) {
@@ -14169,13 +14641,14 @@
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin';
       }
 
-      let html; // direct html
+      let html; // Direct HTML content
 
       if (targetingMsgJson.msgContent.type === 1) {
         html = targetingMsgJson.msgContent.html;
         html = html.replace(/##campaignId##/g, campaignId);
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
+        // Generated HTML with styling
         const css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + 'td{vertical-align:top;}' + 'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' + '</style>';
         let bgColor, textColor, btnBg, leftTd, btColor;
 
@@ -14209,19 +14682,20 @@
       }
 
       iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
-      msgDiv.appendChild(iframe); // Dispatch event for popup box/banner close
+      msgDiv.appendChild(iframe); // Dispatches event to signal campaign rendering
 
       const closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
 
       if (displayObj['custom-editor']) {
+        // Adds custom event scripts if needed
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
-      iframe.srcdoc = html;
+      iframe.srcdoc = html; // Adjusts iframe height based on content
 
       const adjustIFrameHeight = () => {
-        // adjust iframe and body height of html inside correctly
+        // Gets scroll height of content div inside iframe
         contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
 
         if (displayObj['custom-editor'] !== true && !isBanner) {
@@ -14263,17 +14737,18 @@
           setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
         };
       }
-    };
+    }; // Renders footer notification
+
 
     const renderFooterNotification = targetingMsgJson => {
       createTemplate(targetingMsgJson, false);
     };
 
-    let _callBackCalled = false;
+    let _callBackCalled = false; // Displays footer notification with callback handling
 
     const showFooterNotification = targetingMsgJson => {
       let onClick = targetingMsgJson.display.onClick;
-      const displayObj = targetingMsgJson.display; // TODO: Needs wizrocket as a global variable
+      const displayObj = targetingMsgJson.display; // Checks for custom notification callback from CleverTap
 
       if (window.clevertap.hasOwnProperty('notificationCallback') && typeof window.clevertap.notificationCallback !== 'undefined' && typeof window.clevertap.notificationCallback === 'function') {
         const notificationCallback = window.clevertap.notificationCallback;
@@ -14294,14 +14769,14 @@
           window.clevertap.raiseNotificationClicked = () => {
             if (onClick !== '' && onClick != null) {
               const jsFunc = targetingMsgJson.display.jsFunc;
-              onClick += getCookieParams(_device, _session); // invoke js function call
+              onClick += getCookieParams(_device, _session); // Invokes JS function or redirects based on click action
 
               if (jsFunc != null) {
-                // track notification clicked event
+                // Tracks notification clicked event
                 RequestDispatcher.fireRequest(onClick);
                 invokeExternalJs(jsFunc, targetingMsgJson);
                 return;
-              } // pass on the gcookie|page|scookieId for capturing the click event
+              } // Opens link in new tab or redirects current page
 
 
               if (targetingMsgJson.display.window === 1) {
@@ -14320,7 +14795,7 @@
           _callBackCalled = true;
         }
       } else {
-        window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id;
+        window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id; // Handles delivery triggers (inactivity, scroll, exit intent, delay)
 
         if (displayObj.deliveryTrigger) {
           if (displayObj.deliveryTrigger.inactive) {
@@ -14334,8 +14809,7 @@
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
             window.document.body.onmouseleave = showExitIntent;
-          } // delay
-
+          }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
 
@@ -14346,7 +14820,8 @@
           }
         } else {
           renderFooterNotification(targetingMsgJson);
-        }
+        } // Handles popup-specific callbacks
+
 
         if (window.clevertap.hasOwnProperty('popupCallbacks') && typeof window.clevertap.popupCallbacks !== 'undefined' && typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === 'function') {
           const popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id];
@@ -14361,7 +14836,7 @@
           var msgCTkv = [];
 
           for (var wzrkPrefixKey in targetingMsgJson) {
-            // ADD WZRK PREFIX KEY VALUE PAIRS
+            // Adds WZRK prefix key-value pairs to callback data
             if (wzrkPrefixKey.startsWith(WZRK_PREFIX) && wzrkPrefixKey !== WZRK_ID) {
               const wzrkJson = {
                 [wzrkPrefixKey]: targetingMsgJson[wzrkPrefixKey]
@@ -14376,7 +14851,7 @@
 
           if (targetingMsgJson.display.kv != null) {
             inaObj.kv = targetingMsgJson.display.kv;
-          } // PUBLIC API TO RECORD CLICKED EVENT
+          } // Public API to record clicked event
 
 
           window.clevertap.raisePopupNotificationClicked = notificationData => {
@@ -14395,7 +14870,7 @@
               eventData.evtData = { ...eventData.evtData,
                 wzrk_pivot: notificationData.pivotId
               };
-            } // WZRK PREFIX KEY VALUE PAIRS
+            } // Adds WZRK prefix key-value pairs to event data
 
 
             if (notificationData.msgCTkv) {
@@ -14412,7 +14887,8 @@
           popupCallback(inaObj);
         }
       }
-    };
+    }; // Triggers campaign based on user inactivity
+
 
     const triggerByInactivity = targetNotif => {
       const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // Convert to milliseconds
@@ -14443,9 +14919,11 @@
       };
 
       setupEventListeners();
-      resetIdleTimer();
-      return removeEventListeners; // Return a cleanup function
-    };
+      resetIdleTimer(); // Returns cleanup function
+
+      return removeEventListeners;
+    }; // Triggers campaign based on scroll percentage
+
 
     const triggerByScroll = targetNotif => {
       const calculateScrollPercentage = () => {
@@ -14488,27 +14966,32 @@
       const throttledScrollListener = throttle(scrollListener, 200);
       window.addEventListener('scroll', throttledScrollListener, {
         passive: true
-      });
-      return () => window.removeEventListener('scroll', throttledScrollListener); // Return a cleanup function
+      }); // Returns cleanup function
+
+      return () => window.removeEventListener('scroll', throttledScrollListener);
     };
 
-    let exitintentObj;
+    let exitintentObj; // Handles exit intent campaigns (triggered when mouse leaves window)
 
     const showExitIntent = (event, targetObj) => {
+      // Only triggers when mouse moves upward out of window
       if ((event === null || event === void 0 ? void 0 : event.clientY) > 0) return;
       const targetingMsgJson = targetObj || exitintentObj;
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-      const layout = targetingMsgJson.display.layout;
+      const layout = targetingMsgJson.display.layout; // Skips if campaign is already rendered
+
       if (isExistingCampaign(campaignId)) return;
 
       if (targetingMsgJson.display.wtarget_type === 0 && (layout === 0 || layout === 2 || layout === 3)) {
         createTemplate(targetingMsgJson, true);
         return;
-      }
+      } // Skips if frequency limits are exceeded
+
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
-      }
+      } // Removes existing exit intent elements if spam control is active
+
 
       if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0) {
         const intentPreview = document.getElementById('intentPreview');
@@ -14518,12 +15001,12 @@
           intentPreview.remove();
           intentOpacityDiv.remove();
         }
-      } // ImageOnly campaign and Interstitial/Exit Intent shouldn't coexist`
+      } // Prevents coexistence with other popups
 
 
       if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
         return;
-      } // dont show exit intent on tablet/mobile - only on desktop
+      } // Skips exit intent on mobile/tablet devices
 
 
       if (targetingMsgJson.display.layout == null && (/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent) || /iPad/i.test(navigator.userAgent) || 'ontouchstart' in window || /tablet/i.test(navigator.userAgent))) {
@@ -14567,13 +15050,14 @@
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
       }
 
-      let html; // direct html
+      let html; // Direct HTML content
 
       if (targetingMsgJson.msgContent.type === 1) {
         html = targetingMsgJson.msgContent.html;
         html = html.replace(/##campaignId##/g, campaignId);
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
+        // Generated HTML with styling
         const css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + '#contentDiv .button{padding-top:20px;}' + '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' + '</style>';
         let bgColor, textColor, btnBg, btColor;
 
@@ -14610,7 +15094,7 @@
       }
 
       iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
-      msgDiv.appendChild(iframe); // Dispatch event for interstitial/exit intent close
+      msgDiv.appendChild(iframe); // Dispatches event for interstitial/exit intent close
 
       const closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
@@ -14625,7 +15109,8 @@
         const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
         setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
-    };
+    }; // Retries processing if document.body isn't ready (up to 6 attempts)
+
 
     if (!document.body) {
       if (_wizCounter < 6) {
@@ -14639,7 +15124,8 @@
       }
 
       return;
-    }
+    } // Processes native display campaigns (e.g., banners, carousels)
+
 
     const processNativeDisplayArr = arrInAppNotifs => {
       Object.keys(arrInAppNotifs).map(key => {
@@ -14654,11 +15140,13 @@
         }
 
         if (id !== null) {
-          arrInAppNotifs[key].msgContent.type === 2 ? renderPersonalisationBanner(arrInAppNotifs[key]) : renderPersonalisationCarousel(arrInAppNotifs[key]);
+          arrInAppNotifs[key].msgContent.type === 2 ? renderPersonalisationBanner(arrInAppNotifs[key]) : renderPersonalisationCarousel(arrInAppNotifs[key]); // Removes processed campaign
+
           delete arrInAppNotifs[key];
         }
       });
-    };
+    }; // Adds listener to process native displays after page load
+
 
     const addLoadListener = arrInAppNotifs => {
       window.addEventListener('load', () => {
@@ -14677,7 +15165,8 @@
           }, 500);
         }
       });
-    };
+    }; // Processes in-app notifications (e.g., footers, exit intents, native displays)
+
 
     if (msg.inapp_notifs != null) {
       const arrInAppNotifs = {};
@@ -14698,14 +15187,12 @@
           window.document.body.onmouseleave = showExitIntent;
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
-
-          /* Skip current campaign if we have already executed one with same CustomEvent and topic */
+          // Skips duplicate custom event campaigns
           if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif) && executedTargets.customEvents.length > 0 && webNativeDisplayCampaignUtils.shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets)) {
             _logger.debug('Custom Event Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
 
             continue;
-          }
-          /* Skip current campaign if we have already executed one with same DOM Node */
+          } // Skips duplicate DOM node campaigns
 
 
           if (webNativeDisplayCampaignUtils.doesCampaignMutateDOMNode(targetNotif) && executedTargets.nodes.some(node => {
@@ -14716,7 +15203,8 @@
             _logger.debug('DOM Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
 
             continue;
-          }
+          } // Tracks executed custom events
+
 
           if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif)) {
             /*
@@ -14729,9 +15217,11 @@
               eventTopic
             });
           } else if (webNativeDisplayCampaignUtils.doesCampaignMutateDOMNode(targetNotif)) {
+            // Tracks executed DOM nodes
             const nodes = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif);
             executedTargets.nodes.push(...nodes);
-          }
+          } // Handles different native display types
+
 
           if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR) {
             handleKVpairCampaign(targetNotif);
@@ -14742,7 +15232,8 @@
             if (element !== null) {
               targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
             } else {
-              arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
+              // Adds to array for later processing if element not found
+              arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif;
             }
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
             renderVisualBuilder(targetNotif, false, _logger);
@@ -14754,7 +15245,7 @@
             showFooterNotification(targetNotif);
           }
         }
-      } // Process banner or carousel campaign array
+      } // Processes banner or carousel campaign array
 
 
       if (Object.keys(arrInAppNotifs).length) {
@@ -14764,7 +15255,8 @@
           addLoadListener(arrInAppNotifs);
         }
       }
-    }
+    } // Processes web inbox notifications
+
 
     const handleInboxNotifications = () => {
       if (msg.inbox_preview) {
@@ -14783,7 +15275,8 @@
 
         processInboxNotifs(msgArr);
       }
-    };
+    }; // Initializes and processes web inbox settings and notifications
+
 
     if (msg.webInboxSetting || msg.inbox_notifs != null) {
       /**
@@ -14803,16 +15296,19 @@
       } else {
         handleInboxNotifications();
       }
-    }
+    } // Processes web push configuration
+
 
     if (msg.webPushConfig) {
       processWebPushConfig(msg.webPushConfig, logger, request);
-    }
+    } // Merges variables into storage
+
 
     if (msg.vars) {
       $ct.variableStore.mergeVariables(msg.vars);
       return;
-    }
+    } // Persists events and profile data to local storage
+
 
     if (StorageManager._isLocalStorageSupported()) {
       try {
@@ -14838,12 +15334,12 @@
         }
 
         if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
-          // web popup stale
+          // Updates stale web popup data
           staleDataUpdate(msg.inapp_stale, 'wp');
         }
 
         if (msg.inbox_stale != null && msg.inbox_stale.length > 0) {
-          // web inbox stale
+          // Updates stale web inbox data
           staleDataUpdate(msg.inbox_stale, 'wi');
         }
       } catch (e) {
@@ -15242,7 +15738,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.14.1',
+        lib: 'web-sdk-v1.15.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17053,7 +17549,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.14.1';
+      return 'web-sdk-v1.15.0';
     }
 
     defineVariable(name, defaultValue) {
