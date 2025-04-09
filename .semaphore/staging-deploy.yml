@@ -10,8 +10,8 @@ blocks:
       jobs:
         - name: Deploy Assets to S3 and Invalidate CloudFront Cache
           commands:
-            - artifact pull workflow clevertap.min.js 
-            - artifact pull workflow clevertap.js 
+            - artifact pull workflow clevertap.min.js
+            - artifact pull workflow clevertap.js
             - artifact pull workflow clevertap.js.map
             - |
               mkdir utils
