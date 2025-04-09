@@ -335,3 +335,19 @@ export const webNativeDisplayCampaignUtils = {
     return shouldSkip
   }
 }
+
+export function addScriptTo (script, target = 'body') {
+  const targetEl = document.querySelector(target)
+  if (!targetEl) return
+  const newScript = document.createElement('script')
+  newScript.textContent = script.textContent
+  if (script.src) newScript.src = script.src
+  newScript.async = script.async
+  Array.from(script.attributes).forEach(attr => {
+    if (attr.name !== 'src' && attr.name !== 'async') {
+      newScript.setAttribute(attr.name, attr.value)
+    }
+  })
+  targetEl.appendChild(newScript)
+  script.remove()
+}
