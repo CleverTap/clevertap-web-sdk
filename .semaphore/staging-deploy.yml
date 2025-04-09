@@ -15,7 +15,7 @@ blocks:
             - artifact pull workflow clevertap.js.map
             - artifact pull workflow sw_webpush.js
             - artifact pull workflow sw_webpush.min.js
-            - echo ${SEMAPHORE_GIT_PR_BRANCH}
+            - echo ${SEMAPHORE_GIT_WORKING_BRANCH}
             - |
               mkdir utils
               aws s3 cp s3://cfstack-init-sources3bucket-b5bxfzywj4ae/utils/generate_assumed_role_creds.py utils/generate_assumed_role_creds.py
