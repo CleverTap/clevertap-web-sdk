@@ -899,7 +899,7 @@ const _tr = (msg, {
             arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
           }
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
-          renderVisualBuilder(targetNotif, false)
+          renderVisualBuilder(targetNotif, false, _logger)
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
           renderCustomHtml(targetNotif, _logger)
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
