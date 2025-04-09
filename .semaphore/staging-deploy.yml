@@ -30,5 +30,5 @@ blocks:
         - name: ProductionAccountAwsCredentials
       agent:
         machine:
-          type: s1-c5-large
+          type: s1-ultron-c5-large
           os_image: ''
