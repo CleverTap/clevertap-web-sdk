@@ -13,7 +13,8 @@ import {
   IS_OUL,
   categoryLongKey,
   CAMP_COOKIE_G,
-  GLOBAL
+  GLOBAL,
+  CAMPAIGN_TYPES
 } from './constants'
 import {
   GENDER_ERROR,
@@ -41,6 +42,8 @@ import {
   isValueValid
 } from './datatypes'
 
+import { deliveryPreferenceUtils } from '../../src/util/campaignRender/utilities'
+
 import { addToURL, getURLParams } from './url'
 import { compressData } from './encoder'
 import RequestDispatcher from './requestDispatcher'
@@ -51,11 +54,7 @@ export const getCampaignObject = () => {
     let campObj = StorageManager.read(CAMP_COOKIE_NAME)
     if (campObj != null) {
       campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'))
-      if (campObj.hasOwnProperty('global')) {
-        finalcampObj.wp = campObj
-      } else {
-        finalcampObj = campObj
-      }
+      finalcampObj = campObj
     } else {
       finalcampObj = {}
     }
@@ -63,6 +62,7 @@ export const getCampaignObject = () => {
   return finalcampObj
 }
 
+// Save Camp here
 export const saveCampaignObject = (campaignObj) => {
   if (StorageManager._isLocalStorageSupported()) {
     const newObj = { ...getCampaignObject(), ...campaignObj }
@@ -70,6 +70,76 @@ export const saveCampaignObject = (campaignObj) => {
     StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj))
     // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
     setCampaignObjectForGuid()
+  }
+}
+
+/**
+ * Updates campaign delivery preferences and tracking counters
+ *
+ * This function updates the campaign tracking object in the CAMP localstorage variables based on the campaign type,
+ * increments appropriate show counters, and updates frequency control timestamps.
+ *
+ * @param {CampaignDetails} campaignDetails - The campaign information object
+ * @param {any} wtq - Additional query parameters (if needed)
+ * @returns {void}
+ */
+export const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
+  try {
+    if (!campaignDetails || !campaignDetails.wzrk_id) {
+      throw new Error('Invalid campaign details provided')
+    }
+
+    const campaignObj = getCampaignObject() || {}
+
+    const campaignIdParts = campaignDetails.wzrk_id.split('_')
+    const campaignId = campaignIdParts[0]
+    const isCampaignExcludedFromFrequencyLimits = campaignDetails?.display?.efc
+
+    if (!campaignId) {
+      throw new Error('Failed to parse campaign ID')
+    }
+
+    const campaignType = campaignDetails?.display?.wtarget_type
+
+    const campaignTypeConfig = {
+      [CAMPAIGN_TYPES.FOOTER_NOTIFICATION]: {
+        showCountKey: 'wsc',
+        frequencyControlKey: 'wfc'
+      },
+      [CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY]: {
+        showCountKey: 'wndsc',
+        frequencyControlKey: 'wndfc'
+      }
+    }
+
+    const config = campaignTypeConfig[campaignType]
+
+    if (!config) {
+      throw new Error(`Unsupported campaign type: ${campaignType}`)
+    }
+
+    if (!isCampaignExcludedFromFrequencyLimits) {
+      const showCountKey = config.showCountKey
+      const currentShowCount =
+        typeof campaignObj[showCountKey] === 'number'
+          ? campaignObj[showCountKey]
+          : 0
+      campaignObj[showCountKey] = currentShowCount + 1
+    }
+
+    if (campaignDetails?.display?.adp) {
+      const frequencyControlKey = config.frequencyControlKey
+      campaignObj[frequencyControlKey] = deliveryPreferenceUtils.updateTimestampTracker(
+        [campaignId],
+        campaignObj[frequencyControlKey] || {}
+      )
+    }
+
+    console.log({ campaignObj })
+
+    saveCampaignObject(campaignObj)
+  } catch (error) {
+    logger.error(`Campaign delivery preference update failed: ${error.message}`)
   }
 }
 
@@ -111,7 +181,16 @@ export const setCampaignObjectForGuid = () => {
                 }
               }
             }
-            finalCampObj = { ...finalCampObj, [key]: campKeyObj }
+            finalCampObj = {
+              ...finalCampObj,
+              [key]: campKeyObj,
+              wsc: campObj.wsc,
+              wfc: campObj.wfc,
+              woc: campObj.woc,
+              wndsc: campObj.wndsc,
+              wndfc: campObj.wndfc,
+              wndoc: campObj.wndoc
+            }
           })
           guidCampObj[guid] = finalCampObj
           StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
@@ -134,32 +213,37 @@ export const getCampaignObjForLc = () => {
     const decodedValue = storageValue ? decodeURIComponent(storageValue) : null
     const parsedValue = decodedValue ? JSON.parse(decodedValue) : null
 
-    const resultObjWP = (!!guid &&
-                        storageValue !== undefined && storageValue !== null &&
-                        parsedValue && parsedValue[guid] && parsedValue[guid].wp)
-      ? Object.values(parsedValue[guid].wp)
-      : []
-
     const resultObjWI = (!!guid &&
                         storageValue !== undefined && storageValue !== null &&
                         parsedValue && parsedValue[guid] && parsedValue[guid].wi)
       ? Object.values(parsedValue[guid].wi)
       : []
 
-    const today = getToday()
-    let todayCwp = 0
-    let todayCwi = 0
-    if (campObj.wp && campObj.wp[today] && campObj.wp[today].tc !== 'undefined') {
-      todayCwp = campObj.wp[today].tc
+    const webPopupDeliveryPreferenceDeatils = {
+      wsc: campObj?.wsc ?? 0,
+      wfc: campObj?.wfc ?? {},
+      woc: campObj?.woc ?? {}
     }
+
+    const webNativeDisplayDeliveryPreferenceDeatils = {
+      wndsc: campObj?.wndsc ?? 0,
+      wndfc: campObj?.wndfc ?? {},
+      wndoc: campObj?.wndoc ?? {}
+    }
+
+    const today = getToday()
+    // let todayCwp = 0
+    let todayCwi = 0
     if (campObj.wi && campObj.wi[today] && campObj.wi[today].tc !== 'undefined') {
       todayCwi = campObj.wi[today].tc
     }
+
+    // CAMP Is generated here
     resultObj = {
-      wmp: todayCwp,
       wimp: todayCwi,
-      tlc: resultObjWP,
-      witlc: resultObjWI
+      witlc: resultObjWI,
+      ...webPopupDeliveryPreferenceDeatils,
+      ...webNativeDisplayDeliveryPreferenceDeatils
     }
     return resultObj
   }
@@ -415,12 +499,11 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     if (StorageManager._isLocalStorageSupported()) {
       const campaignObj = getCampaignObject()
 
-      let sessionCampaignObj = campaignObj.wp[currentSessionId]
-      if (sessionCampaignObj == null) {
-        sessionCampaignObj = {}
-        campaignObj[currentSessionId] = sessionCampaignObj
-      }
-      sessionCampaignObj[campaignId] = 'dnd'
+      // CurrentSesion Id is the problem
+      campaignObj.dnd = new Set([
+        ...(campaignObj.dnd ?? []),
+        campaignId
+      ])
       saveCampaignObject(campaignObj)
     }
   }
