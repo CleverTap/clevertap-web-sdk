@@ -1,7 +1,7 @@
-import {
-  getCampaignObject,
-  saveCampaignObject
-} from '../clevertap'
+// import {
+//   getCampaignObject,
+//   saveCampaignObject
+// } from '../clevertap'
 import { StorageManager } from '../storage'
 import { ACTION_TYPES } from '../constants'
 
@@ -65,21 +65,22 @@ export class CTWebPopupImageOnly extends HTMLElement {
 
       this.closeIcon.addEventListener('click', () => {
         const campaignId = this.target.wzrk_id.split('_')[0]
-        const currentSessionId = this.session.sessionId
+        // const currentSessionId = this.session.sessionId
         this.resizeObserver.unobserve(this.popup)
         document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
         this.remove()
         if (campaignId != null && campaignId !== '-1') {
           if (StorageManager._isLocalStorageSupported()) {
-            const campaignObj = getCampaignObject()
+            /* Wfc will take care of this */
+            // const campaignObj = getCampaignObject()
 
-            let sessionCampaignObj = campaignObj.wp[currentSessionId]
-            if (sessionCampaignObj == null) {
-              sessionCampaignObj = {}
-              campaignObj[currentSessionId] = sessionCampaignObj
-            }
-            sessionCampaignObj[campaignId] = 'dnd'
-            saveCampaignObject(campaignObj)
+            // // let sessionCampaignObj = campaignObj.wp[currentSessionId]
+            // // if (sessionCampaignObj == null) {
+            // //   sessionCampaignObj = {}
+            // //   campaignObj[currentSessionId] = sessionCampaignObj
+            // // }
+            // // sessionCampaignObj[campaignId] = 'dnd'
+            // // saveCampaignObject(campaignObj)
           }
         }
       })
