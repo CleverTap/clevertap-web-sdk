@@ -14202,12 +14202,7 @@
 
         if (sessionObj) {
           const campaignSessionCount = sessionObj[campaignId];
-          const totalSessionCount = sessionObj.tc; // If marked as "do not disturb" (dnd) and spam control isn't dismissed, skip
-
-          if (campaignSessionCount === 'dnd' && !$ct.dismissSpamControl) {
-            return false;
-          } // For web inbox campaigns
-
+          const totalSessionCount = sessionObj.tc; // For web inbox campaigns
 
           if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
             // Inbox session limit check
