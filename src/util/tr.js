@@ -67,12 +67,17 @@ const _tr = (msg, {
   }
 
   saveCampaignObject(campaignObj)
+  deliveryPreferenceUtils.portTLC(_session)
 
   const doCampHouseKeeping = (targetingMsgJson) => {
     // Extracts campaign ID from wzrk_id (e.g., "123_456" -> "123")
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     // Gets current date for daily capping
     const today = getToday()
+
+    if (deliveryPreferenceUtils.isCampaignAddedToDND(campaignId) && !$ct.dismissSpamControl) {
+      return false
+    }
 
     // Helper function to increment campaign counters (session, daily, total)
     const incrCount = (obj, campaignId, excludeFromFreqCaps) => {
@@ -108,13 +113,14 @@ const _tr = (msg, {
         campTypeObj = campObj.wi
       } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) {
         // Web popup campaigns
-        campTypeObj = campObj.wp
+        // campTypeObj = campObj.wp
+
       } else {
         campTypeObj = {}
       }
       if (campObj.hasOwnProperty('global')) {
         // Merges global data if present
-        campTypeObj.wp = campObj
+        // campTypeObj.wp = campObj
       }
       // Sets default global session limits if not specified
       if (targetingMsgJson[DISPLAY].wmc == null) {
@@ -248,19 +254,22 @@ const _tr = (msg, {
     incrCount(globalObj, campaignId, excludeFromFreqCaps)
 
     // Determines storage key based on campaign type (web popup or inbox)
-    let campKey = 'wp'
+    let campKey;
     if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
       campKey = 'wi'
     }
-    // Updates campaign object with new counts and saves to storage
-    const newCampObj = {}
-    newCampObj[_session.sessionId] = sessionObj
-    newCampObj[today] = dailyObj
-    newCampObj[GLOBAL] = globalObj
-    // Save CAMP to localstorage here
-    saveCampaignObject({ [campKey]: newCampObj })
-
-    addDeliveryPreferenceDetails(targetingMsgJson, logger)
+    if (campKey === 'wi') {
+      // Updates campaign object with new counts and saves to storage
+      const newCampObj = {}
+      newCampObj[_session.sessionId] = sessionObj
+      newCampObj[today] = dailyObj
+      newCampObj[GLOBAL] = globalObj
+      // Save CAMP to localstorage here
+      saveCampaignObject({ [campKey]: newCampObj })
+    } else {
+      /* For Web Native Display and Web Popup */
+      addDeliveryPreferenceDetails(targetingMsgJson, logger)
+    }
   }
 
   // Sets up click tracking and impression increment for a campaign
@@ -1086,6 +1095,7 @@ const _tr = (msg, {
       }
       if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
         // Updates stale web popup data
+        /* TODO: Need to handle Stale Campaign CLeanups for Webpopups without wp */
         staleDataUpdate(msg.inapp_stale, 'wp')
       }
       if (msg.inbox_stale != null && msg.inbox_stale.length > 0) {
