@@ -216,7 +216,6 @@ export const getCookieParams = (_device, _session) => {
 }
 
 export const webNativeDisplayCampaignUtils = {
-
   /**
    * Checks if a campaign triggers a custom event push based on its template type.
    *
@@ -249,10 +248,12 @@ export const webNativeDisplayCampaignUtils = {
         WEB_NATIVE_TEMPLATES.CUSTOM_HTML
       ].includes(campaign?.msgContent?.type) ||
       (WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === campaign?.msgContent?.type &&
-        campaign?.display?.details?.[0]?.selectorData
-          ?.some((s) =>
-            [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML,
-              WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s?.values?.editor)))
+        campaign?.display?.details?.[0]?.selectorData?.some((s) =>
+          [
+            WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML,
+            WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM
+          ].includes(s?.values?.editor)
+        ))
     )
   },
 
@@ -263,8 +264,7 @@ export const webNativeDisplayCampaignUtils = {
    * @returns {Array<Object>} - A new array of campaigns sorted by priority.
    */
   sortCampaignsByPriority: (campaigns) => {
-    return campaigns
-      .sort((a, b) => b.priority - a.priority)
+    return campaigns.sort((a, b) => b.priority - a.priority)
   },
 
   /**
@@ -286,9 +286,15 @@ export const webNativeDisplayCampaignUtils = {
         return [display?.divId]
 
       case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-        return display?.details?.[0]?.selectorData
-          ?.filter((s) => s?.values?.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML)
-          ?.map((s) => s?.selector) || []
+        return (
+          display?.details?.[0]?.selectorData
+            ?.filter(
+              (s) =>
+                s?.values?.editor ===
+                WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML
+            )
+            ?.map((s) => s?.selector) || []
+        )
 
       default:
         return []
@@ -301,10 +307,11 @@ export const webNativeDisplayCampaignUtils = {
    * @param {Object} targetNotif - The current notification object containing campaign details.
    * @param {ExecutedTargets} executedTargets - An object holding already executed custom events.
    * @returns {boolean} - Returns true if the current custom event campaign should be skipped, false otherwise.
-  */
+   */
   shouldCurrentCustomEventCampaignBeSkipped (targetNotif, executedTargets) {
-    const currentSameTypeCampaigns = executedTargets.customEvents.filter((customEvent) =>
-      customEvent.customEventType === targetNotif?.msgContent?.type
+    const currentSameTypeCampaigns = executedTargets.customEvents.filter(
+      (customEvent) =>
+        customEvent.customEventType === targetNotif?.msgContent?.type
     )
 
     let shouldSkip = false
@@ -314,9 +321,13 @@ export const webNativeDisplayCampaignUtils = {
     if (currentSameTypeCampaigns?.length) {
       switch (targetNotif?.msgContent?.type) {
         case WEB_NATIVE_TEMPLATES.KV_PAIR:
-          if (currentSameTypeCampaigns.map(c => c?.eventTopic)?.includes(targetNotif?.display?.kv?.topic)) {
+          if (
+            currentSameTypeCampaigns
+              .map((c) => c?.eventTopic)
+              ?.includes(targetNotif?.display?.kv?.topic)
+          ) {
             shouldSkip = true
-          };
+          }
           break
 
           /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
@@ -336,6 +347,192 @@ export const webNativeDisplayCampaignUtils = {
   }
 }
 
+export const deliveryPreferenceUtils = {
+  /**
+   * Updates a frequency counter object based on the given array.
+   * If a key from the array exists in the object, its value is incremented.
+   * Otherwise, the key is added with an initial count of 1.
+   *
+   * @param {string[]} arr - The array of keys to process.
+   * @param {Object<string, number>} [obj={}] - The existing frequency counter object (optional).
+   * @returns {Object<string, number>} - The updated frequency counter object.
+   *
+   * @example
+   * let freq = updateFrequencyCounter(["a", "b", "c"]);
+   * console.log(freq); // { a: 1, b: 1, c: 1 }
+   *
+   * freq = updateFrequencyCounter(["a", "b"], freq);
+   * console.log(freq); // { a: 2, b: 2, c: 1 }
+   */
+  updateFrequencyCounter (arr, obj = {}) {
+    if (!arr || arr.length === 0) {
+      return obj
+    }
+
+    arr.forEach((key) => {
+      obj[key] = (obj[key] || 0) + 1
+    })
+    return obj
+  },
+
+  /**
+   * Updates a timestamp tracker object based on the given array of keys.
+   * If a key exists, it appends the current timestamp; otherwise, it starts a new array with the timestamp.
+   *
+   * @param {string[]} arr - The array of keys to process.
+   * @param {Object<string, number[]>} [obj={}] - The existing timestamp tracker object (optional).
+   * @returns {Object<string, number[]>} - The updated timestamp tracker object.
+   *
+   * @example
+   * let timestamps = updateTimestampTracker(["a", "b", "c"]);
+   * console.log(timestamps);
+   * // { a: [1712134567], b: [1712134567], c: [1712134567] }
+   *
+   * timestamps = updateTimestampTracker(["a", "b"], timestamps);
+   * console.log(timestamps);
+   * // { a: [1712134567, 1712134570], b: [1712134567, 1712134570], c: [1712134567] }
+   */
+  updateTimestampTracker (arr, obj = {}) {
+    if (!arr || arr.length === 0) {
+      return obj
+    }
+
+    const now = Math.floor(Date.now() / 1000) // Current timestamp in seconds (Epoch UTC)
+    arr.forEach((key) => {
+      if (!obj[key]) {
+        obj[key] = []
+      }
+      obj[key].push(now)
+    })
+
+    return obj
+  },
+
+  /* This function takes in tlc data and migrate it to latest wsc and wfc data */
+  /* Once the porting is done, tlc will be deleted */
+  /* for the current session, check the CAMP.wp[sessionId]
+       Structure is as follows
+       {
+        "1743758736": "dnd",
+        "1744193923": "dnd",
+        "tc": 3
+      }
+
+      For all the keys except the tc, we have campaign Ids,
+        For each Campaign Id, we want to migrate the data to the new wsc and wfc as follows
+        Value of campaignIds can be [dnd, 1]
+          Which means
+            campaignId is shown once -> 1
+            campaignId is shown & dimissed -> dnd
+
+    */
+  portTLC (_session) {
+    const CAMP = getCampaignObject()
+
+    /* If no campaigns are present, then we don't need to port anything */
+    if (!CAMP?.wp || Object.keys(CAMP?.wp).length === 0) {
+      return
+    }
+
+    const webPopupGlobalDetails = CAMP?.wp?.global || {}
+    const webPopupSessionDetails = CAMP?.wp?.[_session.sessionId] || {}
+    const campaignIds = Object.keys(webPopupGlobalDetails)
+
+    for (const campaignId of campaignIds) {
+      if (campaignId !== 'tc') {
+        const globalCampaignCount = webPopupGlobalDetails[campaignId]
+        const sessionCampaignCount = webPopupSessionDetails[campaignId]
+        const updatedCamp = deliveryPreferenceUtils.portCampaignDetails(
+          campaignId,
+          sessionCampaignCount,
+          globalCampaignCount
+        )
+        saveCampaignObject(updatedCamp)
+      }
+    }
+    saveCampaignObject({
+      ...getCampaignObject(),
+      wp: {}
+    })
+  },
+
+  portCampaignDetails (campaignId, sessionCount, globalCount) {
+    const sCount = sessionCount === 'dnd' ? 1 : sessionCount
+    const campaignObj = getCampaignObject()
+
+    // Ensure campaignObj and campaignObj.wfc exist
+    campaignObj.wfc = campaignObj.wfc || {}
+
+    // Fallback to an empty array if campaignObj.wfc[campaignId] is undefined
+    const existingTimestamps = Array.isArray(campaignObj.wfc[campaignId])
+      ? campaignObj.wfc[campaignId]
+      : []
+
+    // Generate new timestamps safely
+    let newTimestamps = []
+    try {
+      newTimestamps = deliveryPreferenceUtils.generateTimestamps(
+        globalCount,
+        sCount
+      )
+    } catch (err) {
+      console.error('Failed to generate timestamps:', err)
+    }
+
+    // Safely update the object
+    campaignObj.wfc = {
+      ...campaignObj.wfc,
+      [campaignId]: [...existingTimestamps, ...newTimestamps]
+    }
+
+    /* Or tc can also be used to assign once */
+    campaignObj.wsc = (campaignObj?.wsc ?? 0) + globalCount
+
+    return campaignObj
+  },
+
+  /**
+   * Generates an array of timestamps.
+   *
+   * - The first `a` timestamps are from the current time, each 1 second apart (now, now - 1s, now - 2s, ...).
+   * - The remaining `(b - a)` timestamps are from previous days (now - 1 day, now - 2 days, ...).
+   *
+   * @param {number} a - Number of recent timestamps with 1-second gaps.
+   * @param {number} b - Total number of timestamps to generate.
+   * @returns {number[]} Array of timestamps in milliseconds since the Unix epoch.
+   */
+  generateTimestamps (a, b) {
+    try {
+      const now = Math.floor(Date.now() / 1000)
+      const oneDay = 24 * 60 * 60 * 1000
+
+      // (b - a) timestamps: today - 1 day, today - 2 days, ...
+      const pastDays = Array.from(
+        { length: b - a },
+        (_, i) => now - oneDay * (i + 1)
+      )
+
+      // a timestamps: today, today - 1s, today - 2s, ...
+      const recentMs = Array.from({ length: a }, (_, i) => now - i * 1000)
+
+      return [...recentMs, ...pastDays]
+    } catch {
+      return []
+    }
+  },
+
+  isPopupCampaignAlreadyShown (campaignId) {
+    const campaignObj = getCampaignObject()
+    const campaignDetails = campaignObj?.wfc?.[campaignId]
+    return campaignDetails?.length > 0
+  },
+
+  isCampaignAddedToDND (campaignId) {
+    const campaignObj = getCampaignObject()
+    return campaignObj?.dnd?.includes(campaignId)
+  }
+}
+
 export function addScriptTo (script, target = 'body') {
   const targetEl = document.querySelector(target)
   if (!targetEl) return
@@ -343,7 +540,7 @@ export function addScriptTo (script, target = 'body') {
   newScript.textContent = script.textContent
   if (script.src) newScript.src = script.src
   newScript.async = script.async
-  Array.from(script.attributes).forEach(attr => {
+  Array.from(script.attributes).forEach((attr) => {
     if (attr.name !== 'src' && attr.name !== 'async') {
       newScript.setAttribute(attr.name, attr.value)
     }
