@@ -54,11 +54,7 @@ export const getCampaignObject = () => {
     let campObj = StorageManager.read(CAMP_COOKIE_NAME)
     if (campObj != null) {
       campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'))
-      if (campObj.hasOwnProperty('global')) {
-        finalcampObj.wp = campObj
-      } else {
-        finalcampObj = campObj
-      }
+      finalcampObj = campObj
     } else {
       finalcampObj = {}
     }
@@ -97,6 +93,7 @@ export const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
 
     const campaignIdParts = campaignDetails.wzrk_id.split('_')
     const campaignId = campaignIdParts[0]
+    const isCampaignExcludedFromFrequencyLimits = campaignDetails?.display?.efc
 
     if (!campaignId) {
       throw new Error('Failed to parse campaign ID')
@@ -121,9 +118,14 @@ export const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
       throw new Error(`Unsupported campaign type: ${campaignType}`)
     }
 
-    const showCountKey = config.showCountKey
-    const currentShowCount = typeof campaignObj[showCountKey] === 'number' ? campaignObj[showCountKey] : 0
-    campaignObj[showCountKey] = currentShowCount + 1
+    if (!isCampaignExcludedFromFrequencyLimits) {
+      const showCountKey = config.showCountKey
+      const currentShowCount =
+        typeof campaignObj[showCountKey] === 'number'
+          ? campaignObj[showCountKey]
+          : 0
+      campaignObj[showCountKey] = currentShowCount + 1
+    }
 
     if (campaignDetails?.display?.adp) {
       const frequencyControlKey = config.frequencyControlKey
@@ -498,12 +500,10 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
       const campaignObj = getCampaignObject()
 
       // CurrentSesion Id is the problem
-      let sessionCampaignObj = campaignObj.wp[currentSessionId]
-      if (sessionCampaignObj == null) {
-        sessionCampaignObj = {}
-        campaignObj[currentSessionId] = sessionCampaignObj
-      }
-      sessionCampaignObj[campaignId] = 'dnd'
+      campaignObj.dnd = new Set([
+        ...(campaignObj.dnd ?? []),
+        campaignId
+      ])
       saveCampaignObject(campaignObj)
     }
   }
