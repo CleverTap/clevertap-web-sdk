@@ -542,11 +542,14 @@ export const deliveryPreferenceUtils = {
       currentIdCamp || getCampaignObject()
     const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc)
     const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc)
+    // Here `wi` data needs to be added as per CAMP not CAMP_G
+    const wi = getCampaignObject()?.wi ?? {}
 
     campaignObj = {
       ...campaignObj,
       woc,
-      wndoc
+      wndoc,
+      wi
     }
     saveCampaignObject(campaignObj)
   }

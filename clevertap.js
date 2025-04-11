@@ -9126,15 +9126,20 @@
     },
 
     updateOccurenceForPopupAndNativeDisplay(msg, device, logger) {
+      var _getCampaignObject$wi, _getCampaignObject;
+
       // If the guid is present in CAMP_G retain it instead of using the CAMP
       const globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
       const currentIdCamp = globalCamp === null || globalCamp === void 0 ? void 0 : globalCamp[device === null || device === void 0 ? void 0 : device.gcookie];
       let campaignObj = currentIdCamp || getCampaignObject();
       const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc);
-      const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc);
+      const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc); // Here `wi` data needs to be added as per CAMP not CAMP_G
+
+      const wi = (_getCampaignObject$wi = (_getCampaignObject = getCampaignObject()) === null || _getCampaignObject === void 0 ? void 0 : _getCampaignObject.wi) !== null && _getCampaignObject$wi !== void 0 ? _getCampaignObject$wi : {};
       campaignObj = { ...campaignObj,
         woc,
-        wndoc
+        wndoc,
+        wi
       };
       saveCampaignObject(campaignObj);
     }
@@ -9263,6 +9268,8 @@
           if (guid && StorageManager._isLocalStorageSupported()) {
             var finalCampObj = {};
             var campObj = getCampaignObject();
+            /* TODO: Check if Webinbox needs these keys or get rid of them */
+
             Object.keys(campObj).forEach(key => {
               const campKeyObj = guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key] ? guidCampObj[guid][key] : {};
               const globalObj = campObj[key].global;
