@@ -14085,11 +14085,11 @@
     let _wizCounter = 0; // Campaign House keeping
 
     deliveryPreferenceUtils.updateOccurenceCountsForPopupAndNativeDisplay(device, msg);
-    deliveryPreferenceUtils.portTLC(_session);
+    deliveryPreferenceUtils.portTLC(_session); // Done
 
     const doCampHouseKeeping = targetingMsgJson => {
       // Extracts campaign ID from wzrk_id (e.g., "123_456" -> "123")
-      const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Gets current date for daily capping
+      const campaignId = targetingMsgJson.wzrk_id.split("_")[0]; // Gets current date for daily capping
 
       const today = getToday();
 
@@ -14130,14 +14130,14 @@
 
         const campObj = getCampaignObject(); // Determines campaign type (web inbox or web popup) and fetches corresponding data
 
-        if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
+        if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty("wi")) {
           // Web inbox campaigns
           campTypeObj = campObj.wi;
-        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) ; else {
+        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty("wp")) ; else {
           campTypeObj = {};
         }
 
-        if (campObj.hasOwnProperty('global')) ; // Sets default global session limits if not specified
+        if (campObj.hasOwnProperty("global")) ; // Sets default global session limits if not specified
 
 
         if (targetingMsgJson[DISPLAY].wmc == null) {
@@ -14292,10 +14292,10 @@
       let campKey;
 
       if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
-        campKey = 'wi';
+        campKey = "wi";
       }
 
-      if (campKey === 'wi') {
+      if (campKey === "wi") {
         // Updates campaign object with new counts and saves to storage
         const newCampObj = {};
         newCampObj[_session.sessionId] = sessionObj;
@@ -14309,7 +14309,8 @@
         /* For Web Native Display and Web Popup */
         addDeliveryPreferenceDetails(targetingMsgJson, logger);
       }
-    }; // Sets up click tracking and impression increment for a campaign
+    }; // Done
+    // Sets up click tracking and impression increment for a campaign
 
 
     const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
@@ -14317,11 +14318,12 @@
       incrementImpression(targetingMsgJson, _request); // Sets up click event listener
 
       setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session);
-    }; // Handles rendering of image-only popup campaigns
+    }; // Done
+    // Handles rendering of image-only popup campaigns
 
 
     const handleImageOnlyPopup = targetingMsgJson => {
-      const divId = 'wzrkImageOnlyDiv'; // Skips if frequency limits are exceeded
+      const divId = "wzrkImageOnlyDiv"; // Skips if frequency limits are exceeded
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
         return;
@@ -14334,25 +14336,26 @@
       } // Prevents coexistence with other popups (e.g., exit intent)
 
 
-      if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
+      if (document.getElementById(divId) != null || document.getElementById("intentPreview") != null) {
         return;
       }
 
-      const msgDiv = document.createElement('div');
+      const msgDiv = document.createElement("div");
       msgDiv.id = divId;
       document.body.appendChild(msgDiv); // Registers custom element for image-only popup if not already defined
 
-      if (customElements.get('ct-web-popup-imageonly') === undefined) {
-        customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
+      if (customElements.get("ct-web-popup-imageonly") === undefined) {
+        customElements.define("ct-web-popup-imageonly", CTWebPopupImageOnly);
       } // Renders the popup
 
 
       return renderPopUpImageOnly(targetingMsgJson, _session);
-    }; // Checks if a campaign is already rendered in an iframe
+    }; // Done
+    // Checks if a campaign is already rendered in an iframe
 
 
     const isExistingCampaign = campaignId => {
-      const testIframe = document.getElementById('wiz-iframe-intent') || document.getElementById('wiz-iframe');
+      const testIframe = document.getElementById("wiz-iframe-intent") || document.getElementById("wiz-iframe");
 
       if (testIframe) {
         const iframeDocument = testIframe.contentDocument || testIframe.contentWindow.document;
@@ -14364,7 +14367,7 @@
 
 
     const createTemplate = (targetingMsgJson, isExitIntent) => {
-      const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      const campaignId = targetingMsgJson.wzrk_id.split("_")[0];
       const displayObj = targetingMsgJson.display; // Handles specific layout types
 
       if (displayObj.layout === 1) {
@@ -14383,8 +14386,8 @@
         return;
       }
 
-      const divId = 'wizParDiv' + displayObj.layout;
-      const opacityDivId = 'intentOpacityDiv' + displayObj.layout; // Removes existing elements if spam control is active
+      const divId = "wizParDiv" + displayObj.layout;
+      const opacityDivId = "intentOpacityDiv" + displayObj.layout; // Removes existing elements if spam control is active
 
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         const element = document.getElementById(divId);
@@ -14412,15 +14415,15 @@
       const isBanner = displayObj.layout === 2; // Adds opacity layer for exit intent campaigns
 
       if (isExitIntent) {
-        const opacityDiv = document.createElement('div');
+        const opacityDiv = document.createElement("div");
         opacityDiv.id = opacityDivId;
         const opacity = targetingMsgJson.display.opacity || 0.7;
         const rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
-        opacityDiv.setAttribute('style', "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
+        opacityDiv.setAttribute("style", "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
         document.body.appendChild(opacityDiv);
       }
 
-      const msgDiv = document.createElement('div');
+      const msgDiv = document.createElement("div");
       msgDiv.id = divId;
       const viewHeight = window.innerHeight;
       const viewWidth = window.innerWidth;
@@ -14432,48 +14435,48 @@
         let right = viewWidth * 5 / 100;
         let bottomPosition = contentHeight + marginBottom;
         let width = viewWidth * 30 / 100 + 20;
-        let widthPerct = 'width:30%;'; // Adjusts for mobile devices
+        let widthPerct = "width:30%;"; // Adjusts for mobile devices
 
         if ((/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent)) && /iPad/i.test(navigator.userAgent) === false) {
           width = viewWidth * 85 / 100 + 20;
           right = viewWidth * 5 / 100;
           bottomPosition = viewHeight * 5 / 100;
-          widthPerct = 'width:80%;'; // Adjusts for tablets
-        } else if ('ontouchstart' in window || /tablet/i.test(navigator.userAgent)) {
+          widthPerct = "width:80%;"; // Adjusts for tablets
+        } else if ("ontouchstart" in window || /tablet/i.test(navigator.userAgent)) {
           width = viewWidth * 50 / 100 + 20;
           right = viewWidth * 5 / 100;
           bottomPosition = viewHeight * 5 / 100;
-          widthPerct = 'width:50%;';
+          widthPerct = "width:50%;";
         } // Applies legacy styling if proto is absent
 
 
         if (displayObj.proto == null) {
           legacy = true;
-          msgDiv.setAttribute('style', 'display:block;overflow:hidden; bottom:' + bottomPosition + 'px !important;width:' + width + 'px !important;right:' + right + 'px !important;position:fixed;z-index:2147483647;');
+          msgDiv.setAttribute("style", "display:block;overflow:hidden; bottom:" + bottomPosition + "px !important;width:" + width + "px !important;right:" + right + "px !important;position:fixed;z-index:2147483647;");
         } else {
-          msgDiv.setAttribute('style', widthPerct + displayObj.iFrameStyle);
+          msgDiv.setAttribute("style", widthPerct + displayObj.iFrameStyle);
         }
       } else {
-        msgDiv.setAttribute('style', displayObj.iFrameStyle);
+        msgDiv.setAttribute("style", displayObj.iFrameStyle);
       }
 
       document.body.appendChild(msgDiv);
-      const iframe = document.createElement('iframe');
-      const borderRadius = displayObj.br === false ? '0' : '8';
-      iframe.frameborder = '0px';
-      iframe.marginheight = '0px';
-      iframe.marginwidth = '0px';
-      iframe.scrolling = 'no';
-      iframe.id = 'wiz-iframe';
+      const iframe = document.createElement("iframe");
+      const borderRadius = displayObj.br === false ? "0" : "8";
+      iframe.frameborder = "0px";
+      iframe.marginheight = "0px";
+      iframe.marginwidth = "0px";
+      iframe.scrolling = "no";
+      iframe.id = "wiz-iframe";
       const onClick = targetingMsgJson.display.onClick;
-      let pointerCss = '';
+      let pointerCss = "";
 
-      if (onClick !== '' && onClick != null) {
-        pointerCss = 'cursor:pointer;';
+      if (onClick !== "" && onClick != null) {
+        pointerCss = "cursor:pointer;";
       }
 
       if (displayObj.preview) {
-        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin';
+        iframe.sandbox = "allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin";
       }
 
       let html; // Direct HTML content
@@ -14484,45 +14487,45 @@
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
         // Generated HTML with styling
-        const css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + 'td{vertical-align:top;}' + 'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' + '</style>';
+        const css = "" + '<style type="text/css">' + "body{margin:0;padding:0;}" + "#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;" + pointerCss + "}" + "#contentDiv.wzrk td{padding:15px 10px;}" + ".wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}" + ".wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}" + ".PL15{padding-left:15px;}" + ".wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: " + borderRadius + "px;box-shadow: 1px 1px 5px #888888;}" + "a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;" + "background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}" + "a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}" + "td{vertical-align:top;}" + "td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}" + "</style>";
         let bgColor, textColor, btnBg, leftTd, btColor;
 
-        if (targetingMsgJson.display.theme === 'dark') {
-          bgColor = '#2d2d2e';
-          textColor = '#eaeaea';
-          btnBg = '#353535';
-          leftTd = '#353535';
-          btColor = '#ffffff';
+        if (targetingMsgJson.display.theme === "dark") {
+          bgColor = "#2d2d2e";
+          textColor = "#eaeaea";
+          btnBg = "#353535";
+          leftTd = "#353535";
+          btColor = "#ffffff";
         } else {
-          bgColor = '#ffffff';
-          textColor = '#000000';
-          leftTd = '#f4f4f4';
-          btnBg = '#a5a6a6';
-          btColor = '#ffffff';
+          bgColor = "#ffffff";
+          textColor = "#000000";
+          leftTd = "#f4f4f4";
+          btnBg = "#a5a6a6";
+          btColor = "#ffffff";
         }
 
         const titleText = targetingMsgJson.msgContent.title;
         const descriptionText = targetingMsgJson.msgContent.description;
-        let imageTd = '';
+        let imageTd = "";
 
-        if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== '') {
+        if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== "") {
           imageTd = "<td class='imgTd' style='background-color:" + leftTd + "'><img src='" + targetingMsgJson.msgContent.imageUrl + "' height='60' width='60'></td>";
         }
 
-        const onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'" + divId + "');";
-        const title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<table cellpadding='0' cellspacing='0' border='0'>" + // "<tr><td colspan='2'></td></tr>"+
-        '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
-        const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>';
+        const onClickStr = "parent.$WZRK_WR.closeIframe(" + campaignId + ",'" + divId + "');";
+        const title = "<div class='wzrkPPwarp' style='color:" + textColor + ";background-color:" + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ";color:" + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<table cellpadding='0' cellspacing='0' border='0'>" + // "<tr><td colspan='2'></td></tr>"+
+        "<tr>" + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + "</div>";
+        const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + "<div></td></tr></table></div>";
         html = css + title + body;
       }
 
-      iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
+      iframe.setAttribute("style", "color-scheme: none; z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;");
       msgDiv.appendChild(iframe); // Dispatches event to signal campaign rendering
 
-      const closeCampaign = new Event('CT_campaign_rendered');
+      const closeCampaign = new Event("CT_campaign_rendered");
       document.dispatchEvent(closeCampaign);
 
-      if (displayObj['custom-editor']) {
+      if (displayObj["custom-editor"]) {
         // Adds custom event scripts if needed
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
@@ -14531,23 +14534,23 @@
 
       const adjustIFrameHeight = () => {
         // Gets scroll height of content div inside iframe
-        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
+        contentHeight = document.getElementById("wiz-iframe").contentDocument.getElementById("contentDiv").scrollHeight;
 
-        if (displayObj['custom-editor'] !== true && !isBanner) {
+        if (displayObj["custom-editor"] !== true && !isBanner) {
           contentHeight += 25;
         }
 
-        document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px';
-        document.getElementById('wiz-iframe').style.height = contentHeight + 'px';
+        document.getElementById("wiz-iframe").contentDocument.body.style.margin = "0px";
+        document.getElementById("wiz-iframe").style.height = contentHeight + "px";
       };
 
       const ua = navigator.userAgent.toLowerCase();
 
-      if (ua.indexOf('safari') !== -1) {
-        if (ua.indexOf('chrome') > -1) {
+      if (ua.indexOf("safari") !== -1) {
+        if (ua.indexOf("chrome") > -1) {
           iframe.onload = () => {
             adjustIFrameHeight();
-            const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+            const contentDiv = document.getElementById("wiz-iframe").contentDocument.getElementById("contentDiv");
             setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
           };
         } else {
@@ -14555,11 +14558,11 @@
           if (inDoc.document) inDoc = inDoc.document; // safari iphone 7+ needs this.
 
           const _timer = setInterval(() => {
-            if (inDoc.readyState === 'complete') {
+            if (inDoc.readyState === "complete") {
               clearInterval(_timer); // adjust iframe and body height of html inside correctly
 
               adjustIFrameHeight();
-              const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+              const contentDiv = document.getElementById("wiz-iframe").contentDocument.getElementById("contentDiv");
               setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
             }
           }, 300);
@@ -14568,7 +14571,7 @@
         iframe.onload = () => {
           // adjust iframe and body height of html inside correctly
           adjustIFrameHeight();
-          const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+          const contentDiv = document.getElementById("wiz-iframe").contentDocument.getElementById("contentDiv");
           setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
         };
       }
@@ -14585,7 +14588,7 @@
       let onClick = targetingMsgJson.display.onClick;
       const displayObj = targetingMsgJson.display; // Checks for custom notification callback from CleverTap
 
-      if (window.clevertap.hasOwnProperty('notificationCallback') && typeof window.clevertap.notificationCallback !== 'undefined' && typeof window.clevertap.notificationCallback === 'function') {
+      if (window.clevertap.hasOwnProperty("notificationCallback") && typeof window.clevertap.notificationCallback !== "undefined" && typeof window.clevertap.notificationCallback === "function") {
         const notificationCallback = window.clevertap.notificationCallback;
 
         if (!_callBackCalled) {
@@ -14602,7 +14605,7 @@
           }
 
           window.clevertap.raiseNotificationClicked = () => {
-            if (onClick !== '' && onClick != null) {
+            if (onClick !== "" && onClick != null) {
               const jsFunc = targetingMsgJson.display.jsFunc;
               onClick += getCookieParams(_device, _session); // Invokes JS function or redirects based on click action
 
@@ -14615,7 +14618,7 @@
 
 
               if (targetingMsgJson.display.window === 1) {
-                window.open(onClick, '_blank');
+                window.open(onClick, "_blank");
               } else {
                 window.location = onClick;
               }
@@ -14658,7 +14661,7 @@
         } // Handles popup-specific callbacks
 
 
-        if (window.clevertap.hasOwnProperty('popupCallbacks') && typeof window.clevertap.popupCallbacks !== 'undefined' && typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === 'function') {
+        if (window.clevertap.hasOwnProperty("popupCallbacks") && typeof window.clevertap.popupCallbacks !== "undefined" && typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === "function") {
           const popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id];
           const inaObj = {};
           inaObj.msgContent = targetingMsgJson.msgContent;
@@ -14695,7 +14698,7 @@
             }
 
             const eventData = {};
-            eventData.type = 'event';
+            eventData.type = "event";
             eventData.evtName = NOTIFICATION_CLICKED;
             eventData.evtData = {
               [WZRK_ID]: notificationData.msgId
@@ -14729,7 +14732,7 @@
       const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // Convert to milliseconds
 
       let idleTimer;
-      const events = ['mousemove', 'keypress', 'scroll', 'mousedown', 'touchmove', 'click'];
+      const events = ["mousemove", "keypress", "scroll", "mousedown", "touchmove", "click"];
 
       const resetIdleTimer = () => {
         clearTimeout(idleTimer);
@@ -14775,7 +14778,7 @@
 
         if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
           renderFooterNotification(targetNotif);
-          window.removeEventListener('scroll', throttledScrollListener);
+          window.removeEventListener("scroll", throttledScrollListener);
         }
       };
 
@@ -14799,11 +14802,11 @@
       };
 
       const throttledScrollListener = throttle(scrollListener, 200);
-      window.addEventListener('scroll', throttledScrollListener, {
+      window.addEventListener("scroll", throttledScrollListener, {
         passive: true
       }); // Returns cleanup function
 
-      return () => window.removeEventListener('scroll', throttledScrollListener);
+      return () => window.removeEventListener("scroll", throttledScrollListener);
     };
 
     let exitintentObj; // Handles exit intent campaigns (triggered when mouse leaves window)
@@ -14812,7 +14815,7 @@
       // Only triggers when mouse moves upward out of window
       if ((event === null || event === void 0 ? void 0 : event.clientY) > 0) return;
       const targetingMsgJson = targetObj || exitintentObj;
-      const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      const campaignId = targetingMsgJson.wzrk_id.split("_")[0];
       const layout = targetingMsgJson.display.layout; // Skips if campaign is already rendered
 
       if (isExistingCampaign(campaignId)) return;
@@ -14829,8 +14832,8 @@
 
 
       if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0) {
-        const intentPreview = document.getElementById('intentPreview');
-        const intentOpacityDiv = document.getElementById('intentOpacityDiv');
+        const intentPreview = document.getElementById("intentPreview");
+        const intentOpacityDiv = document.getElementById("intentOpacityDiv");
 
         if (intentPreview && intentOpacityDiv) {
           intentPreview.remove();
@@ -14839,50 +14842,50 @@
       } // Prevents coexistence with other popups
 
 
-      if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
+      if (document.getElementById("intentPreview") != null || document.getElementById("wzrkImageOnlyDiv") != null) {
         return;
       } // Skips exit intent on mobile/tablet devices
 
 
-      if (targetingMsgJson.display.layout == null && (/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent) || /iPad/i.test(navigator.userAgent) || 'ontouchstart' in window || /tablet/i.test(navigator.userAgent))) {
+      if (targetingMsgJson.display.layout == null && (/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent) || /iPad/i.test(navigator.userAgent) || "ontouchstart" in window || /tablet/i.test(navigator.userAgent))) {
         return;
       }
 
-      $ct.campaignDivMap[campaignId] = 'intentPreview';
+      $ct.campaignDivMap[campaignId] = "intentPreview";
       let legacy = false;
-      const opacityDiv = document.createElement('div');
-      opacityDiv.id = 'intentOpacityDiv';
+      const opacityDiv = document.createElement("div");
+      opacityDiv.id = "intentOpacityDiv";
       const opacity = targetingMsgJson.display.opacity || 0.7;
       const rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
-      opacityDiv.setAttribute('style', "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
+      opacityDiv.setAttribute("style", "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
       document.body.appendChild(opacityDiv);
-      const msgDiv = document.createElement('div');
-      msgDiv.id = 'intentPreview';
+      const msgDiv = document.createElement("div");
+      msgDiv.id = "intentPreview";
 
       if (targetingMsgJson.display.proto == null) {
         legacy = true;
-        msgDiv.setAttribute('style', 'display:block;overflow:hidden;top:55% !important;left:50% !important;position:fixed;z-index:2147483647;width:600px !important;height:600px !important;margin:-300px 0 0 -300px !important;');
+        msgDiv.setAttribute("style", "display:block;overflow:hidden;top:55% !important;left:50% !important;position:fixed;z-index:2147483647;width:600px !important;height:600px !important;margin:-300px 0 0 -300px !important;");
       } else {
-        msgDiv.setAttribute('style', targetingMsgJson.display.iFrameStyle);
+        msgDiv.setAttribute("style", targetingMsgJson.display.iFrameStyle);
       }
 
       document.body.appendChild(msgDiv);
-      const iframe = document.createElement('iframe');
-      const borderRadius = targetingMsgJson.display.br === false ? '0' : '8';
-      iframe.frameborder = '0px';
-      iframe.marginheight = '0px';
-      iframe.marginwidth = '0px';
-      iframe.scrolling = 'no';
-      iframe.id = 'wiz-iframe-intent';
+      const iframe = document.createElement("iframe");
+      const borderRadius = targetingMsgJson.display.br === false ? "0" : "8";
+      iframe.frameborder = "0px";
+      iframe.marginheight = "0px";
+      iframe.marginwidth = "0px";
+      iframe.scrolling = "no";
+      iframe.id = "wiz-iframe-intent";
       const onClick = targetingMsgJson.display.onClick;
-      let pointerCss = '';
+      let pointerCss = "";
 
-      if (onClick !== '' && onClick != null) {
-        pointerCss = 'cursor:pointer;';
+      if (onClick !== "" && onClick != null) {
+        pointerCss = "cursor:pointer;";
       }
 
-      if (targetingMsgJson.display.preview && targetingMsgJson.display['custom-editor']) {
-        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
+      if (targetingMsgJson.display.preview && targetingMsgJson.display["custom-editor"]) {
+        iframe.sandbox = "allow-scripts allow-popups allow-popups-to-escape-sandbox";
       }
 
       let html; // Direct HTML content
@@ -14893,56 +14896,56 @@
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
         // Generated HTML with styling
-        const css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + '#contentDiv .button{padding-top:20px;}' + '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' + '</style>';
+        const css = "" + '<style type="text/css">' + "body{margin:0;padding:0;}" + "#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;" + pointerCss + "}" + "#contentDiv.wzrk td{padding:15px 10px;}" + ".wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}" + ".wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}" + ".PL15{padding-left:15px;}" + ".wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: " + borderRadius + "px;box-shadow: 1px 1px 5px #888888;}" + "a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;" + "background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}" + "a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}" + "#contentDiv .button{padding-top:20px;}" + "#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}" + "</style>";
         let bgColor, textColor, btnBg, btColor;
 
-        if (targetingMsgJson.display.theme === 'dark') {
-          bgColor = '#2d2d2e';
-          textColor = '#eaeaea';
-          btnBg = '#353535';
-          btColor = '#ffffff';
+        if (targetingMsgJson.display.theme === "dark") {
+          bgColor = "#2d2d2e";
+          textColor = "#eaeaea";
+          btnBg = "#353535";
+          btColor = "#ffffff";
         } else {
-          bgColor = '#ffffff';
-          textColor = '#000000';
-          btnBg = '#a5a6a6';
-          btColor = '#ffffff';
+          bgColor = "#ffffff";
+          textColor = "#000000";
+          btnBg = "#a5a6a6";
+          btColor = "#ffffff";
         }
 
         const titleText = targetingMsgJson.msgContent.title;
         const descriptionText = targetingMsgJson.msgContent.description;
-        let ctaText = '';
+        let ctaText = "";
 
-        if (targetingMsgJson.msgContent.ctaText != null && targetingMsgJson.msgContent.ctaText !== '') {
-          ctaText = "<div class='button'><a href='#'>" + targetingMsgJson.msgContent.ctaText + '</a></div>';
+        if (targetingMsgJson.msgContent.ctaText != null && targetingMsgJson.msgContent.ctaText !== "") {
+          ctaText = "<div class='button'><a href='#'>" + targetingMsgJson.msgContent.ctaText + "</a></div>";
         }
 
-        let imageTd = '';
+        let imageTd = "";
 
-        if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== '') {
-          imageTd = "<div style='padding-top:20px;'><img src='" + targetingMsgJson.msgContent.imageUrl + "' width='500' alt=" + titleText + ' /></div>';
+        if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== "") {
+          imageTd = "<div style='padding-top:20px;'><img src='" + targetingMsgJson.msgContent.imageUrl + "' width='500' alt=" + titleText + " /></div>";
         }
 
-        const onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'intentPreview');";
-        const title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
-        const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '</div>' + imageTd + ctaText + '</div></div>';
+        const onClickStr = "parent.$WZRK_WR.closeIframe(" + campaignId + ",'intentPreview');";
+        const title = "<div class='wzrkPPwarp' style='color:" + textColor + ";background-color:" + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ";color:" + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + "</div>";
+        const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + "</div>" + imageTd + ctaText + "</div></div>";
         html = css + title + body;
       }
 
-      iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
+      iframe.setAttribute("style", "color-scheme: none; z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;");
       msgDiv.appendChild(iframe); // Dispatches event for interstitial/exit intent close
 
-      const closeCampaign = new Event('CT_campaign_rendered');
+      const closeCampaign = new Event("CT_campaign_rendered");
       document.dispatchEvent(closeCampaign);
 
-      if (targetingMsgJson.display['custom-editor']) {
+      if (targetingMsgJson.display["custom-editor"]) {
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
       iframe.srcdoc = html;
 
       iframe.onload = () => {
-        const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
-        setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
+        const contentDiv = document.getElementById("wiz-iframe-intent").contentDocument.getElementById("contentDiv");
+        setupClickUrl(onClick, targetingMsgJson, contentDiv, "intentPreview", legacy);
       };
     }; // Retries processing if document.body isn't ready (up to 6 attempts)
 
@@ -14984,7 +14987,7 @@
 
 
     const addLoadListener = arrInAppNotifs => {
-      window.addEventListener('load', () => {
+      window.addEventListener("load", () => {
         let count = 0;
 
         if (count < 20) {
@@ -15024,7 +15027,7 @@
           // if display['wtarget_type']==2 then web native display
           // Skips duplicate custom event campaigns
           if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif) && executedTargets.customEvents.length > 0 && webNativeDisplayCampaignUtils.shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets)) {
-            _logger.debug('Custom Event Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
+            _logger.debug("Custom Event Campaign Skipped with id :: " + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
 
             continue;
           } // Skips duplicate DOM node campaigns
@@ -15035,7 +15038,7 @@
 
             return (_webNativeDisplayCamp = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif)) === null || _webNativeDisplayCamp === void 0 ? void 0 : _webNativeDisplayCamp.includes(node);
           })) {
-            _logger.debug('DOM Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
+            _logger.debug("DOM Campaign Skipped with id :: " + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
 
             continue;
           } // Tracks executed custom events
@@ -15068,7 +15071,7 @@
               targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
             } else {
               // Adds to array for later processing if element not found
-              arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif;
+              arrInAppNotifs[targetNotif.wzrk_id.split("_")[0]] = targetNotif;
             }
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
             renderVisualBuilder(targetNotif, false, _logger);
@@ -15084,7 +15087,7 @@
 
 
       if (Object.keys(arrInAppNotifs).length) {
-        if (document.readyState === 'complete') {
+        if (document.readyState === "complete") {
           processNativeDisplayArr(arrInAppNotifs);
         } else {
           addLoadListener(arrInAppNotifs);
@@ -15152,8 +15155,8 @@
           const profileMap = msg.evpr.profile;
           const syncExpiry = msg.evpr.expires_in;
           const now = getNow();
-          StorageManager.setMetaProp('lsTime', now);
-          StorageManager.setMetaProp('exTs', syncExpiry);
+          StorageManager.setMetaProp("lsTime", now);
+          StorageManager.setMetaProp("exTs", syncExpiry);
           mergeEventMap(eventsMap);
           StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
 
@@ -15172,15 +15175,15 @@
           // Updates stale web popup data
 
           /* TODO: Need to handle Stale Campaign CLeanups for Webpopups without wp */
-          staleDataUpdate(msg.inapp_stale, 'wp');
+          staleDataUpdate(msg.inapp_stale, "wp");
         }
 
         if (msg.inbox_stale != null && msg.inbox_stale.length > 0) {
           // Updates stale web inbox data
-          staleDataUpdate(msg.inbox_stale, 'wi');
+          staleDataUpdate(msg.inbox_stale, "wi");
         }
       } catch (e) {
-        _logger.error('Unable to persist evrp/arp: ' + e);
+        _logger.error("Unable to persist evrp/arp: " + e);
       }
     }
   };
