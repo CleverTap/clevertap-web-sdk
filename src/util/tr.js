@@ -1,6 +1,6 @@
 import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 import { CampaignContext } from './campaignHouseKeeping/campaignContext'
-import { houseKeepingUtils } from './campaignHouseKeeping/houseKeepingUtils'
+import { commonCampaignUtils } from './campaignHouseKeeping/commonCampaignUtils'
 import { deliveryPreferenceUtils } from './campaignRender/utilities'
 
 const _tr = (msg, { device, session, request, logger }) => {
@@ -34,7 +34,7 @@ const _tr = (msg, { device, session, request, logger }) => {
 
   // Processes in-app notifications (e.g., footers, exit intents, native displays)
   if (msg.inapp_notifs != null) {
-    houseKeepingUtils.processCampaigns(msg, _callBackCalled, exitintentObj, logger)
+    commonCampaignUtils.processCampaigns(msg, _callBackCalled, exitintentObj, logger)
   }
 
   // Initializes and processes web inbox settings and notifications
@@ -45,7 +45,7 @@ const _tr = (msg, { device, session, request, logger }) => {
      * as we would not have any entry related to webInboxSettings in the LS
      */
 
-    houseKeepingUtils.handleWebInbox(msg, logger)
+    commonCampaignUtils.handleWebInbox(msg, logger)
   }
 
   // Processes web push configuration
@@ -53,8 +53,8 @@ const _tr = (msg, { device, session, request, logger }) => {
     processWebPushConfig(msg.webPushConfig, logger, request)
   }
 
-  houseKeepingUtils.handleVariables(msg)
-  houseKeepingUtils.persistsEventsAndProfileData(msg, logger)
+  commonCampaignUtils.handleVariables(msg)
+  commonCampaignUtils.persistsEventsAndProfileData(msg, logger)
 }
 
 export default _tr

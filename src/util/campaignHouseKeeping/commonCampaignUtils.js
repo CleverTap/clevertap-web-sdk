@@ -1,11 +1,11 @@
-import { renderPopUpImageOnly } from '../campaignRender/webPopup'
+import { renderPopUpImageOnly } from '../campaignRender/webPopup.js'
 import {
   addDeliveryPreferenceDetails,
   addToLocalProfileMap,
   arp,
   getCampaignObject,
   saveCampaignObject
-} from '../clevertap'
+} from '../clevertap.js'
 
 import {
   CAMP_COOKIE_NAME,
@@ -17,28 +17,28 @@ import {
   WZRK_ID,
   WEB_NATIVE_TEMPLATES,
   CAMPAIGN_TYPES
-} from '../constants'
+} from '../constants.js'
 
-import { getNow, getToday } from '../datetime'
+import { getNow, getToday } from '../datetime.js'
 
-import { StorageManager, $ct } from '../storage'
-import RequestDispatcher from '../requestDispatcher'
-import { CTWebPopupImageOnly } from '../web-popupImageonly/popupImageonly'
+import { StorageManager, $ct } from '../storage.js'
+import RequestDispatcher from '../requestDispatcher.js'
+import { CTWebPopupImageOnly } from '../web-popupImageonly/popupImageonly.js'
 import {
   checkAndRegisterWebInboxElements,
   initializeWebInbox,
   processWebInboxSettings,
   hasWebInboxSettingsInLS,
   processInboxNotifs
-} from '../../modules/web-inbox/helper'
-import { renderVisualBuilder } from '../../modules/visualBuilder/pageBuilder'
+} from '../../modules/web-inbox/helper.js'
+import { renderVisualBuilder } from '../../modules/visualBuilder/pageBuilder.js'
 import {
   handleKVpairCampaign,
   renderPersonalisationBanner,
   renderPersonalisationCarousel,
   renderCustomHtml,
   handleJson
-} from '.././campaignRender/nativeDisplay'
+} from '../campaignRender/nativeDisplay.js'
 import {
   appendScriptForCustomEvent,
   deliveryPreferenceUtils,
@@ -49,11 +49,11 @@ import {
   setupClickEvent,
   staleDataUpdate,
   webNativeDisplayCampaignUtils
-} from '.././campaignRender/utilities'
-import { CampaignContext } from './campaignContext'
+} from '../campaignRender/utilities.js'
+import { CampaignContext } from './campaignContext.js'
 import _tr from '../tr.js'
 
-export const houseKeepingUtils = {
+export const commonCampaignUtils = {
   doCampHouseKeeping (targetingMsgJson, logger) {
     // Extracts campaign ID from wzrk_id (e.g., "123_456" -> "123")
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
