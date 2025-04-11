@@ -9123,6 +9123,20 @@
 
       const campaignObj = getCampaignObject();
       return campaignObj === null || campaignObj === void 0 ? void 0 : (_campaignObj$dnd = campaignObj.dnd) === null || _campaignObj$dnd === void 0 ? void 0 : _campaignObj$dnd.includes(campaignId);
+    },
+
+    updateOccurenceForPopupAndNativeDisplay(device, msg) {
+      // If the guid is present in CAMP_G retain it instead of using the CAMP
+      const globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+      const currentIdCamp = globalCamp === null || globalCamp === void 0 ? void 0 : globalCamp[device === null || device === void 0 ? void 0 : device.gcookie];
+      let campaignObj = currentIdCamp && Object.keys(currentIdCamp).length === 0 ? currentIdCamp : getCampaignObject();
+      const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc);
+      const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc);
+      campaignObj = { ...campaignObj,
+        woc,
+        wndoc
+      };
+      saveCampaignObject(campaignObj);
     }
 
   };
@@ -14069,18 +14083,8 @@
     const _request = request;
     const _logger = logger;
     let _wizCounter = 0; // Campaign House keeping
-    // If the guid is present in CAMP_G retain it instead of using the CAMP
 
-    const globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-    const currentIdCamp = globalCamp === null || globalCamp === void 0 ? void 0 : globalCamp[device === null || device === void 0 ? void 0 : device.gcookie];
-    let campaignObj = currentIdCamp && Object.keys(currentIdCamp).length === 0 ? currentIdCamp : getCampaignObject();
-    const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc);
-    const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc);
-    campaignObj = { ...campaignObj,
-      woc,
-      wndoc
-    };
-    saveCampaignObject(campaignObj);
+    deliveryPreferenceUtils.updateOccurenceCountsForPopupAndNativeDisplay(device, msg);
     deliveryPreferenceUtils.portTLC(_session);
 
     const doCampHouseKeeping = targetingMsgJson => {

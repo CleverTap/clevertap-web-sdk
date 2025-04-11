@@ -15,8 +15,7 @@ import {
   WZRK_PREFIX,
   WZRK_ID,
   WEB_NATIVE_TEMPLATES,
-  CAMPAIGN_TYPES,
-  CAMP_COOKIE_G
+  CAMPAIGN_TYPES
 } from './constants'
 
 import {
@@ -47,26 +46,8 @@ const _tr = (msg, {
   let _wizCounter = 0
   // Campaign House keeping
 
-  // If the guid is present in CAMP_G retain it instead of using the CAMP
+  deliveryPreferenceUtils.updateOccurenceCountsForPopupAndNativeDisplay(device, msg)
 
-  const globalCamp = JSON.parse(
-    decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))
-  )
-  const currentIdCamp = globalCamp?.[device?.gcookie]
-  let campaignObj =
-    currentIdCamp && Object.keys(currentIdCamp).length === 0
-      ? currentIdCamp
-      : getCampaignObject()
-  const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc)
-  const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc)
-
-  campaignObj = {
-    ...campaignObj,
-    woc,
-    wndoc
-  }
-
-  saveCampaignObject(campaignObj)
   deliveryPreferenceUtils.portTLC(_session)
 
   const doCampHouseKeeping = (targetingMsgJson) => {
