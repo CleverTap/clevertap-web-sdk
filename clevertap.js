@@ -9126,7 +9126,7 @@
     },
 
     updateOccurenceForPopupAndNativeDisplay(msg, device, logger) {
-      var _getCampaignObject$wi, _getCampaignObject;
+      var _getCampaignObject$wi, _getCampaignObject, _getCampaignObject$wp, _getCampaignObject2;
 
       // If the guid is present in CAMP_G retain it instead of using the CAMP
       const globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
@@ -9136,10 +9136,12 @@
       const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc); // If we are retreiving CAMP_G data, we can not retain details on web inbox as they are only session based.
 
       const wi = (_getCampaignObject$wi = (_getCampaignObject = getCampaignObject()) === null || _getCampaignObject === void 0 ? void 0 : _getCampaignObject.wi) !== null && _getCampaignObject$wi !== void 0 ? _getCampaignObject$wi : {};
+      const wp = (_getCampaignObject$wp = (_getCampaignObject2 = getCampaignObject()) === null || _getCampaignObject2 === void 0 ? void 0 : _getCampaignObject2.wp) !== null && _getCampaignObject$wp !== void 0 ? _getCampaignObject$wp : {};
       campaignObj = { ...campaignObj,
         woc,
         wndoc,
-        wi
+        wi,
+        wp
       };
       saveCampaignObject(campaignObj);
     }

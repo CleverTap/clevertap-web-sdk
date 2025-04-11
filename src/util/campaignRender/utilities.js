@@ -544,12 +544,14 @@ export const deliveryPreferenceUtils = {
     const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc)
     // If we are retreiving CAMP_G data, we can not retain details on web inbox as they are only session based.
     const wi = getCampaignObject()?.wi ?? {}
+    const wp = getCampaignObject()?.wp ?? {}
 
     campaignObj = {
       ...campaignObj,
       woc,
       wndoc,
-      wi
+      wi,
+      wp
     }
     saveCampaignObject(campaignObj)
   }
