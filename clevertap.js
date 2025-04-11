@@ -9129,7 +9129,7 @@
       // If the guid is present in CAMP_G retain it instead of using the CAMP
       const globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
       const currentIdCamp = globalCamp === null || globalCamp === void 0 ? void 0 : globalCamp[device === null || device === void 0 ? void 0 : device.gcookie];
-      let campaignObj = currentIdCamp && Object.keys(currentIdCamp).length === 0 ? currentIdCamp : getCampaignObject();
+      let campaignObj = currentIdCamp ? currentIdCamp : getCampaignObject();
       const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc);
       const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc);
       campaignObj = { ...campaignObj,

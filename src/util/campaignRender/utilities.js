@@ -539,9 +539,7 @@ export const deliveryPreferenceUtils = {
     )
     const currentIdCamp = globalCamp?.[device?.gcookie]
     let campaignObj =
-      currentIdCamp 
-        ? currentIdCamp
-        : getCampaignObject()
+      currentIdCamp || getCampaignObject()
     const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc)
     const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc)
 
