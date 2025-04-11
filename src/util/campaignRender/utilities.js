@@ -539,7 +539,7 @@ export const deliveryPreferenceUtils = {
     )
     const currentIdCamp = globalCamp?.[device?.gcookie]
     let campaignObj =
-      currentIdCamp && Object.keys(currentIdCamp).length === 0
+      currentIdCamp 
         ? currentIdCamp
         : getCampaignObject()
     const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc)
