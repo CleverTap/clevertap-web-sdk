@@ -154,6 +154,8 @@ export const setCampaignObjectForGuid = () => {
         if (guid && StorageManager._isLocalStorageSupported()) {
           var finalCampObj = {}
           var campObj = getCampaignObject()
+
+          /* TODO: Check if Webinbox needs these keys or get rid of them */
           Object.keys(campObj).forEach(key => {
             const campKeyObj = (guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key]) ? guidCampObj[guid][key] : {}
             const globalObj = campObj[key].global
