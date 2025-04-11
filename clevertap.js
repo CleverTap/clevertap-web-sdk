@@ -9135,7 +9135,7 @@
       const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc);
       const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc); // If we are retreiving CAMP_G data, we can not retain details on web inbox as they are only session based.
 
-      const wi = !currentIdCamp ? (_getCampaignObject$wi = (_getCampaignObject = getCampaignObject()) === null || _getCampaignObject === void 0 ? void 0 : _getCampaignObject.wi) !== null && _getCampaignObject$wi !== void 0 ? _getCampaignObject$wi : {} : {};
+      const wi = (_getCampaignObject$wi = (_getCampaignObject = getCampaignObject()) === null || _getCampaignObject === void 0 ? void 0 : _getCampaignObject.wi) !== null && _getCampaignObject$wi !== void 0 ? _getCampaignObject$wi : {};
       campaignObj = { ...campaignObj,
         woc,
         wndoc,
