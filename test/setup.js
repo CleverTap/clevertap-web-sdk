@@ -3,6 +3,6 @@ jest.mock('crypto-js', () => {
     AES: {
       encrypt: jest.fn().mockReturnValue('encrypted'),
       decrypt: jest.fn().mockReturnValue('decrypted')
+    }
   }
-}
 })
