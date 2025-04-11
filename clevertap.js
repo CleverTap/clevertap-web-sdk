@@ -9641,7 +9641,7 @@
 
         const campaignObj = getCampaignObject(); // CurrentSesion Id is the problem
 
-        campaignObj.dnd = new Set([...((_campaignObj$dnd = campaignObj.dnd) !== null && _campaignObj$dnd !== void 0 ? _campaignObj$dnd : []), campaignId]);
+        campaignObj.dnd = [...new Set([...((_campaignObj$dnd = campaignObj.dnd) !== null && _campaignObj$dnd !== void 0 ? _campaignObj$dnd : []), campaignId])];
         saveCampaignObject(campaignObj);
       }
     }
@@ -11931,7 +11931,7 @@
             var _campaignObj$dnd;
 
             const campaignObj = getCampaignObject();
-            campaignObj.dnd = new Set([...((_campaignObj$dnd = campaignObj.dnd) !== null && _campaignObj$dnd !== void 0 ? _campaignObj$dnd : []), campaignId]);
+            campaignObj.dnd = [...new Set([...((_campaignObj$dnd = campaignObj.dnd) !== null && _campaignObj$dnd !== void 0 ? _campaignObj$dnd : []), campaignId])];
             saveCampaignObject(campaignObj);
           }
         }

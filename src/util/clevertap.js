@@ -500,10 +500,10 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
       const campaignObj = getCampaignObject()
 
       // CurrentSesion Id is the problem
-      campaignObj.dnd = new Set([
+      campaignObj.dnd = [...new Set([
         ...(campaignObj.dnd ?? []),
         campaignId
-      ])
+      ])]
       saveCampaignObject(campaignObj)
     }
   }

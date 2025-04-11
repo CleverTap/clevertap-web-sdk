@@ -73,10 +73,10 @@ export class CTWebPopupImageOnly extends HTMLElement {
           if (StorageManager._isLocalStorageSupported()) {
             const campaignObj = getCampaignObject()
 
-            campaignObj.dnd = new Set([
+            campaignObj.dnd = [...new Set([
               ...(campaignObj.dnd ?? []),
               campaignId
-            ])
+            ])]
             saveCampaignObject(campaignObj)
           }
         }
