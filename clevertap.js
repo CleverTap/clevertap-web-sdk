@@ -9299,16 +9299,18 @@
               }
 
               finalCampObj = { ...finalCampObj,
-                [key]: campKeyObj,
-                wsc: campObj.wsc,
-                wfc: campObj.wfc,
-                woc: campObj.woc,
-                dnd: campKeyObj.dnd,
-                wndsc: campObj.wndsc,
-                wndfc: campObj.wndfc,
-                wndoc: campObj.wndoc
+                [key]: campKeyObj
               };
             });
+            finalCampObj = { ...finalCampObj,
+              wsc: campObj.wsc,
+              wfc: campObj.wfc,
+              woc: campObj.woc,
+              dnd: campObj.dnd,
+              wndsc: campObj.wndsc,
+              wndfc: campObj.wndfc,
+              wndoc: campObj.wndoc
+            };
             guidCampObj[guid] = finalCampObj;
             StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
           }
