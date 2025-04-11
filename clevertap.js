@@ -9125,7 +9125,7 @@
       return campaignObj === null || campaignObj === void 0 ? void 0 : (_campaignObj$dnd = campaignObj.dnd) === null || _campaignObj$dnd === void 0 ? void 0 : _campaignObj$dnd.includes(campaignId);
     },
 
-    updateOccurenceForPopupAndNativeDisplay(device, msg) {
+    updateOccurenceForPopupAndNativeDisplay(msg, device, logger) {
       // If the guid is present in CAMP_G retain it instead of using the CAMP
       const globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
       const currentIdCamp = globalCamp === null || globalCamp === void 0 ? void 0 : globalCamp[device === null || device === void 0 ? void 0 : device.gcookie];
@@ -10502,6 +10502,1366 @@
     }
   };
 
+  const getBoxPromptStyles = style => {
+    const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
+    const cardPadding = 16 * 2; // Left and right padding
+
+    const cardContentWidth = 360 - cardPadding - totalBorderWidth;
+    return "\n    #pnWrapper {\n      width: 360px;\n      font-family: proxima-nova, Arial, sans-serif;\n    }\n    \n    #pnWrapper * {\n       margin: 0px;\n       padding: 0px;\n       text-align: left;\n    }\n    ".concat(style.overlay.enabled ? "#pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n") : '', "\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n      text-align: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
+  };
+  const getBellIconStyles = style => {
+    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
+  };
+
+  const isChrome = () => {
+    const ua = navigator.userAgent;
+    return ua.includes('Chrome') || ua.includes('CriOS');
+  };
+  const isFirefox = () => {
+    const ua = navigator.userAgent;
+    return ua.includes('Firefox') || ua.includes('FxiOS');
+  };
+  const isSafari = () => {
+    const ua = navigator.userAgent; // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
+
+    return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
+  };
+  /**
+   * Recursively checks if an object contains an array or a function at any level of nesting.
+   *
+   * @param {Object} obj - The object to check.
+   * @returns {boolean} - Returns `true` if the object contains an array or function, otherwise `false`.
+   */
+
+  const objectHasNestedArrayOrFunction = obj => {
+    if (!obj || typeof obj !== 'object') return false;
+    if (Array.isArray(obj)) return true;
+    return Object.values(obj).some(value => typeof value === 'function' || objectHasNestedArrayOrFunction(value));
+  };
+  /**
+   * Flattens a nested object into a single-level object using dot notation.
+   * Arrays are ignored in this transformation.
+   *
+   * @param {Object} obj - The object to be flattened.
+   * @param {string} [parentKey=""] - The parent key for recursion (used internally).
+   * @returns {Object} - The transformed object with dot notation keys.
+   */
+
+  const flattenObjectToDotNotation = function (obj) {
+    let parentKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+    const result = {};
+
+    for (const key in obj) {
+      if (Object.hasOwnProperty.call(obj, key)) {
+        const value = obj[key];
+        const newKey = parentKey ? "".concat(parentKey, ".").concat(key) : key;
+
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          // Recursively process nested objects
+          Object.assign(result, flattenObjectToDotNotation(value, newKey));
+        } else if (!Array.isArray(value)) {
+          // Assign non-array values directly
+          result[newKey] = {
+            defaultValue: value,
+            type: typeof value
+          };
+        }
+      }
+    }
+
+    return result;
+  };
+  /**
+   * Reconstructs an object from a flat key-value structure using dot notation.
+   *
+   * @param {Object} payload - The input object with flat dot notation keys.
+   * @returns {Object} - The reconstructed object with proper nesting.
+   */
+
+  const reconstructNestedObject = payload => {
+    const result = {};
+
+    for (const key in payload) {
+      if (Object.hasOwnProperty.call(payload, key)) {
+        const value = payload[key];
+        const keys = key.split('.'); // Split keys on dot notation
+
+        let current = result;
+        keys.forEach((part, index) => {
+          if (index === keys.length - 1) {
+            // Assign value at the last key level
+            current[part] = value;
+          } else {
+            // Ensure intermediate levels exist
+            current = current[part] = current[part] || {};
+          }
+        });
+      }
+    }
+
+    return result;
+  };
+
+  var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
+
+  var _logger$5 = _classPrivateFieldLooseKey("logger");
+
+  var _request$3 = _classPrivateFieldLooseKey("request");
+
+  var _account$4 = _classPrivateFieldLooseKey("account");
+
+  var _wizAlertJSPath = _classPrivateFieldLooseKey("wizAlertJSPath");
+
+  var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
+
+  var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
+
+  var _isNativeWebPushSupported = _classPrivateFieldLooseKey("isNativeWebPushSupported");
+
+  var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
+
+  var _setUpChromeFirefoxNotifications = _classPrivateFieldLooseKey("setUpChromeFirefoxNotifications");
+
+  var _addWizAlertJS = _classPrivateFieldLooseKey("addWizAlertJS");
+
+  var _removeWizAlertJS = _classPrivateFieldLooseKey("removeWizAlertJS");
+
+  var _handleNotificationRegistration = _classPrivateFieldLooseKey("handleNotificationRegistration");
+
+  class NotificationHandler extends Array {
+    constructor(_ref, values) {
+      let {
+        logger,
+        session,
+        request,
+        account
+      } = _ref;
+      super();
+      Object.defineProperty(this, _handleNotificationRegistration, {
+        value: _handleNotificationRegistration2
+      });
+      Object.defineProperty(this, _removeWizAlertJS, {
+        value: _removeWizAlertJS2
+      });
+      Object.defineProperty(this, _addWizAlertJS, {
+        value: _addWizAlertJS2
+      });
+      Object.defineProperty(this, _setUpChromeFirefoxNotifications, {
+        value: _setUpChromeFirefoxNotifications2
+      });
+      Object.defineProperty(this, _setUpSafariNotifications, {
+        value: _setUpSafariNotifications2
+      });
+      Object.defineProperty(this, _isNativeWebPushSupported, {
+        value: _isNativeWebPushSupported2
+      });
+      Object.defineProperty(this, _setUpWebPush, {
+        value: _setUpWebPush2
+      });
+      Object.defineProperty(this, _oldValues$1, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _logger$5, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _request$3, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _account$4, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _wizAlertJSPath, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _fcmPublicKey, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath] = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js';
+      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = null;
+      _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = values;
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
+      _classPrivateFieldLooseBase(this, _request$3)[_request$3] = request;
+      _classPrivateFieldLooseBase(this, _account$4)[_account$4] = account;
+    }
+
+    setupWebPush(displayArgs) {
+      /*
+        A method in notification.js which can be accessed in prompt.js file to call the
+        private method this.#setUpWebPush
+      */
+      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
+    }
+
+    push() {
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        /*
+          To handle a potential race condition, two flags are stored in Local Storage:
+          - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
+          - `NOTIFICATION_PUSH_METHOD_DEFERRED`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+           This ensures the soft prompt is rendered correctly:
+          - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
+          - Otherwise, `NOTIFICATION_PUSH_METHOD_DEFERRED` is set to true, and the rendering is deferred until the webPushConfig is received.
+        */
+        const isWebPushConfigPresent = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED);
+        const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED);
+
+        for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
+          displayArgs[_key] = arguments[_key];
+        }
+
+        setNotificationHandlerValues({
+          logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+          account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
+          request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
+          displayArgs,
+          fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
+        });
+
+        if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
+          processSoftPrompt();
+        } else {
+          StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
+        }
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Account ID is not set');
+      }
+    }
+
+    _processOldValues() {
+      if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
+        if (Array.isArray(_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) && _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1].length > 0) {
+          setNotificationHandlerValues({
+            logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
+            account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
+            request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
+            displayArgs: _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1].slice(),
+            fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
+          });
+          StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
+        }
+
+        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
+      }
+
+      _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = null;
+    }
+
+    setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
+      if (isChrome() || isFirefox()) {
+        _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
+      } else if (isSafari()) {
+        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath);
+      }
+    }
+
+    setApplicationServerKey(applicationServerKey) {
+      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
+    }
+
+    _enableWebPush(enabled, applicationServerKey) {
+      $ct.webPushEnabled = enabled;
+
+      if (applicationServerKey != null) {
+        this.setApplicationServerKey(applicationServerKey);
+      }
+
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
+
+      if (isNotificationPushCalled) {
+        return;
+      }
+
+      if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
+        _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
+      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
+    }
+
+  }
+
+  var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
+    if ($ct.webPushEnabled && displayArgs.length > 0) {
+      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
+    } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
+      $ct.notifApi.notifEnabledFromApi = true;
+      $ct.notifApi.displayArgs = displayArgs.slice();
+    } else if ($ct.webPushEnabled === false && displayArgs.length > 0) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure push notifications are fully enabled and integrated');
+    }
+  };
+
+  var _isNativeWebPushSupported2 = function _isNativeWebPushSupported2() {
+    return 'PushManager' in window;
+  };
+
+  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
+    const softPromptCard = document.getElementById('pnWrapper');
+    const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+
+    if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
+      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
+        window.Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            const subscribeObj = {
+              applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
+              userVisibleOnly: true
+            };
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Sub Obj' + JSON.stringify(subscribeObj));
+
+            const subscribeForPush = () => {
+              registration.pushManager.subscribe(subscribeObj).then(subscription => {
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
+
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+                  applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
+                  userVisibleOnly: true
+                }));
+
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+
+                const subscriptionData = JSON.parse(JSON.stringify(subscription));
+                subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+                StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+                _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
+
+                if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+                  subscriptionCallback();
+                }
+
+                const existingBellWrapper = document.getElementById('bell_wrapper');
+
+                if (existingBellWrapper) {
+                  existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+                }
+
+                if (softPromptCard) {
+                  softPromptCard.parentNode.removeChild(softPromptCard);
+                }
+
+                if (oldSoftPromptCard) {
+                  oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+                }
+              });
+            };
+
+            const serviceWorker = registration.installing || registration.waiting || registration.active;
+
+            if (serviceWorker && serviceWorker.state === 'activated') {
+              // Already activated, proceed with subscription
+              subscribeForPush();
+            } else if (serviceWorker) {
+              // Listen for state changes to handle activation
+              serviceWorker.addEventListener('statechange', event => {
+                if (event.target.state === 'activated') {
+                  _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker activated. Proceeding with subscription.');
+
+                  subscribeForPush();
+                }
+              });
+            }
+          } else if (permission === 'denied') {
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+            }
+          }
+        });
+      });
+    } else {
+      // ensure that proper arguments are passed
+      if (typeof apnsWebPushId === 'undefined') {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
+      }
+
+      if (typeof apnsServiceUrl === 'undefined') {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
+      }
+
+      if ('safari' in window && 'pushNotification' in window.safari) {
+        window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
+          if (subscription.permission === 'granted') {
+            const subscriptionData = JSON.parse(JSON.stringify(subscription));
+            subscriptionData.endpoint = subscription.deviceToken;
+            subscriptionData.browser = 'Safari';
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
+              apnsServiceUrl,
+              apnsWebPushId
+            }));
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
+
+            const existingBellWrapper = document.getElementById('bell_wrapper');
+
+            if (existingBellWrapper) {
+              existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+            }
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+            }
+
+            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+            _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
+
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
+          } else if (subscription.permission === 'denied') {
+            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
+
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard);
+            }
+
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+            }
+          }
+        });
+      }
+    }
+  };
+
+  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
+    let registrationScope = '';
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
+        if (typeof __wzrk_account_id !== 'undefined') {
+          // eslint-disable-line
+          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
+          // hence add a timeout and hope serviceWroker is ready within that time.
+          return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
+        }
+
+        registrationScope = registration.scope; // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
+        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
+        // OR getRegistrations PROMISE IF ITS FIREFOX
+
+        const rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
+        const isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
+
+        if (isServiceWorkerAtRoot) {
+          return navigator.serviceWorker.ready;
+        } else {
+          if (isChrome()) {
+            return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
+          } else {
+            return navigator.serviceWorker.getRegistrations();
+          }
+        }
+      }).then(serviceWorkerRegistration => {
+        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
+        if (isFirefox() && Array.isArray(serviceWorkerRegistration)) {
+          serviceWorkerRegistration = serviceWorkerRegistration.filter(i => i.scope === registrationScope)[0];
+        }
+
+        const subscribeObj = {
+          userVisibleOnly: true
+        };
+
+        if (_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
+          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
+        }
+
+        const softPromptCard = document.getElementById('pnWrapper');
+        const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+        serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Service Data Sent: ' + JSON.stringify(subscribeObj));
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Subscription Data Received: ' + JSON.stringify(subscription)); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
+
+
+          const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
+
+          if (isChrome()) {
+            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+            subscriptionData.browser = 'Chrome';
+          } else if (isFirefox()) {
+            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
+            subscriptionData.browser = 'Firefox';
+          }
+
+          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
+
+          _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
+
+          if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+            subscriptionCallback();
+          }
+
+          const existingBellWrapper = document.getElementById('bell_wrapper');
+
+          if (existingBellWrapper) {
+            existingBellWrapper.parentNode.removeChild(existingBellWrapper);
+          }
+
+          if (softPromptCard) {
+            softPromptCard.parentNode.removeChild(softPromptCard);
+          }
+
+          if (oldSoftPromptCard) {
+            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+          }
+        }).catch(error => {
+          // unsubscribe from webpush if error
+          serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
+            if (subscription !== null) {
+              subscription.unsubscribe().then(successful => {
+                // You've successfully unsubscribed
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Unsubscription successful');
+
+                window.clevertap.notifications.push({
+                  skipDialog: true
+                });
+              }).catch(e => {
+                // Unsubscription failed
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error unsubscribing: ' + e);
+              });
+            }
+          });
+
+          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error subscribing: ' + error);
+
+          if (softPromptCard) {
+            softPromptCard.parentNode.removeChild(softPromptCard);
+          }
+
+          if (oldSoftPromptCard) {
+            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
+          }
+        });
+      }).catch(err => {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('error registering service worker: ' + err);
+      });
+    }
+  };
+
+  var _addWizAlertJS2 = function _addWizAlertJS2() {
+    const scriptTag = document.createElement('script');
+    scriptTag.setAttribute('type', 'text/javascript');
+    scriptTag.setAttribute('id', 'wzrk-alert-js');
+    scriptTag.setAttribute('src', _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath]); // add the script tag to the end of the body
+
+    document.getElementsByTagName('body')[0].appendChild(scriptTag);
+    return scriptTag;
+  };
+
+  var _removeWizAlertJS2 = function _removeWizAlertJS2() {
+    const scriptTag = document.getElementById('wzrk-alert-js');
+    scriptTag.parentNode.removeChild(scriptTag);
+  };
+
+  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
+    // make sure everything is specified
+    let titleText;
+    let bodyText;
+    let okButtonText;
+    let rejectButtonText;
+    let okButtonColor;
+    let skipDialog;
+    let askAgainTimeInSeconds;
+    let okCallback;
+    let rejectCallback;
+    let subscriptionCallback;
+    let serviceWorkerPath;
+    let httpsPopupPath;
+    let httpsIframePath;
+    let apnsWebPushId;
+    let apnsWebPushServiceUrl;
+    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
+
+    if (displayArgs.length === 1) {
+      if (isObject(displayArgs[0])) {
+        const notifObj = displayArgs[0];
+        titleText = notifObj.titleText;
+        bodyText = notifObj.bodyText;
+        okButtonText = notifObj.okButtonText;
+        rejectButtonText = notifObj.rejectButtonText;
+        okButtonColor = notifObj.okButtonColor;
+        skipDialog = notifObj.skipDialog;
+        askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
+        okCallback = notifObj.okCallback;
+        rejectCallback = notifObj.rejectCallback;
+        subscriptionCallback = notifObj.subscriptionCallback;
+        serviceWorkerPath = notifObj.serviceWorkerPath;
+        httpsPopupPath = notifObj.httpsPopupPath;
+        httpsIframePath = notifObj.httpsIframePath;
+        apnsWebPushId = notifObj.apnsWebPushId;
+        apnsWebPushServiceUrl = notifObj.apnsWebPushServiceUrl;
+      }
+    } else {
+      titleText = displayArgs[0];
+      bodyText = displayArgs[1];
+      okButtonText = displayArgs[2];
+      rejectButtonText = displayArgs[3];
+      okButtonColor = displayArgs[4];
+      skipDialog = displayArgs[5];
+      askAgainTimeInSeconds = displayArgs[6];
+    }
+
+    if (skipDialog == null) {
+      skipDialog = false;
+    }
+
+    if (serviceWorkerPath == null) {
+      serviceWorkerPath = '/clevertap_sw.js';
+    } // ensure that the browser supports notifications
+
+
+    if (typeof navigator.serviceWorker === 'undefined') {
+      return;
+    }
+
+    const isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
+
+    if (window.location.protocol !== 'https:' && document.location.hostname !== 'localhost' && !isHTTP) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure you are https or localhost to register for notifications');
+
+      return;
+    }
+    /*
+       If it is chrome or firefox and the nativeWebPush is not supported then return
+       For Safari the APNs route is open if nativeWebPush is not supported
+    */
+
+
+    if (isChrome() || isFirefox()) {
+      if (!_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]()) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Web Push Notification is not supported on this browser');
+
+        return;
+      }
+    } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
+
+
+    if (!isHTTP) {
+      const hasNotification = ('Notification' in window);
+
+      if (!hasNotification || Notification == null) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Notification not supported on this Device or Browser');
+
+        return;
+      } // handle migrations from other services -> chrome notifications may have already been asked for before
+
+
+      if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
+        // skip the dialog and register
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        return;
+      } else if (Notification.permission === 'denied') {
+        // we've lost this profile :'(
+        return;
+      }
+
+      if (skipDialog) {
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        return;
+      }
+    } // make sure the right parameters are passed
+
+
+    if (!titleText || !bodyText || !okButtonText || !rejectButtonText) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Missing input parameters; please specify title, body, ok button and cancel button text');
+
+      return;
+    } // make sure okButtonColor is formatted properly
+
+
+    if (okButtonColor == null || !okButtonColor.match(/^#[a-f\d]{6}$/i)) {
+      okButtonColor = '#f28046'; // default color for positive button
+    } // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
+
+
+    const now = new Date().getTime() / 1000;
+
+    if (StorageManager.getMetaProp(NOTIF_LAST_TIME) == null) {
+      StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
+    } else {
+      if (askAgainTimeInSeconds == null) {
+        // 7 days by default
+        askAgainTimeInSeconds = 7 * 24 * 60 * 60;
+      }
+
+      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME);
+
+      if (now - notifLastTime < askAgainTimeInSeconds) {
+        if (!isSafari()) {
+          return;
+        } // If Safari is migrated already or only APNS, then return
+
+
+        if (vapidSupportedAndMigrated || _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] === null) {
+          return;
+        }
+      } else {
+        StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
+      }
+    }
+
+    if (isSafari() && _classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
+    }
+
+    if (isHTTP) {
+      // add the https iframe
+      const httpsIframe = document.createElement('iframe');
+      httpsIframe.setAttribute('style', 'display:none;');
+      httpsIframe.setAttribute('src', httpsIframePath);
+      document.body.appendChild(httpsIframe);
+      window.addEventListener('message', event => {
+        if (event.data != null) {
+          let obj = {};
+
+          try {
+            obj = JSON.parse(event.data);
+          } catch (e) {
+            // not a call from our iframe
+            return;
+          }
+
+          if (obj.state != null) {
+            if (obj.from === 'ct' && obj.state === 'not') {
+              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
+
+                return;
+              }
+
+              StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
+              _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
+                StorageManager.saveToLSorCookie(POPUP_LOADING, false);
+                window.wzrkPermissionPopup.wizAlert({
+                  title: titleText,
+                  body: bodyText,
+                  confirmButtonText: okButtonText,
+                  confirmButtonColor: okButtonColor,
+                  rejectButtonText: rejectButtonText
+                }, enabled => {
+                  // callback function
+                  if (enabled) {
+                    // the user accepted on the dialog box
+                    if (typeof okCallback === 'function') {
+                      okCallback();
+                    } // redirect to popup.html
+
+
+                    window.open(httpsPopupPath);
+                  } else {
+                    if (typeof rejectCallback === 'function') {
+                      rejectCallback();
+                    }
+                  }
+
+                  _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
+                });
+              };
+            }
+          }
+        }
+      }, false);
+    } else {
+      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
+
+        return;
+      }
+
+      StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
+      _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
+        StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
+
+        window.wzrkPermissionPopup.wizAlert({
+          title: titleText,
+          body: bodyText,
+          confirmButtonText: okButtonText,
+          confirmButtonColor: okButtonColor,
+          rejectButtonText: rejectButtonText
+        }, enabled => {
+          // callback function
+          if (enabled) {
+            // the user accepted on the dialog box
+            if (typeof okCallback === 'function') {
+              okCallback();
+            }
+
+            this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+          } else {
+            if (typeof rejectCallback === 'function') {
+              rejectCallback();
+            }
+          }
+
+          _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
+        });
+      };
+    }
+  };
+
+  const BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi40OTYyIDUuMjQzOTVDMTIuODM5MSA1LjAzMzE3IDEzLjI4NDcgNS4xNDY4OSAxMy40OTczIDUuNDg4NjdDMTMuNzIyMyA1Ljg1MDE4IDEzLjYwMDIgNi4zMjUxOCAxMy4yMzggNi41NDkwMkM3LjM5Mzk5IDEwLjE2MDYgMy41IDE2LjYyNTcgMy41IDI0LjAwMDNDMy41IDM1LjMyMjEgMTIuNjc4MiA0NC41MDAzIDI0IDQ0LjUwMDNDMjguMDA1NSA0NC41MDAzIDMxLjc0MjYgNDMuMzUxNSAzNC45IDQxLjM2NTVDMzUuMjYwOCA0MS4xMzg1IDM1Ljc0MTYgNDEuMjM4NiAzNS45NjY4IDQxLjYwMDZDMzYuMTc5MiA0MS45NDE5IDM2LjA4NSA0Mi4zOTExIDM1Ljc0NTIgNDIuNjA2QzMyLjM0NjggNDQuNzU1OSAyOC4zMTg3IDQ2LjAwMDMgMjQgNDYuMDAwM0MxMS44NDk3IDQ2LjAwMDMgMiAzNi4xNTA1IDIgMjQuMDAwM0MyIDE2LjA2NjkgNi4xOTkyMSA5LjExNDMyIDEyLjQ5NjIgNS4yNDM5NVpNMzguOCAzOS45MDAzQzM4LjggNDAuMzk3MyAzOC4zOTcxIDQwLjgwMDMgMzcuOSA0MC44MDAzQzM3LjQwMjkgNDAuODAwMyAzNyA0MC4zOTczIDM3IDM5LjkwMDNDMzcgMzkuNDAzMiAzNy40MDI5IDM5LjAwMDMgMzcuOSAzOS4wMDAzQzM4LjM5NzEgMzkuMDAwMyAzOC44IDM5LjQwMzIgMzguOCAzOS45MDAzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMkMyMi44OTU0IDEyIDIyIDEyLjg5NTQgMjIgMTRWMTQuMjUyQzE4LjU0OTUgMTUuMTQwMSAxNiAxOC4yNzIzIDE2IDIyVjI5LjVIMTUuNDc2OUMxNC42NjEyIDI5LjUgMTQgMzAuMTYxMiAxNCAzMC45NzY5VjMxLjAyMzFDMTQgMzEuODM4OCAxNC42NjEyIDMyLjUgMTUuNDc2OSAzMi41SDMyLjUyMzFDMzMuMzM4OCAzMi41IDM0IDMxLjgzODggMzQgMzEuMDIzMVYzMC45NzY5QzM0IDMwLjE2MTIgMzMuMzM4OCAyOS41IDMyLjUyMzEgMjkuNUgzMlYyMkMzMiAxOC4yNzIzIDI5LjQ1MDUgMTUuMTQwMSAyNiAxNC4yNTJWMTRDMjYgMTIuODk1NCAyNS4xMDQ2IDEyIDI0IDEyWk0yNiAzNFYzMy41SDIyVjM0QzIyIDM1LjEwNDYgMjIuODk1NCAzNiAyNCAzNkMyNS4xMDQ2IDM2IDI2IDM1LjEwNDYgMjYgMzRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
+  const PROMPT_BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMzIiIGZpbGw9IiMwMEFFQjkiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0zMS45OTg2IDIwQzMwLjkxOTggMjAgMzAuMDQyOCAyMC44NzQ2IDMwLjA0MjggMjEuOTUzNEwzMC4wNDI5IDIxLjk3MzRDMjYuNTQzNCAyMi41NTM1IDIzLjg3NSAyNS41OTQzIDIzLjg3NSAyOS4yNTgyVjM4LjA5OTVIMjMuODczNUMyMy4wNTg5IDM4LjA5OTUgMjIuMzk4NCAzOC43NiAyMi4zOTg0IDM5LjU3NDZDMjIuMzk4NCA0MC4zODkzIDIzLjA1ODkgNDEuMDQ5NyAyMy44NzM1IDQxLjA0OTdIMjkuNzgxMlY0MS43ODQyQzI5Ljc4MTIgNDMuMDA3NyAzMC43NzMxIDQzLjk5OTYgMzEuOTk2NiA0My45OTk2QzMzLjIyMDIgNDMuOTk5NiAzNC4yMTIgNDMuMDA3NyAzNC4yMTIgNDEuNzg0MlY0MS4wNDk3SDQwLjEyMzNDNDAuOTM4IDQxLjA0OTcgNDEuNTk4NCA0MC4zODkzIDQxLjU5ODQgMzkuNTc0NkM0MS41OTg0IDM4Ljc2IDQwLjkzOCAzOC4wOTk1IDQwLjEyMzMgMzguMDk5NUg0MC4xMjEyVjI5LjI1ODJDNDAuMTIxMiAyNS41OTQ2IDM3LjQ1MzMgMjIuNTU0MiAzMy45NTQzIDIxLjk3MzZMMzMuOTU0NCAyMS45NTM0QzMzLjk1NDQgMjAuODc0NiAzMy4wNzc1IDIwIDMxLjk5ODYgMjBaIiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCBvcGFjaXR5PSIwLjUiIHg9IjcuNSIgeT0iNy41IiB3aWR0aD0iNDkiIGhlaWdodD0iNDkiIHJ4PSIyNC41IiBzdHJva2U9IndoaXRlIi8+CjxyZWN0IG9wYWNpdHk9IjAuMyIgeD0iNC41IiB5PSI0LjUiIHdpZHRoPSI1NSIgaGVpZ2h0PSI1NSIgcng9IjI3LjUiIHN0cm9rZT0id2hpdGUiLz4KPHJlY3Qgb3BhY2l0eT0iMC44IiB4PSIxMC41IiB5PSIxMC41IiB3aWR0aD0iNDMiIGhlaWdodD0iNDMiIHJ4PSIyMS41IiBzdHJva2U9IndoaXRlIi8+Cjwvc3ZnPgo=';
+
+  let appServerKey = null;
+  let swPath = '/clevertap_sw.js';
+  let notificationHandler = null;
+  let logger$1 = null;
+  let account = null;
+  let request = null;
+  let displayArgs = null;
+  let fcmPublicKey = null;
+  const setNotificationHandlerValues = function () {
+    let notificationValues = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    logger$1 = notificationValues.logger;
+    account = notificationValues.account;
+    request = notificationValues.request;
+    displayArgs = notificationValues.displayArgs;
+    fcmPublicKey = notificationValues.fcmPublicKey;
+  };
+  const processWebPushConfig = (webPushConfig, logger, request) => {
+    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true);
+
+    const updatePushConfig = () => {
+      $ct.pushConfig = webPushConfig;
+      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
+    };
+
+    updatePushConfig();
+
+    if (webPushConfig.isPreview) {
+      enablePush({
+        logger,
+        request
+      });
+    }
+
+    try {
+      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
+
+      if (isNotificationPushCalled) {
+        try {
+          processSoftPrompt();
+        } catch (error) {
+          logger.error('processs soft prompt' + error);
+        }
+
+        return;
+      }
+    } catch (error) {
+      logger.error('Failed to process web push config:', error); // Fallback: Attempt to process soft prompt anyway
+
+      processSoftPrompt();
+    }
+  };
+  const processSoftPrompt = () => {
+    const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+    notificationHandler = new NotificationHandler({
+      logger: logger$1,
+      session: {},
+      request,
+      account
+    });
+
+    if (webPushConfig && !(Object.keys(webPushConfig).length > 0)) {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setupWebPush(displayArgs);
+      return;
+    }
+
+    const {
+      showBox,
+      showBellIcon,
+      boxType
+    } = webPushConfig;
+    const {
+      serviceWorkerPath,
+      skipDialog,
+      okCallback,
+      subscriptionCallback,
+      rejectCallback,
+      apnsWebPushId,
+      apnsWebPushServiceUrl
+    } = parseDisplayArgs(displayArgs);
+    const isSoftPromptNew = showBellIcon || showBox && boxType === 'new';
+
+    if (isSoftPromptNew) {
+      const enablePushParams = {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        logger: logger$1,
+        request,
+        account,
+        fcmPublicKey,
+        apnsWebPushId,
+        apnsWebPushServiceUrl
+      };
+      enablePush(enablePushParams);
+    }
+
+    if (showBox && boxType === 'old') {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setupWebPush(displayArgs);
+    }
+
+    StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, false);
+    StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, false);
+  };
+  const parseDisplayArgs = displayArgs => {
+    if (displayArgs && displayArgs.length === 1 && isObject(displayArgs[0])) {
+      const {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        apnsWebPushServiceUrl,
+        apnsWebPushId
+      } = displayArgs[0];
+      return {
+        serviceWorkerPath,
+        skipDialog,
+        okCallback,
+        subscriptionCallback,
+        rejectCallback,
+        apnsWebPushServiceUrl,
+        apnsWebPushId
+      };
+    }
+
+    return {
+      serviceWorkerPath: undefined,
+      skipDialog: displayArgs[5],
+      okCallback: undefined,
+      subscriptionCallback: undefined,
+      rejectCallback: undefined,
+      apnsWebPushServiceUrl: undefined,
+      apnsWebPushId: undefined
+    };
+  };
+  const enablePush = enablePushParams => {
+    const {
+      serviceWorkerPath: customSwPath,
+      okCallback,
+      subscriptionCallback,
+      rejectCallback,
+      logger,
+      fcmPublicKey,
+      apnsWebPushId,
+      apnsWebPushServiceUrl
+    } = enablePushParams;
+    let {
+      skipDialog
+    } = enablePushParams;
+
+    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+
+    $ct.pushConfig = _pushConfig;
+
+    if (!$ct.pushConfig) {
+      logger.error('Web Push config data not present');
+      return;
+    }
+
+    if (customSwPath) {
+      swPath = customSwPath;
+    }
+
+    if (skipDialog === null) {
+      skipDialog = false;
+    } // notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
+
+
+    if (skipDialog) {
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
+      return;
+    }
+
+    const {
+      showBox,
+      boxType,
+      showBellIcon,
+      isPreview
+    } = $ct.pushConfig;
+
+    if (isPreview) {
+      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey);
+      if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
+    } else {
+      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+      if (showBellIcon) createBellIcon($ct.pushConfig, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
+    }
+  };
+
+  const createElementWithAttributes = function (tag) {
+    let attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    const element = document.createElement(tag);
+    Object.entries(attributes).forEach((_ref) => {
+      let [key, value] = _ref;
+      element[key] = value;
+    });
+    return element;
+  };
+
+  const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
+    const {
+      boxConfig: {
+        content,
+        style
+      }
+    } = configData; // Create the wrapper div
+
+    const wrapper = createElementWithAttributes('div', {
+      id: NEW_SOFT_PROMPT_SELCTOR_ID
+    });
+    const overlayDiv = style.overlay.enabled ? createElementWithAttributes('div', {
+      id: 'pnOverlay'
+    }) : '';
+    const pnCard = createElementWithAttributes('div', {
+      id: 'pnCard'
+    });
+    const iconTitleDescWrapper = createElementWithAttributes('div', {
+      id: 'iconTitleDescWrapper'
+    });
+    const iconContainer = createElementWithAttributes('img', {
+      id: 'iconContainer',
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url
+    });
+    iconTitleDescWrapper.appendChild(iconContainer);
+    const titleDescWrapper = createElementWithAttributes('div', {
+      id: 'titleDescWrapper'
+    });
+    titleDescWrapper.appendChild(createElementWithAttributes('div', {
+      id: 'title',
+      textContent: content.title
+    }));
+    titleDescWrapper.appendChild(createElementWithAttributes('div', {
+      id: 'description',
+      textContent: content.description
+    }));
+    iconTitleDescWrapper.appendChild(titleDescWrapper);
+    const buttonsContainer = createElementWithAttributes('div', {
+      id: 'buttonsContainer'
+    });
+    const primaryButton = createElementWithAttributes('button', {
+      id: 'primaryButton',
+      textContent: content.buttons.primaryButtonText
+    });
+    const secondaryButton = createElementWithAttributes('button', {
+      id: 'secondaryButton',
+      textContent: content.buttons.secondaryButtonText
+    });
+    buttonsContainer.appendChild(secondaryButton);
+    buttonsContainer.appendChild(primaryButton);
+    pnCard.appendChild(iconTitleDescWrapper);
+    pnCard.appendChild(buttonsContainer); // Apply styles
+
+    const styleElement = createElementWithAttributes('style', {
+      textContent: getBoxPromptStyles(style)
+    });
+    wrapper.appendChild(styleElement);
+    wrapper.appendChild(pnCard);
+
+    if (overlayDiv) {
+      wrapper.appendChild(overlayDiv);
+    }
+
+    setElementPosition(pnCard, style.card.position);
+    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
+
+    if (!configData.isPreview) {
+      if ('Notification' in window && Notification !== null) {
+        if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
+          notificationHandler.setApplicationServerKey(appServerKey);
+          notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
+          return;
+        } else if (Notification.permission === 'denied') {
+          return;
+        }
+      }
+    }
+
+    const now = new Date().getTime() / 1000;
+    const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
+    const popupFrequency = content.popupFrequency || 7; // number of days
+
+    const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
+
+    if (shouldShowNotification) {
+      document.body.appendChild(wrapper);
+
+      if (!configData.isPreview) {
+        StorageManager.setMetaProp('webpush_last_notif_time', now);
+        addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+
+        if (isSafari() && 'PushManager' in window && fcmPublicKey != null) {
+          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
+        }
+      }
+    } else {
+      if (isSafari()) {
+        // This is for migration case for safari from apns to vapid, show popup even when timer is not expired.
+        if (vapidSupportedAndMigrated || fcmPublicKey === null) {
+          return;
+        }
+
+        if (!configData.isPreview) {
+          document.body.appendChild(wrapper);
+          addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
+          StorageManager.setMetaProp('webpush_last_notif_time', now);
+          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
+        }
+      }
+    }
+  };
+  const createBellIcon = (configData, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return;
+    const {
+      bellIconConfig: {
+        content,
+        style
+      }
+    } = configData;
+    const bellWrapper = createElementWithAttributes('div', {
+      id: 'bell_wrapper'
+    });
+    const bellIcon = createElementWithAttributes('img', {
+      id: 'bell_icon',
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(BELL_BASE64) : content.icon.url
+    }); // For playing gif
+
+    const gifModal = createElementWithAttributes('div', {
+      id: 'gif_modal',
+      style: 'display: none;'
+    });
+    const gifImage = createElementWithAttributes('img', {
+      id: 'gif_image',
+      src: 'https://d2r1yp2w7bby2u.cloudfront.net/js/permission_grant.gif'
+    });
+    const closeModal = createElementWithAttributes('div', {
+      id: 'close_modal',
+      innerHTML: '&times;'
+    });
+    gifModal.appendChild(gifImage);
+    gifModal.appendChild(closeModal);
+    bellWrapper.appendChild(bellIcon);
+    bellWrapper.appendChild(gifModal);
+
+    if (content.hoverText.enabled) {
+      const tooltip = createElementWithAttributes('div', {
+        id: 'bell_tooltip',
+        textContent: content.hoverText.text
+      });
+      bellWrapper.appendChild(tooltip);
+    }
+
+    setElementPosition(bellWrapper, style.card.position); // Apply styles
+
+    const styleElement = createElementWithAttributes('style', {
+      textContent: getBellIconStyles(style)
+    });
+    document.head.appendChild(styleElement);
+    document.body.appendChild(bellWrapper);
+
+    if (!configData.isPreview) {
+      addBellEventListeners(bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
+    }
+
+    return bellWrapper;
+  };
+  const setServerKey = serverKey => {
+    appServerKey = serverKey;
+    fcmPublicKey = serverKey;
+  };
+  const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    const primaryButton = wrapper.querySelector('#primaryButton');
+    const secondaryButton = wrapper.querySelector('#secondaryButton');
+
+    const removeWrapper = () => {
+      var _wrapper$parentNode;
+
+      return (_wrapper$parentNode = wrapper.parentNode) === null || _wrapper$parentNode === void 0 ? void 0 : _wrapper$parentNode.removeChild(wrapper);
+    };
+
+    primaryButton.addEventListener('click', () => {
+      removeWrapper();
+      notificationHandler.setApplicationServerKey(appServerKey);
+      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
+
+      if (typeof okCallback === 'function') {
+        okCallback();
+      }
+    });
+    secondaryButton.addEventListener('click', () => {
+      removeWrapper();
+
+      if (typeof rejectCallback === 'function') {
+        rejectCallback();
+      }
+    });
+  };
+  const addBellEventListeners = (bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    const bellIcon = bellWrapper.querySelector('#bell_icon');
+    bellIcon.addEventListener('click', () => {
+      if (Notification.permission === 'denied') {
+        toggleGifModal(bellWrapper);
+      } else {
+        notificationHandler.setApplicationServerKey(appServerKey);
+        notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
+
+        if (Notification.permission === 'granted') {
+          bellWrapper.remove();
+        }
+      }
+    });
+    bellIcon.addEventListener('mouseenter', () => displayTooltip(bellWrapper));
+    bellIcon.addEventListener('mouseleave', () => clearTooltip(bellWrapper));
+    bellWrapper.querySelector('#close_modal').addEventListener('click', () => toggleGifModal(bellWrapper));
+  };
+  const setElementPosition = (element, position) => {
+    Object.assign(element.style, {
+      inset: 'auto',
+      transform: 'none'
+    });
+    const positions = {
+      'Top Right': {
+        inset: '16px 16px auto auto'
+      },
+      'Top Left': {
+        inset: '16px auto auto 16px'
+      },
+      'Bottom Right': {
+        inset: 'auto 16px 16px auto'
+      },
+      'Bottom Left': {
+        inset: 'auto auto 16px 16px'
+      },
+      Center: {
+        inset: '50%',
+        transform: 'translate(-50%, -50%)'
+      },
+      Top: {
+        inset: '16px auto auto 50%',
+        transform: 'translateX(-50%)'
+      },
+      Bottom: {
+        inset: 'auto auto 16px 50%',
+        transform: 'translateX(-50%)'
+      }
+    };
+    Object.assign(element.style, positions[position] || positions['top-right']);
+  };
+
+  const displayTooltip = bellWrapper => {
+    const gifModal = bellWrapper.querySelector('#gif_modal');
+
+    if (gifModal.style.display === 'flex') {
+      return;
+    }
+
+    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+
+    if (tooltip) {
+      tooltip.style.display = 'flex';
+    }
+
+    const bellIcon = bellWrapper.querySelector('#bell_icon');
+    const bellRect = bellIcon.getBoundingClientRect();
+    var midX = window.innerWidth / 2;
+    var midY = window.innerHeight / 2;
+    bellWrapper.style['flex-direction'] = bellRect.y > midY ? 'column-reverse' : 'column';
+    bellWrapper.style['align-items'] = bellRect.x > midX ? 'flex-end' : 'flex-start';
+  };
+
+  const clearTooltip = bellWrapper => {
+    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+
+    if (tooltip) {
+      tooltip.style.display = 'none';
+    }
+  };
+
+  const toggleGifModal = bellWrapper => {
+    clearTooltip(bellWrapper);
+    const gifModal = bellWrapper.querySelector('#gif_modal');
+    gifModal.style.display = gifModal.style.display === 'none' ? 'flex' : 'none';
+  };
+
+  // contextManager.js
+  const CampaignContext = {
+    _device: null,
+    _session: null,
+    _request: null,
+    _logger: null,
+    _msg: null,
+
+    // Initialize with context objects
+    update(device, session, request, logger, msg) {
+      this._device = device;
+      this._session = session;
+      this._request = request;
+      this._logger = logger;
+      this._msg = msg;
+    },
+
+    // Getters for clean access
+    get device() {
+      return this._device;
+    },
+
+    get session() {
+      return this._session;
+    },
+
+    get request() {
+      return this._request;
+    },
+
+    get logger() {
+      return this._logger;
+    },
+
+    get msg() {
+      return this._msg;
+    }
+
+  };
+
+  const renderPopUpImageOnly = (targetingMsgJson, _session) => {
+    const divId = 'wzrkImageOnlyDiv';
+    const popupImageOnly = document.createElement('ct-web-popup-imageonly');
+    popupImageOnly.session = _session;
+    popupImageOnly.target = targetingMsgJson;
+    const containerEl = document.getElementById(divId);
+    containerEl.innerHTML = '';
+    containerEl.style.visibility = 'hidden';
+    containerEl.appendChild(popupImageOnly);
+  };
+
   class CTWebPopupImageOnly extends HTMLElement {
     constructor() {
       super();
@@ -11822,18 +13182,18 @@
     }
   };
 
-  let logger$1 = null;
+  let logger = null;
   const handleActionMode = (_logger, accountId) => {
     const searchParams = new URLSearchParams(window.location.search);
     const ctType = searchParams.get('ctActionMode');
-    logger$1 = _logger;
+    logger = _logger;
 
     if (ctType) {
       const parentWindow = window.opener;
 
       switch (ctType) {
         case WVE_QUERY_PARAMS.BUILDER:
-          logger$1.debug('open in visual builder mode');
+          logger.debug('open in visual builder mode');
           window.addEventListener('message', handleMessageEvent, false);
 
           if (parentWindow) {
@@ -11846,7 +13206,7 @@
           break;
 
         case WVE_QUERY_PARAMS.PREVIEW:
-          logger$1.debug('preview of visual editor');
+          logger.debug('preview of visual editor');
           window.addEventListener('message', handleMessageEvent, false);
 
           if (parentWindow) {
@@ -11860,7 +13220,7 @@
 
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
-            logger$1.debug('SDK version check');
+            logger.debug('SDK version check');
             const sdkVersion = '1.15.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
@@ -11873,7 +13233,7 @@
           break;
 
         default:
-          logger$1.debug("unknown query param ".concat(ctType));
+          logger.debug("unknown query param ".concat(ctType));
           break;
       }
     }
@@ -11944,10 +13304,10 @@
       container.style.display = 'flex';
       document.body.appendChild(container);
       loadOverlayScript(OVERLAY_PATH, url, variant, details, personalisation).then(() => {
-        logger$1.debug('Overlay script loaded successfully.');
+        logger.debug('Overlay script loaded successfully.');
         contentLoaded = true;
       }).catch(error => {
-        logger$1.debug('Error loading overlay script:', error);
+        logger.debug('Error loading overlay script:', error);
       });
       loadCSS();
     }
@@ -12014,7 +13374,7 @@
 
   const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
     if (_logger) {
-      logger$1 = _logger;
+      logger = _logger;
     }
 
     const insertedElements = [];
@@ -12104,7 +13464,7 @@
           processElement(retryElement, selector);
           clearInterval(intervalId);
         } else if (++count >= 20) {
-          logger$1.debug("No element present on DOM with selector '".concat(selector, "'."));
+          logger.debug("No element present on DOM with selector '".concat(selector, "'."));
           clearInterval(intervalId);
         }
       }, 500);
@@ -12166,7 +13526,7 @@
           processElement(insertedElement, selector);
           clearInterval(intervalId);
         } else if (++count >= 20) {
-          logger$1.debug("No element present on DOM with selector '".concat(sibling, "'."));
+          logger.debug("No element present on DOM with selector '".concat(sibling, "'."));
           clearInterval(intervalId);
         }
       }, 500);
@@ -12353,7 +13713,7 @@
       const scripts = newElement.querySelectorAll('script');
       scripts.forEach(addScriptTo);
     } catch (error) {
-      logger$1.debug('Error loading script', error);
+      logger.debug('Error loading script', error);
     }
   }
 
@@ -12751,1345 +14111,10 @@
     }
   };
 
-  const renderPopUpImageOnly = (targetingMsgJson, _session) => {
-    const divId = 'wzrkImageOnlyDiv';
-    const popupImageOnly = document.createElement('ct-web-popup-imageonly');
-    popupImageOnly.session = _session;
-    popupImageOnly.target = targetingMsgJson;
-    const containerEl = document.getElementById(divId);
-    containerEl.innerHTML = '';
-    containerEl.style.visibility = 'hidden';
-    containerEl.appendChild(popupImageOnly);
-  };
-
-  const getBoxPromptStyles = style => {
-    const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
-    const cardPadding = 16 * 2; // Left and right padding
-
-    const cardContentWidth = 360 - cardPadding - totalBorderWidth;
-    return "\n    #pnWrapper {\n      width: 360px;\n      font-family: proxima-nova, Arial, sans-serif;\n    }\n    \n    #pnWrapper * {\n       margin: 0px;\n       padding: 0px;\n       text-align: left;\n    }\n    ".concat(style.overlay.enabled ? "#pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n") : '', "\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n      text-align: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
-  };
-  const getBellIconStyles = style => {
-    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
-  };
-
-  const isChrome = () => {
-    const ua = navigator.userAgent;
-    return ua.includes('Chrome') || ua.includes('CriOS');
-  };
-  const isFirefox = () => {
-    const ua = navigator.userAgent;
-    return ua.includes('Firefox') || ua.includes('FxiOS');
-  };
-  const isSafari = () => {
-    const ua = navigator.userAgent; // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
-
-    return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
-  };
-  /**
-   * Recursively checks if an object contains an array or a function at any level of nesting.
-   *
-   * @param {Object} obj - The object to check.
-   * @returns {boolean} - Returns `true` if the object contains an array or function, otherwise `false`.
-   */
-
-  const objectHasNestedArrayOrFunction = obj => {
-    if (!obj || typeof obj !== 'object') return false;
-    if (Array.isArray(obj)) return true;
-    return Object.values(obj).some(value => typeof value === 'function' || objectHasNestedArrayOrFunction(value));
-  };
-  /**
-   * Flattens a nested object into a single-level object using dot notation.
-   * Arrays are ignored in this transformation.
-   *
-   * @param {Object} obj - The object to be flattened.
-   * @param {string} [parentKey=""] - The parent key for recursion (used internally).
-   * @returns {Object} - The transformed object with dot notation keys.
-   */
-
-  const flattenObjectToDotNotation = function (obj) {
-    let parentKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
-    const result = {};
-
-    for (const key in obj) {
-      if (Object.hasOwnProperty.call(obj, key)) {
-        const value = obj[key];
-        const newKey = parentKey ? "".concat(parentKey, ".").concat(key) : key;
-
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-          // Recursively process nested objects
-          Object.assign(result, flattenObjectToDotNotation(value, newKey));
-        } else if (!Array.isArray(value)) {
-          // Assign non-array values directly
-          result[newKey] = {
-            defaultValue: value,
-            type: typeof value
-          };
-        }
-      }
-    }
-
-    return result;
-  };
-  /**
-   * Reconstructs an object from a flat key-value structure using dot notation.
-   *
-   * @param {Object} payload - The input object with flat dot notation keys.
-   * @returns {Object} - The reconstructed object with proper nesting.
-   */
-
-  const reconstructNestedObject = payload => {
-    const result = {};
-
-    for (const key in payload) {
-      if (Object.hasOwnProperty.call(payload, key)) {
-        const value = payload[key];
-        const keys = key.split('.'); // Split keys on dot notation
-
-        let current = result;
-        keys.forEach((part, index) => {
-          if (index === keys.length - 1) {
-            // Assign value at the last key level
-            current[part] = value;
-          } else {
-            // Ensure intermediate levels exist
-            current = current[part] = current[part] || {};
-          }
-        });
-      }
-    }
-
-    return result;
-  };
-
-  var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
-
-  var _logger$5 = _classPrivateFieldLooseKey("logger");
-
-  var _request$3 = _classPrivateFieldLooseKey("request");
-
-  var _account$4 = _classPrivateFieldLooseKey("account");
-
-  var _wizAlertJSPath = _classPrivateFieldLooseKey("wizAlertJSPath");
-
-  var _fcmPublicKey = _classPrivateFieldLooseKey("fcmPublicKey");
-
-  var _setUpWebPush = _classPrivateFieldLooseKey("setUpWebPush");
-
-  var _isNativeWebPushSupported = _classPrivateFieldLooseKey("isNativeWebPushSupported");
-
-  var _setUpSafariNotifications = _classPrivateFieldLooseKey("setUpSafariNotifications");
-
-  var _setUpChromeFirefoxNotifications = _classPrivateFieldLooseKey("setUpChromeFirefoxNotifications");
-
-  var _addWizAlertJS = _classPrivateFieldLooseKey("addWizAlertJS");
-
-  var _removeWizAlertJS = _classPrivateFieldLooseKey("removeWizAlertJS");
-
-  var _handleNotificationRegistration = _classPrivateFieldLooseKey("handleNotificationRegistration");
-
-  class NotificationHandler extends Array {
-    constructor(_ref, values) {
-      let {
-        logger,
-        session,
-        request,
-        account
-      } = _ref;
-      super();
-      Object.defineProperty(this, _handleNotificationRegistration, {
-        value: _handleNotificationRegistration2
-      });
-      Object.defineProperty(this, _removeWizAlertJS, {
-        value: _removeWizAlertJS2
-      });
-      Object.defineProperty(this, _addWizAlertJS, {
-        value: _addWizAlertJS2
-      });
-      Object.defineProperty(this, _setUpChromeFirefoxNotifications, {
-        value: _setUpChromeFirefoxNotifications2
-      });
-      Object.defineProperty(this, _setUpSafariNotifications, {
-        value: _setUpSafariNotifications2
-      });
-      Object.defineProperty(this, _isNativeWebPushSupported, {
-        value: _isNativeWebPushSupported2
-      });
-      Object.defineProperty(this, _setUpWebPush, {
-        value: _setUpWebPush2
-      });
-      Object.defineProperty(this, _oldValues$1, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _logger$5, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _request$3, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _account$4, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _wizAlertJSPath, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _fcmPublicKey, {
-        writable: true,
-        value: void 0
-      });
-      _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath] = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js';
-      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = null;
-      _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = values;
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
-      _classPrivateFieldLooseBase(this, _request$3)[_request$3] = request;
-      _classPrivateFieldLooseBase(this, _account$4)[_account$4] = account;
-    }
-
-    setupWebPush(displayArgs) {
-      /*
-        A method in notification.js which can be accessed in prompt.js file to call the
-        private method this.#setUpWebPush
-      */
-      _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](displayArgs);
-    }
-
-    push() {
-      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
-        /*
-          To handle a potential race condition, two flags are stored in Local Storage:
-          - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
-          - `NOTIFICATION_PUSH_METHOD_DEFERRED`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
-           This ensures the soft prompt is rendered correctly:
-          - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
-          - Otherwise, `NOTIFICATION_PUSH_METHOD_DEFERRED` is set to true, and the rendering is deferred until the webPushConfig is received.
-        */
-        const isWebPushConfigPresent = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED);
-        const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED);
-
-        for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
-          displayArgs[_key] = arguments[_key];
-        }
-
-        setNotificationHandlerValues({
-          logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
-          account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
-          request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
-          displayArgs,
-          fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
-        });
-
-        if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
-          processSoftPrompt();
-        } else {
-          StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
-        }
-      } else {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Account ID is not set');
-      }
-    }
-
-    _processOldValues() {
-      if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
-        if (Array.isArray(_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) && _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1].length > 0) {
-          setNotificationHandlerValues({
-            logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5],
-            account: _classPrivateFieldLooseBase(this, _account$4)[_account$4],
-            request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
-            displayArgs: _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1].slice(),
-            fcmPublicKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]
-          });
-          StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true);
-        }
-
-        _classPrivateFieldLooseBase(this, _setUpWebPush)[_setUpWebPush](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
-      }
-
-      _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = null;
-    }
-
-    setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-      if (isChrome() || isFirefox()) {
-        _classPrivateFieldLooseBase(this, _setUpChromeFirefoxNotifications)[_setUpChromeFirefoxNotifications](subscriptionCallback, serviceWorkerPath);
-      } else if (isSafari()) {
-        _classPrivateFieldLooseBase(this, _setUpSafariNotifications)[_setUpSafariNotifications](subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath);
-      }
-    }
-
-    setApplicationServerKey(applicationServerKey) {
-      _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] = applicationServerKey;
-    }
-
-    _enableWebPush(enabled, applicationServerKey) {
-      $ct.webPushEnabled = enabled;
-
-      if (applicationServerKey != null) {
-        this.setApplicationServerKey(applicationServerKey);
-      }
-
-      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
-
-      if (isNotificationPushCalled) {
-        return;
-      }
-
-      if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-        _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
-    }
-
-  }
-
-  var _setUpWebPush2 = function _setUpWebPush2(displayArgs) {
-    if ($ct.webPushEnabled && displayArgs.length > 0) {
-      _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration](displayArgs);
-    } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
-      $ct.notifApi.notifEnabledFromApi = true;
-      $ct.notifApi.displayArgs = displayArgs.slice();
-    } else if ($ct.webPushEnabled === false && displayArgs.length > 0) {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure push notifications are fully enabled and integrated');
-    }
-  };
-
-  var _isNativeWebPushSupported2 = function _isNativeWebPushSupported2() {
-    return 'PushManager' in window;
-  };
-
-  var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
-    const softPromptCard = document.getElementById('pnWrapper');
-    const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
-
-    if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
-      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
-      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
-        window.Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            const subscribeObj = {
-              applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
-              userVisibleOnly: true
-            };
-
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Sub Obj' + JSON.stringify(subscribeObj));
-
-            const subscribeForPush = () => {
-              registration.pushManager.subscribe(subscribeObj).then(subscription => {
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
-
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
-                  applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
-                  userVisibleOnly: true
-                }));
-
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
-
-                const subscriptionData = JSON.parse(JSON.stringify(subscription));
-                subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-                StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-                _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
-
-                if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
-                  subscriptionCallback();
-                }
-
-                const existingBellWrapper = document.getElementById('bell_wrapper');
-
-                if (existingBellWrapper) {
-                  existingBellWrapper.parentNode.removeChild(existingBellWrapper);
-                }
-
-                if (softPromptCard) {
-                  softPromptCard.parentNode.removeChild(softPromptCard);
-                }
-
-                if (oldSoftPromptCard) {
-                  oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
-                }
-              });
-            };
-
-            const serviceWorker = registration.installing || registration.waiting || registration.active;
-
-            if (serviceWorker && serviceWorker.state === 'activated') {
-              // Already activated, proceed with subscription
-              subscribeForPush();
-            } else if (serviceWorker) {
-              // Listen for state changes to handle activation
-              serviceWorker.addEventListener('statechange', event => {
-                if (event.target.state === 'activated') {
-                  _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker activated. Proceeding with subscription.');
-
-                  subscribeForPush();
-                }
-              });
-            }
-          } else if (permission === 'denied') {
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
-
-            if (softPromptCard) {
-              softPromptCard.parentNode.removeChild(softPromptCard);
-            }
-
-            if (oldSoftPromptCard) {
-              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
-            }
-          }
-        });
-      });
-    } else {
-      // ensure that proper arguments are passed
-      if (typeof apnsWebPushId === 'undefined') {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push ID is supplied');
-      }
-
-      if (typeof apnsServiceUrl === 'undefined') {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Ensure that APNS Web Push service path is supplied');
-      }
-
-      if ('safari' in window && 'pushNotification' in window.safari) {
-        window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
-          if (subscription.permission === 'granted') {
-            const subscriptionData = JSON.parse(JSON.stringify(subscription));
-            subscriptionData.endpoint = subscription.deviceToken;
-            subscriptionData.browser = 'Safari';
-
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Data Sent: ' + JSON.stringify({
-              apnsServiceUrl,
-              apnsWebPushId
-            }));
-
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
-
-            const existingBellWrapper = document.getElementById('bell_wrapper');
-
-            if (existingBellWrapper) {
-              existingBellWrapper.parentNode.removeChild(existingBellWrapper);
-            }
-
-            if (softPromptCard) {
-              softPromptCard.parentNode.removeChild(softPromptCard);
-            }
-
-            if (oldSoftPromptCard) {
-              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
-            }
-
-            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-            _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
-
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Safari Web Push registered. Device Token: ' + subscription.deviceToken);
-          } else if (subscription.permission === 'denied') {
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Error subscribing to Safari web push');
-
-            if (softPromptCard) {
-              softPromptCard.parentNode.removeChild(softPromptCard);
-            }
-
-            if (oldSoftPromptCard) {
-              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
-            }
-          }
-        });
-      }
-    }
-  };
-
-  var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
-    let registrationScope = '';
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
-        if (typeof __wzrk_account_id !== 'undefined') {
-          // eslint-disable-line
-          // shopify accounts , since the service worker is not at root, serviceWorker.ready is never resolved.
-          // hence add a timeout and hope serviceWroker is ready within that time.
-          return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
-        }
-
-        registrationScope = registration.scope; // IF SERVICE WORKER IS AT ROOT, RETURN THE READY PROMISE
-        // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
-        // OR getRegistrations PROMISE IF ITS FIREFOX
-
-        const rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
-        const isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
-
-        if (isServiceWorkerAtRoot) {
-          return navigator.serviceWorker.ready;
-        } else {
-          if (isChrome()) {
-            return new Promise(resolve => setTimeout(() => resolve(registration), 5000));
-          } else {
-            return navigator.serviceWorker.getRegistrations();
-          }
-        }
-      }).then(serviceWorkerRegistration => {
-        // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
-        if (isFirefox() && Array.isArray(serviceWorkerRegistration)) {
-          serviceWorkerRegistration = serviceWorkerRegistration.filter(i => i.scope === registrationScope)[0];
-        }
-
-        const subscribeObj = {
-          userVisibleOnly: true
-        };
-
-        if (_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
-          subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
-        }
-
-        const softPromptCard = document.getElementById('pnWrapper');
-        const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
-        serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
-
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Service Data Sent: ' + JSON.stringify(subscribeObj));
-
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Subscription Data Received: ' + JSON.stringify(subscription)); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
-
-
-          const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
-
-          if (isChrome()) {
-            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-            subscriptionData.browser = 'Chrome';
-          } else if (isFirefox()) {
-            subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
-            subscriptionData.browser = 'Firefox';
-          }
-
-          StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
-
-          _classPrivateFieldLooseBase(this, _request$3)[_request$3].registerToken(subscriptionData);
-
-          if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
-            subscriptionCallback();
-          }
-
-          const existingBellWrapper = document.getElementById('bell_wrapper');
-
-          if (existingBellWrapper) {
-            existingBellWrapper.parentNode.removeChild(existingBellWrapper);
-          }
-
-          if (softPromptCard) {
-            softPromptCard.parentNode.removeChild(softPromptCard);
-          }
-
-          if (oldSoftPromptCard) {
-            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
-          }
-        }).catch(error => {
-          // unsubscribe from webpush if error
-          serviceWorkerRegistration.pushManager.getSubscription().then(subscription => {
-            if (subscription !== null) {
-              subscription.unsubscribe().then(successful => {
-                // You've successfully unsubscribed
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Unsubscription successful');
-
-                window.clevertap.notifications.push({
-                  skipDialog: true
-                });
-              }).catch(e => {
-                // Unsubscription failed
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error unsubscribing: ' + e);
-              });
-            }
-          });
-
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Error subscribing: ' + error);
-
-          if (softPromptCard) {
-            softPromptCard.parentNode.removeChild(softPromptCard);
-          }
-
-          if (oldSoftPromptCard) {
-            oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard);
-          }
-        });
-      }).catch(err => {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('error registering service worker: ' + err);
-      });
-    }
-  };
-
-  var _addWizAlertJS2 = function _addWizAlertJS2() {
-    const scriptTag = document.createElement('script');
-    scriptTag.setAttribute('type', 'text/javascript');
-    scriptTag.setAttribute('id', 'wzrk-alert-js');
-    scriptTag.setAttribute('src', _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath]); // add the script tag to the end of the body
-
-    document.getElementsByTagName('body')[0].appendChild(scriptTag);
-    return scriptTag;
-  };
-
-  var _removeWizAlertJS2 = function _removeWizAlertJS2() {
-    const scriptTag = document.getElementById('wzrk-alert-js');
-    scriptTag.parentNode.removeChild(scriptTag);
-  };
-
-  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
-    // make sure everything is specified
-    let titleText;
-    let bodyText;
-    let okButtonText;
-    let rejectButtonText;
-    let okButtonColor;
-    let skipDialog;
-    let askAgainTimeInSeconds;
-    let okCallback;
-    let rejectCallback;
-    let subscriptionCallback;
-    let serviceWorkerPath;
-    let httpsPopupPath;
-    let httpsIframePath;
-    let apnsWebPushId;
-    let apnsWebPushServiceUrl;
-    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
-
-    if (displayArgs.length === 1) {
-      if (isObject(displayArgs[0])) {
-        const notifObj = displayArgs[0];
-        titleText = notifObj.titleText;
-        bodyText = notifObj.bodyText;
-        okButtonText = notifObj.okButtonText;
-        rejectButtonText = notifObj.rejectButtonText;
-        okButtonColor = notifObj.okButtonColor;
-        skipDialog = notifObj.skipDialog;
-        askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
-        okCallback = notifObj.okCallback;
-        rejectCallback = notifObj.rejectCallback;
-        subscriptionCallback = notifObj.subscriptionCallback;
-        serviceWorkerPath = notifObj.serviceWorkerPath;
-        httpsPopupPath = notifObj.httpsPopupPath;
-        httpsIframePath = notifObj.httpsIframePath;
-        apnsWebPushId = notifObj.apnsWebPushId;
-        apnsWebPushServiceUrl = notifObj.apnsWebPushServiceUrl;
-      }
-    } else {
-      titleText = displayArgs[0];
-      bodyText = displayArgs[1];
-      okButtonText = displayArgs[2];
-      rejectButtonText = displayArgs[3];
-      okButtonColor = displayArgs[4];
-      skipDialog = displayArgs[5];
-      askAgainTimeInSeconds = displayArgs[6];
-    }
-
-    if (skipDialog == null) {
-      skipDialog = false;
-    }
-
-    if (serviceWorkerPath == null) {
-      serviceWorkerPath = '/clevertap_sw.js';
-    } // ensure that the browser supports notifications
-
-
-    if (typeof navigator.serviceWorker === 'undefined') {
-      return;
-    }
-
-    const isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
-
-    if (window.location.protocol !== 'https:' && document.location.hostname !== 'localhost' && !isHTTP) {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure you are https or localhost to register for notifications');
-
-      return;
-    }
-    /*
-       If it is chrome or firefox and the nativeWebPush is not supported then return
-       For Safari the APNs route is open if nativeWebPush is not supported
-    */
-
-
-    if (isChrome() || isFirefox()) {
-      if (!_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]()) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Web Push Notification is not supported on this browser');
-
-        return;
-      }
-    } // we check for the cookie in setUpChromeNotifications() the tokens may have changed
-
-
-    if (!isHTTP) {
-      const hasNotification = ('Notification' in window);
-
-      if (!hasNotification || Notification == null) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Notification not supported on this Device or Browser');
-
-        return;
-      } // handle migrations from other services -> chrome notifications may have already been asked for before
-
-
-      if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
-        // skip the dialog and register
-        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-        return;
-      } else if (Notification.permission === 'denied') {
-        // we've lost this profile :'(
-        return;
-      }
-
-      if (skipDialog) {
-        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-        return;
-      }
-    } // make sure the right parameters are passed
-
-
-    if (!titleText || !bodyText || !okButtonText || !rejectButtonText) {
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Missing input parameters; please specify title, body, ok button and cancel button text');
-
-      return;
-    } // make sure okButtonColor is formatted properly
-
-
-    if (okButtonColor == null || !okButtonColor.match(/^#[a-f\d]{6}$/i)) {
-      okButtonColor = '#f28046'; // default color for positive button
-    } // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
-
-
-    const now = new Date().getTime() / 1000;
-
-    if (StorageManager.getMetaProp(NOTIF_LAST_TIME) == null) {
-      StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
-    } else {
-      if (askAgainTimeInSeconds == null) {
-        // 7 days by default
-        askAgainTimeInSeconds = 7 * 24 * 60 * 60;
-      }
-
-      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME);
-
-      if (now - notifLastTime < askAgainTimeInSeconds) {
-        if (!isSafari()) {
-          return;
-        } // If Safari is migrated already or only APNS, then return
-
-
-        if (vapidSupportedAndMigrated || _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] === null) {
-          return;
-        }
-      } else {
-        StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
-      }
-    }
-
-    if (isSafari() && _classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null) {
-      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
-    }
-
-    if (isHTTP) {
-      // add the https iframe
-      const httpsIframe = document.createElement('iframe');
-      httpsIframe.setAttribute('style', 'display:none;');
-      httpsIframe.setAttribute('src', httpsIframePath);
-      document.body.appendChild(httpsIframe);
-      window.addEventListener('message', event => {
-        if (event.data != null) {
-          let obj = {};
-
-          try {
-            obj = JSON.parse(event.data);
-          } catch (e) {
-            // not a call from our iframe
-            return;
-          }
-
-          if (obj.state != null) {
-            if (obj.from === 'ct' && obj.state === 'not') {
-              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
-
-                return;
-              }
-
-              StorageManager.saveToLSorCookie(POPUP_LOADING, true);
-
-              _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-                StorageManager.saveToLSorCookie(POPUP_LOADING, false);
-                window.wzrkPermissionPopup.wizAlert({
-                  title: titleText,
-                  body: bodyText,
-                  confirmButtonText: okButtonText,
-                  confirmButtonColor: okButtonColor,
-                  rejectButtonText: rejectButtonText
-                }, enabled => {
-                  // callback function
-                  if (enabled) {
-                    // the user accepted on the dialog box
-                    if (typeof okCallback === 'function') {
-                      okCallback();
-                    } // redirect to popup.html
-
-
-                    window.open(httpsPopupPath);
-                  } else {
-                    if (typeof rejectCallback === 'function') {
-                      rejectCallback();
-                    }
-                  }
-
-                  _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-                });
-              };
-            }
-          }
-        }
-      }, false);
-    } else {
-      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
-
-        return;
-      }
-
-      StorageManager.saveToLSorCookie(POPUP_LOADING, true);
-
-      _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-        StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
-
-        window.wzrkPermissionPopup.wizAlert({
-          title: titleText,
-          body: bodyText,
-          confirmButtonText: okButtonText,
-          confirmButtonColor: okButtonColor,
-          rejectButtonText: rejectButtonText
-        }, enabled => {
-          // callback function
-          if (enabled) {
-            // the user accepted on the dialog box
-            if (typeof okCallback === 'function') {
-              okCallback();
-            }
-
-            this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-          } else {
-            if (typeof rejectCallback === 'function') {
-              rejectCallback();
-            }
-          }
-
-          _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-        });
-      };
-    }
-  };
-
-  const BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi40OTYyIDUuMjQzOTVDMTIuODM5MSA1LjAzMzE3IDEzLjI4NDcgNS4xNDY4OSAxMy40OTczIDUuNDg4NjdDMTMuNzIyMyA1Ljg1MDE4IDEzLjYwMDIgNi4zMjUxOCAxMy4yMzggNi41NDkwMkM3LjM5Mzk5IDEwLjE2MDYgMy41IDE2LjYyNTcgMy41IDI0LjAwMDNDMy41IDM1LjMyMjEgMTIuNjc4MiA0NC41MDAzIDI0IDQ0LjUwMDNDMjguMDA1NSA0NC41MDAzIDMxLjc0MjYgNDMuMzUxNSAzNC45IDQxLjM2NTVDMzUuMjYwOCA0MS4xMzg1IDM1Ljc0MTYgNDEuMjM4NiAzNS45NjY4IDQxLjYwMDZDMzYuMTc5MiA0MS45NDE5IDM2LjA4NSA0Mi4zOTExIDM1Ljc0NTIgNDIuNjA2QzMyLjM0NjggNDQuNzU1OSAyOC4zMTg3IDQ2LjAwMDMgMjQgNDYuMDAwM0MxMS44NDk3IDQ2LjAwMDMgMiAzNi4xNTA1IDIgMjQuMDAwM0MyIDE2LjA2NjkgNi4xOTkyMSA5LjExNDMyIDEyLjQ5NjIgNS4yNDM5NVpNMzguOCAzOS45MDAzQzM4LjggNDAuMzk3MyAzOC4zOTcxIDQwLjgwMDMgMzcuOSA0MC44MDAzQzM3LjQwMjkgNDAuODAwMyAzNyA0MC4zOTczIDM3IDM5LjkwMDNDMzcgMzkuNDAzMiAzNy40MDI5IDM5LjAwMDMgMzcuOSAzOS4wMDAzQzM4LjM5NzEgMzkuMDAwMyAzOC44IDM5LjQwMzIgMzguOCAzOS45MDAzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMkMyMi44OTU0IDEyIDIyIDEyLjg5NTQgMjIgMTRWMTQuMjUyQzE4LjU0OTUgMTUuMTQwMSAxNiAxOC4yNzIzIDE2IDIyVjI5LjVIMTUuNDc2OUMxNC42NjEyIDI5LjUgMTQgMzAuMTYxMiAxNCAzMC45NzY5VjMxLjAyMzFDMTQgMzEuODM4OCAxNC42NjEyIDMyLjUgMTUuNDc2OSAzMi41SDMyLjUyMzFDMzMuMzM4OCAzMi41IDM0IDMxLjgzODggMzQgMzEuMDIzMVYzMC45NzY5QzM0IDMwLjE2MTIgMzMuMzM4OCAyOS41IDMyLjUyMzEgMjkuNUgzMlYyMkMzMiAxOC4yNzIzIDI5LjQ1MDUgMTUuMTQwMSAyNiAxNC4yNTJWMTRDMjYgMTIuODk1NCAyNS4xMDQ2IDEyIDI0IDEyWk0yNiAzNFYzMy41SDIyVjM0QzIyIDM1LjEwNDYgMjIuODk1NCAzNiAyNCAzNkMyNS4xMDQ2IDM2IDI2IDM1LjEwNDYgMjYgMzRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
-  const PROMPT_BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMzIiIGZpbGw9IiMwMEFFQjkiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0zMS45OTg2IDIwQzMwLjkxOTggMjAgMzAuMDQyOCAyMC44NzQ2IDMwLjA0MjggMjEuOTUzNEwzMC4wNDI5IDIxLjk3MzRDMjYuNTQzNCAyMi41NTM1IDIzLjg3NSAyNS41OTQzIDIzLjg3NSAyOS4yNTgyVjM4LjA5OTVIMjMuODczNUMyMy4wNTg5IDM4LjA5OTUgMjIuMzk4NCAzOC43NiAyMi4zOTg0IDM5LjU3NDZDMjIuMzk4NCA0MC4zODkzIDIzLjA1ODkgNDEuMDQ5NyAyMy44NzM1IDQxLjA0OTdIMjkuNzgxMlY0MS43ODQyQzI5Ljc4MTIgNDMuMDA3NyAzMC43NzMxIDQzLjk5OTYgMzEuOTk2NiA0My45OTk2QzMzLjIyMDIgNDMuOTk5NiAzNC4yMTIgNDMuMDA3NyAzNC4yMTIgNDEuNzg0MlY0MS4wNDk3SDQwLjEyMzNDNDAuOTM4IDQxLjA0OTcgNDEuNTk4NCA0MC4zODkzIDQxLjU5ODQgMzkuNTc0NkM0MS41OTg0IDM4Ljc2IDQwLjkzOCAzOC4wOTk1IDQwLjEyMzMgMzguMDk5NUg0MC4xMjEyVjI5LjI1ODJDNDAuMTIxMiAyNS41OTQ2IDM3LjQ1MzMgMjIuNTU0MiAzMy45NTQzIDIxLjk3MzZMMzMuOTU0NCAyMS45NTM0QzMzLjk1NDQgMjAuODc0NiAzMy4wNzc1IDIwIDMxLjk5ODYgMjBaIiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCBvcGFjaXR5PSIwLjUiIHg9IjcuNSIgeT0iNy41IiB3aWR0aD0iNDkiIGhlaWdodD0iNDkiIHJ4PSIyNC41IiBzdHJva2U9IndoaXRlIi8+CjxyZWN0IG9wYWNpdHk9IjAuMyIgeD0iNC41IiB5PSI0LjUiIHdpZHRoPSI1NSIgaGVpZ2h0PSI1NSIgcng9IjI3LjUiIHN0cm9rZT0id2hpdGUiLz4KPHJlY3Qgb3BhY2l0eT0iMC44IiB4PSIxMC41IiB5PSIxMC41IiB3aWR0aD0iNDMiIGhlaWdodD0iNDMiIHJ4PSIyMS41IiBzdHJva2U9IndoaXRlIi8+Cjwvc3ZnPgo=';
-
-  let appServerKey = null;
-  let swPath = '/clevertap_sw.js';
-  let notificationHandler = null;
-  let logger = null;
-  let account = null;
-  let request = null;
-  let displayArgs = null;
-  let fcmPublicKey = null;
-  const setNotificationHandlerValues = function () {
-    let notificationValues = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-    logger = notificationValues.logger;
-    account = notificationValues.account;
-    request = notificationValues.request;
-    displayArgs = notificationValues.displayArgs;
-    fcmPublicKey = notificationValues.fcmPublicKey;
-  };
-  const processWebPushConfig = (webPushConfig, logger, request) => {
-    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true);
-
-    const updatePushConfig = () => {
-      $ct.pushConfig = webPushConfig;
-      StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
-    };
-
-    updatePushConfig();
-
-    if (webPushConfig.isPreview) {
-      enablePush({
-        logger,
-        request
-      });
-    }
-
-    try {
-      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
-
-      if (isNotificationPushCalled) {
-        try {
-          processSoftPrompt();
-        } catch (error) {
-          logger.error('processs soft prompt' + error);
-        }
-
-        return;
-      }
-    } catch (error) {
-      logger.error('Failed to process web push config:', error); // Fallback: Attempt to process soft prompt anyway
-
-      processSoftPrompt();
-    }
-  };
-  const processSoftPrompt = () => {
-    const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
-    notificationHandler = new NotificationHandler({
-      logger,
-      session: {},
-      request,
-      account
-    });
-
-    if (webPushConfig && !(Object.keys(webPushConfig).length > 0)) {
-      notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setupWebPush(displayArgs);
-      return;
-    }
-
-    const {
-      showBox,
-      showBellIcon,
-      boxType
-    } = webPushConfig;
-    const {
-      serviceWorkerPath,
-      skipDialog,
-      okCallback,
-      subscriptionCallback,
-      rejectCallback,
-      apnsWebPushId,
-      apnsWebPushServiceUrl
-    } = parseDisplayArgs(displayArgs);
-    const isSoftPromptNew = showBellIcon || showBox && boxType === 'new';
-
-    if (isSoftPromptNew) {
-      const enablePushParams = {
-        serviceWorkerPath,
-        skipDialog,
-        okCallback,
-        subscriptionCallback,
-        rejectCallback,
-        logger,
-        request,
-        account,
-        fcmPublicKey,
-        apnsWebPushId,
-        apnsWebPushServiceUrl
-      };
-      enablePush(enablePushParams);
-    }
-
-    if (showBox && boxType === 'old') {
-      notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setupWebPush(displayArgs);
-    }
-
-    StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, false);
-    StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, false);
-  };
-  const parseDisplayArgs = displayArgs => {
-    if (displayArgs && displayArgs.length === 1 && isObject(displayArgs[0])) {
-      const {
-        serviceWorkerPath,
-        skipDialog,
-        okCallback,
-        subscriptionCallback,
-        rejectCallback,
-        apnsWebPushServiceUrl,
-        apnsWebPushId
-      } = displayArgs[0];
-      return {
-        serviceWorkerPath,
-        skipDialog,
-        okCallback,
-        subscriptionCallback,
-        rejectCallback,
-        apnsWebPushServiceUrl,
-        apnsWebPushId
-      };
-    }
-
-    return {
-      serviceWorkerPath: undefined,
-      skipDialog: displayArgs[5],
-      okCallback: undefined,
-      subscriptionCallback: undefined,
-      rejectCallback: undefined,
-      apnsWebPushServiceUrl: undefined,
-      apnsWebPushId: undefined
-    };
-  };
-  const enablePush = enablePushParams => {
-    const {
-      serviceWorkerPath: customSwPath,
-      okCallback,
-      subscriptionCallback,
-      rejectCallback,
-      logger,
-      fcmPublicKey,
-      apnsWebPushId,
-      apnsWebPushServiceUrl
-    } = enablePushParams;
-    let {
-      skipDialog
-    } = enablePushParams;
-
-    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
-
-    $ct.pushConfig = _pushConfig;
-
-    if (!$ct.pushConfig) {
-      logger.error('Web Push config data not present');
-      return;
-    }
-
-    if (customSwPath) {
-      swPath = customSwPath;
-    }
-
-    if (skipDialog === null) {
-      skipDialog = false;
-    } // notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
-
-
-    if (skipDialog) {
-      notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
-      return;
-    }
-
-    const {
-      showBox,
-      boxType,
-      showBellIcon,
-      isPreview
-    } = $ct.pushConfig;
-
-    if (isPreview) {
-      if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey);
-      if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig);
-    } else {
-      if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
-      if (showBellIcon) createBellIcon($ct.pushConfig, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
-    }
-  };
-
-  const createElementWithAttributes = function (tag) {
-    let attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-    const element = document.createElement(tag);
-    Object.entries(attributes).forEach((_ref) => {
-      let [key, value] = _ref;
-      element[key] = value;
-    });
-    return element;
-  };
-
-  const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
-    if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
-    const {
-      boxConfig: {
-        content,
-        style
-      }
-    } = configData; // Create the wrapper div
-
-    const wrapper = createElementWithAttributes('div', {
-      id: NEW_SOFT_PROMPT_SELCTOR_ID
-    });
-    const overlayDiv = style.overlay.enabled ? createElementWithAttributes('div', {
-      id: 'pnOverlay'
-    }) : '';
-    const pnCard = createElementWithAttributes('div', {
-      id: 'pnCard'
-    });
-    const iconTitleDescWrapper = createElementWithAttributes('div', {
-      id: 'iconTitleDescWrapper'
-    });
-    const iconContainer = createElementWithAttributes('img', {
-      id: 'iconContainer',
-      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url
-    });
-    iconTitleDescWrapper.appendChild(iconContainer);
-    const titleDescWrapper = createElementWithAttributes('div', {
-      id: 'titleDescWrapper'
-    });
-    titleDescWrapper.appendChild(createElementWithAttributes('div', {
-      id: 'title',
-      textContent: content.title
-    }));
-    titleDescWrapper.appendChild(createElementWithAttributes('div', {
-      id: 'description',
-      textContent: content.description
-    }));
-    iconTitleDescWrapper.appendChild(titleDescWrapper);
-    const buttonsContainer = createElementWithAttributes('div', {
-      id: 'buttonsContainer'
-    });
-    const primaryButton = createElementWithAttributes('button', {
-      id: 'primaryButton',
-      textContent: content.buttons.primaryButtonText
-    });
-    const secondaryButton = createElementWithAttributes('button', {
-      id: 'secondaryButton',
-      textContent: content.buttons.secondaryButtonText
-    });
-    buttonsContainer.appendChild(secondaryButton);
-    buttonsContainer.appendChild(primaryButton);
-    pnCard.appendChild(iconTitleDescWrapper);
-    pnCard.appendChild(buttonsContainer); // Apply styles
-
-    const styleElement = createElementWithAttributes('style', {
-      textContent: getBoxPromptStyles(style)
-    });
-    wrapper.appendChild(styleElement);
-    wrapper.appendChild(pnCard);
-
-    if (overlayDiv) {
-      wrapper.appendChild(overlayDiv);
-    }
-
-    setElementPosition(pnCard, style.card.position);
-    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
-
-    if (!configData.isPreview) {
-      if ('Notification' in window && Notification !== null) {
-        if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
-          notificationHandler.setApplicationServerKey(appServerKey);
-          notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
-          return;
-        } else if (Notification.permission === 'denied') {
-          return;
-        }
-      }
-    }
-
-    const now = new Date().getTime() / 1000;
-    const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
-    const popupFrequency = content.popupFrequency || 7; // number of days
-
-    const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
-
-    if (shouldShowNotification) {
-      document.body.appendChild(wrapper);
-
-      if (!configData.isPreview) {
-        StorageManager.setMetaProp('webpush_last_notif_time', now);
-        addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
-
-        if (isSafari() && 'PushManager' in window && fcmPublicKey != null) {
-          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
-        }
-      }
-    } else {
-      if (isSafari()) {
-        // This is for migration case for safari from apns to vapid, show popup even when timer is not expired.
-        if (vapidSupportedAndMigrated || fcmPublicKey === null) {
-          return;
-        }
-
-        if (!configData.isPreview) {
-          document.body.appendChild(wrapper);
-          addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl);
-          StorageManager.setMetaProp('webpush_last_notif_time', now);
-          StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
-        }
-      }
-    }
-  };
-  const createBellIcon = (configData, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
-    if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return;
-    const {
-      bellIconConfig: {
-        content,
-        style
-      }
-    } = configData;
-    const bellWrapper = createElementWithAttributes('div', {
-      id: 'bell_wrapper'
-    });
-    const bellIcon = createElementWithAttributes('img', {
-      id: 'bell_icon',
-      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(BELL_BASE64) : content.icon.url
-    }); // For playing gif
-
-    const gifModal = createElementWithAttributes('div', {
-      id: 'gif_modal',
-      style: 'display: none;'
-    });
-    const gifImage = createElementWithAttributes('img', {
-      id: 'gif_image',
-      src: 'https://d2r1yp2w7bby2u.cloudfront.net/js/permission_grant.gif'
-    });
-    const closeModal = createElementWithAttributes('div', {
-      id: 'close_modal',
-      innerHTML: '&times;'
-    });
-    gifModal.appendChild(gifImage);
-    gifModal.appendChild(closeModal);
-    bellWrapper.appendChild(bellIcon);
-    bellWrapper.appendChild(gifModal);
-
-    if (content.hoverText.enabled) {
-      const tooltip = createElementWithAttributes('div', {
-        id: 'bell_tooltip',
-        textContent: content.hoverText.text
-      });
-      bellWrapper.appendChild(tooltip);
-    }
-
-    setElementPosition(bellWrapper, style.card.position); // Apply styles
-
-    const styleElement = createElementWithAttributes('style', {
-      textContent: getBellIconStyles(style)
-    });
-    document.head.appendChild(styleElement);
-    document.body.appendChild(bellWrapper);
-
-    if (!configData.isPreview) {
-      addBellEventListeners(bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl);
-    }
-
-    return bellWrapper;
-  };
-  const setServerKey = serverKey => {
-    appServerKey = serverKey;
-    fcmPublicKey = serverKey;
-  };
-  const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
-    const primaryButton = wrapper.querySelector('#primaryButton');
-    const secondaryButton = wrapper.querySelector('#secondaryButton');
-
-    const removeWrapper = () => {
-      var _wrapper$parentNode;
-
-      return (_wrapper$parentNode = wrapper.parentNode) === null || _wrapper$parentNode === void 0 ? void 0 : _wrapper$parentNode.removeChild(wrapper);
-    };
-
-    primaryButton.addEventListener('click', () => {
-      removeWrapper();
-      notificationHandler.setApplicationServerKey(appServerKey);
-      notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
-
-      if (typeof okCallback === 'function') {
-        okCallback();
-      }
-    });
-    secondaryButton.addEventListener('click', () => {
-      removeWrapper();
-
-      if (typeof rejectCallback === 'function') {
-        rejectCallback();
-      }
-    });
-  };
-  const addBellEventListeners = (bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
-    const bellIcon = bellWrapper.querySelector('#bell_icon');
-    bellIcon.addEventListener('click', () => {
-      if (Notification.permission === 'denied') {
-        toggleGifModal(bellWrapper);
-      } else {
-        notificationHandler.setApplicationServerKey(appServerKey);
-        notificationHandler.setUpWebPushNotifications(subscriptionCallback, swPath, apnsWebPushId, apnsWebPushServiceUrl);
-
-        if (Notification.permission === 'granted') {
-          bellWrapper.remove();
-        }
-      }
-    });
-    bellIcon.addEventListener('mouseenter', () => displayTooltip(bellWrapper));
-    bellIcon.addEventListener('mouseleave', () => clearTooltip(bellWrapper));
-    bellWrapper.querySelector('#close_modal').addEventListener('click', () => toggleGifModal(bellWrapper));
-  };
-  const setElementPosition = (element, position) => {
-    Object.assign(element.style, {
-      inset: 'auto',
-      transform: 'none'
-    });
-    const positions = {
-      'Top Right': {
-        inset: '16px 16px auto auto'
-      },
-      'Top Left': {
-        inset: '16px auto auto 16px'
-      },
-      'Bottom Right': {
-        inset: 'auto 16px 16px auto'
-      },
-      'Bottom Left': {
-        inset: 'auto auto 16px 16px'
-      },
-      Center: {
-        inset: '50%',
-        transform: 'translate(-50%, -50%)'
-      },
-      Top: {
-        inset: '16px auto auto 50%',
-        transform: 'translateX(-50%)'
-      },
-      Bottom: {
-        inset: 'auto auto 16px 50%',
-        transform: 'translateX(-50%)'
-      }
-    };
-    Object.assign(element.style, positions[position] || positions['top-right']);
-  };
-
-  const displayTooltip = bellWrapper => {
-    const gifModal = bellWrapper.querySelector('#gif_modal');
-
-    if (gifModal.style.display === 'flex') {
-      return;
-    }
-
-    const tooltip = bellWrapper.querySelector('#bell_tooltip');
-
-    if (tooltip) {
-      tooltip.style.display = 'flex';
-    }
-
-    const bellIcon = bellWrapper.querySelector('#bell_icon');
-    const bellRect = bellIcon.getBoundingClientRect();
-    var midX = window.innerWidth / 2;
-    var midY = window.innerHeight / 2;
-    bellWrapper.style['flex-direction'] = bellRect.y > midY ? 'column-reverse' : 'column';
-    bellWrapper.style['align-items'] = bellRect.x > midX ? 'flex-end' : 'flex-start';
-  };
-
-  const clearTooltip = bellWrapper => {
-    const tooltip = bellWrapper.querySelector('#bell_tooltip');
-
-    if (tooltip) {
-      tooltip.style.display = 'none';
-    }
-  };
-
-  const toggleGifModal = bellWrapper => {
-    clearTooltip(bellWrapper);
-    const gifModal = bellWrapper.querySelector('#gif_modal');
-    gifModal.style.display = gifModal.style.display === 'none' ? 'flex' : 'none';
-  };
-
-  const _tr = (msg, _ref) => {
-    let {
-      device,
-      session,
-      request,
-      logger
-    } = _ref;
-    const _device = device;
-    const _session = session;
-    const _request = request;
-    const _logger = logger;
-    let _wizCounter = 0; // Campaign House keeping
-
-    deliveryPreferenceUtils.updateOccurenceCountsForPopupAndNativeDisplay(device, msg);
-    deliveryPreferenceUtils.portTLC(_session); // Done
-
-    const doCampHouseKeeping = targetingMsgJson => {
+  const houseKeepingUtils = {
+    doCampHouseKeeping(targetingMsgJson, logger) {
       // Extracts campaign ID from wzrk_id (e.g., "123_456" -> "123")
-      const campaignId = targetingMsgJson.wzrk_id.split("_")[0]; // Gets current date for daily capping
+      const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Gets current date for daily capping
 
       const today = getToday();
 
@@ -14130,14 +14155,14 @@
 
         const campObj = getCampaignObject(); // Determines campaign type (web inbox or web popup) and fetches corresponding data
 
-        if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty("wi")) {
+        if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
           // Web inbox campaigns
           campTypeObj = campObj.wi;
-        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty("wp")) ; else {
+        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) ; else {
           campTypeObj = {};
         }
 
-        if (campObj.hasOwnProperty("global")) ; // Sets default global session limits if not specified
+        if (campObj.hasOwnProperty('global')) ; // Sets default global session limits if not specified
 
 
         if (targetingMsgJson[DISPLAY].wmc == null) {
@@ -14202,7 +14227,7 @@
         } // Session-level capping: Checks if campaign exceeds session limits
 
 
-        var sessionObj = campTypeObj[_session.sessionId];
+        var sessionObj = campTypeObj[CampaignContext.session.sessionId];
 
         if (sessionObj) {
           const campaignSessionCount = sessionObj[campaignId];
@@ -14227,7 +14252,7 @@
         } else {
           // Initializes session object if not present
           sessionObj = {};
-          campTypeObj[_session.sessionId] = sessionObj;
+          campTypeObj[CampaignContext.session.sessionId] = sessionObj;
         } // Daily-level capping: Checks if campaign exceeds daily limits
 
 
@@ -14274,11 +14299,11 @@
         const delay = displayObj.delay; // Resets delay to prevent re-triggering
 
         displayObj.delay = 0;
-        setTimeout(_tr, delay * 1000, msg, {
-          device: _device,
-          session: _session,
-          request: _request,
-          logger: _logger
+        setTimeout(_tr, delay * 1000, CampaignContext.msg, {
+          device: CampaignContext.device,
+          session: CampaignContext.session,
+          request: CampaignContext.request,
+          logger: logger
         }); // Delays execution, skips immediate rendering
 
         return false;
@@ -14292,13 +14317,13 @@
       let campKey;
 
       if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
-        campKey = "wi";
+        campKey = 'wi';
       }
 
-      if (campKey === "wi") {
+      if (campKey === 'wi') {
         // Updates campaign object with new counts and saves to storage
         const newCampObj = {};
-        newCampObj[_session.sessionId] = sessionObj;
+        newCampObj[CampaignContext.session.sessionId] = sessionObj;
         newCampObj[today] = dailyObj;
         newCampObj[GLOBAL] = globalObj; // Save CAMP to localstorage here
 
@@ -14309,23 +14334,21 @@
         /* For Web Native Display and Web Popup */
         addDeliveryPreferenceDetails(targetingMsgJson, logger);
       }
-    }; // Done
+    },
+
     // Sets up click tracking and impression increment for a campaign
-
-
-    const setupClickUrl = (onClick, targetingMsgJson, contentDiv, divId, isLegacy) => {
+    setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, isLegacy) {
       // Records an impression
-      incrementImpression(targetingMsgJson, _request); // Sets up click event listener
+      incrementImpression(targetingMsgJson, CampaignContext.request); // Sets up click event listener
 
-      setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session);
-    }; // Done
+      setupClickEvent(onClick, targetingMsgJson, contentDiv, divId, isLegacy, CampaignContext.device, CampaignContext.session);
+    },
+
     // Handles rendering of image-only popup campaigns
+    handleImageOnlyPopup(targetingMsgJson) {
+      const divId = 'wzrkImageOnlyDiv'; // Skips if frequency limits are exceeded
 
-
-    const handleImageOnlyPopup = targetingMsgJson => {
-      const divId = "wzrkImageOnlyDiv"; // Skips if frequency limits are exceeded
-
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
+      if (houseKeepingUtils.doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       } // Removes existing popup if spam control is active
 
@@ -14336,26 +14359,25 @@
       } // Prevents coexistence with other popups (e.g., exit intent)
 
 
-      if (document.getElementById(divId) != null || document.getElementById("intentPreview") != null) {
+      if (document.getElementById(divId) != null || document.getElementById('intentPreview') != null) {
         return;
       }
 
-      const msgDiv = document.createElement("div");
+      const msgDiv = document.createElement('div');
       msgDiv.id = divId;
       document.body.appendChild(msgDiv); // Registers custom element for image-only popup if not already defined
 
-      if (customElements.get("ct-web-popup-imageonly") === undefined) {
-        customElements.define("ct-web-popup-imageonly", CTWebPopupImageOnly);
+      if (customElements.get('ct-web-popup-imageonly') === undefined) {
+        customElements.define('ct-web-popup-imageonly', CTWebPopupImageOnly);
       } // Renders the popup
 
 
-      return renderPopUpImageOnly(targetingMsgJson, _session);
-    }; // Done
+      return renderPopUpImageOnly(targetingMsgJson, CampaignContext.session);
+    },
+
     // Checks if a campaign is already rendered in an iframe
-
-
-    const isExistingCampaign = campaignId => {
-      const testIframe = document.getElementById("wiz-iframe-intent") || document.getElementById("wiz-iframe");
+    isExistingCampaign(campaignId) {
+      const testIframe = document.getElementById('wiz-iframe-intent') || document.getElementById('wiz-iframe');
 
       if (testIframe) {
         const iframeDocument = testIframe.contentDocument || testIframe.contentWindow.document;
@@ -14363,31 +14385,31 @@
       }
 
       return false;
-    }; // Creates and renders campaign templates (e.g., exit intent, banners, popups)
+    },
 
-
-    const createTemplate = (targetingMsgJson, isExitIntent) => {
-      const campaignId = targetingMsgJson.wzrk_id.split("_")[0];
+    // Creates and renders campaign templates (e.g., exit intent, banners, popups)
+    createTemplate(targetingMsgJson, isExitIntent, wtq) {
+      const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       const displayObj = targetingMsgJson.display; // Handles specific layout types
 
       if (displayObj.layout === 1) {
         // Handling Web Exit Intent
-        return showExitIntent(undefined, targetingMsgJson);
+        return houseKeepingUtils.showExitIntent(undefined, targetingMsgJson, wtq);
       }
 
       if (displayObj.layout === 3) {
         // Handling Web Popup Image Only
-        handleImageOnlyPopup(targetingMsgJson);
+        houseKeepingUtils.handleImageOnlyPopup(targetingMsgJson);
         return;
       } // Skips if frequency limits are exceeded
 
 
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
+      if (houseKeepingUtils.doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       }
 
-      const divId = "wizParDiv" + displayObj.layout;
-      const opacityDivId = "intentOpacityDiv" + displayObj.layout; // Removes existing elements if spam control is active
+      const divId = 'wizParDiv' + displayObj.layout;
+      const opacityDivId = 'intentOpacityDiv' + displayObj.layout; // Removes existing elements if spam control is active
 
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
         const element = document.getElementById(divId);
@@ -14403,7 +14425,7 @@
       } // Skips if campaign is already rendered
 
 
-      if (isExistingCampaign(campaignId)) return;
+      if (houseKeepingUtils.isExistingCampaign(campaignId)) return;
 
       if (document.getElementById(divId) != null) {
         // Skips if div already exists
@@ -14415,15 +14437,15 @@
       const isBanner = displayObj.layout === 2; // Adds opacity layer for exit intent campaigns
 
       if (isExitIntent) {
-        const opacityDiv = document.createElement("div");
+        const opacityDiv = document.createElement('div');
         opacityDiv.id = opacityDivId;
         const opacity = targetingMsgJson.display.opacity || 0.7;
         const rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
-        opacityDiv.setAttribute("style", "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
+        opacityDiv.setAttribute('style', "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
         document.body.appendChild(opacityDiv);
       }
 
-      const msgDiv = document.createElement("div");
+      const msgDiv = document.createElement('div');
       msgDiv.id = divId;
       const viewHeight = window.innerHeight;
       const viewWidth = window.innerWidth;
@@ -14435,48 +14457,48 @@
         let right = viewWidth * 5 / 100;
         let bottomPosition = contentHeight + marginBottom;
         let width = viewWidth * 30 / 100 + 20;
-        let widthPerct = "width:30%;"; // Adjusts for mobile devices
+        let widthPerct = 'width:30%;'; // Adjusts for mobile devices
 
         if ((/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent)) && /iPad/i.test(navigator.userAgent) === false) {
           width = viewWidth * 85 / 100 + 20;
           right = viewWidth * 5 / 100;
           bottomPosition = viewHeight * 5 / 100;
-          widthPerct = "width:80%;"; // Adjusts for tablets
-        } else if ("ontouchstart" in window || /tablet/i.test(navigator.userAgent)) {
+          widthPerct = 'width:80%;'; // Adjusts for tablets
+        } else if ('ontouchstart' in window || /tablet/i.test(navigator.userAgent)) {
           width = viewWidth * 50 / 100 + 20;
           right = viewWidth * 5 / 100;
           bottomPosition = viewHeight * 5 / 100;
-          widthPerct = "width:50%;";
+          widthPerct = 'width:50%;';
         } // Applies legacy styling if proto is absent
 
 
         if (displayObj.proto == null) {
           legacy = true;
-          msgDiv.setAttribute("style", "display:block;overflow:hidden; bottom:" + bottomPosition + "px !important;width:" + width + "px !important;right:" + right + "px !important;position:fixed;z-index:2147483647;");
+          msgDiv.setAttribute('style', 'display:block;overflow:hidden; bottom:' + bottomPosition + 'px !important;width:' + width + 'px !important;right:' + right + 'px !important;position:fixed;z-index:2147483647;');
         } else {
-          msgDiv.setAttribute("style", widthPerct + displayObj.iFrameStyle);
+          msgDiv.setAttribute('style', widthPerct + displayObj.iFrameStyle);
         }
       } else {
-        msgDiv.setAttribute("style", displayObj.iFrameStyle);
+        msgDiv.setAttribute('style', displayObj.iFrameStyle);
       }
 
       document.body.appendChild(msgDiv);
-      const iframe = document.createElement("iframe");
-      const borderRadius = displayObj.br === false ? "0" : "8";
-      iframe.frameborder = "0px";
-      iframe.marginheight = "0px";
-      iframe.marginwidth = "0px";
-      iframe.scrolling = "no";
-      iframe.id = "wiz-iframe";
+      const iframe = document.createElement('iframe');
+      const borderRadius = displayObj.br === false ? '0' : '8';
+      iframe.frameborder = '0px';
+      iframe.marginheight = '0px';
+      iframe.marginwidth = '0px';
+      iframe.scrolling = 'no';
+      iframe.id = 'wiz-iframe';
       const onClick = targetingMsgJson.display.onClick;
-      let pointerCss = "";
+      let pointerCss = '';
 
-      if (onClick !== "" && onClick != null) {
-        pointerCss = "cursor:pointer;";
+      if (onClick !== '' && onClick != null) {
+        pointerCss = 'cursor:pointer;';
       }
 
       if (displayObj.preview) {
-        iframe.sandbox = "allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin";
+        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin';
       }
 
       let html; // Direct HTML content
@@ -14487,45 +14509,45 @@
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
         // Generated HTML with styling
-        const css = "" + '<style type="text/css">' + "body{margin:0;padding:0;}" + "#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;" + pointerCss + "}" + "#contentDiv.wzrk td{padding:15px 10px;}" + ".wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}" + ".wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}" + ".PL15{padding-left:15px;}" + ".wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: " + borderRadius + "px;box-shadow: 1px 1px 5px #888888;}" + "a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;" + "background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}" + "a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}" + "td{vertical-align:top;}" + "td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}" + "</style>";
+        const css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + 'td{vertical-align:top;}' + 'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' + '</style>';
         let bgColor, textColor, btnBg, leftTd, btColor;
 
-        if (targetingMsgJson.display.theme === "dark") {
-          bgColor = "#2d2d2e";
-          textColor = "#eaeaea";
-          btnBg = "#353535";
-          leftTd = "#353535";
-          btColor = "#ffffff";
+        if (targetingMsgJson.display.theme === 'dark') {
+          bgColor = '#2d2d2e';
+          textColor = '#eaeaea';
+          btnBg = '#353535';
+          leftTd = '#353535';
+          btColor = '#ffffff';
         } else {
-          bgColor = "#ffffff";
-          textColor = "#000000";
-          leftTd = "#f4f4f4";
-          btnBg = "#a5a6a6";
-          btColor = "#ffffff";
+          bgColor = '#ffffff';
+          textColor = '#000000';
+          leftTd = '#f4f4f4';
+          btnBg = '#a5a6a6';
+          btColor = '#ffffff';
         }
 
         const titleText = targetingMsgJson.msgContent.title;
         const descriptionText = targetingMsgJson.msgContent.description;
-        let imageTd = "";
+        let imageTd = '';
 
-        if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== "") {
+        if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== '') {
           imageTd = "<td class='imgTd' style='background-color:" + leftTd + "'><img src='" + targetingMsgJson.msgContent.imageUrl + "' height='60' width='60'></td>";
         }
 
-        const onClickStr = "parent.$WZRK_WR.closeIframe(" + campaignId + ",'" + divId + "');";
-        const title = "<div class='wzrkPPwarp' style='color:" + textColor + ";background-color:" + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ";color:" + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<table cellpadding='0' cellspacing='0' border='0'>" + // "<tr><td colspan='2'></td></tr>"+
-        "<tr>" + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + "</div>";
-        const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + "<div></td></tr></table></div>";
+        const onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'" + divId + "');";
+        const title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<table cellpadding='0' cellspacing='0' border='0'>" + // "<tr><td colspan='2'></td></tr>"+
+        '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
+        const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>';
         html = css + title + body;
       }
 
-      iframe.setAttribute("style", "color-scheme: none; z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;");
+      iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe); // Dispatches event to signal campaign rendering
 
-      const closeCampaign = new Event("CT_campaign_rendered");
+      const closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
 
-      if (displayObj["custom-editor"]) {
+      if (displayObj['custom-editor']) {
         // Adds custom event scripts if needed
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
@@ -14534,36 +14556,36 @@
 
       const adjustIFrameHeight = () => {
         // Gets scroll height of content div inside iframe
-        contentHeight = document.getElementById("wiz-iframe").contentDocument.getElementById("contentDiv").scrollHeight;
+        contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
 
-        if (displayObj["custom-editor"] !== true && !isBanner) {
+        if (displayObj['custom-editor'] !== true && !isBanner) {
           contentHeight += 25;
         }
 
-        document.getElementById("wiz-iframe").contentDocument.body.style.margin = "0px";
-        document.getElementById("wiz-iframe").style.height = contentHeight + "px";
+        document.getElementById('wiz-iframe').contentDocument.body.style.margin = '0px';
+        document.getElementById('wiz-iframe').style.height = contentHeight + 'px';
       };
 
       const ua = navigator.userAgent.toLowerCase();
 
-      if (ua.indexOf("safari") !== -1) {
-        if (ua.indexOf("chrome") > -1) {
+      if (ua.indexOf('safari') !== -1) {
+        if (ua.indexOf('chrome') > -1) {
           iframe.onload = () => {
             adjustIFrameHeight();
-            const contentDiv = document.getElementById("wiz-iframe").contentDocument.getElementById("contentDiv");
-            setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+            const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+            houseKeepingUtils.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
           };
         } else {
           let inDoc = iframe.contentDocument || iframe.contentWindow;
           if (inDoc.document) inDoc = inDoc.document; // safari iphone 7+ needs this.
 
           const _timer = setInterval(() => {
-            if (inDoc.readyState === "complete") {
+            if (inDoc.readyState === 'complete') {
               clearInterval(_timer); // adjust iframe and body height of html inside correctly
 
               adjustIFrameHeight();
-              const contentDiv = document.getElementById("wiz-iframe").contentDocument.getElementById("contentDiv");
-              setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+              const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+              houseKeepingUtils.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
             }
           }, 300);
         }
@@ -14571,24 +14593,23 @@
         iframe.onload = () => {
           // adjust iframe and body height of html inside correctly
           adjustIFrameHeight();
-          const contentDiv = document.getElementById("wiz-iframe").contentDocument.getElementById("contentDiv");
-          setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+          const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+          houseKeepingUtils.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
         };
       }
-    }; // Renders footer notification
+    },
 
+    // Renders footer notification
+    renderFooterNotification(targetingMsgJson, exitintentObj) {
+      houseKeepingUtils.createTemplate(targetingMsgJson, false);
+    },
 
-    const renderFooterNotification = targetingMsgJson => {
-      createTemplate(targetingMsgJson, false);
-    };
-
-    let _callBackCalled = false; // Displays footer notification with callback handling
-
-    const showFooterNotification = targetingMsgJson => {
+    // Displays footer notification with callback handling
+    showFooterNotification(targetingMsgJson, _callBackCalled, exitintentObj) {
       let onClick = targetingMsgJson.display.onClick;
       const displayObj = targetingMsgJson.display; // Checks for custom notification callback from CleverTap
 
-      if (window.clevertap.hasOwnProperty("notificationCallback") && typeof window.clevertap.notificationCallback !== "undefined" && typeof window.clevertap.notificationCallback === "function") {
+      if (window.clevertap.hasOwnProperty('notificationCallback') && typeof window.clevertap.notificationCallback !== 'undefined' && typeof window.clevertap.notificationCallback === 'function') {
         const notificationCallback = window.clevertap.notificationCallback;
 
         if (!_callBackCalled) {
@@ -14605,9 +14626,9 @@
           }
 
           window.clevertap.raiseNotificationClicked = () => {
-            if (onClick !== "" && onClick != null) {
+            if (onClick !== '' && onClick != null) {
               const jsFunc = targetingMsgJson.display.jsFunc;
-              onClick += getCookieParams(_device, _session); // Invokes JS function or redirects based on click action
+              onClick += getCookieParams(CampaignContext.device, CampaignContext.session); // Invokes JS function or redirects based on click action
 
               if (jsFunc != null) {
                 // Tracks notification clicked event
@@ -14618,7 +14639,7 @@
 
 
               if (targetingMsgJson.display.window === 1) {
-                window.open(onClick, "_blank");
+                window.open(onClick, '_blank');
               } else {
                 window.location = onClick;
               }
@@ -14637,31 +14658,31 @@
 
         if (displayObj.deliveryTrigger) {
           if (displayObj.deliveryTrigger.inactive) {
-            triggerByInactivity(targetingMsgJson);
+            houseKeepingUtils.triggerByInactivity(targetingMsgJson);
           }
 
           if (displayObj.deliveryTrigger.scroll) {
-            triggerByScroll(targetingMsgJson);
+            houseKeepingUtils.triggerByScroll(targetingMsgJson);
           }
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
-            window.document.body.onmouseleave = showExitIntent;
+            window.document.body.onmouseleave = houseKeepingUtils.showExitIntent;
           }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
 
           if (delay != null && delay > 0) {
             setTimeout(() => {
-              renderFooterNotification(targetingMsgJson);
+              houseKeepingUtils.renderFooterNotification(targetingMsgJson, exitintentObj);
             }, delay * 1000);
           }
         } else {
-          renderFooterNotification(targetingMsgJson);
+          houseKeepingUtils.renderFooterNotification(targetingMsgJson, exitintentObj);
         } // Handles popup-specific callbacks
 
 
-        if (window.clevertap.hasOwnProperty("popupCallbacks") && typeof window.clevertap.popupCallbacks !== "undefined" && typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === "function") {
+        if (window.clevertap.hasOwnProperty('popupCallbacks') && typeof window.clevertap.popupCallbacks !== 'undefined' && typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === 'function') {
           const popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id];
           const inaObj = {};
           inaObj.msgContent = targetingMsgJson.msgContent;
@@ -14698,7 +14719,7 @@
             }
 
             const eventData = {};
-            eventData.type = "event";
+            eventData.type = 'event';
             eventData.evtName = NOTIFICATION_CLICKED;
             eventData.evtData = {
               [WZRK_ID]: notificationData.msgId
@@ -14719,25 +14740,25 @@
               }
             }
 
-            _request.processEvent(eventData);
+            CampaignContext.request.processEvent(eventData);
           };
 
           popupCallback(inaObj);
         }
       }
-    }; // Triggers campaign based on user inactivity
+    },
 
-
-    const triggerByInactivity = targetNotif => {
+    // Triggers campaign based on user inactivity
+    triggerByInactivity(targetNotif) {
       const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // Convert to milliseconds
 
       let idleTimer;
-      const events = ["mousemove", "keypress", "scroll", "mousedown", "touchmove", "click"];
+      const events = ['mousemove', 'keypress', 'scroll', 'mousedown', 'touchmove', 'click'];
 
       const resetIdleTimer = () => {
         clearTimeout(idleTimer);
         idleTimer = setTimeout(() => {
-          renderFooterNotification(targetNotif);
+          houseKeepingUtils.renderFooterNotification(targetNotif);
           removeEventListeners();
         }, IDLE_TIME_THRESHOLD);
       };
@@ -14760,10 +14781,10 @@
       resetIdleTimer(); // Returns cleanup function
 
       return removeEventListeners;
-    }; // Triggers campaign based on scroll percentage
+    },
 
-
-    const triggerByScroll = targetNotif => {
+    // Triggers campaign based on scroll percentage
+    triggerByScroll(targetNotif) {
       const calculateScrollPercentage = () => {
         const {
           scrollHeight,
@@ -14777,8 +14798,8 @@
         const scrollPercentage = calculateScrollPercentage();
 
         if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
-          renderFooterNotification(targetNotif);
-          window.removeEventListener("scroll", throttledScrollListener);
+          houseKeepingUtils.renderFooterNotification(targetNotif);
+          window.removeEventListener('scroll', throttledScrollListener);
         }
       };
 
@@ -14802,38 +14823,37 @@
       };
 
       const throttledScrollListener = throttle(scrollListener, 200);
-      window.addEventListener("scroll", throttledScrollListener, {
+      window.addEventListener('scroll', throttledScrollListener, {
         passive: true
       }); // Returns cleanup function
 
-      return () => window.removeEventListener("scroll", throttledScrollListener);
-    };
+      return () => window.removeEventListener('scroll', throttledScrollListener);
+    },
 
-    let exitintentObj; // Handles exit intent campaigns (triggered when mouse leaves window)
-
-    const showExitIntent = (event, targetObj) => {
+    // Handles exit intent campaigns (triggered when mouse leaves window)
+    showExitIntent(event, targetObj, wtq, exitintentObj) {
       // Only triggers when mouse moves upward out of window
       if ((event === null || event === void 0 ? void 0 : event.clientY) > 0) return;
       const targetingMsgJson = targetObj || exitintentObj;
-      const campaignId = targetingMsgJson.wzrk_id.split("_")[0];
+      const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       const layout = targetingMsgJson.display.layout; // Skips if campaign is already rendered
 
-      if (isExistingCampaign(campaignId)) return;
+      if (houseKeepingUtils.isExistingCampaign(campaignId)) return;
 
       if (targetingMsgJson.display.wtarget_type === 0 && (layout === 0 || layout === 2 || layout === 3)) {
-        createTemplate(targetingMsgJson, true);
+        houseKeepingUtils.createTemplate(targetingMsgJson, true);
         return;
       } // Skips if frequency limits are exceeded
 
 
-      if (doCampHouseKeeping(targetingMsgJson) === false) {
+      if (houseKeepingUtils.doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       } // Removes existing exit intent elements if spam control is active
 
 
       if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0) {
-        const intentPreview = document.getElementById("intentPreview");
-        const intentOpacityDiv = document.getElementById("intentOpacityDiv");
+        const intentPreview = document.getElementById('intentPreview');
+        const intentOpacityDiv = document.getElementById('intentOpacityDiv');
 
         if (intentPreview && intentOpacityDiv) {
           intentPreview.remove();
@@ -14842,50 +14862,50 @@
       } // Prevents coexistence with other popups
 
 
-      if (document.getElementById("intentPreview") != null || document.getElementById("wzrkImageOnlyDiv") != null) {
+      if (document.getElementById('intentPreview') != null || document.getElementById('wzrkImageOnlyDiv') != null) {
         return;
       } // Skips exit intent on mobile/tablet devices
 
 
-      if (targetingMsgJson.display.layout == null && (/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent) || /iPad/i.test(navigator.userAgent) || "ontouchstart" in window || /tablet/i.test(navigator.userAgent))) {
+      if (targetingMsgJson.display.layout == null && (/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent) || /iPad/i.test(navigator.userAgent) || 'ontouchstart' in window || /tablet/i.test(navigator.userAgent))) {
         return;
       }
 
-      $ct.campaignDivMap[campaignId] = "intentPreview";
+      $ct.campaignDivMap[campaignId] = 'intentPreview';
       let legacy = false;
-      const opacityDiv = document.createElement("div");
-      opacityDiv.id = "intentOpacityDiv";
+      const opacityDiv = document.createElement('div');
+      opacityDiv.id = 'intentOpacityDiv';
       const opacity = targetingMsgJson.display.opacity || 0.7;
       const rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
-      opacityDiv.setAttribute("style", "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
+      opacityDiv.setAttribute('style', "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
       document.body.appendChild(opacityDiv);
-      const msgDiv = document.createElement("div");
-      msgDiv.id = "intentPreview";
+      const msgDiv = document.createElement('div');
+      msgDiv.id = 'intentPreview';
 
       if (targetingMsgJson.display.proto == null) {
         legacy = true;
-        msgDiv.setAttribute("style", "display:block;overflow:hidden;top:55% !important;left:50% !important;position:fixed;z-index:2147483647;width:600px !important;height:600px !important;margin:-300px 0 0 -300px !important;");
+        msgDiv.setAttribute('style', 'display:block;overflow:hidden;top:55% !important;left:50% !important;position:fixed;z-index:2147483647;width:600px !important;height:600px !important;margin:-300px 0 0 -300px !important;');
       } else {
-        msgDiv.setAttribute("style", targetingMsgJson.display.iFrameStyle);
+        msgDiv.setAttribute('style', targetingMsgJson.display.iFrameStyle);
       }
 
       document.body.appendChild(msgDiv);
-      const iframe = document.createElement("iframe");
-      const borderRadius = targetingMsgJson.display.br === false ? "0" : "8";
-      iframe.frameborder = "0px";
-      iframe.marginheight = "0px";
-      iframe.marginwidth = "0px";
-      iframe.scrolling = "no";
-      iframe.id = "wiz-iframe-intent";
+      const iframe = document.createElement('iframe');
+      const borderRadius = targetingMsgJson.display.br === false ? '0' : '8';
+      iframe.frameborder = '0px';
+      iframe.marginheight = '0px';
+      iframe.marginwidth = '0px';
+      iframe.scrolling = 'no';
+      iframe.id = 'wiz-iframe-intent';
       const onClick = targetingMsgJson.display.onClick;
-      let pointerCss = "";
+      let pointerCss = '';
 
-      if (onClick !== "" && onClick != null) {
-        pointerCss = "cursor:pointer;";
+      if (onClick !== '' && onClick != null) {
+        pointerCss = 'cursor:pointer;';
       }
 
-      if (targetingMsgJson.display.preview && targetingMsgJson.display["custom-editor"]) {
-        iframe.sandbox = "allow-scripts allow-popups allow-popups-to-escape-sandbox";
+      if (targetingMsgJson.display.preview && targetingMsgJson.display['custom-editor']) {
+        iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
       }
 
       let html; // Direct HTML content
@@ -14896,76 +14916,61 @@
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
         // Generated HTML with styling
-        const css = "" + '<style type="text/css">' + "body{margin:0;padding:0;}" + "#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;" + pointerCss + "}" + "#contentDiv.wzrk td{padding:15px 10px;}" + ".wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}" + ".wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}" + ".PL15{padding-left:15px;}" + ".wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: " + borderRadius + "px;box-shadow: 1px 1px 5px #888888;}" + "a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;" + "background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}" + "a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}" + "#contentDiv .button{padding-top:20px;}" + "#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}" + "</style>";
+        const css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + '#contentDiv .button{padding-top:20px;}' + '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' + '</style>';
         let bgColor, textColor, btnBg, btColor;
 
-        if (targetingMsgJson.display.theme === "dark") {
-          bgColor = "#2d2d2e";
-          textColor = "#eaeaea";
-          btnBg = "#353535";
-          btColor = "#ffffff";
+        if (targetingMsgJson.display.theme === 'dark') {
+          bgColor = '#2d2d2e';
+          textColor = '#eaeaea';
+          btnBg = '#353535';
+          btColor = '#ffffff';
         } else {
-          bgColor = "#ffffff";
-          textColor = "#000000";
-          btnBg = "#a5a6a6";
-          btColor = "#ffffff";
+          bgColor = '#ffffff';
+          textColor = '#000000';
+          btnBg = '#a5a6a6';
+          btColor = '#ffffff';
         }
 
         const titleText = targetingMsgJson.msgContent.title;
         const descriptionText = targetingMsgJson.msgContent.description;
-        let ctaText = "";
+        let ctaText = '';
 
-        if (targetingMsgJson.msgContent.ctaText != null && targetingMsgJson.msgContent.ctaText !== "") {
-          ctaText = "<div class='button'><a href='#'>" + targetingMsgJson.msgContent.ctaText + "</a></div>";
+        if (targetingMsgJson.msgContent.ctaText != null && targetingMsgJson.msgContent.ctaText !== '') {
+          ctaText = "<div class='button'><a href='#'>" + targetingMsgJson.msgContent.ctaText + '</a></div>';
         }
 
-        let imageTd = "";
+        let imageTd = '';
 
-        if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== "") {
-          imageTd = "<div style='padding-top:20px;'><img src='" + targetingMsgJson.msgContent.imageUrl + "' width='500' alt=" + titleText + " /></div>";
+        if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== '') {
+          imageTd = "<div style='padding-top:20px;'><img src='" + targetingMsgJson.msgContent.imageUrl + "' width='500' alt=" + titleText + ' /></div>';
         }
 
-        const onClickStr = "parent.$WZRK_WR.closeIframe(" + campaignId + ",'intentPreview');";
-        const title = "<div class='wzrkPPwarp' style='color:" + textColor + ";background-color:" + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ";color:" + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + "</div>";
-        const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + "</div>" + imageTd + ctaText + "</div></div>";
+        const onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'intentPreview');";
+        const title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
+        const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '</div>' + imageTd + ctaText + '</div></div>';
         html = css + title + body;
       }
 
-      iframe.setAttribute("style", "color-scheme: none; z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;");
+      iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe); // Dispatches event for interstitial/exit intent close
 
-      const closeCampaign = new Event("CT_campaign_rendered");
+      const closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
 
-      if (targetingMsgJson.display["custom-editor"]) {
+      if (targetingMsgJson.display['custom-editor']) {
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
       iframe.srcdoc = html;
 
       iframe.onload = () => {
-        const contentDiv = document.getElementById("wiz-iframe-intent").contentDocument.getElementById("contentDiv");
-        setupClickUrl(onClick, targetingMsgJson, contentDiv, "intentPreview", legacy);
+        const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
+        houseKeepingUtils.setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
-    }; // Retries processing if document.body isn't ready (up to 6 attempts)
+    },
 
-
-    if (!document.body) {
-      if (_wizCounter < 6) {
-        _wizCounter++;
-        setTimeout(_tr, 1000, msg, {
-          device: _device,
-          session: _session,
-          request: _request,
-          logger: _logger
-        });
-      }
-
-      return;
-    } // Processes native display campaigns (e.g., banners, carousels)
-
-
-    const processNativeDisplayArr = arrInAppNotifs => {
+    // Processes native display campaigns (e.g., banners, carousels)
+    processNativeDisplayArr(arrInAppNotifs) {
       Object.keys(arrInAppNotifs).map(key => {
         var elementId, id;
 
@@ -14983,16 +14988,16 @@
           delete arrInAppNotifs[key];
         }
       });
-    }; // Adds listener to process native displays after page load
+    },
 
-
-    const addLoadListener = arrInAppNotifs => {
-      window.addEventListener("load", () => {
+    // Adds listener to process native displays after page load
+    addLoadListener(arrInAppNotifs) {
+      window.addEventListener('load', () => {
         let count = 0;
 
         if (count < 20) {
           const t = setInterval(() => {
-            processNativeDisplayArr(arrInAppNotifs);
+            houseKeepingUtils.processNativeDisplayArr(arrInAppNotifs);
 
             if (Object.keys(arrInAppNotifs).length === 0 || count === 20) {
               clearInterval(t);
@@ -15003,10 +15008,29 @@
           }, 500);
         }
       });
-    }; // Processes in-app notifications (e.g., footers, exit intents, native displays)
+    },
 
+    // Processes web inbox notifications
+    handleInboxNotifications(msg) {
+      if (msg.inbox_preview) {
+        processInboxNotifs(msg);
+        return;
+      }
 
-    if (msg.inapp_notifs != null) {
+      if (msg.inbox_notifs) {
+        const msgArr = [];
+
+        for (let index = 0; index < msg.inbox_notifs.length; index++) {
+          if (houseKeepingUtils.doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
+            msgArr.push(msg.inbox_notifs[index]);
+          }
+        }
+
+        processInboxNotifs(msgArr);
+      }
+    },
+
+    processCampaigns(msg, _callBackCalled, exitintentObj, logger) {
       const arrInAppNotifs = {};
       const sortedCampaigns = webNativeDisplayCampaignUtils.sortCampaignsByPriority(msg.inapp_notifs);
       const executedTargets = {
@@ -15018,17 +15042,16 @@
         const targetNotif = sortedCampaigns[index];
 
         if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
-          showFooterNotification(targetNotif);
+          houseKeepingUtils.showFooterNotification(targetNotif, _callBackCalled, exitintentObj);
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
-          window.document.body.onmouseleave = showExitIntent;
+          window.document.body.onmouseleave = houseKeepingUtils.showExitIntent;
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
           // Skips duplicate custom event campaigns
           if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif) && executedTargets.customEvents.length > 0 && webNativeDisplayCampaignUtils.shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets)) {
-            _logger.debug("Custom Event Campaign Skipped with id :: " + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
-
+            logger.debug('Custom Event Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
             continue;
           } // Skips duplicate DOM node campaigns
 
@@ -15038,17 +15061,16 @@
 
             return (_webNativeDisplayCamp = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif)) === null || _webNativeDisplayCamp === void 0 ? void 0 : _webNativeDisplayCamp.includes(node);
           })) {
-            _logger.debug("DOM Campaign Skipped with id :: " + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
-
+            logger.debug('DOM Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
             continue;
           } // Tracks executed custom events
 
 
           if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif)) {
             /*
-              This basically stores the CustomEvents with their type that we will push so that
-              the next time we receive a CustomEvent with the same type we can skip it
-            */
+                This basically stores the CustomEvents with their type that we will push so that
+                the next time we receive a CustomEvent with the same type we can skip it
+              */
             const eventTopic = targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR ? targetNotif.display.kv.topic : null;
             executedTargets.customEvents.push({
               customEventType: targetNotif.msgContent.type,
@@ -15071,49 +15093,131 @@
               targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
             } else {
               // Adds to array for later processing if element not found
-              arrInAppNotifs[targetNotif.wzrk_id.split("_")[0]] = targetNotif;
+              arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif;
             }
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
-            renderVisualBuilder(targetNotif, false, _logger);
+            renderVisualBuilder(targetNotif, false);
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
-            renderCustomHtml(targetNotif, _logger);
+            renderCustomHtml(targetNotif, logger);
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
             handleJson(targetNotif);
           } else {
-            showFooterNotification(targetNotif);
+            houseKeepingUtils.showFooterNotification(targetNotif, _callBackCalled, exitintentObj);
           }
         }
       } // Processes banner or carousel campaign array
 
 
       if (Object.keys(arrInAppNotifs).length) {
-        if (document.readyState === "complete") {
-          processNativeDisplayArr(arrInAppNotifs);
+        if (document.readyState === 'complete') {
+          houseKeepingUtils.processNativeDisplayArr(arrInAppNotifs);
         } else {
-          addLoadListener(arrInAppNotifs);
+          houseKeepingUtils.addLoadListener(arrInAppNotifs);
         }
       }
-    } // Processes web inbox notifications
+    },
 
-
-    const handleInboxNotifications = () => {
-      if (msg.inbox_preview) {
-        processInboxNotifs(msg);
-        return;
+    handleWebInbox(msg, logger) {
+      if (hasWebInboxSettingsInLS()) {
+        checkAndRegisterWebInboxElements();
       }
 
-      if (msg.inbox_notifs) {
-        const msgArr = [];
+      if ($ct.inbox === null) {
+        msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
+        initializeWebInbox(logger).then(() => {
+          houseKeepingUtils.handleInboxNotifications(msg);
+        }).catch(e => {});
+      } else {
+        houseKeepingUtils.handleInboxNotifications(msg);
+      }
+    },
 
-        for (let index = 0; index < msg.inbox_notifs.length; index++) {
-          if (doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
-            msgArr.push(msg.inbox_notifs[index]);
+    persistsEventsAndProfileData(msg, logger) {
+      // Persists events and profile data to local storage
+      if (StorageManager._isLocalStorageSupported()) {
+        try {
+          if (msg.evpr != null) {
+            const eventsMap = msg.evpr.events;
+            const profileMap = msg.evpr.profile;
+            const syncExpiry = msg.evpr.expires_in;
+            const now = getNow();
+            StorageManager.setMetaProp('lsTime', now);
+            StorageManager.setMetaProp('exTs', syncExpiry);
+            mergeEventMap(eventsMap);
+            StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
+
+            if ($ct.globalProfileMap == null) {
+              addToLocalProfileMap(profileMap, true);
+            } else {
+              addToLocalProfileMap(profileMap, false);
+            }
           }
-        }
 
-        processInboxNotifs(msgArr);
+          if (msg.arp != null) {
+            arp(msg.arp);
+          }
+
+          if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
+            // Updates stale web popup data
+            staleDataUpdate(msg.inapp_stale, 'wp');
+          }
+
+          if (msg.inbox_stale != null && msg.inbox_stale.length > 0) {
+            // Updates stale web inbox data
+            staleDataUpdate(msg.inbox_stale, 'wi');
+          }
+        } catch (e) {
+          logger.error('Unable to persist evrp/arp: ' + e);
+        }
       }
-    }; // Initializes and processes web inbox settings and notifications
+    },
+
+    handleVariables(msg) {
+      // Merges variables into storage
+      if (msg.vars) {
+        $ct.variableStore.mergeVariables(msg.vars);
+      }
+    }
+
+  };
+
+  const _tr = (msg, _ref) => {
+    let {
+      device,
+      session,
+      request,
+      logger
+    } = _ref;
+    const _device = device;
+    const _session = session;
+    const _request = request;
+    const _logger = logger;
+    let _wizCounter = 0; // Campaign House keeping
+
+    CampaignContext.update(device, session, request, logger, msg);
+    deliveryPreferenceUtils.updateOccurenceForPopupAndNativeDisplay(msg, device, logger);
+    deliveryPreferenceUtils.portTLC(_session, logger);
+    const _callBackCalled = false;
+    let exitintentObj; // Retries processing if document.body isn't ready (up to 6 attempts)
+
+    if (!document.body) {
+      if (_wizCounter < 6) {
+        _wizCounter++;
+        setTimeout(_tr, 1000, msg, {
+          device: _device,
+          session: _session,
+          request: _request,
+          logger: _logger
+        });
+      }
+
+      return;
+    } // Processes in-app notifications (e.g., footers, exit intents, native displays)
+
+
+    if (msg.inapp_notifs != null) {
+      houseKeepingUtils.processCampaigns(msg, _callBackCalled, exitintentObj, logger);
+    } // Initializes and processes web inbox settings and notifications
 
 
     if (msg.webInboxSetting || msg.inbox_notifs != null) {
@@ -15122,70 +15226,16 @@
        * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
        * as we would not have any entry related to webInboxSettings in the LS
        */
-      if (hasWebInboxSettingsInLS()) {
-        checkAndRegisterWebInboxElements();
-      }
-
-      if ($ct.inbox === null) {
-        msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
-        initializeWebInbox(_logger).then(() => {
-          handleInboxNotifications();
-        }).catch(e => {});
-      } else {
-        handleInboxNotifications();
-      }
+      houseKeepingUtils.handleWebInbox(msg, logger);
     } // Processes web push configuration
 
 
     if (msg.webPushConfig) {
       processWebPushConfig(msg.webPushConfig, logger, request);
-    } // Merges variables into storage
-
-
-    if (msg.vars) {
-      $ct.variableStore.mergeVariables(msg.vars);
-      return;
-    } // Persists events and profile data to local storage
-
-
-    if (StorageManager._isLocalStorageSupported()) {
-      try {
-        if (msg.evpr != null) {
-          const eventsMap = msg.evpr.events;
-          const profileMap = msg.evpr.profile;
-          const syncExpiry = msg.evpr.expires_in;
-          const now = getNow();
-          StorageManager.setMetaProp("lsTime", now);
-          StorageManager.setMetaProp("exTs", syncExpiry);
-          mergeEventMap(eventsMap);
-          StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
-
-          if ($ct.globalProfileMap == null) {
-            addToLocalProfileMap(profileMap, true);
-          } else {
-            addToLocalProfileMap(profileMap, false);
-          }
-        }
-
-        if (msg.arp != null) {
-          arp(msg.arp);
-        }
-
-        if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
-          // Updates stale web popup data
-
-          /* TODO: Need to handle Stale Campaign CLeanups for Webpopups without wp */
-          staleDataUpdate(msg.inapp_stale, "wp");
-        }
-
-        if (msg.inbox_stale != null && msg.inbox_stale.length > 0) {
-          // Updates stale web inbox data
-          staleDataUpdate(msg.inbox_stale, "wi");
-        }
-      } catch (e) {
-        _logger.error("Unable to persist evrp/arp: " + e);
-      }
     }
+
+    houseKeepingUtils.handleVariables(msg);
+    houseKeepingUtils.persistsEventsAndProfileData(msg, logger);
   };
 
   var _isPersonalisationActive$2 = _classPrivateFieldLooseKey("isPersonalisationActive");

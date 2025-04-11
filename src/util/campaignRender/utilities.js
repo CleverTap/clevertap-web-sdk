@@ -532,7 +532,7 @@ export const deliveryPreferenceUtils = {
     return campaignObj?.dnd?.includes(campaignId)
   },
 
-  updateOccurenceForPopupAndNativeDisplay (device, msg) {
+  updateOccurenceForPopupAndNativeDisplay (msg, device, logger) {
     // If the guid is present in CAMP_G retain it instead of using the CAMP
     const globalCamp = JSON.parse(
       decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))
