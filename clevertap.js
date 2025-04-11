@@ -11591,7 +11591,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.14.1';
+            const sdkVersion = '1.14.2';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -12415,6 +12415,10 @@
         if (retryElement) {
           raiseViewed();
           retryElement.outerHTML = html;
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = html;
+          const scripts = wrapper.querySelectorAll('script');
+          scripts.forEach(addScriptTo);
           clearInterval(intervalId);
         } else if (++count >= 20) {
           logger.error("No element present on DOM with divId '".concat(divId, "'."));
@@ -15242,7 +15246,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.14.1',
+        lib: 'web-sdk-v1.14.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17053,7 +17057,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.14.1';
+      return 'web-sdk-v1.14.2';
     }
 
     defineVariable(name, defaultValue) {
