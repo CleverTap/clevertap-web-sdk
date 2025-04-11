@@ -14111,7 +14111,7 @@
     }
   };
 
-  const houseKeepingUtils = {
+  const commonCampaignUtils = {
     doCampHouseKeeping(targetingMsgJson, logger) {
       // Extracts campaign ID from wzrk_id (e.g., "123_456" -> "123")
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Gets current date for daily capping
@@ -14348,7 +14348,7 @@
     handleImageOnlyPopup(targetingMsgJson) {
       const divId = 'wzrkImageOnlyDiv'; // Skips if frequency limits are exceeded
 
-      if (houseKeepingUtils.doCampHouseKeeping(targetingMsgJson) === false) {
+      if (this.doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       } // Removes existing popup if spam control is active
 
@@ -14394,17 +14394,17 @@
 
       if (displayObj.layout === 1) {
         // Handling Web Exit Intent
-        return houseKeepingUtils.showExitIntent(undefined, targetingMsgJson, wtq);
+        return this.showExitIntent(undefined, targetingMsgJson, wtq);
       }
 
       if (displayObj.layout === 3) {
         // Handling Web Popup Image Only
-        houseKeepingUtils.handleImageOnlyPopup(targetingMsgJson);
+        this.handleImageOnlyPopup(targetingMsgJson);
         return;
       } // Skips if frequency limits are exceeded
 
 
-      if (houseKeepingUtils.doCampHouseKeeping(targetingMsgJson) === false) {
+      if (this.doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       }
 
@@ -14425,7 +14425,7 @@
       } // Skips if campaign is already rendered
 
 
-      if (houseKeepingUtils.isExistingCampaign(campaignId)) return;
+      if (this.isExistingCampaign(campaignId)) return;
 
       if (document.getElementById(divId) != null) {
         // Skips if div already exists
@@ -14573,7 +14573,7 @@
           iframe.onload = () => {
             adjustIFrameHeight();
             const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-            houseKeepingUtils.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+            this.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
           };
         } else {
           let inDoc = iframe.contentDocument || iframe.contentWindow;
@@ -14585,7 +14585,7 @@
 
               adjustIFrameHeight();
               const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-              houseKeepingUtils.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+              this.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
             }
           }, 300);
         }
@@ -14594,14 +14594,14 @@
           // adjust iframe and body height of html inside correctly
           adjustIFrameHeight();
           const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
-          houseKeepingUtils.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
+          this.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
         };
       }
     },
 
     // Renders footer notification
     renderFooterNotification(targetingMsgJson, exitintentObj) {
-      houseKeepingUtils.createTemplate(targetingMsgJson, false);
+      this.createTemplate(targetingMsgJson, false);
     },
 
     // Displays footer notification with callback handling
@@ -14658,27 +14658,27 @@
 
         if (displayObj.deliveryTrigger) {
           if (displayObj.deliveryTrigger.inactive) {
-            houseKeepingUtils.triggerByInactivity(targetingMsgJson);
+            this.triggerByInactivity(targetingMsgJson);
           }
 
           if (displayObj.deliveryTrigger.scroll) {
-            houseKeepingUtils.triggerByScroll(targetingMsgJson);
+            this.triggerByScroll(targetingMsgJson);
           }
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
-            window.document.body.onmouseleave = houseKeepingUtils.showExitIntent;
+            window.document.body.onmouseleave = this.showExitIntent;
           }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
 
           if (delay != null && delay > 0) {
             setTimeout(() => {
-              houseKeepingUtils.renderFooterNotification(targetingMsgJson, exitintentObj);
+              this.renderFooterNotification(targetingMsgJson, exitintentObj);
             }, delay * 1000);
           }
         } else {
-          houseKeepingUtils.renderFooterNotification(targetingMsgJson, exitintentObj);
+          this.renderFooterNotification(targetingMsgJson, exitintentObj);
         } // Handles popup-specific callbacks
 
 
@@ -14758,7 +14758,7 @@
       const resetIdleTimer = () => {
         clearTimeout(idleTimer);
         idleTimer = setTimeout(() => {
-          houseKeepingUtils.renderFooterNotification(targetNotif);
+          this.renderFooterNotification(targetNotif);
           removeEventListeners();
         }, IDLE_TIME_THRESHOLD);
       };
@@ -14798,7 +14798,7 @@
         const scrollPercentage = calculateScrollPercentage();
 
         if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
-          houseKeepingUtils.renderFooterNotification(targetNotif);
+          this.renderFooterNotification(targetNotif);
           window.removeEventListener('scroll', throttledScrollListener);
         }
       };
@@ -14838,15 +14838,15 @@
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       const layout = targetingMsgJson.display.layout; // Skips if campaign is already rendered
 
-      if (houseKeepingUtils.isExistingCampaign(campaignId)) return;
+      if (this.isExistingCampaign(campaignId)) return;
 
       if (targetingMsgJson.display.wtarget_type === 0 && (layout === 0 || layout === 2 || layout === 3)) {
-        houseKeepingUtils.createTemplate(targetingMsgJson, true);
+        this.createTemplate(targetingMsgJson, true);
         return;
       } // Skips if frequency limits are exceeded
 
 
-      if (houseKeepingUtils.doCampHouseKeeping(targetingMsgJson) === false) {
+      if (this.doCampHouseKeeping(targetingMsgJson) === false) {
         return;
       } // Removes existing exit intent elements if spam control is active
 
@@ -14965,7 +14965,7 @@
 
       iframe.onload = () => {
         const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
-        houseKeepingUtils.setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
+        this.setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
     },
 
@@ -14997,7 +14997,7 @@
 
         if (count < 20) {
           const t = setInterval(() => {
-            houseKeepingUtils.processNativeDisplayArr(arrInAppNotifs);
+            this.processNativeDisplayArr(arrInAppNotifs);
 
             if (Object.keys(arrInAppNotifs).length === 0 || count === 20) {
               clearInterval(t);
@@ -15021,7 +15021,7 @@
         const msgArr = [];
 
         for (let index = 0; index < msg.inbox_notifs.length; index++) {
-          if (houseKeepingUtils.doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
+          if (this.doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
             msgArr.push(msg.inbox_notifs[index]);
           }
         }
@@ -15042,11 +15042,11 @@
         const targetNotif = sortedCampaigns[index];
 
         if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
-          houseKeepingUtils.showFooterNotification(targetNotif, _callBackCalled, exitintentObj);
+          this.showFooterNotification(targetNotif, _callBackCalled, exitintentObj);
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
-          window.document.body.onmouseleave = houseKeepingUtils.showExitIntent;
+          window.document.body.onmouseleave = this.showExitIntent;
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
           // Skips duplicate custom event campaigns
@@ -15102,7 +15102,7 @@
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
             handleJson(targetNotif);
           } else {
-            houseKeepingUtils.showFooterNotification(targetNotif, _callBackCalled, exitintentObj);
+            this.showFooterNotification(targetNotif, _callBackCalled, exitintentObj);
           }
         }
       } // Processes banner or carousel campaign array
@@ -15110,9 +15110,9 @@
 
       if (Object.keys(arrInAppNotifs).length) {
         if (document.readyState === 'complete') {
-          houseKeepingUtils.processNativeDisplayArr(arrInAppNotifs);
+          this.processNativeDisplayArr(arrInAppNotifs);
         } else {
-          houseKeepingUtils.addLoadListener(arrInAppNotifs);
+          this.addLoadListener(arrInAppNotifs);
         }
       }
     },
@@ -15125,10 +15125,10 @@
       if ($ct.inbox === null) {
         msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
         initializeWebInbox(logger).then(() => {
-          houseKeepingUtils.handleInboxNotifications(msg);
+          this.handleInboxNotifications(msg);
         }).catch(e => {});
       } else {
-        houseKeepingUtils.handleInboxNotifications(msg);
+        this.handleInboxNotifications(msg);
       }
     },
 
@@ -15216,7 +15216,7 @@
 
 
     if (msg.inapp_notifs != null) {
-      houseKeepingUtils.processCampaigns(msg, _callBackCalled, exitintentObj, logger);
+      commonCampaignUtils.processCampaigns(msg, _callBackCalled, exitintentObj, logger);
     } // Initializes and processes web inbox settings and notifications
 
 
@@ -15226,7 +15226,7 @@
        * we need to initialise the inbox here because the initializeWebInbox method within init will not be executed
        * as we would not have any entry related to webInboxSettings in the LS
        */
-      houseKeepingUtils.handleWebInbox(msg, logger);
+      commonCampaignUtils.handleWebInbox(msg, logger);
     } // Processes web push configuration
 
 
@@ -15234,8 +15234,8 @@
       processWebPushConfig(msg.webPushConfig, logger, request);
     }
 
-    houseKeepingUtils.handleVariables(msg);
-    houseKeepingUtils.persistsEventsAndProfileData(msg, logger);
+    commonCampaignUtils.handleVariables(msg);
+    commonCampaignUtils.persistsEventsAndProfileData(msg, logger);
   };
 
   var _isPersonalisationActive$2 = _classPrivateFieldLooseKey("isPersonalisationActive");

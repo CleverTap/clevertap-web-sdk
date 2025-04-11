@@ -309,7 +309,7 @@ export const commonCampaignUtils = {
   handleImageOnlyPopup (targetingMsgJson) {
     const divId = 'wzrkImageOnlyDiv'
     // Skips if frequency limits are exceeded
-    if (houseKeepingUtils.doCampHouseKeeping(targetingMsgJson) === false) {
+    if (this.doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
     // Removes existing popup if spam control is active
@@ -356,16 +356,16 @@ export const commonCampaignUtils = {
     // Handles specific layout types
     if (displayObj.layout === 1) {
       // Handling Web Exit Intent
-      return houseKeepingUtils.showExitIntent(undefined, targetingMsgJson, wtq)
+      return this.showExitIntent(undefined, targetingMsgJson, wtq)
     }
     if (displayObj.layout === 3) {
       // Handling Web Popup Image Only
-      houseKeepingUtils.handleImageOnlyPopup(targetingMsgJson)
+      this.handleImageOnlyPopup(targetingMsgJson)
       return
     }
 
     // Skips if frequency limits are exceeded
-    if (houseKeepingUtils.doCampHouseKeeping(targetingMsgJson) === false) {
+    if (this.doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
 
@@ -384,7 +384,7 @@ export const commonCampaignUtils = {
       }
     }
     // Skips if campaign is already rendered
-    if (houseKeepingUtils.isExistingCampaign(campaignId)) return
+    if (this.isExistingCampaign(campaignId)) return
 
     if (document.getElementById(divId) != null) {
       // Skips if div already exists
@@ -608,7 +608,7 @@ export const commonCampaignUtils = {
           const contentDiv = document
             .getElementById('wiz-iframe')
             .contentDocument.getElementById('contentDiv')
-          houseKeepingUtils.setupClickUrl(
+          this.setupClickUrl(
             onClick,
             targetingMsgJson,
             contentDiv,
@@ -628,7 +628,7 @@ export const commonCampaignUtils = {
             const contentDiv = document
               .getElementById('wiz-iframe')
               .contentDocument.getElementById('contentDiv')
-            houseKeepingUtils.setupClickUrl(
+            this.setupClickUrl(
               onClick,
               targetingMsgJson,
               contentDiv,
@@ -645,7 +645,7 @@ export const commonCampaignUtils = {
         const contentDiv = document
           .getElementById('wiz-iframe')
           .contentDocument.getElementById('contentDiv')
-        houseKeepingUtils.setupClickUrl(
+        this.setupClickUrl(
           onClick,
           targetingMsgJson,
           contentDiv,
@@ -658,7 +658,7 @@ export const commonCampaignUtils = {
 
   // Renders footer notification
   renderFooterNotification (targetingMsgJson, exitintentObj) {
-    houseKeepingUtils.createTemplate(targetingMsgJson, false)
+    this.createTemplate(targetingMsgJson, false)
   },
 
   // Displays footer notification with callback handling
@@ -720,27 +720,27 @@ export const commonCampaignUtils = {
       // Handles delivery triggers (inactivity, scroll, exit intent, delay)
       if (displayObj.deliveryTrigger) {
         if (displayObj.deliveryTrigger.inactive) {
-          houseKeepingUtils.triggerByInactivity(targetingMsgJson)
+          this.triggerByInactivity(targetingMsgJson)
         }
         if (displayObj.deliveryTrigger.scroll) {
-          houseKeepingUtils.triggerByScroll(targetingMsgJson)
+          this.triggerByScroll(targetingMsgJson)
         }
         if (displayObj.deliveryTrigger.isExitIntent) {
           exitintentObj = targetingMsgJson
-          window.document.body.onmouseleave = houseKeepingUtils.showExitIntent
+          window.document.body.onmouseleave = this.showExitIntent
         }
         const delay =
           displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed
         if (delay != null && delay > 0) {
           setTimeout(() => {
-            houseKeepingUtils.renderFooterNotification(
+            this.renderFooterNotification(
               targetingMsgJson,
               exitintentObj
             )
           }, delay * 1000)
         }
       } else {
-        houseKeepingUtils.renderFooterNotification(
+        this.renderFooterNotification(
           targetingMsgJson,
           exitintentObj
         )
@@ -832,7 +832,7 @@ export const commonCampaignUtils = {
     const resetIdleTimer = () => {
       clearTimeout(idleTimer)
       idleTimer = setTimeout(() => {
-        houseKeepingUtils.renderFooterNotification(targetNotif)
+        this.renderFooterNotification(targetNotif)
         removeEventListeners()
       }, IDLE_TIME_THRESHOLD)
     }
@@ -865,7 +865,7 @@ export const commonCampaignUtils = {
     const scrollListener = () => {
       const scrollPercentage = calculateScrollPercentage()
       if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
-        houseKeepingUtils.renderFooterNotification(targetNotif)
+        this.renderFooterNotification(targetNotif)
         window.removeEventListener('scroll', throttledScrollListener)
       }
     }
@@ -899,17 +899,17 @@ export const commonCampaignUtils = {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     const layout = targetingMsgJson.display.layout
     // Skips if campaign is already rendered
-    if (houseKeepingUtils.isExistingCampaign(campaignId)) return
+    if (this.isExistingCampaign(campaignId)) return
 
     if (
       targetingMsgJson.display.wtarget_type === 0 &&
       (layout === 0 || layout === 2 || layout === 3)
     ) {
-      houseKeepingUtils.createTemplate(targetingMsgJson, true)
+      this.createTemplate(targetingMsgJson, true)
       return
     }
     // Skips if frequency limits are exceeded
-    if (houseKeepingUtils.doCampHouseKeeping(targetingMsgJson) === false) {
+    if (this.doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
 
@@ -1102,7 +1102,7 @@ export const commonCampaignUtils = {
       const contentDiv = document
         .getElementById('wiz-iframe-intent')
         .contentDocument.getElementById('contentDiv')
-      houseKeepingUtils.setupClickUrl(
+      this.setupClickUrl(
         onClick,
         targetingMsgJson,
         contentDiv,
@@ -1139,7 +1139,7 @@ export const commonCampaignUtils = {
       let count = 0
       if (count < 20) {
         const t = setInterval(() => {
-          houseKeepingUtils.processNativeDisplayArr(arrInAppNotifs)
+          this.processNativeDisplayArr(arrInAppNotifs)
           if (Object.keys(arrInAppNotifs).length === 0 || count === 20) {
             clearInterval(t)
             arrInAppNotifs = {}
@@ -1160,7 +1160,7 @@ export const commonCampaignUtils = {
       const msgArr = []
       for (let index = 0; index < msg.inbox_notifs.length; index++) {
         if (
-          houseKeepingUtils.doCampHouseKeeping(msg.inbox_notifs[index]) !==
+          this.doCampHouseKeeping(msg.inbox_notifs[index]) !==
           false
         ) {
           msgArr.push(msg.inbox_notifs[index])
@@ -1190,7 +1190,7 @@ export const commonCampaignUtils = {
         targetNotif.display.wtarget_type ===
           CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2
       ) {
-        houseKeepingUtils.showFooterNotification(
+        this.showFooterNotification(
           targetNotif,
           _callBackCalled,
           exitintentObj
@@ -1200,7 +1200,7 @@ export const commonCampaignUtils = {
       ) {
         // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif
-        window.document.body.onmouseleave = houseKeepingUtils.showExitIntent
+        window.document.body.onmouseleave = this.showExitIntent
       } else if (
         targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY
       ) {
@@ -1295,7 +1295,7 @@ export const commonCampaignUtils = {
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
           handleJson(targetNotif, false)
         } else {
-          houseKeepingUtils.showFooterNotification(
+          this.showFooterNotification(
             targetNotif,
             _callBackCalled,
             exitintentObj
@@ -1306,9 +1306,9 @@ export const commonCampaignUtils = {
     // Processes banner or carousel campaign array
     if (Object.keys(arrInAppNotifs).length) {
       if (document.readyState === 'complete') {
-        houseKeepingUtils.processNativeDisplayArr(arrInAppNotifs)
+        this.processNativeDisplayArr(arrInAppNotifs)
       } else {
-        houseKeepingUtils.addLoadListener(arrInAppNotifs)
+        this.addLoadListener(arrInAppNotifs)
       }
     }
   },
@@ -1321,11 +1321,11 @@ export const commonCampaignUtils = {
       msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
       initializeWebInbox(logger)
         .then(() => {
-          houseKeepingUtils.handleInboxNotifications(msg)
+          this.handleInboxNotifications(msg)
         })
         .catch((e) => {})
     } else {
-      houseKeepingUtils.handleInboxNotifications(msg)
+      this.handleInboxNotifications(msg)
     }
   },
 
