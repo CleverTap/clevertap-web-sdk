@@ -61,6 +61,13 @@ export const houseKeepingUtils = {
     // Gets current date for daily capping
     const today = getToday();
 
+    if (
+      deliveryPreferenceUtils.isCampaignAddedToDND(campaignId) &&
+      !$ct.dismissSpamControl
+    ) {
+      return false;
+    }
+
     // Helper function to increment campaign counters (session, daily, total)
     const incrCount = (obj, campaignId, excludeFromFreqCaps) => {
       let currentCount = 0;
@@ -102,13 +109,13 @@ export const houseKeepingUtils = {
         campObj.hasOwnProperty("wp")
       ) {
         // Web popup campaigns
-        campTypeObj = campObj.wp;
+        // campTypeObj = campObj.wp
       } else {
         campTypeObj = {};
       }
       if (campObj.hasOwnProperty("global")) {
         // Merges global data if present
-        campTypeObj.wp = campObj;
+        // campTypeObj.wp = campObj
       }
       // Sets default global session limits if not specified
       if (targetingMsgJson[DISPLAY].wmc == null) {
@@ -166,11 +173,6 @@ export const houseKeepingUtils = {
       if (sessionObj) {
         const campaignSessionCount = sessionObj[campaignId];
         const totalSessionCount = sessionObj.tc;
-        // If marked as "do not disturb" (dnd) and spam control isn't dismissed, skip
-        if (campaignSessionCount === "dnd" && !$ct.dismissSpamControl) {
-          return false;
-        }
-
         // For web inbox campaigns
         if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
           // Inbox session limit check
@@ -202,7 +204,7 @@ export const houseKeepingUtils = {
       } else {
         // Initializes session object if not present
         sessionObj = {};
-        campTypeObj[CampaignContext.session.sessionId] = sessionObj;
+        campTypeObj[_session.sessionId] = sessionObj;
       }
 
       // Daily-level capping: Checks if campaign exceeds daily limits
@@ -270,19 +272,22 @@ export const houseKeepingUtils = {
     incrCount(globalObj, campaignId, excludeFromFreqCaps);
 
     // Determines storage key based on campaign type (web popup or inbox)
-    let campKey = "wp";
+    let campKey;
     if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
       campKey = "wi";
     }
-    // Updates campaign object with new counts and saves to storage
-    const newCampObj = {};
-    newCampObj[CampaignContext.session.sessionId] = sessionObj;
-    newCampObj[today] = dailyObj;
-    newCampObj[GLOBAL] = globalObj;
-    // Save CAMP to localstorage here
-    saveCampaignObject({ [campKey]: newCampObj });
-
-    addDeliveryPreferenceDetails(targetingMsgJson, logger);
+    if (campKey === "wi") {
+      // Updates campaign object with new counts and saves to storage
+      const newCampObj = {};
+      newCampObj[_session.sessionId] = sessionObj;
+      newCampObj[today] = dailyObj;
+      newCampObj[GLOBAL] = globalObj;
+      // Save CAMP to localstorage here
+      saveCampaignObject({ [campKey]: newCampObj });
+    } else {
+      /* For Web Native Display and Web Popup */
+      addDeliveryPreferenceDetails(targetingMsgJson, logger);
+    }
   },
 
   // Sets up click tracking and impression increment for a campaign
