@@ -187,6 +187,7 @@ export const setCampaignObjectForGuid = () => {
               wsc: campObj.wsc,
               wfc: campObj.wfc,
               woc: campObj.woc,
+              dnd: campKeyObj.dnd,
               wndsc: campObj.wndsc,
               wndfc: campObj.wndfc,
               wndoc: campObj.wndoc
