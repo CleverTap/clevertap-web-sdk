@@ -408,25 +408,23 @@ export const deliveryPreferenceUtils = {
     return obj
   },
 
-  /* This function takes in tlc data and migrate it to latest wsc and wfc data */
-  /* Once the porting is done, tlc will be deleted */
-  /* for the current session, check the CAMP.wp[sessionId]
-       Structure is as follows
-       {
-        "1743758736": "dnd",
-        "1744193923": "dnd",
-        "tc": 3
-      }
-
-      For all the keys except the tc, we have campaign Ids,
-        For each Campaign Id, we want to migrate the data to the new wsc and wfc as follows
-        Value of campaignIds can be [dnd, 1]
-          Which means
-            campaignId is shown once -> 1
-            campaignId is shown & dimissed -> dnd
-
-    */
+  /**
+   * Migrates legacy TLC data to the latest WSC
+   * and WFC structures.
+   *
+   * This function reads from `CAMP.wp`, which stores web popup data keyed by session IDs and global campaign data.
+   * Each campaign ID (except for the key `tc`, which is a total count) maps to either:
+   * - `1` → campaign was shown once
+   * - `'dnd'` → campaign was shown and dismissed (Do Not Disturb)
+   *
+   * After migrating each campaign's data using `deliveryPreferenceUtils.portCampaignDetails`, 
+   * the old TLC data (`CAMP.wp`) is cleared from storage.
+   *
+   * @param {Object} _session - The current session object.
+   * @param {string} _session.sessionId - The unique identifier for the session, used to access session-specific campaign data.
+   */
   portTLC (_session) {
+    // TODO: Add the campaignId keys which has value as `dnd` to the `dnd` array
     const CAMP = getCampaignObject()
 
     /* If no campaigns are present, then we don't need to port anything */
