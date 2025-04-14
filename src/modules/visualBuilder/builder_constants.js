@@ -10,3 +10,8 @@ export const WVE_QUERY_PARAMS = {
   PREVIEW: 'ctBuilderPreview',
   SDK_CHECK: 'ctBuilderSDKCheck'
 }
+
+export const WVE_URL_ORIGIN = {
+  CLEVERTAP: 'dashboard.clevertap.com',
+  LOCAL: 'localhost'
+}
