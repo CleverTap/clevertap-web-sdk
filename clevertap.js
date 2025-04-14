@@ -11613,7 +11613,7 @@
     if (event.data && isValidUrl(event.data.originUrl)) {
       const msgOrigin = new URL(event.data.originUrl).origin;
 
-      if (event.origin !== msgOrigin) {
+      if (!event.origin.includes('dashboard.clevertap.com') && !event.origin.includes(window.location.origin) && !event.origin.includes('localhost') || event.origin !== msgOrigin) {
         return;
       }
     } else {
