@@ -11182,6 +11182,10 @@
     PREVIEW: 'ctBuilderPreview',
     SDK_CHECK: 'ctBuilderSDKCheck'
   };
+  const WVE_URL_ORIGIN = {
+    CLEVERTAP: 'dashboard.clevertap.com',
+    LOCAL: 'localhost'
+  };
 
   const updateFormData = function (element, formStyle, payload) {
     let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
@@ -11613,7 +11617,7 @@
     if (event.data && isValidUrl(event.data.originUrl)) {
       const msgOrigin = new URL(event.data.originUrl).origin;
 
-      if (!event.origin.includes('dashboard.clevertap.com') && !event.origin.includes(window.location.origin) && !event.origin.includes('localhost') || event.origin !== msgOrigin) {
+      if (!event.origin.includes(WVE_URL_ORIGIN.CLEVERTAP) && !event.origin.includes(window.location.origin) && !event.origin.includes(WVE_URL_ORIGIN.LOCAL) || event.origin !== msgOrigin) {
         return;
       }
     } else {
