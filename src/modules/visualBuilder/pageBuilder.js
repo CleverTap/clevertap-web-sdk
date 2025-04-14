@@ -1,4 +1,4 @@
-import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_QUERY_PARAMS } from './builder_constants'
+import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_QUERY_PARAMS, WVE_URL_ORIGIN } from './builder_constants'
 import { updateFormData, updateElementCSS } from './dataUpdate'
 import { addScriptTo } from '../../util/campaignRender/utilities'
 
@@ -51,7 +51,12 @@ export const handleActionMode = (_logger, accountId) => {
 const handleMessageEvent = (event) => {
   if (event.data && isValidUrl(event.data.originUrl)) {
     const msgOrigin = new URL(event.data.originUrl).origin
-    if (event.origin !== msgOrigin) {
+    if (
+      (!event.origin.includes(WVE_URL_ORIGIN.CLEVERTAP) &&
+      !event.origin.includes(window.location.origin) &&
+      !event.origin.includes(WVE_URL_ORIGIN.LOCAL)) ||
+      event.origin !== msgOrigin
+    ) {
       return
     }
   } else {
