@@ -9008,48 +9008,54 @@
       return obj;
     },
 
-    /* This function takes in tlc data and migrate it to latest wsc and wfc data */
-
-    /* Once the porting is done, tlc will be deleted */
-
-    /* for the current session, check the CAMP.wp[sessionId]
-         Structure is as follows
-         {
-          "1743758736": "dnd",
-          "1744193923": "dnd",
-          "tc": 3
-        }
-         For all the keys except the tc, we have campaign Ids,
-          For each Campaign Id, we want to migrate the data to the new wsc and wfc as follows
-          Value of campaignIds can be [dnd, 1]
-            Which means
-              campaignId is shown once -> 1
-              campaignId is shown & dimissed -> dnd
-       */
+    /**
+     * Migrates legacy TLC data to the latest WSC
+     * and WFC structures.
+     *
+     * This function reads from `CAMP.wp`, which stores web popup data keyed by session IDs and global campaign data.
+     * Each campaign ID (except for the key `tc`, which is a total count) maps to either:
+     * - `1` → campaign was shown once
+     * - `'dnd'` → campaign was shown and dismissed (Do Not Disturb)
+     *
+     * After migrating each campaign's data using `deliveryPreferenceUtils.portCampaignDetails`, 
+     * the old TLC data (`CAMP.wp`) is cleared from storage.
+     *
+     * @param {Object} _session - The current session object.
+     * @param {string} _session.sessionId - The unique identifier for the session, used to access session-specific campaign data.
+     */
     portTLC(_session) {
-      var _CAMP$wp, _CAMP$wp2;
+      var _existingCamp$wp, _existingCamp$wp2;
 
-      const CAMP = getCampaignObject();
+      // TODO: Add the campaignId keys which has value as `dnd` to the `dnd` array
+      const existingCamp = getCampaignObject();
+      const dnd = [];
       /* If no campaigns are present, then we don't need to port anything */
 
-      if (!(CAMP === null || CAMP === void 0 ? void 0 : CAMP.wp) || Object.keys(CAMP === null || CAMP === void 0 ? void 0 : CAMP.wp).length === 0) {
+      if (!(existingCamp === null || existingCamp === void 0 ? void 0 : existingCamp.wp) || Object.keys(existingCamp === null || existingCamp === void 0 ? void 0 : existingCamp.wp).length === 0) {
         return;
       }
 
-      const webPopupGlobalDetails = (CAMP === null || CAMP === void 0 ? void 0 : (_CAMP$wp = CAMP.wp) === null || _CAMP$wp === void 0 ? void 0 : _CAMP$wp.global) || {};
-      const webPopupSessionDetails = (CAMP === null || CAMP === void 0 ? void 0 : (_CAMP$wp2 = CAMP.wp) === null || _CAMP$wp2 === void 0 ? void 0 : _CAMP$wp2[_session.sessionId]) || {};
+      const webPopupGlobalDetails = (existingCamp === null || existingCamp === void 0 ? void 0 : (_existingCamp$wp = existingCamp.wp) === null || _existingCamp$wp === void 0 ? void 0 : _existingCamp$wp.global) || {};
+      const webPopupSessionDetails = (existingCamp === null || existingCamp === void 0 ? void 0 : (_existingCamp$wp2 = existingCamp.wp) === null || _existingCamp$wp2 === void 0 ? void 0 : _existingCamp$wp2[_session.sessionId]) || {};
       const campaignIds = Object.keys(webPopupGlobalDetails);
 
       for (const campaignId of campaignIds) {
         if (campaignId !== 'tc') {
           const globalCampaignCount = webPopupGlobalDetails[campaignId];
           const sessionCampaignCount = webPopupSessionDetails[campaignId];
+
+          if (sessionCampaignCount === 'dnd') {
+            dnd.push(campaignId);
+          }
+
           const updatedCamp = deliveryPreferenceUtils.portCampaignDetails(campaignId, sessionCampaignCount, globalCampaignCount);
           saveCampaignObject(updatedCamp);
         }
       }
 
-      saveCampaignObject({ ...getCampaignObject(),
+      const updatedCamp = getCampaignObject();
+      saveCampaignObject({ ...updatedCamp,
+        dnd: [...new Set([...(updatedCamp === null || updatedCamp === void 0 ? void 0 : updatedCamp.dnd), ...dnd])],
         wp: {}
       });
     },

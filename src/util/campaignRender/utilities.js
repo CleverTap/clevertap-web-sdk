@@ -417,7 +417,7 @@ export const deliveryPreferenceUtils = {
    * - `1` → campaign was shown once
    * - `'dnd'` → campaign was shown and dismissed (Do Not Disturb)
    *
-   * After migrating each campaign's data using `deliveryPreferenceUtils.portCampaignDetails`, 
+   * After migrating each campaign's data using `deliveryPreferenceUtils.portCampaignDetails`,
    * the old TLC data (`CAMP.wp`) is cleared from storage.
    *
    * @param {Object} _session - The current session object.
@@ -425,21 +425,25 @@ export const deliveryPreferenceUtils = {
    */
   portTLC (_session) {
     // TODO: Add the campaignId keys which has value as `dnd` to the `dnd` array
-    const CAMP = getCampaignObject()
+    const existingCamp = getCampaignObject()
+    const dnd = []
 
     /* If no campaigns are present, then we don't need to port anything */
-    if (!CAMP?.wp || Object.keys(CAMP?.wp).length === 0) {
+    if (!existingCamp?.wp || Object.keys(existingCamp?.wp).length === 0) {
       return
     }
 
-    const webPopupGlobalDetails = CAMP?.wp?.global || {}
-    const webPopupSessionDetails = CAMP?.wp?.[_session.sessionId] || {}
+    const webPopupGlobalDetails = existingCamp?.wp?.global || {}
+    const webPopupSessionDetails = existingCamp?.wp?.[_session.sessionId] || {}
     const campaignIds = Object.keys(webPopupGlobalDetails)
 
     for (const campaignId of campaignIds) {
       if (campaignId !== 'tc') {
         const globalCampaignCount = webPopupGlobalDetails[campaignId]
         const sessionCampaignCount = webPopupSessionDetails[campaignId]
+        if (sessionCampaignCount === 'dnd') {
+          dnd.push(campaignId)
+        }
         const updatedCamp = deliveryPreferenceUtils.portCampaignDetails(
           campaignId,
           sessionCampaignCount,
@@ -448,8 +452,11 @@ export const deliveryPreferenceUtils = {
         saveCampaignObject(updatedCamp)
       }
     }
+
+    const updatedCamp = getCampaignObject()
     saveCampaignObject({
-      ...getCampaignObject(),
+      ...updatedCamp,
+      dnd: [...new Set([...updatedCamp?.dnd, ...dnd])],
       wp: {}
     })
   },
