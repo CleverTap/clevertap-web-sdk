@@ -9055,7 +9055,7 @@
 
       const updatedCamp = getCampaignObject();
       saveCampaignObject({ ...updatedCamp,
-        dnd: [...new Set([...(updatedCamp === null || updatedCamp === void 0 ? void 0 : updatedCamp.dnd), ...dnd])],
+        dnd: [...new Set([...(updatedCamp.dnd || []), ...dnd])],
         wp: {}
       });
     },

@@ -456,7 +456,7 @@ export const deliveryPreferenceUtils = {
     const updatedCamp = getCampaignObject()
     saveCampaignObject({
       ...updatedCamp,
-      dnd: [...new Set([...updatedCamp?.dnd, ...dnd])],
+      dnd: [...new Set([...(updatedCamp.dnd || []), ...dnd])],
       wp: {}
     })
   },
