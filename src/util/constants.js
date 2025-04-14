@@ -67,6 +67,7 @@ export const TIMER_FOR_NOTIF_BADGE_UPDATE = 300
 export const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper'
 export const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper'
 export const POPUP_LOADING = 'WZRK_POPUP_LOADING'
+export const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview'
 
 export const WEB_NATIVE_TEMPLATES = {
   KV_PAIR: 1,
@@ -90,10 +91,6 @@ export const CAMPAIGN_TYPES = {
   FOOTER_NOTIFICATION_2: null
 }
 
-export const CUSTOM_EVENT_KEYS = {
-  WEB_NATIVE_DISPLAY: 'CT_web_native_display'
-}
-
 export const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
   KV_PAIR: 'KV_Pair',
   JSON: 'JSON',
@@ -114,3 +111,8 @@ export const KEYS_TO_ENCRYPT = [
   LRU_CACHE,
   PR_COOKIE
 ]
+
+export const ACTION_TYPES = {
+  OPEN_LINK: 'url',
+  OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
+}

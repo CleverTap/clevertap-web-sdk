@@ -402,7 +402,7 @@ const _tr = (msg, {
       html = css + title + body
     }
 
-    iframe.setAttribute('style', 'z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
+    iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;')
     msgDiv.appendChild(iframe)
 
     // Dispatch event for popup box/banner close
@@ -899,7 +899,7 @@ const _tr = (msg, {
             arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
           }
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
-          renderVisualBuilder(targetNotif, false)
+          renderVisualBuilder(targetNotif, false, _logger)
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
           renderCustomHtml(targetNotif, _logger)
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {

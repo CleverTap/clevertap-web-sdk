@@ -3,6 +3,7 @@ import {
   saveCampaignObject
 } from '../clevertap'
 import { StorageManager } from '../storage'
+import { ACTION_TYPES } from '../constants'
 
 export class CTWebPopupImageOnly extends HTMLElement {
   constructor () {
@@ -48,10 +49,11 @@ export class CTWebPopupImageOnly extends HTMLElement {
       return this.target.display.onClickUrl
     }
 
-    renderImageOnlyPopup () {
-      const campaignId = this.target.wzrk_id.split('_')[0]
-      const currentSessionId = this.session.sessionId
+    get onClickAction () {
+      return this.target.display.onClickAction
+    }
 
+    renderImageOnlyPopup () {
       this.shadow.innerHTML = this.getImageOnlyPopupContent()
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup')
       this.container = this.shadowRoot.getElementById('container')
@@ -62,6 +64,8 @@ export class CTWebPopupImageOnly extends HTMLElement {
       this.resizeObserver.observe(this.popup)
 
       this.closeIcon.addEventListener('click', () => {
+        const campaignId = this.target.wzrk_id.split('_')[0]
+        const currentSessionId = this.session.sessionId
         this.resizeObserver.unobserve(this.popup)
         document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
         this.remove()
@@ -80,12 +84,30 @@ export class CTWebPopupImageOnly extends HTMLElement {
         }
       })
 
-      window.clevertap.renderNotificationViewed({ msgId: this.msgId, pivotId: this.pivotId })
+      if (!this.target.display.preview) {
+        window.clevertap.renderNotificationViewed({
+          msgId: this.msgId,
+          pivotId: this.pivotId
+        })
+      }
 
       if (this.onClickUrl) {
         this.popup.addEventListener('click', () => {
-          this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
-          window.clevertap.renderNotificationClicked({ msgId: this.msgId, pivotId: this.pivotId })
+          if (!this.target.display.preview) {
+            window.clevertap.renderNotificationClicked({
+              msgId: this.msgId,
+              pivotId: this.pivotId
+            })
+          }
+          switch (this.onClickAction) {
+            case ACTION_TYPES.OPEN_LINK_AND_CLOSE:
+              this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
+              this.closeIcon.click()
+              break
+            case ACTION_TYPES.OPEN_LINK:
+            default:
+              this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
+          }
         })
       }
     }

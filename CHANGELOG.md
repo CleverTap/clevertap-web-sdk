@@ -1,10 +1,28 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.13.4] 5th Mar, 2025
+## [1.14.1] 9th Apr, 2025
+- Added support for scripts tags in Web Native Display Visual Editor Template.
+
+## [1.14.0] 24th Mar, 2025
+- Added JSON and File Vars Support
+
+## [1.13.7] 19th Mar, 2025
+- Added option to close image only popup on click action
+
+## [1.13.6] 13th Mar, 2025
+- Fixed Overlay issue for soft prompt
+
+## [1.13.5] 7th Mar, 2025
+- Added Null Checks for Web Native Campaigns Utils
 - Fixed WebInbox Runtime Issues
 - Skipped WebInbox Retries when config not present
-- Cleaned up build files from source control and updated Build Pipelines & npm package entry point
+- Native Display KV_Pair Custom Event Paylaod Backward Compatibility
+- Enhanced session storage check for WZRK_D with fallback and error handling.
+
+## [1.13.4] 7th Mar, 2025
+- Added support to preview html for custom native html
+- Fixed white background around web-popup
 
 ## [1.13.3] 5th Mar, 2025
 - Web Native Display - Campaign Priority Support
