@@ -2,8 +2,9 @@
   "name": "clevertap-web-sdk",
   "version": "1.14.2",
   "description": "",
-  "main": "clevertap.js",
+  "main": "dist/clevertap.js",
   "scripts": {
+    "prepare": "npm run build",
     "build": "MODE=WEB rollup --config rollup.config.js",
     "build_sw": "MODE=SERVICE_WORKER rollup --config rollup.config.js",
     "test": "eslint --fix test && jest",

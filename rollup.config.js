@@ -28,7 +28,7 @@ const getOutput = (mode) => {
     return [
       {
         name: 'sw_webpush',
-        file: 'sw_webpush.min.js',
+        file: 'dist/sw_webpush.min.js',
         format: 'umd',
         plugins: [terser()]
       }
@@ -38,13 +38,13 @@ const getOutput = (mode) => {
   return [
     {
       name: 'clevertap',
-      file: 'clevertap.js',
+      file: 'dist/clevertap.js',
       format: 'umd',
       sourcemap: true
     },
     {
       name: 'clevertap',
-      file: 'clevertap.min.js',
+      file: 'dist/clevertap.min.js',
       format: 'umd',
       plugins: [terser()]
     }
