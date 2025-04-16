@@ -84,7 +84,9 @@ export const renderCustomHtml = (targetingMsgJson, logger) => {
         const wrapper = document.createElement('div')
         wrapper.innerHTML = html
         const scripts = wrapper.querySelectorAll('script')
-        scripts.forEach(addScriptTo)
+        scripts.forEach((script) => {
+          addScriptTo(script)
+        })
         clearInterval(intervalId)
       } else if (++count >= 20) {
         logger.error(`No element present on DOM with divId '${divId}'.`)
