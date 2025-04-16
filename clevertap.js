@@ -12085,7 +12085,9 @@
 
       if (!newElement) return;
       const scripts = newElement.querySelectorAll('script');
-      scripts.forEach(addScriptTo);
+      scripts.forEach(script => {
+        addScriptTo(script);
+      });
     } catch (error) {
       logger$1.debug('Error loading script', error);
     }
@@ -12422,7 +12424,9 @@
           const wrapper = document.createElement('div');
           wrapper.innerHTML = html;
           const scripts = wrapper.querySelectorAll('script');
-          scripts.forEach(addScriptTo);
+          scripts.forEach(script => {
+            addScriptTo(script);
+          });
           clearInterval(intervalId);
         } else if (++count >= 20) {
           logger.error("No element present on DOM with divId '".concat(divId, "'."));
