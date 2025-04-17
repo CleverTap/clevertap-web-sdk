@@ -461,7 +461,9 @@ export function executeScripts (selector) {
     }
     if (!newElement) return
     const scripts = newElement.querySelectorAll('script')
-    scripts.forEach(addScriptTo)
+    scripts.forEach((script) => {
+      addScriptTo(script)
+    })
   } catch (error) {
     logger.debug('Error loading script', error)
   }
