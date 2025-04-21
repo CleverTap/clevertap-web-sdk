@@ -12420,7 +12420,7 @@
 
         if (retryElement) {
           raiseViewed();
-          retryElement.outerHTML = html;
+          retryElement.innerHTML = html;
           const wrapper = document.createElement('div');
           wrapper.innerHTML = html;
           const scripts = wrapper.querySelectorAll('script');
