@@ -6,6 +6,7 @@ export const CLEAR = 'clear'
 export const CHARGED_ID = 'Charged ID'
 export const CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID'
 export const GCOOKIE_NAME = 'WZRK_G'
+export const QUALIFIED_CAMPAIGNS = 'WZRK_QC'
 export const KCOOKIE_NAME = 'WZRK_K'
 export const CAMP_COOKIE_NAME = 'WZRK_CAMP'
 export const CAMP_COOKIE_G = 'WZRK_CAMP_G'// cookie for storing campaign details against guid
