@@ -11595,7 +11595,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.14.3';
+            const sdkVersion = '1.14.4';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -12420,7 +12420,7 @@
 
         if (retryElement) {
           raiseViewed();
-          retryElement.outerHTML = html;
+          retryElement.innerHTML = html;
           const wrapper = document.createElement('div');
           wrapper.innerHTML = html;
           const scripts = wrapper.querySelectorAll('script');
@@ -15254,7 +15254,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.14.3',
+        lib: 'web-sdk-v1.14.4',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17065,7 +17065,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.14.3';
+      return 'web-sdk-v1.14.4';
     }
 
     defineVariable(name, defaultValue) {
