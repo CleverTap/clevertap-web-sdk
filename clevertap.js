@@ -219,6 +219,7 @@
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
+  const CUSTOM_CT_ID_PREFIX = '_w_';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -12682,7 +12683,7 @@
       throw new Error('ID must be a string');
     }
 
-    return "_w_".concat(id.toLowerCase());
+    return "".concat(CUSTOM_CT_ID_PREFIX).concat(id.toLowerCase());
   }
 
   var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");

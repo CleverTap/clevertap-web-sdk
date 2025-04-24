@@ -1,3 +1,5 @@
+import { CUSTOM_CT_ID_PREFIX } from '../util/constants'
+
 export const isChrome = () => {
   const ua = navigator.userAgent
   return ua.includes('Chrome') || ua.includes('CriOS')
@@ -147,5 +149,5 @@ function addWebPrefix (id) {
     throw new Error('ID must be a string')
   }
 
-  return `_w_${id.toLowerCase()}`
+  return `${CUSTOM_CT_ID_PREFIX}${id.toLowerCase()}`
 }
