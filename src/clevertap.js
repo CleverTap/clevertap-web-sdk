@@ -105,12 +105,13 @@ export default class CleverTap {
     encryption.key = clevertap.account?.[0].id
     // Custom Guid will be set here
 
-    const { isValid, sanitizedId } = validateCustomCleverTapID(clevertap.config?.customId)
-    if (!isValid) {
-      this.#logger.error(sanitizedId)
+    const result = validateCustomCleverTapID(clevertap?.config?.customId)
+
+    if (!result?.isValid) {
+      this.#logger.error(result?.error)
     }
 
-    this.#device = new DeviceManager({ logger: this.#logger, customId: isValid ? sanitizedId : null })
+    this.#device = new DeviceManager({ logger: this.#logger, customId: result?.isValid ? result?.sanitizedId : null })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#session = new SessionManager({
@@ -656,17 +657,17 @@ export default class CleverTap {
   }
 
   createCustomIdIfValid (customId) {
-    const { isValid, sanitizedId } = validateCustomCleverTapID(customId)
+    const result = validateCustomCleverTapID(customId)
 
     /* Only add Custom Id if no existing id is present */
     if (!this.#device.gcookie) {
       return
     }
 
-    if (isValid) {
-      this.#device.gcookie = sanitizedId
-      StorageManager.saveToLSorCookie(GCOOKIE_NAME, sanitizedId)
-      this.#logger.debug('CT Initialized with customId:: ' + sanitizedId)
+    if (result?.isValid) {
+      this.#device.gcookie = result?.sanitizedId
+      StorageManager.saveToLSorCookie(GCOOKIE_NAME, result?.sanitizedId)
+      this.#logger.debug('CT Initialized with customId:: ' + result?.sanitizedId)
     } else {
       this.#logger.error('Invalid customId')
     }

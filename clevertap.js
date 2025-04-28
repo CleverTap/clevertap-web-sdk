@@ -16289,18 +16289,15 @@
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
       encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id; // Custom Guid will be set here
 
-      const {
-        isValid,
-        sanitizedId
-      } = validateCustomCleverTapID((_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
+      let result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
 
-      if (!isValid) {
-        _classPrivateFieldLooseBase(this, _logger)[_logger].error(sanitizedId);
+      if (!(result === null || result === void 0 ? void 0 : result.isValid)) {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].error(result === null || result === void 0 ? void 0 : result.error);
       }
 
       _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
-        customId: isValid ? sanitizedId : null
+        customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
@@ -16945,21 +16942,18 @@
     }
 
     createCustomIdIfValid(customId) {
-      const {
-        isValid,
-        sanitizedId
-      } = validateCustomCleverTapID(customId);
+      const result = validateCustomCleverTapID(customId);
       /* Only add Custom Id if no existing id is present */
 
       if (!_classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
         return;
       }
 
-      if (isValid) {
-        _classPrivateFieldLooseBase(this, _device)[_device].gcookie = sanitizedId;
-        StorageManager.saveToLSorCookie(GCOOKIE_NAME, sanitizedId);
+      if (result === null || result === void 0 ? void 0 : result.isValid) {
+        _classPrivateFieldLooseBase(this, _device)[_device].gcookie = result === null || result === void 0 ? void 0 : result.sanitizedId;
+        StorageManager.saveToLSorCookie(GCOOKIE_NAME, result === null || result === void 0 ? void 0 : result.sanitizedId);
 
-        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('CT Initialized with customId:: ' + sanitizedId);
+        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('CT Initialized with customId:: ' + (result === null || result === void 0 ? void 0 : result.sanitizedId));
       } else {
         _classPrivateFieldLooseBase(this, _logger)[_logger].error('Invalid customId');
       }
