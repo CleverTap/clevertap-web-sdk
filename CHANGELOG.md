@@ -1,6 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.14.5] 28th Apr, 2025
+- Added Clevertap Custom Id Support
+- Added Public API `getAllQualifiedCampaignDetails` for debugging purpose
+
+## [1.14.4] 24th Apr, 2025
+- Updated rendering logic for Web Native Display Custom Html Template.
+
 ## [1.14.3] 16th Apr, 2025
 - Corrected the addScriptTo call to prevent wrong arguments
 
