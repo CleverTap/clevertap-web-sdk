@@ -7776,7 +7776,6 @@
       this.gcookie = void 0;
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
       this.gcookie = this.getGuid() || customId;
-      console.log('this.gcookie', this.gcookie);
     }
 
     getGuid() {
@@ -11616,7 +11615,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.14.4';
+            const sdkVersion = '1.14.5';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -15341,7 +15340,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.14.4',
+        lib: 'web-sdk-v1.14.5',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -16198,7 +16197,7 @@
     }
 
     constructor() {
-      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$account6;
+      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$account6;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
@@ -16289,9 +16288,9 @@
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
       encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id; // Custom Guid will be set here
 
-      let result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
+      const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
 
-      if (!(result === null || result === void 0 ? void 0 : result.isValid)) {
+      if (!(result === null || result === void 0 ? void 0 : result.isValid) && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId)) {
         _classPrivateFieldLooseBase(this, _logger)[_logger].error(result === null || result === void 0 ? void 0 : result.error);
       }
 
@@ -16945,7 +16944,7 @@
       const result = validateCustomCleverTapID(customId);
       /* Only add Custom Id if no existing id is present */
 
-      if (!_classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
+      if (_classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
         return;
       }
 
@@ -17009,7 +17008,10 @@
         _classPrivateFieldLooseBase(this, _account)[_account].token = token;
       }
 
-      this.createCustomIdIfValid(config === null || config === void 0 ? void 0 : config.customId);
+      if (config === null || config === void 0 ? void 0 : config.customId) {
+        this.createCustomIdIfValid(config === null || config === void 0 ? void 0 : config.customId);
+      }
+
       const currLocation = location.href;
       const urlParams = getURLParams(currLocation.toLowerCase()); // eslint-disable-next-line eqeqeq
 
@@ -17182,7 +17184,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.14.4';
+      return 'web-sdk-v1.14.5';
     }
 
     defineVariable(name, defaultValue) {
