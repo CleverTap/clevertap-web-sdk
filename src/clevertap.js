@@ -107,7 +107,7 @@ export default class CleverTap {
 
     const result = validateCustomCleverTapID(clevertap?.config?.customId)
 
-    if (!result?.isValid) {
+    if (!result?.isValid && clevertap?.config?.customId) {
       this.#logger.error(result?.error)
     }
 
@@ -709,8 +709,9 @@ export default class CleverTap {
     if (token) {
       this.#account.token = token
     }
-
-    this.createCustomIdIfValid(config?.customId)
+    if (config?.customId) {
+      this.createCustomIdIfValid(config?.customId)
+    }
 
     const currLocation = location.href
     const urlParams = getURLParams(currLocation.toLowerCase())

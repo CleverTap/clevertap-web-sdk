@@ -16197,7 +16197,7 @@
     }
 
     constructor() {
-      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$account6;
+      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$account6;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
@@ -16290,7 +16290,7 @@
 
       const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
 
-      if (!(result === null || result === void 0 ? void 0 : result.isValid)) {
+      if (!(result === null || result === void 0 ? void 0 : result.isValid) && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId)) {
         _classPrivateFieldLooseBase(this, _logger)[_logger].error(result === null || result === void 0 ? void 0 : result.error);
       }
 
@@ -17008,7 +17008,10 @@
         _classPrivateFieldLooseBase(this, _account)[_account].token = token;
       }
 
-      this.createCustomIdIfValid(config === null || config === void 0 ? void 0 : config.customId);
+      if (config === null || config === void 0 ? void 0 : config.customId) {
+        this.createCustomIdIfValid(config === null || config === void 0 ? void 0 : config.customId);
+      }
+
       const currLocation = location.href;
       const urlParams = getURLParams(currLocation.toLowerCase()); // eslint-disable-next-line eqeqeq
 
