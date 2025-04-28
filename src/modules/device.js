@@ -9,7 +9,6 @@ export default class DeviceManager {
   constructor ({ logger, customId }) {
     this.#logger = logger
     this.gcookie = this.getGuid() || customId
-    console.log('this.gcookie', this.gcookie)
   }
 
   getGuid () {

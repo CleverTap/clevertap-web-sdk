@@ -660,7 +660,7 @@ export default class CleverTap {
     const result = validateCustomCleverTapID(customId)
 
     /* Only add Custom Id if no existing id is present */
-    if (!this.#device.gcookie) {
+    if (this.#device.gcookie) {
       return
     }
 
