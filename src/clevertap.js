@@ -108,7 +108,7 @@ export default class CleverTap {
     const result = validateCustomCleverTapID(clevertap?.config?.customId)
 
     if (!result.isValid && clevertap?.config?.customId) {
-      this.#logger.error(result?.error)
+      this.#logger.error(result.error)
     }
 
     this.#device = new DeviceManager({ logger: this.#logger, customId: result?.isValid ? result?.sanitizedId : null })
@@ -658,6 +658,10 @@ export default class CleverTap {
 
   createCustomIdIfValid (customId) {
     const result = validateCustomCleverTapID(customId)
+
+    if (!result.isValid) {
+      this.#logger.error(result.error)
+    }
 
     /* Only add Custom Id if no existing id is present */
     if (this.#device.gcookie) {

@@ -16291,7 +16291,7 @@
       const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
 
       if (!result.isValid && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId)) {
-        _classPrivateFieldLooseBase(this, _logger)[_logger].error(result === null || result === void 0 ? void 0 : result.error);
+        _classPrivateFieldLooseBase(this, _logger)[_logger].error(result.error);
       }
 
       _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
@@ -16942,7 +16942,12 @@
 
     createCustomIdIfValid(customId) {
       const result = validateCustomCleverTapID(customId);
+
+      if (!result.isValid) {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].error(result.error);
+      }
       /* Only add Custom Id if no existing id is present */
+
 
       if (_classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
         return;
