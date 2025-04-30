@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.14.5] 28th Apr, 2025
+## [1.15.0] 30th Apr, 2025
 - Added Clevertap Custom Id Support
 - Added Public API `getAllQualifiedCampaignDetails` for debugging purpose
 
