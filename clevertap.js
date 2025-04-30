@@ -152,6 +152,7 @@
   const CHARGED_ID = 'Charged ID';
   const CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID';
   const GCOOKIE_NAME = 'WZRK_G';
+  const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const KCOOKIE_NAME = 'WZRK_K';
   const CAMP_COOKIE_NAME = 'WZRK_CAMP';
   const CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
@@ -218,6 +219,7 @@
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
+  const CUSTOM_CT_ID_PREFIX = '_w_';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -7764,7 +7766,8 @@
   class DeviceManager {
     constructor(_ref) {
       let {
-        logger
+        logger,
+        customId
       } = _ref;
       Object.defineProperty(this, _logger$9, {
         writable: true,
@@ -7772,7 +7775,7 @@
       });
       this.gcookie = void 0;
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
-      this.gcookie = this.getGuid();
+      this.gcookie = this.getGuid() || customId;
     }
 
     getGuid() {
@@ -10067,7 +10070,7 @@
       });
       this.config = config;
       this.message = message;
-      this.renderMessage(message);
+      message && this.renderMessage(message);
     }
 
     get pivotId() {
@@ -11555,6 +11558,23 @@
     targetEl.appendChild(newScript);
     script.remove();
   }
+  function addCampaignToLocalStorage(campaign) {
+    let region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'eu1';
+    let accountId = arguments.length > 2 ? arguments[2] : undefined;
+    const campaignId = campaign.wzrk_id.split('_')[0];
+    const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
+    const enrichedCampaign = { ...campaign,
+      url: dashboardUrl
+    };
+    const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
+    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
+
+    if (!isDuplicate) {
+      const updatedCampaigns = [...existingCampaigns, enrichedCampaign];
+      StorageManager.saveToLSorCookie(QUALIFIED_CAMPAIGNS, encodeURIComponent(JSON.stringify(updatedCampaigns)));
+    }
+  }
 
   let logger$1 = null;
   const handleActionMode = (_logger, accountId) => {
@@ -11595,7 +11615,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.14.4';
+            const sdkVersion = '1.14.5';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -12603,6 +12623,67 @@
 
     return result;
   };
+  /**
+   * Validates and sanitizes a custom CleverTap ID based on platform rules.
+   *
+   * Rules:
+   * - Must be between 1 and 64 characters in length.
+   * - Allowed characters: A-Z, a-z, 0-9, (, ), !, :, @, $, _, -
+   * - Automatically lowercases the ID.
+   *
+   * @param {string} id - The custom CleverTap ID to validate.
+   * @returns {{ isValid: boolean, error?: string, sanitizedId?: string }} - Validation result.
+   */
+
+  function validateCustomCleverTapID(id) {
+    if (typeof id !== 'string') {
+      return {
+        isValid: false,
+        error: 'ID must be a string.'
+      };
+    }
+
+    const lowercaseId = id.toLowerCase();
+    const length = lowercaseId.length;
+
+    if (length < 1 || length > 64) {
+      return {
+        isValid: false,
+        error: 'ID must be between 1 and 64 characters.'
+      };
+    }
+
+    const allowedPattern = /^[a-z0-9()!:@$_-]+$/;
+
+    if (!allowedPattern.test(lowercaseId)) {
+      return {
+        isValid: false,
+        error: 'ID contains invalid characters. Only A-Z, a-z, 0-9, (, ), !, :, @, $, _, - are allowed.'
+      };
+    }
+
+    return {
+      isValid: true,
+      sanitizedId: addWebPrefix(lowercaseId)
+    };
+  }
+  /**
+   * Adds a `_w_` prefix to a sanitized CleverTap ID for web.
+   *
+   * - Converts the ID to lowercase.
+   * - Does not validate the characters or length — assumes the ID is already valid.
+   *
+   * @param {string} id - The custom CleverTap ID.
+   * @returns {string} - The prefixed and lowercased CleverTap ID.
+   */
+
+  function addWebPrefix(id) {
+    if (typeof id !== 'string') {
+      throw new Error('ID must be a string');
+    }
+
+    return "".concat(CUSTOM_CT_ID_PREFIX).concat(id.toLowerCase());
+  }
 
   var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
 
@@ -13818,12 +13899,14 @@
       device,
       session,
       request,
-      logger
+      logger,
+      region
     } = _ref;
     const _device = device;
     const _session = session;
     const _request = request;
     const _logger = logger;
+    const _region = region;
     let _wizCounter = 0; // Campaign House keeping
 
     const doCampHouseKeeping = targetingMsgJson => {
@@ -14700,6 +14783,7 @@
       };
 
       for (let index = 0; index < sortedCampaigns.length; index++) {
+        addCampaignToLocalStorage(sortedCampaigns[index], _region, msg.arp.id);
         const targetNotif = sortedCampaigns[index];
 
         if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
@@ -14788,6 +14872,8 @@
         const msgArr = [];
 
         for (let index = 0; index < msg.inbox_notifs.length; index++) {
+          addCampaignToLocalStorage(msg.inbox_notifs[index], _region, msg.arp.id);
+
           if (doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
             msgArr.push(msg.inbox_notifs[index]);
           }
@@ -15254,7 +15340,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.14.4',
+        lib: 'web-sdk-v1.14.5',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -16111,7 +16197,7 @@
     }
 
     constructor() {
-      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$account6;
+      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$account6;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
@@ -16200,9 +16286,17 @@
 
       _classPrivateFieldLooseBase(this, _logger)[_logger] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
-      encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id;
+      encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id; // Custom Guid will be set here
+
+      const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
+
+      if (!result.isValid && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId)) {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].error(result === null || result === void 0 ? void 0 : result.error);
+      }
+
       _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
-        logger: _classPrivateFieldLooseBase(this, _logger)[_logger]
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
@@ -16761,7 +16855,8 @@
           device: _classPrivateFieldLooseBase(this, _device)[_device],
           session: _classPrivateFieldLooseBase(this, _session)[_session],
           request: _classPrivateFieldLooseBase(this, _request)[_request],
-          logger: _classPrivateFieldLooseBase(this, _logger)[_logger]
+          logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+          region: _classPrivateFieldLooseBase(this, _account)[_account].region
         });
       };
 
@@ -16843,14 +16938,34 @@
         StorageManager.saveToLSorCookie(ACCOUNT_ID, (_clevertap$account7 = clevertap.account) === null || _clevertap$account7 === void 0 ? void 0 : _clevertap$account7[0].id);
         this.init();
       }
-    } // starts here
+    }
 
+    createCustomIdIfValid(customId) {
+      const result = validateCustomCleverTapID(customId);
+      /* Only add Custom Id if no existing id is present */
+
+      if (_classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
+        return;
+      }
+
+      if (result.isValid) {
+        _classPrivateFieldLooseBase(this, _device)[_device].gcookie = result === null || result === void 0 ? void 0 : result.sanitizedId;
+        StorageManager.saveToLSorCookie(GCOOKIE_NAME, result === null || result === void 0 ? void 0 : result.sanitizedId);
+
+        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('CT Initialized with customId:: ' + (result === null || result === void 0 ? void 0 : result.sanitizedId));
+      } else {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].error('Invalid customId');
+      }
+    }
 
     init(accountId, region, targetDomain, token) {
-      let antiFlicker = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
+      let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
+        antiFlicker: {},
+        customId: null
+      };
 
-      if (Object.keys(antiFlicker).length > 0) {
-        addAntiFlicker(antiFlicker);
+      if (Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
+        addAntiFlicker(config.antiFlicker);
       }
 
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
@@ -16891,6 +17006,10 @@
 
       if (token) {
         _classPrivateFieldLooseBase(this, _account)[_account].token = token;
+      }
+
+      if (config === null || config === void 0 ? void 0 : config.customId) {
+        this.createCustomIdIfValid(config === null || config === void 0 ? void 0 : config.customId);
       }
 
       const currLocation = location.href;
@@ -17065,7 +17184,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.14.4';
+      return 'web-sdk-v1.14.5';
     }
 
     defineVariable(name, defaultValue) {
@@ -17113,6 +17232,16 @@
 
     addOneTimeVariablesChangedCallback(callback) {
       _classPrivateFieldLooseBase(this, _variableStore)[_variableStore].addOneTimeVariablesChangedCallback(callback);
+    }
+    /*
+       This function is used for debugging and getting the details of all the campaigns
+       that were qualified and rendered for the current user
+    */
+
+
+    getAllQualifiedCampaignDetails() {
+      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
+      return existingCampaign;
     }
 
   }
