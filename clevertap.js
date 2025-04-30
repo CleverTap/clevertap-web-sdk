@@ -17009,7 +17009,7 @@
       }
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
-        this.createCustomIdIfValid(config === null || config === void 0 ? void 0 : config.customId);
+        this.createCustomIdIfValid(config.customId);
       }
 
       const currLocation = location.href;

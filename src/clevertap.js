@@ -710,7 +710,7 @@ export default class CleverTap {
       this.#account.token = token
     }
     if (config?.customId) {
-      this.createCustomIdIfValid(config?.customId)
+      this.createCustomIdIfValid(config.customId)
     }
 
     const currLocation = location.href
