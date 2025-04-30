@@ -16290,7 +16290,7 @@
 
       const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
 
-      if (!(result === null || result === void 0 ? void 0 : result.isValid) && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId)) {
+      if (!result.isValid && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId)) {
         _classPrivateFieldLooseBase(this, _logger)[_logger].error(result === null || result === void 0 ? void 0 : result.error);
       }
 
@@ -16948,7 +16948,7 @@
         return;
       }
 
-      if (result === null || result === void 0 ? void 0 : result.isValid) {
+      if (result.isValid) {
         _classPrivateFieldLooseBase(this, _device)[_device].gcookie = result === null || result === void 0 ? void 0 : result.sanitizedId;
         StorageManager.saveToLSorCookie(GCOOKIE_NAME, result === null || result === void 0 ? void 0 : result.sanitizedId);
 

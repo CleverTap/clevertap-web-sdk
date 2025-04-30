@@ -107,7 +107,7 @@ export default class CleverTap {
 
     const result = validateCustomCleverTapID(clevertap?.config?.customId)
 
-    if (!result?.isValid && clevertap?.config?.customId) {
+    if (!result.isValid && clevertap?.config?.customId) {
       this.#logger.error(result?.error)
     }
 
@@ -664,7 +664,7 @@ export default class CleverTap {
       return
     }
 
-    if (result?.isValid) {
+    if (result.isValid) {
       this.#device.gcookie = result?.sanitizedId
       StorageManager.saveToLSorCookie(GCOOKIE_NAME, result?.sanitizedId)
       this.#logger.debug('CT Initialized with customId:: ' + result?.sanitizedId)
