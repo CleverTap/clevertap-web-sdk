@@ -6,6 +6,7 @@ export const CLEAR = 'clear'
 export const CHARGED_ID = 'Charged ID'
 export const CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID'
 export const GCOOKIE_NAME = 'WZRK_G'
+export const QUALIFIED_CAMPAIGNS = 'WZRK_QC'
 export const KCOOKIE_NAME = 'WZRK_K'
 export const CAMP_COOKIE_NAME = 'WZRK_CAMP'
 export const CAMP_COOKIE_G = 'WZRK_CAMP_G'// cookie for storing campaign details against guid
@@ -68,6 +69,7 @@ export const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper'
 export const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper'
 export const POPUP_LOADING = 'WZRK_POPUP_LOADING'
 export const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview'
+export const CUSTOM_CT_ID_PREFIX = '_w_'
 
 export const WEB_NATIVE_TEMPLATES = {
   KV_PAIR: 1,
