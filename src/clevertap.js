@@ -33,7 +33,9 @@ import {
   TIMER_FOR_NOTIF_BADGE_UPDATE,
   ACCOUNT_ID,
   APPLICATION_SERVER_KEY_RECEIVED,
-  VARIABLES
+  VARIABLES,
+  GCOOKIE_NAME,
+  QUALIFIED_CAMPAIGNS
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -49,7 +51,7 @@ import { addAntiFlicker, handleActionMode } from './modules/visualBuilder/pageBu
 import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
-import { reconstructNestedObject } from './util/helpers'
+import { reconstructNestedObject, validateCustomCleverTapID } from './util/helpers'
 
 export default class CleverTap {
   #logger
@@ -101,7 +103,15 @@ export default class CleverTap {
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
     encryption.key = clevertap.account?.[0].id
-    this.#device = new DeviceManager({ logger: this.#logger })
+    // Custom Guid will be set here
+
+    const result = validateCustomCleverTapID(clevertap?.config?.customId)
+
+    if (!result.isValid && clevertap?.config?.customId) {
+      this.#logger.error(result.error)
+    }
+
+    this.#device = new DeviceManager({ logger: this.#logger, customId: result?.isValid ? result?.sanitizedId : null })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#session = new SessionManager({
@@ -581,7 +591,8 @@ export default class CleverTap {
         device: this.#device,
         session: this.#session,
         request: this.#request,
-        logger: this.#logger
+        logger: this.#logger,
+        region: this.#account.region
       })
     }
     api.setEnum = (enumVal) => {
@@ -645,10 +656,30 @@ export default class CleverTap {
     }
   }
 
-  // starts here
-  init (accountId, region, targetDomain, token, antiFlicker = {}) {
-    if (Object.keys(antiFlicker).length > 0) {
-      addAntiFlicker(antiFlicker)
+  createCustomIdIfValid (customId) {
+    const result = validateCustomCleverTapID(customId)
+
+    if (!result.isValid) {
+      this.#logger.error(result.error)
+    }
+
+    /* Only add Custom Id if no existing id is present */
+    if (this.#device.gcookie) {
+      return
+    }
+
+    if (result.isValid) {
+      this.#device.gcookie = result?.sanitizedId
+      StorageManager.saveToLSorCookie(GCOOKIE_NAME, result?.sanitizedId)
+      this.#logger.debug('CT Initialized with customId:: ' + result?.sanitizedId)
+    } else {
+      this.#logger.error('Invalid customId')
+    }
+  }
+
+  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null }) {
+    if (Object.keys(config?.antiFlicker).length > 0) {
+      addAntiFlicker(config.antiFlicker)
     }
     if (this.#onloadcalled === 1) {
       // already initailsed
@@ -681,6 +712,9 @@ export default class CleverTap {
     }
     if (token) {
       this.#account.token = token
+    }
+    if (config?.customId) {
+      this.createCustomIdIfValid(config.customId)
     }
 
     const currLocation = location.href
@@ -1001,5 +1035,14 @@ export default class CleverTap {
 
   addOneTimeVariablesChangedCallback (callback) {
     this.#variableStore.addOneTimeVariablesChangedCallback(callback)
+  }
+
+  /*
+     This function is used for debugging and getting the details of all the campaigns
+     that were qualified and rendered for the current user
+  */
+  getAllQualifiedCampaignDetails () {
+    const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
+    return existingCampaign
   }
 }
