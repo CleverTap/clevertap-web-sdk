@@ -16969,7 +16969,7 @@
         customId: null
       };
 
-      if (Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
+      if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
         addAntiFlicker(config.antiFlicker);
       }
 

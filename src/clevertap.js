@@ -678,7 +678,7 @@ export default class CleverTap {
   }
 
   init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null }) {
-    if (Object.keys(config?.antiFlicker).length > 0) {
+    if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
     }
     if (this.#onloadcalled === 1) {
