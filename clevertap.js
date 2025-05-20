@@ -11559,26 +11559,28 @@
     script.remove();
   }
   function addCampaignToLocalStorage(campaign) {
+    var _campaign$display3;
+
     let region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'eu1';
     let accountId = arguments.length > 2 ? arguments[2] : undefined;
-    let logger = arguments.length > 3 ? arguments[3] : undefined;
 
-    try {
-      const campaignId = campaign.wzrk_id.split('_')[0];
-      const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
-      const enrichedCampaign = { ...campaign,
-        url: dashboardUrl
-      };
-      const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
-      const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
-      const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
+    /* No Need to store campaigns in local storage in preview mode */
+    if ((campaign === null || campaign === void 0 ? void 0 : (_campaign$display3 = campaign.display) === null || _campaign$display3 === void 0 ? void 0 : _campaign$display3.preview) === true) {
+      return;
+    }
 
-      if (!isDuplicate) {
-        const updatedCampaigns = [...existingCampaigns, enrichedCampaign];
-        StorageManager.saveToLSorCookie(QUALIFIED_CAMPAIGNS, encodeURIComponent(JSON.stringify(updatedCampaigns)));
-      }
-    } catch (e) {
-      logger.debug('error in addCampaignToLocalStorage :: ' + JSON.stringify(e));
+    const campaignId = campaign.wzrk_id.split('_')[0];
+    const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
+    const enrichedCampaign = { ...campaign,
+      url: dashboardUrl
+    };
+    const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
+    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
+
+    if (!isDuplicate) {
+      const updatedCampaigns = [...existingCampaigns, enrichedCampaign];
+      StorageManager.saveToLSorCookie(QUALIFIED_CAMPAIGNS, encodeURIComponent(JSON.stringify(updatedCampaigns)));
     }
   }
 
@@ -14791,7 +14793,7 @@
       for (let index = 0; index < sortedCampaigns.length; index++) {
         var _msg$arp;
 
-        addCampaignToLocalStorage(sortedCampaigns[index], _region, msg === null || msg === void 0 ? void 0 : (_msg$arp = msg.arp) === null || _msg$arp === void 0 ? void 0 : _msg$arp.id, _logger);
+        addCampaignToLocalStorage(sortedCampaigns[index], _region, msg === null || msg === void 0 ? void 0 : (_msg$arp = msg.arp) === null || _msg$arp === void 0 ? void 0 : _msg$arp.id);
         const targetNotif = sortedCampaigns[index];
 
         if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
@@ -14882,7 +14884,7 @@
         for (let index = 0; index < msg.inbox_notifs.length; index++) {
           var _msg$arp2;
 
-          addCampaignToLocalStorage(msg.inbox_notifs[index], _region, msg === null || msg === void 0 ? void 0 : (_msg$arp2 = msg.arp) === null || _msg$arp2 === void 0 ? void 0 : _msg$arp2.id, _logger);
+          addCampaignToLocalStorage(msg.inbox_notifs[index], _region, msg === null || msg === void 0 ? void 0 : (_msg$arp2 = msg.arp) === null || _msg$arp2 === void 0 ? void 0 : _msg$arp2.id);
 
           if (doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
             msgArr.push(msg.inbox_notifs[index]);

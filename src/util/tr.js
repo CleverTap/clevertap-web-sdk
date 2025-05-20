@@ -846,7 +846,7 @@ const _tr = (msg, {
     }
 
     for (let index = 0; index < sortedCampaigns.length; index++) {
-      addCampaignToLocalStorage(sortedCampaigns[index], _region, msg?.arp?.id, _logger)
+      addCampaignToLocalStorage(sortedCampaigns[index], _region, msg?.arp?.id)
 
       const targetNotif = sortedCampaigns[index]
 
@@ -932,7 +932,7 @@ const _tr = (msg, {
     if (msg.inbox_notifs) {
       const msgArr = []
       for (let index = 0; index < msg.inbox_notifs.length; index++) {
-        addCampaignToLocalStorage(msg.inbox_notifs[index], _region, msg?.arp?.id, _logger)
+        addCampaignToLocalStorage(msg.inbox_notifs[index], _region, msg?.arp?.id)
         if (doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
           msgArr.push(msg.inbox_notifs[index])
         }
