@@ -11561,18 +11561,24 @@
   function addCampaignToLocalStorage(campaign) {
     let region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'eu1';
     let accountId = arguments.length > 2 ? arguments[2] : undefined;
-    const campaignId = campaign.wzrk_id.split('_')[0];
-    const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
-    const enrichedCampaign = { ...campaign,
-      url: dashboardUrl
-    };
-    const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
-    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
-    const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
+    let logger = arguments.length > 3 ? arguments[3] : undefined;
 
-    if (!isDuplicate) {
-      const updatedCampaigns = [...existingCampaigns, enrichedCampaign];
-      StorageManager.saveToLSorCookie(QUALIFIED_CAMPAIGNS, encodeURIComponent(JSON.stringify(updatedCampaigns)));
+    try {
+      const campaignId = campaign.wzrk_id.split('_')[0];
+      const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
+      const enrichedCampaign = { ...campaign,
+        url: dashboardUrl
+      };
+      const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
+      const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+      const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
+
+      if (!isDuplicate) {
+        const updatedCampaigns = [...existingCampaigns, enrichedCampaign];
+        StorageManager.saveToLSorCookie(QUALIFIED_CAMPAIGNS, encodeURIComponent(JSON.stringify(updatedCampaigns)));
+      }
+    } catch (e) {
+      logger.debug('error in addCampaignToLocalStorage :: ' + JSON.stringify(e));
     }
   }
 
@@ -11615,7 +11621,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.15.0';
+            const sdkVersion = '1.15.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -14783,7 +14789,9 @@
       };
 
       for (let index = 0; index < sortedCampaigns.length; index++) {
-        addCampaignToLocalStorage(sortedCampaigns[index], _region, msg.arp.id);
+        var _msg$arp;
+
+        addCampaignToLocalStorage(sortedCampaigns[index], _region, msg === null || msg === void 0 ? void 0 : (_msg$arp = msg.arp) === null || _msg$arp === void 0 ? void 0 : _msg$arp.id, _logger);
         const targetNotif = sortedCampaigns[index];
 
         if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
@@ -14872,7 +14880,9 @@
         const msgArr = [];
 
         for (let index = 0; index < msg.inbox_notifs.length; index++) {
-          addCampaignToLocalStorage(msg.inbox_notifs[index], _region, msg.arp.id);
+          var _msg$arp2;
+
+          addCampaignToLocalStorage(msg.inbox_notifs[index], _region, msg === null || msg === void 0 ? void 0 : (_msg$arp2 = msg.arp) === null || _msg$arp2 === void 0 ? void 0 : _msg$arp2.id, _logger);
 
           if (doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
             msgArr.push(msg.inbox_notifs[index]);
@@ -15340,7 +15350,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.15.0',
+        lib: 'web-sdk-v1.15.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17189,7 +17199,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.15.0';
+      return 'web-sdk-v1.15.1';
     }
 
     defineVariable(name, defaultValue) {
