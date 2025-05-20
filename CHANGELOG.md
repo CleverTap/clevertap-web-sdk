@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.15.1] 30th Apr, 2025
+- Bug fix for Webpopup Preview
+
 ## [1.15.0] 30th Apr, 2025
 - Added Clevertap Custom Id Support
 - Added Public API `getAllQualifiedCampaignDetails` for debugging purpose
