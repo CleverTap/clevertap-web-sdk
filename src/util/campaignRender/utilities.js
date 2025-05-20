@@ -353,25 +353,29 @@ export function addScriptTo (script, target = 'body') {
   script.remove()
 }
 
-export function addCampaignToLocalStorage (campaign, region = 'eu1', accountId) {
-  const campaignId = campaign.wzrk_id.split('_')[0]
-  const dashboardUrl = `https://${region}.dashboard.clevertap.com/${accountId}/campaigns/campaign/${campaignId}/report/stats`
+export function addCampaignToLocalStorage (campaign, region = 'eu1', accountId, logger) {
+  try {
+    const campaignId = campaign.wzrk_id.split('_')[0]
+    const dashboardUrl = `https://${region}.dashboard.clevertap.com/${accountId}/campaigns/campaign/${campaignId}/report/stats`
 
-  const enrichedCampaign = {
-    ...campaign,
-    url: dashboardUrl
-  }
+    const enrichedCampaign = {
+      ...campaign,
+      url: dashboardUrl
+    }
 
-  const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)
-  const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : []
+    const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)
+    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : []
 
-  const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id)
+    const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id)
 
-  if (!isDuplicate) {
-    const updatedCampaigns = [...existingCampaigns, enrichedCampaign]
-    StorageManager.saveToLSorCookie(
-      QUALIFIED_CAMPAIGNS,
-      encodeURIComponent(JSON.stringify(updatedCampaigns))
-    )
+    if (!isDuplicate) {
+      const updatedCampaigns = [...existingCampaigns, enrichedCampaign]
+      StorageManager.saveToLSorCookie(
+        QUALIFIED_CAMPAIGNS,
+        encodeURIComponent(JSON.stringify(updatedCampaigns))
+      )
+    }
+  } catch (e) {
+    logger.debug('error in addCampaignToLocalStorage :: ' + JSON.stringify(e))
   }
 }
