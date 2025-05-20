@@ -354,6 +354,11 @@ export function addScriptTo (script, target = 'body') {
 }
 
 export function addCampaignToLocalStorage (campaign, region = 'eu1', accountId) {
+  /* No Need to store campaigns in local storage in preview mode */
+  if (campaign?.display?.preview === true) {
+    return
+  }
+
   const campaignId = campaign.wzrk_id.split('_')[0]
   const dashboardUrl = `https://${region}.dashboard.clevertap.com/${accountId}/campaigns/campaign/${campaignId}/report/stats`
 
