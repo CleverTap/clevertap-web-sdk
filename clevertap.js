@@ -11623,7 +11623,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.15.1';
+            const sdkVersion = '1.15.2';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -11639,13 +11639,15 @@
           break;
       }
     }
-  }; // TODO: Add a guarding mechanism to skip postMessages from non trusted sources
+  };
 
   const handleMessageEvent = event => {
     if (event.data && isValidUrl(event.data.originUrl)) {
-      const msgOrigin = new URL(event.data.originUrl).origin;
+      const msgOrigin = new URL(event.data.originUrl).origin; // Visual Editor is opened from only dashboard, while preview can be opened from both dashboard & Visual Editor
+      // therefore adding check for self origin
+      // Visual Editor can only be opened in their domain not inside dashboard
 
-      if (!event.origin.includes(WVE_URL_ORIGIN.CLEVERTAP) && !event.origin.includes(window.location.origin) && !event.origin.includes(WVE_URL_ORIGIN.LOCAL) || event.origin !== msgOrigin) {
+      if (!event.origin.includes(WVE_URL_ORIGIN.CLEVERTAP) && !event.origin.includes(window.location.origin) || event.origin !== msgOrigin) {
         return;
       }
     } else {
@@ -12486,6 +12488,10 @@
   };
 
   function handleCustomHtmlPreviewPostMessageEvent(event, logger) {
+    if (!event.origin.includes(WVE_URL_ORIGIN.CLEVERTAP)) {
+      return;
+    }
+
     const eventData = JSON.parse(event.data);
     const inAppNotifs = eventData.inapp_notifs;
     const msgContent = inAppNotifs[0].msgContent;
@@ -13221,7 +13227,9 @@
 
     if (typeof navigator.serviceWorker === 'undefined') {
       return;
-    }
+    } // Used for Shopify Web Push mentioned here
+    // (https://wizrocket.atlassian.net/wiki/spaces/TAMKB/pages/1824325665/Implementing+Web+Push+in+Shopify+if+not+using+the+Shopify+App+approach)
+
 
     const isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
 
@@ -15352,7 +15360,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.15.1',
+        lib: 'web-sdk-v1.15.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17201,7 +17209,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.15.1';
+      return 'web-sdk-v1.15.2';
     }
 
     defineVariable(name, defaultValue) {
