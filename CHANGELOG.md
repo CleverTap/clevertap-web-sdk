@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.15.2] 22nd May, 2025
+- Added origin check in postMessage for solve XSS vulnerability
+
 ## [1.15.1] 20th May, 2025
 - Bug fix for Webpopup Preview
 
