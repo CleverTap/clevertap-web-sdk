@@ -426,6 +426,8 @@ export default class NotificationHandler extends Array {
       return
     }
 
+    // Used for Shopify Web Push mentioned here
+    // (https://wizrocket.atlassian.net/wiki/spaces/TAMKB/pages/1824325665/Implementing+Web+Push+in+Shopify+if+not+using+the+Shopify+App+approach)
     const isHTTP = httpsPopupPath != null && httpsIframePath != null
 
     // make sure the site is on https for chrome notifications
