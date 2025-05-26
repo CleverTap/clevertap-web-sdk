@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.15.2] 26th May, 2025
+## [1.15.3] 26th May, 2025
 - Fix for Exit Intent Issue
 
 ## [1.15.2] 22nd May, 2025
