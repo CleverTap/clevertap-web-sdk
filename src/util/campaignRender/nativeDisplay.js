@@ -116,7 +116,7 @@ export const handleJson = (targetingMsgJson) => {
 }
 
 function handleCustomHtmlPreviewPostMessageEvent (event, logger) {
-  if (!event.origin.includes(WVE_URL_ORIGIN.CLEVERTAP)) {
+  if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
     return
   }
   const eventData = JSON.parse(event.data)
