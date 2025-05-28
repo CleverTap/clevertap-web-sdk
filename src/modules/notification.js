@@ -17,7 +17,6 @@ import {
 import { setNotificationHandlerValues, processSoftPrompt } from './webPushPrompt/prompt'
 
 import { isChrome, isFirefox, isSafari } from '../util/helpers'
-import { WVE_URL_ORIGIN } from './visualBuilder/builder_constants'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -511,91 +510,35 @@ export default class NotificationHandler extends Array {
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
     }
 
-    if (isHTTP) {
-      // add the https iframe
-      const httpsIframe = document.createElement('iframe')
-      httpsIframe.setAttribute('style', 'display:none;')
-      httpsIframe.setAttribute('src', httpsIframePath)
-      document.body.appendChild(httpsIframe)
-      window.addEventListener('message', (event) => {
-        if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
-          return
-        }
-        if (event.data != null) {
-          let obj = {}
-          try {
-            obj = JSON.parse(event.data)
-          } catch (e) {
-            // not a call from our iframe
-            return
-          }
-          if (obj.state != null) {
-            if (obj.from === 'ct' && obj.state === 'not') {
-              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-                this.#logger.debug('Soft prompt wrapper is already loading or loaded')
-                return
-              }
+    if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+      this.#logger.debug('Soft prompt wrapper is already loading or loaded')
+      return
+    }
 
-              StorageManager.saveToLSorCookie(POPUP_LOADING, true)
-              this.#addWizAlertJS().onload = () => {
-                StorageManager.saveToLSorCookie(POPUP_LOADING, false)
-                window.wzrkPermissionPopup.wizAlert({
-                  title: titleText,
-                  body: bodyText,
-                  confirmButtonText: okButtonText,
-                  confirmButtonColor: okButtonColor,
-                  rejectButtonText: rejectButtonText
-                }, (enabled) => { // callback function
-                  if (enabled) {
-                    // the user accepted on the dialog box
-                    if (typeof okCallback === 'function') {
-                      okCallback()
-                    }
-                    // redirect to popup.html
-                    window.open(httpsPopupPath)
-                  } else {
-                    if (typeof rejectCallback === 'function') {
-                      rejectCallback()
-                    }
-                  }
-                  this.#removeWizAlertJS()
-                })
-              }
-            }
+    StorageManager.saveToLSorCookie(POPUP_LOADING, true)
+    this.#addWizAlertJS().onload = () => {
+      StorageManager.saveToLSorCookie(POPUP_LOADING, false)
+      // create our wizrocket popup
+      window.wzrkPermissionPopup.wizAlert({
+        title: titleText,
+        body: bodyText,
+        confirmButtonText: okButtonText,
+        confirmButtonColor: okButtonColor,
+        rejectButtonText: rejectButtonText
+      }, (enabled) => { // callback function
+        if (enabled) {
+          // the user accepted on the dialog box
+          if (typeof okCallback === 'function') {
+            okCallback()
+          }
+          this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
+        } else {
+          if (typeof rejectCallback === 'function') {
+            rejectCallback()
           }
         }
-      }, false)
-    } else {
-      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-        this.#logger.debug('Soft prompt wrapper is already loading or loaded')
-        return
-      }
-
-      StorageManager.saveToLSorCookie(POPUP_LOADING, true)
-      this.#addWizAlertJS().onload = () => {
-        StorageManager.saveToLSorCookie(POPUP_LOADING, false)
-        // create our wizrocket popup
-        window.wzrkPermissionPopup.wizAlert({
-          title: titleText,
-          body: bodyText,
-          confirmButtonText: okButtonText,
-          confirmButtonColor: okButtonColor,
-          rejectButtonText: rejectButtonText
-        }, (enabled) => { // callback function
-          if (enabled) {
-            // the user accepted on the dialog box
-            if (typeof okCallback === 'function') {
-              okCallback()
-            }
-            this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
-          } else {
-            if (typeof rejectCallback === 'function') {
-              rejectCallback()
-            }
-          }
-          this.#removeWizAlertJS()
-        })
-      }
+        this.#removeWizAlertJS()
+      })
     }
   }
 
