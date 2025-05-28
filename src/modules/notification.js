@@ -17,6 +17,7 @@ import {
 import { setNotificationHandlerValues, processSoftPrompt } from './webPushPrompt/prompt'
 
 import { isChrome, isFirefox, isSafari } from '../util/helpers'
+import { WVE_URL_ORIGIN } from './visualBuilder/builder_constants'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -517,6 +518,9 @@ export default class NotificationHandler extends Array {
       httpsIframe.setAttribute('src', httpsIframePath)
       document.body.appendChild(httpsIframe)
       window.addEventListener('message', (event) => {
+        if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+          return
+        }
         if (event.data != null) {
           let obj = {}
           try {
