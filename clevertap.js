@@ -11623,7 +11623,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.15.2';
+            const sdkVersion = '1.15.3';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -11643,11 +11643,10 @@
 
   const handleMessageEvent = event => {
     if (event.data && isValidUrl(event.data.originUrl)) {
-      const msgOrigin = new URL(event.data.originUrl).origin; // Visual Editor is opened from only dashboard, while preview can be opened from both dashboard & Visual Editor
+      // Visual Editor is opened from only dashboard, while preview can be opened from both dashboard & Visual Editor
       // therefore adding check for self origin
       // Visual Editor can only be opened in their domain not inside dashboard
-
-      if (!event.origin.includes(WVE_URL_ORIGIN.CLEVERTAP) && !event.origin.includes(window.location.origin) || event.origin !== msgOrigin) {
+      if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) && !event.origin.endsWith(window.location.origin)) {
         return;
       }
     } else {
@@ -12488,7 +12487,7 @@
   };
 
   function handleCustomHtmlPreviewPostMessageEvent(event, logger) {
-    if (!event.origin.includes(WVE_URL_ORIGIN.CLEVERTAP)) {
+    if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
       return;
     }
 
@@ -13328,6 +13327,10 @@
       httpsIframe.setAttribute('src', httpsIframePath);
       document.body.appendChild(httpsIframe);
       window.addEventListener('message', event => {
+        if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+          return;
+        }
+
         if (event.data != null) {
           let obj = {};
 
@@ -15360,7 +15363,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.15.2',
+        lib: 'web-sdk-v1.15.3',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17209,7 +17212,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.15.2';
+      return 'web-sdk-v1.15.3';
     }
 
     defineVariable(name, defaultValue) {
