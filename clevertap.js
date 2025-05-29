@@ -11643,11 +11643,10 @@
 
   const handleMessageEvent = event => {
     if (event.data && isValidUrl(event.data.originUrl)) {
-      const msgOrigin = new URL(event.data.originUrl).origin; // Visual Editor is opened from only dashboard, while preview can be opened from both dashboard & Visual Editor
+      // Visual Editor is opened from only dashboard, while preview can be opened from both dashboard & Visual Editor
       // therefore adding check for self origin
       // Visual Editor can only be opened in their domain not inside dashboard
-
-      if (!event.origin.includes(WVE_URL_ORIGIN.CLEVERTAP) && !event.origin.includes(window.location.origin) || event.origin !== msgOrigin) {
+      if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) && !event.origin.endsWith(window.location.origin)) {
         return;
       }
     } else {
@@ -12488,7 +12487,7 @@
   };
 
   function handleCustomHtmlPreviewPostMessageEvent(event, logger) {
-    if (!event.origin.includes(WVE_URL_ORIGIN.CLEVERTAP)) {
+    if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
       return;
     }
 
@@ -13321,101 +13320,41 @@
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
     }
 
-    if (isHTTP) {
-      // add the https iframe
-      const httpsIframe = document.createElement('iframe');
-      httpsIframe.setAttribute('style', 'display:none;');
-      httpsIframe.setAttribute('src', httpsIframePath);
-      document.body.appendChild(httpsIframe);
-      window.addEventListener('message', event => {
-        if (event.data != null) {
-          let obj = {};
+    if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
 
-          try {
-            obj = JSON.parse(event.data);
-          } catch (e) {
-            // not a call from our iframe
-            return;
+      return;
+    }
+
+    StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
+    _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
+      StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
+
+      window.wzrkPermissionPopup.wizAlert({
+        title: titleText,
+        body: bodyText,
+        confirmButtonText: okButtonText,
+        confirmButtonColor: okButtonColor,
+        rejectButtonText: rejectButtonText
+      }, enabled => {
+        // callback function
+        if (enabled) {
+          // the user accepted on the dialog box
+          if (typeof okCallback === 'function') {
+            okCallback();
           }
 
-          if (obj.state != null) {
-            if (obj.from === 'ct' && obj.state === 'not') {
-              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
-
-                return;
-              }
-
-              StorageManager.saveToLSorCookie(POPUP_LOADING, true);
-
-              _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-                StorageManager.saveToLSorCookie(POPUP_LOADING, false);
-                window.wzrkPermissionPopup.wizAlert({
-                  title: titleText,
-                  body: bodyText,
-                  confirmButtonText: okButtonText,
-                  confirmButtonColor: okButtonColor,
-                  rejectButtonText: rejectButtonText
-                }, enabled => {
-                  // callback function
-                  if (enabled) {
-                    // the user accepted on the dialog box
-                    if (typeof okCallback === 'function') {
-                      okCallback();
-                    } // redirect to popup.html
-
-
-                    window.open(httpsPopupPath);
-                  } else {
-                    if (typeof rejectCallback === 'function') {
-                      rejectCallback();
-                    }
-                  }
-
-                  _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-                });
-              };
-            }
+          this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        } else {
+          if (typeof rejectCallback === 'function') {
+            rejectCallback();
           }
         }
-      }, false);
-    } else {
-      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
 
-        return;
-      }
-
-      StorageManager.saveToLSorCookie(POPUP_LOADING, true);
-
-      _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-        StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
-
-        window.wzrkPermissionPopup.wizAlert({
-          title: titleText,
-          body: bodyText,
-          confirmButtonText: okButtonText,
-          confirmButtonColor: okButtonColor,
-          rejectButtonText: rejectButtonText
-        }, enabled => {
-          // callback function
-          if (enabled) {
-            // the user accepted on the dialog box
-            if (typeof okCallback === 'function') {
-              okCallback();
-            }
-
-            this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-          } else {
-            if (typeof rejectCallback === 'function') {
-              rejectCallback();
-            }
-          }
-
-          _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-        });
-      };
-    }
+        _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
+      });
+    };
   };
 
   const BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi40OTYyIDUuMjQzOTVDMTIuODM5MSA1LjAzMzE3IDEzLjI4NDcgNS4xNDY4OSAxMy40OTczIDUuNDg4NjdDMTMuNzIyMyA1Ljg1MDE4IDEzLjYwMDIgNi4zMjUxOCAxMy4yMzggNi41NDkwMkM3LjM5Mzk5IDEwLjE2MDYgMy41IDE2LjYyNTcgMy41IDI0LjAwMDNDMy41IDM1LjMyMjEgMTIuNjc4MiA0NC41MDAzIDI0IDQ0LjUwMDNDMjguMDA1NSA0NC41MDAzIDMxLjc0MjYgNDMuMzUxNSAzNC45IDQxLjM2NTVDMzUuMjYwOCA0MS4xMzg1IDM1Ljc0MTYgNDEuMjM4NiAzNS45NjY4IDQxLjYwMDZDMzYuMTc5MiA0MS45NDE5IDM2LjA4NSA0Mi4zOTExIDM1Ljc0NTIgNDIuNjA2QzMyLjM0NjggNDQuNzU1OSAyOC4zMTg3IDQ2LjAwMDMgMjQgNDYuMDAwM0MxMS44NDk3IDQ2LjAwMDMgMiAzNi4xNTA1IDIgMjQuMDAwM0MyIDE2LjA2NjkgNi4xOTkyMSA5LjExNDMyIDEyLjQ5NjIgNS4yNDM5NVpNMzguOCAzOS45MDAzQzM4LjggNDAuMzk3MyAzOC4zOTcxIDQwLjgwMDMgMzcuOSA0MC44MDAzQzM3LjQwMjkgNDAuODAwMyAzNyA0MC4zOTczIDM3IDM5LjkwMDNDMzcgMzkuNDAzMiAzNy40MDI5IDM5LjAwMDMgMzcuOSAzOS4wMDAzQzM4LjM5NzEgMzkuMDAwMyAzOC44IDM5LjQwMzIgMzguOCAzOS45MDAzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMkMyMi44OTU0IDEyIDIyIDEyLjg5NTQgMjIgMTRWMTQuMjUyQzE4LjU0OTUgMTUuMTQwMSAxNiAxOC4yNzIzIDE2IDIyVjI5LjVIMTUuNDc2OUMxNC42NjEyIDI5LjUgMTQgMzAuMTYxMiAxNCAzMC45NzY5VjMxLjAyMzFDMTQgMzEuODM4OCAxNC42NjEyIDMyLjUgMTUuNDc2OSAzMi41SDMyLjUyMzFDMzMuMzM4OCAzMi41IDM0IDMxLjgzODggMzQgMzEuMDIzMVYzMC45NzY5QzM0IDMwLjE2MTIgMzMuMzM4OCAyOS41IDMyLjUyMzEgMjkuNUgzMlYyMkMzMiAxOC4yNzIzIDI5LjQ1MDUgMTUuMTQwMSAyNiAxNC4yNTJWMTRDMjYgMTIuODk1NCAyNS4xMDQ2IDEyIDI0IDEyWk0yNiAzNFYzMy41SDIyVjM0QzIyIDM1LjEwNDYgMjIuODk1NCAzNiAyNCAzNkMyNS4xMDQ2IDM2IDI2IDM1LjEwNDYgMjYgMzRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
