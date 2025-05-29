@@ -11623,7 +11623,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.15.3';
+            const sdkVersion = '1.16.0';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -14383,7 +14383,7 @@
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
-            window.document.body.onmouseleave = showExitIntent;
+            window.document.onmouseleave = showExitIntent;
           } // delay
 
 
@@ -14748,7 +14748,7 @@
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
-          window.document.body.onmouseleave = showExitIntent;
+          window.document.onmouseleave = showExitIntent;
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
 
@@ -15299,7 +15299,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.15.3',
+        lib: 'web-sdk-v1.16.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17148,7 +17148,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.15.3';
+      return 'web-sdk-v1.16.0';
     }
 
     defineVariable(name, defaultValue) {
