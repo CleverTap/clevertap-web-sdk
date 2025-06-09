@@ -523,7 +523,7 @@ const _tr = (msg, {
         }
         if (displayObj.deliveryTrigger.isExitIntent) {
           exitintentObj = targetingMsgJson
-          window.document.body.onmouseleave = showExitIntent
+          window.document.onmouseleave = showExitIntent
         }
         // delay
         const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed
@@ -854,7 +854,7 @@ const _tr = (msg, {
         showFooterNotification(targetNotif)
       } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) { // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif
-        window.document.body.onmouseleave = showExitIntent
+        window.document.onmouseleave = showExitIntent
       } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) { // if display['wtarget_type']==2 then web native display
         /* Skip current campaign if we have already executed one with same CustomEvent and topic */
         if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif) &&
