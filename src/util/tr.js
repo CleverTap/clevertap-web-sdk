@@ -28,7 +28,7 @@ import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
 import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel, renderCustomHtml, handleJson } from './campaignRender/nativeDisplay'
-import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate, webNativeDisplayCampaignUtils } from './campaignRender/utilities'
+import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate, webNativeDisplayCampaignUtils, addCampaignToLocalStorage } from './campaignRender/utilities'
 import { renderPopUpImageOnly } from './campaignRender/webPopup'
 import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 
@@ -36,12 +36,15 @@ const _tr = (msg, {
   device,
   session,
   request,
-  logger
+  logger,
+  region
 }) => {
   const _device = device
   const _session = session
   const _request = request
   const _logger = logger
+  const _region = region
+
   let _wizCounter = 0
   // Campaign House keeping
   const doCampHouseKeeping = (targetingMsgJson) => {
@@ -520,7 +523,7 @@ const _tr = (msg, {
         }
         if (displayObj.deliveryTrigger.isExitIntent) {
           exitintentObj = targetingMsgJson
-          window.document.body.onmouseleave = showExitIntent
+          window.document.onmouseleave = showExitIntent
         }
         // delay
         const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed
@@ -843,13 +846,15 @@ const _tr = (msg, {
     }
 
     for (let index = 0; index < sortedCampaigns.length; index++) {
+      addCampaignToLocalStorage(sortedCampaigns[index], _region, msg?.arp?.id)
+
       const targetNotif = sortedCampaigns[index]
 
       if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
         showFooterNotification(targetNotif)
       } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) { // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif
-        window.document.body.onmouseleave = showExitIntent
+        window.document.onmouseleave = showExitIntent
       } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) { // if display['wtarget_type']==2 then web native display
         /* Skip current campaign if we have already executed one with same CustomEvent and topic */
         if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif) &&
@@ -899,7 +904,7 @@ const _tr = (msg, {
             arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
           }
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
-          renderVisualBuilder(targetNotif, false)
+          renderVisualBuilder(targetNotif, false, _logger)
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
           renderCustomHtml(targetNotif, _logger)
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
@@ -927,6 +932,7 @@ const _tr = (msg, {
     if (msg.inbox_notifs) {
       const msgArr = []
       for (let index = 0; index < msg.inbox_notifs.length; index++) {
+        addCampaignToLocalStorage(msg.inbox_notifs[index], _region, msg?.arp?.id)
         if (doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
           msgArr.push(msg.inbox_notifs[index])
         }

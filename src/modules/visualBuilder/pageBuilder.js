@@ -1,10 +1,13 @@
-import { CUSTOM_EVENT_KEYS, CUSTOM_EVENTS_CAMPAIGN_SOURCES } from '../../util/constants'
-import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_QUERY_PARAMS } from './builder_constants'
+import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_QUERY_PARAMS, WVE_URL_ORIGIN } from './builder_constants'
 import { updateFormData, updateElementCSS } from './dataUpdate'
+import { addScriptTo } from '../../util/campaignRender/utilities'
 
-export const handleActionMode = (logger, accountId) => {
+let logger = null
+
+export const handleActionMode = (_logger, accountId) => {
   const searchParams = new URLSearchParams(window.location.search)
   const ctType = searchParams.get('ctActionMode')
+  logger = _logger
 
   if (ctType) {
     const parentWindow = window.opener
@@ -44,11 +47,16 @@ export const handleActionMode = (logger, accountId) => {
   }
 }
 
-// TODO: Add a guarding mechanism to skip postMessages from non trusted sources
 const handleMessageEvent = (event) => {
   if (event.data && isValidUrl(event.data.originUrl)) {
-    const msgOrigin = new URL(event.data.originUrl).origin
-    if (event.origin !== msgOrigin) {
+    // Visual Editor is opened from only dashboard, while preview can be opened from both dashboard & Visual Editor
+    // therefore adding check for self origin
+    // Visual Editor can only be opened in their domain not inside dashboard
+
+    if (
+      !event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) &&
+      !event.origin.endsWith(window.location.origin)
+    ) {
       return
     }
   } else {
@@ -105,14 +113,13 @@ function onContentLoad (url, variant, details, personalisation) {
     container.style.position = 'relative' // Ensure relative positioning for absolute positioning of form
     container.style.display = 'flex'
     document.body.appendChild(container)
-    const overlayPath = OVERLAY_PATH
-    loadOverlayScript(overlayPath, url, variant, details, personalisation)
+    loadOverlayScript(OVERLAY_PATH, url, variant, details, personalisation)
       .then(() => {
-        console.log('Overlay script loaded successfully.')
+        logger.debug('Overlay script loaded successfully.')
         contentLoaded = true
       })
       .catch((error) => {
-        console.error('Error loading overlay script:', error)
+        logger.debug('Error loading overlay script:', error)
       })
     loadCSS()
   }
@@ -162,8 +169,12 @@ function loadOverlayScript (overlayPath, url, variant, details, personalisation)
  * Renders the visual builder.
  * @param {Object} targetingMsgJson - The point and click campaign JSON object.
  * @param {boolean} isPreview - Indicates if it's a preview.
+ * @param _logger - instance of logger class
  */
-export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
+  if (_logger) {
+    logger = _logger
+  }
   const insertedElements = []
   const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details
   let url = window.location.href
@@ -211,6 +222,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
           } else {
             element.outerHTML = selector.values.html
           }
+          executeScripts(selector.selector)
           break
         case 'json':
           dispatchJsonData(targetingMsgJson, selector.values, isPreview)
@@ -235,7 +247,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
         processElement(retryElement, selector)
         clearInterval(intervalId)
       } else if (++count >= 20) {
-        console.log(`No element present on DOM with selector '${selector}'.`)
+        logger.debug(`No element present on DOM with selector '${selector}'.`)
         clearInterval(intervalId)
       }
     }, 500)
@@ -289,7 +301,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview) => {
         processElement(insertedElement, selector)
         clearInterval(intervalId)
       } else if (++count >= 20) {
-        console.log(`No element present on DOM with selector '${sibling}'.`)
+        logger.debug(`No element present on DOM with selector '${sibling}'.`)
         clearInterval(intervalId)
       }
     }, 500)
@@ -334,11 +346,8 @@ function dispatchJsonData (targetingMsgJson, selector, isPreview = false) {
       inaObj.json = selector.json
     }
   }
-  const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-    detail: {
-      campaignDetails: inaObj, campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.VISUAL_BUILDER
-    }
-  })
+
+  const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', { detail: inaObj })
   document.dispatchEvent(kvPairsEvent)
 }
 
@@ -438,4 +447,24 @@ export function addAntiFlicker (antiFlicker) {
     observeUrlChange()
   })
   applyAntiFlicker(personalizedSelectors)
+}
+
+export function executeScripts (selector) {
+  try {
+    let newElement
+    if (selector.includes('-afterend-') || selector.includes('-beforebegin-')) {
+      // doing this because inserted elements saved selectors do not follow normal conventions
+      // they start with numbers ex. 0-beforebegin-div#titleContainer
+      newElement = document.querySelector(`[ct-selector="${selector}"]`)
+    } else {
+      newElement = document.querySelector(selector)
+    }
+    if (!newElement) return
+    const scripts = newElement.querySelectorAll('script')
+    scripts.forEach((script) => {
+      addScriptTo(script)
+    })
+  } catch (error) {
+    logger.debug('Error loading script', error)
+  }
 }

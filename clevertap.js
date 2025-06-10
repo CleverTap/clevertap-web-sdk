@@ -152,6 +152,7 @@
   const CHARGED_ID = 'Charged ID';
   const CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID';
   const GCOOKIE_NAME = 'WZRK_G';
+  const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const KCOOKIE_NAME = 'WZRK_K';
   const CAMP_COOKIE_NAME = 'WZRK_CAMP';
   const CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
@@ -218,6 +219,7 @@
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
+  const CUSTOM_CT_ID_PREFIX = '_w_';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -237,16 +239,12 @@
     FOOTER_NOTIFICATION: 0,
     FOOTER_NOTIFICATION_2: null
   };
-  const CUSTOM_EVENT_KEYS = {
-    WEB_NATIVE_DISPLAY: 'CT_web_native_display'
-  };
-  const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
-    KV_PAIR: 'KV_Pair',
-    JSON: 'JSON',
-    VISUAL_BUILDER: 'Visual_Builder'
-  };
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
+  const ACTION_TYPES = {
+    OPEN_LINK: 'url',
+    OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
+  };
 
   const isString = input => {
     return typeof input === 'string' || input instanceof String;
@@ -7769,7 +7767,8 @@
   class DeviceManager {
     constructor(_ref) {
       let {
-        logger
+        logger,
+        customId
       } = _ref;
       Object.defineProperty(this, _logger$9, {
         writable: true,
@@ -7777,7 +7776,7 @@
       });
       this.gcookie = void 0;
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
-      this.gcookie = this.getGuid();
+      this.gcookie = this.getGuid() || customId;
     }
 
     getGuid() {
@@ -10010,9 +10009,11 @@
       return this.target.display.onClickUrl;
     }
 
+    get onClickAction() {
+      return this.target.display.onClickAction;
+    }
+
     renderImageOnlyPopup() {
-      const campaignId = this.target.wzrk_id.split('_')[0];
-      const currentSessionId = this.session.sessionId;
       this.shadow.innerHTML = this.getImageOnlyPopupContent();
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
       this.container = this.shadowRoot.getElementById('container');
@@ -10021,6 +10022,8 @@
       this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container));
       this.resizeObserver.observe(this.popup);
       this.closeIcon.addEventListener('click', () => {
+        const campaignId = this.target.wzrk_id.split('_')[0];
+        const currentSessionId = this.session.sessionId;
         this.resizeObserver.unobserve(this.popup);
         document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
         this.remove();
@@ -10040,18 +10043,33 @@
           }
         }
       });
-      window.clevertap.renderNotificationViewed({
-        msgId: this.msgId,
-        pivotId: this.pivotId
-      });
+
+      if (!this.target.display.preview) {
+        window.clevertap.renderNotificationViewed({
+          msgId: this.msgId,
+          pivotId: this.pivotId
+        });
+      }
 
       if (this.onClickUrl) {
         this.popup.addEventListener('click', () => {
-          this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
-          window.clevertap.renderNotificationClicked({
-            msgId: this.msgId,
-            pivotId: this.pivotId
-          });
+          if (!this.target.display.preview) {
+            window.clevertap.renderNotificationClicked({
+              msgId: this.msgId,
+              pivotId: this.pivotId
+            });
+          }
+
+          switch (this.onClickAction) {
+            case ACTION_TYPES.OPEN_LINK_AND_CLOSE:
+              this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
+              this.closeIcon.click();
+              break;
+
+            case ACTION_TYPES.OPEN_LINK:
+            default:
+              this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
+          }
         });
       }
     }
@@ -10095,7 +10113,7 @@
       });
       this.config = config;
       this.message = message;
-      this.renderMessage(message);
+      message && this.renderMessage(message);
     }
 
     get pivotId() {
@@ -11025,12 +11043,6 @@
 
       const checkElementCondition = () => {
         const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-
-        if (!config.inboxSelector) {
-          logger.debug('Inbox selector is not configured');
-          return false;
-        }
-
         return document.getElementById(config.inboxSelector) && $ct.inbox === null;
       };
 
@@ -11041,6 +11053,13 @@
       let retryStarted = false; // Guard flag
 
       const startRetry = () => {
+        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+
+        if (!config.inboxSelector) {
+          logger.debug('Web Inbox Retry Skipped, Inbox selector is not configured');
+          return false;
+        }
+
         if (!retryStarted) {
           retryStarted = true;
           retryUntil(checkElementCondition, 500, 20).then(() => {
@@ -11209,6 +11228,10 @@
     PREVIEW: 'ctBuilderPreview',
     SDK_CHECK: 'ctBuilderSDKCheck'
   };
+  const WVE_URL_ORIGIN = {
+    CLEVERTAP: 'dashboard.clevertap.com',
+    LOCAL: 'localhost'
+  };
 
   const updateFormData = function (element, formStyle, payload) {
     let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
@@ -11270,16 +11293,352 @@
     }
   };
 
-  const handleActionMode = (logger, accountId) => {
+  const invokeExternalJs = (jsFunc, targetingMsgJson) => {
+    const func = window.parent[jsFunc];
+
+    if (typeof func === 'function') {
+      if (targetingMsgJson.display.kv != null) {
+        func(targetingMsgJson.display.kv);
+      } else {
+        func();
+      }
+    }
+  };
+  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
+    const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
+    return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
+  };
+  const staleDataUpdate = (staledata, campType) => {
+    const campObj = getCampaignObject();
+    const globalObj = campObj[campType].global;
+
+    if (globalObj != null && campType) {
+      for (const idx in staledata) {
+        if (staledata.hasOwnProperty(idx)) {
+          delete globalObj[staledata[idx]];
+
+          if (StorageManager.read(CAMP_COOKIE_G)) {
+            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+
+            if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
+              delete guidCampObj[guid][campType][staledata[idx]];
+              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
+            }
+          }
+        }
+      }
+    }
+
+    saveCampaignObject(campObj);
+  };
+  const mergeEventMap = newEvtMap => {
+    if ($ct.globalEventsMap == null) {
+      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
+
+      if ($ct.globalEventsMap == null) {
+        $ct.globalEventsMap = newEvtMap;
+        return;
+      }
+    }
+
+    for (const key in newEvtMap) {
+      if (newEvtMap.hasOwnProperty(key)) {
+        const oldEvtObj = $ct.globalEventsMap[key];
+        const newEvtObj = newEvtMap[key];
+
+        if ($ct.globalEventsMap[key] != null) {
+          if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
+            $ct.globalEventsMap[key] = newEvtObj;
+          }
+        } else {
+          $ct.globalEventsMap[key] = newEvtObj;
+        }
+      }
+    }
+  };
+  const incrementImpression = (targetingMsgJson, _request) => {
+    const data = {};
+    data.type = 'event';
+    data.evtName = NOTIFICATION_VIEWED;
+    data.evtData = {
+      [WZRK_ID]: targetingMsgJson.wzrk_id
+    };
+
+    if (targetingMsgJson.wzrk_pivot) {
+      data.evtData = { ...data.evtData,
+        wzrk_pivot: targetingMsgJson.wzrk_pivot
+      };
+    }
+
+    _request.processEvent(data);
+  };
+  const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session) => {
+    if (onClick !== '' && onClick != null) {
+      let ctaElement;
+      let jsCTAElements;
+
+      if (isLegacy) {
+        ctaElement = contentDiv;
+      } else if (contentDiv !== null) {
+        jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
+
+        if (jsCTAElements != null && jsCTAElements.length === 1) {
+          ctaElement = jsCTAElements[0];
+        }
+      }
+
+      const jsFunc = targetingMsgJson.display.jsFunc;
+      const isPreview = targetingMsgJson.display.preview;
+
+      if (isPreview == null) {
+        onClick += getCookieParams(_device, _session);
+      }
+
+      if (ctaElement != null) {
+        ctaElement.onclick = () => {
+          // invoke js function call
+          if (jsFunc != null) {
+            // track notification clicked event
+            if (isPreview == null) {
+              RequestDispatcher.fireRequest(onClick);
+            }
+
+            invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
+
+            closeIframe('-1', divId, _session.sessionId);
+          } else {
+            const rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
+            const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+
+            if (rValue === 'pushPrompt') {
+              if (!targetingMsgJson.display.preview) {
+                window.parent.clevertap.renderNotificationClicked({
+                  msgId: targetingMsgJson.wzrk_id,
+                  pivotId: targetingMsgJson.wzrk_pivot
+                });
+              } // Open Web Push Soft prompt
+
+
+              window.clevertap.notifications.push({
+                skipDialog: true
+              });
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else if (rValue === 'none') {
+              // Close notification
+              closeIframe(campaignId, divId, _session.sessionId);
+            } else {
+              // Will get the url to open
+              if (targetingMsgJson.display.window === 1) {
+                window.open(onClick, '_blank');
+
+                if (targetingMsgJson.display['close-popup']) {
+                  closeIframe(campaignId, divId, _session.sessionId);
+                }
+
+                if (!targetingMsgJson.display.preview) {
+                  window.parent.clevertap.renderNotificationClicked({
+                    msgId: targetingMsgJson.wzrk_id,
+                    pivotId: targetingMsgJson.wzrk_pivot
+                  });
+                }
+              } else {
+                window.location = onClick;
+              }
+            }
+          }
+        };
+      }
+    }
+  };
+  const getCookieParams = (_device, _session) => {
+    const gcookie = _device.getGuid();
+
+    const scookieObj = _session.getSessionCookieObject();
+
+    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
+  };
+  const webNativeDisplayCampaignUtils = {
+    /**
+     * Checks if a campaign triggers a custom event push based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to evaluate.
+     * @returns {boolean} - Returns true if the campaign pushes a custom event, otherwise false.
+     */
+    doesCampaignPushCustomEvent: campaign => {
+      var _campaign$msgContent, _campaign$msgContent2, _campaign$display, _campaign$display$det, _campaign$display$det2, _campaign$display$det3, _campaign$display$det4;
+
+      return [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent = campaign.msgContent) === null || _campaign$msgContent === void 0 ? void 0 : _campaign$msgContent.type) || (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent2 = campaign.msgContent) === null || _campaign$msgContent2 === void 0 ? void 0 : _campaign$msgContent2.type) === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display = campaign.display) === null || _campaign$display === void 0 ? void 0 : (_campaign$display$det = _campaign$display.details) === null || _campaign$display$det === void 0 ? void 0 : (_campaign$display$det2 = _campaign$display$det[0]) === null || _campaign$display$det2 === void 0 ? void 0 : (_campaign$display$det3 = _campaign$display$det2.selectorData) === null || _campaign$display$det3 === void 0 ? void 0 : (_campaign$display$det4 = _campaign$display$det3.map(s => {
+        var _s$values;
+
+        return s === null || s === void 0 ? void 0 : (_s$values = s.values) === null || _s$values === void 0 ? void 0 : _s$values.editor;
+      })) === null || _campaign$display$det4 === void 0 ? void 0 : _campaign$display$det4.includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON));
+    },
+
+    /**
+     * Determines if a campaign mutates the DOM node based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to evaluate.
+     * @returns {boolean} - Returns true if the campaign mutates the DOM node, otherwise false.
+     */
+    doesCampaignMutateDOMNode: campaign => {
+      var _campaign$msgContent3, _campaign$msgContent4, _campaign$display2, _campaign$display2$de, _campaign$display2$de2, _campaign$display2$de3;
+
+      return [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL, WEB_NATIVE_TEMPLATES.CUSTOM_HTML].includes(campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent3 = campaign.msgContent) === null || _campaign$msgContent3 === void 0 ? void 0 : _campaign$msgContent3.type) || WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === (campaign === null || campaign === void 0 ? void 0 : (_campaign$msgContent4 = campaign.msgContent) === null || _campaign$msgContent4 === void 0 ? void 0 : _campaign$msgContent4.type) && (campaign === null || campaign === void 0 ? void 0 : (_campaign$display2 = campaign.display) === null || _campaign$display2 === void 0 ? void 0 : (_campaign$display2$de = _campaign$display2.details) === null || _campaign$display2$de === void 0 ? void 0 : (_campaign$display2$de2 = _campaign$display2$de[0]) === null || _campaign$display2$de2 === void 0 ? void 0 : (_campaign$display2$de3 = _campaign$display2$de2.selectorData) === null || _campaign$display2$de3 === void 0 ? void 0 : _campaign$display2$de3.some(s => {
+        var _s$values2;
+
+        return [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML, WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s === null || s === void 0 ? void 0 : (_s$values2 = s.values) === null || _s$values2 === void 0 ? void 0 : _s$values2.editor);
+      }));
+    },
+
+    /**
+     * Sorts campaigns based on their priority in descending order.
+     *
+     * @param {Array<Object>} campaigns - The list of campaign objects.
+     * @returns {Array<Object>} - A new array of campaigns sorted by priority.
+     */
+    sortCampaignsByPriority: campaigns => {
+      return campaigns.sort((a, b) => b.priority - a.priority);
+    },
+
+    /**
+     * Retrieves the DOM nodes associated with a campaign based on its template type.
+     *
+     * @param {Object} campaign - The campaign object to extract nodes from.
+     * @returns {Array<string>} - An array of DOM node selectors or IDs associated with the campaign.
+     */
+    getCampaignNodes: campaign => {
+      var _display$details, _display$details$, _display$details$$sel, _display$details$$sel2;
+
+      const {
+        msgContent,
+        display
+      } = campaign;
+      const {
+        type
+      } = msgContent;
+
+      switch (type) {
+        case WEB_NATIVE_TEMPLATES.BANNER:
+        case WEB_NATIVE_TEMPLATES.CAROUSEL:
+          return [display === null || display === void 0 ? void 0 : display.divSelector];
+
+        case WEB_NATIVE_TEMPLATES.CUSTOM_HTML:
+          return [display === null || display === void 0 ? void 0 : display.divId];
+
+        case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+          return (display === null || display === void 0 ? void 0 : (_display$details = display.details) === null || _display$details === void 0 ? void 0 : (_display$details$ = _display$details[0]) === null || _display$details$ === void 0 ? void 0 : (_display$details$$sel = _display$details$.selectorData) === null || _display$details$$sel === void 0 ? void 0 : (_display$details$$sel2 = _display$details$$sel.filter(s => {
+            var _s$values3;
+
+            return (s === null || s === void 0 ? void 0 : (_s$values3 = s.values) === null || _s$values3 === void 0 ? void 0 : _s$values3.editor) === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML;
+          })) === null || _display$details$$sel2 === void 0 ? void 0 : _display$details$$sel2.map(s => s === null || s === void 0 ? void 0 : s.selector)) || [];
+
+        default:
+          return [];
+      }
+    },
+
+    /**
+     * Determines whether the current custom event campaign should be skipped based on existing executed targets.
+     *
+     * @param {Object} targetNotif - The current notification object containing campaign details.
+     * @param {ExecutedTargets} executedTargets - An object holding already executed custom events.
+     * @returns {boolean} - Returns true if the current custom event campaign should be skipped, false otherwise.
+    */
+    shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets) {
+      var _targetNotif$msgConte2, _currentSameTypeCampa, _targetNotif$display, _targetNotif$display$;
+
+      const currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => {
+        var _targetNotif$msgConte;
+
+        return customEvent.customEventType === (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte = targetNotif.msgContent) === null || _targetNotif$msgConte === void 0 ? void 0 : _targetNotif$msgConte.type);
+      });
+      let shouldSkip = false; // If KV Pair, check for topic and type
+      // if visual builder or JSON, just check for the type of event, because we do not have `topic`
+
+      if (currentSameTypeCampaigns === null || currentSameTypeCampaigns === void 0 ? void 0 : currentSameTypeCampaigns.length) {
+        switch (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte2 = targetNotif.msgContent) === null || _targetNotif$msgConte2 === void 0 ? void 0 : _targetNotif$msgConte2.type) {
+          case WEB_NATIVE_TEMPLATES.KV_PAIR:
+            if ((_currentSameTypeCampa = currentSameTypeCampaigns.map(c => c === null || c === void 0 ? void 0 : c.eventTopic)) === null || _currentSameTypeCampa === void 0 ? void 0 : _currentSameTypeCampa.includes(targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$display = targetNotif.display) === null || _targetNotif$display === void 0 ? void 0 : (_targetNotif$display$ = _targetNotif$display.kv) === null || _targetNotif$display$ === void 0 ? void 0 : _targetNotif$display$.topic)) {
+              shouldSkip = true;
+            }
+            break;
+
+          /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
+          and can we inform the user the type of event they will receive in the editor
+          */
+
+          /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
+
+          /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
+
+          /* So we can not use Separated Campaigns logic for it, Hence skipping */
+
+          case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
+          case WEB_NATIVE_TEMPLATES.JSON:
+            shouldSkip = true;
+            break;
+        }
+      }
+
+      return shouldSkip;
+    }
+
+  };
+  function addScriptTo(script) {
+    let target = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'body';
+    const targetEl = document.querySelector(target);
+    if (!targetEl) return;
+    const newScript = document.createElement('script');
+    newScript.textContent = script.textContent;
+    if (script.src) newScript.src = script.src;
+    newScript.async = script.async;
+    Array.from(script.attributes).forEach(attr => {
+      if (attr.name !== 'src' && attr.name !== 'async') {
+        newScript.setAttribute(attr.name, attr.value);
+      }
+    });
+    targetEl.appendChild(newScript);
+    script.remove();
+  }
+  function addCampaignToLocalStorage(campaign) {
+    var _campaign$display3;
+
+    let region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'eu1';
+    let accountId = arguments.length > 2 ? arguments[2] : undefined;
+
+    /* No Need to store campaigns in local storage in preview mode */
+    if ((campaign === null || campaign === void 0 ? void 0 : (_campaign$display3 = campaign.display) === null || _campaign$display3 === void 0 ? void 0 : _campaign$display3.preview) === true) {
+      return;
+    }
+
+    const campaignId = campaign.wzrk_id.split('_')[0];
+    const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
+    const enrichedCampaign = { ...campaign,
+      url: dashboardUrl
+    };
+    const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
+    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
+
+    if (!isDuplicate) {
+      const updatedCampaigns = [...existingCampaigns, enrichedCampaign];
+      StorageManager.saveToLSorCookie(QUALIFIED_CAMPAIGNS, encodeURIComponent(JSON.stringify(updatedCampaigns)));
+    }
+  }
+
+  let logger$1 = null;
+  const handleActionMode = (_logger, accountId) => {
     const searchParams = new URLSearchParams(window.location.search);
     const ctType = searchParams.get('ctActionMode');
+    logger$1 = _logger;
 
     if (ctType) {
       const parentWindow = window.opener;
 
       switch (ctType) {
         case WVE_QUERY_PARAMS.BUILDER:
-          logger.debug('open in visual builder mode');
+          logger$1.debug('open in visual builder mode');
           window.addEventListener('message', handleMessageEvent, false);
 
           if (parentWindow) {
@@ -11292,7 +11651,7 @@
           break;
 
         case WVE_QUERY_PARAMS.PREVIEW:
-          logger.debug('preview of visual editor');
+          logger$1.debug('preview of visual editor');
           window.addEventListener('message', handleMessageEvent, false);
 
           if (parentWindow) {
@@ -11306,8 +11665,8 @@
 
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
-            logger.debug('SDK version check');
-            const sdkVersion = '1.13.4';
+            logger$1.debug('SDK version check');
+            const sdkVersion = '1.15.4';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -11319,17 +11678,18 @@
           break;
 
         default:
-          logger.debug("unknown query param ".concat(ctType));
+          logger$1.debug("unknown query param ".concat(ctType));
           break;
       }
     }
-  }; // TODO: Add a guarding mechanism to skip postMessages from non trusted sources
+  };
 
   const handleMessageEvent = event => {
     if (event.data && isValidUrl(event.data.originUrl)) {
-      const msgOrigin = new URL(event.data.originUrl).origin;
-
-      if (event.origin !== msgOrigin) {
+      // Visual Editor is opened from only dashboard, while preview can be opened from both dashboard & Visual Editor
+      // therefore adding check for self origin
+      // Visual Editor can only be opened in their domain not inside dashboard
+      if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) && !event.origin.endsWith(window.location.origin)) {
         return;
       }
     } else {
@@ -11389,12 +11749,11 @@
 
       container.style.display = 'flex';
       document.body.appendChild(container);
-      const overlayPath = OVERLAY_PATH;
-      loadOverlayScript(overlayPath, url, variant, details, personalisation).then(() => {
-        console.log('Overlay script loaded successfully.');
+      loadOverlayScript(OVERLAY_PATH, url, variant, details, personalisation).then(() => {
+        logger$1.debug('Overlay script loaded successfully.');
         contentLoaded = true;
       }).catch(error => {
-        console.error('Error loading overlay script:', error);
+        logger$1.debug('Error loading overlay script:', error);
       });
       loadCSS();
     }
@@ -11455,10 +11814,15 @@
    * Renders the visual builder.
    * @param {Object} targetingMsgJson - The point and click campaign JSON object.
    * @param {boolean} isPreview - Indicates if it's a preview.
+   * @param _logger - instance of logger class
    */
 
 
-  const renderVisualBuilder = (targetingMsgJson, isPreview) => {
+  const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
+    if (_logger) {
+      logger$1 = _logger;
+    }
+
     const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let url = window.location.href;
@@ -11515,6 +11879,7 @@
               element.outerHTML = selector.values.html;
             }
 
+            executeScripts(selector.selector);
             break;
 
           case 'json':
@@ -11545,7 +11910,7 @@
           processElement(retryElement, selector);
           clearInterval(intervalId);
         } else if (++count >= 20) {
-          console.log("No element present on DOM with selector '".concat(selector, "'."));
+          logger$1.debug("No element present on DOM with selector '".concat(selector, "'."));
           clearInterval(intervalId);
         }
       }, 500);
@@ -11607,7 +11972,7 @@
           processElement(insertedElement, selector);
           clearInterval(intervalId);
         } else if (++count >= 20) {
-          console.log("No element present on DOM with selector '".concat(sibling, "'."));
+          logger$1.debug("No element present on DOM with selector '".concat(sibling, "'."));
           clearInterval(intervalId);
         }
       }, 500);
@@ -11664,11 +12029,8 @@
       }
     }
 
-    const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-      detail: {
-        campaignDetails: inaObj,
-        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.VISUAL_BUILDER
-      }
+    const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', {
+      detail: inaObj
     });
     document.dispatchEvent(kvPairsEvent);
   }
@@ -11780,6 +12142,27 @@
       observeUrlChange();
     });
     applyAntiFlicker(personalizedSelectors);
+  }
+  function executeScripts(selector) {
+    try {
+      let newElement;
+
+      if (selector.includes('-afterend-') || selector.includes('-beforebegin-')) {
+        // doing this because inserted elements saved selectors do not follow normal conventions
+        // they start with numbers ex. 0-beforebegin-div#titleContainer
+        newElement = document.querySelector("[ct-selector=\"".concat(selector, "\"]"));
+      } else {
+        newElement = document.querySelector(selector);
+      }
+
+      if (!newElement) return;
+      const scripts = newElement.querySelectorAll('script');
+      scripts.forEach(script => {
+        addScriptTo(script);
+      });
+    } catch (error) {
+      logger$1.debug('Error loading script', error);
+    }
   }
 
   class CTWebPersonalisationBanner extends HTMLElement {
@@ -12020,279 +12403,6 @@
 
   }
 
-  const invokeExternalJs = (jsFunc, targetingMsgJson) => {
-    const func = window.parent[jsFunc];
-
-    if (typeof func === 'function') {
-      if (targetingMsgJson.display.kv != null) {
-        func(targetingMsgJson.display.kv);
-      } else {
-        func();
-      }
-    }
-  };
-  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
-    const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
-    return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
-  };
-  const staleDataUpdate = (staledata, campType) => {
-    const campObj = getCampaignObject();
-    const globalObj = campObj[campType].global;
-
-    if (globalObj != null && campType) {
-      for (const idx in staledata) {
-        if (staledata.hasOwnProperty(idx)) {
-          delete globalObj[staledata[idx]];
-
-          if (StorageManager.read(CAMP_COOKIE_G)) {
-            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-
-            if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
-              delete guidCampObj[guid][campType][staledata[idx]];
-              StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
-            }
-          }
-        }
-      }
-    }
-
-    saveCampaignObject(campObj);
-  };
-  const mergeEventMap = newEvtMap => {
-    if ($ct.globalEventsMap == null) {
-      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
-
-      if ($ct.globalEventsMap == null) {
-        $ct.globalEventsMap = newEvtMap;
-        return;
-      }
-    }
-
-    for (const key in newEvtMap) {
-      if (newEvtMap.hasOwnProperty(key)) {
-        const oldEvtObj = $ct.globalEventsMap[key];
-        const newEvtObj = newEvtMap[key];
-
-        if ($ct.globalEventsMap[key] != null) {
-          if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
-            $ct.globalEventsMap[key] = newEvtObj;
-          }
-        } else {
-          $ct.globalEventsMap[key] = newEvtObj;
-        }
-      }
-    }
-  };
-  const incrementImpression = (targetingMsgJson, _request) => {
-    const data = {};
-    data.type = 'event';
-    data.evtName = NOTIFICATION_VIEWED;
-    data.evtData = {
-      [WZRK_ID]: targetingMsgJson.wzrk_id
-    };
-
-    if (targetingMsgJson.wzrk_pivot) {
-      data.evtData = { ...data.evtData,
-        wzrk_pivot: targetingMsgJson.wzrk_pivot
-      };
-    }
-
-    _request.processEvent(data);
-  };
-  const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session) => {
-    if (onClick !== '' && onClick != null) {
-      let ctaElement;
-      let jsCTAElements;
-
-      if (isLegacy) {
-        ctaElement = contentDiv;
-      } else if (contentDiv !== null) {
-        jsCTAElements = contentDiv.getElementsByClassName('jsCT_CTA');
-
-        if (jsCTAElements != null && jsCTAElements.length === 1) {
-          ctaElement = jsCTAElements[0];
-        }
-      }
-
-      const jsFunc = targetingMsgJson.display.jsFunc;
-      const isPreview = targetingMsgJson.display.preview;
-
-      if (isPreview == null) {
-        onClick += getCookieParams(_device, _session);
-      }
-
-      if (ctaElement != null) {
-        ctaElement.onclick = () => {
-          // invoke js function call
-          if (jsFunc != null) {
-            // track notification clicked event
-            if (isPreview == null) {
-              RequestDispatcher.fireRequest(onClick);
-            }
-
-            invokeExternalJs(jsFunc, targetingMsgJson); // close iframe. using -1 for no campaignId
-
-            closeIframe('-1', divId, _session.sessionId);
-          } else {
-            const rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
-            const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-
-            if (rValue === 'pushPrompt') {
-              if (!targetingMsgJson.display.preview) {
-                window.parent.clevertap.renderNotificationClicked({
-                  msgId: targetingMsgJson.wzrk_id,
-                  pivotId: targetingMsgJson.wzrk_pivot
-                });
-              } // Open Web Push Soft prompt
-
-
-              window.clevertap.notifications.push({
-                skipDialog: true
-              });
-              closeIframe(campaignId, divId, _session.sessionId);
-            } else if (rValue === 'none') {
-              // Close notification
-              closeIframe(campaignId, divId, _session.sessionId);
-            } else {
-              // Will get the url to open
-              if (targetingMsgJson.display.window === 1) {
-                window.open(onClick, '_blank');
-
-                if (targetingMsgJson.display['close-popup']) {
-                  closeIframe(campaignId, divId, _session.sessionId);
-                }
-
-                if (!targetingMsgJson.display.preview) {
-                  window.parent.clevertap.renderNotificationClicked({
-                    msgId: targetingMsgJson.wzrk_id,
-                    pivotId: targetingMsgJson.wzrk_pivot
-                  });
-                }
-              } else {
-                window.location = onClick;
-              }
-            }
-          }
-        };
-      }
-    }
-  };
-  const getCookieParams = (_device, _session) => {
-    const gcookie = _device.getGuid();
-
-    const scookieObj = _session.getSessionCookieObject();
-
-    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
-  };
-  const webNativeDisplayCampaignUtils = {
-    /**
-     * Checks if a campaign triggers a custom event push based on its template type.
-     *
-     * @param {Object} campaign - The campaign object to evaluate.
-     * @returns {boolean} - Returns true if the campaign pushes a custom event, otherwise false.
-     */
-    doesCampaignPushCustomEvent: campaign => {
-      return [WEB_NATIVE_TEMPLATES.KV_PAIR, WEB_NATIVE_TEMPLATES.JSON].includes(campaign.msgContent.type) || campaign.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER && campaign.display.details[0].selectorData.map(s => s.values.editor).includes(WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.JSON);
-    },
-
-    /**
-     * Determines if a campaign mutates the DOM node based on its template type.
-     *
-     * @param {Object} campaign - The campaign object to evaluate.
-     * @returns {boolean} - Returns true if the campaign mutates the DOM node, otherwise false.
-     */
-    doesCampaignMutateDOMNode: campaign => {
-      return [WEB_NATIVE_TEMPLATES.BANNER, WEB_NATIVE_TEMPLATES.CAROUSEL, WEB_NATIVE_TEMPLATES.CUSTOM_HTML].includes(campaign.msgContent.type) || WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === campaign.msgContent.type && campaign.display.details[0].selectorData.some(s => [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML, WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s.values.editor));
-    },
-
-    /**
-     * Sorts campaigns based on their priority in descending order.
-     *
-     * @param {Array<Object>} campaigns - The list of campaign objects.
-     * @returns {Array<Object>} - A new array of campaigns sorted by priority.
-     */
-    sortCampaignsByPriority: campaigns => {
-      return campaigns.sort((a, b) => b.priority - a.priority);
-    },
-
-    /**
-     * Retrieves the DOM nodes associated with a campaign based on its template type.
-     *
-     * @param {Object} campaign - The campaign object to extract nodes from.
-     * @returns {Array<string>} - An array of DOM node selectors or IDs associated with the campaign.
-     */
-    getCampaignNodes: campaign => {
-      var _display$details, _display$details$, _display$details$$sel;
-
-      const {
-        msgContent,
-        display
-      } = campaign;
-      const {
-        type
-      } = msgContent;
-
-      switch (type) {
-        case WEB_NATIVE_TEMPLATES.BANNER:
-        case WEB_NATIVE_TEMPLATES.CAROUSEL:
-          return [display.divSelector];
-
-        case WEB_NATIVE_TEMPLATES.CUSTOM_HTML:
-          return [display.divId];
-
-        case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-          return ((_display$details = display.details) === null || _display$details === void 0 ? void 0 : (_display$details$ = _display$details[0]) === null || _display$details$ === void 0 ? void 0 : (_display$details$$sel = _display$details$.selectorData) === null || _display$details$$sel === void 0 ? void 0 : _display$details$$sel.filter(s => s.values.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML).map(s => s.selector)) || [];
-
-        default:
-          return [];
-      }
-    },
-
-    /**
-     * Determines whether the current custom event campaign should be skipped based on existing executed targets.
-     *
-     * @param {Object} targetNotif - The current notification object containing campaign details.
-     * @param {ExecutedTargets} executedTargets - An object holding already executed custom events.
-     * @returns {boolean} - Returns true if the current custom event campaign should be skipped, false otherwise.
-    */
-    shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets) {
-      var _currentSameTypeCampa;
-
-      const currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => customEvent.customEventType === targetNotif.msgContent.type);
-      let shouldSkip = false; // If KV Pair, check for topic and type
-      // if visual builder or JSON, just check for the type of event, because we do not have `topic`
-
-      if (currentSameTypeCampaigns === null || currentSameTypeCampaigns === void 0 ? void 0 : currentSameTypeCampaigns.length) {
-        switch (targetNotif.msgContent.type) {
-          case WEB_NATIVE_TEMPLATES.KV_PAIR:
-            if ((_currentSameTypeCampa = currentSameTypeCampaigns.map(c => c.eventTopic)) === null || _currentSameTypeCampa === void 0 ? void 0 : _currentSameTypeCampa.includes(targetNotif.display.kv.topic)) {
-              shouldSkip = true;
-            }
-            break;
-
-          /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
-          and can we inform the user the type of event they will receive in the editor
-          */
-
-          /* TODO: Can we intro a key for `topic` similar to KV_PAIR in VISUAL_EDITOR & JSON for parity and better UX */
-
-          /* Visual Editor has all the events from different campaigns combined in single JSON within selectorData */
-
-          /* So we can not use Separated Campaigns logic for it, Hence skipping */
-
-          case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-          case WEB_NATIVE_TEMPLATES.JSON:
-            shouldSkip = true;
-            break;
-        }
-      }
-
-      return shouldSkip;
-    }
-
-  };
-
   const renderPersonalisationBanner = targetingMsgJson => {
     var _targetingMsgJson$dis;
 
@@ -12334,14 +12444,10 @@
 
     if (targetingMsgJson.msgContent.kv != null) {
       inaObj.kv = targetingMsgJson.msgContent.kv;
-    } // combine all events from web native display under single event and add type
+    }
 
-
-    const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-      detail: {
-        campaignDetails: inaObj,
-        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.KV_PAIR
-      }
+    const kvPairsEvent = new CustomEvent('CT_web_native_display', {
+      detail: inaObj
     });
     document.dispatchEvent(kvPairsEvent);
   };
@@ -12386,7 +12492,13 @@
 
         if (retryElement) {
           raiseViewed();
-          retryElement.outerHTML = html;
+          retryElement.innerHTML = html;
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = html;
+          const scripts = wrapper.querySelectorAll('script');
+          scripts.forEach(script => {
+            addScriptTo(script);
+          });
           clearInterval(intervalId);
         } else if (++count >= 20) {
           logger.error("No element present on DOM with divId '".concat(divId, "'."));
@@ -12411,16 +12523,17 @@
       inaObj.json = json;
     }
 
-    const jsonEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-      detail: {
-        campaignDetails: inaObj,
-        campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.JSON
-      }
+    const jsonEvent = new CustomEvent('CT_web_native_display_json', {
+      detail: inaObj
     });
     document.dispatchEvent(jsonEvent);
   };
 
   function handleCustomHtmlPreviewPostMessageEvent(event, logger) {
+    if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+      return;
+    }
+
     const eventData = JSON.parse(event.data);
     const inAppNotifs = eventData.inapp_notifs;
     const msgContent = inAppNotifs[0].msgContent;
@@ -12472,7 +12585,7 @@
     const cardPadding = 16 * 2; // Left and right padding
 
     const cardContentWidth = 360 - cardPadding - totalBorderWidth;
-    return "\n    #pnWrapper {\n      width: 360px;\n      font-family: proxima-nova, Arial, sans-serif;\n    }\n    \n    #pnWrapper * {\n       margin: 0px;\n       padding: 0px;\n       text-align: left;\n    }\n\n    #pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n      text-align: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
+    return "\n    #pnWrapper {\n      width: 360px;\n      font-family: proxima-nova, Arial, sans-serif;\n    }\n    \n    #pnWrapper * {\n       margin: 0px;\n       padding: 0px;\n       text-align: left;\n    }\n    ".concat(style.overlay.enabled ? "#pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n") : '', "\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n      text-align: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
   };
   const getBellIconStyles = style => {
     return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
@@ -12491,6 +12604,142 @@
 
     return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
   };
+  /**
+   * Recursively checks if an object contains an array or a function at any level of nesting.
+   *
+   * @param {Object} obj - The object to check.
+   * @returns {boolean} - Returns `true` if the object contains an array or function, otherwise `false`.
+   */
+
+  const objectHasNestedArrayOrFunction = obj => {
+    if (!obj || typeof obj !== 'object') return false;
+    if (Array.isArray(obj)) return true;
+    return Object.values(obj).some(value => typeof value === 'function' || objectHasNestedArrayOrFunction(value));
+  };
+  /**
+   * Flattens a nested object into a single-level object using dot notation.
+   * Arrays are ignored in this transformation.
+   *
+   * @param {Object} obj - The object to be flattened.
+   * @param {string} [parentKey=""] - The parent key for recursion (used internally).
+   * @returns {Object} - The transformed object with dot notation keys.
+   */
+
+  const flattenObjectToDotNotation = function (obj) {
+    let parentKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+    const result = {};
+
+    for (const key in obj) {
+      if (Object.hasOwnProperty.call(obj, key)) {
+        const value = obj[key];
+        const newKey = parentKey ? "".concat(parentKey, ".").concat(key) : key;
+
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          // Recursively process nested objects
+          Object.assign(result, flattenObjectToDotNotation(value, newKey));
+        } else if (!Array.isArray(value)) {
+          // Assign non-array values directly
+          result[newKey] = {
+            defaultValue: value,
+            type: typeof value
+          };
+        }
+      }
+    }
+
+    return result;
+  };
+  /**
+   * Reconstructs an object from a flat key-value structure using dot notation.
+   *
+   * @param {Object} payload - The input object with flat dot notation keys.
+   * @returns {Object} - The reconstructed object with proper nesting.
+   */
+
+  const reconstructNestedObject = payload => {
+    const result = {};
+
+    for (const key in payload) {
+      if (Object.hasOwnProperty.call(payload, key)) {
+        const value = payload[key];
+        const keys = key.split('.'); // Split keys on dot notation
+
+        let current = result;
+        keys.forEach((part, index) => {
+          if (index === keys.length - 1) {
+            // Assign value at the last key level
+            current[part] = value;
+          } else {
+            // Ensure intermediate levels exist
+            current = current[part] = current[part] || {};
+          }
+        });
+      }
+    }
+
+    return result;
+  };
+  /**
+   * Validates and sanitizes a custom CleverTap ID based on platform rules.
+   *
+   * Rules:
+   * - Must be between 1 and 64 characters in length.
+   * - Allowed characters: A-Z, a-z, 0-9, (, ), !, :, @, $, _, -
+   * - Automatically lowercases the ID.
+   *
+   * @param {string} id - The custom CleverTap ID to validate.
+   * @returns {{ isValid: boolean, error?: string, sanitizedId?: string }} - Validation result.
+   */
+
+  function validateCustomCleverTapID(id) {
+    if (typeof id !== 'string') {
+      return {
+        isValid: false,
+        error: 'ID must be a string.'
+      };
+    }
+
+    const lowercaseId = id.toLowerCase();
+    const length = lowercaseId.length;
+
+    if (length < 1 || length > 64) {
+      return {
+        isValid: false,
+        error: 'ID must be between 1 and 64 characters.'
+      };
+    }
+
+    const allowedPattern = /^[a-z0-9()!:@$_-]+$/;
+
+    if (!allowedPattern.test(lowercaseId)) {
+      return {
+        isValid: false,
+        error: 'ID contains invalid characters. Only A-Z, a-z, 0-9, (, ), !, :, @, $, _, - are allowed.'
+      };
+    }
+
+    return {
+      isValid: true,
+      sanitizedId: addWebPrefix(lowercaseId)
+    };
+  }
+  /**
+   * Adds a `_w_` prefix to a sanitized CleverTap ID for web.
+   *
+   * - Converts the ID to lowercase.
+   * - Does not validate the characters or length — assumes the ID is already valid.
+   *
+   * @param {string} id - The custom CleverTap ID.
+   * @returns {string} - The prefixed and lowercased CleverTap ID.
+   */
+
+  function addWebPrefix(id) {
+    if (typeof id !== 'string') {
+      throw new Error('ID must be a string');
+    }
+
+    return "".concat(CUSTOM_CT_ID_PREFIX).concat(id.toLowerCase());
+  }
 
   var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
 
@@ -13020,7 +13269,9 @@
 
     if (typeof navigator.serviceWorker === 'undefined') {
       return;
-    }
+    } // Used for Shopify Web Push mentioned here
+    // (https://wizrocket.atlassian.net/wiki/spaces/TAMKB/pages/1824325665/Implementing+Web+Push+in+Shopify+if+not+using+the+Shopify+App+approach)
+
 
     const isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
 
@@ -13112,101 +13363,41 @@
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
     }
 
-    if (isHTTP) {
-      // add the https iframe
-      const httpsIframe = document.createElement('iframe');
-      httpsIframe.setAttribute('style', 'display:none;');
-      httpsIframe.setAttribute('src', httpsIframePath);
-      document.body.appendChild(httpsIframe);
-      window.addEventListener('message', event => {
-        if (event.data != null) {
-          let obj = {};
+    if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
 
-          try {
-            obj = JSON.parse(event.data);
-          } catch (e) {
-            // not a call from our iframe
-            return;
+      return;
+    }
+
+    StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
+    _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
+      StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
+
+      window.wzrkPermissionPopup.wizAlert({
+        title: titleText,
+        body: bodyText,
+        confirmButtonText: okButtonText,
+        confirmButtonColor: okButtonColor,
+        rejectButtonText: rejectButtonText
+      }, enabled => {
+        // callback function
+        if (enabled) {
+          // the user accepted on the dialog box
+          if (typeof okCallback === 'function') {
+            okCallback();
           }
 
-          if (obj.state != null) {
-            if (obj.from === 'ct' && obj.state === 'not') {
-              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
-
-                return;
-              }
-
-              StorageManager.saveToLSorCookie(POPUP_LOADING, true);
-
-              _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-                StorageManager.saveToLSorCookie(POPUP_LOADING, false);
-                window.wzrkPermissionPopup.wizAlert({
-                  title: titleText,
-                  body: bodyText,
-                  confirmButtonText: okButtonText,
-                  confirmButtonColor: okButtonColor,
-                  rejectButtonText: rejectButtonText
-                }, enabled => {
-                  // callback function
-                  if (enabled) {
-                    // the user accepted on the dialog box
-                    if (typeof okCallback === 'function') {
-                      okCallback();
-                    } // redirect to popup.html
-
-
-                    window.open(httpsPopupPath);
-                  } else {
-                    if (typeof rejectCallback === 'function') {
-                      rejectCallback();
-                    }
-                  }
-
-                  _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-                });
-              };
-            }
+          this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        } else {
+          if (typeof rejectCallback === 'function') {
+            rejectCallback();
           }
         }
-      }, false);
-    } else {
-      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
 
-        return;
-      }
-
-      StorageManager.saveToLSorCookie(POPUP_LOADING, true);
-
-      _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-        StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
-
-        window.wzrkPermissionPopup.wizAlert({
-          title: titleText,
-          body: bodyText,
-          confirmButtonText: okButtonText,
-          confirmButtonColor: okButtonColor,
-          rejectButtonText: rejectButtonText
-        }, enabled => {
-          // callback function
-          if (enabled) {
-            // the user accepted on the dialog box
-            if (typeof okCallback === 'function') {
-              okCallback();
-            }
-
-            this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-          } else {
-            if (typeof rejectCallback === 'function') {
-              rejectCallback();
-            }
-          }
-
-          _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-        });
-      };
-    }
+        _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
+      });
+    };
   };
 
   const BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi40OTYyIDUuMjQzOTVDMTIuODM5MSA1LjAzMzE3IDEzLjI4NDcgNS4xNDY4OSAxMy40OTczIDUuNDg4NjdDMTMuNzIyMyA1Ljg1MDE4IDEzLjYwMDIgNi4zMjUxOCAxMy4yMzggNi41NDkwMkM3LjM5Mzk5IDEwLjE2MDYgMy41IDE2LjYyNTcgMy41IDI0LjAwMDNDMy41IDM1LjMyMjEgMTIuNjc4MiA0NC41MDAzIDI0IDQ0LjUwMDNDMjguMDA1NSA0NC41MDAzIDMxLjc0MjYgNDMuMzUxNSAzNC45IDQxLjM2NTVDMzUuMjYwOCA0MS4xMzg1IDM1Ljc0MTYgNDEuMjM4NiAzNS45NjY4IDQxLjYwMDZDMzYuMTc5MiA0MS45NDE5IDM2LjA4NSA0Mi4zOTExIDM1Ljc0NTIgNDIuNjA2QzMyLjM0NjggNDQuNzU1OSAyOC4zMTg3IDQ2LjAwMDMgMjQgNDYuMDAwM0MxMS44NDk3IDQ2LjAwMDMgMiAzNi4xNTA1IDIgMjQuMDAwM0MyIDE2LjA2NjkgNi4xOTkyMSA5LjExNDMyIDEyLjQ5NjIgNS4yNDM5NVpNMzguOCAzOS45MDAzQzM4LjggNDAuMzk3MyAzOC4zOTcxIDQwLjgwMDMgMzcuOSA0MC44MDAzQzM3LjQwMjkgNDAuODAwMyAzNyA0MC4zOTczIDM3IDM5LjkwMDNDMzcgMzkuNDAzMiAzNy40MDI5IDM5LjAwMDMgMzcuOSAzOS4wMDAzQzM4LjM5NzEgMzkuMDAwMyAzOC44IDM5LjQwMzIgMzguOCAzOS45MDAzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMkMyMi44OTU0IDEyIDIyIDEyLjg5NTQgMjIgMTRWMTQuMjUyQzE4LjU0OTUgMTUuMTQwMSAxNiAxOC4yNzIzIDE2IDIyVjI5LjVIMTUuNDc2OUMxNC42NjEyIDI5LjUgMTQgMzAuMTYxMiAxNCAzMC45NzY5VjMxLjAyMzFDMTQgMzEuODM4OCAxNC42NjEyIDMyLjUgMTUuNDc2OSAzMi41SDMyLjUyMzFDMzMuMzM4OCAzMi41IDM0IDMxLjgzODggMzQgMzEuMDIzMVYzMC45NzY5QzM0IDMwLjE2MTIgMzMuMzM4OCAyOS41IDMyLjUyMzEgMjkuNUgzMlYyMkMzMiAxOC4yNzIzIDI5LjQ1MDUgMTUuMTQwMSAyNiAxNC4yNTJWMTRDMjYgMTIuODk1NCAyNS4xMDQ2IDEyIDI0IDEyWk0yNiAzNFYzMy41SDIyVjM0QzIyIDM1LjEwNDYgMjIuODk1NCAzNiAyNCAzNkMyNS4xMDQ2IDM2IDI2IDM1LjEwNDYgMjYgMzRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
@@ -13428,9 +13619,9 @@
     const wrapper = createElementWithAttributes('div', {
       id: NEW_SOFT_PROMPT_SELCTOR_ID
     });
-    const overlayDiv = createElementWithAttributes('div', {
+    const overlayDiv = style.overlay.enabled ? createElementWithAttributes('div', {
       id: 'pnOverlay'
-    });
+    }) : '';
     const pnCard = createElementWithAttributes('div', {
       id: 'pnCard'
     });
@@ -13475,7 +13666,11 @@
     });
     wrapper.appendChild(styleElement);
     wrapper.appendChild(pnCard);
-    wrapper.appendChild(overlayDiv);
+
+    if (overlayDiv) {
+      wrapper.appendChild(overlayDiv);
+    }
+
     setElementPosition(pnCard, style.card.position);
     const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
 
@@ -13702,12 +13897,14 @@
       device,
       session,
       request,
-      logger
+      logger,
+      region
     } = _ref;
     const _device = device;
     const _session = session;
     const _request = request;
     const _logger = logger;
+    const _region = region;
     let _wizCounter = 0; // Campaign House keeping
 
     const doCampHouseKeeping = targetingMsgJson => {
@@ -14229,7 +14426,7 @@
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
-            window.document.body.onmouseleave = showExitIntent;
+            window.document.onmouseleave = showExitIntent;
           } // delay
 
 
@@ -14584,6 +14781,9 @@
       };
 
       for (let index = 0; index < sortedCampaigns.length; index++) {
+        var _msg$arp;
+
+        addCampaignToLocalStorage(sortedCampaigns[index], _region, msg === null || msg === void 0 ? void 0 : (_msg$arp = msg.arp) === null || _msg$arp === void 0 ? void 0 : _msg$arp.id);
         const targetNotif = sortedCampaigns[index];
 
         if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
@@ -14591,7 +14791,7 @@
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
-          window.document.body.onmouseleave = showExitIntent;
+          window.document.onmouseleave = showExitIntent;
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
 
@@ -14641,7 +14841,7 @@
               arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
             }
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
-            renderVisualBuilder(targetNotif, false);
+            renderVisualBuilder(targetNotif, false, _logger);
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
             renderCustomHtml(targetNotif, _logger);
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
@@ -14672,6 +14872,10 @@
         const msgArr = [];
 
         for (let index = 0; index < msg.inbox_notifs.length; index++) {
+          var _msg$arp2;
+
+          addCampaignToLocalStorage(msg.inbox_notifs[index], _region, msg === null || msg === void 0 ? void 0 : (_msg$arp2 = msg.arp) === null || _msg$arp2 === void 0 ? void 0 : _msg$arp2.id);
+
           if (doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
             msgArr.push(msg.inbox_notifs[index]);
           }
@@ -15138,13 +15342,17 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.13.4',
+        lib: 'web-sdk-v1.15.4',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
 
-      if (sessionStorage.hasOwnProperty('WZRK_D')) {
-        dataObject.debug = true;
+      try {
+        if (sessionStorage.hasOwnProperty('WZRK_D') || sessionStorage.getItem('WZRK_D')) {
+          dataObject.debug = true;
+        }
+      } catch (e) {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Error in reading WZRK_D from session storage');
       }
 
       return dataObject;
@@ -15489,21 +15697,26 @@
      */
 
 
-    static define(name, defaultValue, variableStore) {
+    static define(name, defaultValue, variableStore, logger) {
       if (!name || typeof name !== 'string') {
-        console.error('Empty or invalid name parameter provided.');
+        logger.error('Empty or invalid name parameter provided.');
         return null;
       }
 
       if (name.startsWith('.') || name.endsWith('.')) {
-        console.error('Variable name starts or ends with a `.` which is not allowed: ' + name);
+        logger.error('Variable name starts or ends with a `.` which is not allowed: ' + name);
         return null;
       }
 
       const typeOfDefaultValue = typeof defaultValue;
 
-      if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean') {
-        console.error('Only primitive types (string, number, boolean) are accepted as value');
+      if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean' && typeOfDefaultValue !== 'object') {
+        logger.error('Only (string, number, boolean, objects) are accepted as value');
+        return null;
+      }
+
+      if (typeOfDefaultValue === 'object' && objectHasNestedArrayOrFunction(defaultValue)) {
+        logger.error('Nested arrays/functions are not supported in JSON variables');
         return null;
       }
 
@@ -15525,7 +15738,30 @@
         variableStore.registerVariable(varInstance);
         varInstance.update(defaultValue);
       } catch (error) {
-        console.error(error);
+        logger.error(error);
+      }
+
+      return varInstance;
+    }
+
+    static defineFileVar(name, variableStore, logger) {
+      if (!name || typeof name !== 'string' || name.startsWith('.') || name.endsWith('.')) {
+        logger.error('Empty or invalid name parameter provided.');
+        return null;
+      }
+
+      const varInstance = new Variable({
+        variableStore
+      });
+
+      try {
+        varInstance.name = name;
+        varInstance.defaultValue = '';
+        varInstance.type = 'file';
+        variableStore.registerVariable(varInstance);
+        varInstance.update(varInstance.defaultValue);
+      } catch (error) {
+        logger.error(error);
       }
 
       return varInstance;
@@ -15569,9 +15805,9 @@
      */
 
 
-    addValueChangedCallback(onValueChanged) {
+    addValueChangedCallback(onValueChanged, logger) {
       if (!onValueChanged) {
-        console.log('Invalid callback parameter provided.');
+        logger.log('Invalid callback parameter provided.');
         return;
       }
 
@@ -15739,10 +15975,29 @@
       };
 
       for (const name in _classPrivateFieldLooseBase(this, _variables)[_variables]) {
-        payload.vars[name] = {
-          defaultValue: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue,
-          type: _classPrivateFieldLooseBase(this, _variables)[_variables][name].type
-        };
+        if (typeof _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue === 'object') {
+          var _classPrivateFieldLoo;
+
+          const flattenedPayload = flattenObjectToDotNotation({
+            [(_classPrivateFieldLoo = _classPrivateFieldLooseBase(this, _variables)[_variables][name]) === null || _classPrivateFieldLoo === void 0 ? void 0 : _classPrivateFieldLoo.name]: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue
+          });
+
+          for (const key in flattenedPayload) {
+            payload.vars[key] = {
+              defaultValue: flattenedPayload[key].defaultValue,
+              type: flattenedPayload[key].type
+            };
+          }
+        } else if (_classPrivateFieldLooseBase(this, _variables)[_variables][name].type === 'file') {
+          payload.vars[name] = {
+            type: _classPrivateFieldLooseBase(this, _variables)[_variables][name].type
+          };
+        } else {
+          payload.vars[name] = {
+            defaultValue: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue,
+            type: _classPrivateFieldLooseBase(this, _variables)[_variables][name].type
+          };
+        }
       } // Check if payload.vars is empty
 
 
@@ -15955,7 +16210,7 @@
     }
 
     constructor() {
-      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$account6;
+      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$account6;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
@@ -16048,9 +16303,17 @@
 
       _classPrivateFieldLooseBase(this, _logger)[_logger] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
-      encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id;
+      encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id; // Custom Guid will be set here
+
+      const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
+
+      if (!result.isValid && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId)) {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].error(result.error);
+      }
+
       _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
-        logger: _classPrivateFieldLooseBase(this, _logger)[_logger]
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
@@ -16233,8 +16496,11 @@
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
           if (messages[messageId].viewed === 0) {
-            $ct.inbox.unviewedCounter--;
-            delete $ct.inbox.unviewedMessages[messageId];
+            if ($ct.inbox) {
+              $ct.inbox.unviewedCounter--;
+              delete $ct.inbox.unviewedMessages[messageId];
+            }
+
             const unViewedBadge = document.getElementById('unviewedBadge');
 
             if (unViewedBadge) {
@@ -16293,8 +16559,12 @@
             msgId: messages[messageId].wzrk_id,
             pivotId: messages[messageId].pivotId
           });
-          $ct.inbox.unviewedCounter--;
-          delete $ct.inbox.unviewedMessages[messageId];
+
+          if ($ct.inbox) {
+            $ct.inbox.unviewedCounter--;
+            delete $ct.inbox.unviewedMessages[messageId];
+          }
+
           saveInboxMessages(messages);
         } else {
           _classPrivateFieldLooseBase(this, _logger)[_logger].error('No message available for message Id ' + messageId);
@@ -16604,7 +16874,8 @@
           device: _classPrivateFieldLooseBase(this, _device)[_device],
           session: _classPrivateFieldLooseBase(this, _session)[_session],
           request: _classPrivateFieldLooseBase(this, _request)[_request],
-          logger: _classPrivateFieldLooseBase(this, _logger)[_logger]
+          logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+          region: _classPrivateFieldLooseBase(this, _account)[_account].region
         });
       };
 
@@ -16686,15 +16957,38 @@
         StorageManager.saveToLSorCookie(ACCOUNT_ID, (_clevertap$account7 = clevertap.account) === null || _clevertap$account7 === void 0 ? void 0 : _clevertap$account7[0].id);
         this.init();
       }
-    } // starts here
+    }
 
+    createCustomIdIfValid(customId) {
+      const result = validateCustomCleverTapID(customId);
+
+      if (!result.isValid) {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].error(result.error);
+      }
+      /* Only add Custom Id if no existing id is present */
+
+
+      if (_classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
+        return;
+      }
+
+      if (result.isValid) {
+        _classPrivateFieldLooseBase(this, _device)[_device].gcookie = result === null || result === void 0 ? void 0 : result.sanitizedId;
+        StorageManager.saveToLSorCookie(GCOOKIE_NAME, result === null || result === void 0 ? void 0 : result.sanitizedId);
+
+        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('CT Initialized with customId:: ' + (result === null || result === void 0 ? void 0 : result.sanitizedId));
+      } else {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].error('Invalid customId');
+      }
+    }
 
     init(accountId, region, targetDomain, token) {
       let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
-        antiFlicker: {}
+        antiFlicker: {},
+        customId: null
       };
 
-      if (config.antiFlicker && Object.keys(config.antiFlicker).length > 0) {
+      if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
         addAntiFlicker(config.antiFlicker);
       }
 
@@ -16738,9 +17032,8 @@
         _classPrivateFieldLooseBase(this, _account)[_account].token = token;
       }
 
-      if (config.enableFetchApi) {
-        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
-        $ct.enableFetchApi = config.enableFetchApi;
+      if (config === null || config === void 0 ? void 0 : config.customId) {
+        this.createCustomIdIfValid(config.customId);
       }
 
       const currLocation = location.href;
@@ -16915,11 +17208,15 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.13.4';
+      return 'web-sdk-v1.15.4';
     }
 
     defineVariable(name, defaultValue) {
-      return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore]);
+      return Variable.define(name, defaultValue, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore], _classPrivateFieldLooseBase(this, _logger)[_logger]);
+    }
+
+    defineFileVariable(name) {
+      return Variable.defineFileVar(name, _classPrivateFieldLooseBase(this, _variableStore)[_variableStore], _classPrivateFieldLooseBase(this, _logger)[_logger]);
     }
 
     syncVariables(onSyncSuccess, onSyncFailure) {
@@ -16938,12 +17235,37 @@
       _classPrivateFieldLooseBase(this, _variableStore)[_variableStore].fetchVariables(onFetchCallback);
     }
 
+    getVariables() {
+      return reconstructNestedObject(StorageManager.readFromLSorCookie(VARIABLES));
+    }
+
+    getVariableValue(variableName) {
+      const variables = StorageManager.readFromLSorCookie(VARIABLES);
+      const reconstructedVariables = reconstructNestedObject(variables);
+
+      if (variables.hasOwnProperty(variableName)) {
+        return variables[variableName];
+      } else if (reconstructedVariables.hasOwnProperty(variableName)) {
+        return reconstructedVariables[variableName];
+      }
+    }
+
     addVariablesChangedCallback(callback) {
       _classPrivateFieldLooseBase(this, _variableStore)[_variableStore].addVariablesChangedCallback(callback);
     }
 
     addOneTimeVariablesChangedCallback(callback) {
       _classPrivateFieldLooseBase(this, _variableStore)[_variableStore].addOneTimeVariablesChangedCallback(callback);
+    }
+    /*
+       This function is used for debugging and getting the details of all the campaigns
+       that were qualified and rendered for the current user
+    */
+
+
+    getAllQualifiedCampaignDetails() {
+      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
+      return existingCampaign;
     }
 
   }

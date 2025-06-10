@@ -1,8 +1,9 @@
-import { CUSTOM_EVENT_KEYS, CUSTOM_EVENTS_CAMPAIGN_SOURCES, CUSTOM_HTML_PREVIEW } from '../constants'
+import { CUSTOM_HTML_PREVIEW } from '../constants'
 import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
 
-import { appendScriptForCustomEvent } from '../campaignRender/utilities'
+import { addScriptTo, appendScriptForCustomEvent } from '../campaignRender/utilities'
+import { WVE_URL_ORIGIN } from '../../modules/visualBuilder/builder_constants'
 
 export const renderPersonalisationBanner = (targetingMsgJson) => {
   if (customElements.get('ct-web-personalisation-banner') === undefined) {
@@ -40,12 +41,8 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
   if (targetingMsgJson.msgContent.kv != null) {
     inaObj.kv = targetingMsgJson.msgContent.kv
   }
-  // combine all events from web native display under single event and add type
-  const kvPairsEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-    detail: {
-      campaignDetails: inaObj, campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.KV_PAIR
-    }
-  })
+
+  const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
   document.dispatchEvent(kvPairsEvent)
 }
 
@@ -84,7 +81,13 @@ export const renderCustomHtml = (targetingMsgJson, logger) => {
       const retryElement = document.querySelector(divId)
       if (retryElement) {
         raiseViewed()
-        retryElement.outerHTML = html
+        retryElement.innerHTML = html
+        const wrapper = document.createElement('div')
+        wrapper.innerHTML = html
+        const scripts = wrapper.querySelectorAll('script')
+        scripts.forEach((script) => {
+          addScriptTo(script)
+        })
         clearInterval(intervalId)
       } else if (++count >= 20) {
         logger.error(`No element present on DOM with divId '${divId}'.`)
@@ -107,15 +110,15 @@ export const handleJson = (targetingMsgJson) => {
   if (targetingMsgJson.display.json != null) {
     inaObj.json = json
   }
-  const jsonEvent = new CustomEvent(CUSTOM_EVENT_KEYS.WEB_NATIVE_DISPLAY, {
-    detail: {
-      campaignDetails: inaObj, campaignSource: CUSTOM_EVENTS_CAMPAIGN_SOURCES.JSON
-    }
-  })
+
+  const jsonEvent = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
   document.dispatchEvent(jsonEvent)
 }
 
 function handleCustomHtmlPreviewPostMessageEvent (event, logger) {
+  if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+    return
+  }
   const eventData = JSON.parse(event.data)
   const inAppNotifs = eventData.inapp_notifs
   const msgContent = inAppNotifs[0].msgContent

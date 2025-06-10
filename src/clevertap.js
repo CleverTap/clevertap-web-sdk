@@ -32,7 +32,10 @@ import {
   WEBINBOX_CONFIG,
   TIMER_FOR_NOTIF_BADGE_UPDATE,
   ACCOUNT_ID,
-  APPLICATION_SERVER_KEY_RECEIVED
+  APPLICATION_SERVER_KEY_RECEIVED,
+  VARIABLES,
+  GCOOKIE_NAME,
+  QUALIFIED_CAMPAIGNS
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -48,6 +51,7 @@ import { addAntiFlicker, handleActionMode } from './modules/visualBuilder/pageBu
 import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
+import { reconstructNestedObject, validateCustomCleverTapID } from './util/helpers'
 
 export default class CleverTap {
   #logger
@@ -109,7 +113,15 @@ export default class CleverTap {
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
     encryption.key = clevertap.account?.[0].id
-    this.#device = new DeviceManager({ logger: this.#logger })
+    // Custom Guid will be set here
+
+    const result = validateCustomCleverTapID(clevertap?.config?.customId)
+
+    if (!result.isValid && clevertap?.config?.customId) {
+      this.#logger.error(result.error)
+    }
+
+    this.#device = new DeviceManager({ logger: this.#logger, customId: result?.isValid ? result?.sanitizedId : null })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#enableFetchApi = clevertap.enableFetchApi || false
@@ -290,8 +302,10 @@ export default class CleverTap {
       const messages = getInboxMessages()
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
         if (messages[messageId].viewed === 0) {
-          $ct.inbox.unviewedCounter--
-          delete $ct.inbox.unviewedMessages[messageId]
+          if ($ct.inbox) {
+            $ct.inbox.unviewedCounter--
+            delete $ct.inbox.unviewedMessages[messageId]
+          }
           const unViewedBadge = document.getElementById('unviewedBadge')
           if (unViewedBadge) {
             unViewedBadge.innerText = $ct.inbox.unviewedCounter
@@ -335,8 +349,10 @@ export default class CleverTap {
           unViewedBadge.style.display = counter > 0 ? 'flex' : 'none'
         }
         window.clevertap.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
-        $ct.inbox.unviewedCounter--
-        delete $ct.inbox.unviewedMessages[messageId]
+        if ($ct.inbox) {
+          $ct.inbox.unviewedCounter--
+          delete $ct.inbox.unviewedMessages[messageId]
+        }
         saveInboxMessages(messages)
       } else {
         this.#logger.error('No message available for message Id ' + messageId)
@@ -587,7 +603,8 @@ export default class CleverTap {
         device: this.#device,
         session: this.#session,
         request: this.#request,
-        logger: this.#logger
+        logger: this.#logger,
+        region: this.#account.region
       })
     }
     api.setEnum = (enumVal) => {
@@ -651,9 +668,29 @@ export default class CleverTap {
     }
   }
 
-  // starts here
-  init (accountId, region, targetDomain, token, config = { antiFlicker: {} }) {
-    if (config.antiFlicker && Object.keys(config.antiFlicker).length > 0) {
+  createCustomIdIfValid (customId) {
+    const result = validateCustomCleverTapID(customId)
+
+    if (!result.isValid) {
+      this.#logger.error(result.error)
+    }
+
+    /* Only add Custom Id if no existing id is present */
+    if (this.#device.gcookie) {
+      return
+    }
+
+    if (result.isValid) {
+      this.#device.gcookie = result?.sanitizedId
+      StorageManager.saveToLSorCookie(GCOOKIE_NAME, result?.sanitizedId)
+      this.#logger.debug('CT Initialized with customId:: ' + result?.sanitizedId)
+    } else {
+      this.#logger.error('Invalid customId')
+    }
+  }
+
+  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null }) {
+    if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
     }
     if (this.#onloadcalled === 1) {
@@ -687,6 +724,9 @@ export default class CleverTap {
     }
     if (token) {
       this.#account.token = token
+    }
+    if (config?.customId) {
+      this.createCustomIdIfValid(config.customId)
     }
 
     if (config.enableFetchApi) {
@@ -969,7 +1009,11 @@ export default class CleverTap {
   }
 
   defineVariable (name, defaultValue) {
-    return Variable.define(name, defaultValue, this.#variableStore)
+    return Variable.define(name, defaultValue, this.#variableStore, this.#logger)
+  }
+
+  defineFileVariable (name) {
+    return Variable.defineFileVar(name, this.#variableStore, this.#logger)
   }
 
   syncVariables (onSyncSuccess, onSyncFailure) {
@@ -986,11 +1030,36 @@ export default class CleverTap {
     this.#variableStore.fetchVariables(onFetchCallback)
   }
 
+  getVariables () {
+    return reconstructNestedObject(
+      StorageManager.readFromLSorCookie(VARIABLES)
+    )
+  }
+
+  getVariableValue (variableName) {
+    const variables = StorageManager.readFromLSorCookie(VARIABLES)
+    const reconstructedVariables = reconstructNestedObject(variables)
+    if (variables.hasOwnProperty(variableName)) {
+      return variables[variableName]
+    } else if (reconstructedVariables.hasOwnProperty(variableName)) {
+      return reconstructedVariables[variableName]
+    }
+  }
+
   addVariablesChangedCallback (callback) {
     this.#variableStore.addVariablesChangedCallback(callback)
   }
 
   addOneTimeVariablesChangedCallback (callback) {
     this.#variableStore.addOneTimeVariablesChangedCallback(callback)
+  }
+
+  /*
+     This function is used for debugging and getting the details of all the campaigns
+     that were qualified and rendered for the current user
+  */
+  getAllQualifiedCampaignDetails () {
+    const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
+    return existingCampaign
   }
 }
