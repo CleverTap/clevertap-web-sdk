@@ -1,6 +1,19 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.15.3] 28nd May, 2025
+- Stricter Origin Checks for postMessage communication
+
+## [1.15.2] 22nd May, 2025
+- Added origin check in postMessage for solve XSS vulnerability
+
+## [1.15.1] 20th May, 2025
+- Bug fix for Webpopup Preview
+
+## [1.15.0] 13th May, 2025
+- Added Clevertap Custom Id Support
+- Added Public API `getAllQualifiedCampaignDetails` for debugging purpose
+
 ## [1.14.4] 24th Apr, 2025
 - Updated rendering logic for Web Native Display Custom Html Template.
 

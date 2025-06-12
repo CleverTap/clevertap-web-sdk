@@ -152,6 +152,7 @@
   const CHARGED_ID = 'Charged ID';
   const CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID';
   const GCOOKIE_NAME = 'WZRK_G';
+  const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const KCOOKIE_NAME = 'WZRK_K';
   const CAMP_COOKIE_NAME = 'WZRK_CAMP';
   const CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
@@ -218,6 +219,7 @@
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
+  const CUSTOM_CT_ID_PREFIX = '_w_';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -7765,7 +7767,8 @@
   class DeviceManager {
     constructor(_ref) {
       let {
-        logger
+        logger,
+        customId
       } = _ref;
       Object.defineProperty(this, _logger$9, {
         writable: true,
@@ -7773,7 +7776,7 @@
       });
       this.gcookie = void 0;
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
-      this.gcookie = this.getGuid();
+      this.gcookie = this.getGuid() || customId;
     }
 
     getGuid() {
@@ -10068,7 +10071,7 @@
       });
       this.config = config;
       this.message = message;
-      this.renderMessage(message);
+      message && this.renderMessage(message);
     }
 
     get pivotId() {
@@ -11556,6 +11559,31 @@
     targetEl.appendChild(newScript);
     script.remove();
   }
+  function addCampaignToLocalStorage(campaign) {
+    var _campaign$display3;
+
+    let region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'eu1';
+    let accountId = arguments.length > 2 ? arguments[2] : undefined;
+
+    /* No Need to store campaigns in local storage in preview mode */
+    if ((campaign === null || campaign === void 0 ? void 0 : (_campaign$display3 = campaign.display) === null || _campaign$display3 === void 0 ? void 0 : _campaign$display3.preview) === true) {
+      return;
+    }
+
+    const campaignId = campaign.wzrk_id.split('_')[0];
+    const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
+    const enrichedCampaign = { ...campaign,
+      url: dashboardUrl
+    };
+    const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
+    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
+
+    if (!isDuplicate) {
+      const updatedCampaigns = [...existingCampaigns, enrichedCampaign];
+      StorageManager.saveToLSorCookie(QUALIFIED_CAMPAIGNS, encodeURIComponent(JSON.stringify(updatedCampaigns)));
+    }
+  }
 
   let logger$1 = null;
   const handleActionMode = (_logger, accountId) => {
@@ -11596,7 +11624,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.14.4';
+            const sdkVersion = '1.15.3';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -11612,13 +11640,14 @@
           break;
       }
     }
-  }; // TODO: Add a guarding mechanism to skip postMessages from non trusted sources
+  };
 
   const handleMessageEvent = event => {
     if (event.data && isValidUrl(event.data.originUrl)) {
-      const msgOrigin = new URL(event.data.originUrl).origin;
-
-      if (!event.origin.includes(WVE_URL_ORIGIN.CLEVERTAP) && !event.origin.includes(window.location.origin) && !event.origin.includes(WVE_URL_ORIGIN.LOCAL) || event.origin !== msgOrigin) {
+      // Visual Editor is opened from only dashboard, while preview can be opened from both dashboard & Visual Editor
+      // therefore adding check for self origin
+      // Visual Editor can only be opened in their domain not inside dashboard
+      if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) && !event.origin.endsWith(window.location.origin)) {
         return;
       }
     } else {
@@ -12454,6 +12483,10 @@
   };
 
   function handleCustomHtmlPreviewPostMessageEvent(event, logger) {
+    if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+      return;
+    }
+
     const eventData = JSON.parse(event.data);
     const inAppNotifs = eventData.inapp_notifs;
     const msgContent = inAppNotifs[0].msgContent;
@@ -12599,6 +12632,67 @@
 
     return result;
   };
+  /**
+   * Validates and sanitizes a custom CleverTap ID based on platform rules.
+   *
+   * Rules:
+   * - Must be between 1 and 64 characters in length.
+   * - Allowed characters: A-Z, a-z, 0-9, (, ), !, :, @, $, _, -
+   * - Automatically lowercases the ID.
+   *
+   * @param {string} id - The custom CleverTap ID to validate.
+   * @returns {{ isValid: boolean, error?: string, sanitizedId?: string }} - Validation result.
+   */
+
+  function validateCustomCleverTapID(id) {
+    if (typeof id !== 'string') {
+      return {
+        isValid: false,
+        error: 'ID must be a string.'
+      };
+    }
+
+    const lowercaseId = id.toLowerCase();
+    const length = lowercaseId.length;
+
+    if (length < 1 || length > 64) {
+      return {
+        isValid: false,
+        error: 'ID must be between 1 and 64 characters.'
+      };
+    }
+
+    const allowedPattern = /^[a-z0-9()!:@$_-]+$/;
+
+    if (!allowedPattern.test(lowercaseId)) {
+      return {
+        isValid: false,
+        error: 'ID contains invalid characters. Only A-Z, a-z, 0-9, (, ), !, :, @, $, _, - are allowed.'
+      };
+    }
+
+    return {
+      isValid: true,
+      sanitizedId: addWebPrefix(lowercaseId)
+    };
+  }
+  /**
+   * Adds a `_w_` prefix to a sanitized CleverTap ID for web.
+   *
+   * - Converts the ID to lowercase.
+   * - Does not validate the characters or length — assumes the ID is already valid.
+   *
+   * @param {string} id - The custom CleverTap ID.
+   * @returns {string} - The prefixed and lowercased CleverTap ID.
+   */
+
+  function addWebPrefix(id) {
+    if (typeof id !== 'string') {
+      throw new Error('ID must be a string');
+    }
+
+    return "".concat(CUSTOM_CT_ID_PREFIX).concat(id.toLowerCase());
+  }
 
   var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
 
@@ -13128,7 +13222,9 @@
 
     if (typeof navigator.serviceWorker === 'undefined') {
       return;
-    }
+    } // Used for Shopify Web Push mentioned here
+    // (https://wizrocket.atlassian.net/wiki/spaces/TAMKB/pages/1824325665/Implementing+Web+Push+in+Shopify+if+not+using+the+Shopify+App+approach)
+
 
     const isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
 
@@ -13220,101 +13316,41 @@
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
     }
 
-    if (isHTTP) {
-      // add the https iframe
-      const httpsIframe = document.createElement('iframe');
-      httpsIframe.setAttribute('style', 'display:none;');
-      httpsIframe.setAttribute('src', httpsIframePath);
-      document.body.appendChild(httpsIframe);
-      window.addEventListener('message', event => {
-        if (event.data != null) {
-          let obj = {};
+    if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
 
-          try {
-            obj = JSON.parse(event.data);
-          } catch (e) {
-            // not a call from our iframe
-            return;
+      return;
+    }
+
+    StorageManager.saveToLSorCookie(POPUP_LOADING, true);
+
+    _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
+      StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
+
+      window.wzrkPermissionPopup.wizAlert({
+        title: titleText,
+        body: bodyText,
+        confirmButtonText: okButtonText,
+        confirmButtonColor: okButtonColor,
+        rejectButtonText: rejectButtonText
+      }, enabled => {
+        // callback function
+        if (enabled) {
+          // the user accepted on the dialog box
+          if (typeof okCallback === 'function') {
+            okCallback();
           }
 
-          if (obj.state != null) {
-            if (obj.from === 'ct' && obj.state === 'not') {
-              if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-                _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
-
-                return;
-              }
-
-              StorageManager.saveToLSorCookie(POPUP_LOADING, true);
-
-              _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-                StorageManager.saveToLSorCookie(POPUP_LOADING, false);
-                window.wzrkPermissionPopup.wizAlert({
-                  title: titleText,
-                  body: bodyText,
-                  confirmButtonText: okButtonText,
-                  confirmButtonColor: okButtonColor,
-                  rejectButtonText: rejectButtonText
-                }, enabled => {
-                  // callback function
-                  if (enabled) {
-                    // the user accepted on the dialog box
-                    if (typeof okCallback === 'function') {
-                      okCallback();
-                    } // redirect to popup.html
-
-
-                    window.open(httpsPopupPath);
-                  } else {
-                    if (typeof rejectCallback === 'function') {
-                      rejectCallback();
-                    }
-                  }
-
-                  _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-                });
-              };
-            }
+          this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
+        } else {
+          if (typeof rejectCallback === 'function') {
+            rejectCallback();
           }
         }
-      }, false);
-    } else {
-      if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
-        _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Soft prompt wrapper is already loading or loaded');
 
-        return;
-      }
-
-      StorageManager.saveToLSorCookie(POPUP_LOADING, true);
-
-      _classPrivateFieldLooseBase(this, _addWizAlertJS)[_addWizAlertJS]().onload = () => {
-        StorageManager.saveToLSorCookie(POPUP_LOADING, false); // create our wizrocket popup
-
-        window.wzrkPermissionPopup.wizAlert({
-          title: titleText,
-          body: bodyText,
-          confirmButtonText: okButtonText,
-          confirmButtonColor: okButtonColor,
-          rejectButtonText: rejectButtonText
-        }, enabled => {
-          // callback function
-          if (enabled) {
-            // the user accepted on the dialog box
-            if (typeof okCallback === 'function') {
-              okCallback();
-            }
-
-            this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl);
-          } else {
-            if (typeof rejectCallback === 'function') {
-              rejectCallback();
-            }
-          }
-
-          _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
-        });
-      };
-    }
+        _classPrivateFieldLooseBase(this, _removeWizAlertJS)[_removeWizAlertJS]();
+      });
+    };
   };
 
   const BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi40OTYyIDUuMjQzOTVDMTIuODM5MSA1LjAzMzE3IDEzLjI4NDcgNS4xNDY4OSAxMy40OTczIDUuNDg4NjdDMTMuNzIyMyA1Ljg1MDE4IDEzLjYwMDIgNi4zMjUxOCAxMy4yMzggNi41NDkwMkM3LjM5Mzk5IDEwLjE2MDYgMy41IDE2LjYyNTcgMy41IDI0LjAwMDNDMy41IDM1LjMyMjEgMTIuNjc4MiA0NC41MDAzIDI0IDQ0LjUwMDNDMjguMDA1NSA0NC41MDAzIDMxLjc0MjYgNDMuMzUxNSAzNC45IDQxLjM2NTVDMzUuMjYwOCA0MS4xMzg1IDM1Ljc0MTYgNDEuMjM4NiAzNS45NjY4IDQxLjYwMDZDMzYuMTc5MiA0MS45NDE5IDM2LjA4NSA0Mi4zOTExIDM1Ljc0NTIgNDIuNjA2QzMyLjM0NjggNDQuNzU1OSAyOC4zMTg3IDQ2LjAwMDMgMjQgNDYuMDAwM0MxMS44NDk3IDQ2LjAwMDMgMiAzNi4xNTA1IDIgMjQuMDAwM0MyIDE2LjA2NjkgNi4xOTkyMSA5LjExNDMyIDEyLjQ5NjIgNS4yNDM5NVpNMzguOCAzOS45MDAzQzM4LjggNDAuMzk3MyAzOC4zOTcxIDQwLjgwMDMgMzcuOSA0MC44MDAzQzM3LjQwMjkgNDAuODAwMyAzNyA0MC4zOTczIDM3IDM5LjkwMDNDMzcgMzkuNDAzMiAzNy40MDI5IDM5LjAwMDMgMzcuOSAzOS4wMDAzQzM4LjM5NzEgMzkuMDAwMyAzOC44IDM5LjQwMzIgMzguOCAzOS45MDAzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMkMyMi44OTU0IDEyIDIyIDEyLjg5NTQgMjIgMTRWMTQuMjUyQzE4LjU0OTUgMTUuMTQwMSAxNiAxOC4yNzIzIDE2IDIyVjI5LjVIMTUuNDc2OUMxNC42NjEyIDI5LjUgMTQgMzAuMTYxMiAxNCAzMC45NzY5VjMxLjAyMzFDMTQgMzEuODM4OCAxNC42NjEyIDMyLjUgMTUuNDc2OSAzMi41SDMyLjUyMzFDMzMuMzM4OCAzMi41IDM0IDMxLjgzODggMzQgMzEuMDIzMVYzMC45NzY5QzM0IDMwLjE2MTIgMzMuMzM4OCAyOS41IDMyLjUyMzEgMjkuNUgzMlYyMkMzMiAxOC4yNzIzIDI5LjQ1MDUgMTUuMTQwMSAyNiAxNC4yNTJWMTRDMjYgMTIuODk1NCAyNS4xMDQ2IDEyIDI0IDEyWk0yNiAzNFYzMy41SDIyVjM0QzIyIDM1LjEwNDYgMjIuODk1NCAzNiAyNCAzNkMyNS4xMDQ2IDM2IDI2IDM1LjEwNDYgMjYgMzRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
@@ -13814,12 +13850,14 @@
       device,
       session,
       request,
-      logger
+      logger,
+      region
     } = _ref;
     const _device = device;
     const _session = session;
     const _request = request;
     const _logger = logger;
+    const _region = region;
     let _wizCounter = 0; // Campaign House keeping
 
     const doCampHouseKeeping = targetingMsgJson => {
@@ -14696,6 +14734,9 @@
       };
 
       for (let index = 0; index < sortedCampaigns.length; index++) {
+        var _msg$arp;
+
+        addCampaignToLocalStorage(sortedCampaigns[index], _region, msg === null || msg === void 0 ? void 0 : (_msg$arp = msg.arp) === null || _msg$arp === void 0 ? void 0 : _msg$arp.id);
         const targetNotif = sortedCampaigns[index];
 
         if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
@@ -14784,6 +14825,10 @@
         const msgArr = [];
 
         for (let index = 0; index < msg.inbox_notifs.length; index++) {
+          var _msg$arp2;
+
+          addCampaignToLocalStorage(msg.inbox_notifs[index], _region, msg === null || msg === void 0 ? void 0 : (_msg$arp2 = msg.arp) === null || _msg$arp2 === void 0 ? void 0 : _msg$arp2.id);
+
           if (doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
             msgArr.push(msg.inbox_notifs[index]);
           }
@@ -15250,7 +15295,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.14.4',
+        lib: 'web-sdk-v1.15.3',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -16107,7 +16152,7 @@
     }
 
     constructor() {
-      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$account6;
+      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$account6;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
@@ -16196,9 +16241,17 @@
 
       _classPrivateFieldLooseBase(this, _logger)[_logger] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
-      encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id;
+      encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id; // Custom Guid will be set here
+
+      const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
+
+      if (!result.isValid && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId)) {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].error(result.error);
+      }
+
       _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
-        logger: _classPrivateFieldLooseBase(this, _logger)[_logger]
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
@@ -16757,7 +16810,8 @@
           device: _classPrivateFieldLooseBase(this, _device)[_device],
           session: _classPrivateFieldLooseBase(this, _session)[_session],
           request: _classPrivateFieldLooseBase(this, _request)[_request],
-          logger: _classPrivateFieldLooseBase(this, _logger)[_logger]
+          logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+          region: _classPrivateFieldLooseBase(this, _account)[_account].region
         });
       };
 
@@ -16839,14 +16893,39 @@
         StorageManager.saveToLSorCookie(ACCOUNT_ID, (_clevertap$account7 = clevertap.account) === null || _clevertap$account7 === void 0 ? void 0 : _clevertap$account7[0].id);
         this.init();
       }
-    } // starts here
+    }
 
+    createCustomIdIfValid(customId) {
+      const result = validateCustomCleverTapID(customId);
+
+      if (!result.isValid) {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].error(result.error);
+      }
+      /* Only add Custom Id if no existing id is present */
+
+
+      if (_classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
+        return;
+      }
+
+      if (result.isValid) {
+        _classPrivateFieldLooseBase(this, _device)[_device].gcookie = result === null || result === void 0 ? void 0 : result.sanitizedId;
+        StorageManager.saveToLSorCookie(GCOOKIE_NAME, result === null || result === void 0 ? void 0 : result.sanitizedId);
+
+        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('CT Initialized with customId:: ' + (result === null || result === void 0 ? void 0 : result.sanitizedId));
+      } else {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].error('Invalid customId');
+      }
+    }
 
     init(accountId, region, targetDomain, token) {
-      let antiFlicker = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
+      let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
+        antiFlicker: {},
+        customId: null
+      };
 
-      if (Object.keys(antiFlicker).length > 0) {
-        addAntiFlicker(antiFlicker);
+      if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
+        addAntiFlicker(config.antiFlicker);
       }
 
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
@@ -16887,6 +16966,10 @@
 
       if (token) {
         _classPrivateFieldLooseBase(this, _account)[_account].token = token;
+      }
+
+      if (config === null || config === void 0 ? void 0 : config.customId) {
+        this.createCustomIdIfValid(config.customId);
       }
 
       const currLocation = location.href;
@@ -17078,7 +17161,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.14.4';
+      return 'web-sdk-v1.15.3';
     }
 
     defineVariable(name, defaultValue) {
@@ -17126,6 +17209,16 @@
 
     addOneTimeVariablesChangedCallback(callback) {
       _classPrivateFieldLooseBase(this, _variableStore)[_variableStore].addOneTimeVariablesChangedCallback(callback);
+    }
+    /*
+       This function is used for debugging and getting the details of all the campaigns
+       that were qualified and rendered for the current user
+    */
+
+
+    getAllQualifiedCampaignDetails() {
+      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
+      return existingCampaign;
     }
 
   }
