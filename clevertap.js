@@ -11623,7 +11623,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.15.4';
+            const sdkVersion = '1.15.5';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -13184,6 +13184,8 @@
     let httpsIframePath;
     let apnsWebPushId;
     let apnsWebPushServiceUrl;
+    let okButtonAriaLabel;
+    let rejectButtonAriaLabel;
     const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
 
     if (displayArgs.length === 1) {
@@ -13193,6 +13195,8 @@
         bodyText = notifObj.bodyText;
         okButtonText = notifObj.okButtonText;
         rejectButtonText = notifObj.rejectButtonText;
+        okButtonAriaLabel = notifObj.okButtonAriaLabel;
+        rejectButtonAriaLabel = notifObj.rejectButtonAriaLabel;
         okButtonColor = notifObj.okButtonColor;
         skipDialog = notifObj.skipDialog;
         askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
@@ -13336,7 +13340,9 @@
         body: bodyText,
         confirmButtonText: okButtonText,
         confirmButtonColor: okButtonColor,
-        rejectButtonText: rejectButtonText
+        rejectButtonText: rejectButtonText,
+        confirmButtonAriaLabel: okButtonAriaLabel,
+        rejectButtonAriaLabel: rejectButtonAriaLabel
       }, enabled => {
         // callback function
         if (enabled) {
@@ -15299,7 +15305,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.15.4',
+        lib: 'web-sdk-v1.15.5',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17148,7 +17154,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.15.4';
+      return 'web-sdk-v1.15.5';
     }
 
     defineVariable(name, defaultValue) {
