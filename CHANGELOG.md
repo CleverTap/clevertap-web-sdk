@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.15.5] 13th June 2025
+- Added Support for Accessiblity in Old Soft Prompt
+
 ## [1.15.4] 09th June, 2025 
 - Fix for Exit Intent Issue
 
