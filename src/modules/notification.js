@@ -382,6 +382,9 @@ export default class NotificationHandler extends Array {
     let httpsIframePath
     let apnsWebPushId
     let apnsWebPushServiceUrl
+    let okButtonAriaLabel
+    let rejectButtonAriaLabel
+
     const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && this.#fcmPublicKey !== null
 
     if (displayArgs.length === 1) {
@@ -391,6 +394,8 @@ export default class NotificationHandler extends Array {
         bodyText = notifObj.bodyText
         okButtonText = notifObj.okButtonText
         rejectButtonText = notifObj.rejectButtonText
+        okButtonAriaLabel = notifObj.okButtonAriaLabel
+        rejectButtonAriaLabel = notifObj.rejectButtonAriaLabel
         okButtonColor = notifObj.okButtonColor
         skipDialog = notifObj.skipDialog
         askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds
@@ -524,7 +529,9 @@ export default class NotificationHandler extends Array {
         body: bodyText,
         confirmButtonText: okButtonText,
         confirmButtonColor: okButtonColor,
-        rejectButtonText: rejectButtonText
+        rejectButtonText: rejectButtonText,
+        confirmButtonAriaLabel: okButtonAriaLabel,
+        rejectButtonAriaLabel: rejectButtonAriaLabel
       }, (enabled) => { // callback function
         if (enabled) {
           // the user accepted on the dialog box

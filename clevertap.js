@@ -13184,6 +13184,8 @@
     let httpsIframePath;
     let apnsWebPushId;
     let apnsWebPushServiceUrl;
+    let okButtonAriaLabel;
+    let rejectButtonAriaLabel;
     const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
 
     if (displayArgs.length === 1) {
@@ -13193,6 +13195,8 @@
         bodyText = notifObj.bodyText;
         okButtonText = notifObj.okButtonText;
         rejectButtonText = notifObj.rejectButtonText;
+        okButtonAriaLabel = notifObj.okButtonAriaLabel;
+        rejectButtonAriaLabel = notifObj.rejectButtonAriaLabel;
         okButtonColor = notifObj.okButtonColor;
         skipDialog = notifObj.skipDialog;
         askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
@@ -13336,7 +13340,9 @@
         body: bodyText,
         confirmButtonText: okButtonText,
         confirmButtonColor: okButtonColor,
-        rejectButtonText: rejectButtonText
+        rejectButtonText: rejectButtonText,
+        confirmButtonAriaLabel: okButtonAriaLabel,
+        rejectButtonAriaLabel: rejectButtonAriaLabel
       }, enabled => {
         // callback function
         if (enabled) {
@@ -13587,7 +13593,8 @@
     });
     const iconContainer = createElementWithAttributes('img', {
       id: 'iconContainer',
-      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url,
+      alt: content.icon.altText
     });
     iconTitleDescWrapper.appendChild(iconContainer);
     const titleDescWrapper = createElementWithAttributes('div', {
@@ -13607,11 +13614,13 @@
     });
     const primaryButton = createElementWithAttributes('button', {
       id: 'primaryButton',
-      textContent: content.buttons.primaryButtonText
+      textContent: content.buttons.primaryButtonText,
+      'ariaLabel': content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
     });
     const secondaryButton = createElementWithAttributes('button', {
       id: 'secondaryButton',
-      textContent: content.buttons.secondaryButtonText
+      textContent: content.buttons.secondaryButtonText,
+      'ariaLabel': content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
     });
     buttonsContainer.appendChild(secondaryButton);
     buttonsContainer.appendChild(primaryButton);
