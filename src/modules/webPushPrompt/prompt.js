@@ -184,12 +184,12 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
   const primaryButton = createElementWithAttributes('button', {
     id: 'primaryButton',
     textContent: content.buttons.primaryButtonText,
-    'aria-label': content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
+    ariaLabel: content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
   })
   const secondaryButton = createElementWithAttributes('button', {
     id: 'secondaryButton',
     textContent: content.buttons.secondaryButtonText,
-    'aria-label': content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
+    ariaLabel: content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
   })
   buttonsContainer.appendChild(secondaryButton)
   buttonsContainer.appendChild(primaryButton)
