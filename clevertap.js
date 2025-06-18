@@ -13593,7 +13593,8 @@
     });
     const iconContainer = createElementWithAttributes('img', {
       id: 'iconContainer',
-      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url,
+      alt: content.icon.altText
     });
     iconTitleDescWrapper.appendChild(iconContainer);
     const titleDescWrapper = createElementWithAttributes('div', {
@@ -13613,11 +13614,13 @@
     });
     const primaryButton = createElementWithAttributes('button', {
       id: 'primaryButton',
-      textContent: content.buttons.primaryButtonText
+      textContent: content.buttons.primaryButtonText,
+      'aria-label': content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
     });
     const secondaryButton = createElementWithAttributes('button', {
       id: 'secondaryButton',
-      textContent: content.buttons.secondaryButtonText
+      textContent: content.buttons.secondaryButtonText,
+      'aria-label': content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
     });
     buttonsContainer.appendChild(secondaryButton);
     buttonsContainer.appendChild(primaryButton);
