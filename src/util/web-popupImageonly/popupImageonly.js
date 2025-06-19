@@ -58,6 +58,8 @@ export class CTWebPopupImageOnly extends HTMLElement {
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup')
       this.container = this.shadowRoot.getElementById('container')
       this.closeIcon = this.shadowRoot.getElementById('close')
+      this.shadow.setAttribute('role', 'dialog')
+      this.shadow.setAttribute('aria-modal', 'true')
 
       this.popup.addEventListener('load', this.updateImageAndContainerWidth())
       this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container))

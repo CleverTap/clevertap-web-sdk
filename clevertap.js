@@ -9975,6 +9975,8 @@
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
       this.container = this.shadowRoot.getElementById('container');
       this.closeIcon = this.shadowRoot.getElementById('close');
+      this.shadow.setAttribute('role', 'dialog');
+      this.shadow.setAttribute('aria-modal', 'true');
       this.popup.addEventListener('load', this.updateImageAndContainerWidth());
       this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container));
       this.resizeObserver.observe(this.popup);
@@ -11623,7 +11625,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.15.3';
+            const sdkVersion = '1.15.4';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -14208,6 +14210,8 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe';
+      iframe.setAttribute('role', 'dialog');
+      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -14383,7 +14387,7 @@
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
-            window.document.body.onmouseleave = showExitIntent;
+            window.document.onmouseleave = showExitIntent;
           } // delay
 
 
@@ -14606,6 +14610,8 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe-intent';
+      iframe.setAttribute('role', 'dialog');
+      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -14748,7 +14754,7 @@
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
-          window.document.body.onmouseleave = showExitIntent;
+          window.document.onmouseleave = showExitIntent;
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
 
@@ -15299,7 +15305,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.15.3',
+        lib: 'web-sdk-v1.15.4',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17148,7 +17154,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.15.3';
+      return 'web-sdk-v1.15.4';
     }
 
     defineVariable(name, defaultValue) {
