@@ -17036,6 +17036,11 @@
         this.createCustomIdIfValid(config.customId);
       }
 
+      if (config.enableFetchApi) {
+        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
+        $ct.enableFetchApi = config.enableFetchApi;
+      }
+
       const currLocation = location.href;
       const urlParams = getURLParams(currLocation.toLowerCase()); // eslint-disable-next-line eqeqeq
 
