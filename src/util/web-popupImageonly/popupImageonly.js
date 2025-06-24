@@ -53,6 +53,14 @@ export class CTWebPopupImageOnly extends HTMLElement {
       return this.target.display.onClickAction
     }
 
+    get desktopAltText () {
+      return this.target.display.desktopAlt
+    }
+
+    get mobileAltText () {
+      return this.target.display.mobileALt
+    }
+
     renderImageOnlyPopup () {
       this.shadow.setAttribute('role', 'dialog')
       this.shadow.setAttribute('aria-modal', 'true')
@@ -123,6 +131,11 @@ export class CTWebPopupImageOnly extends HTMLElement {
     handleResize (popup, container) {
       const width = this.getRenderedImageWidth(popup)
       container.style.setProperty('width', `${width}px`)
+      if (window.innerWidth > 480) {
+        this.popup.setAttribute('alt', this.desktopAltText)
+      } else {
+        this.popup.setAttribute('alt', this.mobileAltText)
+      }
     }
 
     getImageOnlyPopupContent () {
