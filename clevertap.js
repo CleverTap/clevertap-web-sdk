@@ -9980,7 +9980,8 @@
       this.popup.addEventListener('load', this.updateImageAndContainerWidth());
       this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container));
       this.resizeObserver.observe(this.popup);
-      this.closeIcon.addEventListener('click', () => {
+
+      const closeFn = () => {
         const campaignId = this.target.wzrk_id.split('_')[0];
         const currentSessionId = this.session.sessionId;
         this.resizeObserver.unobserve(this.popup);
@@ -10001,7 +10002,9 @@
             saveCampaignObject(campaignObj);
           }
         }
-      });
+      };
+
+      this.closeIcon.addEventListener('click', closeFn);
 
       if (!this.target.display.preview) {
         window.clevertap.renderNotificationViewed({
@@ -10030,6 +10033,10 @@
               this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
           }
         });
+      }
+
+      if (this.onClickAction === 'none') {
+        this.popup.addEventListener('click', closeFn);
       }
     }
 
