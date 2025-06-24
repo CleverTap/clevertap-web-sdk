@@ -54,6 +54,8 @@ export class CTWebPopupImageOnly extends HTMLElement {
     }
 
     renderImageOnlyPopup () {
+      this.shadow.setAttribute('role', 'dialog')
+      this.shadow.setAttribute('aria-modal', 'true')
       this.shadow.innerHTML = this.getImageOnlyPopupContent()
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup')
       this.container = this.shadowRoot.getElementById('container')

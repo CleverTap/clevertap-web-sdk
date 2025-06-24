@@ -9971,6 +9971,8 @@
     }
 
     renderImageOnlyPopup() {
+      this.shadow.setAttribute('role', 'dialog');
+      this.shadow.setAttribute('aria-modal', 'true');
       this.shadow.innerHTML = this.getImageOnlyPopupContent();
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
       this.container = this.shadowRoot.getElementById('container');
@@ -13615,12 +13617,12 @@
     const primaryButton = createElementWithAttributes('button', {
       id: 'primaryButton',
       textContent: content.buttons.primaryButtonText,
-      'ariaLabel': content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
+      ariaLabel: content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
     });
     const secondaryButton = createElementWithAttributes('button', {
       id: 'secondaryButton',
       textContent: content.buttons.secondaryButtonText,
-      'ariaLabel': content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
+      ariaLabel: content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
     });
     buttonsContainer.appendChild(secondaryButton);
     buttonsContainer.appendChild(primaryButton);
@@ -14217,6 +14219,8 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe';
+      iframe.setAttribute('role', 'dialog');
+      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -14615,6 +14619,8 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe-intent';
+      iframe.setAttribute('role', 'dialog');
+      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
