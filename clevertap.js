@@ -13682,7 +13682,7 @@
     const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
 
     if (shouldShowNotification) {
-      document.body.appendChild(wrapper);
+      document.body.insertBefore(wrapper, document.body.firstChild);
 
       if (!configData.isPreview) {
         StorageManager.setMetaProp('webpush_last_notif_time', now);
