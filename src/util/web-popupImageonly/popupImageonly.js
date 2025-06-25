@@ -53,7 +53,17 @@ export class CTWebPopupImageOnly extends HTMLElement {
       return this.target.display.onClickAction
     }
 
+    get desktopAltText () {
+      return this.target.display.desktopAlt
+    }
+
+    get mobileAltText () {
+      return this.target.display.mobileALt
+    }
+
     renderImageOnlyPopup () {
+      this.shadow.setAttribute('role', 'dialog')
+      this.shadow.setAttribute('aria-modal', 'true')
       this.shadow.innerHTML = this.getImageOnlyPopupContent()
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup')
       this.container = this.shadowRoot.getElementById('container')
@@ -63,7 +73,7 @@ export class CTWebPopupImageOnly extends HTMLElement {
       this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container))
       this.resizeObserver.observe(this.popup)
 
-      this.closeIcon.addEventListener('click', () => {
+      const closeFn = () => {
         const campaignId = this.target.wzrk_id.split('_')[0]
         const currentSessionId = this.session.sessionId
         this.resizeObserver.unobserve(this.popup)
@@ -82,7 +92,9 @@ export class CTWebPopupImageOnly extends HTMLElement {
             saveCampaignObject(campaignObj)
           }
         }
-      })
+      }
+
+      this.closeIcon.addEventListener('click', closeFn)
 
       if (!this.target.display.preview) {
         window.clevertap.renderNotificationViewed({
@@ -110,11 +122,20 @@ export class CTWebPopupImageOnly extends HTMLElement {
           }
         })
       }
+
+      if (this.onClickAction === 'none') {
+        this.popup.addEventListener('click', closeFn)
+      }
     }
 
     handleResize (popup, container) {
       const width = this.getRenderedImageWidth(popup)
       container.style.setProperty('width', `${width}px`)
+      if (window.innerWidth > 480) {
+        this.popup.setAttribute('alt', this.desktopAltText)
+      } else {
+        this.popup.setAttribute('alt', this.mobileAltText)
+      }
     }
 
     getImageOnlyPopupContent () {
