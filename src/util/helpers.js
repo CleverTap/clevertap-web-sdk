@@ -1,5 +1,3 @@
-import { CUSTOM_CT_ID_PREFIX } from '../util/constants'
-
 export const isChrome = () => {
   const ua = navigator.userAgent
   return ua.includes('Chrome') || ua.includes('CriOS')
@@ -95,6 +93,7 @@ export const reconstructNestedObject = (payload) => {
 
   return result
 }
+
 
 /**
  * Validates and sanitizes a custom CleverTap ID based on platform rules.
