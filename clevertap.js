@@ -218,6 +218,7 @@
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
+  const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -9169,6 +9170,31 @@
     targetEl.appendChild(newScript);
     script.remove();
   }
+  function addCampaignToLocalStorage(campaign) {
+    var _campaign$display3;
+
+    let region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'eu1';
+    let accountId = arguments.length > 2 ? arguments[2] : undefined;
+
+    /* No Need to store campaigns in local storage in preview mode */
+    if ((campaign === null || campaign === void 0 ? void 0 : (_campaign$display3 = campaign.display) === null || _campaign$display3 === void 0 ? void 0 : _campaign$display3.preview) === true) {
+      return;
+    }
+
+    const campaignId = campaign.wzrk_id.split('_')[0];
+    const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
+    const enrichedCampaign = { ...campaign,
+      url: dashboardUrl
+    };
+    const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
+    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
+
+    if (!isDuplicate) {
+      const updatedCampaigns = [...existingCampaigns, enrichedCampaign];
+      StorageManager.saveToLSorCookie(QUALIFIED_CAMPAIGNS, encodeURIComponent(JSON.stringify(updatedCampaigns)));
+    }
+  }
 
   // CleverTap specific utilities
   const getCampaignObject = () => {
@@ -11836,14 +11862,16 @@
     _request: null,
     _logger: null,
     _msg: null,
+    _region: null,
 
     // Initialize with context objects
-    update(device, session, request, logger, msg) {
+    update(device, session, request, logger, msg, region) {
       this._device = device;
       this._session = session;
       this._request = request;
       this._logger = logger;
       this._msg = msg;
+      this._region = region;
     },
 
     // Getters for clean access
@@ -11865,6 +11893,10 @@
 
     get msg() {
       return this._msg;
+    },
+
+    get region() {
+      return this._region;
     }
 
   };
@@ -13243,7 +13275,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '1.15.1';
+            const sdkVersion = '1.15.2';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -15122,6 +15154,10 @@
         const msgArr = [];
 
         for (let index = 0; index < msg.inbox_notifs.length; index++) {
+          var _CampaignContext$msg, _CampaignContext$msg$;
+
+          addCampaignToLocalStorage(msg.inbox_notifs[index], CampaignContext.region, (_CampaignContext$msg = CampaignContext.msg) === null || _CampaignContext$msg === void 0 ? void 0 : (_CampaignContext$msg$ = _CampaignContext$msg.arp) === null || _CampaignContext$msg$ === void 0 ? void 0 : _CampaignContext$msg$.id);
+
           if (this.doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
             msgArr.push(msg.inbox_notifs[index]);
           }
@@ -15140,6 +15176,9 @@
       };
 
       for (let index = 0; index < sortedCampaigns.length; index++) {
+        var _CampaignContext$msg2, _CampaignContext$msg3;
+
+        addCampaignToLocalStorage(sortedCampaigns[index], CampaignContext.region, (_CampaignContext$msg2 = CampaignContext.msg) === null || _CampaignContext$msg2 === void 0 ? void 0 : (_CampaignContext$msg3 = _CampaignContext$msg2.arp) === null || _CampaignContext$msg3 === void 0 ? void 0 : _CampaignContext$msg3.id);
         const targetNotif = sortedCampaigns[index];
 
         if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
@@ -15287,7 +15326,8 @@
       device,
       session,
       request,
-      logger
+      logger,
+      region
     } = _ref;
     const _device = device;
     const _session = session;
@@ -15295,7 +15335,7 @@
     const _logger = logger;
     let _wizCounter = 0; // Campaign House keeping
 
-    CampaignContext.update(device, session, request, logger, msg);
+    CampaignContext.update(device, session, request, logger, msg, region);
     deliveryPreferenceUtils.updateOccurenceForPopupAndNativeDisplay(msg, device, logger);
     deliveryPreferenceUtils.portTLC(_session, logger);
     const _callBackCalled = false;
@@ -15729,7 +15769,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.15.1',
+        lib: 'web-sdk-v1.15.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17540,7 +17580,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.15.1';
+      return 'web-sdk-v1.15.2';
     }
 
     defineVariable(name, defaultValue) {
