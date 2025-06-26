@@ -47,15 +47,15 @@ export const handleActionMode = (_logger, accountId) => {
   }
 }
 
-// TODO: Add a guarding mechanism to skip postMessages from non trusted sources
 const handleMessageEvent = (event) => {
   if (event.data && isValidUrl(event.data.originUrl)) {
-    const msgOrigin = new URL(event.data.originUrl).origin
+    // Visual Editor is opened from only dashboard, while preview can be opened from both dashboard & Visual Editor
+    // therefore adding check for self origin
+    // Visual Editor can only be opened in their domain not inside dashboard
+
     if (
-      (!event.origin.includes(WVE_URL_ORIGIN.CLEVERTAP) &&
-      !event.origin.includes(window.location.origin) &&
-      !event.origin.includes(WVE_URL_ORIGIN.LOCAL)) ||
-      event.origin !== msgOrigin
+      !event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) &&
+      !event.origin.endsWith(window.location.origin)
     ) {
       return
     }
@@ -461,7 +461,9 @@ export function executeScripts (selector) {
     }
     if (!newElement) return
     const scripts = newElement.querySelectorAll('script')
-    scripts.forEach(addScriptTo)
+    scripts.forEach((script) => {
+      addScriptTo(script)
+    })
   } catch (error) {
     logger.debug('Error loading script', error)
   }

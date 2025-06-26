@@ -93,3 +93,60 @@ export const reconstructNestedObject = (payload) => {
 
   return result
 }
+
+
+/**
+ * Validates and sanitizes a custom CleverTap ID based on platform rules.
+ *
+ * Rules:
+ * - Must be between 1 and 64 characters in length.
+ * - Allowed characters: A-Z, a-z, 0-9, (, ), !, :, @, $, _, -
+ * - Automatically lowercases the ID.
+ *
+ * @param {string} id - The custom CleverTap ID to validate.
+ * @returns {{ isValid: boolean, error?: string, sanitizedId?: string }} - Validation result.
+ */
+export function validateCustomCleverTapID (id) {
+  if (typeof id !== 'string') {
+    return { isValid: false, error: 'ID must be a string.' }
+  }
+
+  const lowercaseId = id.toLowerCase()
+  const length = lowercaseId.length
+
+  if (length < 1 || length > 64) {
+    return {
+      isValid: false,
+      error: 'ID must be between 1 and 64 characters.'
+    }
+  }
+
+  const allowedPattern = /^[a-z0-9()!:@$_-]+$/
+
+  if (!allowedPattern.test(lowercaseId)) {
+    return {
+      isValid: false,
+      error:
+        'ID contains invalid characters. Only A-Z, a-z, 0-9, (, ), !, :, @, $, _, - are allowed.'
+    }
+  }
+
+  return { isValid: true, sanitizedId: addWebPrefix(lowercaseId) }
+}
+
+/**
+ * Adds a `_w_` prefix to a sanitized CleverTap ID for web.
+ *
+ * - Converts the ID to lowercase.
+ * - Does not validate the characters or length — assumes the ID is already valid.
+ *
+ * @param {string} id - The custom CleverTap ID.
+ * @returns {string} - The prefixed and lowercased CleverTap ID.
+ */
+function addWebPrefix (id) {
+  if (typeof id !== 'string') {
+    throw new Error('ID must be a string')
+  }
+
+  return `${CUSTOM_CT_ID_PREFIX}${id.toLowerCase()}`
+}
