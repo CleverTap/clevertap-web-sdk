@@ -3,7 +3,6 @@ import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
 
 import { addScriptTo, appendScriptForCustomEvent } from '../campaignRender/utilities'
-import { WVE_URL_ORIGIN } from '../../modules/visualBuilder/builder_constants'
 
 export const renderPersonalisationBanner = (targetingMsgJson) => {
   if (customElements.get('ct-web-personalisation-banner') === undefined) {
@@ -81,13 +80,11 @@ export const renderCustomHtml = (targetingMsgJson, logger) => {
       const retryElement = document.querySelector(divId)
       if (retryElement) {
         raiseViewed()
-        retryElement.innerHTML = html
+        retryElement.outerHTML = html
         const wrapper = document.createElement('div')
         wrapper.innerHTML = html
         const scripts = wrapper.querySelectorAll('script')
-        scripts.forEach((script) => {
-          addScriptTo(script)
-        })
+        scripts.forEach(addScriptTo)
         clearInterval(intervalId)
       } else if (++count >= 20) {
         logger.error(`No element present on DOM with divId '${divId}'.`)
@@ -116,9 +113,6 @@ export const handleJson = (targetingMsgJson) => {
 }
 
 function handleCustomHtmlPreviewPostMessageEvent (event, logger) {
-  if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
-    return
-  }
   const eventData = JSON.parse(event.data)
   const inAppNotifs = eventData.inapp_notifs
   const msgContent = inAppNotifs[0].msgContent

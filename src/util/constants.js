@@ -6,7 +6,6 @@ export const CLEAR = 'clear'
 export const CHARGED_ID = 'Charged ID'
 export const CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID'
 export const GCOOKIE_NAME = 'WZRK_G'
-export const QUALIFIED_CAMPAIGNS = 'WZRK_QC'
 export const KCOOKIE_NAME = 'WZRK_K'
 export const CAMP_COOKIE_NAME = 'WZRK_CAMP'
 export const CAMP_COOKIE_G = 'WZRK_CAMP_G'// cookie for storing campaign details against guid
@@ -69,7 +68,7 @@ export const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper'
 export const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper'
 export const POPUP_LOADING = 'WZRK_POPUP_LOADING'
 export const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview'
-export const CUSTOM_CT_ID_PREFIX = '_w_'
+export const QUALIFIED_CAMPAIGNS = 'WZRK_QC'
 
 export const WEB_NATIVE_TEMPLATES = {
   KV_PAIR: 1,
@@ -87,10 +86,10 @@ export const WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES = {
 }
 
 export const CAMPAIGN_TYPES = {
-  EXIT_INTENT: 1,
+  EXIT_INTENT: 1, /* Deprecated */
   WEB_NATIVE_DISPLAY: 2,
-  FOOTER_NOTIFICATION: 0,
-  FOOTER_NOTIFICATION_2: null
+  FOOTER_NOTIFICATION: 0, /* Web Popup */
+  FOOTER_NOTIFICATION_2: null /* Web Popup */
 }
 
 export const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
@@ -113,6 +112,28 @@ export const KEYS_TO_ENCRYPT = [
   LRU_CACHE,
   PR_COOKIE
 ]
+
+export const DELIVERY_PREFERENCE_KEYS = {
+  EXCLUDE_FROM_FREQUENCY_CAP: 'efc',
+  ADVANCE_DELIVERY_PREFERENEC: 'adp',
+  WEB_POPUP: {
+    SESSION_COUNT: 'wsc',
+    FREQUENCY_COUNT: 'wfc',
+    OCCURENCE_COUNT: 'woc',
+    wtq: 'wtq',
+    GLOBAL_SESSION_LIMIT: 'wmc',
+    LEGACY: {
+      ONCE_PER_SESSION: 'mdc',
+      ONCE_PER_DAY: 'tdc'
+    }
+  },
+  WEB_NATIVE_DISPLAY: {
+    SESSION_COUNT: 'wndsc',
+    FREQUENCY_COUNT: 'wndfc',
+    OCCURENCE_COUNT: 'wndoc',
+    wndtq: 'wndtq'
+  }
+}
 
 export const ACTION_TYPES = {
   OPEN_LINK: 'url',
