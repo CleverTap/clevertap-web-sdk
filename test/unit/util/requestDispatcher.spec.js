@@ -1,3 +1,4 @@
+import 'regenerator-runtime/runtime'
 import { ARP_COOKIE, OPTOUT_COOKIE_ENDSWITH } from '../../../src/util/constants'
 import { compressData } from '../../../src/util/encoder'
 import RequestDispatcher from '../../../src/util/requestDispatcher'
@@ -10,13 +11,53 @@ jest.enableAutomock().unmock('../../../src/util/requestDispatcher').unmock('../.
 describe('util/requestDispatcher', function () {
   describe('fire request', () => {
     beforeEach(() => {
+      // Reset all mocks
+      jest.clearAllMocks()
+
       RequestDispatcher.logger = {
-        debug: jest.fn()
+        debug: jest.fn(),
+        error: jest.fn()
+      }
+
+      // Mock the handleFetchResponse method to avoid actual fetch calls
+      RequestDispatcher.handleFetchResponse = jest.fn().mockResolvedValue()
+
+      // Mock $ct object completely
+      Object.assign($ct, {
+        enableFetchApi: false,
+        blockRequest: false,
+        isOptInRequest: false,
+        globalCache: {
+          REQ_N: 0,
+          RESP_N: 0
+        }
+      })
+
+      // Mock DOM methods
+      document.getElementsByClassName = jest.fn().mockReturnValue([])
+      document.createElement = jest.fn().mockReturnValue({
+        setAttribute: jest.fn(),
+        async: true
+      })
+      document.getElementsByTagName = jest.fn().mockReturnValue([{
+        appendChild: jest.fn()
+      }])
+
+      // Mock window properties
+      window.isOULInProgress = false
+      window.clevertap = undefined
+      window.wizrocket = undefined
+      window.$WZRK_WR = {
+        tr: jest.fn(),
+        s: jest.fn(),
+        enableWebPush: jest.fn()
       }
 
       addToURL.mockImplementation((url, key, value) => `${url}&${key}=${value}`)
       compressData.mockImplementation(data => data)
       StorageManager._isLocalStorageSupported.mockReturnValue(true)
+      StorageManager.getMetaProp.mockReturnValue(false)
+      StorageManager.readFromLSorCookie.mockReturnValue(null)
     })
 
     describe('drop request due to opt out', () => {
@@ -87,6 +128,31 @@ describe('util/requestDispatcher', function () {
         RequestDispatcher.fireRequest('chrome-extension://testUrl')
         expect(RequestDispatcher.logger.debug).toHaveBeenCalledWith(expect.stringContaining('https://testUrl'))
         expect(RequestDispatcher.logger.debug).toHaveBeenCalledWith(expect.not.stringContaining('chrome-extension://testUrl'))
+      })
+
+      describe('fetch API feature flag', () => {
+        test('should use script tag when enableFetchApi is false', () => {
+          $ct.enableFetchApi = false
+          const mockAppendChild = jest.fn()
+          document.getElementsByTagName = jest.fn().mockReturnValue([{ appendChild: mockAppendChild }])
+          document.createElement = jest.fn().mockReturnValue({
+            setAttribute: jest.fn()
+          })
+          document.getElementsByClassName = jest.fn().mockReturnValue([])
+
+          RequestDispatcher.fireRequest('test url', false, false)
+
+          expect(RequestDispatcher.handleFetchResponse).not.toHaveBeenCalled()
+          expect(mockAppendChild).toHaveBeenCalled()
+        })
+
+        test('should use fetch API when enableFetchApi is true', () => {
+          $ct.enableFetchApi = true
+
+          RequestDispatcher.fireRequest('test url', false, false)
+
+          expect(RequestDispatcher.handleFetchResponse).toHaveBeenCalled()
+        })
       })
     })
   })
