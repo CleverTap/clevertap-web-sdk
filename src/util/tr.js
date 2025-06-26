@@ -3,7 +3,7 @@ import { CampaignContext } from './campaignHouseKeeping/campaignContext'
 import { commonCampaignUtils } from './campaignHouseKeeping/commonCampaignUtils'
 import { deliveryPreferenceUtils } from './campaignRender/utilities'
 
-const _tr = (msg, { device, session, request, logger }) => {
+const _tr = (msg, { device, session, request, logger, region }) => {
   const _device = device
   const _session = session
   const _request = request
@@ -11,7 +11,7 @@ const _tr = (msg, { device, session, request, logger }) => {
   let _wizCounter = 0
   // Campaign House keeping
 
-  CampaignContext.update(device, session, request, logger, msg)
+  CampaignContext.update(device, session, request, logger, msg, region)
   deliveryPreferenceUtils.updateOccurenceForPopupAndNativeDisplay(msg, device, logger)
   deliveryPreferenceUtils.portTLC(_session, logger)
 
