@@ -6,9 +6,9 @@ export default class DeviceManager {
   #logger
   gcookie
 
-  constructor ({ logger, customId }) {
+  constructor ({ logger }) {
     this.#logger = logger
-    this.gcookie = this.getGuid() || customId
+    this.gcookie = this.getGuid()
   }
 
   getGuid () {
