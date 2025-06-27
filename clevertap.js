@@ -13594,6 +13594,8 @@
   };
 
   const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    var _content$icon;
+
     if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
     const {
       boxConfig: {
@@ -13617,7 +13619,7 @@
     const iconContainer = createElementWithAttributes('img', {
       id: 'iconContainer',
       src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url,
-      alt: content.icon.altText
+      alt: ((_content$icon = content.icon) === null || _content$icon === void 0 ? void 0 : _content$icon.altText) || ''
     });
     iconTitleDescWrapper.appendChild(iconContainer);
     const titleDescWrapper = createElementWithAttributes('div', {

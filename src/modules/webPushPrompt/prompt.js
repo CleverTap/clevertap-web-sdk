@@ -168,7 +168,7 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
   const iconContainer = createElementWithAttributes('img', {
     id: 'iconContainer',
     src: content.icon.type === 'default' ? `data:image/svg+xml;base64,${PROMPT_BELL_BASE64}` : content.icon.url,
-    alt: content.icon.altText
+    alt: content.icon?.altText || ''
   })
 
   iconTitleDescWrapper.appendChild(iconContainer)
