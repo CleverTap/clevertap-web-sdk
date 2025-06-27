@@ -167,7 +167,8 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
   const iconTitleDescWrapper = createElementWithAttributes('div', { id: 'iconTitleDescWrapper' })
   const iconContainer = createElementWithAttributes('img', {
     id: 'iconContainer',
-    src: content.icon.type === 'default' ? `data:image/svg+xml;base64,${PROMPT_BELL_BASE64}` : content.icon.url
+    src: content.icon.type === 'default' ? `data:image/svg+xml;base64,${PROMPT_BELL_BASE64}` : content.icon.url,
+    alt: content.icon?.altText || ''
   })
 
   iconTitleDescWrapper.appendChild(iconContainer)
@@ -182,11 +183,13 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
 
   const primaryButton = createElementWithAttributes('button', {
     id: 'primaryButton',
-    textContent: content.buttons.primaryButtonText
+    textContent: content.buttons.primaryButtonText,
+    ariaLabel: content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
   })
   const secondaryButton = createElementWithAttributes('button', {
     id: 'secondaryButton',
-    textContent: content.buttons.secondaryButtonText
+    textContent: content.buttons.secondaryButtonText,
+    ariaLabel: content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
   })
   buttonsContainer.appendChild(secondaryButton)
   buttonsContainer.appendChild(primaryButton)
@@ -223,7 +226,7 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
   const popupFrequency = content.popupFrequency || 7 // number of days
   const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60
   if (shouldShowNotification) {
-    document.body.appendChild(wrapper)
+    document.body.insertBefore(wrapper, document.body.firstChild)
     if (!configData.isPreview) {
       StorageManager.setMetaProp('webpush_last_notif_time', now)
       addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl)

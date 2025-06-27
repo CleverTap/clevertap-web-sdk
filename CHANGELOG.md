@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.16.0] 27th June 2025
+- Added Support for Accessiblity in Soft Prompt
+- Fix for Exit Intent Issue
+
 ## [1.15.3] 28nd May, 2025
 - Stricter Origin Checks for postMessage communication
 
