@@ -9987,10 +9987,31 @@
      */
 
 
-    _handleMultiValueAdd(propKey, propVal, command) {
-      if ($ct.globalProfileMap == null) {
-        $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
-      }
+    get desktopAltText() {
+      return this.target.display.desktopAlt;
+    }
+
+    get mobileAltText() {
+      return this.target.display.mobileALt;
+    }
+
+    renderImageOnlyPopup() {
+      this.shadow.innerHTML = this.getImageOnlyPopupContent();
+      this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
+      this.container = this.shadowRoot.getElementById('container');
+      this.closeIcon = this.shadowRoot.getElementById('close');
+      this.container.setAttribute('role', 'dialog');
+      this.container.setAttribute('aria-modal', 'true');
+      this.popup.addEventListener('load', this.updateImageAndContainerWidth());
+      this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container));
+      this.resizeObserver.observe(this.popup);
+
+      const closeFn = () => {
+        const campaignId = this.target.wzrk_id.split('_')[0];
+        const currentSessionId = this.session.sessionId;
+        this.resizeObserver.unobserve(this.popup);
+        document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
+        this.remove();
 
       const existingValue = $ct.globalProfileMap[propKey];
       const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : [];
@@ -10002,6 +10023,30 @@
           array.push(normalizedValue);
         }
       };
+
+      this.closeIcon.addEventListener('click', closeFn);
+
+      if (!this.target.display.preview) {
+        window.clevertap.renderNotificationViewed({
+          msgId: this.msgId,
+          pivotId: this.pivotId
+        });
+      }
+
+      if (this.onClickUrl) {
+        this.popup.addEventListener('click', () => {
+          if (!this.target.display.preview) {
+            window.clevertap.renderNotificationClicked({
+              msgId: this.msgId,
+              pivotId: this.pivotId
+            });
+          }
+
+          switch (this.onClickAction) {
+            case ACTION_TYPES.OPEN_LINK_AND_CLOSE:
+              this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
+              this.closeIcon.click();
+              break;
 
       if (Array.isArray(propVal)) {
         propVal.forEach(value => {
@@ -10019,9 +10064,20 @@
         return;
       }
 
-      $ct.globalProfileMap[propKey] = array;
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(propKey, propVal, command);
+      if (this.onClickAction === 'none') {
+        this.popup.addEventListener('click', closeFn);
+      }
+    }
+
+    handleResize(popup, container) {
+      const width = this.getRenderedImageWidth(popup);
+      container.style.setProperty('width', "".concat(width, "px"));
+
+      if (window.innerWidth > 480) {
+        this.popup.setAttribute('alt', this.desktopAltText);
+      } else {
+        this.popup.setAttribute('alt', this.mobileAltText);
+      }
     }
     /**
      *
@@ -12049,7 +12105,17 @@
       return img.height * ratio;
     }
 
-  }
+        case WVE_QUERY_PARAMS.SDK_CHECK:
+          if (parentWindow) {
+            logger$1.debug('SDK version check');
+            const sdkVersion = '1.16.0';
+            parentWindow.postMessage({
+              message: 'SDKVersion',
+              accountId,
+              originUrl: window.location.href,
+              sdkVersion
+            }, '*');
+          }
 
   class Message extends HTMLElement {
     constructor(config, message) {
@@ -13721,10 +13787,47 @@
         }
       }
 
-      processSelectors(selectors);
+  var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
+    // make sure everything is specified
+    let titleText;
+    let bodyText;
+    let okButtonText;
+    let rejectButtonText;
+    let okButtonColor;
+    let skipDialog;
+    let askAgainTimeInSeconds;
+    let okCallback;
+    let rejectCallback;
+    let subscriptionCallback;
+    let serviceWorkerPath;
+    let httpsPopupPath;
+    let httpsIframePath;
+    let apnsWebPushId;
+    let apnsWebPushServiceUrl;
+    let okButtonAriaLabel;
+    let rejectButtonAriaLabel;
+    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
 
-      if (Object.keys(retryElements).length) {
-        retryInterval = setInterval(retryProcessing, 100);
+    if (displayArgs.length === 1) {
+      if (isObject(displayArgs[0])) {
+        const notifObj = displayArgs[0];
+        titleText = notifObj.titleText;
+        bodyText = notifObj.bodyText;
+        okButtonText = notifObj.okButtonText;
+        rejectButtonText = notifObj.rejectButtonText;
+        okButtonAriaLabel = notifObj.okButtonAriaLabel;
+        rejectButtonAriaLabel = notifObj.rejectButtonAriaLabel;
+        okButtonColor = notifObj.okButtonColor;
+        skipDialog = notifObj.skipDialog;
+        askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
+        okCallback = notifObj.okCallback;
+        rejectCallback = notifObj.rejectCallback;
+        subscriptionCallback = notifObj.subscriptionCallback;
+        serviceWorkerPath = notifObj.serviceWorkerPath;
+        httpsPopupPath = notifObj.httpsPopupPath;
+        httpsIframePath = notifObj.httpsIframePath;
+        apnsWebPushId = notifObj.apnsWebPushId;
+        apnsWebPushServiceUrl = notifObj.apnsWebPushServiceUrl;
       }
     }
 
@@ -13980,9 +14083,21 @@
         }
       }
 
-      const item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
-      const button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
-      item.classList.add('carousel__item--selected');
+      window.wzrkPermissionPopup.wizAlert({
+        title: titleText,
+        body: bodyText,
+        confirmButtonText: okButtonText,
+        confirmButtonColor: okButtonColor,
+        rejectButtonText: rejectButtonText,
+        confirmButtonAriaLabel: okButtonAriaLabel,
+        rejectButtonAriaLabel: rejectButtonAriaLabel
+      }, enabled => {
+        // callback function
+        if (enabled) {
+          // the user accepted on the dialog box
+          if (typeof okCallback === 'function') {
+            okCallback();
+          }
 
       if (button) {
         button.classList.add('carousel__button--selected');
@@ -14161,13 +14276,64 @@
     const searchParams = new URLSearchParams(window.location.search);
     const ctType = searchParams.get('ctActionMode');
 
-    if (ctType) {
-      const parentWindow = window.opener;
+  const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    var _content$icon;
 
-      switch (ctType) {
-        case CUSTOM_HTML_PREVIEW:
-          if (parentWindow) {
-            parentWindow.postMessage('ready', '*');
+    if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
+    const {
+      boxConfig: {
+        content,
+        style
+      }
+    } = configData; // Create the wrapper div
+
+    const wrapper = createElementWithAttributes('div', {
+      id: NEW_SOFT_PROMPT_SELCTOR_ID
+    });
+    const overlayDiv = style.overlay.enabled ? createElementWithAttributes('div', {
+      id: 'pnOverlay'
+    }) : '';
+    const pnCard = createElementWithAttributes('div', {
+      id: 'pnCard'
+    });
+    const iconTitleDescWrapper = createElementWithAttributes('div', {
+      id: 'iconTitleDescWrapper'
+    });
+    const iconContainer = createElementWithAttributes('img', {
+      id: 'iconContainer',
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url,
+      alt: ((_content$icon = content.icon) === null || _content$icon === void 0 ? void 0 : _content$icon.altText) || ''
+    });
+    iconTitleDescWrapper.appendChild(iconContainer);
+    const titleDescWrapper = createElementWithAttributes('div', {
+      id: 'titleDescWrapper'
+    });
+    titleDescWrapper.appendChild(createElementWithAttributes('div', {
+      id: 'title',
+      textContent: content.title
+    }));
+    titleDescWrapper.appendChild(createElementWithAttributes('div', {
+      id: 'description',
+      textContent: content.description
+    }));
+    iconTitleDescWrapper.appendChild(titleDescWrapper);
+    const buttonsContainer = createElementWithAttributes('div', {
+      id: 'buttonsContainer'
+    });
+    const primaryButton = createElementWithAttributes('button', {
+      id: 'primaryButton',
+      textContent: content.buttons.primaryButtonText,
+      ariaLabel: content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
+    });
+    const secondaryButton = createElementWithAttributes('button', {
+      id: 'secondaryButton',
+      textContent: content.buttons.secondaryButtonText,
+      ariaLabel: content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
+    });
+    buttonsContainer.appendChild(secondaryButton);
+    buttonsContainer.appendChild(primaryButton);
+    pnCard.appendChild(iconTitleDescWrapper);
+    pnCard.appendChild(buttonsContainer); // Apply styles
 
             const eventHandler = event => handleCustomHtmlPreviewPostMessageEvent(event, logger);
 
@@ -14196,7 +14362,8 @@
         currentCount = obj[campaignId];
       }
 
-      currentCount++;
+    if (shouldShowNotification) {
+      document.body.insertBefore(wrapper, document.body.firstChild);
 
       if (obj.tc != null) {
         // Total count across all campaigns
@@ -14637,6 +14804,8 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe';
+      iframe.setAttribute('role', 'dialog');
+      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -15044,6 +15213,8 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe-intent';
+      iframe.setAttribute('role', 'dialog');
+      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
