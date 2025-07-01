@@ -116,5 +116,9 @@ export const KEYS_TO_ENCRYPT = [
 
 export const ACTION_TYPES = {
   OPEN_LINK: 'url',
-  OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
+  OPEN_LINK_AND_CLOSE: 'urlCloseNotification',
+  CLOSE: 'close',
+  OPEN_WEB_URL: 'open-web-url',
+  SOFT_PROMPT: 'soft-prompt',
+  RUN_JS: 'js'
 }

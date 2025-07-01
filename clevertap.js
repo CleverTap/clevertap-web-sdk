@@ -243,7 +243,11 @@
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
   const ACTION_TYPES = {
     OPEN_LINK: 'url',
-    OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
+    OPEN_LINK_AND_CLOSE: 'urlCloseNotification',
+    CLOSE: 'close',
+    OPEN_WEB_URL: 'open-web-url',
+    SOFT_PROMPT: 'soft-prompt',
+    RUN_JS: 'js'
   };
 
   const isString = input => {
@@ -12559,6 +12563,108 @@
     containerEl.style.visibility = 'hidden';
     containerEl.appendChild(popupImageOnly);
   };
+  const FULLSCREEN_STYLE = "\n  z-index: 2147483647;\n  display: block;\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100vw !important;\n  height: 100vh !important;\n  margin: 0;\n  padding: 0;\n  background: transparent;\n";
+  const IFRAME_STYLE = "\n  ".concat(FULLSCREEN_STYLE, "\n  border: 0 !important;\n");
+  const renderAdvancedBuilder = (targetingMsgJson, _session) => {
+    const divId = 'wizAdvBuilder';
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+    const existingWrapper = document.getElementById(divId);
+
+    if (existingWrapper) {
+      if ($ct.dismissSpamControl) {
+        existingWrapper.remove();
+      } else {
+        return;
+      }
+    }
+
+    $ct.campaignDivMap[campaignId] = divId;
+    const msgDiv = document.createElement('div');
+    msgDiv.id = divId;
+    msgDiv.setAttribute('style', FULLSCREEN_STYLE);
+    const iframe = document.createElement('iframe');
+    iframe.id = 'wiz-iframe';
+    const isDesktop = window.matchMedia('(min-width: 480px)').matches;
+    const html = isDesktop ? targetingMsgJson.display.desktopHTML : targetingMsgJson.display.mobileHTML;
+    iframe.srcdoc = html;
+    iframe.setAttribute('style', IFRAME_STYLE);
+
+    iframe.onload = () => {
+      try {
+        iframe.contentDocument.addEventListener('CT_custom_event', e => {
+          console.log('Event received ', e);
+          handleIframeEvent(e, targetingMsgJson, divId, _session);
+        });
+      } catch (error) {
+        console.warn('Iframe document inaccessible, using postMessage:', error);
+
+        const messageHandler = event => {
+          var _event$data;
+
+          if (((_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.type) === 'CT_custom_event') {
+            console.log('Event received ', event);
+            handleIframeEvent({
+              detail: event.data.detail
+            }, targetingMsgJson, divId, _session);
+          }
+        };
+
+        window.removeEventListener('message', messageHandler); // Avoid duplicate bindings
+
+        window.addEventListener('message', messageHandler);
+      }
+    };
+
+    msgDiv.appendChild(iframe);
+    document.body.appendChild(msgDiv);
+  };
+
+  const handleIframeEvent = (e, targetingMsgJson, divId, _session) => {
+    var _detail$open;
+
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+    const {
+      detail
+    } = e;
+    if (!(detail === null || detail === void 0 ? void 0 : detail.type)) return console.log('Empty or missing event type');
+    console.log('Received event type:', detail.type);
+
+    switch (detail.type) {
+      case ACTION_TYPES.CLOSE:
+        // close Iframe
+        closeIframe(campaignId, divId, _session.sessionId);
+        break;
+
+      case ACTION_TYPES.OPEN_WEB_URL:
+        // handle opening of url
+        if ((_detail$open = detail.open) === null || _detail$open === void 0 ? void 0 : _detail$open.openInNewTab) {
+          window.open(detail.url, '_blank');
+
+          if (detail.closeOnClick) {
+            closeIframe(campaignId, divId, _session.sessionId);
+          }
+        } else {
+          window.location.href = detail.url;
+        }
+
+        break;
+
+      case ACTION_TYPES.SOFT_PROMPT:
+        // Handle soft prompt
+        window.clevertap.notifications.push({
+          skipDialog: true
+        });
+        break;
+
+      case ACTION_TYPES.RUN_JS:
+        // Handle JS code
+        invokeExternalJs(e.detail.js, targetingMsgJson);
+        break;
+
+      default:
+        console.log('Empty event type received');
+    }
+  };
 
   const getBoxPromptStyles = style => {
     const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
@@ -13895,7 +14001,8 @@
     const _session = session;
     const _request = request;
     const _logger = logger;
-    const _region = region;
+    const _region = region; // msg = builderdata
+
     let _wizCounter = 0; // Campaign House keeping
 
     const doCampHouseKeeping = targetingMsgJson => {
@@ -14163,6 +14270,11 @@
         return;
       }
 
+      if (displayObj.layout === 5) {
+        renderAdvancedBuilder(targetingMsgJson, _session);
+        return;
+      }
+
       const divId = 'wizParDiv' + displayObj.layout;
       const opacityDivId = 'intentOpacityDiv' + displayObj.layout;
 
@@ -14242,8 +14354,6 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe';
-      iframe.setAttribute('role', 'dialog');
-      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -14642,8 +14752,6 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe-intent';
-      iframe.setAttribute('role', 'dialog');
-      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
