@@ -96,7 +96,8 @@ export const CAMPAIGN_TYPES = {
 export const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
   KV_PAIR: 'KV_Pair',
   JSON: 'JSON',
-  VISUAL_BUILDER: 'Visual_Builder'
+  VISUAL_BUILDER: 'Visual_Builder',
+  ADVANCED_BUILDER: 'advanced-web-popup-builder'
 }
 
 export const SYSTEM_EVENTS = [

@@ -86,6 +86,10 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session) => {
   }
   msgDiv.appendChild(iframe)
   document.body.appendChild(msgDiv)
+  window.clevertap.renderNotificationViewed({
+    msgId: targetingMsgJson.wzrk_id,
+    pivotId: targetingMsgJson.wzrk_pivot
+  })
 }
 
 const handleIframeEvent = (e, targetingMsgJson, divId, _session) => {
