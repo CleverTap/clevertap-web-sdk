@@ -12569,58 +12569,22 @@
   const IFRAME_STYLE = "\n  ".concat(FULLSCREEN_STYLE, "\n  border: 0 !important;\n");
   const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
     const divId = 'wizAdvBuilder';
-    const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-    const existingWrapper = document.getElementById(divId);
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Check for existing wrapper and handle accordingly
 
-    if (existingWrapper) {
-      if ($ct.dismissSpamControl) {
-        existingWrapper.remove();
-      } else {
-        return;
-      }
+    if (handleExistingWrapper(divId)) {
+      return; // Early exit if existing wrapper should not be replaced
     }
 
-    $ct.campaignDivMap[campaignId] = divId;
-    const msgDiv = document.createElement('div');
-    msgDiv.id = divId;
-    msgDiv.setAttribute('style', FULLSCREEN_STYLE);
-    const iframe = document.createElement('iframe');
-    iframe.id = 'wiz-iframe';
-    const isDesktop = window.matchMedia('(min-width: 480px)').matches;
-    const html = isDesktop ? targetingMsgJson.display.desktopHTML : targetingMsgJson.display.mobileHTML;
-    iframe.srcdoc = html;
-    iframe.setAttribute('style', IFRAME_STYLE);
+    $ct.campaignDivMap[campaignId] = divId; // Create DOM elements
 
-    iframe.onload = () => {
-      try {
-        iframe.contentDocument.addEventListener('CT_custom_event', e => {
-          _logger.debug('Event received ', e);
+    const msgDiv = createWrapperDiv(divId);
+    const iframe = createIframe(targetingMsgJson); // Setup event handling
 
-          handleIframeEvent(e, targetingMsgJson, divId, _session, _logger);
-        });
-      } catch (error) {
-        _logger.error('Iframe document inaccessible, using postMessage:', error);
-
-        const messageHandler = event => {
-          var _event$data;
-
-          if (((_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.type) === 'CT_custom_event') {
-            _logger.debug('Event received ', event);
-
-            handleIframeEvent({
-              detail: event.data.detail
-            }, targetingMsgJson, divId, _session, _logger);
-          }
-        };
-
-        window.removeEventListener('message', messageHandler); // Avoid duplicate bindings
-
-        window.addEventListener('message', messageHandler);
-      }
-    };
+    setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger); // Append to DOM
 
     msgDiv.appendChild(iframe);
-    document.body.appendChild(msgDiv);
+    document.body.appendChild(msgDiv); // Track notification view
+
     window.clevertap.renderNotificationViewed({
       msgId: targetingMsgJson.wzrk_id,
       pivotId: targetingMsgJson.wzrk_pivot
@@ -12632,16 +12596,19 @@
     const {
       detail
     } = e;
-    const payload = {
-      msgId: campaignId,
-      pivotId: targetingMsgJson.wzrk_pivot
-    };
-    if (!(detail === null || detail === void 0 ? void 0 : detail.type)) return _logger.debug('Empty or missing event type');
+
+    if (!(detail === null || detail === void 0 ? void 0 : detail.type)) {
+      return _logger.debug('Empty or missing event type');
+    }
 
     _logger.debug('Received event type:', detail);
 
-    payload.kv = {
-      wzrk_c2a: e.detail.elementDetails.name
+    const payload = {
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot,
+      kv: {
+        wzrk_c2a: e.detail.elementDetails.name
+      }
     };
 
     switch (detail.type) {
@@ -12678,13 +12645,86 @@
       case ACTION_TYPES.RUN_JS:
         // Handle JS code
         window.clevertap.renderNotificationClicked(payload);
-        invokeExternalJs(e.detail.js, targetingMsgJson);
+        invokeExternalJs(e.detail.js.name, targetingMsgJson);
         break;
 
       default:
         _logger.debug('Empty event type received');
 
     }
+  }; // Utility: Check and handle existing wrapper
+
+
+  const handleExistingWrapper = divId => {
+    const existingWrapper = document.getElementById(divId);
+
+    if (existingWrapper) {
+      if ($ct.dismissSpamControl) {
+        existingWrapper.remove();
+        return false; // Continue with creation
+      } else {
+          return true; // Stop execution
+        }
+    }
+
+    return false; // No existing wrapper, continue
+  }; // Utility: Create wrapper div
+
+
+  const createWrapperDiv = divId => {
+    const msgDiv = document.createElement('div');
+    msgDiv.id = divId;
+    msgDiv.setAttribute('style', FULLSCREEN_STYLE);
+    return msgDiv;
+  }; // Utility: Create iframe with attributes and content
+
+
+  const createIframe = targetingMsgJson => {
+    const iframe = document.createElement('iframe');
+    iframe.id = 'wiz-iframe';
+    const isDesktop = window.matchMedia('(min-width: 480px)').matches;
+    const html = isDesktop ? targetingMsgJson.display.desktopHTML : targetingMsgJson.display.mobileHTML;
+    iframe.srcdoc = html;
+    iframe.setAttribute('style', IFRAME_STYLE);
+    return iframe;
+  }; // Utility: Setup iframe event listeners
+
+
+  const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger) => {
+    iframe.onload = () => {
+      try {
+        // Try direct document access first
+        iframe.contentDocument.addEventListener('CT_custom_event', e => {
+          _logger.debug('Event received ', e);
+
+          handleIframeEvent(e, targetingMsgJson, divId, _session, _logger);
+        });
+      } catch (error) {
+        // Fallback to postMessage
+        _logger.error('Iframe document inaccessible, using postMessage:', error);
+
+        setupPostMessageListener(targetingMsgJson, divId, _session, _logger);
+      }
+    };
+  }; // Utility: Setup postMessage listener as fallback
+
+
+  const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) => {
+    const messageHandler = event => {
+      var _event$data;
+
+      if (((_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.type) === 'CT_custom_event') {
+        _logger.debug('Event received ', event);
+
+        handleIframeEvent({
+          detail: event.data.detail
+        }, targetingMsgJson, divId, _session, _logger);
+      }
+    };
+
+    window.removeEventListener('message', messageHandler); // Avoid duplicate bindings
+
+    window.addEventListener('message', messageHandler);
   };
 
   const getBoxPromptStyles = style => {

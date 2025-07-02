@@ -23,7 +23,6 @@ import {
   getToday
 } from './datetime'
 
-// import AdvenaceBuilderHTML from '../../example-apps/advance_builder.html?raw'
 import { StorageManager, $ct } from './storage'
 import RequestDispatcher from './requestDispatcher'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
@@ -33,7 +32,6 @@ import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisatio
 import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate, webNativeDisplayCampaignUtils, addCampaignToLocalStorage } from './campaignRender/utilities'
 import { renderAdvancedBuilder, renderPopUpImageOnly } from './campaignRender/webPopup'
 import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
-// import builderdata from './builderData'
 
 const _tr = (msg, {
   device,
