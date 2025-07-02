@@ -10013,15 +10013,26 @@
       return this.target.display.onClickAction;
     }
 
+    get desktopAltText() {
+      return this.target.display.desktopAlt;
+    }
+
+    get mobileAltText() {
+      return this.target.display.mobileALt;
+    }
+
     renderImageOnlyPopup() {
       this.shadow.innerHTML = this.getImageOnlyPopupContent();
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
       this.container = this.shadowRoot.getElementById('container');
       this.closeIcon = this.shadowRoot.getElementById('close');
+      this.container.setAttribute('role', 'dialog');
+      this.container.setAttribute('aria-modal', 'true');
       this.popup.addEventListener('load', this.updateImageAndContainerWidth());
       this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container));
       this.resizeObserver.observe(this.popup);
-      this.closeIcon.addEventListener('click', () => {
+
+      const closeFn = () => {
         const campaignId = this.target.wzrk_id.split('_')[0];
         const currentSessionId = this.session.sessionId;
         this.resizeObserver.unobserve(this.popup);
@@ -10042,7 +10053,9 @@
             saveCampaignObject(campaignObj);
           }
         }
-      });
+      };
+
+      this.closeIcon.addEventListener('click', closeFn);
 
       if (!this.target.display.preview) {
         window.clevertap.renderNotificationViewed({
@@ -10072,11 +10085,21 @@
           }
         });
       }
+
+      if (this.onClickAction === 'none') {
+        this.popup.addEventListener('click', closeFn);
+      }
     }
 
     handleResize(popup, container) {
       const width = this.getRenderedImageWidth(popup);
       container.style.setProperty('width', "".concat(width, "px"));
+
+      if (window.innerWidth > 480) {
+        this.popup.setAttribute('alt', this.desktopAltText);
+      } else {
+        this.popup.setAttribute('alt', this.mobileAltText);
+      }
     }
 
     getImageOnlyPopupContent() {
@@ -11666,7 +11689,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.15.4';
+            const sdkVersion = '1.16.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -11825,12 +11848,11 @@
 
     const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
-    let url = window.location.href;
+    const url = window.location.href;
 
     if (isPreview) {
       const currentUrl = new URL(url);
       currentUrl.searchParams.delete('ctActionMode');
-      url = currentUrl.toString();
     }
 
     let notificationViewed = false;
@@ -11917,27 +11939,24 @@
     };
 
     details.forEach(d => {
-      // TODO: Check if this condition is needed, as we might have scenarios where the customer might be on the same url but might have ?queryParams or #pageAnchors
-      if (d.url === url) {
-        d.selectorData.forEach(s => {
-          if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
-            insertedElements.push(s);
+      d.selectorData.forEach(s => {
+        if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
+          insertedElements.push(s);
+        } else {
+          let element;
+
+          try {
+            element = document.querySelector(s.selector);
+          } catch (_) {}
+
+          if (element) {
+            raiseViewed();
+            processElement(element, s);
           } else {
-            let element;
-
-            try {
-              element = document.querySelector(s.selector);
-            } catch (_) {}
-
-            if (element) {
-              raiseViewed();
-              processElement(element, s);
-            } else {
-              tryFindingElement(s);
-            }
+            tryFindingElement(s);
           }
-        });
-      }
+        }
+      });
     });
 
     const addNewEl = selector => {
@@ -13227,6 +13246,8 @@
     let httpsIframePath;
     let apnsWebPushId;
     let apnsWebPushServiceUrl;
+    let okButtonAriaLabel;
+    let rejectButtonAriaLabel;
     const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
 
     if (displayArgs.length === 1) {
@@ -13236,6 +13257,8 @@
         bodyText = notifObj.bodyText;
         okButtonText = notifObj.okButtonText;
         rejectButtonText = notifObj.rejectButtonText;
+        okButtonAriaLabel = notifObj.okButtonAriaLabel;
+        rejectButtonAriaLabel = notifObj.rejectButtonAriaLabel;
         okButtonColor = notifObj.okButtonColor;
         skipDialog = notifObj.skipDialog;
         askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
@@ -13379,7 +13402,9 @@
         body: bodyText,
         confirmButtonText: okButtonText,
         confirmButtonColor: okButtonColor,
-        rejectButtonText: rejectButtonText
+        rejectButtonText: rejectButtonText,
+        confirmButtonAriaLabel: okButtonAriaLabel,
+        rejectButtonAriaLabel: rejectButtonAriaLabel
       }, enabled => {
         // callback function
         if (enabled) {
@@ -13608,6 +13633,8 @@
   };
 
   const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    var _content$icon;
+
     if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
     const {
       boxConfig: {
@@ -13630,7 +13657,8 @@
     });
     const iconContainer = createElementWithAttributes('img', {
       id: 'iconContainer',
-      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url,
+      alt: ((_content$icon = content.icon) === null || _content$icon === void 0 ? void 0 : _content$icon.altText) || ''
     });
     iconTitleDescWrapper.appendChild(iconContainer);
     const titleDescWrapper = createElementWithAttributes('div', {
@@ -13650,11 +13678,13 @@
     });
     const primaryButton = createElementWithAttributes('button', {
       id: 'primaryButton',
-      textContent: content.buttons.primaryButtonText
+      textContent: content.buttons.primaryButtonText,
+      ariaLabel: content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
     });
     const secondaryButton = createElementWithAttributes('button', {
       id: 'secondaryButton',
-      textContent: content.buttons.secondaryButtonText
+      textContent: content.buttons.secondaryButtonText,
+      ariaLabel: content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
     });
     buttonsContainer.appendChild(secondaryButton);
     buttonsContainer.appendChild(primaryButton);
@@ -13693,7 +13723,7 @@
     const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
 
     if (shouldShowNotification) {
-      document.body.appendChild(wrapper);
+      document.body.insertBefore(wrapper, document.body.firstChild);
 
       if (!configData.isPreview) {
         StorageManager.setMetaProp('webpush_last_notif_time', now);
@@ -14251,6 +14281,8 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe';
+      iframe.setAttribute('role', 'dialog');
+      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -14649,6 +14681,8 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe-intent';
+      iframe.setAttribute('role', 'dialog');
+      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -15342,7 +15376,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.15.4',
+        lib: 'web-sdk-v1.16.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17213,7 +17247,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.15.4';
+      return 'web-sdk-v1.16.1';
     }
 
     defineVariable(name, defaultValue) {

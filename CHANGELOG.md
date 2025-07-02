@@ -1,7 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.15.4] 09th June, 2025 
+## [1.16.1] 1st July 2025
+- Removed URL check from Visual Editor rendering
+
+## [1.16.0] 27th June 2025
+- Added Support for Accessiblity in Soft Prompt
 - Fix for Exit Intent Issue
 
 ## [1.15.3] 28nd May, 2025
