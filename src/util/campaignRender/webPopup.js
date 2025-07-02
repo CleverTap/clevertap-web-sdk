@@ -32,7 +32,7 @@ const IFRAME_STYLE = `
   border: 0 !important;
 `
 
-export const renderAdvancedBuilder = (targetingMsgJson, _session) => {
+export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
   const divId = 'wizAdvBuilder'
   const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
 
@@ -66,17 +66,17 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session) => {
   iframe.onload = () => {
     try {
       iframe.contentDocument.addEventListener('CT_custom_event', (e) => {
-        console.log('Event received ', e)
-        handleIframeEvent(e, targetingMsgJson, divId, _session)
+        _logger.debug('Event received ', e)
+        handleIframeEvent(e, targetingMsgJson, divId, _session, _logger)
       }
       )
     } catch (error) {
-      console.warn('Iframe document inaccessible, using postMessage:', error)
+      _logger.error('Iframe document inaccessible, using postMessage:', error)
 
       const messageHandler = (event) => {
         if (event.data?.type === 'CT_custom_event') {
-          console.log('Event received ', event)
-          handleIframeEvent({ detail: event.data.detail }, targetingMsgJson, divId, _session)
+          _logger.debug('Event received ', event)
+          handleIframeEvent({ detail: event.data.detail }, targetingMsgJson, divId, _session, _logger)
         }
       }
 
@@ -92,38 +92,47 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session) => {
   })
 }
 
-const handleIframeEvent = (e, targetingMsgJson, divId, _session) => {
+const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
   const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
   const { detail } = e
+  const payload = { msgId: campaignId, pivotId: targetingMsgJson.wzrk_pivot }
 
-  if (!detail?.type) return console.log('Empty or missing event type')
-  console.log('Received event type:', detail.type)
+  if (!detail?.type) return _logger.debug('Empty or missing event type')
 
+  _logger.debug('Received event type:', detail)
+
+  payload.kv = {
+    wzrk_c2a: e.detail.elementDetails.name
+  }
   switch (detail.type) {
     case ACTION_TYPES.CLOSE:
       // close Iframe
+      window.clevertap.renderNotificationClicked(payload)
       closeIframe(campaignId, divId, _session.sessionId)
       break
     case ACTION_TYPES.OPEN_WEB_URL:
       // handle opening of url
-      if (detail.open?.openInNewTab) {
-        window.open(detail.url, '_blank')
+      window.clevertap.renderNotificationClicked(payload)
+      if (detail.openInNewTab) {
+        window.open(detail.url.value.replacements, '_blank')
         if (detail.closeOnClick) {
           closeIframe(campaignId, divId, _session.sessionId)
         }
       } else {
-        window.location.href = detail.url
+        window.location.href = detail.url.value.replacements
       }
       break
     case ACTION_TYPES.SOFT_PROMPT:
       // Handle soft prompt
+      window.clevertap.renderNotificationClicked(payload)
       window.clevertap.notifications.push({ skipDialog: true })
       break
     case ACTION_TYPES.RUN_JS:
       // Handle JS code
+      window.clevertap.renderNotificationClicked(payload)
       invokeExternalJs(e.detail.js, targetingMsgJson)
       break
     default:
-      console.log('Empty event type received')
+      _logger.debug('Empty event type received')
   }
 }

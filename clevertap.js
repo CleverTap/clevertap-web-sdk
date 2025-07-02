@@ -12571,7 +12571,7 @@
   };
   const FULLSCREEN_STYLE = "\n  z-index: 2147483647;\n  display: block;\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100vw !important;\n  height: 100vh !important;\n  margin: 0;\n  padding: 0;\n  background: transparent;\n";
   const IFRAME_STYLE = "\n  ".concat(FULLSCREEN_STYLE, "\n  border: 0 !important;\n");
-  const renderAdvancedBuilder = (targetingMsgJson, _session) => {
+  const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
     const divId = 'wizAdvBuilder';
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
     const existingWrapper = document.getElementById(divId);
@@ -12598,20 +12598,22 @@
     iframe.onload = () => {
       try {
         iframe.contentDocument.addEventListener('CT_custom_event', e => {
-          console.log('Event received ', e);
-          handleIframeEvent(e, targetingMsgJson, divId, _session);
+          _logger.debug('Event received ', e);
+
+          handleIframeEvent(e, targetingMsgJson, divId, _session, _logger);
         });
       } catch (error) {
-        console.warn('Iframe document inaccessible, using postMessage:', error);
+        _logger.error('Iframe document inaccessible, using postMessage:', error);
 
         const messageHandler = event => {
           var _event$data;
 
           if (((_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.type) === 'CT_custom_event') {
-            console.log('Event received ', event);
+            _logger.debug('Event received ', event);
+
             handleIframeEvent({
               detail: event.data.detail
-            }, targetingMsgJson, divId, _session);
+            }, targetingMsgJson, divId, _session, _logger);
           }
         };
 
@@ -12629,38 +12631,49 @@
     });
   };
 
-  const handleIframeEvent = (e, targetingMsgJson, divId, _session) => {
-    var _detail$open;
-
+  const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
     const {
       detail
     } = e;
-    if (!(detail === null || detail === void 0 ? void 0 : detail.type)) return console.log('Empty or missing event type');
-    console.log('Received event type:', detail.type);
+    const payload = {
+      msgId: campaignId,
+      pivotId: targetingMsgJson.wzrk_pivot
+    };
+    if (!(detail === null || detail === void 0 ? void 0 : detail.type)) return _logger.debug('Empty or missing event type');
+
+    _logger.debug('Received event type:', detail);
+
+    payload.kv = {
+      wzrk_c2a: e.detail.elementDetails.name
+    };
 
     switch (detail.type) {
       case ACTION_TYPES.CLOSE:
         // close Iframe
+        window.clevertap.renderNotificationClicked(payload);
         closeIframe(campaignId, divId, _session.sessionId);
         break;
 
       case ACTION_TYPES.OPEN_WEB_URL:
         // handle opening of url
-        if ((_detail$open = detail.open) === null || _detail$open === void 0 ? void 0 : _detail$open.openInNewTab) {
-          window.open(detail.url, '_blank');
+        window.clevertap.renderNotificationClicked(payload);
+
+        if (detail.openInNewTab) {
+          window.open(detail.url.value.replacements, '_blank');
 
           if (detail.closeOnClick) {
             closeIframe(campaignId, divId, _session.sessionId);
           }
         } else {
-          window.location.href = detail.url;
+          window.location.href = detail.url.value.replacements;
         }
 
         break;
 
       case ACTION_TYPES.SOFT_PROMPT:
         // Handle soft prompt
+        window.clevertap.renderNotificationClicked(payload);
         window.clevertap.notifications.push({
           skipDialog: true
         });
@@ -12668,11 +12681,13 @@
 
       case ACTION_TYPES.RUN_JS:
         // Handle JS code
+        window.clevertap.renderNotificationClicked(payload);
         invokeExternalJs(e.detail.js, targetingMsgJson);
         break;
 
       default:
-        console.log('Empty event type received');
+        _logger.debug('Empty event type received');
+
     }
   };
 
@@ -14281,7 +14296,7 @@
       }
 
       if (displayObj.templateType === CUSTOM_EVENTS_CAMPAIGN_SOURCES.ADVANCED_BUILDER) {
-        renderAdvancedBuilder(targetingMsgJson, _session);
+        renderAdvancedBuilder(targetingMsgJson, _session, _logger);
         return;
       }
 

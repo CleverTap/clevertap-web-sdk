@@ -272,7 +272,7 @@ const _tr = (msg, {
       return
     }
     if (displayObj.templateType === CUSTOM_EVENTS_CAMPAIGN_SOURCES.ADVANCED_BUILDER) {
-      renderAdvancedBuilder(targetingMsgJson, _session)
+      renderAdvancedBuilder(targetingMsgJson, _session, _logger)
       return
     }
 
