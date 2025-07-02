@@ -14,7 +14,8 @@ import {
   WZRK_PREFIX,
   WZRK_ID,
   WEB_NATIVE_TEMPLATES,
-  CAMPAIGN_TYPES
+  CAMPAIGN_TYPES,
+  CUSTOM_EVENTS_CAMPAIGN_SOURCES
 } from './constants'
 
 import {
@@ -29,7 +30,7 @@ import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSe
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
 import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel, renderCustomHtml, handleJson } from './campaignRender/nativeDisplay'
 import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate, webNativeDisplayCampaignUtils, addCampaignToLocalStorage } from './campaignRender/utilities'
-import { renderPopUpImageOnly } from './campaignRender/webPopup'
+import { renderAdvancedBuilder, renderPopUpImageOnly } from './campaignRender/webPopup'
 import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 
 const _tr = (msg, {
@@ -44,6 +45,8 @@ const _tr = (msg, {
   const _request = request
   const _logger = logger
   const _region = region
+
+  // msg = builderdata
 
   let _wizCounter = 0
   // Campaign House keeping
@@ -266,6 +269,10 @@ const _tr = (msg, {
     if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
+    if (displayObj.templateType === CUSTOM_EVENTS_CAMPAIGN_SOURCES.ADVANCED_BUILDER) {
+      renderAdvancedBuilder(targetingMsgJson, _session, _logger)
+      return
+    }
 
     const divId = 'wizParDiv' + displayObj.layout
     const opacityDivId = 'intentOpacityDiv' + displayObj.layout
@@ -341,8 +348,6 @@ const _tr = (msg, {
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe'
-    iframe.setAttribute('role', 'dialog')
-    iframe.setAttribute('aria-modal', 'true')
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
     if (onClick !== '' && onClick != null) {
@@ -711,8 +716,6 @@ const _tr = (msg, {
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe-intent'
-    iframe.setAttribute('role', 'dialog')
-    iframe.setAttribute('aria-modal', 'true')
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
     if (onClick !== '' && onClick != null) {
