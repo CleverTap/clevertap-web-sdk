@@ -9245,6 +9245,15 @@
       if (!campaignDetails || !campaignDetails.wzrk_id) {
         throw new Error('Invalid campaign details provided');
       }
+      /* TODO: Remove this once we have the real data */
+
+
+      const addMockDatatoWebNativeDisplayCamps = c => {
+        c.display.adp = 1;
+      };
+
+      addMockDatatoWebNativeDisplayCamps(campaignDetails);
+      /* TODO: Remove this once we have the real data */
 
       const campaignObj = getCampaignObject() || {};
       const campaignIdParts = campaignDetails.wzrk_id.split('_');
@@ -14051,6 +14060,107 @@
 
   }
 
+  const logLevels = {
+    DISABLE: 0,
+    ERROR: 1,
+    INFO: 2,
+    DEBUG: 3,
+    DEBUG_PE: 4
+  };
+
+  var _logLevel = _classPrivateFieldLooseKey("logLevel");
+
+  var _log = _classPrivateFieldLooseKey("log");
+
+  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
+
+  class Logger {
+    constructor(logLevel) {
+      Object.defineProperty(this, _isLegacyDebug, {
+        get: _get_isLegacyDebug,
+        set: void 0
+      });
+      Object.defineProperty(this, _log, {
+        value: _log2
+      });
+      Object.defineProperty(this, _logLevel, {
+        writable: true,
+        value: void 0
+      });
+      this.wzrkError = {};
+
+      // Singleton pattern - return existing instance if it exists
+      if (Logger.instance) {
+        return Logger.instance;
+      }
+
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
+      this.wzrkError = {};
+      Logger.instance = this;
+    } // Static method for explicit singleton access
+
+
+    static getInstance(logLevel) {
+      if (!Logger.instance) {
+        Logger.instance = new Logger(logLevel);
+      }
+
+      return Logger.instance;
+    }
+
+    get logLevel() {
+      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
+    }
+
+    set logLevel(logLevel) {
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
+    }
+
+    error(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
+      }
+    }
+
+    info(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
+      }
+    }
+
+    debug(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
+      }
+    }
+
+    debugPE(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
+      }
+    }
+
+    reportError(code, description) {
+      this.wzrkError.c = code;
+      this.wzrkError.d = description;
+      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
+    }
+
+  }
+
+  var _log2 = function _log2(level, message) {
+    if (window.console) {
+      try {
+        const ts = new Date().getTime();
+        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
+      } catch (e) {}
+    }
+  };
+
+  var _get_isLegacyDebug = function () {
+    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
+  };
+
   const renderPersonalisationBanner = targetingMsgJson => {
     var _targetingMsgJson$dis;
 
@@ -14067,6 +14177,7 @@
     const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
     containerEl.innerHTML = '';
     containerEl.appendChild(bannerEl);
+    commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
   };
   const renderPersonalisationCarousel = targetingMsgJson => {
     var _targetingMsgJson$dis2;
@@ -14081,6 +14192,7 @@
     const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
     container.innerHTML = '';
     container.appendChild(carousel);
+    commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
   };
   const handleKVpairCampaign = targetingMsgJson => {
     const inaObj = {};
@@ -14098,6 +14210,7 @@
       detail: inaObj
     });
     document.dispatchEvent(kvPairsEvent);
+    commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
   };
   const renderCustomHtml = (targetingMsgJson, logger) => {
     const {
@@ -14147,6 +14260,7 @@
           scripts.forEach(script => {
             addScriptTo(script);
           });
+          commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
           clearInterval(intervalId);
         } else if (++count >= 20) {
           logger.error("No element present on DOM with divId '".concat(divId, "'."));
@@ -14175,6 +14289,7 @@
       detail: inaObj
     });
     document.dispatchEvent(jsonEvent);
+    commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
   };
 
   function handleCustomHtmlPreviewPostMessageEvent(event, logger) {
@@ -15468,91 +15583,6 @@
     }
 
   }
-
-  const logLevels = {
-    DISABLE: 0,
-    ERROR: 1,
-    INFO: 2,
-    DEBUG: 3,
-    DEBUG_PE: 4
-  };
-
-  var _logLevel = _classPrivateFieldLooseKey("logLevel");
-
-  var _log = _classPrivateFieldLooseKey("log");
-
-  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
-
-  class Logger {
-    constructor(logLevel) {
-      Object.defineProperty(this, _isLegacyDebug, {
-        get: _get_isLegacyDebug,
-        set: void 0
-      });
-      Object.defineProperty(this, _log, {
-        value: _log2
-      });
-      Object.defineProperty(this, _logLevel, {
-        writable: true,
-        value: void 0
-      });
-      this.wzrkError = {};
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevel : logLevels.INFO;
-      this.wzrkError = {};
-    }
-
-    get logLevel() {
-      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
-    }
-
-    set logLevel(logLevel) {
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
-    }
-
-    error(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
-      }
-    }
-
-    info(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
-      }
-    }
-
-    debug(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
-      }
-    }
-
-    debugPE(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
-      }
-    }
-
-    reportError(code, description) {
-      this.wzrkError.c = code;
-      this.wzrkError.d = description;
-      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
-    }
-
-  }
-
-  var _log2 = function _log2(level, message) {
-    if (window.console) {
-      try {
-        const ts = new Date().getTime();
-        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
-    }
-  };
-
-  var _get_isLegacyDebug = function () {
-    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
-  };
 
   var _logger$4 = _classPrivateFieldLooseKey("logger");
 
