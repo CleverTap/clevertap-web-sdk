@@ -11656,7 +11656,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.16.0';
+            const sdkVersion = '1.16.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -11815,12 +11815,11 @@
 
     const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
-    let url = window.location.href;
+    const url = window.location.href;
 
     if (isPreview) {
       const currentUrl = new URL(url);
       currentUrl.searchParams.delete('ctActionMode');
-      url = currentUrl.toString();
     }
 
     let notificationViewed = false;
@@ -11907,27 +11906,24 @@
     };
 
     details.forEach(d => {
-      // TODO: Check if this condition is needed, as we might have scenarios where the customer might be on the same url but might have ?queryParams or #pageAnchors
-      if (d.url === url) {
-        d.selectorData.forEach(s => {
-          if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
-            insertedElements.push(s);
+      d.selectorData.forEach(s => {
+        if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
+          insertedElements.push(s);
+        } else {
+          let element;
+
+          try {
+            element = document.querySelector(s.selector);
+          } catch (_) {}
+
+          if (element) {
+            raiseViewed();
+            processElement(element, s);
           } else {
-            let element;
-
-            try {
-              element = document.querySelector(s.selector);
-            } catch (_) {}
-
-            if (element) {
-              raiseViewed();
-              processElement(element, s);
-            } else {
-              tryFindingElement(s);
-            }
+            tryFindingElement(s);
           }
-        });
-      }
+        }
+      });
     });
 
     const addNewEl = selector => {
@@ -15470,7 +15466,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.16.0',
+        lib: 'web-sdk-v1.16.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17319,7 +17315,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.16.0';
+      return 'web-sdk-v1.16.1';
     }
 
     defineVariable(name, defaultValue) {
