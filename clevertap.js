@@ -239,11 +239,21 @@
     FOOTER_NOTIFICATION: 0,
     FOOTER_NOTIFICATION_2: null
   };
+  const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
+    KV_PAIR: 'KV_Pair',
+    JSON: 'JSON',
+    VISUAL_BUILDER: 'Visual_Builder',
+    ADVANCED_BUILDER: 'advanced-web-popup-builder'
+  };
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
   const ACTION_TYPES = {
     OPEN_LINK: 'url',
-    OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
+    OPEN_LINK_AND_CLOSE: 'urlCloseNotification',
+    CLOSE: 'close',
+    OPEN_WEB_URL: 'open-web-url',
+    SOFT_PROMPT: 'soft-prompt',
+    RUN_JS: 'js'
   };
 
   const isString = input => {
@@ -12555,6 +12565,127 @@
     containerEl.style.visibility = 'hidden';
     containerEl.appendChild(popupImageOnly);
   };
+  const FULLSCREEN_STYLE = "\n  z-index: 2147483647;\n  display: block;\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100vw !important;\n  height: 100vh !important;\n  margin: 0;\n  padding: 0;\n  background: transparent;\n";
+  const IFRAME_STYLE = "\n  ".concat(FULLSCREEN_STYLE, "\n  border: 0 !important;\n");
+  const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
+    const divId = 'wizAdvBuilder';
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+    const existingWrapper = document.getElementById(divId);
+
+    if (existingWrapper) {
+      if ($ct.dismissSpamControl) {
+        existingWrapper.remove();
+      } else {
+        return;
+      }
+    }
+
+    $ct.campaignDivMap[campaignId] = divId;
+    const msgDiv = document.createElement('div');
+    msgDiv.id = divId;
+    msgDiv.setAttribute('style', FULLSCREEN_STYLE);
+    const iframe = document.createElement('iframe');
+    iframe.id = 'wiz-iframe';
+    const isDesktop = window.matchMedia('(min-width: 480px)').matches;
+    const html = isDesktop ? targetingMsgJson.display.desktopHTML : targetingMsgJson.display.mobileHTML;
+    iframe.srcdoc = html;
+    iframe.setAttribute('style', IFRAME_STYLE);
+
+    iframe.onload = () => {
+      try {
+        iframe.contentDocument.addEventListener('CT_custom_event', e => {
+          _logger.debug('Event received ', e);
+
+          handleIframeEvent(e, targetingMsgJson, divId, _session, _logger);
+        });
+      } catch (error) {
+        _logger.error('Iframe document inaccessible, using postMessage:', error);
+
+        const messageHandler = event => {
+          var _event$data;
+
+          if (((_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.type) === 'CT_custom_event') {
+            _logger.debug('Event received ', event);
+
+            handleIframeEvent({
+              detail: event.data.detail
+            }, targetingMsgJson, divId, _session, _logger);
+          }
+        };
+
+        window.removeEventListener('message', messageHandler); // Avoid duplicate bindings
+
+        window.addEventListener('message', messageHandler);
+      }
+    };
+
+    msgDiv.appendChild(iframe);
+    document.body.appendChild(msgDiv);
+    window.clevertap.renderNotificationViewed({
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot
+    });
+  };
+
+  const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+    const {
+      detail
+    } = e;
+    const payload = {
+      msgId: campaignId,
+      pivotId: targetingMsgJson.wzrk_pivot
+    };
+    if (!(detail === null || detail === void 0 ? void 0 : detail.type)) return _logger.debug('Empty or missing event type');
+
+    _logger.debug('Received event type:', detail);
+
+    payload.kv = {
+      wzrk_c2a: e.detail.elementDetails.name
+    };
+
+    switch (detail.type) {
+      case ACTION_TYPES.CLOSE:
+        // close Iframe
+        window.clevertap.renderNotificationClicked(payload);
+        closeIframe(campaignId, divId, _session.sessionId);
+        break;
+
+      case ACTION_TYPES.OPEN_WEB_URL:
+        // handle opening of url
+        window.clevertap.renderNotificationClicked(payload);
+
+        if (detail.openInNewTab) {
+          window.open(detail.url.value.replacements, '_blank');
+
+          if (detail.closeOnClick) {
+            closeIframe(campaignId, divId, _session.sessionId);
+          }
+        } else {
+          window.location.href = detail.url.value.replacements;
+        }
+
+        break;
+
+      case ACTION_TYPES.SOFT_PROMPT:
+        // Handle soft prompt
+        window.clevertap.renderNotificationClicked(payload);
+        window.clevertap.notifications.push({
+          skipDialog: true
+        });
+        break;
+
+      case ACTION_TYPES.RUN_JS:
+        // Handle JS code
+        window.clevertap.renderNotificationClicked(payload);
+        invokeExternalJs(e.detail.js, targetingMsgJson);
+        break;
+
+      default:
+        _logger.debug('Empty event type received');
+
+    }
+  };
 
   const getBoxPromptStyles = style => {
     const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
@@ -13891,7 +14022,8 @@
     const _session = session;
     const _request = request;
     const _logger = logger;
-    const _region = region;
+    const _region = region; // msg = builderdata
+
     let _wizCounter = 0; // Campaign House keeping
 
     const doCampHouseKeeping = targetingMsgJson => {
@@ -14159,6 +14291,11 @@
         return;
       }
 
+      if (displayObj.templateType === CUSTOM_EVENTS_CAMPAIGN_SOURCES.ADVANCED_BUILDER) {
+        renderAdvancedBuilder(targetingMsgJson, _session, _logger);
+        return;
+      }
+
       const divId = 'wizParDiv' + displayObj.layout;
       const opacityDivId = 'intentOpacityDiv' + displayObj.layout;
 
@@ -14238,8 +14375,6 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe';
-      iframe.setAttribute('role', 'dialog');
-      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -14638,8 +14773,6 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe-intent';
-      iframe.setAttribute('role', 'dialog');
-      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
