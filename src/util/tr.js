@@ -347,6 +347,8 @@ const _tr = (msg, {
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe'
+    iframe.setAttribute('role', 'dialog')
+    iframe.setAttribute('aria-modal', 'true')
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
     if (onClick !== '' && onClick != null) {
@@ -715,6 +717,8 @@ const _tr = (msg, {
     iframe.marginwidth = '0px'
     iframe.scrolling = 'no'
     iframe.id = 'wiz-iframe-intent'
+    iframe.setAttribute('role', 'dialog')
+    iframe.setAttribute('aria-modal', 'true')
     const onClick = targetingMsgJson.display.onClick
     let pointerCss = ''
     if (onClick !== '' && onClick != null) {
