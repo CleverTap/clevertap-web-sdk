@@ -12593,6 +12593,8 @@
   };
 
   const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
+    var _e$detail, _e$detail$elementDeta;
+
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
     const {
       detail
@@ -12608,7 +12610,7 @@
       msgId: targetingMsgJson.wzrk_id,
       pivotId: targetingMsgJson.wzrk_pivot,
       kv: {
-        wzrk_c2a: e.detail.elementDetails.name
+        wzrk_c2a: (_e$detail = e.detail) === null || _e$detail === void 0 ? void 0 : (_e$detail$elementDeta = _e$detail.elementDetails) === null || _e$detail$elementDeta === void 0 ? void 0 : _e$detail$elementDeta.name
       }
     };
 
@@ -12624,7 +12626,7 @@
         window.clevertap.renderNotificationClicked(payload);
 
         if (detail.openInNewTab) {
-          window.open(detail.url.value.replacements, '_blank');
+          window.open(detail.url.value.replacements, '_blank', 'noopener');
 
           if (detail.closeOnClick) {
             closeIframe(campaignId, divId, _session.sessionId);
@@ -12713,6 +12715,10 @@
   const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) => {
     const messageHandler = event => {
       var _event$data;
+
+      if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+        return;
+      }
 
       if (((_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.type) === 'CT_custom_event') {
         _logger.debug('Event received ', event);
