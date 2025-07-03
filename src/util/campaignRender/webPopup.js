@@ -2,6 +2,7 @@ import { invokeExternalJs } from './utilities'
 import { $ct } from '../storage'
 import { closeIframe } from '../clevertap'
 import { ACTION_TYPES } from '../constants'
+import { WVE_URL_ORIGIN } from '../../modules/visualBuilder/builder_constants'
 
 export const renderPopUpImageOnly = (targetingMsgJson, _session) => {
   const divId = 'wzrkImageOnlyDiv'
@@ -74,7 +75,7 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
     msgId: targetingMsgJson.wzrk_id,
     pivotId: targetingMsgJson.wzrk_pivot,
     kv: {
-      wzrk_c2a: e.detail.elementDetails.name
+      wzrk_c2a: e.detail?.elementDetails?.name
     }
   }
   switch (detail.type) {
@@ -87,7 +88,7 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
       // handle opening of url
       window.clevertap.renderNotificationClicked(payload)
       if (detail.openInNewTab) {
-        window.open(detail.url.value.replacements, '_blank')
+        window.open(detail.url.value.replacements, '_blank', 'noopener')
         if (detail.closeOnClick) {
           closeIframe(campaignId, divId, _session.sessionId)
         }
@@ -169,6 +170,9 @@ const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _l
 // Utility: Setup postMessage listener as fallback
 const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) => {
   const messageHandler = (event) => {
+    if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+      return
+    }
     if (event.data?.type === 'CT_custom_event') {
       _logger.debug('Event received ', event)
       handleIframeEvent({ detail: event.data.detail }, targetingMsgJson, divId, _session, _logger)
