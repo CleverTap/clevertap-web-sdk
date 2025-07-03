@@ -14,8 +14,7 @@ import {
   WZRK_PREFIX,
   WZRK_ID,
   WEB_NATIVE_TEMPLATES,
-  CAMPAIGN_TYPES,
-  CUSTOM_EVENTS_CAMPAIGN_SOURCES
+  CAMPAIGN_TYPES
 } from './constants'
 
 import {
@@ -269,7 +268,7 @@ const _tr = (msg, {
     if (doCampHouseKeeping(targetingMsgJson) === false) {
       return
     }
-    if (displayObj.templateType === CUSTOM_EVENTS_CAMPAIGN_SOURCES.ADVANCED_BUILDER) {
+    if (displayObj.layout === 4) {
       renderAdvancedBuilder(targetingMsgJson, _session, _logger)
       return
     }

@@ -239,12 +239,6 @@
     FOOTER_NOTIFICATION: 0,
     FOOTER_NOTIFICATION_2: null
   };
-  const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
-    KV_PAIR: 'KV_Pair',
-    JSON: 'JSON',
-    VISUAL_BUILDER: 'Visual_Builder',
-    ADVANCED_BUILDER: 'advanced-web-popup-builder'
-  };
   const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
   const ACTION_TYPES = {
@@ -14331,7 +14325,7 @@
         return;
       }
 
-      if (displayObj.templateType === CUSTOM_EVENTS_CAMPAIGN_SOURCES.ADVANCED_BUILDER) {
+      if (displayObj.layout === 4) {
         renderAdvancedBuilder(targetingMsgJson, _session, _logger);
         return;
       }
