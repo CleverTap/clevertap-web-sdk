@@ -233,6 +233,13 @@
     FORM: 'form',
     JSON: 'json'
   };
+  const WEB_POPUP_TEMPLATES = {
+    BOX: 0,
+    INTERSTITIAL: 1,
+    BANNER: 2,
+    IMAGE_ONLY: 3,
+    ADVANCED_BUILDER: 4
+  };
   const CAMPAIGN_TYPES = {
     EXIT_INTENT: 1,
     WEB_NATIVE_DISPLAY: 2,
@@ -14310,12 +14317,12 @@
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       const displayObj = targetingMsgJson.display;
 
-      if (displayObj.layout === 1) {
+      if (displayObj.layout === WEB_POPUP_TEMPLATES.INTERSTITIAL) {
         // Handling Web Exit Intent
         return showExitIntent(undefined, targetingMsgJson);
       }
 
-      if (displayObj.layout === 3) {
+      if (displayObj.layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY) {
         // Handling Web Popup Image Only
         handleImageOnlyPopup(targetingMsgJson);
         return;
@@ -14325,7 +14332,7 @@
         return;
       }
 
-      if (displayObj.layout === 4) {
+      if (displayObj.layout === WEB_POPUP_TEMPLATES.ADVANCED_BUILDER) {
         renderAdvancedBuilder(targetingMsgJson, _session, _logger);
         return;
       }
@@ -14353,7 +14360,7 @@
       }
 
       $ct.campaignDivMap[campaignId] = divId;
-      const isBanner = displayObj.layout === 2;
+      const isBanner = displayObj.layout === WEB_POPUP_TEMPLATES.BANNER;
 
       if (isExitIntent) {
         const opacityDiv = document.createElement('div');
@@ -14754,7 +14761,7 @@
       const layout = targetingMsgJson.display.layout;
       if (isExistingCampaign(campaignId)) return;
 
-      if (targetingMsgJson.display.wtarget_type === 0 && (layout === 0 || layout === 2 || layout === 3)) {
+      if (targetingMsgJson.display.wtarget_type === 0 && (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER || layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
         createTemplate(targetingMsgJson, true);
         return;
       }
