@@ -14,7 +14,8 @@ import {
   WZRK_PREFIX,
   WZRK_ID,
   WEB_NATIVE_TEMPLATES,
-  CAMPAIGN_TYPES
+  CAMPAIGN_TYPES,
+  WEB_POPUP_TEMPLATES
 } from './constants'
 
 import {
@@ -29,7 +30,7 @@ import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSe
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
 import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel, renderCustomHtml, handleJson } from './campaignRender/nativeDisplay'
 import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate, webNativeDisplayCampaignUtils, addCampaignToLocalStorage } from './campaignRender/utilities'
-import { renderPopUpImageOnly } from './campaignRender/webPopup'
+import { renderAdvancedBuilder, renderPopUpImageOnly } from './campaignRender/webPopup'
 import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 
 const _tr = (msg, {
@@ -44,6 +45,8 @@ const _tr = (msg, {
   const _request = request
   const _logger = logger
   const _region = region
+
+  // msg = builderdata
 
   let _wizCounter = 0
   // Campaign House keeping
@@ -255,15 +258,19 @@ const _tr = (msg, {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
     const displayObj = targetingMsgJson.display
 
-    if (displayObj.layout === 1) { // Handling Web Exit Intent
+    if (displayObj.layout === WEB_POPUP_TEMPLATES.INTERSTITIAL) { // Handling Web Exit Intent
       return showExitIntent(undefined, targetingMsgJson)
     }
-    if (displayObj.layout === 3) { // Handling Web Popup Image Only
+    if (displayObj.layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY) { // Handling Web Popup Image Only
       handleImageOnlyPopup(targetingMsgJson)
       return
     }
 
     if (doCampHouseKeeping(targetingMsgJson) === false) {
+      return
+    }
+    if (displayObj.layout === WEB_POPUP_TEMPLATES.ADVANCED_BUILDER) {
+      renderAdvancedBuilder(targetingMsgJson, _session, _logger)
       return
     }
 
@@ -287,7 +294,7 @@ const _tr = (msg, {
     }
 
     $ct.campaignDivMap[campaignId] = divId
-    const isBanner = displayObj.layout === 2
+    const isBanner = displayObj.layout === WEB_POPUP_TEMPLATES.BANNER
     if (isExitIntent) {
       const opacityDiv = document.createElement('div')
       opacityDiv.id = opacityDivId
@@ -657,7 +664,7 @@ const _tr = (msg, {
     const layout = targetingMsgJson.display.layout
     if (isExistingCampaign(campaignId)) return
 
-    if (targetingMsgJson.display.wtarget_type === 0 && (layout === 0 || layout === 2 || layout === 3)) {
+    if (targetingMsgJson.display.wtarget_type === 0 && (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER || layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
       createTemplate(targetingMsgJson, true)
       return
     }
