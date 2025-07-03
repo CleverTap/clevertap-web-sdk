@@ -136,13 +136,15 @@ const createWrapperDiv = (divId) => {
 
 // Utility: Create iframe with attributes and content
 const createIframe = (targetingMsgJson) => {
-  const iframe = document.createElement('iframe')
-  iframe.id = 'wiz-iframe'
+  const staticHTML = targetingMsgJson.msgContent.html
+  const desktopHTML = staticHTML.replace('"##Vars##"', JSON.stringify(targetingMsgJson.display.desktopConfig))
+  const mobileHTML = staticHTML.replace('"##Vars##"', JSON.stringify(targetingMsgJson.display.mobileConfig))
 
   const isDesktop = window.matchMedia('(min-width: 480px)').matches
-  const html = isDesktop
-    ? targetingMsgJson.display.desktopHTML
-    : targetingMsgJson.display.mobileHTML
+  const html = isDesktop ? desktopHTML : mobileHTML
+
+  const iframe = document.createElement('iframe')
+  iframe.id = 'wiz-iframe'
 
   iframe.srcdoc = html
   iframe.setAttribute('style', IFRAME_STYLE)
