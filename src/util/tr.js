@@ -29,7 +29,7 @@ import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSe
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
 import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel, renderCustomHtml, handleJson } from './campaignRender/nativeDisplay'
 import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate, webNativeDisplayCampaignUtils, addCampaignToLocalStorage } from './campaignRender/utilities'
-import { renderPopUpImageOnly } from './campaignRender/webPopup'
+import { renderAdvancedBuilder, renderPopUpImageOnly } from './campaignRender/webPopup'
 import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 
 const _tr = (msg, {
@@ -44,6 +44,8 @@ const _tr = (msg, {
   const _request = request
   const _logger = logger
   const _region = region
+
+  // msg = builderdata
 
   let _wizCounter = 0
   // Campaign House keeping
@@ -264,6 +266,10 @@ const _tr = (msg, {
     }
 
     if (doCampHouseKeeping(targetingMsgJson) === false) {
+      return
+    }
+    if (displayObj.layout === 4) {
+      renderAdvancedBuilder(targetingMsgJson, _session, _logger)
       return
     }
 
