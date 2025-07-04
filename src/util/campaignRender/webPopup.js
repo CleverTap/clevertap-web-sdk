@@ -45,7 +45,12 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
 
   // Create DOM elements
   const msgDiv = createWrapperDiv(divId)
-  const iframe = createIframe(targetingMsgJson)
+  const iframe = createIframe(targetingMsgJson, _logger)
+
+  if (!iframe) {
+    _logger.error('Failed to create iframe for Advanced Builder')
+    return
+  }
 
   // Setup event handling
   setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger)
@@ -135,19 +140,23 @@ const createWrapperDiv = (divId) => {
 }
 
 // Utility: Create iframe with attributes and content
-const createIframe = (targetingMsgJson) => {
-  const iframe = document.createElement('iframe')
-  iframe.id = 'wiz-iframe'
+const createIframe = (targetingMsgJson, _logger) => {
+  try {
+    const staticHTML = targetingMsgJson.msgContent.html
+    const isDesktop = window.matchMedia('(min-width: 480px)').matches
+    const config = isDesktop ? targetingMsgJson.display.desktopConfig : targetingMsgJson.display.mobileConfig
+    const html = staticHTML.replace('"##Vars##"', JSON.stringify(config))
 
-  const isDesktop = window.matchMedia('(min-width: 480px)').matches
-  const html = isDesktop
-    ? targetingMsgJson.display.desktopHTML
-    : targetingMsgJson.display.mobileHTML
+    const iframe = document.createElement('iframe')
+    iframe.id = 'wiz-iframe'
+    iframe.srcdoc = html
+    iframe.setAttribute('style', IFRAME_STYLE)
 
-  iframe.srcdoc = html
-  iframe.setAttribute('style', IFRAME_STYLE)
-
-  return iframe
+    return iframe
+  } catch (error) {
+    _logger.error('Error creating iframe:', error)
+    return null
+  }
 }
 
 // Utility: Setup iframe event listeners
