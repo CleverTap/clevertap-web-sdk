@@ -12047,6 +12047,23 @@
 
   };
 
+  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
+  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
+  const WVE_CLASS = {
+    FLICKER_SHOW: 'wve-anti-flicker-show',
+    FLICKER_HIDE: 'wve-anti-flicker-hide',
+    FLICKER_ID: 'wve-flicker-style'
+  };
+  const WVE_QUERY_PARAMS = {
+    BUILDER: 'ctBuilder',
+    PREVIEW: 'ctBuilderPreview',
+    SDK_CHECK: 'ctBuilderSDKCheck'
+  };
+  const WVE_URL_ORIGIN = {
+    CLEVERTAP: 'dashboard.clevertap.com',
+    LOCAL: 'localhost'
+  };
+
   const renderPopUpImageOnly = (targetingMsgJson, _session) => {
     const divId = 'wzrkImageOnlyDiv';
     const popupImageOnly = document.createElement('ct-web-popup-imageonly');
@@ -12056,6 +12073,173 @@
     containerEl.innerHTML = '';
     containerEl.style.visibility = 'hidden';
     containerEl.appendChild(popupImageOnly);
+  };
+  const FULLSCREEN_STYLE = "\n  z-index: 2147483647;\n  display: block;\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100vw !important;\n  height: 100vh !important;\n  margin: 0;\n  padding: 0;\n  background: transparent;\n";
+  const IFRAME_STYLE = "\n  ".concat(FULLSCREEN_STYLE, "\n  border: 0 !important;\n");
+  const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
+    const divId = 'wizAdvBuilder';
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Check for existing wrapper and handle accordingly
+
+    if (handleExistingWrapper(divId)) {
+      return; // Early exit if existing wrapper should not be replaced
+    }
+
+    $ct.campaignDivMap[campaignId] = divId; // Create DOM elements
+
+    const msgDiv = createWrapperDiv(divId);
+    const iframe = createIframe(targetingMsgJson); // Setup event handling
+
+    setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger); // Append to DOM
+
+    msgDiv.appendChild(iframe);
+    document.body.appendChild(msgDiv); // Track notification view
+
+    window.clevertap.renderNotificationViewed({
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot
+    });
+  };
+
+  const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
+    var _e$detail, _e$detail$elementDeta;
+
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+    const {
+      detail
+    } = e;
+
+    if (!(detail === null || detail === void 0 ? void 0 : detail.type)) {
+      return _logger.debug('Empty or missing event type');
+    }
+
+    _logger.debug('Received event type:', detail);
+
+    const payload = {
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot,
+      kv: {
+        wzrk_c2a: (_e$detail = e.detail) === null || _e$detail === void 0 ? void 0 : (_e$detail$elementDeta = _e$detail.elementDetails) === null || _e$detail$elementDeta === void 0 ? void 0 : _e$detail$elementDeta.name
+      }
+    };
+
+    switch (detail.type) {
+      case ACTION_TYPES.CLOSE:
+        // close Iframe
+        window.clevertap.renderNotificationClicked(payload);
+        closeIframe(campaignId, divId, _session.sessionId);
+        break;
+
+      case ACTION_TYPES.OPEN_WEB_URL:
+        // handle opening of url
+        window.clevertap.renderNotificationClicked(payload);
+
+        if (detail.openInNewTab) {
+          window.open(detail.url.value.replacements, '_blank', 'noopener');
+
+          if (detail.closeOnClick) {
+            closeIframe(campaignId, divId, _session.sessionId);
+          }
+        } else {
+          window.location.href = detail.url.value.replacements;
+        }
+
+        break;
+
+      case ACTION_TYPES.SOFT_PROMPT:
+        // Handle soft prompt
+        window.clevertap.renderNotificationClicked(payload);
+        window.clevertap.notifications.push({
+          skipDialog: true
+        });
+        break;
+
+      case ACTION_TYPES.RUN_JS:
+        // Handle JS code
+        window.clevertap.renderNotificationClicked(payload);
+        invokeExternalJs(e.detail.js.name, targetingMsgJson);
+        break;
+
+      default:
+        _logger.debug('Empty event type received');
+
+    }
+  }; // Utility: Check and handle existing wrapper
+
+
+  const handleExistingWrapper = divId => {
+    const existingWrapper = document.getElementById(divId);
+
+    if (existingWrapper) {
+      if ($ct.dismissSpamControl) {
+        existingWrapper.remove();
+        return false; // Continue with creation
+      } else {
+          return true; // Stop execution
+        }
+    }
+
+    return false; // No existing wrapper, continue
+  }; // Utility: Create wrapper div
+
+
+  const createWrapperDiv = divId => {
+    const msgDiv = document.createElement('div');
+    msgDiv.id = divId;
+    msgDiv.setAttribute('style', FULLSCREEN_STYLE);
+    return msgDiv;
+  }; // Utility: Create iframe with attributes and content
+
+
+  const createIframe = targetingMsgJson => {
+    const iframe = document.createElement('iframe');
+    iframe.id = 'wiz-iframe';
+    const isDesktop = window.matchMedia('(min-width: 480px)').matches;
+    const html = isDesktop ? targetingMsgJson.display.desktopHTML : targetingMsgJson.display.mobileHTML;
+    iframe.srcdoc = html;
+    iframe.setAttribute('style', IFRAME_STYLE);
+    return iframe;
+  }; // Utility: Setup iframe event listeners
+
+
+  const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger) => {
+    iframe.onload = () => {
+      try {
+        // Try direct document access first
+        iframe.contentDocument.addEventListener('CT_custom_event', e => {
+          _logger.debug('Event received ', e);
+
+          handleIframeEvent(e, targetingMsgJson, divId, _session, _logger);
+        });
+      } catch (error) {
+        // Fallback to postMessage
+        _logger.error('Iframe document inaccessible, using postMessage:', error);
+
+        setupPostMessageListener(targetingMsgJson, divId, _session, _logger);
+      }
+    };
+  }; // Utility: Setup postMessage listener as fallback
+
+
+  const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) => {
+    const messageHandler = event => {
+      var _event$data;
+
+      if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+        return;
+      }
+
+      if (((_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.type) === 'CT_custom_event') {
+        _logger.debug('Event received ', event);
+
+        handleIframeEvent({
+          detail: event.data.detail
+        }, targetingMsgJson, divId, _session, _logger);
+      }
+    };
+
+    window.removeEventListener('message', messageHandler); // Avoid duplicate bindings
+
+    window.addEventListener('message', messageHandler);
   };
 
   class CTWebPopupImageOnly extends HTMLElement {
@@ -13328,23 +13512,6 @@
   const arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
   const greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
-  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
-  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
-  const WVE_CLASS = {
-    FLICKER_SHOW: 'wve-anti-flicker-show',
-    FLICKER_HIDE: 'wve-anti-flicker-hide',
-    FLICKER_ID: 'wve-flicker-style'
-  };
-  const WVE_QUERY_PARAMS = {
-    BUILDER: 'ctBuilder',
-    PREVIEW: 'ctBuilderPreview',
-    SDK_CHECK: 'ctBuilderSDKCheck'
-  };
-  const WVE_URL_ORIGIN = {
-    CLEVERTAP: 'dashboard.clevertap.com',
-    LOCAL: 'localhost'
-  };
-
   const updateFormData = function (element, formStyle, payload) {
     let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
@@ -13444,7 +13611,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '1.16.0';
+            const sdkVersion = '1.17.0';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -13603,12 +13770,11 @@
 
     const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
-    let url = window.location.href;
+    const url = window.location.href;
 
     if (isPreview) {
       const currentUrl = new URL(url);
       currentUrl.searchParams.delete('ctActionMode');
-      url = currentUrl.toString();
     }
 
     let notificationViewed = false;
@@ -13695,27 +13861,24 @@
     };
 
     details.forEach(d => {
-      // TODO: Check if this condition is needed, as we might have scenarios where the customer might be on the same url but might have ?queryParams or #pageAnchors
-      if (d.url === url) {
-        d.selectorData.forEach(s => {
-          if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
-            insertedElements.push(s);
+      d.selectorData.forEach(s => {
+        if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
+          insertedElements.push(s);
+        } else {
+          let element;
+
+          try {
+            element = document.querySelector(s.selector);
+          } catch (_) {}
+
+          if (element) {
+            raiseViewed();
+            processElement(element, s);
           } else {
-            let element;
-
-            try {
-              element = document.querySelector(s.selector);
-            } catch (_) {}
-
-            if (element) {
-              raiseViewed();
-              processElement(element, s);
-            } else {
-              tryFindingElement(s);
-            }
+            tryFindingElement(s);
           }
-        });
-      }
+        }
+      });
     });
 
     const addNewEl = selector => {
@@ -14826,7 +14989,7 @@
       }
 
       if (displayObj.layout === WEB_POPUP_TEMPLATES.ADVANCED_BUILDER) {
-        renderAdvancedBuilder(targetingMsgJson, _session, _logger);
+        renderAdvancedBuilder(targetingMsgJson, CampaignContext.session, Logger.getInstance());
         return;
       }
 
@@ -14856,7 +15019,7 @@
 
 
       $ct.campaignDivMap[campaignId] = divId;
-      const isBanner = displayObj.layout === 2; // Adds opacity layer for exit intent campaigns
+      const isBanner = displayObj.layout === WEB_POPUP_TEMPLATES.BANNER; // Adds opacity layer for exit intent campaigns
 
       if (isExitIntent) {
         const opacityDiv = document.createElement('div');
@@ -15262,7 +15425,7 @@
 
       if (this.isExistingCampaign(campaignId)) return;
 
-      if (targetingMsgJson.display.wtarget_type === 0 && (layout === 0 || layout === 2 || layout === 3)) {
+      if (targetingMsgJson.display.wtarget_type === 0 && (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER || layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
         this.createTemplate(targetingMsgJson, true);
         return;
       } // Skips if frequency limits are exceeded
@@ -15974,7 +16137,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.16.2',
+        lib: 'web-sdk-v1.17.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17823,7 +17986,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.16.2';
+      return 'web-sdk-v1.17.0';
     }
 
     defineVariable(name, defaultValue) {

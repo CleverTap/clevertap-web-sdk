@@ -1,4 +1,4 @@
-import { renderPopUpImageOnly } from '../campaignRender/webPopup.js'
+import { renderAdvancedBuilder, renderPopUpImageOnly } from '../campaignRender/webPopup.js'
 import {
   addDeliveryPreferenceDetails,
   addToLocalProfileMap,
@@ -16,7 +16,8 @@ import {
   WZRK_PREFIX,
   WZRK_ID,
   WEB_NATIVE_TEMPLATES,
-  CAMPAIGN_TYPES
+  CAMPAIGN_TYPES,
+  WEB_POPUP_TEMPLATES
 } from '../constants.js'
 
 import { getNow, getToday } from '../datetime.js'
@@ -53,6 +54,7 @@ import {
 } from '../campaignRender/utilities.js'
 import { CampaignContext } from './campaignContext.js'
 import _tr from '../tr.js'
+import { Logger } from '../../modules/logger.js'
 
 export const commonCampaignUtils = {
 
@@ -433,11 +435,11 @@ export const commonCampaignUtils = {
     const displayObj = targetingMsgJson.display
 
     // Handles specific layout types
-    if (displayObj.layout === 1) {
+    if (displayObj.layout === WEB_POPUP_TEMPLATES.INTERSTITIAL) {
       // Handling Web Exit Intent
       return this.showExitIntent(undefined, targetingMsgJson, wtq)
     }
-    if (displayObj.layout === 3) {
+    if (displayObj.layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY) {
       // Handling Web Popup Image Only
       this.handleImageOnlyPopup(targetingMsgJson)
       return
@@ -445,6 +447,10 @@ export const commonCampaignUtils = {
 
     // Skips if frequency limits are exceeded
     if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+      return
+    }
+    if (displayObj.layout === WEB_POPUP_TEMPLATES.ADVANCED_BUILDER) {
+      renderAdvancedBuilder(targetingMsgJson, CampaignContext.session, Logger.getInstance())
       return
     }
 
@@ -472,7 +478,7 @@ export const commonCampaignUtils = {
 
     // Maps campaign ID to div ID
     $ct.campaignDivMap[campaignId] = divId
-    const isBanner = displayObj.layout === 2
+    const isBanner = displayObj.layout === WEB_POPUP_TEMPLATES.BANNER
     // Adds opacity layer for exit intent campaigns
     if (isExitIntent) {
       const opacityDiv = document.createElement('div')
@@ -974,10 +980,9 @@ export const commonCampaignUtils = {
     // Skips if campaign is already rendered
     if (this.isExistingCampaign(campaignId)) return
 
-    if (
-      targetingMsgJson.display.wtarget_type === 0 &&
-      (layout === 0 || layout === 2 || layout === 3)
-    ) {
+    if (targetingMsgJson.display.wtarget_type === 0 &&
+      (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER ||
+        layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
       this.createTemplate(targetingMsgJson, true)
       return
     }
