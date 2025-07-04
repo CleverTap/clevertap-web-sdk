@@ -86,6 +86,14 @@ export const WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES = {
   JSON: 'json'
 }
 
+export const WEB_POPUP_TEMPLATES = {
+  BOX: 0,
+  INTERSTITIAL: 1,
+  BANNER: 2,
+  IMAGE_ONLY: 3,
+  ADVANCED_BUILDER: 4
+}
+
 export const CAMPAIGN_TYPES = {
   EXIT_INTENT: 1, /* Deprecated */
   WEB_NATIVE_DISPLAY: 2,
@@ -96,7 +104,8 @@ export const CAMPAIGN_TYPES = {
 export const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
   KV_PAIR: 'KV_Pair',
   JSON: 'JSON',
-  VISUAL_BUILDER: 'Visual_Builder'
+  VISUAL_BUILDER: 'Visual_Builder',
+  ADVANCED_BUILDER: 'advanced-web-popup-builder'
 }
 
 export const SYSTEM_EVENTS = [
@@ -138,5 +147,9 @@ export const DELIVERY_PREFERENCE_KEYS = {
 
 export const ACTION_TYPES = {
   OPEN_LINK: 'url',
-  OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
+  OPEN_LINK_AND_CLOSE: 'urlCloseNotification',
+  CLOSE: 'close',
+  OPEN_WEB_URL: 'open-web-url',
+  SOFT_PROMPT: 'soft-prompt',
+  RUN_JS: 'js'
 }

@@ -233,6 +233,13 @@
     FORM: 'form',
     JSON: 'json'
   };
+  const WEB_POPUP_TEMPLATES = {
+    BOX: 0,
+    INTERSTITIAL: 1,
+    BANNER: 2,
+    IMAGE_ONLY: 3,
+    ADVANCED_BUILDER: 4
+  };
   const CAMPAIGN_TYPES = {
     EXIT_INTENT: 1,
 
@@ -249,7 +256,11 @@
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
   const ACTION_TYPES = {
     OPEN_LINK: 'url',
-    OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
+    OPEN_LINK_AND_CLOSE: 'urlCloseNotification',
+    CLOSE: 'close',
+    OPEN_WEB_URL: 'open-web-url',
+    SOFT_PROMPT: 'soft-prompt',
+    RUN_JS: 'js'
   };
 
   const isString = input => {
@@ -14798,12 +14809,12 @@
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       const displayObj = targetingMsgJson.display; // Handles specific layout types
 
-      if (displayObj.layout === 1) {
+      if (displayObj.layout === WEB_POPUP_TEMPLATES.INTERSTITIAL) {
         // Handling Web Exit Intent
         return this.showExitIntent(undefined, targetingMsgJson, wtq);
       }
 
-      if (displayObj.layout === 3) {
+      if (displayObj.layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY) {
         // Handling Web Popup Image Only
         this.handleImageOnlyPopup(targetingMsgJson);
         return;
@@ -14811,6 +14822,11 @@
 
 
       if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
+      }
+
+      if (displayObj.layout === WEB_POPUP_TEMPLATES.ADVANCED_BUILDER) {
+        renderAdvancedBuilder(targetingMsgJson, _session, _logger);
         return;
       }
 
@@ -15958,7 +15974,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.16.0',
+        lib: 'web-sdk-v1.16.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17807,7 +17823,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.16.0';
+      return 'web-sdk-v1.16.2';
     }
 
     defineVariable(name, defaultValue) {
