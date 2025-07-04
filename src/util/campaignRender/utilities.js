@@ -547,7 +547,7 @@ export const deliveryPreferenceUtils = {
     let campaignObj =
       currentIdCamp || getCampaignObject()
     const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc)
-    const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc)
+    const wndoc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wndtq, campaignObj.wndoc)
     // If we are retreiving CAMP_G data, we can not retain details on web inbox as they are only session based.
     const wi = getCampaignObject()?.wi ?? {}
     const wp = getCampaignObject()?.wp ?? {}

@@ -9142,7 +9142,7 @@
       const currentIdCamp = globalCamp === null || globalCamp === void 0 ? void 0 : globalCamp[device === null || device === void 0 ? void 0 : device.gcookie];
       let campaignObj = currentIdCamp || getCampaignObject();
       const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc);
-      const wndoc = deliveryPreferenceUtils.updateTimestampTracker(msg.wndtq, campaignObj.wndoc); // If we are retreiving CAMP_G data, we can not retain details on web inbox as they are only session based.
+      const wndoc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wndtq, campaignObj.wndoc); // If we are retreiving CAMP_G data, we can not retain details on web inbox as they are only session based.
 
       const wi = (_getCampaignObject$wi = (_getCampaignObject = getCampaignObject()) === null || _getCampaignObject === void 0 ? void 0 : _getCampaignObject.wi) !== null && _getCampaignObject$wi !== void 0 ? _getCampaignObject$wi : {};
       const wp = (_getCampaignObject$wp = (_getCampaignObject2 = getCampaignObject()) === null || _getCampaignObject2 === void 0 ? void 0 : _getCampaignObject2.wp) !== null && _getCampaignObject$wp !== void 0 ? _getCampaignObject$wp : {};
@@ -9245,15 +9245,6 @@
       if (!campaignDetails || !campaignDetails.wzrk_id) {
         throw new Error('Invalid campaign details provided');
       }
-      /* TODO: Remove this once we have the real data */
-
-
-      const addMockDatatoWebNativeDisplayCamps = c => {
-        c.display.adp = 1;
-      };
-
-      addMockDatatoWebNativeDisplayCamps(campaignDetails);
-      /* TODO: Remove this once we have the real data */
 
       const campaignObj = getCampaignObject() || {};
       const campaignIdParts = campaignDetails.wzrk_id.split('_');
