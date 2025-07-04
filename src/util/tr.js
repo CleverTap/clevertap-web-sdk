@@ -12,6 +12,7 @@ const _tr = (msg, { device, session, request, logger, region }) => {
   // Campaign House keeping
 
   CampaignContext.update(device, session, request, logger, msg, region)
+  deliveryPreferenceUtils.clearStaleCampaigns(msg, logger)
   deliveryPreferenceUtils.updateOccurenceForPopupAndNativeDisplay(msg, device, logger)
   deliveryPreferenceUtils.portTLC(_session, logger)
 

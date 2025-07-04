@@ -593,6 +593,90 @@ export const deliveryPreferenceUtils = {
       newDailyCount = storedCount + 1
     }
     return newDailyCount
+  },
+
+  /**
+ * Clears stale campaign entries from the campaign object based on provided message data.
+ *
+ * @param {Object} msg - Message object containing stale campaign information
+ * @param {Array<string>} [msg.native_display_stale] - Array of campaign IDs for native display campaigns to clear
+ * @param {Array<string>} [msg.inbox_stale] - Array of campaign IDs for inbox campaigns to clear
+ * @param {Object} logger - Logger instance for logging operations
+ * @returns {void}
+ *
+ * @description
+ * This function processes stale campaign data and removes corresponding entries:
+ * - For inbox_stale campaigns: removes entries from wfc and woc
+ * - For native_display_stale campaigns: removes entries from wndfc and wndoc
+ *
+ * The function retrieves the current campaign object, modifies it by removing
+ * stale entries, and saves the updated object back to storage.
+ */
+  clearStaleCampaigns (msg, logger) {
+    try {
+      // Get current campaign object
+      const campaignObject = getCampaignObject()
+
+      if (!campaignObject) {
+        logger.debug('No campaign object found')
+        return
+      }
+
+      let modified = false
+
+      // Handle inbox_stale campaigns - clear wfc and woc entries
+      if (msg.inbox_stale && Array.isArray(msg.inbox_stale)) {
+        logger.debug(`Processing ${msg.inbox_stale.length} inbox stale campaigns`)
+
+        for (const campaignId of msg.inbox_stale) {
+          // Clear wfc entry
+          if (campaignObject.wfc && campaignObject.wfc[campaignId]) {
+            delete campaignObject.wfc[campaignId]
+            logger.debug(`Cleared wfc entry for campaign ${campaignId}`)
+            modified = true
+          }
+
+          // Clear woc entry
+          if (campaignObject.woc && campaignObject.woc[campaignId]) {
+            delete campaignObject.woc[campaignId]
+            logger.debug(`Cleared woc entry for campaign ${campaignId}`)
+            modified = true
+          }
+        }
+      }
+
+      // Handle native_display_stale campaigns - clear wndfc and wndoc entries
+      if (msg.native_display_stale && Array.isArray(msg.native_display_stale)) {
+        logger.debug(`Processing ${msg.native_display_stale.length} native display stale campaigns`)
+
+        for (const campaignId of msg.native_display_stale) {
+          // Clear wndfc entry
+          if (campaignObject.wndfc && campaignObject.wndfc[campaignId]) {
+            delete campaignObject.wndfc[campaignId]
+            logger.debug(`Cleared wndfc entry for campaign ${campaignId}`)
+            modified = true
+          }
+
+          // Clear wndoc entry
+          if (campaignObject.wndoc && campaignObject.wndoc[campaignId]) {
+            delete campaignObject.wndoc[campaignId]
+            logger.debug(`Cleared wndoc entry for campaign ${campaignId}`)
+            modified = true
+          }
+        }
+      }
+
+      // Save updated campaign object if modifications were made
+      if (modified) {
+        saveCampaignObject(campaignObject)
+        logger.debug('Campaign object updated with stale campaign removals')
+      } else {
+        logger.debug('No stale campaigns found to clear')
+      }
+    } catch (error) {
+      logger.error('Error clearing stale campaigns:', error)
+      throw error
+    }
   }
 
 }
