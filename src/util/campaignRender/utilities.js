@@ -217,7 +217,6 @@ export const getCookieParams = (_device, _session) => {
 }
 
 export const webNativeDisplayCampaignUtils = {
-
   /**
    * Checks if a campaign triggers a custom event push based on its template type.
    *
@@ -250,10 +249,12 @@ export const webNativeDisplayCampaignUtils = {
         WEB_NATIVE_TEMPLATES.CUSTOM_HTML
       ].includes(campaign?.msgContent?.type) ||
       (WEB_NATIVE_TEMPLATES.VISUAL_BUILDER === campaign?.msgContent?.type &&
-        campaign?.display?.details?.[0]?.selectorData
-          ?.some((s) =>
-            [WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML,
-              WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM].includes(s?.values?.editor)))
+        campaign?.display?.details?.[0]?.selectorData?.some((s) =>
+          [
+            WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML,
+            WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.FORM
+          ].includes(s?.values?.editor)
+        ))
     )
   },
 
@@ -264,8 +265,7 @@ export const webNativeDisplayCampaignUtils = {
    * @returns {Array<Object>} - A new array of campaigns sorted by priority.
    */
   sortCampaignsByPriority: (campaigns) => {
-    return campaigns
-      .sort((a, b) => b.priority - a.priority)
+    return campaigns.sort((a, b) => b.priority - a.priority)
   },
 
   /**
@@ -287,9 +287,15 @@ export const webNativeDisplayCampaignUtils = {
         return [display?.divId]
 
       case WEB_NATIVE_TEMPLATES.VISUAL_BUILDER:
-        return display?.details?.[0]?.selectorData
-          ?.filter((s) => s?.values?.editor === WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML)
-          ?.map((s) => s?.selector) || []
+        return (
+          display?.details?.[0]?.selectorData
+            ?.filter(
+              (s) =>
+                s?.values?.editor ===
+                WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES.HTML
+            )
+            ?.map((s) => s?.selector) || []
+        )
 
       default:
         return []
@@ -302,10 +308,11 @@ export const webNativeDisplayCampaignUtils = {
    * @param {Object} targetNotif - The current notification object containing campaign details.
    * @param {ExecutedTargets} executedTargets - An object holding already executed custom events.
    * @returns {boolean} - Returns true if the current custom event campaign should be skipped, false otherwise.
-  */
+   */
   shouldCurrentCustomEventCampaignBeSkipped (targetNotif, executedTargets) {
-    const currentSameTypeCampaigns = executedTargets.customEvents.filter((customEvent) =>
-      customEvent.customEventType === targetNotif?.msgContent?.type
+    const currentSameTypeCampaigns = executedTargets.customEvents.filter(
+      (customEvent) =>
+        customEvent.customEventType === targetNotif?.msgContent?.type
     )
 
     let shouldSkip = false
@@ -315,9 +322,13 @@ export const webNativeDisplayCampaignUtils = {
     if (currentSameTypeCampaigns?.length) {
       switch (targetNotif?.msgContent?.type) {
         case WEB_NATIVE_TEMPLATES.KV_PAIR:
-          if (currentSameTypeCampaigns.map(c => c?.eventTopic)?.includes(targetNotif?.display?.kv?.topic)) {
+          if (
+            currentSameTypeCampaigns
+              .map((c) => c?.eventTopic)
+              ?.includes(targetNotif?.display?.kv?.topic)
+          ) {
             shouldSkip = true
-          };
+          }
           break
 
           /* TODO: Within Visual Editor : Why do we need to select a DOM node for create customEvent
@@ -337,6 +348,339 @@ export const webNativeDisplayCampaignUtils = {
   }
 }
 
+export const deliveryPreferenceUtils = {
+  /**
+   * Updates a frequency counter object based on the given array.
+   * If a key from the array exists in the object, its value is incremented.
+   * Otherwise, the key is added with an initial count of 1.
+   *
+   * @param {string[]} arr - The array of keys to process.
+   * @param {Object<string, number>} [obj={}] - The existing frequency counter object (optional).
+   * @returns {Object<string, number>} - The updated frequency counter object.
+   *
+   * @example
+   * let freq = updateFrequencyCounter(["a", "b", "c"]);
+   * console.log(freq); // { a: 1, b: 1, c: 1 }
+   *
+   * freq = updateFrequencyCounter(["a", "b"], freq);
+   * console.log(freq); // { a: 2, b: 2, c: 1 }
+   */
+  updateFrequencyCounter (arr, obj = {}) {
+    if (!arr || arr.length === 0) {
+      return obj
+    }
+
+    arr.forEach((key) => {
+      obj[key] = (obj[key] || 0) + 1
+    })
+    return obj
+  },
+
+  /**
+   * Updates a timestamp tracker object based on the given array of keys.
+   * If a key exists, it appends the current timestamp; otherwise, it starts a new array with the timestamp.
+   *
+   * @param {string[]} arr - The array of keys to process.
+   * @param {Object<string, number[]>} [obj={}] - The existing timestamp tracker object (optional).
+   * @returns {Object<string, number[]>} - The updated timestamp tracker object.
+   *
+   * @example
+   * let timestamps = updateTimestampTracker(["a", "b", "c"]);
+   * console.log(timestamps);
+   * // { a: [1712134567], b: [1712134567], c: [1712134567] }
+   *
+   * timestamps = updateTimestampTracker(["a", "b"], timestamps);
+   * console.log(timestamps);
+   * // { a: [1712134567, 1712134570], b: [1712134567, 1712134570], c: [1712134567] }
+   */
+  updateTimestampTracker (arr, obj = {}) {
+    if (!arr || arr.length === 0) {
+      return obj
+    }
+
+    const now = Math.floor(Date.now() / 1000) // Current timestamp in seconds (Epoch UTC)
+    arr.forEach((key) => {
+      if (!obj[key]) {
+        obj[key] = []
+      }
+      obj[key].push(now)
+    })
+
+    return obj
+  },
+
+  /**
+   * Migrates legacy TLC data to the latest WSC
+   * and WFC structures.
+   *
+   * This function reads from `CAMP.wp`, which stores web popup data keyed by session IDs and global campaign data.
+   * Each campaign ID (except for the key `tc`, which is a total count) maps to either:
+   * - `1` → campaign was shown once
+   * - `'dnd'` → campaign was shown and dismissed (Do Not Disturb)
+   *
+   * After migrating each campaign's data using `deliveryPreferenceUtils.portCampaignDetails`,
+   * the old TLC data (`CAMP.wp`) is cleared from storage.
+   *
+   * @param {Object} _session - The current session object.
+   * @param {string} _session.sessionId - The unique identifier for the session, used to access session-specific campaign data.
+   */
+  portTLC (_session) {
+    // TODO: Add the campaignId keys which has value as `dnd` to the `dnd` array
+    const existingCamp = getCampaignObject()
+    const dnd = []
+
+    /* If no campaigns are present, then we don't need to port anything */
+    if (!existingCamp?.wp || Object.keys(existingCamp?.wp).length === 0) {
+      return
+    }
+
+    const webPopupGlobalDetails = existingCamp?.wp?.global || {}
+    const webPopupSessionDetails = existingCamp?.wp?.[_session.sessionId] || {}
+    const campaignIds = Object.keys(webPopupGlobalDetails)
+
+    for (const campaignId of campaignIds) {
+      if (campaignId !== 'tc') {
+        const globalCampaignCount = webPopupGlobalDetails[campaignId]
+        const sessionCampaignCount = webPopupSessionDetails[campaignId]
+        if (sessionCampaignCount === 'dnd') {
+          dnd.push(campaignId)
+        }
+        const updatedCamp = deliveryPreferenceUtils.portCampaignDetails(
+          campaignId,
+          sessionCampaignCount,
+          globalCampaignCount
+        )
+        saveCampaignObject(updatedCamp)
+      }
+    }
+
+    const updatedCamp = getCampaignObject()
+    saveCampaignObject({
+      ...updatedCamp,
+      dnd: [...new Set([...(updatedCamp.dnd || []), ...dnd])],
+      wp: {}
+    })
+  },
+
+  portCampaignDetails (campaignId, sessionCount, globalCount) {
+    const sCount = sessionCount === 'dnd' ? 1 : sessionCount
+    const campaignObj = getCampaignObject()
+
+    // Ensure campaignObj and campaignObj.wfc exist
+    campaignObj.wfc = campaignObj.wfc || {}
+
+    // Fallback to an empty array if campaignObj.wfc[campaignId] is undefined
+    const existingTimestamps = Array.isArray(campaignObj.wfc[campaignId])
+      ? campaignObj.wfc[campaignId]
+      : []
+
+    // Generate new timestamps safely
+    let newTimestamps = []
+    try {
+      newTimestamps = deliveryPreferenceUtils.generateTimestamps(
+        globalCount,
+        sCount
+      )
+    } catch (err) {
+      console.error('Failed to generate timestamps:', err)
+    }
+
+    // Safely update the object
+    campaignObj.wfc = {
+      ...campaignObj.wfc,
+      [campaignId]: [...existingTimestamps, ...newTimestamps]
+    }
+
+    /* Or tc can also be used to assign once */
+    campaignObj.wsc = (campaignObj?.wsc ?? 0) + globalCount
+
+    return campaignObj
+  },
+
+  /**
+   * Generates an array of timestamps.
+   *
+   * - The first `a` timestamps are from the current time, each 1 second apart (now, now - 1s, now - 2s, ...).
+   * - The remaining `(b - a)` timestamps are from previous days (now - 1 day, now - 2 days, ...).
+   *
+   * @param {number} a - Number of recent timestamps with 1-second gaps.
+   * @param {number} b - Total number of timestamps to generate.
+   * @returns {number[]} Array of timestamps in milliseconds since the Unix epoch.
+   */
+  generateTimestamps (a, b) {
+    try {
+      const now = Math.floor(Date.now() / 1000)
+      const oneDay = 24 * 60 * 60 * 1000
+
+      // (b - a) timestamps: today - 1 day, today - 2 days, ...
+      const pastDays = Array.from(
+        { length: b - a },
+        (_, i) => now - oneDay * (i + 1)
+      )
+
+      // a timestamps: today, today - 1s, today - 2s, ...
+      const recentMs = Array.from({ length: a }, (_, i) => now - i * 1000)
+
+      return [...recentMs, ...pastDays]
+    } catch {
+      return []
+    }
+  },
+
+  isPopupCampaignAlreadyShown (campaignId) {
+    const campaignObj = getCampaignObject()
+    const campaignDetails = campaignObj?.wfc?.[campaignId]
+    return campaignDetails?.length > 0
+  },
+
+  isCampaignAddedToDND (campaignId) {
+    const campaignObj = getCampaignObject()
+    return campaignObj?.dnd?.includes(campaignId)
+  },
+
+  updateOccurenceForPopupAndNativeDisplay (msg, device, logger) {
+    // If the guid is present in CAMP_G retain it instead of using the CAMP
+    const globalCamp = JSON.parse(
+      decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))
+    )
+    const currentIdCamp = globalCamp?.[device?.gcookie]
+    let campaignObj =
+      currentIdCamp || getCampaignObject()
+    const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc)
+    const wndoc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wndtq, campaignObj.wndoc)
+    // If we are retreiving CAMP_G data, we can not retain details on web inbox as they are only session based.
+    const wi = getCampaignObject()?.wi ?? {}
+    const wp = getCampaignObject()?.wp ?? {}
+    const wsc = getCampaignObject()?.wsc ?? 0
+    const wndsc = getCampaignObject()?.wndsc ?? 0
+
+    campaignObj = {
+      ...campaignObj,
+      woc,
+      wndoc,
+      wi,
+      wp,
+      wsc,
+      wndsc
+    }
+    saveCampaignObject(campaignObj)
+  },
+
+  /**
+   * Gets the daily count for a campaign, automatically resetting to 1 when date changes
+   * Date tracking is done in localStorage for persistence across page reloads
+   * @param {Object} campaignObj - The campaign object to store count
+   * @param {string} dailyCountKey - The key to store the daily count
+   * @returns {number} The new daily count (incremented from previous or reset to 1)
+   */
+  getDailyCount (campaignObj, dailyCountKey) {
+    const DATE_TRACKER_KEY = 'ct_daily_date_tracker'
+    const today = new Date().toISOString().split('T')[0]
+    let storedDate = null
+    storedDate = localStorage.getItem(DATE_TRACKER_KEY)
+
+    // Get current count
+    const storedCount = typeof campaignObj[dailyCountKey] === 'number'
+      ? campaignObj[dailyCountKey]
+      : 0
+
+    let newDailyCount
+
+    if (storedDate !== today) {
+      newDailyCount = 1
+      localStorage.setItem(DATE_TRACKER_KEY, today)
+    } else {
+      newDailyCount = storedCount + 1
+    }
+    return newDailyCount
+  },
+
+  /**
+ * Clears stale campaign entries from the campaign object based on provided message data.
+ *
+ * @param {Object} msg - Message object containing stale campaign information
+ * @param {Array<string>} [msg.native_display_stale] - Array of campaign IDs for native display campaigns to clear
+ * @param {Array<string>} [msg.inbox_stale] - Array of campaign IDs for inbox campaigns to clear
+ * @param {Object} logger - Logger instance for logging operations
+ * @returns {void}
+ *
+ * @description
+ * This function processes stale campaign data and removes corresponding entries:
+ * - For inbox_stale campaigns: removes entries from wfc and woc
+ * - For native_display_stale campaigns: removes entries from wndfc and wndoc
+ *
+ * The function retrieves the current campaign object, modifies it by removing
+ * stale entries, and saves the updated object back to storage.
+ */
+  clearStaleCampaigns (msg, logger) {
+    try {
+      // Get current campaign object
+      const campaignObject = getCampaignObject()
+
+      if (!campaignObject) {
+        logger.debug('No campaign object found')
+        return
+      }
+
+      let modified = false
+
+      // Handle inbox_stale campaigns - clear wfc and woc entries
+      if (msg.inbox_stale && Array.isArray(msg.inbox_stale)) {
+        logger.debug(`Processing ${msg.inbox_stale.length} inbox stale campaigns`)
+
+        for (const campaignId of msg.inbox_stale) {
+          // Clear wfc entry
+          if (campaignObject.wfc && campaignObject.wfc[campaignId]) {
+            delete campaignObject.wfc[campaignId]
+            logger.debug(`Cleared wfc entry for campaign ${campaignId}`)
+            modified = true
+          }
+
+          // Clear woc entry
+          if (campaignObject.woc && campaignObject.woc[campaignId]) {
+            delete campaignObject.woc[campaignId]
+            logger.debug(`Cleared woc entry for campaign ${campaignId}`)
+            modified = true
+          }
+        }
+      }
+
+      // Handle native_display_stale campaigns - clear wndfc and wndoc entries
+      if (msg.native_display_stale && Array.isArray(msg.native_display_stale)) {
+        logger.debug(`Processing ${msg.native_display_stale.length} native display stale campaigns`)
+
+        for (const campaignId of msg.native_display_stale) {
+          // Clear wndfc entry
+          if (campaignObject.wndfc && campaignObject.wndfc[campaignId]) {
+            delete campaignObject.wndfc[campaignId]
+            logger.debug(`Cleared wndfc entry for campaign ${campaignId}`)
+            modified = true
+          }
+
+          // Clear wndoc entry
+          if (campaignObject.wndoc && campaignObject.wndoc[campaignId]) {
+            delete campaignObject.wndoc[campaignId]
+            logger.debug(`Cleared wndoc entry for campaign ${campaignId}`)
+            modified = true
+          }
+        }
+      }
+
+      // Save updated campaign object if modifications were made
+      if (modified) {
+        saveCampaignObject(campaignObject)
+        logger.debug('Campaign object updated with stale campaign removals')
+      } else {
+        logger.debug('No stale campaigns found to clear')
+      }
+    } catch (error) {
+      logger.error('Error clearing stale campaigns:', error)
+      throw error
+    }
+  }
+
+}
+
 export function addScriptTo (script, target = 'body') {
   const targetEl = document.querySelector(target)
   if (!targetEl) return
@@ -344,7 +688,7 @@ export function addScriptTo (script, target = 'body') {
   newScript.textContent = script.textContent
   if (script.src) newScript.src = script.src
   newScript.async = script.async
-  Array.from(script.attributes).forEach(attr => {
+  Array.from(script.attributes).forEach((attr) => {
     if (attr.name !== 'src' && attr.name !== 'async') {
       newScript.setAttribute(attr.name, attr.value)
     }

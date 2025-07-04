@@ -4,6 +4,8 @@ import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
 
 import { addScriptTo, appendScriptForCustomEvent } from '../campaignRender/utilities'
 import { WVE_URL_ORIGIN } from '../../modules/visualBuilder/builder_constants'
+import { commonCampaignUtils } from '../../util/campaignHouseKeeping/commonCampaignUtils'
+import { Logger } from '../../../src/modules/logger'
 
 export const renderPersonalisationBanner = (targetingMsgJson) => {
   if (customElements.get('ct-web-personalisation-banner') === undefined) {
@@ -18,6 +20,7 @@ export const renderPersonalisationBanner = (targetingMsgJson) => {
   const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId)
   containerEl.innerHTML = ''
   containerEl.appendChild(bannerEl)
+  commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance())
 }
 
 export const renderPersonalisationCarousel = (targetingMsgJson) => {
@@ -30,6 +33,7 @@ export const renderPersonalisationCarousel = (targetingMsgJson) => {
   const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId)
   container.innerHTML = ''
   container.appendChild(carousel)
+  commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance())
 }
 
 export const handleKVpairCampaign = (targetingMsgJson) => {
@@ -44,6 +48,7 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
 
   const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
   document.dispatchEvent(kvPairsEvent)
+  commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance())
 }
 
 export const renderCustomHtml = (targetingMsgJson, logger) => {
@@ -88,6 +93,7 @@ export const renderCustomHtml = (targetingMsgJson, logger) => {
         scripts.forEach((script) => {
           addScriptTo(script)
         })
+        commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance())
         clearInterval(intervalId)
       } else if (++count >= 20) {
         logger.error(`No element present on DOM with divId '${divId}'.`)
@@ -113,6 +119,7 @@ export const handleJson = (targetingMsgJson) => {
 
   const jsonEvent = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
   document.dispatchEvent(jsonEvent)
+  commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance())
 }
 
 function handleCustomHtmlPreviewPostMessageEvent (event, logger) {
