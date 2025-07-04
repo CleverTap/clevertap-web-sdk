@@ -9135,7 +9135,7 @@
     },
 
     updateOccurenceForPopupAndNativeDisplay(msg, device, logger) {
-      var _getCampaignObject$wi, _getCampaignObject, _getCampaignObject$wp, _getCampaignObject2;
+      var _getCampaignObject$wi, _getCampaignObject, _getCampaignObject$wp, _getCampaignObject2, _getCampaignObject$ws, _getCampaignObject3, _getCampaignObject$wn, _getCampaignObject4;
 
       // If the guid is present in CAMP_G retain it instead of using the CAMP
       const globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
@@ -9146,11 +9146,15 @@
 
       const wi = (_getCampaignObject$wi = (_getCampaignObject = getCampaignObject()) === null || _getCampaignObject === void 0 ? void 0 : _getCampaignObject.wi) !== null && _getCampaignObject$wi !== void 0 ? _getCampaignObject$wi : {};
       const wp = (_getCampaignObject$wp = (_getCampaignObject2 = getCampaignObject()) === null || _getCampaignObject2 === void 0 ? void 0 : _getCampaignObject2.wp) !== null && _getCampaignObject$wp !== void 0 ? _getCampaignObject$wp : {};
+      const wsc = (_getCampaignObject$ws = (_getCampaignObject3 = getCampaignObject()) === null || _getCampaignObject3 === void 0 ? void 0 : _getCampaignObject3.wsc) !== null && _getCampaignObject$ws !== void 0 ? _getCampaignObject$ws : 0;
+      const wndsc = (_getCampaignObject$wn = (_getCampaignObject4 = getCampaignObject()) === null || _getCampaignObject4 === void 0 ? void 0 : _getCampaignObject4.wndsc) !== null && _getCampaignObject$wn !== void 0 ? _getCampaignObject$wn : 0;
       campaignObj = { ...campaignObj,
         woc,
         wndoc,
         wi,
-        wp
+        wp,
+        wsc,
+        wndsc
       };
       saveCampaignObject(campaignObj);
     },

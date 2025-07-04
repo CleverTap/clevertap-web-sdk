@@ -551,13 +551,17 @@ export const deliveryPreferenceUtils = {
     // If we are retreiving CAMP_G data, we can not retain details on web inbox as they are only session based.
     const wi = getCampaignObject()?.wi ?? {}
     const wp = getCampaignObject()?.wp ?? {}
+    const wsc = getCampaignObject()?.wsc ?? 0
+    const wndsc = getCampaignObject()?.wndsc ?? 0
 
     campaignObj = {
       ...campaignObj,
       woc,
       wndoc,
       wi,
-      wp
+      wp,
+      wsc,
+      wndsc
     }
     saveCampaignObject(campaignObj)
   },
