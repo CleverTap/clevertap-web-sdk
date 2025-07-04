@@ -104,11 +104,13 @@ export const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
     const campaignTypeConfig = {
       [CAMPAIGN_TYPES.FOOTER_NOTIFICATION]: {
         showCountKey: 'wsc',
-        frequencyControlKey: 'wfc'
+        frequencyControlKey: 'wfc',
+        dailyCountKey: 'wmp'
       },
       [CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY]: {
         showCountKey: 'wndsc',
-        frequencyControlKey: 'wndfc'
+        frequencyControlKey: 'wndfc',
+        dailyCountKey: 'wndmp'
       }
     }
 
@@ -120,11 +122,15 @@ export const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
 
     if (!isCampaignExcludedFromFrequencyLimits) {
       const showCountKey = config.showCountKey
+      const dailyCountKey = config.dailyCountKey
+
       const currentShowCount =
         typeof campaignObj[showCountKey] === 'number'
           ? campaignObj[showCountKey]
           : 0
       campaignObj[showCountKey] = currentShowCount + 1
+
+      campaignObj[dailyCountKey] = deliveryPreferenceUtils.getDailyCount(campaignObj, dailyCountKey)
     }
 
     if (campaignDetails?.display?.adp) {
@@ -194,10 +200,12 @@ export const setCampaignObjectForGuid = () => {
             wsc: campObj.wsc,
             wfc: campObj.wfc,
             woc: campObj.woc,
+            wmp: campObj.wmp,
             dnd: campObj.dnd,
             wndsc: campObj.wndsc,
             wndfc: campObj.wndfc,
-            wndoc: campObj.wndoc
+            wndoc: campObj.wndoc,
+            wndmp: campObj.wndmp
           }
 
           guidCampObj[guid] = finalCampObj

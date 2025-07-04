@@ -560,7 +560,37 @@ export const deliveryPreferenceUtils = {
       wp
     }
     saveCampaignObject(campaignObj)
+  },
+
+  /**
+   * Gets the daily count for a campaign, automatically resetting to 1 when date changes
+   * Date tracking is done in localStorage for persistence across page reloads
+   * @param {Object} campaignObj - The campaign object to store count
+   * @param {string} dailyCountKey - The key to store the daily count
+   * @returns {number} The new daily count (incremented from previous or reset to 1)
+   */
+  getDailyCount (campaignObj, dailyCountKey) {
+    const DATE_TRACKER_KEY = 'ct_daily_date_tracker'
+    const today = new Date().toISOString().split('T')[0]
+    let storedDate = null
+    storedDate = localStorage.getItem(DATE_TRACKER_KEY)
+
+    // Get current count
+    const storedCount = typeof campaignObj[dailyCountKey] === 'number'
+      ? campaignObj[dailyCountKey]
+      : 0
+
+    let newDailyCount
+
+    if (storedDate !== today) {
+      newDailyCount = 1
+      localStorage.setItem(DATE_TRACKER_KEY, today)
+    } else {
+      newDailyCount = storedCount + 1
+    }
+    return newDailyCount
   }
+
 }
 
 export function addScriptTo (script, target = 'body') {

@@ -9153,6 +9153,32 @@
         wp
       };
       saveCampaignObject(campaignObj);
+    },
+
+    /**
+     * Gets the daily count for a campaign, automatically resetting to 1 when date changes
+     * Date tracking is done in localStorage for persistence across page reloads
+     * @param {Object} campaignObj - The campaign object to store count
+     * @param {string} dailyCountKey - The key to store the daily count
+     * @returns {number} The new daily count (incremented from previous or reset to 1)
+     */
+    getDailyCount(campaignObj, dailyCountKey) {
+      const DATE_TRACKER_KEY = 'ct_daily_date_tracker';
+      const today = new Date().toISOString().split('T')[0];
+      let storedDate = null;
+      storedDate = localStorage.getItem(DATE_TRACKER_KEY); // Get current count
+
+      const storedCount = typeof campaignObj[dailyCountKey] === 'number' ? campaignObj[dailyCountKey] : 0;
+      let newDailyCount;
+
+      if (storedDate !== today) {
+        newDailyCount = 1;
+        localStorage.setItem(DATE_TRACKER_KEY, today);
+      } else {
+        newDailyCount = storedCount + 1;
+      }
+
+      return newDailyCount;
     }
 
   };
@@ -9259,11 +9285,13 @@
       const campaignTypeConfig = {
         [CAMPAIGN_TYPES.FOOTER_NOTIFICATION]: {
           showCountKey: 'wsc',
-          frequencyControlKey: 'wfc'
+          frequencyControlKey: 'wfc',
+          dailyCountKey: 'wmp'
         },
         [CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY]: {
           showCountKey: 'wndsc',
-          frequencyControlKey: 'wndfc'
+          frequencyControlKey: 'wndfc',
+          dailyCountKey: 'wndmp'
         }
       };
       const config = campaignTypeConfig[campaignType];
@@ -9274,8 +9302,10 @@
 
       if (!isCampaignExcludedFromFrequencyLimits) {
         const showCountKey = config.showCountKey;
+        const dailyCountKey = config.dailyCountKey;
         const currentShowCount = typeof campaignObj[showCountKey] === 'number' ? campaignObj[showCountKey] : 0;
         campaignObj[showCountKey] = currentShowCount + 1;
+        campaignObj[dailyCountKey] = deliveryPreferenceUtils.getDailyCount(campaignObj, dailyCountKey);
       }
 
       if (campaignDetails === null || campaignDetails === void 0 ? void 0 : (_campaignDetails$disp3 = campaignDetails.display) === null || _campaignDetails$disp3 === void 0 ? void 0 : _campaignDetails$disp3.adp) {
@@ -9349,10 +9379,12 @@
               wsc: campObj.wsc,
               wfc: campObj.wfc,
               woc: campObj.woc,
+              wmp: campObj.wmp,
               dnd: campObj.dnd,
               wndsc: campObj.wndsc,
               wndfc: campObj.wndfc,
-              wndoc: campObj.wndoc
+              wndoc: campObj.wndoc,
+              wndmp: campObj.wndmp
             };
             guidCampObj[guid] = finalCampObj;
             StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
