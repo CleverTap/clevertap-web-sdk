@@ -12684,10 +12684,9 @@
 
   const createIframe = targetingMsgJson => {
     const staticHTML = targetingMsgJson.msgContent.html;
-    const desktopHTML = staticHTML.replace('"##Vars##"', JSON.stringify(targetingMsgJson.display.desktopConfig));
-    const mobileHTML = staticHTML.replace('"##Vars##"', JSON.stringify(targetingMsgJson.display.mobileConfig));
     const isDesktop = window.matchMedia('(min-width: 480px)').matches;
-    const html = isDesktop ? desktopHTML : mobileHTML;
+    const config = isDesktop ? targetingMsgJson.display.desktopConfig : targetingMsgJson.display.mobileConfig;
+    const html = staticHTML.replace('"##Vars##"', JSON.stringify(config));
     const iframe = document.createElement('iframe');
     iframe.id = 'wiz-iframe';
     iframe.srcdoc = html;
