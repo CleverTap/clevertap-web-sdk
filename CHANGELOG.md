@@ -2,6 +2,9 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.16.2] 3rd July 2025
+- Added changes to support personalisation in 'Advanced Web-popup Builder' in 'Web Popup'.
+
+## [1.16.2] 3rd July 2025
 - Introduces the new templates 'Advanced Web-popup Builder' in 'Web Popup'.
 
 ## [1.16.1] 1st July 2025

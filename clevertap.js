@@ -11657,7 +11657,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.16.2';
+            const sdkVersion = '1.17.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -12579,7 +12579,14 @@
     $ct.campaignDivMap[campaignId] = divId; // Create DOM elements
 
     const msgDiv = createWrapperDiv(divId);
-    const iframe = createIframe(targetingMsgJson); // Setup event handling
+    const iframe = createIframe(targetingMsgJson, _logger);
+
+    if (!iframe) {
+      _logger.error('Failed to create iframe for Advanced Builder');
+
+      return;
+    } // Setup event handling
+
 
     setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger); // Append to DOM
 
@@ -12682,14 +12689,22 @@
   }; // Utility: Create iframe with attributes and content
 
 
-  const createIframe = targetingMsgJson => {
-    const iframe = document.createElement('iframe');
-    iframe.id = 'wiz-iframe';
-    const isDesktop = window.matchMedia('(min-width: 480px)').matches;
-    const html = isDesktop ? targetingMsgJson.display.desktopHTML : targetingMsgJson.display.mobileHTML;
-    iframe.srcdoc = html;
-    iframe.setAttribute('style', IFRAME_STYLE);
-    return iframe;
+  const createIframe = (targetingMsgJson, _logger) => {
+    try {
+      const staticHTML = targetingMsgJson.msgContent.html;
+      const isDesktop = window.matchMedia('(min-width: 480px)').matches;
+      const config = isDesktop ? targetingMsgJson.display.desktopConfig : targetingMsgJson.display.mobileConfig;
+      const html = staticHTML.replace('"##Vars##"', JSON.stringify(config));
+      const iframe = document.createElement('iframe');
+      iframe.id = 'wiz-iframe';
+      iframe.srcdoc = html;
+      iframe.setAttribute('style', IFRAME_STYLE);
+      return iframe;
+    } catch (error) {
+      _logger.error('Error creating iframe:', error);
+
+      return null;
+    }
   }; // Utility: Setup iframe event listeners
 
 
@@ -15517,7 +15532,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.16.2',
+        lib: 'web-sdk-v1.17.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17366,7 +17381,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.16.2';
+      return 'web-sdk-v1.17.1';
     }
 
     defineVariable(name, defaultValue) {
