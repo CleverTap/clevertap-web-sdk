@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.18.0] 9th July, 2025
+- Added Delivery Preference Support for Web Popups
+
 ## [1.17.0] 8th July 2025
 - Added changes to support personalisation in 'Advanced Web-popup Builder' in 'Web Popup'.
 
