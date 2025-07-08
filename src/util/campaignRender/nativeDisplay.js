@@ -1,4 +1,4 @@
-import { CUSTOM_HTML_PREVIEW } from '../constants'
+import { CUSTOM_HTML_PREVIEW, WEB_NATIVE_TEMPLATES } from '../constants'
 import { CTWebPersonalisationBanner } from '../web-personalisation/banner'
 import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
 
@@ -145,4 +145,20 @@ export const checkCustomHtmlNativeDisplayPreview = (logger) => {
         break
     }
   }
+}
+
+export const renderWebNativeDisplayBanner = (targetNotif, logger, arrInAppNotifs) => {
+  let count = 0
+  const intervalId = setInterval(() => {
+    const selector = targetNotif.display.divId ? targetNotif.display.divId : targetNotif.display.divSelector
+    const element = document.getElementById(selector)
+    if (element !== null) {
+      targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
+      clearInterval(intervalId)
+    } else if (++count >= 20) {
+      logger.debug(`No element present on DOM with selector '${selector}'.`)
+      arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
+      clearInterval(intervalId)
+    }
+  }, 500)
 }

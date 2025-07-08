@@ -11657,7 +11657,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.16.2';
+            const sdkVersion = '1.16.3';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -12554,6 +12554,23 @@
           break;
       }
     }
+  };
+  const renderWebNativeDisplayBanner = (targetNotif, logger, arrInAppNotifs) => {
+    let count = 0;
+    const intervalId = setInterval(() => {
+      const selector = targetNotif.display.divId ? targetNotif.display.divId : targetNotif.display.divSelector;
+      const element = document.getElementById(selector);
+
+      if (element !== null) {
+        targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
+        clearInterval(intervalId);
+      } else if (++count >= 20) {
+        logger.debug("No element present on DOM with selector '".concat(selector, "'."));
+        arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
+
+        clearInterval(intervalId);
+      }
+    }, 500);
   };
 
   const renderPopUpImageOnly = (targetingMsgJson, _session) => {
@@ -15008,13 +15025,7 @@
             handleKVpairCampaign(targetNotif);
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER || targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CAROUSEL) {
             // Check for banner and carousel
-            const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
-
-            if (element !== null) {
-              targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
-            } else {
-              arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
-            }
+            renderWebNativeDisplayBanner(targetNotif, _logger, arrInAppNotifs);
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
             renderVisualBuilder(targetNotif, false, _logger);
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
@@ -15517,7 +15528,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.16.2',
+        lib: 'web-sdk-v1.16.3',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17366,7 +17377,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.16.2';
+      return 'web-sdk-v1.16.3';
     }
 
     defineVariable(name, defaultValue) {
