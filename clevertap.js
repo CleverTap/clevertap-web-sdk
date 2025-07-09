@@ -12753,7 +12753,7 @@
   };
 
   function handleWebPopupPreviewPostMessageEvent(event, logger) {
-    if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+    if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) || !event.data.origin.includes('localhost')) {
       return;
     }
 
