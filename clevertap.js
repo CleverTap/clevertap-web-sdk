@@ -12754,6 +12754,7 @@
 
   function handleWebPopupPreviewPostMessageEvent(event, logger) {
     if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) || !event.origin.includes('localhost')) {
+      console.log('event', event.data);
       return;
     }
 
