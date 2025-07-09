@@ -193,9 +193,10 @@ const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) =>
 }
 
 function handleWebPopupPreviewPostMessageEvent (event, logger) {
-  if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) || !event.data.origin.includes('localhost')) {
+  if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) || !event.origin.includes('localhost')) {
     return
   }
+  console.log('event', event.origin)
   const eventData = JSON.parse(event.data)
   const inAppNotifs = eventData.inapp_notifs
   const msgContent = inAppNotifs[0].msgContent
