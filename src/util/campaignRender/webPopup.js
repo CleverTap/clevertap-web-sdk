@@ -213,9 +213,10 @@ export const checkWebPopupPreview = (logger) => {
     switch (ctType) {
       case WEB_POPUP_PREVIEW:
         if (parentWindow) {
-          parentWindow.postMessage('ready', '*')
           const eventHandler = (event) => handleWebPopupPreviewPostMessageEvent(event, logger)
           window.addEventListener('message', eventHandler, false)
+          console.log('message sent')
+          parentWindow.postMessage('ready', '*')
         }
         break
       default:
