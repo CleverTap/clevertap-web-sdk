@@ -12571,7 +12571,8 @@
   };
   const FULLSCREEN_STYLE = "\n  z-index: 2147483647;\n  display: block;\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100vw !important;\n  height: 100vh !important;\n  margin: 0;\n  padding: 0;\n  background: transparent;\n";
   const IFRAME_STYLE = "\n  ".concat(FULLSCREEN_STYLE, "\n  border: 0 !important;\n");
-  const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
+  const renderAdvancedBuilder = function (targetingMsgJson, _session, _logger) {
+    let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
     const divId = 'wizAdvBuilder';
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Check for existing wrapper and handle accordingly
 
@@ -12591,7 +12592,10 @@
     } // Setup event handling
 
 
-    setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger); // Append to DOM
+    if (!isPreview) {
+      setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger);
+    } // Append to DOM
+
 
     msgDiv.appendChild(iframe);
     document.body.appendChild(msgDiv); // Track notification view
@@ -12761,8 +12765,8 @@
     const inAppNotifs = eventData.inapp_notifs;
     const msgContent = inAppNotifs[0].msgContent;
 
-    if (eventData && msgContent && msgContent.templateType === 'advanced-builder') {
-      renderAdvancedBuilder(inAppNotifs[0], logger);
+    if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
+      renderAdvancedBuilder(inAppNotifs[0], null, logger, true);
     }
   }
 

@@ -33,7 +33,7 @@ const IFRAME_STYLE = `
   border: 0 !important;
 `
 
-export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
+export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger, isPreview = false) => {
   const divId = 'wizAdvBuilder'
   const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
 
@@ -53,7 +53,9 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
   }
 
   // Setup event handling
-  setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger)
+  if (!isPreview) {
+    setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger)
+  }
 
   // Append to DOM
   msgDiv.appendChild(iframe)
@@ -193,14 +195,14 @@ const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) =>
 }
 
 function handleWebPopupPreviewPostMessageEvent (event, logger) {
-  if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) || !event.data.origin.includes('localhost')) {
+  if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
     return
   }
   const eventData = JSON.parse(event.data)
   const inAppNotifs = eventData.inapp_notifs
   const msgContent = inAppNotifs[0].msgContent
-  if (eventData && msgContent && msgContent.templateType === 'advanced-builder') {
-    renderAdvancedBuilder(inAppNotifs[0], logger)
+  if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
+    renderAdvancedBuilder(inAppNotifs[0], null, logger, true)
   }
 }
 
