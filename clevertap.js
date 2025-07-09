@@ -12754,16 +12754,14 @@
 
   function handleWebPopupPreviewPostMessageEvent(event, logger) {
     if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) && !event.origin.includes('localhost')) {
-      console.log('origin', event.origin);
       return;
     }
 
-    console.log('event', event.origin);
     const eventData = JSON.parse(event.data);
     const inAppNotifs = eventData.inapp_notifs;
     const msgContent = inAppNotifs[0].msgContent;
 
-    if (eventData && msgContent && msgContent.templateType === 'advanced-builder') {
+    if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
       renderAdvancedBuilder(inAppNotifs[0], logger);
     }
   }
