@@ -219,6 +219,7 @@
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
+  const WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
   const CUSTOM_CT_ID_PREFIX = '_w_';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
@@ -12751,6 +12752,47 @@
     window.addEventListener('message', messageHandler);
   };
 
+  function handleWebPopupPreviewPostMessageEvent(event, logger) {
+    if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) || !event.origin.includes('localhost')) {
+      return;
+    }
+
+    console.log('event', event.origin);
+    const eventData = JSON.parse(event.data);
+    const inAppNotifs = eventData.inapp_notifs;
+    const msgContent = inAppNotifs[0].msgContent;
+
+    if (eventData && msgContent && msgContent.templateType === 'advanced-builder') {
+      renderAdvancedBuilder(inAppNotifs[0], logger);
+    }
+  }
+
+  const checkWebPopupPreview = logger => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const ctType = searchParams.get('ctActionMode');
+
+    if (ctType) {
+      const parentWindow = window.opener;
+
+      switch (ctType) {
+        case WEB_POPUP_PREVIEW:
+          if (parentWindow) {
+            parentWindow.postMessage('ready', '*');
+
+            const eventHandler = event => handleWebPopupPreviewPostMessageEvent(event, logger);
+
+            window.addEventListener('message', eventHandler, false);
+          }
+
+          break;
+
+        default:
+          logger.debug("unknown query param ".concat(ctType));
+          break;
+      }
+    }
+  };
+
   const getBoxPromptStyles = style => {
     const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
     const cardPadding = 16 * 2; // Left and right padding
@@ -17193,6 +17235,7 @@
 
       handleActionMode(_classPrivateFieldLooseBase(this, _logger)[_logger], _classPrivateFieldLooseBase(this, _account)[_account].id);
       checkCustomHtmlNativeDisplayPreview(_classPrivateFieldLooseBase(this, _logger)[_logger]);
+      checkWebPopupPreview(_classPrivateFieldLooseBase(this, _logger)[_logger]);
       _classPrivateFieldLooseBase(this, _session)[_session].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account)[_account].id;
 
       if (region) {
