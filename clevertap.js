@@ -8554,7 +8554,7 @@
   };
 
   var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
-    var _window$clevertap, _window$wizrocket;
+    var _window$location$orig, _window, _window$location, _window2, _window2$location, _window$clevertap, _window$wizrocket;
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
@@ -8609,6 +8609,8 @@
     }
 
     url = addToURL(url, 'tries', tries); // Add tries to URL
+
+    url = addToURL(url, 'origin', (_window$location$orig = (_window = window) === null || _window === void 0 ? void 0 : (_window$location = _window.location) === null || _window$location === void 0 ? void 0 : _window$location.origin) !== null && _window$location$orig !== void 0 ? _window$location$orig : (_window2 = window) === null || _window2 === void 0 ? void 0 : (_window2$location = _window2.location) === null || _window2$location === void 0 ? void 0 : _window2$location.href); // Add origin to URL
 
     url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
