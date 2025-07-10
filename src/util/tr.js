@@ -28,7 +28,7 @@ import RequestDispatcher from './requestDispatcher'
 import { CTWebPopupImageOnly } from './web-popupImageonly/popupImageonly'
 import { checkAndRegisterWebInboxElements, initializeWebInbox, processWebInboxSettings, hasWebInboxSettingsInLS, processInboxNotifs } from '../modules/web-inbox/helper'
 import { renderVisualBuilder } from '../modules/visualBuilder/pageBuilder'
-import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel, renderCustomHtml, handleJson } from './campaignRender/nativeDisplay'
+import { handleKVpairCampaign, renderPersonalisationBanner, renderPersonalisationCarousel, renderCustomHtml, handleJson, renderWebNativeDisplayBanner } from './campaignRender/nativeDisplay'
 import { appendScriptForCustomEvent, getCookieParams, incrementImpression, invokeExternalJs, mergeEventMap, setupClickEvent, staleDataUpdate, webNativeDisplayCampaignUtils, addCampaignToLocalStorage } from './campaignRender/utilities'
 import { renderAdvancedBuilder, renderPopUpImageOnly } from './campaignRender/webPopup'
 import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
@@ -908,12 +908,7 @@ const _tr = (msg, {
         if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR) {
           handleKVpairCampaign(targetNotif)
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER || targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CAROUSEL) { // Check for banner and carousel
-          const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector)
-          if (element !== null) {
-            targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif)
-          } else {
-            arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif // Add targetNotif to object
-          }
+          renderWebNativeDisplayBanner(targetNotif, _logger, arrInAppNotifs)
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER) {
           renderVisualBuilder(targetNotif, false, _logger)
         } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CUSTOM_HTML) {
