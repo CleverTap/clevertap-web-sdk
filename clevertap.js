@@ -7754,8 +7754,9 @@
       } // session cookie
 
 
-      const obj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject(); // for the race-condition where two responses come back with different session ids. don't write the older session id.
+      const obj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
 
+      console.log('Session Obj ', obj); // for the race-condition where two responses come back with different session ids. don't write the older session id.
 
       if (typeof obj.s === 'undefined' || obj.s <= session) {
         obj.s = session;
@@ -8519,7 +8520,24 @@
         }
 
         if (meta) {
-          window.$WZRK_WR.s(meta);
+          const {
+            g,
+            sid,
+            rf,
+            rn,
+            optOut
+          } = meta;
+
+          if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
+            const parsedRn = parseInt(rn);
+            const finalRn = isNaN(parsedRn) ? 1 : parsedRn + 1; // Include optOut as 5th parameter if present
+
+            if (optOut !== undefined) {
+              window.$WZRK_WR.s(g, sid, rf, finalRn, optOut);
+            } else {
+              window.$WZRK_WR.s(g, sid, rf, finalRn);
+            }
+          }
         }
 
         if (wpe) {
