@@ -233,6 +233,13 @@
     FORM: 'form',
     JSON: 'json'
   };
+  const WEB_POPUP_TEMPLATES = {
+    BOX: 0,
+    INTERSTITIAL: 1,
+    BANNER: 2,
+    IMAGE_ONLY: 3,
+    ADVANCED_BUILDER: 4
+  };
   const CAMPAIGN_TYPES = {
     EXIT_INTENT: 1,
     WEB_NATIVE_DISPLAY: 2,
@@ -243,7 +250,11 @@
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
   const ACTION_TYPES = {
     OPEN_LINK: 'url',
-    OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
+    OPEN_LINK_AND_CLOSE: 'urlCloseNotification',
+    CLOSE: 'close',
+    OPEN_WEB_URL: 'open-web-url',
+    SOFT_PROMPT: 'soft-prompt',
+    RUN_JS: 'js'
   };
 
   const isString = input => {
@@ -8599,8 +8610,13 @@
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
   };
 
+<<<<<<< HEAD
   var _fireRequest2 = async function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
     var _window$clevertap, _window$wizrocket;
+=======
+  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
+    var _window$location$orig, _window, _window$location, _window2, _window2$location, _window$clevertap, _window$wizrocket;
+>>>>>>> origin/develop
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
@@ -8655,6 +8671,8 @@
     }
 
     url = addToURL(url, 'tries', tries); // Add tries to URL
+
+    url = addToURL(url, 'origin', (_window$location$orig = (_window = window) === null || _window === void 0 ? void 0 : (_window$location = _window.location) === null || _window$location === void 0 ? void 0 : _window$location.origin) !== null && _window$location$orig !== void 0 ? _window$location$orig : (_window2 = window) === null || _window2 === void 0 ? void 0 : (_window2$location = _window2.location) === null || _window2$location === void 0 ? void 0 : _window2$location.href); // Add origin to URL
 
     url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
@@ -11707,7 +11725,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.16.1';
+            const sdkVersion = '1.17.0';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -12615,6 +12633,188 @@
     containerEl.innerHTML = '';
     containerEl.style.visibility = 'hidden';
     containerEl.appendChild(popupImageOnly);
+  };
+  const FULLSCREEN_STYLE = "\n  z-index: 2147483647;\n  display: block;\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100vw !important;\n  height: 100vh !important;\n  margin: 0;\n  padding: 0;\n  background: transparent;\n";
+  const IFRAME_STYLE = "\n  ".concat(FULLSCREEN_STYLE, "\n  border: 0 !important;\n");
+  const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
+    const divId = 'wizAdvBuilder';
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Check for existing wrapper and handle accordingly
+
+    if (handleExistingWrapper(divId)) {
+      return; // Early exit if existing wrapper should not be replaced
+    }
+
+    $ct.campaignDivMap[campaignId] = divId; // Create DOM elements
+
+    const msgDiv = createWrapperDiv(divId);
+    const iframe = createIframe(targetingMsgJson, _logger);
+
+    if (!iframe) {
+      _logger.error('Failed to create iframe for Advanced Builder');
+
+      return;
+    } // Setup event handling
+
+
+    setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger); // Append to DOM
+
+    msgDiv.appendChild(iframe);
+    document.body.appendChild(msgDiv); // Track notification view
+
+    window.clevertap.renderNotificationViewed({
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot
+    });
+  };
+
+  const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
+    var _e$detail, _e$detail$elementDeta;
+
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+    const {
+      detail
+    } = e;
+
+    if (!(detail === null || detail === void 0 ? void 0 : detail.type)) {
+      return _logger.debug('Empty or missing event type');
+    }
+
+    _logger.debug('Received event type:', detail);
+
+    const payload = {
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot,
+      kv: {
+        wzrk_c2a: (_e$detail = e.detail) === null || _e$detail === void 0 ? void 0 : (_e$detail$elementDeta = _e$detail.elementDetails) === null || _e$detail$elementDeta === void 0 ? void 0 : _e$detail$elementDeta.name
+      }
+    };
+
+    switch (detail.type) {
+      case ACTION_TYPES.CLOSE:
+        // close Iframe
+        window.clevertap.renderNotificationClicked(payload);
+        closeIframe(campaignId, divId, _session.sessionId);
+        break;
+
+      case ACTION_TYPES.OPEN_WEB_URL:
+        // handle opening of url
+        window.clevertap.renderNotificationClicked(payload);
+
+        if (detail.openInNewTab) {
+          window.open(detail.url.value.replacements, '_blank', 'noopener');
+
+          if (detail.closeOnClick) {
+            closeIframe(campaignId, divId, _session.sessionId);
+          }
+        } else {
+          window.location.href = detail.url.value.replacements;
+        }
+
+        break;
+
+      case ACTION_TYPES.SOFT_PROMPT:
+        // Handle soft prompt
+        window.clevertap.renderNotificationClicked(payload);
+        window.clevertap.notifications.push({
+          skipDialog: true
+        });
+        break;
+
+      case ACTION_TYPES.RUN_JS:
+        // Handle JS code
+        window.clevertap.renderNotificationClicked(payload);
+        invokeExternalJs(e.detail.js.name, targetingMsgJson);
+        break;
+
+      default:
+        _logger.debug('Empty event type received');
+
+    }
+  }; // Utility: Check and handle existing wrapper
+
+
+  const handleExistingWrapper = divId => {
+    const existingWrapper = document.getElementById(divId);
+
+    if (existingWrapper) {
+      if ($ct.dismissSpamControl) {
+        existingWrapper.remove();
+        return false; // Continue with creation
+      } else {
+          return true; // Stop execution
+        }
+    }
+
+    return false; // No existing wrapper, continue
+  }; // Utility: Create wrapper div
+
+
+  const createWrapperDiv = divId => {
+    const msgDiv = document.createElement('div');
+    msgDiv.id = divId;
+    msgDiv.setAttribute('style', FULLSCREEN_STYLE);
+    return msgDiv;
+  }; // Utility: Create iframe with attributes and content
+
+
+  const createIframe = (targetingMsgJson, _logger) => {
+    try {
+      const staticHTML = targetingMsgJson.msgContent.html;
+      const isDesktop = window.matchMedia('(min-width: 480px)').matches;
+      const config = isDesktop ? targetingMsgJson.display.desktopConfig : targetingMsgJson.display.mobileConfig;
+      const html = staticHTML.replace('"##Vars##"', JSON.stringify(config));
+      const iframe = document.createElement('iframe');
+      iframe.id = 'wiz-iframe';
+      iframe.srcdoc = html;
+      iframe.setAttribute('style', IFRAME_STYLE);
+      return iframe;
+    } catch (error) {
+      _logger.error('Error creating iframe:', error);
+
+      return null;
+    }
+  }; // Utility: Setup iframe event listeners
+
+
+  const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger) => {
+    iframe.onload = () => {
+      try {
+        // Try direct document access first
+        iframe.contentDocument.addEventListener('CT_custom_event', e => {
+          _logger.debug('Event received ', e);
+
+          handleIframeEvent(e, targetingMsgJson, divId, _session, _logger);
+        });
+      } catch (error) {
+        // Fallback to postMessage
+        _logger.error('Iframe document inaccessible, using postMessage:', error);
+
+        setupPostMessageListener(targetingMsgJson, divId, _session, _logger);
+      }
+    };
+  }; // Utility: Setup postMessage listener as fallback
+
+
+  const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) => {
+    const messageHandler = event => {
+      var _event$data;
+
+      if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+        return;
+      }
+
+      if (((_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.type) === 'CT_custom_event') {
+        _logger.debug('Event received ', event);
+
+        handleIframeEvent({
+          detail: event.data.detail
+        }, targetingMsgJson, divId, _session, _logger);
+      }
+    };
+
+    window.removeEventListener('message', messageHandler); // Avoid duplicate bindings
+
+    window.addEventListener('message', messageHandler);
   };
 
   const getBoxPromptStyles = style => {
@@ -13952,7 +14152,8 @@
     const _session = session;
     const _request = request;
     const _logger = logger;
-    const _region = region;
+    const _region = region; // msg = builderdata
+
     let _wizCounter = 0; // Campaign House keeping
 
     const doCampHouseKeeping = targetingMsgJson => {
@@ -14205,18 +14406,23 @@
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       const displayObj = targetingMsgJson.display;
 
-      if (displayObj.layout === 1) {
+      if (displayObj.layout === WEB_POPUP_TEMPLATES.INTERSTITIAL) {
         // Handling Web Exit Intent
         return showExitIntent(undefined, targetingMsgJson);
       }
 
-      if (displayObj.layout === 3) {
+      if (displayObj.layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY) {
         // Handling Web Popup Image Only
         handleImageOnlyPopup(targetingMsgJson);
         return;
       }
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
+      }
+
+      if (displayObj.layout === WEB_POPUP_TEMPLATES.ADVANCED_BUILDER) {
+        renderAdvancedBuilder(targetingMsgJson, _session, _logger);
         return;
       }
 
@@ -14243,7 +14449,7 @@
       }
 
       $ct.campaignDivMap[campaignId] = divId;
-      const isBanner = displayObj.layout === 2;
+      const isBanner = displayObj.layout === WEB_POPUP_TEMPLATES.BANNER;
 
       if (isExitIntent) {
         const opacityDiv = document.createElement('div');
@@ -14644,7 +14850,7 @@
       const layout = targetingMsgJson.display.layout;
       if (isExistingCampaign(campaignId)) return;
 
-      if (targetingMsgJson.display.wtarget_type === 0 && (layout === 0 || layout === 2 || layout === 3)) {
+      if (targetingMsgJson.display.wtarget_type === 0 && (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER || layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
         createTemplate(targetingMsgJson, true);
         return;
       }
@@ -15394,7 +15600,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.16.1',
+        lib: 'web-sdk-v1.17.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17265,7 +17471,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.16.1';
+      return 'web-sdk-v1.17.0';
     }
 
     defineVariable(name, defaultValue) {

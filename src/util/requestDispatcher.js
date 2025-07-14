@@ -65,6 +65,7 @@ export default class RequestDispatcher {
     }
 
     url = addToURL(url, 'tries', tries) // Add tries to URL
+    url = addToURL(url, 'origin', window?.location?.origin ?? window?.location?.href) // Add origin to URL
 
     url = this.#addUseIPToRequest(url)
     url = addToURL(url, 'r', new Date().getTime()) // add epoch to beat caching of the URL
