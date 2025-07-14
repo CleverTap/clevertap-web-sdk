@@ -146,7 +146,18 @@ export default class RequestDispatcher {
         window.$WZRK_WR.tr(tr)
       }
       if (meta) {
-        window.$WZRK_WR.s(meta)
+        const { g, sid, rf, rn, optOut } = meta
+        if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
+          const parsedRn = parseInt(rn)
+          const finalRn = isNaN(parsedRn) ? 1 : parsedRn + 1
+
+          // Include optOut as 5th parameter if present
+          if (optOut !== undefined) {
+            window.$WZRK_WR.s(g, sid, rf, finalRn, optOut)
+          } else {
+            window.$WZRK_WR.s(g, sid, rf, finalRn)
+          }
+        }
       }
       if (wpe) {
         window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key)
