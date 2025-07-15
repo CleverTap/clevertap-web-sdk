@@ -2,6 +2,9 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.17.0] 8th July 2025
+- Introduced preview in 'Advanced Web-popup Builder' in 'Web Popup'.
+
+## [1.17.0] 8th July 2025
 - Added changes to support personalisation in 'Advanced Web-popup Builder' in 'Web Popup'.
 - Sending Origin details for domain whitelisting 
 
