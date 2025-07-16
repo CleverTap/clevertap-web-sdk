@@ -38,7 +38,8 @@ import {
   renderPersonalisationBanner,
   renderPersonalisationCarousel,
   renderCustomHtml,
-  handleJson
+  handleJson,
+  renderWebNativeDisplayBanner
 } from '../campaignRender/nativeDisplay.js'
 import {
   appendScriptForCustomEvent,
@@ -1349,18 +1350,7 @@ export const commonCampaignUtils = {
           targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ||
           targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.CAROUSEL
         ) {
-          // Check for banner and carousel
-          const element = targetNotif.display.divId
-            ? document.getElementById(targetNotif.display.divId)
-            : document.querySelector(targetNotif.display.divSelector)
-          if (element !== null) {
-            targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER
-              ? renderPersonalisationBanner(targetNotif)
-              : renderPersonalisationCarousel(targetNotif)
-          } else {
-            // Adds to array for later processing if element not found
-            arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif
-          }
+          renderWebNativeDisplayBanner(targetNotif, logger, arrInAppNotifs)
         } else if (
           targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.VISUAL_BUILDER
         ) {
