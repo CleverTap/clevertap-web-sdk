@@ -233,6 +233,13 @@
     FORM: 'form',
     JSON: 'json'
   };
+  const WEB_POPUP_TEMPLATES = {
+    BOX: 0,
+    INTERSTITIAL: 1,
+    BANNER: 2,
+    IMAGE_ONLY: 3,
+    ADVANCED_BUILDER: 4
+  };
   const CAMPAIGN_TYPES = {
     EXIT_INTENT: 1,
     WEB_NATIVE_DISPLAY: 2,
@@ -243,7 +250,11 @@
   const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
   const ACTION_TYPES = {
     OPEN_LINK: 'url',
-    OPEN_LINK_AND_CLOSE: 'urlCloseNotification'
+    OPEN_LINK_AND_CLOSE: 'urlCloseNotification',
+    CLOSE: 'close',
+    OPEN_WEB_URL: 'open-web-url',
+    SOFT_PROMPT: 'soft-prompt',
+    RUN_JS: 'js'
   };
 
   const isString = input => {
@@ -7442,8 +7453,7 @@
     globalUnsubscribe: true,
     flutterVersion: null,
     variableStore: {},
-    pushConfig: null,
-    intervalArray: [] // domain: window.location.hostname, url -> getHostName()
+    pushConfig: null // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -8544,7 +8554,7 @@
   };
 
   var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
-    var _window$clevertap, _window$wizrocket;
+    var _window$location$orig, _window, _window$location, _window2, _window2$location, _window$clevertap, _window$wizrocket;
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
@@ -8599,6 +8609,8 @@
     }
 
     url = addToURL(url, 'tries', tries); // Add tries to URL
+
+    url = addToURL(url, 'origin', (_window$location$orig = (_window = window) === null || _window === void 0 ? void 0 : (_window$location = _window.location) === null || _window$location === void 0 ? void 0 : _window$location.origin) !== null && _window$location$orig !== void 0 ? _window$location$orig : (_window2 = window) === null || _window2 === void 0 ? void 0 : (_window2$location = _window2.location) === null || _window2$location === void 0 ? void 0 : _window2$location.href); // Add origin to URL
 
     url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
     url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
@@ -9971,15 +9983,26 @@
       return this.target.display.onClickAction;
     }
 
+    get desktopAltText() {
+      return this.target.display.desktopAlt;
+    }
+
+    get mobileAltText() {
+      return this.target.display.mobileALt;
+    }
+
     renderImageOnlyPopup() {
       this.shadow.innerHTML = this.getImageOnlyPopupContent();
       this.popup = this.shadowRoot.getElementById('imageOnlyPopup');
       this.container = this.shadowRoot.getElementById('container');
       this.closeIcon = this.shadowRoot.getElementById('close');
+      this.container.setAttribute('role', 'dialog');
+      this.container.setAttribute('aria-modal', 'true');
       this.popup.addEventListener('load', this.updateImageAndContainerWidth());
       this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container));
       this.resizeObserver.observe(this.popup);
-      this.closeIcon.addEventListener('click', () => {
+
+      const closeFn = () => {
         const campaignId = this.target.wzrk_id.split('_')[0];
         const currentSessionId = this.session.sessionId;
         this.resizeObserver.unobserve(this.popup);
@@ -10000,7 +10023,9 @@
             saveCampaignObject(campaignObj);
           }
         }
-      });
+      };
+
+      this.closeIcon.addEventListener('click', closeFn);
 
       if (!this.target.display.preview) {
         window.clevertap.renderNotificationViewed({
@@ -10030,11 +10055,21 @@
           }
         });
       }
+
+      if (this.onClickAction === 'none') {
+        this.popup.addEventListener('click', closeFn);
+      }
     }
 
     handleResize(popup, container) {
       const width = this.getRenderedImageWidth(popup);
       container.style.setProperty('width', "".concat(width, "px"));
+
+      if (window.innerWidth > 480) {
+        this.popup.setAttribute('alt', this.desktopAltText);
+      } else {
+        this.popup.setAttribute('alt', this.mobileAltText);
+      }
     }
 
     getImageOnlyPopupContent() {
@@ -11174,8 +11209,8 @@
   const arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
   const greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
-  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/staging/lib-overlay/overlay.js';
-  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/staging/lib-overlay/style.css';
+  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
+  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
   const WVE_CLASS = {
     FLICKER_SHOW: 'wve-anti-flicker-show',
     FLICKER_HIDE: 'wve-anti-flicker-hide',
@@ -11624,7 +11659,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.15.4';
+            const sdkVersion = '1.17.0';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -11781,12 +11816,15 @@
       logger$1 = _logger;
     }
 
-    if (isPreview) {
-      sessionStorage.setItem('visualEditorData', JSON.stringify(targetingMsgJson));
-    }
-
     const insertedElements = [];
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
+    const url = window.location.href;
+
+    if (isPreview) {
+      const currentUrl = new URL(url);
+      currentUrl.searchParams.delete('ctActionMode');
+    }
+
     let notificationViewed = false;
     const payload = {
       msgId: targetingMsgJson.wzrk_id,
@@ -11868,7 +11906,6 @@
           clearInterval(intervalId);
         }
       }, 500);
-      $ct.intervalArray.push(intervalId);
     };
 
     details.forEach(d => {
@@ -11928,7 +11965,6 @@
           clearInterval(intervalId);
         }
       }, 500);
-      $ct.intervalArray.push(intervalId);
     };
 
     if (insertedElements.length > 0) {
@@ -12531,6 +12567,188 @@
     containerEl.innerHTML = '';
     containerEl.style.visibility = 'hidden';
     containerEl.appendChild(popupImageOnly);
+  };
+  const FULLSCREEN_STYLE = "\n  z-index: 2147483647;\n  display: block;\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100vw !important;\n  height: 100vh !important;\n  margin: 0;\n  padding: 0;\n  background: transparent;\n";
+  const IFRAME_STYLE = "\n  ".concat(FULLSCREEN_STYLE, "\n  border: 0 !important;\n");
+  const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
+    const divId = 'wizAdvBuilder';
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Check for existing wrapper and handle accordingly
+
+    if (handleExistingWrapper(divId)) {
+      return; // Early exit if existing wrapper should not be replaced
+    }
+
+    $ct.campaignDivMap[campaignId] = divId; // Create DOM elements
+
+    const msgDiv = createWrapperDiv(divId);
+    const iframe = createIframe(targetingMsgJson, _logger);
+
+    if (!iframe) {
+      _logger.error('Failed to create iframe for Advanced Builder');
+
+      return;
+    } // Setup event handling
+
+
+    setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger); // Append to DOM
+
+    msgDiv.appendChild(iframe);
+    document.body.appendChild(msgDiv); // Track notification view
+
+    window.clevertap.renderNotificationViewed({
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot
+    });
+  };
+
+  const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
+    var _e$detail, _e$detail$elementDeta;
+
+    const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+    const {
+      detail
+    } = e;
+
+    if (!(detail === null || detail === void 0 ? void 0 : detail.type)) {
+      return _logger.debug('Empty or missing event type');
+    }
+
+    _logger.debug('Received event type:', detail);
+
+    const payload = {
+      msgId: targetingMsgJson.wzrk_id,
+      pivotId: targetingMsgJson.wzrk_pivot,
+      kv: {
+        wzrk_c2a: (_e$detail = e.detail) === null || _e$detail === void 0 ? void 0 : (_e$detail$elementDeta = _e$detail.elementDetails) === null || _e$detail$elementDeta === void 0 ? void 0 : _e$detail$elementDeta.name
+      }
+    };
+
+    switch (detail.type) {
+      case ACTION_TYPES.CLOSE:
+        // close Iframe
+        window.clevertap.renderNotificationClicked(payload);
+        closeIframe(campaignId, divId, _session.sessionId);
+        break;
+
+      case ACTION_TYPES.OPEN_WEB_URL:
+        // handle opening of url
+        window.clevertap.renderNotificationClicked(payload);
+
+        if (detail.openInNewTab) {
+          window.open(detail.url.value.replacements, '_blank', 'noopener');
+
+          if (detail.closeOnClick) {
+            closeIframe(campaignId, divId, _session.sessionId);
+          }
+        } else {
+          window.location.href = detail.url.value.replacements;
+        }
+
+        break;
+
+      case ACTION_TYPES.SOFT_PROMPT:
+        // Handle soft prompt
+        window.clevertap.renderNotificationClicked(payload);
+        window.clevertap.notifications.push({
+          skipDialog: true
+        });
+        break;
+
+      case ACTION_TYPES.RUN_JS:
+        // Handle JS code
+        window.clevertap.renderNotificationClicked(payload);
+        invokeExternalJs(e.detail.js.name, targetingMsgJson);
+        break;
+
+      default:
+        _logger.debug('Empty event type received');
+
+    }
+  }; // Utility: Check and handle existing wrapper
+
+
+  const handleExistingWrapper = divId => {
+    const existingWrapper = document.getElementById(divId);
+
+    if (existingWrapper) {
+      if ($ct.dismissSpamControl) {
+        existingWrapper.remove();
+        return false; // Continue with creation
+      } else {
+          return true; // Stop execution
+        }
+    }
+
+    return false; // No existing wrapper, continue
+  }; // Utility: Create wrapper div
+
+
+  const createWrapperDiv = divId => {
+    const msgDiv = document.createElement('div');
+    msgDiv.id = divId;
+    msgDiv.setAttribute('style', FULLSCREEN_STYLE);
+    return msgDiv;
+  }; // Utility: Create iframe with attributes and content
+
+
+  const createIframe = (targetingMsgJson, _logger) => {
+    try {
+      const staticHTML = targetingMsgJson.msgContent.html;
+      const isDesktop = window.matchMedia('(min-width: 480px)').matches;
+      const config = isDesktop ? targetingMsgJson.display.desktopConfig : targetingMsgJson.display.mobileConfig;
+      const html = staticHTML.replace('"##Vars##"', JSON.stringify(config));
+      const iframe = document.createElement('iframe');
+      iframe.id = 'wiz-iframe';
+      iframe.srcdoc = html;
+      iframe.setAttribute('style', IFRAME_STYLE);
+      return iframe;
+    } catch (error) {
+      _logger.error('Error creating iframe:', error);
+
+      return null;
+    }
+  }; // Utility: Setup iframe event listeners
+
+
+  const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger) => {
+    iframe.onload = () => {
+      try {
+        // Try direct document access first
+        iframe.contentDocument.addEventListener('CT_custom_event', e => {
+          _logger.debug('Event received ', e);
+
+          handleIframeEvent(e, targetingMsgJson, divId, _session, _logger);
+        });
+      } catch (error) {
+        // Fallback to postMessage
+        _logger.error('Iframe document inaccessible, using postMessage:', error);
+
+        setupPostMessageListener(targetingMsgJson, divId, _session, _logger);
+      }
+    };
+  }; // Utility: Setup postMessage listener as fallback
+
+
+  const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) => {
+    const messageHandler = event => {
+      var _event$data;
+
+      if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+        return;
+      }
+
+      if (((_event$data = event.data) === null || _event$data === void 0 ? void 0 : _event$data.type) === 'CT_custom_event') {
+        _logger.debug('Event received ', event);
+
+        handleIframeEvent({
+          detail: event.data.detail
+        }, targetingMsgJson, divId, _session, _logger);
+      }
+    };
+
+    window.removeEventListener('message', messageHandler); // Avoid duplicate bindings
+
+    window.addEventListener('message', messageHandler);
   };
 
   const getBoxPromptStyles = style => {
@@ -13180,6 +13398,8 @@
     let httpsIframePath;
     let apnsWebPushId;
     let apnsWebPushServiceUrl;
+    let okButtonAriaLabel;
+    let rejectButtonAriaLabel;
     const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
 
     if (displayArgs.length === 1) {
@@ -13189,6 +13409,8 @@
         bodyText = notifObj.bodyText;
         okButtonText = notifObj.okButtonText;
         rejectButtonText = notifObj.rejectButtonText;
+        okButtonAriaLabel = notifObj.okButtonAriaLabel;
+        rejectButtonAriaLabel = notifObj.rejectButtonAriaLabel;
         okButtonColor = notifObj.okButtonColor;
         skipDialog = notifObj.skipDialog;
         askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds;
@@ -13332,7 +13554,9 @@
         body: bodyText,
         confirmButtonText: okButtonText,
         confirmButtonColor: okButtonColor,
-        rejectButtonText: rejectButtonText
+        rejectButtonText: rejectButtonText,
+        confirmButtonAriaLabel: okButtonAriaLabel,
+        rejectButtonAriaLabel: rejectButtonAriaLabel
       }, enabled => {
         // callback function
         if (enabled) {
@@ -13561,6 +13785,8 @@
   };
 
   const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    var _content$icon;
+
     if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
     const {
       boxConfig: {
@@ -13583,7 +13809,8 @@
     });
     const iconContainer = createElementWithAttributes('img', {
       id: 'iconContainer',
-      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url
+      src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url,
+      alt: ((_content$icon = content.icon) === null || _content$icon === void 0 ? void 0 : _content$icon.altText) || ''
     });
     iconTitleDescWrapper.appendChild(iconContainer);
     const titleDescWrapper = createElementWithAttributes('div', {
@@ -13603,11 +13830,13 @@
     });
     const primaryButton = createElementWithAttributes('button', {
       id: 'primaryButton',
-      textContent: content.buttons.primaryButtonText
+      textContent: content.buttons.primaryButtonText,
+      ariaLabel: content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
     });
     const secondaryButton = createElementWithAttributes('button', {
       id: 'secondaryButton',
-      textContent: content.buttons.secondaryButtonText
+      textContent: content.buttons.secondaryButtonText,
+      ariaLabel: content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
     });
     buttonsContainer.appendChild(secondaryButton);
     buttonsContainer.appendChild(primaryButton);
@@ -13646,7 +13875,7 @@
     const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
 
     if (shouldShowNotification) {
-      document.body.appendChild(wrapper);
+      document.body.insertBefore(wrapper, document.body.firstChild);
 
       if (!configData.isPreview) {
         StorageManager.setMetaProp('webpush_last_notif_time', now);
@@ -13857,7 +14086,8 @@
     const _session = session;
     const _request = request;
     const _logger = logger;
-    const _region = region;
+    const _region = region; // msg = builderdata
+
     let _wizCounter = 0; // Campaign House keeping
 
     const doCampHouseKeeping = targetingMsgJson => {
@@ -14110,18 +14340,23 @@
       const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
       const displayObj = targetingMsgJson.display;
 
-      if (displayObj.layout === 1) {
+      if (displayObj.layout === WEB_POPUP_TEMPLATES.INTERSTITIAL) {
         // Handling Web Exit Intent
         return showExitIntent(undefined, targetingMsgJson);
       }
 
-      if (displayObj.layout === 3) {
+      if (displayObj.layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY) {
         // Handling Web Popup Image Only
         handleImageOnlyPopup(targetingMsgJson);
         return;
       }
 
       if (doCampHouseKeeping(targetingMsgJson) === false) {
+        return;
+      }
+
+      if (displayObj.layout === WEB_POPUP_TEMPLATES.ADVANCED_BUILDER) {
+        renderAdvancedBuilder(targetingMsgJson, _session, _logger);
         return;
       }
 
@@ -14148,7 +14383,7 @@
       }
 
       $ct.campaignDivMap[campaignId] = divId;
-      const isBanner = displayObj.layout === 2;
+      const isBanner = displayObj.layout === WEB_POPUP_TEMPLATES.BANNER;
 
       if (isExitIntent) {
         const opacityDiv = document.createElement('div');
@@ -14204,6 +14439,8 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe';
+      iframe.setAttribute('role', 'dialog');
+      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -14547,7 +14784,7 @@
       const layout = targetingMsgJson.display.layout;
       if (isExistingCampaign(campaignId)) return;
 
-      if (targetingMsgJson.display.wtarget_type === 0 && (layout === 0 || layout === 2 || layout === 3)) {
+      if (targetingMsgJson.display.wtarget_type === 0 && (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER || layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
         createTemplate(targetingMsgJson, true);
         return;
       }
@@ -14602,6 +14839,8 @@
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe-intent';
+      iframe.setAttribute('role', 'dialog');
+      iframe.setAttribute('aria-modal', 'true');
       const onClick = targetingMsgJson.display.onClick;
       let pointerCss = '';
 
@@ -15295,7 +15534,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.15.4',
+        lib: 'web-sdk-v1.17.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17105,23 +17344,6 @@
       }, FIRST_PING_FREQ_IN_MILLIS);
 
       _classPrivateFieldLooseBase(this, _updateUnviewedBadgePosition)[_updateUnviewedBadgePosition]();
-
-      this._handleVisualEditorPreview();
-    }
-
-    _handleVisualEditorPreview() {
-      if ($ct.intervalArray.length) {
-        $ct.intervalArray.forEach(interval => {
-          clearInterval(interval);
-        });
-      }
-
-      const storedData = sessionStorage.getItem('visualEditorData');
-      const targetJson = storedData ? JSON.parse(storedData) : null;
-
-      if (targetJson) {
-        renderVisualBuilder(targetJson, true, _classPrivateFieldLooseBase(this, _logger)[_logger]);
-      }
     }
 
     _isPersonalisationActive() {
@@ -17161,7 +17383,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.15.4';
+      return 'web-sdk-v1.17.0';
     }
 
     defineVariable(name, defaultValue) {

@@ -255,7 +255,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
   details.forEach(d => {
     d.selectorData.forEach(s => {
       if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) &&
-        s.values.initialHtml) {
+          s.values.initialHtml) {
         insertedElements.push(s)
       } else {
         let element
