@@ -12065,6 +12065,22 @@
     CLEVERTAP: 'dashboard.clevertap.com',
     LOCAL: 'localhost'
   };
+  const renderWebNativeDisplayBanner = (targetNotif, logger, arrInAppNotifs) => {
+    let count = 0;
+    const intervalId = setInterval(() => {
+      const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
+
+      if (element !== null) {
+        targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
+        clearInterval(intervalId);
+      } else if (++count >= 20) {
+        logger.debug("No element present on DOM with selector '".concat(targetNotif.display.divId || targetNotif.display.divSelector, "'."));
+        arrInAppNotifs[targetNotif.wzrk_id.split('_')[0]] = targetNotif; // Add targetNotif to object
+
+        clearInterval(intervalId);
+      }
+    }, 500);
+  };
 
   const renderPopUpImageOnly = (targetingMsgJson, _session) => {
     const divId = 'wzrkImageOnlyDiv';
