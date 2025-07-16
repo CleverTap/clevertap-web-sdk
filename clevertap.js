@@ -9120,11 +9120,11 @@
         const oneDay = 24 * 60 * 60; // (globalCount - sessionCount) timestamps: today - 1 day + 1ms, today - 1 day + 2ms, ...
 
         const pastDays = Array.from({
-          length: globalCount - sessionCount
+          length: sessionCount - globalCount
         }, (_, i) => now - oneDay + (i + 1)); // a timestamps: today, today + 1ms, today + 2ms, ...
 
         const recentMs = Array.from({
-          length: sessionCount
+          length: globalCount
         }, (_, i) => now + i + 1);
         return [...recentMs, ...pastDays];
       } catch {
