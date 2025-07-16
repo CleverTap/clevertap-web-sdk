@@ -503,23 +503,23 @@ export const deliveryPreferenceUtils = {
    * - The first `a` timestamps are from the current time, each 1 second apart (now, now - 1s, now - 2s, ...).
    * - The remaining `(b - a)` timestamps are from previous days (now - 1 day, now - 2 days, ...).
    *
-   * @param {number} a - Number of recent timestamps with 1-second gaps.
-   * @param {number} b - Total number of timestamps to generate.
+   * @param {number} globalCount - Number of recent timestamps with 1-second gaps.
+   * @param {number} sessionCount - Total number of timestamps to generate.
    * @returns {number[]} Array of timestamps in milliseconds since the Unix epoch.
    */
-  generateTimestamps (a, b) {
+  generateTimestamps (globalCount, sessionCount) {
     try {
       const now = Math.floor(Date.now() / 1000)
       const oneDay = 24 * 60 * 60 * 1000
 
-      // (b - a) timestamps: today - 1 day, today - 2 days, ...
+      // (globalCount - sessionCount) timestamps: today - 1 day + 1ms, today - 1 day + 2ms, ...
       const pastDays = Array.from(
-        { length: b - a },
-        (_, i) => now - oneDay * (i + 1)
+        { length: globalCount - sessionCount },
+        (_, i) => now - oneDay + i + 1
       )
 
-      // a timestamps: today, today - 1s, today - 2s, ...
-      const recentMs = Array.from({ length: a }, (_, i) => now - i * 1000)
+      // a timestamps: today, today + 1ms, today + 2ms, ...
+      const recentMs = Array.from({ length: sessionCount }, (_, i) => now + i + 1)
 
       return [...recentMs, ...pastDays]
     } catch {
