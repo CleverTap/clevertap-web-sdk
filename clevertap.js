@@ -9117,11 +9117,11 @@
     generateTimestamps(globalCount, sessionCount) {
       try {
         const now = Math.floor(Date.now() / 1000);
-        const oneDay = 24 * 60 * 60 * 1000; // (globalCount - sessionCount) timestamps: today - 1 day + 1ms, today - 1 day + 2ms, ...
+        const oneDay = 24 * 60 * 60; // (globalCount - sessionCount) timestamps: today - 1 day + 1ms, today - 1 day + 2ms, ...
 
         const pastDays = Array.from({
           length: globalCount - sessionCount
-        }, (_, i) => now - oneDay + i + 1); // a timestamps: today, today + 1ms, today + 2ms, ...
+        }, (_, i) => now - oneDay + (i + 1)); // a timestamps: today, today + 1ms, today + 2ms, ...
 
         const recentMs = Array.from({
           length: sessionCount
