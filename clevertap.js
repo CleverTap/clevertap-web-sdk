@@ -9079,7 +9079,8 @@
     portCampaignDetails(campaignId, sessionCount, globalCount) {
       var _campaignObj$wsc;
 
-      const sCount = sessionCount === 'dnd' ? 1 : sessionCount;
+      /* If we have a dnd count for sesion then we will default its count to globalCount */
+      const sCount = sessionCount === 'dnd' ? globalCount : sessionCount;
       const campaignObj = getCampaignObject(); // Ensure campaignObj and campaignObj.wfc exist
 
       campaignObj.wfc = campaignObj.wfc || {}; // Fallback to an empty array if campaignObj.wfc[campaignId] is undefined
@@ -9120,11 +9121,11 @@
         const oneDay = 24 * 60 * 60; // (globalCount - sessionCount) timestamps: today - 1 day + 1ms, today - 1 day + 2ms, ...
 
         const pastDays = Array.from({
-          length: sessionCount - globalCount
+          length: globalCount - sessionCount
         }, (_, i) => now - oneDay + (i + 1)); // a timestamps: today, today + 1ms, today + 2ms, ...
 
         const recentMs = Array.from({
-          length: globalCount
+          length: sessionCount
         }, (_, i) => now + i + 1);
         return [...recentMs, ...pastDays];
       } catch {
