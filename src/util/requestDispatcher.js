@@ -150,13 +150,12 @@ export default class RequestDispatcher {
         const { g, sid, rf, rn, optOut } = meta
         if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
           const parsedRn = parseInt(rn)
-          const finalRn = isNaN(parsedRn) ? 1 : parsedRn + 1
 
           // Include optOut as 5th parameter if present
           if (optOut !== undefined) {
-            window.$WZRK_WR.s(g, sid, rf, finalRn, optOut)
+            window.$WZRK_WR.s(g, sid, rf, parsedRn, optOut)
           } else {
-            window.$WZRK_WR.s(g, sid, rf, finalRn)
+            window.$WZRK_WR.s(g, sid, rf, parsedRn)
           }
         }
       }
