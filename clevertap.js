@@ -7661,6 +7661,8 @@
 
 
     s(global, session, resume, respNumber, optOutResponse) {
+      console.log('global = ', global, 'session = ', session, 'resume = ', resume, 'respNumber = ', respNumber, 'optOutResponse = ', optOutResponse);
+      console.log(typeof resume, typeof optOutResponse);
       let oulReq = false;
       let newGuid = false; // for a scenario when OUL request is true from client side
       // but resume is returned as false from server end
@@ -7693,6 +7695,8 @@
       }
 
       if (!isValueValid(_classPrivateFieldLooseBase(this, _device$3)[_device$3].gcookie) || resume || typeof optOutResponse === 'boolean') {
+        console.log('Opt out value = ', optOutResponse);
+
         const sessionObj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
         /*  If the received session is less than the session in the cookie,
             then don't update guid as it will be response for old request
@@ -8529,13 +8533,13 @@
           } = meta;
 
           if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
-            const parsedRn = parseInt(rn);
-            const finalRn = isNaN(parsedRn) ? 1 : parsedRn + 1; // Include optOut as 5th parameter if present
+            const parsedRn = parseInt(rn); // Include optOut as 5th parameter if present
 
             if (optOut !== undefined) {
-              window.$WZRK_WR.s(g, sid, rf, finalRn, optOut);
+              const optOutBoolean = JSON.parse(optOut);
+              window.$WZRK_WR.s(g, sid, rf, parsedRn, optOutBoolean);
             } else {
-              window.$WZRK_WR.s(g, sid, rf, finalRn);
+              window.$WZRK_WR.s(g, sid, rf, parsedRn);
             }
           }
         }
