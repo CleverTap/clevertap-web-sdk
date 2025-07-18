@@ -7453,7 +7453,8 @@
     globalUnsubscribe: true,
     flutterVersion: null,
     variableStore: {},
-    pushConfig: null // domain: window.location.hostname, url -> getHostName()
+    pushConfig: null,
+    enableFetchApi: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -8487,6 +8488,61 @@
       _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
     }
 
+    static async handleFetchResponse(url) {
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Network response was not ok: ".concat(response.statusText));
+        }
+
+        const jsonResponse = await response.json();
+        const {
+          tr,
+          meta,
+          wpe
+        } = jsonResponse;
+
+        if (tr) {
+          window.$WZRK_WR.tr(tr);
+        }
+
+        if (meta) {
+          const {
+            g,
+            sid,
+            rf,
+            rn,
+            optOut
+          } = meta;
+
+          if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
+            const parsedRn = parseInt(rn);
+            const finalRn = isNaN(parsedRn) ? 1 : parsedRn + 1; // Include optOut as 5th parameter if present
+
+            if (optOut !== undefined) {
+              window.$WZRK_WR.s(g, sid, rf, finalRn, optOut);
+            } else {
+              window.$WZRK_WR.s(g, sid, rf, finalRn);
+            }
+          }
+        }
+
+        if (wpe) {
+          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key);
+        }
+
+        this.logger.debug('req snt -> url: ' + url);
+      } catch (error) {
+        this.logger.error('Fetch error:', error);
+      }
+    }
+
     getDelayFrequency() {
       this.logger.debug('Network retry #' + this.networkRetryCount); // Retry with delay as 1s for first 10 retries
 
@@ -8553,7 +8609,7 @@
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
   };
 
-  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
+  var _fireRequest2 = async function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
     var _window$location$orig, _window, _window$location, _window2, _window2$location, _window$clevertap, _window$wizrocket;
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
@@ -8633,14 +8689,18 @@
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
     }
 
-    const s = document.createElement('script');
-    s.setAttribute('type', 'text/javascript');
-    s.setAttribute('src', url);
-    s.setAttribute('class', 'ct-jp-cb');
-    s.setAttribute('rel', 'nofollow');
-    s.async = true;
-    document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url);
+    if (!$ct.enableFetchApi) {
+      const s = document.createElement('script');
+      s.setAttribute('type', 'text/javascript');
+      s.setAttribute('src', url);
+      s.setAttribute('class', 'ct-jp-cb');
+      s.setAttribute('rel', 'nofollow');
+      s.async = true;
+      document.getElementsByTagName('head')[0].appendChild(s);
+      this.logger.debug('req snt -> url: ' + url);
+    } else {
+      this.handleFetchResponse(url);
+    }
   };
 
   RequestDispatcher.logger = void 0;
@@ -16354,6 +16414,8 @@
 
   var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
 
+  var _enableFetchApi = _classPrivateFieldLooseKey("enableFetchApi");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _debounce = _classPrivateFieldLooseKey("debounce");
@@ -16398,6 +16460,15 @@
       const dismissSpamControl = value === true;
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
       $ct.dismissSpamControl = dismissSpamControl;
+    }
+
+    get enableFetchApi() {
+      return _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
+    }
+
+    set enableFetchApi(value) {
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value;
+      $ct.enableFetchApi = value;
     }
 
     constructor() {
@@ -16481,6 +16552,10 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _enableFetchApi, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
@@ -16504,6 +16579,7 @@
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = clevertap.enableFetchApi || false;
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         isPersonalisationActive: this._isPersonalisationActive
@@ -16558,6 +16634,7 @@
       });
       this.spa = clevertap.spa;
       this.dismissSpamControl = clevertap.dismissSpamControl;
+      this.enableFetchApi = clevertap.enableFetchApi;
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
@@ -17219,6 +17296,11 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
+      }
+
+      if (config.enableFetchApi) {
+        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
+        $ct.enableFetchApi = config.enableFetchApi;
       }
 
       const currLocation = location.href;

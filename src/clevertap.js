@@ -68,6 +68,7 @@ export default class CleverTap {
   #dismissSpamControl
   enablePersonalization
   #pageChangeTimeoutId
+  #enableFetchApi
 
   get spa () {
     return this.#isSpa
@@ -96,6 +97,15 @@ export default class CleverTap {
     $ct.dismissSpamControl = dismissSpamControl
   }
 
+  get enableFetchApi () {
+    return this.#enableFetchApi
+  }
+
+  set enableFetchApi (value) {
+    this.#enableFetchApi = value
+    $ct.enableFetchApi = value
+  }
+
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
@@ -114,6 +124,7 @@ export default class CleverTap {
     this.#device = new DeviceManager({ logger: this.#logger, customId: result?.isValid ? result?.sanitizedId : null })
     this.#dismissSpamControl = clevertap.dismissSpamControl || false
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
+    this.#enableFetchApi = clevertap.enableFetchApi || false
     this.#session = new SessionManager({
       logger: this.#logger,
       isPersonalisationActive: this._isPersonalisationActive
@@ -175,6 +186,7 @@ export default class CleverTap {
 
     this.spa = clevertap.spa
     this.dismissSpamControl = clevertap.dismissSpamControl
+    this.enableFetchApi = clevertap.enableFetchApi
 
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
@@ -715,6 +727,11 @@ export default class CleverTap {
     }
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
+    }
+
+    if (config.enableFetchApi) {
+      this.#enableFetchApi = config.enableFetchApi
+      $ct.enableFetchApi = config.enableFetchApi
     }
 
     const currLocation = location.href

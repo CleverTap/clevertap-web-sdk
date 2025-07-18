@@ -13,7 +13,7 @@ export default class RequestDispatcher {
   minDelayFrequency = 0
 
   // ANCHOR - Requests get fired from here
-  static #fireRequest (url, tries, skipARP, sendOULFlag, evtName) {
+  static async #fireRequest (url, tries, skipARP, sendOULFlag, evtName) {
     if (this.#dropRequestDueToOptOut()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
@@ -83,14 +83,18 @@ export default class RequestDispatcher {
     while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
     }
-    const s = document.createElement('script')
-    s.setAttribute('type', 'text/javascript')
-    s.setAttribute('src', url)
-    s.setAttribute('class', 'ct-jp-cb')
-    s.setAttribute('rel', 'nofollow')
-    s.async = true
-    document.getElementsByTagName('head')[0].appendChild(s)
-    this.logger.debug('req snt -> url: ' + url)
+    if (!$ct.enableFetchApi) {
+      const s = document.createElement('script')
+      s.setAttribute('type', 'text/javascript')
+      s.setAttribute('src', url)
+      s.setAttribute('class', 'ct-jp-cb')
+      s.setAttribute('rel', 'nofollow')
+      s.async = true
+      document.getElementsByTagName('head')[0].appendChild(s)
+      this.logger.debug('req snt -> url: ' + url)
+    } else {
+      this.handleFetchResponse(url)
+    }
   }
 
   /**
@@ -129,6 +133,40 @@ export default class RequestDispatcher {
       return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE)), this.logger))
     }
     return url
+  }
+
+  static async handleFetchResponse (url) {
+    try {
+      const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.statusText}`)
+      }
+      const jsonResponse = await response.json()
+      const { tr, meta, wpe } = jsonResponse
+      if (tr) {
+        window.$WZRK_WR.tr(tr)
+      }
+      if (meta) {
+        const { g, sid, rf, rn, optOut } = meta
+        if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
+          const parsedRn = parseInt(rn)
+          const finalRn = isNaN(parsedRn) ? 1 : parsedRn + 1
+
+          // Include optOut as 5th parameter if present
+          if (optOut !== undefined) {
+            window.$WZRK_WR.s(g, sid, rf, finalRn, optOut)
+          } else {
+            window.$WZRK_WR.s(g, sid, rf, finalRn)
+          }
+        }
+      }
+      if (wpe) {
+        window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key)
+      }
+      this.logger.debug('req snt -> url: ' + url)
+    } catch (error) {
+      this.logger.error('Fetch error:', error)
+    }
   }
 
   getDelayFrequency () {
