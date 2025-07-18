@@ -7655,8 +7655,6 @@
 
 
     s(global, session, resume, respNumber, optOutResponse) {
-      console.log('global = ', global, 'session = ', session, 'resume = ', resume, 'respNumber = ', respNumber, 'optOutResponse = ', optOutResponse);
-      console.log(typeof resume, typeof optOutResponse);
       let oulReq = false;
       let newGuid = false; // for a scenario when OUL request is true from client side
       // but resume is returned as false from server end
@@ -7689,8 +7687,6 @@
       }
 
       if (!isValueValid(_classPrivateFieldLooseBase(this, _device$3)[_device$3].gcookie) || resume || typeof optOutResponse === 'boolean') {
-        console.log('Opt out value = ', optOutResponse);
-
         const sessionObj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
         /*  If the received session is less than the session in the cookie,
             then don't update guid as it will be response for old request
@@ -8529,8 +8525,7 @@
             const parsedRn = parseInt(rn); // Include optOut as 5th parameter if present
 
             if (optOut !== undefined) {
-              const optOutBoolean = JSON.parse(optOut);
-              window.$WZRK_WR.s(g, sid, rf, parsedRn, optOutBoolean);
+              window.$WZRK_WR.s(g, sid, rf, parsedRn, optOut);
             } else {
               window.$WZRK_WR.s(g, sid, rf, parsedRn);
             }
@@ -8723,6 +8718,96 @@
     value: _addARPToRequest2
   });
 
+  const logLevels = {
+    DISABLE: 0,
+    ERROR: 1,
+    INFO: 2,
+    DEBUG: 3,
+    DEBUG_PE: 4
+  };
+
+  var _logLevel = _classPrivateFieldLooseKey("logLevel");
+
+  var _log = _classPrivateFieldLooseKey("log");
+
+  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
+
+  class Logger {
+    constructor(logLevel) {
+      Object.defineProperty(this, _isLegacyDebug, {
+        get: _get_isLegacyDebug,
+        set: void 0
+      });
+      Object.defineProperty(this, _log, {
+        value: _log2
+      });
+      Object.defineProperty(this, _logLevel, {
+        writable: true,
+        value: void 0
+      });
+      this.wzrkError = {};
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevel : logLevels.INFO;
+      this.wzrkError = {};
+    }
+
+    get logLevel() {
+      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
+    }
+
+    set logLevel(logLevel) {
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
+    }
+
+    error(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
+      }
+    }
+
+    info(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
+      }
+    }
+
+    debug(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
+      }
+    }
+
+    debugPE(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
+      }
+    }
+
+    reportError(code, description) {
+      this.wzrkError.c = code;
+      this.wzrkError.d = description;
+      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
+    }
+
+  }
+
+  var _log2 = function _log2(level, message) {
+    if (window.console) {
+      try {
+        const ts = new Date().getTime();
+        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
+      } catch (e) {}
+    }
+  };
+
+  var _get_isLegacyDebug = function () {
+    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
+  };
+
+  var logger$2 = {
+    Logger,
+    logLevels
+  };
+
   // CleverTap specific utilities
   const getCampaignObject = () => {
     let finalcampObj = {};
@@ -8812,7 +8897,7 @@
             StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
           }
         } catch (e) {
-          console.error('Invalid clevertap Id ' + e);
+          logger$2.error('Invalid clevertap Id ' + e);
         }
       }
     }
@@ -9167,7 +9252,7 @@
   const arp = jsonMap => {
     // For unregister calls dont set arp in LS
     if (jsonMap.skipResARP != null && jsonMap.skipResARP) {
-      console.debug('Update ARP Request rejected', jsonMap);
+      logger$2.debug('Update ARP Request rejected', jsonMap);
       return null;
     }
 
@@ -9194,7 +9279,7 @@
           StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage);
         }
       } catch (e) {
-        console.error('Unable to parse ARP JSON: ' + e);
+        logger$2.error('Unable to parse ARP JSON: ' + e);
       }
     }
   };
@@ -9356,9 +9441,9 @@
 
       if ($ct.globalProfileMap == null && !((_$ct$globalProfileMap = $ct.globalProfileMap) === null || _$ct$globalProfileMap === void 0 ? void 0 : _$ct$globalProfileMap.hasOwnProperty(key))) {
         // Check if the profile map already has the propery defined
-        console.error('Kindly create profile with required proprty to increment/decrement.');
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Kindly create profile with required proprty to increment/decrement.');
       } else if (!value || typeof value !== 'number' || value <= 0) {
-        console.error('Value should be a number greater than 0');
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Value should be a number greater than 0');
       } else {
         // Update the profile property in local storage
         if (command === COMMAND_INCREMENT) {
@@ -9414,7 +9499,7 @@
         } else if (typeof arrayVal[i] === 'string' && !array.includes(arrayVal[i].toLowerCase())) {
           array.push(arrayVal[i].toLowerCase());
         } else {
-          console.error('array supports only string or number type values');
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('array supports only string or number type values');
         }
       }
 
@@ -9929,7 +10014,8 @@
 
   var _handleCookieFromCache2 = function _handleCookieFromCache2() {
     $ct.blockRequest = false;
-    console.debug('Block request is false');
+
+    _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Block request is false');
 
     if (StorageManager._isLocalStorageSupported()) {
       delete localStorage[PR_COOKIE];
@@ -10867,7 +10953,7 @@
                 e.target.shadowRoot.getElementById('unreadMarker').style.display = 'none';
               }, 1000);
             } else {
-              console.log('Notifiction viewed event will be raised at run time with payload ::', {
+              this.logger.debug('Notifiction viewed event will be raised at run time with payload ::', {
                 msgId: e.target.campaignId,
                 pivotId: e.target.pivotId
               });
@@ -15260,91 +15346,6 @@
 
   }
 
-  const logLevels = {
-    DISABLE: 0,
-    ERROR: 1,
-    INFO: 2,
-    DEBUG: 3,
-    DEBUG_PE: 4
-  };
-
-  var _logLevel = _classPrivateFieldLooseKey("logLevel");
-
-  var _log = _classPrivateFieldLooseKey("log");
-
-  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
-
-  class Logger {
-    constructor(logLevel) {
-      Object.defineProperty(this, _isLegacyDebug, {
-        get: _get_isLegacyDebug,
-        set: void 0
-      });
-      Object.defineProperty(this, _log, {
-        value: _log2
-      });
-      Object.defineProperty(this, _logLevel, {
-        writable: true,
-        value: void 0
-      });
-      this.wzrkError = {};
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevel : logLevels.INFO;
-      this.wzrkError = {};
-    }
-
-    get logLevel() {
-      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
-    }
-
-    set logLevel(logLevel) {
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
-    }
-
-    error(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
-      }
-    }
-
-    info(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
-      }
-    }
-
-    debug(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
-      }
-    }
-
-    debugPE(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
-      }
-    }
-
-    reportError(code, description) {
-      this.wzrkError.c = code;
-      this.wzrkError.d = description;
-      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
-    }
-
-  }
-
-  var _log2 = function _log2(level, message) {
-    if (window.console) {
-      try {
-        const ts = new Date().getTime();
-        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
-    }
-  };
-
-  var _get_isLegacyDebug = function () {
-    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
-  };
-
   var _logger$4 = _classPrivateFieldLooseKey("logger");
 
   var _sessionId = _classPrivateFieldLooseKey("sessionId");
@@ -16201,7 +16202,8 @@
         name
       } = varInstance;
       _classPrivateFieldLooseBase(this, _variables)[_variables][name] = varInstance;
-      console.log('registerVariable', _classPrivateFieldLooseBase(this, _variables)[_variables]);
+
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug('registerVariable', _classPrivateFieldLooseBase(this, _variables)[_variables]);
     }
     /**
      * Retrieves a variable by its name.
@@ -16322,7 +16324,8 @@
     }
 
     mergeVariables(vars) {
-      console.log('msg vars is ', vars);
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug('msg vars is ', vars);
+
       _classPrivateFieldLooseBase(this, _hasVarsRequestCompleted)[_hasVarsRequestCompleted] = true;
       StorageManager.saveToLSorCookie(VARIABLES, vars);
       _classPrivateFieldLooseBase(this, _remoteVariables)[_remoteVariables] = vars;
@@ -16982,7 +16985,7 @@
         if (Array.isArray(value)) {
           this.profile._handleMultiValueSet(key, value, COMMAND_SET);
         } else {
-          console.error('setMultiValuesForKey should be called with a value of type array');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('setMultiValuesForKey should be called with a value of type array');
         }
       };
 
@@ -16990,7 +16993,7 @@
         if (typeof value === 'string' || typeof value === 'number') {
           this.profile._handleMultiValueAdd(key, value, COMMAND_ADD);
         } else {
-          console.error('addMultiValueForKey should be called with a value of type string or number.');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('addMultiValueForKey should be called with a value of type string or number.');
         }
       };
 
@@ -16998,7 +17001,7 @@
         if (Array.isArray(value)) {
           this.profile._handleMultiValueAdd(key, value, COMMAND_ADD);
         } else {
-          console.error('addMultiValuesForKey should be called with a value of type array.');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('addMultiValuesForKey should be called with a value of type array.');
         }
       };
 
@@ -17006,7 +17009,7 @@
         if (typeof value === 'string' || typeof value === 'number') {
           this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE);
         } else {
-          console.error('removeMultiValueForKey should be called with a value of type string or number.');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('removeMultiValueForKey should be called with a value of type string or number.');
         }
       };
 
@@ -17014,7 +17017,7 @@
         if (Array.isArray(value)) {
           this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE);
         } else {
-          console.error('removeMultiValuesForKey should be called with a value of type array.');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('removeMultiValuesForKey should be called with a value of type array.');
         }
       };
 
@@ -17465,7 +17468,8 @@
      */
     setOffline(arg) {
       if (typeof arg !== 'boolean') {
-        console.error('setOffline should be called with a value of type boolean');
+        _classPrivateFieldLooseBase(this, _logger)[_logger].error('setOffline should be called with a value of type boolean');
+
         return;
       } // Check if the offline state is changing from true to false
       // If offline is being disabled (arg is false), process any cached events
