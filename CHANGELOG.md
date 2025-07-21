@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.17.2] 21st July 2025
+- Corrected click actions for web popup image only template
+
 ## [1.17.1] 15th July 2025
 - Added retry mechanism for web native display
 

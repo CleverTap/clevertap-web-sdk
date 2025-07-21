@@ -10034,7 +10034,9 @@
         });
       }
 
-      if (this.onClickUrl) {
+      if (this.onClickAction === 'none') {
+        this.popup.addEventListener('click', closeFn);
+      } else if (this.onClickUrl) {
         this.popup.addEventListener('click', () => {
           if (!this.target.display.preview) {
             window.clevertap.renderNotificationClicked({
@@ -10054,10 +10056,6 @@
               this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
           }
         });
-      }
-
-      if (this.onClickAction === 'none') {
-        this.popup.addEventListener('click', closeFn);
       }
     }
 
@@ -11659,7 +11657,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger$1.debug('SDK version check');
-            const sdkVersion = '1.17.1';
+            const sdkVersion = '1.17.2';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -15544,7 +15542,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v1.17.1',
+        lib: 'web-sdk-v1.17.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17393,7 +17391,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v1.17.1';
+      return 'web-sdk-v1.17.2';
     }
 
     defineVariable(name, defaultValue) {
