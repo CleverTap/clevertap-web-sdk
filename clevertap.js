@@ -10034,7 +10034,9 @@
         });
       }
 
-      if (this.onClickUrl) {
+      if (this.onClickAction === 'none') {
+        this.popup.addEventListener('click', closeFn);
+      } else if (this.onClickUrl) {
         this.popup.addEventListener('click', () => {
           if (!this.target.display.preview) {
             window.clevertap.renderNotificationClicked({
@@ -10054,10 +10056,6 @@
               this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
           }
         });
-      }
-
-      if (this.onClickAction === 'none') {
-        this.popup.addEventListener('click', closeFn);
       }
     }
 
