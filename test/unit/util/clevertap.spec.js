@@ -80,8 +80,19 @@ describe('util/clevertap', function () {
       StorageManager.read.mockReturnValue(null)
       const result = getCampaignObjForLc()
       const expectedObj = {
-        wmp: 0,
-        tlc: []
+        /* Webpopup */
+        wfc: {},
+        wsc: 0,
+        woc: {},
+
+        /* Web Native Display */
+        wndfc: {},
+        wndsc: 0,
+        wndoc: {},
+
+        /* Web Inbox */
+        wimp: 0,
+        witlc: []
       }
       expect(result).toMatchObject(expectedObj)
     })
