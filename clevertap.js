@@ -13629,7 +13629,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.0.0';
+            const sdkVersion = '2.1.0';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -15242,6 +15242,11 @@
 
           if (targetingMsgJson.display.kv != null) {
             inaObj.kv = targetingMsgJson.display.kv;
+          } // If present add delivery triggers to callback
+
+
+          if (targetingMsgJson.display.deliveryTrigger) {
+            inaObj.deliveryTrigger = targetingMsgJson.display.deliveryTrigger;
           }
 
           window.clevertap.raiseNotificationClicked = () => {
@@ -16163,7 +16168,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.0.0',
+        lib: 'web-sdk-v2.1.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18012,7 +18017,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.0.0';
+      return 'web-sdk-v2.1.0';
     }
 
     defineVariable(name, defaultValue) {

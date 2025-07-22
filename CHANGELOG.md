@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] 22nd July, 2025
+- Added deliveryTriggers to notification callback object.
+
 ## [2.0.0] 16th July, 2025
 - Added Delivery Preference Support for Web Popups
 
