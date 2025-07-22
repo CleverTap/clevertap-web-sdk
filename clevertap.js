@@ -17121,7 +17121,7 @@
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null
       });
-      _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || false;
+      _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = clevertap.dismissSpamControl || true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
@@ -17571,7 +17571,7 @@
       const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
         handleEmailSubscription(subscription, reEncoded, fetchGroups, _classPrivateFieldLooseBase(this, _account)[_account], _classPrivateFieldLooseBase(this, _logger)[_logger]);
       };
-      /**
+      /**x
        *
        * @param {number} lat
        * @param {number} lng
