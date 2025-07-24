@@ -1,6 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] 16th July, 2025
+- Added Delivery Preference Support for Web Popups & Web Native Displays
+- Enabled dismissSpamControl to true by default
+- Refactored campaignHouseKeeping and Logger 
+- Added Migration Mechanism for old local CAMP data to the new format
+- Refactored logger to support singleton pattern
+
 ## [1.17.1] 15th July 2025
 - Added retry mechanism for web native display
 
