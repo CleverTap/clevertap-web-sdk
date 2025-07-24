@@ -15242,6 +15242,11 @@
 
           if (targetingMsgJson.display.kv != null) {
             inaObj.kv = targetingMsgJson.display.kv;
+          } // If present add delivery triggers to callback
+
+
+          if (targetingMsgJson.display.deliveryTrigger) {
+            inaObj.deliveryTrigger = targetingMsgJson.display.deliveryTrigger;
           }
 
           window.clevertap.raiseNotificationClicked = () => {
