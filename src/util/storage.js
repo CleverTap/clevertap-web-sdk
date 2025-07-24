@@ -271,7 +271,7 @@ export const $ct = {
   privacyArray: [],
   offline: false,
   location: null,
-  dismissSpamControl: false,
+  dismissSpamControl: true,
   globalUnsubscribe: true,
   flutterVersion: null,
   variableStore: {},
