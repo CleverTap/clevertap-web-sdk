@@ -18,3 +18,9 @@ Describe the testing approach and any relevant configurations (e.g., environment
 - [ ] All tests pass
 - [ ] Build process is successful
 - [ ] Documentation has been updated (if needed)
+
+#### Link to Deployed SDK 
+
+Use these url for testing : 
+1. `https://static.wizrocket.com/staging/<CURRENT_BRANCH_NAME>/js/clevertap.min.js`  
+2. `https://static.wizrocket.com/staging/<CURRENT_BRANCH_NAME>/js/sw_webpush.min.js`
