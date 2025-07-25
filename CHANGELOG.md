@@ -1,9 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-
 ## [2.0.1] 25th July 2025
 - Corrected click actions for web popup image only template
+- Added Fetch API support for network requests
 
 ## [2.0.0] 22nd July, 2025
 - Added Delivery Preference Support for Web Popups & Web Native Displays
