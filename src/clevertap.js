@@ -122,7 +122,7 @@ export default class CleverTap {
     }
 
     this.#device = new DeviceManager({ logger: this.#logger, customId: result?.isValid ? result?.sanitizedId : null })
-    this.#dismissSpamControl = clevertap.dismissSpamControl || false
+    this.#dismissSpamControl = clevertap.dismissSpamControl ?? true
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#enableFetchApi = clevertap.enableFetchApi || false
     this.#session = new SessionManager({
@@ -185,8 +185,7 @@ export default class CleverTap {
     })
 
     this.spa = clevertap.spa
-    this.dismissSpamControl = clevertap.dismissSpamControl
-    this.enableFetchApi = clevertap.enableFetchApi
+    this.dismissSpamControl = clevertap.dismissSpamControl ?? true
 
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive

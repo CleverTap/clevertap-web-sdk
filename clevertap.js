@@ -17256,12 +17256,7 @@
         session: _classPrivateFieldLooseBase(this, _session)[_session]
       });
       this.spa = clevertap.spa;
-<<<<<<< HEAD
-      this.dismissSpamControl = clevertap.dismissSpamControl;
-      this.enableFetchApi = clevertap.enableFetchApi;
-=======
       this.dismissSpamControl = (_clevertap$dismissSpa2 = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa2 !== void 0 ? _clevertap$dismissSpa2 : true;
->>>>>>> origin/develop
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
