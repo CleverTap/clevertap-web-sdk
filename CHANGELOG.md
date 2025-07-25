@@ -1,9 +1,15 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+<<<<<<< HEAD
 ## [2.0.1] 7th August 2025
 - Corrected click actions for web popup image only template
 - Bug Fix for Web Popup Exit Intent 
+=======
+## [2.0.1] 25th July 2025
+- Corrected click actions for web popup image only template
+- Added Fetch API support for network requests
+>>>>>>> 00f1fff (Updated changelog)
 
 ## [2.0.0] 22nd July, 2025
 - Added Delivery Preference Support for Web Popups & Web Native Displays

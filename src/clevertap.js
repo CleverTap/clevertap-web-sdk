@@ -186,11 +186,15 @@ export default class CleverTap {
 
     this.spa = clevertap.spa
 <<<<<<< HEAD
+<<<<<<< HEAD
     this.dismissSpamControl = clevertap.dismissSpamControl ?? true
 =======
     this.dismissSpamControl = clevertap.dismissSpamControl
     this.enableFetchApi = clevertap.enableFetchApi
 >>>>>>> ae3dc60 (refactored init and added global var)
+=======
+    this.dismissSpamControl = clevertap.dismissSpamControl ?? true
+>>>>>>> 00f1fff (Updated changelog)
 
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive

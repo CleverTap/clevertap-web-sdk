@@ -17449,11 +17449,15 @@
       });
       this.spa = clevertap.spa;
 <<<<<<< HEAD
+<<<<<<< HEAD
       this.dismissSpamControl = (_clevertap$dismissSpa2 = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa2 !== void 0 ? _clevertap$dismissSpa2 : true;
 =======
       this.dismissSpamControl = clevertap.dismissSpamControl;
       this.enableFetchApi = clevertap.enableFetchApi;
 >>>>>>> ae3dc60 (refactored init and added global var)
+=======
+      this.dismissSpamControl = (_clevertap$dismissSpa2 = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa2 !== void 0 ? _clevertap$dismissSpa2 : true;
+>>>>>>> 00f1fff (Updated changelog)
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
