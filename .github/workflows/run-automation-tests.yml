@@ -1,4 +1,3 @@
-# .github/workflows/trigger-automation-tests.yml
 name: Trigger Automation Suite
 
 on:
