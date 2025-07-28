@@ -33,7 +33,7 @@ jobs:
 
       - name: Clone Automation Repo
         run: |
-          git clone https://x-access-token:${{ secrets.AUTOMATION_REPO_ACCESS_TOKEN }}@github.com/singhkunal2050/ct-web-sdk-automation.git
+          git clone https://${{ secrets.AUTOMATION_REPO_ACCESS_TOKEN }}@github.com/singhkunal2050/ct-web-sdk-automation.git
           cd ct-web-sdk-automation
           git config user.name "CT Web Automation Bot"
           git config user.email "automation@clevertap.com"
