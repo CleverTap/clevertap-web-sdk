@@ -1,0 +1,45 @@
+name: Trigger Automation Suite
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+      - ready_for_review
+
+jobs:
+  trigger-tests:
+    runs-on: ubuntu-latest
+    if: >
+      contains(github.event.pull_request.title, '[run-test]') || 
+      contains(github.event.head_commit.message, '[run-test]') || 
+      contains(github.event.pull_request.body, '[run-test]')
+
+    steps:
+      - name: Checkout PR Branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Extract Commit Info
+        id: extract
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          BRANCH_NAME="${GITHUB_HEAD_REF}"
+          echo "COMMIT_MSG=${COMMIT_MSG}" >> $GITHUB_ENV
+          echo "BRANCH_NAME=${BRANCH_NAME}" >> $GITHUB_ENV
+
+      - name: Clone Automation Repo
+        run: |
+          git clone https://x-access-token:${{ secrets.AUTOMATION_REPO_ACCESS_TOKEN }}@github.com/singhkunal2050/ct-web-sdk-automation.git
+          cd ct-web-sdk-automation
+          git config user.name "CT Web Automation Bot"
+          git config user.email "automation@clevertap.com"
+          echo "Trigger commit from PR..."
+          echo "Triggering: [run-test] ${COMMIT_MSG} branch:${BRANCH_NAME}" > trigger.txt
+          git add trigger.txt
+          git commit -m "[run-test] ${COMMIT_MSG} branch:${BRANCH_NAME}"
+          git push origin main
