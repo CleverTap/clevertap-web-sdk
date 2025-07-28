@@ -3,7 +3,12 @@ name: Trigger Automation Suite
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+      - ready_for_review
 
 jobs:
   trigger-tests:
