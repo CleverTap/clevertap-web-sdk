@@ -40,5 +40,5 @@ jobs:
           echo "Trigger commit from PR..."
           echo "Triggering: [run-test] ${COMMIT_MSG} branch:${BRANCH_NAME}" > trigger.txt
           git add trigger.txt
-          git commit -m "[run-test] ${COMMIT_MSG} branch:${BRANCH_NAME}"
+          git commit --allow-empty -m "[run-test] ${COMMIT_MSG} branch:${BRANCH_NAME}"
           git push origin main
