@@ -14,7 +14,7 @@ jobs:
   trigger-tests:
     runs-on: ubuntu-latest
     if: >
-       contains(github.event.pull_request.head.commit.message, '[run-test]')
+      contains(github.event.pull_request.head.commit.message, '[run-test]')
 
     steps:
       - name: Checkout PR Branch
