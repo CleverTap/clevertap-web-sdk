@@ -11,6 +11,18 @@ on:
       - ready_for_review
 
 jobs:
+  debug-context:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Debug GitHub Context
+          env:
+            GITHUB_CONTEXT: ${{ toJSON(github) }}
+          run: echo "$GITHUB_CONTEXT"
+        
+        - name: Debug PR Context
+          env:
+            PR_CONTEXT: ${{ toJSON(github.event.pull_request) }}
+          run: echo "$PR_CONTEXT"
   trigger-tests:
     runs-on: ubuntu-latest
     if: >
