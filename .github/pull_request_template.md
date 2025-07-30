@@ -18,7 +18,7 @@ Describe the testing approach and any relevant configurations (e.g., environment
 - [ ] All tests pass
 - [ ] Build process is successful
 - [ ] Documentation has been updated (if needed)
-- [ ] Automations are passing
+- [ ] Automation tests are passing
 
 #### Link to Deployed SDK 
 
