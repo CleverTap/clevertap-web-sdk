@@ -20,7 +20,7 @@ Describe the testing approach and any relevant configurations (e.g., environment
 - [ ] Documentation has been updated (if needed)
 - [ ] Automation tests are passing
 
-#### Link to Deployed SDK 
+### Link to Deployed SDK 
 
 Use these url for testing : 
 1. `https://static.wizrocket.com/staging/<CURRENT_BRANCH_NAME>/js/clevertap.min.js`  
