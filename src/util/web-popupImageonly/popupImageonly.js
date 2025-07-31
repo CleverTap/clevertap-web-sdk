@@ -75,7 +75,7 @@ export class CTWebPopupImageOnly extends HTMLElement {
 
       const closeFn = () => {
         const campaignId = this.target.wzrk_id.split('_')[0]
-        const currentSessionId = this.session.sessionId
+        // const currentSessionId = this.session.sessionId
         this.resizeObserver.unobserve(this.popup)
         document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
         this.remove()
@@ -83,12 +83,10 @@ export class CTWebPopupImageOnly extends HTMLElement {
           if (StorageManager._isLocalStorageSupported()) {
             const campaignObj = getCampaignObject()
 
-            let sessionCampaignObj = campaignObj.wp[currentSessionId]
-            if (sessionCampaignObj == null) {
-              sessionCampaignObj = {}
-              campaignObj[currentSessionId] = sessionCampaignObj
-            }
-            sessionCampaignObj[campaignId] = 'dnd'
+            campaignObj.dnd = [...new Set([
+              ...(campaignObj.dnd ?? []),
+              campaignId
+            ])]
             saveCampaignObject(campaignObj)
           }
         }
@@ -103,7 +101,9 @@ export class CTWebPopupImageOnly extends HTMLElement {
         })
       }
 
-      if (this.onClickUrl) {
+      if (this.onClickAction === 'none') {
+        this.popup.addEventListener('click', closeFn)
+      } else if (this.onClickUrl) {
         this.popup.addEventListener('click', () => {
           if (!this.target.display.preview) {
             window.clevertap.renderNotificationClicked({
@@ -121,10 +121,6 @@ export class CTWebPopupImageOnly extends HTMLElement {
               this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
           }
         })
-      }
-
-      if (this.onClickAction === 'none') {
-        this.popup.addEventListener('click', closeFn)
       }
     }
 

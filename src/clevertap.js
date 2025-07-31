@@ -113,7 +113,7 @@ export default class CleverTap {
     }
 
     this.#device = new DeviceManager({ logger: this.#logger, customId: result?.isValid ? result?.sanitizedId : null })
-    this.#dismissSpamControl = clevertap.dismissSpamControl || false
+    this.#dismissSpamControl = clevertap.dismissSpamControl ?? true
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#session = new SessionManager({
       logger: this.#logger,
@@ -175,7 +175,7 @@ export default class CleverTap {
     })
 
     this.spa = clevertap.spa
-    this.dismissSpamControl = clevertap.dismissSpamControl
+    this.dismissSpamControl = clevertap.dismissSpamControl ?? true
 
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
