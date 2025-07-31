@@ -703,7 +703,7 @@ export default class CleverTap {
     }
     handleActionMode(this.#logger, this.#account.id)
     checkCustomHtmlNativeDisplayPreview(this.#logger)
-    checkWebPopupPreview(this.#logger)
+    checkWebPopupPreview()
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
 
     if (region) {

@@ -3,6 +3,7 @@ import { $ct } from '../storage'
 import { closeIframe } from '../clevertap'
 import { ACTION_TYPES, WEB_POPUP_PREVIEW } from '../constants'
 import { WVE_URL_ORIGIN } from '../../modules/visualBuilder/builder_constants'
+import { Logger } from '../../modules/logger'
 
 export const renderPopUpImageOnly = (targetingMsgJson, _session) => {
   const divId = 'wzrkImageOnlyDiv'
@@ -194,19 +195,25 @@ const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) =>
   window.addEventListener('message', messageHandler)
 }
 
-function handleWebPopupPreviewPostMessageEvent (event, logger) {
+function handleWebPopupPreviewPostMessageEvent (event) {
   if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
     return
   }
-  const eventData = JSON.parse(event.data)
-  const inAppNotifs = eventData.inapp_notifs
-  const msgContent = inAppNotifs[0].msgContent
-  if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
-    renderAdvancedBuilder(inAppNotifs[0], null, logger, true)
+  const logger = Logger.getInstance()
+  try {
+    const eventData = JSON.parse(event.data)
+    const inAppNotifs = eventData.inapp_notifs
+    const msgContent = inAppNotifs[0].msgContent
+    if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
+      renderAdvancedBuilder(inAppNotifs[0], null, Logger.getInstance(), true)
+    }
+  } catch (error) {
+    logger.error('Error parsing event data:', error)
   }
 }
 
-export const checkWebPopupPreview = (logger) => {
+export const checkWebPopupPreview = () => {
+  const logger = Logger.getInstance()
   const searchParams = new URLSearchParams(window.location.search)
   const ctType = searchParams.get('ctActionMode')
   if (ctType) {
@@ -215,7 +222,7 @@ export const checkWebPopupPreview = (logger) => {
       case WEB_POPUP_PREVIEW:
         if (parentWindow) {
           parentWindow.postMessage('ready', '*')
-          const eventHandler = (event) => handleWebPopupPreviewPostMessageEvent(event, logger)
+          const eventHandler = (event) => handleWebPopupPreviewPostMessageEvent(event)
           window.addEventListener('message', eventHandler, false)
         }
         break

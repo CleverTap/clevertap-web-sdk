@@ -12068,6 +12068,107 @@
     LOCAL: 'localhost'
   };
 
+  const logLevels = {
+    DISABLE: 0,
+    ERROR: 1,
+    INFO: 2,
+    DEBUG: 3,
+    DEBUG_PE: 4
+  };
+
+  var _logLevel = _classPrivateFieldLooseKey("logLevel");
+
+  var _log = _classPrivateFieldLooseKey("log");
+
+  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
+
+  class Logger {
+    constructor(logLevel) {
+      Object.defineProperty(this, _isLegacyDebug, {
+        get: _get_isLegacyDebug,
+        set: void 0
+      });
+      Object.defineProperty(this, _log, {
+        value: _log2
+      });
+      Object.defineProperty(this, _logLevel, {
+        writable: true,
+        value: void 0
+      });
+      this.wzrkError = {};
+
+      // Singleton pattern - return existing instance if it exists
+      if (Logger.instance) {
+        return Logger.instance;
+      }
+
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
+      this.wzrkError = {};
+      Logger.instance = this;
+    } // Static method for explicit singleton access
+
+
+    static getInstance(logLevel) {
+      if (!Logger.instance) {
+        Logger.instance = new Logger(logLevel);
+      }
+
+      return Logger.instance;
+    }
+
+    get logLevel() {
+      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
+    }
+
+    set logLevel(logLevel) {
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
+    }
+
+    error(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
+      }
+    }
+
+    info(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
+      }
+    }
+
+    debug(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
+      }
+    }
+
+    debugPE(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
+      }
+    }
+
+    reportError(code, description) {
+      this.wzrkError.c = code;
+      this.wzrkError.d = description;
+      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
+    }
+
+  }
+
+  var _log2 = function _log2(level, message) {
+    if (window.console) {
+      try {
+        const ts = new Date().getTime();
+        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
+      } catch (e) {}
+    }
+  };
+
+  var _get_isLegacyDebug = function () {
+    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
+  };
+
   const renderPopUpImageOnly = (targetingMsgJson, _session) => {
     const divId = 'wzrkImageOnlyDiv';
     const popupImageOnly = document.createElement('ct-web-popup-imageonly');
@@ -12265,21 +12366,28 @@
     window.addEventListener('message', messageHandler);
   };
 
-  function handleWebPopupPreviewPostMessageEvent(event, logger) {
+  function handleWebPopupPreviewPostMessageEvent(event) {
     if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
       return;
     }
 
-    const eventData = JSON.parse(event.data);
-    const inAppNotifs = eventData.inapp_notifs;
-    const msgContent = inAppNotifs[0].msgContent;
+    const logger = Logger.getInstance();
 
-    if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
-      renderAdvancedBuilder(inAppNotifs[0], null, logger, true);
+    try {
+      const eventData = JSON.parse(event.data);
+      const inAppNotifs = eventData.inapp_notifs;
+      const msgContent = inAppNotifs[0].msgContent;
+
+      if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
+        renderAdvancedBuilder(inAppNotifs[0], null, Logger.getInstance(), true);
+      }
+    } catch (error) {
+      logger.error('Error parsing event data:', error);
     }
   }
 
-  const checkWebPopupPreview = logger => {
+  const checkWebPopupPreview = () => {
+    const logger = Logger.getInstance();
     const searchParams = new URLSearchParams(window.location.search);
     const ctType = searchParams.get('ctActionMode');
 
@@ -12291,7 +12399,7 @@
           if (parentWindow) {
             parentWindow.postMessage('ready', '*');
 
-            const eventHandler = event => handleWebPopupPreviewPostMessageEvent(event, logger);
+            const eventHandler = event => handleWebPopupPreviewPostMessageEvent(event);
 
             window.addEventListener('message', eventHandler, false);
           }
@@ -14404,107 +14512,6 @@
     }
 
   }
-
-  const logLevels = {
-    DISABLE: 0,
-    ERROR: 1,
-    INFO: 2,
-    DEBUG: 3,
-    DEBUG_PE: 4
-  };
-
-  var _logLevel = _classPrivateFieldLooseKey("logLevel");
-
-  var _log = _classPrivateFieldLooseKey("log");
-
-  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
-
-  class Logger {
-    constructor(logLevel) {
-      Object.defineProperty(this, _isLegacyDebug, {
-        get: _get_isLegacyDebug,
-        set: void 0
-      });
-      Object.defineProperty(this, _log, {
-        value: _log2
-      });
-      Object.defineProperty(this, _logLevel, {
-        writable: true,
-        value: void 0
-      });
-      this.wzrkError = {};
-
-      // Singleton pattern - return existing instance if it exists
-      if (Logger.instance) {
-        return Logger.instance;
-      }
-
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
-      this.wzrkError = {};
-      Logger.instance = this;
-    } // Static method for explicit singleton access
-
-
-    static getInstance(logLevel) {
-      if (!Logger.instance) {
-        Logger.instance = new Logger(logLevel);
-      }
-
-      return Logger.instance;
-    }
-
-    get logLevel() {
-      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
-    }
-
-    set logLevel(logLevel) {
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
-    }
-
-    error(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
-      }
-    }
-
-    info(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
-      }
-    }
-
-    debug(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
-      }
-    }
-
-    debugPE(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
-      }
-    }
-
-    reportError(code, description) {
-      this.wzrkError.c = code;
-      this.wzrkError.d = description;
-      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
-    }
-
-  }
-
-  var _log2 = function _log2(level, message) {
-    if (window.console) {
-      try {
-        const ts = new Date().getTime();
-        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
-    }
-  };
-
-  var _get_isLegacyDebug = function () {
-    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
-  };
 
   const renderPersonalisationBanner = targetingMsgJson => {
     var _targetingMsgJson$dis;
@@ -17870,7 +17877,7 @@
 
       handleActionMode(_classPrivateFieldLooseBase(this, _logger)[_logger], _classPrivateFieldLooseBase(this, _account)[_account].id);
       checkCustomHtmlNativeDisplayPreview(_classPrivateFieldLooseBase(this, _logger)[_logger]);
-      checkWebPopupPreview(_classPrivateFieldLooseBase(this, _logger)[_logger]);
+      checkWebPopupPreview();
       _classPrivateFieldLooseBase(this, _session)[_session].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account)[_account].id;
 
       if (region) {
