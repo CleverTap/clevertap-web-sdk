@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.0.2] 4th August 2025
+## [2.0.3] 4th August 2025
 - Bug Fix for Web Popup Exit Intent 
 
 ## [2.0.2] 31st July 2025
