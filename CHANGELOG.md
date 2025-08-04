@@ -2,6 +2,9 @@
 All notable changes to this project will be documented in this file.
 
 
+## [2.0.2] 31st July 2025
+- Introduced preview in 'Advanced Web-popup Builder' in 'Web Popup'.
+
 ## [2.0.1] 25th July 2025
 - Corrected click actions for web popup image only template
 
