@@ -35,6 +35,7 @@ import {
   processGPlusUserObj,
   addToLocalProfileMap
 } from '../util/clevertap'
+import { validateCustomCleverTapID } from '../util/helpers'
 
 export default class UserLoginHandler extends Array {
   #request
@@ -61,172 +62,198 @@ export default class UserLoginHandler extends Array {
     this.#device = device
   }
 
-  // On User Login
-  #processOUL (profileArr) {
-    let sendOULFlag = true
-    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
-    const addToK = (ids) => {
-      let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME)
-      const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME)
-      let kId
-      if (k == null) {
-        k = {}
-        kId = ids
+// On User Login
+// Import the validation function at the top of the file
+#processOUL (profileArr) {
+  let sendOULFlag = true
+  StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
+  const addToK = (ids, customId = null) => {
+    let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME)
+    const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME)
+    let kId
+    if (k == null) {
+      k = {}
+      kId = customId || ids[0]
+    } else {
+      /* check if already exists */
+      kId = k.id
+      let anonymousUser = false
+      let foundInCache = false
+      if (kId == null) {
+        kId = customId || ids[0]
+        anonymousUser = true
+      }
+
+      // Custom ID = treat as anonymous user (fresh start)
+      if (customId) {
+        anonymousUser = true
+        foundInCache = false
+      }
+
+      if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
+        $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
+      }
+
+      if (anonymousUser) {
+        if ((g) != null) {
+          // if have gcookie
+          $ct.LRU_CACHE.set(kId, g)
+          $ct.blockRequest = false
+        }
       } else {
-        /* check if already exists */
-        kId = k.id
-        let anonymousUser = false
-        let foundInCache = false
-        if (kId == null) {
-          kId = ids[0]
-          anonymousUser = true
+        // check if the id is present in the cache
+        // set foundInCache to true
+        for (const idx in ids) {
+          if (ids.hasOwnProperty(idx)) {
+            const id = ids[idx]
+            if ($ct.LRU_CACHE.cache[id]) {
+              kId = id
+              foundInCache = true
+              break
+            }
+          }
         }
-        if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
-          $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
-        }
+      }
 
-        if (anonymousUser) {
+      if (foundInCache) {
+        if (kId !== $ct.LRU_CACHE.getLastKey()) {
+          // New User found
+          // remove the entire cache
+          this.#handleCookieFromCache()
+        } else {
+          sendOULFlag = false
+          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
+        }
+        const gFromCache = $ct.LRU_CACHE.get(kId)
+        $ct.LRU_CACHE.set(kId, gFromCache)
+        StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache)
+        this.#device.gcookie = gFromCache
+
+        const lastK = $ct.LRU_CACHE.getSecondLastKey()
+        if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+          // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
+          const lastGUID = $ct.LRU_CACHE.cache[lastK]
+          this.#request.unregisterTokenForGuid(lastGUID)
+        }
+      } else {
+        if (!anonymousUser) {
+          this.clear()
+        } else {
           if ((g) != null) {
-            // if have gcookie
-            $ct.LRU_CACHE.set(kId, g)
-            $ct.blockRequest = false
-          }
-        } else {
-          // check if the id is present in the cache
-          // set foundInCache to true
-          for (const idx in ids) {
-            if (ids.hasOwnProperty(idx)) {
-              const id = ids[idx]
-              if ($ct.LRU_CACHE.cache[id]) {
-                kId = id
-                foundInCache = true
-                break
-              }
-            }
-          }
-        }
-
-        if (foundInCache) {
-          if (kId !== $ct.LRU_CACHE.getLastKey()) {
-            // New User found
-            // remove the entire cache
-            this.#handleCookieFromCache()
-          } else {
+            this.#device.gcookie = g
+            StorageManager.saveToLSorCookie(GCOOKIE_NAME, g)
             sendOULFlag = false
-            StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
           }
-          const gFromCache = $ct.LRU_CACHE.get(kId)
-          $ct.LRU_CACHE.set(kId, gFromCache)
-          StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache)
-          this.#device.gcookie = gFromCache
-
-          const lastK = $ct.LRU_CACHE.getSecondLastKey()
-          if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
-            // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
-            const lastGUID = $ct.LRU_CACHE.cache[lastK]
-            this.#request.unregisterTokenForGuid(lastGUID)
-          }
-        } else {
-          if (!anonymousUser) {
-            this.clear()
-          } else {
-            if ((g) != null) {
-              this.#device.gcookie = g
-              StorageManager.saveToLSorCookie(GCOOKIE_NAME, g)
-              sendOULFlag = false
-            }
-          }
-          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
-          kId = ids[0]
         }
+        StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
+        kId = customId || ids[0]
       }
-      k.id = kId
-      StorageManager.saveToLSorCookie(KCOOKIE_NAME, k)
     }
+    k.id = kId
+    StorageManager.saveToLSorCookie(KCOOKIE_NAME, k)
+  }
 
-    if (Array.isArray(profileArr) && profileArr.length > 0) {
-      for (const index in profileArr) {
-        if (profileArr.hasOwnProperty(index)) {
-          const outerObj = profileArr[index]
-          let data = {}
-          let profileObj
-          if (outerObj.Site != null) { // organic data from the site
-            profileObj = outerObj.Site
-            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
-              logger: this.#logger
-            })) {
-              return
-            }
-          } else if (outerObj.Facebook != null) { // fb connect data
-            const FbProfileObj = outerObj.Facebook
-            // make sure that the object contains any data at all
+  if (Array.isArray(profileArr) && profileArr.length > 0) {
+    for (const index in profileArr) {
+      if (profileArr.hasOwnProperty(index)) {
+        const outerObj = profileArr[index]
+        let data = {}
+        let profileObj
+        let customId = null
 
-            if (!isObjectEmpty(FbProfileObj) && (!FbProfileObj.error)) {
-              profileObj = processFBUserObj(FbProfileObj)
+        if (outerObj.Site != null) { // organic data from the site
+          profileObj = outerObj.Site
+
+          // Extract and validate custom ID
+          if (profileObj.customId) {
+            const validation = validateCustomCleverTapID(profileObj.customId)
+            if (validation.isValid) {
+              customId = validation.sanitizedId
+            } else {
+              this.#logger.error(`Custom ID validation failed: ${validation.error}, falling back to normal flow`)
+              // customId remains null - fallback to normal user ID generation
             }
-          } else if (outerObj['Google Plus'] != null) {
-            const GPlusProfileObj = outerObj['Google Plus']
-            if (isObjectEmpty(GPlusProfileObj) && (!GPlusProfileObj.error)) {
-              profileObj = processGPlusUserObj(GPlusProfileObj, { logger: this.#logger })
+
+            // Remove customId from profile before validation
+            const { customId: _, ...cleanProfile } = profileObj
+            profileObj = cleanProfile
+          }
+
+          if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
+            logger: this.#logger
+          })) {
+            return
+          }
+        } else if (outerObj.Facebook != null) { // fb connect data
+          const FbProfileObj = outerObj.Facebook
+          // make sure that the object contains any data at all
+
+          if (!isObjectEmpty(FbProfileObj) && (!FbProfileObj.error)) {
+            profileObj = processFBUserObj(FbProfileObj)
+          }
+        } else if (outerObj['Google Plus'] != null) {
+          const GPlusProfileObj = outerObj['Google Plus']
+          if (isObjectEmpty(GPlusProfileObj) && (!GPlusProfileObj.error)) {
+            profileObj = processGPlusUserObj(GPlusProfileObj, { logger: this.#logger })
+          }
+        }
+        if (profileObj != null && (!isObjectEmpty(profileObj))) { // profile got set from above
+          data.type = 'profile'
+          if (profileObj.tz == null) {
+            // try to auto capture user timezone if not present
+            profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
+          }
+
+          data.profile = profileObj
+          const ids = []
+          if (StorageManager._isLocalStorageSupported()) {
+            if (profileObj.Identity) {
+              ids.push(profileObj.Identity)
+            }
+            if (profileObj.Email) {
+              ids.push(profileObj.Email)
+            }
+            if (profileObj.GPID) {
+              ids.push('GP:' + profileObj.GPID)
+            }
+            if (profileObj.FBID) {
+              ids.push('FB:' + profileObj.FBID)
+            }
+            if (customId || ids.length > 0) {
+              addToK(ids, customId)
             }
           }
-          if (profileObj != null && (!isObjectEmpty(profileObj))) { // profile got set from above
-            data.type = 'profile'
-            if (profileObj.tz == null) {
-              // try to auto capture user timezone if not present
-              profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
-            }
+          addToLocalProfileMap(profileObj, true)
+          data = this.#request.addSystemDataToObject(data, undefined)
 
-            data.profile = profileObj
-            const ids = []
-            if (StorageManager._isLocalStorageSupported()) {
-              if (profileObj.Identity) {
-                ids.push(profileObj.Identity)
-              }
-              if (profileObj.Email) {
-                ids.push(profileObj.Email)
-              }
-              if (profileObj.GPID) {
-                ids.push('GP:' + profileObj.GPID)
-              }
-              if (profileObj.FBID) {
-                ids.push('FB:' + profileObj.FBID)
-              }
-              if (ids.length > 0) {
-                addToK(ids)
-              }
-            }
-            addToLocalProfileMap(profileObj, true)
-            data = this.#request.addSystemDataToObject(data, undefined)
-
-            this.#request.addFlags(data)
-            // Adding 'isOUL' flag in true for OUL cases which.
-            // This flag tells LC to create a new arp object.
-            // Also we will receive the same flag in response arp which tells to delete existing arp object.
-            if (sendOULFlag) {
-              data[IS_OUL] = true
-            }
-            const compressedData = compressData(JSON.stringify(data), this.#logger)
-            let pageLoadUrl = this.#account.dataPostURL
-            pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
-
-            // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
-            // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
-            // stored in the cache and replace it with the response arp.
-
-            this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag)
+          this.#request.addFlags(data)
+          // Adding 'isOUL' flag in true for OUL cases which.
+          // This flag tells LC to create a new arp object.
+          // Also we will receive the same flag in response arp which tells to delete existing arp object.
+          if (sendOULFlag) {
+            data[IS_OUL] = true
           }
+          const compressedData = compressData(JSON.stringify(data), this.#logger)
+          let pageLoadUrl = this.#account.dataPostURL
+          pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
+          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+
+          // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
+          // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
+          // stored in the cache and replace it with the response arp.
+
+          this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag)
         }
       }
     }
   }
+}
 
-  clear () {
-    this.#logger.debug('clear called. Reset flag has been set.')
-    this.#deleteUser()
-    StorageManager.setMetaProp(CLEAR, true)
-  }
+clear () {
+  this.#logger.debug('clear called. Reset flag has been set.')
+  this.#deleteUser()
+  StorageManager.setMetaProp(CLEAR, true)
+}
 
   #handleCookieFromCache () {
     $ct.blockRequest = false
