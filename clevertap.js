@@ -12051,8 +12051,8 @@
 
   };
 
-  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
-  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
+  const OVERLAY_PATH = 'http://localhost:3000/overlay';
+  const CSS_PATH = 'http://localhost:3000/style';
   const WVE_CLASS = {
     FLICKER_SHOW: 'wve-anti-flicker-show',
     FLICKER_HIDE: 'wve-anti-flicker-hide',
@@ -12366,49 +12366,22 @@
     window.addEventListener('message', messageHandler);
   };
 
-  function handleWebPopupPreviewPostMessageEvent(event) {
-    if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
-      return;
-    }
-
-    const logger = Logger.getInstance();
-
-    try {
-      const eventData = JSON.parse(event.data);
-      const inAppNotifs = eventData.inapp_notifs;
-      const msgContent = inAppNotifs[0].msgContent;
-
-      if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
-        renderAdvancedBuilder(inAppNotifs[0], null, Logger.getInstance(), true);
-      }
-    } catch (error) {
-      logger.error('Error parsing event data:', error);
-    }
-  }
-
   const checkWebPopupPreview = () => {
     const logger = Logger.getInstance();
     const searchParams = new URLSearchParams(window.location.search);
     const ctType = searchParams.get('ctActionMode');
+    const preview = searchParams.get('preview');
 
-    if (ctType) {
-      const parentWindow = window.opener;
+    if (ctType === WEB_POPUP_PREVIEW && preview) {
+      try {
+        const inAppNotifs = preview.inapp_notifs;
+        const msgContent = inAppNotifs[0].msgContent;
 
-      switch (ctType) {
-        case WEB_POPUP_PREVIEW:
-          if (parentWindow) {
-            parentWindow.postMessage('ready', '*');
-
-            const eventHandler = event => handleWebPopupPreviewPostMessageEvent(event);
-
-            window.addEventListener('message', eventHandler, false);
-          }
-
-          break;
-
-        default:
-          logger.debug("unknown query param ".concat(ctType));
-          break;
+        if (inAppNotifs && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
+          renderAdvancedBuilder(inAppNotifs[0], null, Logger.getInstance(), true);
+        }
+      } catch (error) {
+        logger.error('Error parsing event data:', error);
       }
     }
   };
