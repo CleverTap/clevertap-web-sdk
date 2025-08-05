@@ -4,6 +4,7 @@ import { closeIframe } from '../clevertap'
 import { ACTION_TYPES, WEB_POPUP_PREVIEW } from '../constants'
 import { WVE_URL_ORIGIN } from '../../modules/visualBuilder/builder_constants'
 import { Logger } from '../../modules/logger'
+import { LZS } from '../lzs'
 
 export const renderPopUpImageOnly = (targetingMsgJson, _session) => {
   const divId = 'wzrkImageOnlyDiv'
@@ -202,8 +203,9 @@ export const checkWebPopupPreview = () => {
   const preview = searchParams.get('preview')
   if (ctType === WEB_POPUP_PREVIEW && preview) {
     try {
-      const previewData = JSON.parse(preview)
-      const inAppNotifs = previewData.inapp_notifs
+      const previewData = LZS.decompress(preview)
+      const parsedPreviewData = JSON.parse(previewData)
+      const inAppNotifs = parsedPreviewData.inapp_notifs
       const msgContent = inAppNotifs[0].msgContent
       if (inAppNotifs && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
         renderAdvancedBuilder(inAppNotifs[0], null, Logger.getInstance(), true)
