@@ -12374,7 +12374,8 @@
 
     if (ctType === WEB_POPUP_PREVIEW && preview) {
       try {
-        const inAppNotifs = preview.inapp_notifs;
+        const previewData = JSON.parse(preview);
+        const inAppNotifs = previewData.inapp_notifs;
         const msgContent = inAppNotifs[0].msgContent;
 
         if (inAppNotifs && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
