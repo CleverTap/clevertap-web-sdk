@@ -220,6 +220,7 @@
   const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
+  const BLOCK_OUL_REQUEST_KEY = 'blockOulReq';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -7436,7 +7437,16 @@
     LRU_CACHE: null,
     globalProfileMap: undefined,
     globalEventsMap: undefined,
-    blockRequest: false,
+
+    // Initialize blockRequest from storage
+    get blockRequest() {
+      return StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY) || false;
+    },
+
+    set blockRequest(value) {
+      StorageManager.setMetaProp(BLOCK_OUL_REQUEST_KEY, value);
+    },
+
     isOptInRequest: false,
     broadDomain: null,
     webPushEnabled: null,
@@ -16059,6 +16069,8 @@
 
   var _clearCookie = _classPrivateFieldLooseKey("clearCookie");
 
+  var _getNextAvailableReqN = _classPrivateFieldLooseKey("getNextAvailableReqN");
+
   var _addToLocalEventMap = _classPrivateFieldLooseKey("addToLocalEventMap");
 
   class RequestManager {
@@ -16072,6 +16084,9 @@
       } = _ref;
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
+      });
+      Object.defineProperty(this, _getNextAvailableReqN, {
+        value: _getNextAvailableReqN2
       });
       Object.defineProperty(this, _logger$3, {
         writable: true,
@@ -16223,10 +16238,15 @@
 
 
     saveAndFireRequest(url, override, sendOULFlag, evtName) {
-      const now = getNow();
-      url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
+      console.log('Inside Save and Fire Request ', localStorage.getItem('WZRK_L'));
+      const now = getNow(); // Get the next available request number that doesn't conflict with existing backups
+
+      const nextReqN = _classPrivateFieldLooseBase(this, _getNextAvailableReqN)[_getNextAvailableReqN]();
+
+      $ct.globalCache.REQ_N = nextReqN;
+      url = addToURL(url, 'rn', nextReqN);
       const data = url + '&i=' + now + '&sn=' + seqNo;
-      StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]); // if offline is set to true, save the request in backup and return
+      StorageManager.backupEvent(data, nextReqN, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]); // if offline is set to true, save the request in backup and return
 
       if ($ct.offline) return; // if there is no override
       // and an OUL request is not in progress
@@ -16242,7 +16262,7 @@
           seqNo = 0;
         }
 
-        window.oulReqN = $ct.globalCache.REQ_N;
+        window.oulReqN = nextReqN;
         RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
       } else {
         _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
@@ -16336,6 +16356,28 @@
     }
 
   }
+
+  var _getNextAvailableReqN2 = function _getNextAvailableReqN2() {
+    // Read existing backup data to check for conflicts
+    const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME); // Start from the current REQ_N + 1
+
+    let candidateReqN = $ct.globalCache.REQ_N + 1; // If no backup data exists, use the candidate
+
+    if (!backupMap || typeof backupMap !== 'object') {
+      return candidateReqN;
+    } // Keep incrementing until we find a request number that doesn't exist in backup
+
+
+    while (backupMap.hasOwnProperty(candidateReqN.toString())) {
+      candidateReqN++;
+
+      _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Request number ".concat(candidateReqN - 1, " already exists in backup, trying ").concat(candidateReqN));
+    }
+
+    _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Using request number: ".concat(candidateReqN));
+
+    return candidateReqN;
+  };
 
   var _addToLocalEventMap2 = function _addToLocalEventMap2(evtName) {
     if (StorageManager._isLocalStorageSupported()) {
@@ -16764,7 +16806,8 @@
         name
       } = varInstance;
       _classPrivateFieldLooseBase(this, _variables)[_variables][name] = varInstance;
-      console.log('registerVariable', _classPrivateFieldLooseBase(this, _variables)[_variables]);
+
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug('registerVariable', _classPrivateFieldLooseBase(this, _variables)[_variables]);
     }
     /**
      * Retrieves a variable by its name.
@@ -16885,7 +16928,8 @@
     }
 
     mergeVariables(vars) {
-      console.log('msg vars is ', vars);
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug('msg vars is ', vars);
+
       _classPrivateFieldLooseBase(this, _hasVarsRequestCompleted)[_hasVarsRequestCompleted] = true;
       StorageManager.saveToLSorCookie(VARIABLES, vars);
       _classPrivateFieldLooseBase(this, _remoteVariables)[_remoteVariables] = vars;
@@ -17846,6 +17890,10 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
+      }
+
+      if (StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY)) {
+        _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
       }
 
       const currLocation = location.href;

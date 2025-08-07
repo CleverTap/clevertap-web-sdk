@@ -35,7 +35,8 @@ import {
   APPLICATION_SERVER_KEY_RECEIVED,
   VARIABLES,
   GCOOKIE_NAME,
-  QUALIFIED_CAMPAIGNS
+  QUALIFIED_CAMPAIGNS,
+  BLOCK_OUL_REQUEST_KEY
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -703,7 +704,6 @@ export default class CleverTap {
     handleActionMode(this.#logger, this.#account.id)
     checkCustomHtmlNativeDisplayPreview(this.#logger)
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
-
     if (region) {
       this.#account.region = region
     }
@@ -716,7 +716,9 @@ export default class CleverTap {
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
     }
-
+    if (StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY)) {
+      this.#request.processBackupEvents()
+    }
     const currLocation = location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
 
