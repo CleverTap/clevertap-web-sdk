@@ -2,7 +2,8 @@ import {
   GCOOKIE_NAME,
   META_COOKIE,
   KCOOKIE_NAME,
-  LCOOKIE_NAME
+  LCOOKIE_NAME,
+  BLOCK_OUL_REQUEST_KEY
 } from './constants'
 import encryption from '../modules/security/Encryption'
 
@@ -254,7 +255,13 @@ export const $ct = {
   LRU_CACHE: null,
   globalProfileMap: undefined,
   globalEventsMap: undefined,
-  blockRequest: false,
+  // Initialize blockRequest from storage
+  get blockRequest () {
+    return StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY) || false
+  },
+  set blockRequest (value) {
+    StorageManager.setMetaProp(BLOCK_OUL_REQUEST_KEY, value)
+  },
   isOptInRequest: false,
   broadDomain: null,
   webPushEnabled: null,
