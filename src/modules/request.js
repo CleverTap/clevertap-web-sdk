@@ -126,8 +126,6 @@ export default class RequestManager {
    * @param {Boolean} sendOULFlag - true in case of a On User Login request
    */
   saveAndFireRequest (url, override, sendOULFlag, evtName) {
-    console.log('Inside Save and Fire Request ', localStorage.getItem('WZRK_L'))
-
     const now = getNow()
 
     // Get the next available request number that doesn't conflict with existing backups
