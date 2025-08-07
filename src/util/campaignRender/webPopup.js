@@ -52,9 +52,7 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
     return
   }
 
-  // Setup event handling
   setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger)
-
   // Append to DOM
   msgDiv.appendChild(iframe)
   document.body.appendChild(msgDiv)
