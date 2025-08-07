@@ -12096,8 +12096,7 @@
       _logger.error('Failed to create iframe for Advanced Builder');
 
       return;
-    } // Setup event handling
-
+    }
 
     setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger); // Append to DOM
 
@@ -12355,7 +12354,9 @@
         });
       }
 
-      if (this.onClickUrl) {
+      if (this.onClickAction === 'none') {
+        this.popup.addEventListener('click', closeFn);
+      } else if (this.onClickUrl) {
         this.popup.addEventListener('click', () => {
           if (!this.target.display.preview) {
             window.clevertap.renderNotificationClicked({
@@ -12375,10 +12376,6 @@
               this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
           }
         });
-      }
-
-      if (this.onClickAction === 'none') {
-        this.popup.addEventListener('click', closeFn);
       }
     }
 
@@ -13629,7 +13626,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.0.0';
+            const sdkVersion = '2.0.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -15291,7 +15288,10 @@
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
-            window.document.body.onmouseleave = this.showExitIntent;
+
+            window.document.body.onmouseleave = event => {
+              this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
+            };
           }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
@@ -15677,7 +15677,10 @@
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
-          window.document.body.onmouseleave = this.showExitIntent;
+
+          window.document.body.onmouseleave = event => {
+            this.showExitIntent(event, targetNotif, null, exitintentObj);
+          };
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
           // Skips duplicate custom event campaigns
@@ -16168,7 +16171,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.0.0',
+        lib: 'web-sdk-v2.0.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18017,7 +18020,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.0.0';
+      return 'web-sdk-v2.0.1';
     }
 
     defineVariable(name, defaultValue) {
