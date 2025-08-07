@@ -816,7 +816,9 @@ export const commonCampaignUtils = {
         }
         if (displayObj.deliveryTrigger.isExitIntent) {
           exitintentObj = targetingMsgJson
-          window.document.body.onmouseleave = this.showExitIntent
+          window.document.body.onmouseleave = (event) => {
+            this.showExitIntent(event, targetingMsgJson, null, exitintentObj)
+          }
         }
         const delay =
           displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed
@@ -1281,7 +1283,9 @@ export const commonCampaignUtils = {
       ) {
         // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif
-        window.document.body.onmouseleave = this.showExitIntent
+        window.document.body.onmouseleave = (event) => {
+          this.showExitIntent(event, targetNotif, null, exitintentObj)
+        }
       } else if (
         targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY
       ) {
