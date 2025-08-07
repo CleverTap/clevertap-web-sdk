@@ -1,8 +1,9 @@
 import { invokeExternalJs } from './utilities'
 import { $ct } from '../storage'
 import { closeIframe } from '../clevertap'
-import { ACTION_TYPES } from '../constants'
+import { ACTION_TYPES, WEB_POPUP_PREVIEW } from '../constants'
 import { WVE_URL_ORIGIN } from '../../modules/visualBuilder/builder_constants'
+import { Logger } from '../../modules/logger'
 
 export const renderPopUpImageOnly = (targetingMsgJson, _session) => {
   const divId = 'wzrkImageOnlyDiv'
@@ -33,7 +34,7 @@ const IFRAME_STYLE = `
   border: 0 !important;
 `
 
-export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
+export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger, isPreview = false) => {
   const divId = 'wizAdvBuilder'
   const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
 
@@ -52,7 +53,11 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
     return
   }
 
-  setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger)
+  // Setup event handling
+  if (!isPreview) {
+    setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger)
+  }
+
   // Append to DOM
   msgDiv.appendChild(iframe)
   document.body.appendChild(msgDiv)
@@ -188,4 +193,43 @@ const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) =>
 
   window.removeEventListener('message', messageHandler) // Avoid duplicate bindings
   window.addEventListener('message', messageHandler)
+}
+
+function handleWebPopupPreviewPostMessageEvent (event) {
+  if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+    return
+  }
+  const logger = Logger.getInstance()
+  try {
+    const eventData = JSON.parse(event.data)
+    const inAppNotifs = eventData.inapp_notifs
+    const msgContent = inAppNotifs[0].msgContent
+    if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
+      renderAdvancedBuilder(inAppNotifs[0], null, Logger.getInstance(), true)
+    }
+  } catch (error) {
+    logger.error('Error parsing event data:', error)
+  }
+}
+
+export const checkWebPopupPreview = () => {
+  const logger = Logger.getInstance()
+  const searchParams = new URLSearchParams(window.location.search)
+  const ctType = searchParams.get('ctActionMode')
+  if (ctType) {
+    const parentWindow = window.opener
+    const referrer = new URL(document.referrer)
+    switch (ctType) {
+      case WEB_POPUP_PREVIEW:
+        if (parentWindow) {
+          parentWindow.postMessage('ready', referrer.origin)
+          const eventHandler = (event) => handleWebPopupPreviewPostMessageEvent(event)
+          window.addEventListener('message', eventHandler, false)
+        }
+        break
+      default:
+        logger.debug(`unknown query param ${ctType}`)
+        break
+    }
+  }
 }
