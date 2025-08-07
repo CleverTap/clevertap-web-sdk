@@ -68,7 +68,6 @@ export const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper'
 export const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper'
 export const POPUP_LOADING = 'WZRK_POPUP_LOADING'
 export const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview'
-export const WEB_POPUP_PREVIEW = 'ctWebPopupPreview'
 export const QUALIFIED_CAMPAIGNS = 'WZRK_QC'
 export const CUSTOM_CT_ID_PREFIX = '_w_'
 
