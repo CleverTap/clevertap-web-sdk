@@ -196,7 +196,10 @@ const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) =>
 }
 
 function handleWebPopupPreviewPostMessageEvent (event) {
-  if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
+  if (
+    !event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) &&
+    !event.origin.endsWith(window.location.origin)
+  ) {
     return
   }
   const logger = Logger.getInstance()
