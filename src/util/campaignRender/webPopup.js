@@ -54,9 +54,7 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger, isPre
   }
 
   // Setup event handling
-  if (!isPreview) {
-    setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger)
-  }
+  setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger, isPreview)
 
   // Append to DOM
   msgDiv.appendChild(iframe)
@@ -69,7 +67,7 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger, isPre
   })
 }
 
-const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
+const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPreview) => {
   const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
   const { detail } = e
 
@@ -89,12 +87,16 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
   switch (detail.type) {
     case ACTION_TYPES.CLOSE:
       // close Iframe
-      window.clevertap.renderNotificationClicked(payload)
+      if (!isPreview) {
+        window.clevertap.renderNotificationClicked(payload)
+      }
       closeIframe(campaignId, divId, _session.sessionId)
       break
     case ACTION_TYPES.OPEN_WEB_URL:
       // handle opening of url
-      window.clevertap.renderNotificationClicked(payload)
+      if (!isPreview) {
+        window.clevertap.renderNotificationClicked(payload)
+      }
       if (detail.openInNewTab) {
         window.open(detail.url.value.replacements, '_blank', 'noopener')
         if (detail.closeOnClick) {
@@ -106,12 +108,16 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
       break
     case ACTION_TYPES.SOFT_PROMPT:
       // Handle soft prompt
-      window.clevertap.renderNotificationClicked(payload)
+      if (!isPreview) {
+        window.clevertap.renderNotificationClicked(payload)
+      }
       window.clevertap.notifications.push({ skipDialog: true })
       break
     case ACTION_TYPES.RUN_JS:
       // Handle JS code
-      window.clevertap.renderNotificationClicked(payload)
+      if (!isPreview) {
+        window.clevertap.renderNotificationClicked(payload)
+      }
       invokeExternalJs(e.detail.js.name, targetingMsgJson)
       break
     default:
@@ -163,13 +169,13 @@ const createIframe = (targetingMsgJson, _logger) => {
 }
 
 // Utility: Setup iframe event listeners
-const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger) => {
+const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger, isPreview) => {
   iframe.onload = () => {
     try {
       // Try direct document access first
       iframe.contentDocument.addEventListener('CT_custom_event', (e) => {
         _logger.debug('Event received ', e)
-        handleIframeEvent(e, targetingMsgJson, divId, _session, _logger)
+        handleIframeEvent(e, targetingMsgJson, divId, _session, _logger, isPreview)
       })
     } catch (error) {
       // Fallback to postMessage

@@ -12202,10 +12202,7 @@
     } // Setup event handling
 
 
-    if (!isPreview) {
-      setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger);
-    } // Append to DOM
-
+    setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger, isPreview); // Append to DOM
 
     msgDiv.appendChild(iframe);
     document.body.appendChild(msgDiv); // Track notification view
@@ -12216,7 +12213,7 @@
     });
   };
 
-  const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
+  const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPreview) => {
     var _e$detail, _e$detail$elementDeta;
 
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
@@ -12241,13 +12238,18 @@
     switch (detail.type) {
       case ACTION_TYPES.CLOSE:
         // close Iframe
-        window.clevertap.renderNotificationClicked(payload);
+        if (!isPreview) {
+          window.clevertap.renderNotificationClicked(payload);
+        }
+
         closeIframe(campaignId, divId, _session.sessionId);
         break;
 
       case ACTION_TYPES.OPEN_WEB_URL:
         // handle opening of url
-        window.clevertap.renderNotificationClicked(payload);
+        if (!isPreview) {
+          window.clevertap.renderNotificationClicked(payload);
+        }
 
         if (detail.openInNewTab) {
           window.open(detail.url.value.replacements, '_blank', 'noopener');
@@ -12263,7 +12265,10 @@
 
       case ACTION_TYPES.SOFT_PROMPT:
         // Handle soft prompt
-        window.clevertap.renderNotificationClicked(payload);
+        if (!isPreview) {
+          window.clevertap.renderNotificationClicked(payload);
+        }
+
         window.clevertap.notifications.push({
           skipDialog: true
         });
@@ -12271,7 +12276,10 @@
 
       case ACTION_TYPES.RUN_JS:
         // Handle JS code
-        window.clevertap.renderNotificationClicked(payload);
+        if (!isPreview) {
+          window.clevertap.renderNotificationClicked(payload);
+        }
+
         invokeExternalJs(e.detail.js.name, targetingMsgJson);
         break;
 
@@ -12325,14 +12333,14 @@
   }; // Utility: Setup iframe event listeners
 
 
-  const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger) => {
+  const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger, isPreview) => {
     iframe.onload = () => {
       try {
         // Try direct document access first
         iframe.contentDocument.addEventListener('CT_custom_event', e => {
           _logger.debug('Event received ', e);
 
-          handleIframeEvent(e, targetingMsgJson, divId, _session, _logger);
+          handleIframeEvent(e, targetingMsgJson, divId, _session, _logger, isPreview);
         });
       } catch (error) {
         // Fallback to postMessage
