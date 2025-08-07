@@ -218,9 +218,9 @@
   const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
-  const WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
+  const BLOCK_REQUEST_KEY = 'block_req';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -7419,11 +7419,14 @@
 
     static removeBackup(respNo, logger) {
       const backupMap = this.readFromLSorCookie(LCOOKIE_NAME);
+      console.log('Remove WZRK_L data pre', decodeURIComponent(localStorage.getItem('WZRK_L')));
 
       if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
+        console.log('Removed Backup for the event ', "del event: ".concat(respNo, " data-> ").concat(backupMap[respNo].q));
         logger.debug("del event: ".concat(respNo, " data-> ").concat(backupMap[respNo].q));
         delete backupMap[respNo];
         this.saveToLSorCookie(LCOOKIE_NAME, backupMap);
+        console.log('Remove WZRK_L data post', decodeURIComponent(localStorage.getItem('WZRK_L')));
       }
     }
 
@@ -7437,7 +7440,17 @@
     LRU_CACHE: null,
     globalProfileMap: undefined,
     globalEventsMap: undefined,
-    blockRequest: false,
+
+    // blockRequest: false,
+    // Initialize blockRequest from storage instead of hardcoded false
+    get blockRequest() {
+      return StorageManager.getMetaProp(BLOCK_REQUEST_KEY) || false;
+    },
+
+    set blockRequest(value) {
+      StorageManager.setMetaProp(BLOCK_REQUEST_KEY, value);
+    },
+
     isOptInRequest: false,
     broadDomain: null,
     webPushEnabled: null,
@@ -7460,7 +7473,8 @@
     globalUnsubscribe: true,
     flutterVersion: null,
     variableStore: {},
-    pushConfig: null // domain: window.location.hostname, url -> getHostName()
+    pushConfig: null,
+    enableFetchApi: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -8494,6 +8508,60 @@
       _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
     }
 
+    static async handleFetchResponse(url) {
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Network response was not ok: ".concat(response.statusText));
+        }
+
+        const jsonResponse = await response.json();
+        const {
+          tr,
+          meta,
+          wpe
+        } = jsonResponse;
+
+        if (tr) {
+          window.$WZRK_WR.tr(tr);
+        }
+
+        if (meta) {
+          const {
+            g,
+            sid,
+            rf,
+            rn,
+            optOut
+          } = meta;
+
+          if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
+            const parsedRn = parseInt(rn); // Include optOut as 5th parameter if present
+
+            if (optOut !== undefined) {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn, optOut);
+            } else {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn);
+            }
+          }
+        }
+
+        if (wpe) {
+          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key);
+        }
+
+        this.logger.debug('req snt -> url: ' + url);
+      } catch (error) {
+        this.logger.error('Fetch error:', error);
+      }
+    }
+
     getDelayFrequency() {
       this.logger.debug('Network retry #' + this.networkRetryCount); // Retry with delay as 1s for first 10 retries
 
@@ -8560,7 +8628,7 @@
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
   };
 
-  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
+  var _fireRequest2 = async function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
     var _window$location$orig, _window, _window$location, _window2, _window2$location, _window$clevertap, _window$wizrocket;
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
@@ -8640,14 +8708,18 @@
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
     }
 
-    const s = document.createElement('script');
-    s.setAttribute('type', 'text/javascript');
-    s.setAttribute('src', url);
-    s.setAttribute('class', 'ct-jp-cb');
-    s.setAttribute('rel', 'nofollow');
-    s.async = true;
-    document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url);
+    if (!$ct.enableFetchApi) {
+      const s = document.createElement('script');
+      s.setAttribute('type', 'text/javascript');
+      s.setAttribute('src', url);
+      s.setAttribute('class', 'ct-jp-cb');
+      s.setAttribute('rel', 'nofollow');
+      s.async = true;
+      document.getElementsByTagName('head')[0].appendChild(s);
+      this.logger.debug('req snt -> url: ' + url);
+    } else {
+      this.handleFetchResponse(url);
+    }
   };
 
   RequestDispatcher.logger = void 0;
@@ -12366,53 +12438,6 @@
     window.addEventListener('message', messageHandler);
   };
 
-  function handleWebPopupPreviewPostMessageEvent(event) {
-    if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
-      return;
-    }
-
-    const logger = Logger.getInstance();
-
-    try {
-      const eventData = JSON.parse(event.data);
-      const inAppNotifs = eventData.inapp_notifs;
-      const msgContent = inAppNotifs[0].msgContent;
-
-      if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
-        renderAdvancedBuilder(inAppNotifs[0], null, Logger.getInstance(), true);
-      }
-    } catch (error) {
-      logger.error('Error parsing event data:', error);
-    }
-  }
-
-  const checkWebPopupPreview = () => {
-    const logger = Logger.getInstance();
-    const searchParams = new URLSearchParams(window.location.search);
-    const ctType = searchParams.get('ctActionMode');
-
-    if (ctType) {
-      const parentWindow = window.opener;
-
-      switch (ctType) {
-        case WEB_POPUP_PREVIEW:
-          if (parentWindow) {
-            parentWindow.postMessage('ready', '*');
-
-            const eventHandler = event => handleWebPopupPreviewPostMessageEvent(event);
-
-            window.addEventListener('message', eventHandler, false);
-          }
-
-          break;
-
-        default:
-          logger.debug("unknown query param ".concat(ctType));
-          break;
-      }
-    }
-  };
-
   class CTWebPopupImageOnly extends HTMLElement {
     constructor() {
       super();
@@ -16112,6 +16137,8 @@
 
   var _clearCookie = _classPrivateFieldLooseKey("clearCookie");
 
+  var _getNextAvailableReqN = _classPrivateFieldLooseKey("getNextAvailableReqN");
+
   var _addToLocalEventMap = _classPrivateFieldLooseKey("addToLocalEventMap");
 
   class RequestManager {
@@ -16125,6 +16152,9 @@
       } = _ref;
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
+      });
+      Object.defineProperty(this, _getNextAvailableReqN, {
+        value: _getNextAvailableReqN2
       });
       Object.defineProperty(this, _logger$3, {
         writable: true,
@@ -16276,10 +16306,15 @@
 
 
     saveAndFireRequest(url, override, sendOULFlag, evtName) {
-      const now = getNow();
-      url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
+      console.log('Inside Save and Fire Request ', localStorage.getItem('WZRK_L'));
+      const now = getNow(); // Get the next available request number that doesn't conflict with existing backups
+
+      const nextReqN = _classPrivateFieldLooseBase(this, _getNextAvailableReqN)[_getNextAvailableReqN]();
+
+      $ct.globalCache.REQ_N = nextReqN;
+      url = addToURL(url, 'rn', nextReqN);
       const data = url + '&i=' + now + '&sn=' + seqNo;
-      StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]); // if offline is set to true, save the request in backup and return
+      StorageManager.backupEvent(data, nextReqN, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]); // if offline is set to true, save the request in backup and return
 
       if ($ct.offline) return; // if there is no override
       // and an OUL request is not in progress
@@ -16295,12 +16330,13 @@
           seqNo = 0;
         }
 
-        window.oulReqN = $ct.globalCache.REQ_N;
+        window.oulReqN = nextReqN;
         RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
       } else {
         _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
       }
-    }
+    } // Add this new private method to your RequestManager class
+
 
     unregisterTokenForGuid(givenGUID) {
       const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA); // Send unregister event only when token is available
@@ -16389,6 +16425,28 @@
     }
 
   }
+
+  var _getNextAvailableReqN2 = function _getNextAvailableReqN2() {
+    // Read existing backup data to check for conflicts
+    const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME); // Start from the current REQ_N + 1
+
+    let candidateReqN = $ct.globalCache.REQ_N + 1; // If no backup data exists, use the candidate
+
+    if (!backupMap || typeof backupMap !== 'object') {
+      return candidateReqN;
+    } // Keep incrementing until we find a request number that doesn't exist in backup
+
+
+    while (backupMap.hasOwnProperty(candidateReqN.toString())) {
+      candidateReqN++;
+
+      _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Request number ".concat(candidateReqN - 1, " already exists in backup, trying ").concat(candidateReqN));
+    }
+
+    _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Using request number: ".concat(candidateReqN));
+
+    return candidateReqN;
+  };
 
   var _addToLocalEventMap2 = function _addToLocalEventMap2(evtName) {
     if (StorageManager._isLocalStorageSupported()) {
@@ -16817,7 +16875,8 @@
         name
       } = varInstance;
       _classPrivateFieldLooseBase(this, _variables)[_variables][name] = varInstance;
-      console.log('registerVariable', _classPrivateFieldLooseBase(this, _variables)[_variables]);
+
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug('registerVariable', _classPrivateFieldLooseBase(this, _variables)[_variables]);
     }
     /**
      * Retrieves a variable by its name.
@@ -16938,7 +16997,8 @@
     }
 
     mergeVariables(vars) {
-      console.log('msg vars is ', vars);
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug('msg vars is ', vars);
+
       _classPrivateFieldLooseBase(this, _hasVarsRequestCompleted)[_hasVarsRequestCompleted] = true;
       StorageManager.saveToLSorCookie(VARIABLES, vars);
       _classPrivateFieldLooseBase(this, _remoteVariables)[_remoteVariables] = vars;
@@ -17034,6 +17094,8 @@
 
   var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
 
+  var _enableFetchApi = _classPrivateFieldLooseKey("enableFetchApi");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _debounce = _classPrivateFieldLooseKey("debounce");
@@ -17078,6 +17140,15 @@
       const dismissSpamControl = value === true;
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
       $ct.dismissSpamControl = dismissSpamControl;
+    }
+
+    get enableFetchApi() {
+      return _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
+    }
+
+    set enableFetchApi(value) {
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value;
+      $ct.enableFetchApi = value;
     }
 
     constructor() {
@@ -17161,6 +17232,10 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _enableFetchApi, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
@@ -17184,6 +17259,7 @@
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = (_clevertap$dismissSpa = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa !== void 0 ? _clevertap$dismissSpa : true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = clevertap.enableFetchApi || false;
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         isPersonalisationActive: this._isPersonalisationActive
@@ -17883,7 +17959,11 @@
 
       handleActionMode(_classPrivateFieldLooseBase(this, _logger)[_logger], _classPrivateFieldLooseBase(this, _account)[_account].id);
       checkCustomHtmlNativeDisplayPreview(_classPrivateFieldLooseBase(this, _logger)[_logger]);
-      checkWebPopupPreview();
+
+      if (StorageManager.getMetaProp(BLOCK_REQUEST_KEY)) {
+        _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
+      }
+
       _classPrivateFieldLooseBase(this, _session)[_session].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account)[_account].id;
 
       if (region) {
@@ -17900,6 +17980,11 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
+      }
+
+      if (config.enableFetchApi) {
+        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
+        $ct.enableFetchApi = config.enableFetchApi;
       }
 
       const currLocation = location.href;

@@ -35,7 +35,8 @@ import {
   APPLICATION_SERVER_KEY_RECEIVED,
   VARIABLES,
   GCOOKIE_NAME,
-  QUALIFIED_CAMPAIGNS
+  QUALIFIED_CAMPAIGNS,
+  BLOCK_REQUEST_KEY
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -51,7 +52,6 @@ import { addAntiFlicker, handleActionMode } from './modules/visualBuilder/pageBu
 import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
-import { checkWebPopupPreview } from './util/campaignRender/webPopup'
 import { reconstructNestedObject, validateCustomCleverTapID } from './util/helpers'
 
 export default class CleverTap {
@@ -69,6 +69,7 @@ export default class CleverTap {
   #dismissSpamControl
   enablePersonalization
   #pageChangeTimeoutId
+  #enableFetchApi
 
   get spa () {
     return this.#isSpa
@@ -97,6 +98,15 @@ export default class CleverTap {
     $ct.dismissSpamControl = dismissSpamControl
   }
 
+  get enableFetchApi () {
+    return this.#enableFetchApi
+  }
+
+  set enableFetchApi (value) {
+    this.#enableFetchApi = value
+    $ct.enableFetchApi = value
+  }
+
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
@@ -115,6 +125,7 @@ export default class CleverTap {
     this.#device = new DeviceManager({ logger: this.#logger, customId: result?.isValid ? result?.sanitizedId : null })
     this.#dismissSpamControl = clevertap.dismissSpamControl ?? true
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
+    this.#enableFetchApi = clevertap.enableFetchApi || false
     this.#session = new SessionManager({
       logger: this.#logger,
       isPersonalisationActive: this._isPersonalisationActive
@@ -703,7 +714,9 @@ export default class CleverTap {
     }
     handleActionMode(this.#logger, this.#account.id)
     checkCustomHtmlNativeDisplayPreview(this.#logger)
-    checkWebPopupPreview()
+    if (StorageManager.getMetaProp(BLOCK_REQUEST_KEY)) {
+      this.#request.processBackupEvents()
+    }
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
 
     if (region) {
@@ -717,6 +730,11 @@ export default class CleverTap {
     }
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
+    }
+
+    if (config.enableFetchApi) {
+      this.#enableFetchApi = config.enableFetchApi
+      $ct.enableFetchApi = config.enableFetchApi
     }
 
     const currLocation = location.href
