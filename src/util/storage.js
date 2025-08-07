@@ -2,7 +2,8 @@ import {
   GCOOKIE_NAME,
   META_COOKIE,
   KCOOKIE_NAME,
-  LCOOKIE_NAME
+  LCOOKIE_NAME,
+  BLOCK_REQUEST_KEY
 } from './constants'
 import encryption from '../modules/security/Encryption'
 
@@ -237,10 +238,14 @@ export class StorageManager {
 
   static removeBackup (respNo, logger) {
     const backupMap = this.readFromLSorCookie(LCOOKIE_NAME)
+    console.log('Remove WZRK_L data pre', decodeURIComponent(localStorage.getItem('WZRK_L')))
+
     if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
+      console.log('Removed Backup for the event ', `del event: ${respNo} data-> ${backupMap[respNo].q}`)
       logger.debug(`del event: ${respNo} data-> ${backupMap[respNo].q}`)
       delete backupMap[respNo]
       this.saveToLSorCookie(LCOOKIE_NAME, backupMap)
+      console.log('Remove WZRK_L data post', decodeURIComponent(localStorage.getItem('WZRK_L')))
     }
   }
 }
@@ -254,7 +259,14 @@ export const $ct = {
   LRU_CACHE: null,
   globalProfileMap: undefined,
   globalEventsMap: undefined,
-  blockRequest: false,
+  // blockRequest: false,
+  // Initialize blockRequest from storage instead of hardcoded false
+  get blockRequest () {
+    return StorageManager.getMetaProp(BLOCK_REQUEST_KEY) || false
+  },
+  set blockRequest (value) {
+    StorageManager.setMetaProp(BLOCK_REQUEST_KEY, value)
+  },
   isOptInRequest: false,
   broadDomain: null,
   webPushEnabled: null,
