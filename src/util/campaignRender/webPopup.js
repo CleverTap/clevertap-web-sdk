@@ -218,10 +218,11 @@ export const checkWebPopupPreview = () => {
   const ctType = searchParams.get('ctActionMode')
   if (ctType) {
     const parentWindow = window.opener
+    const referrer = new URL(document.referrer)
     switch (ctType) {
       case WEB_POPUP_PREVIEW:
         if (parentWindow) {
-          parentWindow.postMessage('ready', WVE_URL_ORIGIN.CLEVERTAP)
+          parentWindow.postMessage('ready', referrer.origin)
           const eventHandler = (event) => handleWebPopupPreviewPostMessageEvent(event)
           window.addEventListener('message', eventHandler, false)
         }
