@@ -36,7 +36,7 @@ class VariableStore {
   registerVariable (varInstance) {
     const { name } = varInstance
     this.#variables[name] = varInstance
-    console.log('registerVariable', this.#variables)
+    this.#logger.debug('registerVariable', this.#variables)
   }
 
   /**
@@ -143,7 +143,7 @@ class VariableStore {
   }
 
   mergeVariables (vars) {
-    console.log('msg vars is ', vars)
+    this.#logger.debug('msg vars is ', vars)
     this.#hasVarsRequestCompleted = true
 
     StorageManager.saveToLSorCookie(VARIABLES, vars)
