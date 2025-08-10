@@ -7415,6 +7415,25 @@
       };
       this.saveToLSorCookie(LCOOKIE_NAME, backupArr);
       logger.debug("stored in ".concat(LCOOKIE_NAME, " reqNo : ").concat(reqNo, " -> ").concat(data));
+    } // Add new method for OUL tracking
+
+
+    static markBackupAsOUL(reqNo) {
+      // Store OUL request numbers in a separate meta property
+      const oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
+
+      if (!oulRequests.includes(reqNo)) {
+        oulRequests.push(reqNo);
+        this.setMetaProp('OUL_REQUESTS', oulRequests);
+      }
+
+      console.log('Backup marked as OUL ', decodeURIComponent(localStorage.getItem(META_COOKIE)));
+    }
+
+    static isBackupOUL(reqNo) {
+      const oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
+      console.log('Is Backup marked OUL ', decodeURIComponent(localStorage.getItem(META_COOKIE)));
+      return oulRequests.includes(reqNo);
     }
 
     static removeBackup(respNo, logger) {
@@ -16122,11 +16141,24 @@
       RequestDispatcher.device = device;
       RequestDispatcher.account = account;
     }
+    /**
+    * Unified backup processing method
+    * @param {boolean} oulOnly - If true, process only OUL requests. If false, process all non-fired requests.
+    */
+
 
     processBackupEvents() {
+      let oulOnly = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
       const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
 
       if (typeof backupMap === 'undefined' || backupMap === null) {
+        return;
+      } // Skip regular processing if there are unprocessed OUL requests
+
+
+      if (!oulOnly && this.hasUnprocessedOULRequests()) {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Unprocessed OUL requests found, skipping regular backup processing');
+
         return;
       }
 
@@ -16136,12 +16168,17 @@
         if (backupMap.hasOwnProperty(idx)) {
           const backupEvent = backupMap[idx];
 
-          if (typeof backupEvent.fired === 'undefined') {
-            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Processing backup event : ' + backupEvent.q);
+          if (typeof backupEvent.fired !== 'undefined') {
+            continue;
+          }
+
+          const isOULRequest = StorageManager.isBackupOUL(parseInt(idx));
+          const shouldProcess = oulOnly ? isOULRequest : true;
+
+          if (shouldProcess) {
+            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event : ").concat(backupEvent.q));
 
             if (typeof backupEvent.q !== 'undefined') {
-              /* For extremely slow networks we often recreate the session from the SE hence appending
-              the session to the request */
               const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
 
               if (session === null || session === void 0 ? void 0 : session.s) {
@@ -16158,6 +16195,22 @@
 
       StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap);
       this.processingBackup = false;
+    } // Add helper method to check if there are pending OUL requests
+
+
+    hasUnprocessedOULRequests() {
+      const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
+      if (!backupMap) return false;
+
+      for (const idx in backupMap) {
+        const backupEvent = backupMap[idx];
+
+        if (backupEvent.fired === undefined && StorageManager.isBackupOUL(parseInt(idx))) {
+          return true;
+        }
+      }
+
+      return false;
     }
 
     addSystemDataToObject(dataObject, ignoreTrim) {
@@ -16245,7 +16298,12 @@
       $ct.globalCache.REQ_N = nextReqN;
       url = addToURL(url, 'rn', nextReqN);
       const data = url + '&i=' + now + '&sn=' + seqNo;
-      StorageManager.backupEvent(data, nextReqN, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]); // if offline is set to true, save the request in backup and return
+      StorageManager.backupEvent(data, nextReqN, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]); // Mark as OUL if it's an OUL request
+
+      if (sendOULFlag) {
+        StorageManager.markBackupAsOUL(nextReqN);
+      } // if offline is set to true, save the request in backup and return
+
 
       if ($ct.offline) return; // if there is no override
       // and an OUL request is not in progress
@@ -17889,10 +17947,14 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
-      }
+      } // Only process OUL backup events if BLOCK_OUL_REQUEST_KEY is set
+      // This ensures user identity is established before other events
+
 
       if (StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY)) {
-        _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
+        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Processing OUL backup events first to establish user identity');
+
+        _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents(true);
       }
 
       const currLocation = location.href;
@@ -17914,6 +17976,8 @@
       const backupInterval = setInterval(() => {
         if (_classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
           clearInterval(backupInterval);
+
+          _classPrivateFieldLooseBase(this, _logger)[_logger].debug('CleverTap ID established, processing any remaining backup events');
 
           _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
         }

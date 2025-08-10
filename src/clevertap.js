@@ -716,8 +716,11 @@ export default class CleverTap {
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
     }
+    // Only process OUL backup events if BLOCK_OUL_REQUEST_KEY is set
+    // This ensures user identity is established before other events
     if (StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY)) {
-      this.#request.processBackupEvents()
+      this.#logger.debug('Processing OUL backup events first to establish user identity')
+      this.#request.processBackupEvents(true)
     }
     const currLocation = location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
@@ -737,6 +740,7 @@ export default class CleverTap {
     const backupInterval = setInterval(() => {
       if (this.#device.gcookie) {
         clearInterval(backupInterval)
+        this.#logger.debug('CleverTap ID established, processing any remaining backup events')
         this.#request.processBackupEvents()
       }
     }, 3000)

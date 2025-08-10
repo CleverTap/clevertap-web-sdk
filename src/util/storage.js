@@ -236,6 +236,23 @@ export class StorageManager {
     logger.debug(`stored in ${LCOOKIE_NAME} reqNo : ${reqNo} -> ${data}`)
   }
 
+  // Add new method for OUL tracking
+  static markBackupAsOUL (reqNo) {
+    // Store OUL request numbers in a separate meta property
+    const oulRequests = this.getMetaProp('OUL_REQUESTS') || []
+    if (!oulRequests.includes(reqNo)) {
+      oulRequests.push(reqNo)
+      this.setMetaProp('OUL_REQUESTS', oulRequests)
+    }
+    console.log('Backup marked as OUL ', decodeURIComponent(localStorage.getItem(META_COOKIE)))
+  }
+
+  static isBackupOUL (reqNo) {
+    const oulRequests = this.getMetaProp('OUL_REQUESTS') || []
+    console.log('Is Backup marked OUL ', decodeURIComponent(localStorage.getItem(META_COOKIE)))
+    return oulRequests.includes(reqNo)
+  }
+
   static removeBackup (respNo, logger) {
     const backupMap = this.readFromLSorCookie(LCOOKIE_NAME)
     if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {

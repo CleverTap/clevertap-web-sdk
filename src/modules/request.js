@@ -31,21 +31,39 @@ export default class RequestManager {
     RequestDispatcher.account = account
   }
 
-  processBackupEvents () {
+  /**
+ * Unified backup processing method
+ * @param {boolean} oulOnly - If true, process only OUL requests. If false, process all non-fired requests.
+ */
+  processBackupEvents (oulOnly = false) {
     const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
     if (typeof backupMap === 'undefined' || backupMap === null) {
       return
     }
+
+    // Skip regular processing if there are unprocessed OUL requests
+    if (!oulOnly && this.hasUnprocessedOULRequests()) {
+      this.#logger.debug('Unprocessed OUL requests found, skipping regular backup processing')
+      return
+    }
+
     this.processingBackup = true
+
     for (const idx in backupMap) {
       if (backupMap.hasOwnProperty(idx)) {
         const backupEvent = backupMap[idx]
-        if (typeof backupEvent.fired === 'undefined') {
-          this.#logger.debug('Processing backup event : ' + backupEvent.q)
-          if (typeof backupEvent.q !== 'undefined') {
-            /* For extremely slow networks we often recreate the session from the SE hence appending
-            the session to the request */
 
+        if (typeof backupEvent.fired !== 'undefined') {
+          continue
+        }
+
+        const isOULRequest = StorageManager.isBackupOUL(parseInt(idx))
+        const shouldProcess = oulOnly ? isOULRequest : true
+
+        if (shouldProcess) {
+          this.#logger.debug(`Processing ${isOULRequest ? 'OUL' : 'regular'} backup event : ${backupEvent.q}`)
+
+          if (typeof backupEvent.q !== 'undefined') {
             const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + this.#account.id))
             if (session?.s) {
               backupEvent.q = backupEvent.q + '&s=' + session.s
@@ -58,6 +76,20 @@ export default class RequestManager {
     }
     StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap)
     this.processingBackup = false
+  }
+
+  // Add helper method to check if there are pending OUL requests
+  hasUnprocessedOULRequests () {
+    const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
+    if (!backupMap) return false
+
+    for (const idx in backupMap) {
+      const backupEvent = backupMap[idx]
+      if (backupEvent.fired === undefined && StorageManager.isBackupOUL(parseInt(idx))) {
+        return true
+      }
+    }
+    return false
   }
 
   addSystemDataToObject (dataObject, ignoreTrim) {
@@ -135,6 +167,11 @@ export default class RequestManager {
     url = addToURL(url, 'rn', nextReqN)
     const data = url + '&i=' + now + '&sn=' + seqNo
     StorageManager.backupEvent(data, nextReqN, this.#logger)
+
+    // Mark as OUL if it's an OUL request
+    if (sendOULFlag) {
+      StorageManager.markBackupAsOUL(nextReqN)
+    }
 
     // if offline is set to true, save the request in backup and return
     if ($ct.offline) return
