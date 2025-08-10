@@ -2,7 +2,8 @@ import {
   GCOOKIE_NAME,
   META_COOKIE,
   KCOOKIE_NAME,
-  LCOOKIE_NAME
+  LCOOKIE_NAME,
+  BLOCK_OUL_REQUEST_KEY
 } from './constants'
 import encryption from '../modules/security/Encryption'
 
@@ -235,6 +236,23 @@ export class StorageManager {
     logger.debug(`stored in ${LCOOKIE_NAME} reqNo : ${reqNo} -> ${data}`)
   }
 
+  // Add new method for OUL tracking
+  static markBackupAsOUL (reqNo) {
+    // Store OUL request numbers in a separate meta property
+    const oulRequests = this.getMetaProp('OUL_REQUESTS') || []
+    if (!oulRequests.includes(reqNo)) {
+      oulRequests.push(reqNo)
+      this.setMetaProp('OUL_REQUESTS', oulRequests)
+    }
+    console.log('Backup marked as OUL ', decodeURIComponent(localStorage.getItem(META_COOKIE)))
+  }
+
+  static isBackupOUL (reqNo) {
+    const oulRequests = this.getMetaProp('OUL_REQUESTS') || []
+    console.log('Is Backup marked OUL ', decodeURIComponent(localStorage.getItem(META_COOKIE)))
+    return oulRequests.includes(reqNo)
+  }
+
   static removeBackup (respNo, logger) {
     const backupMap = this.readFromLSorCookie(LCOOKIE_NAME)
     if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
@@ -254,7 +272,13 @@ export const $ct = {
   LRU_CACHE: null,
   globalProfileMap: undefined,
   globalEventsMap: undefined,
-  blockRequest: false,
+  // Initialize blockRequest from storage
+  get blockRequest () {
+    return StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY) || false
+  },
+  set blockRequest (value) {
+    StorageManager.setMetaProp(BLOCK_OUL_REQUEST_KEY, value)
+  },
   isOptInRequest: false,
   broadDomain: null,
   webPushEnabled: null,
