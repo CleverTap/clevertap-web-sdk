@@ -97,6 +97,12 @@ export default class CleverTap {
   }
 
   constructor (clevertap = {}) {
+    /* --------------------------------------------------------------
+     * Sub-domain isolation: honour flag passed via the global
+     * `clevertap` bootstrap object (CDN / inline snippet scenario)
+     * *before* any DeviceManager or StorageManager logic runs.
+     * ------------------------------------------------------------ */
+    $ct.isolateSubdomain = clevertap.config?.isolateSubdomain === true
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.raiseNotificationClicked = () => { }
@@ -677,13 +683,17 @@ export default class CleverTap {
     }
   }
 
-  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null }) {
+  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false }) {
     if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
     }
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
+    }
+
+    if (config?.isolateSubdomain) {
+      $ct.isolateSubdomain = config.isolateSubdomain
     }
 
     if (accountId) {
