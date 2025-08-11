@@ -141,6 +141,22 @@ export class StorageManager {
   }
 
   static createBroadCookie (name, value, seconds, domain) {
+    /* -------------------------------------------------------------
+     * Sub-domain isolation: when the global flag is set, skip the
+     * broad-domain logic and write a cookie scoped to the current
+     * host only.  Also remove any legacy broad-domain copy so that
+     * the host-level cookie has precedence.
+     * ----------------------------------------------------------- */
+    if ($ct.isolateSubdomain) {
+      // remove previously stored broad-domain cookie, if any
+      if ($ct.broadDomain) {
+        this.removeCookie(name, $ct.broadDomain)
+      }
+
+      // write a normal (host-scoped) cookie and exit
+      this.createCookie(name, value, seconds, domain)
+      return
+    }
     // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
     // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
     // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
@@ -275,7 +291,8 @@ export const $ct = {
   globalUnsubscribe: true,
   flutterVersion: null,
   variableStore: {},
-  pushConfig: null
+  pushConfig: null,
+  isolateSubdomain: false
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }

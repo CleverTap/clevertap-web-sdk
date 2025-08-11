@@ -7307,11 +7307,28 @@
     }
 
     static createBroadCookie(name, value, seconds, domain) {
-      // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
+      /* -------------------------------------------------------------
+       * Sub-domain isolation: when the global flag is set, skip the
+       * broad-domain logic and write a cookie scoped to the current
+       * host only.  Also remove any legacy broad-domain copy so that
+       * the host-level cookie has precedence.
+       * ----------------------------------------------------------- */
+      if ($ct.isolateSubdomain) {
+        // remove previously stored broad-domain cookie, if any
+        if ($ct.broadDomain) {
+          this.removeCookie(name, $ct.broadDomain);
+        } // write a normal (host-scoped) cookie and exit
+
+
+        this.createCookie(name, value, seconds, domain);
+        return;
+      } // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
       // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
       // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
       // to find out which "broadest" domain the cookie was set on. Then delete the test cookie, and use that domain
       // for updating the actual cookie.
+
+
       if (domain) {
         let broadDomain = $ct.broadDomain;
 
@@ -7459,7 +7476,8 @@
     globalUnsubscribe: true,
     flutterVersion: null,
     variableStore: {},
-    pushConfig: null // domain: window.location.hostname, url -> getHostName()
+    pushConfig: null,
+    isolateSubdomain: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -13626,7 +13644,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.0.1';
+            const sdkVersion = '2.0.2';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -16171,7 +16189,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.0.1',
+        lib: 'web-sdk-v2.0.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17028,7 +17046,7 @@
     }
 
     constructor() {
-      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$account6;
+      var _clevertap$config, _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config2, _clevertap$config3, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$account6;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
@@ -17110,6 +17128,13 @@
       });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
+
+      /* --------------------------------------------------------------
+       * Sub-domain isolation: honour flag passed via the global
+       * `clevertap` bootstrap object (CDN / inline snippet scenario)
+       * *before* any DeviceManager or StorageManager logic runs.
+       * ------------------------------------------------------------ */
+      $ct.isolateSubdomain = ((_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.isolateSubdomain) === true;
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
 
@@ -17119,9 +17144,9 @@
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
       encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id; // Custom Guid will be set here
 
-      const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
+      const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId);
 
-      if (!result.isValid && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId)) {
+      if (!result.isValid && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config3 = clevertap.config) === null || _clevertap$config3 === void 0 ? void 0 : _clevertap$config3.customId)) {
         _classPrivateFieldLooseBase(this, _logger)[_logger].error(result.error);
       }
 
@@ -17797,7 +17822,8 @@
     init(accountId, region, targetDomain, token) {
       let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
         antiFlicker: {},
-        customId: null
+        customId: null,
+        isolateSubdomain: false
       };
 
       if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
@@ -17807,6 +17833,10 @@
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
         // already initailsed
         return;
+      }
+
+      if (config === null || config === void 0 ? void 0 : config.isolateSubdomain) {
+        $ct.isolateSubdomain = config.isolateSubdomain;
       }
 
       if (accountId) {
@@ -18020,7 +18050,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.0.1';
+      return 'web-sdk-v2.0.2';
     }
 
     defineVariable(name, defaultValue) {
