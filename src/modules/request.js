@@ -1,4 +1,4 @@
-import { SCOOKIE_PREFIX, CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY } from '../util/constants'
+import { SCOOKIE_PREFIX, CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY, OFFLINE_KEY } from '../util/constants'
 import { isObjectEmpty, isValueValid, removeUnsupportedChars } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
@@ -42,7 +42,9 @@ export default class RequestManager {
     }
 
     // Skip regular processing if there are unprocessed OUL requests
-    if (!oulOnly && this.hasUnprocessedOULRequests()) {
+    const isCurrentlyOffline = StorageManager.getMetaProp(OFFLINE_KEY) === true
+
+    if (!oulOnly && this.hasUnprocessedOULRequests() && isCurrentlyOffline) {
       this.#logger.debug('Unprocessed OUL requests found, skipping regular backup processing')
       return
     }
@@ -174,7 +176,11 @@ export default class RequestManager {
     }
 
     // if offline is set to true, save the request in backup and return
-    if ($ct.offline) return
+    const isOffline = StorageManager.getMetaProp(OFFLINE_KEY) === true
+    if (isOffline) {
+      return
+    }
+    // if ($ct.offline) return
 
     // if there is no override
     // and an OUL request is not in progress

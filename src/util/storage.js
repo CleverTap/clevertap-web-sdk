@@ -296,7 +296,8 @@ export const $ct = {
   privacyArray: [],
   // Initialize Offline from storage
   get offline () {
-    return StorageManager.getMetaProp(OFFLINE_KEY) || false
+    const value = StorageManager.getMetaProp(OFFLINE_KEY)
+    return value === true // Returns false if undefined/null, true only if explicitly set to true
   },
   set offline (value) {
     StorageManager.setMetaProp(OFFLINE_KEY, value)

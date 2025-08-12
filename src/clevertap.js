@@ -36,7 +36,9 @@ import {
   VARIABLES,
   GCOOKIE_NAME,
   QUALIFIED_CAMPAIGNS,
-  BLOCK_OUL_REQUEST_KEY
+  BLOCK_OUL_REQUEST_KEY,
+  META_COOKIE,
+  OFFLINE_KEY
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -128,6 +130,7 @@ export default class CleverTap {
     })
     // Only process OUL backup events if BLOCK_OUL_REQUEST_KEY is set
     // This ensures user identity is established before other events
+    console.log('META is ', decodeURIComponent(localStorage.getItem(META_COOKIE)))
     if (StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY)) {
       console.log('Processing OUL backup events first to establish user identity')
       this.#request.processBackupEvents(true)
@@ -988,10 +991,13 @@ export default class CleverTap {
     }
     // Check if the offline state is changing from true to false
     // If offline is being disabled (arg is false), process any cached events
-    if ($ct.offline !== arg && !arg) {
+    const currentOfflineState = StorageManager.getMetaProp(OFFLINE_KEY) === true
+
+    if (currentOfflineState !== arg && !arg) {
+      console.log('Going from offline to online, processing backup events')
       this.#request.processBackupEvents()
     }
-    $ct.offline = arg
+    StorageManager.setMetaProp(OFFLINE_KEY, arg)
   }
 
   getSDKVersion () {

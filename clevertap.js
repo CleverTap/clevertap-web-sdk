@@ -7486,7 +7486,8 @@
 
     // Initialize Offline from storage
     get offline() {
-      return StorageManager.getMetaProp(OFFLINE_KEY) || false;
+      const value = StorageManager.getMetaProp(OFFLINE_KEY);
+      return value === true; // Returns false if undefined/null, true only if explicitly set to true
     },
 
     set offline(value) {
@@ -16166,7 +16167,9 @@
       } // Skip regular processing if there are unprocessed OUL requests
 
 
-      if (!oulOnly && this.hasUnprocessedOULRequests()) {
+      const isCurrentlyOffline = StorageManager.getMetaProp(OFFLINE_KEY) === true;
+
+      if (!oulOnly && this.hasUnprocessedOULRequests() && isCurrentlyOffline) {
         _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Unprocessed OUL requests found, skipping regular backup processing');
 
         return;
@@ -16315,11 +16318,17 @@
       } // if offline is set to true, save the request in backup and return
 
 
-      if ($ct.offline) return; // if there is no override
+      const isOffline = StorageManager.getMetaProp(OFFLINE_KEY) === true;
+
+      if (isOffline) {
+        return;
+      } // if ($ct.offline) return
+      // if there is no override
       // and an OUL request is not in progress
       // then process the request as it is
       // else block the request
       // note - $ct.blockRequest should ideally be used for override
+
 
       if ((!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) && !window.isOULInProgress) {
         if (now === requestTime) {
@@ -17255,6 +17264,8 @@
       }); // Only process OUL backup events if BLOCK_OUL_REQUEST_KEY is set
       // This ensures user identity is established before other events
 
+      console.log('META is ', decodeURIComponent(localStorage.getItem(META_COOKIE)));
+
       if (StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY)) {
         console.log('Processing OUL backup events first to establish user identity');
 
@@ -18133,11 +18144,15 @@
       // If offline is being disabled (arg is false), process any cached events
 
 
-      if ($ct.offline !== arg && !arg) {
+      const currentOfflineState = StorageManager.getMetaProp(OFFLINE_KEY) === true;
+
+      if (currentOfflineState !== arg && !arg) {
+        console.log('Going from offline to online, processing backup events');
+
         _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
       }
 
-      $ct.offline = arg;
+      StorageManager.setMetaProp(OFFLINE_KEY, arg);
     }
 
     getSDKVersion() {
