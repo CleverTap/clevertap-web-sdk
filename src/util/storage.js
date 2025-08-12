@@ -2,7 +2,8 @@ import {
   GCOOKIE_NAME,
   META_COOKIE,
   KCOOKIE_NAME,
-  LCOOKIE_NAME
+  LCOOKIE_NAME,
+  ISOLATE_COOKIE
 } from './constants'
 import encryption from '../modules/security/Encryption'
 
@@ -147,13 +148,14 @@ export class StorageManager {
      * host only.  Also remove any legacy broad-domain copy so that
      * the host-level cookie has precedence.
      * ----------------------------------------------------------- */
-    if ($ct.isolateSubdomain) {
-      // remove previously stored broad-domain cookie, if any
+    const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE)
+    if (isolate) {
+      // remove any legacy broad-domain cookie
       if ($ct.broadDomain) {
         this.removeCookie(name, $ct.broadDomain)
       }
 
-      // write a normal (host-scoped) cookie and exit
+      // write host-scoped cookie and stop
       this.createCookie(name, value, seconds, domain)
       return
     }
@@ -291,8 +293,7 @@ export const $ct = {
   globalUnsubscribe: true,
   flutterVersion: null,
   variableStore: {},
-  pushConfig: null,
-  isolateSubdomain: false
+  pushConfig: null
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }

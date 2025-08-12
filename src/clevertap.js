@@ -35,7 +35,8 @@ import {
   APPLICATION_SERVER_KEY_RECEIVED,
   VARIABLES,
   GCOOKIE_NAME,
-  QUALIFIED_CAMPAIGNS
+  QUALIFIED_CAMPAIGNS,
+  ISOLATE_COOKIE
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -97,12 +98,6 @@ export default class CleverTap {
   }
 
   constructor (clevertap = {}) {
-    /* --------------------------------------------------------------
-     * Sub-domain isolation: honour flag passed via the global
-     * `clevertap` bootstrap object (CDN / inline snippet scenario)
-     * *before* any DeviceManager or StorageManager logic runs.
-     * ------------------------------------------------------------ */
-    $ct.isolateSubdomain = clevertap.config?.isolateSubdomain === true
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
     this.raiseNotificationClicked = () => { }
@@ -687,13 +682,14 @@ export default class CleverTap {
     if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
     }
+
+    if (config?.isolateSubdomain) {
+      StorageManager.saveToLSorCookie(ISOLATE_COOKIE, true)
+    }
+
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
-    }
-
-    if (config?.isolateSubdomain) {
-      $ct.isolateSubdomain = config.isolateSubdomain
     }
 
     if (accountId) {

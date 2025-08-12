@@ -219,7 +219,9 @@
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
-  const CUSTOM_CT_ID_PREFIX = '_w_';
+  const CUSTOM_CT_ID_PREFIX = '_w_'; // Flag key for optional sub-domain profile isolation
+
+  const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -7313,11 +7315,13 @@
        * host only.  Also remove any legacy broad-domain copy so that
        * the host-level cookie has precedence.
        * ----------------------------------------------------------- */
-      if ($ct.isolateSubdomain) {
-        // remove previously stored broad-domain cookie, if any
+      const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE);
+
+      if (isolate) {
+        // remove any legacy broad-domain cookie
         if ($ct.broadDomain) {
           this.removeCookie(name, $ct.broadDomain);
-        } // write a normal (host-scoped) cookie and exit
+        } // write host-scoped cookie and stop
 
 
         this.createCookie(name, value, seconds, domain);
@@ -7476,8 +7480,7 @@
     globalUnsubscribe: true,
     flutterVersion: null,
     variableStore: {},
-    pushConfig: null,
-    isolateSubdomain: false // domain: window.location.hostname, url -> getHostName()
+    pushConfig: null // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -17046,7 +17049,7 @@
     }
 
     constructor() {
-      var _clevertap$config, _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config2, _clevertap$config3, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$account6;
+      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$account6;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
@@ -17128,13 +17131,6 @@
       });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
-
-      /* --------------------------------------------------------------
-       * Sub-domain isolation: honour flag passed via the global
-       * `clevertap` bootstrap object (CDN / inline snippet scenario)
-       * *before* any DeviceManager or StorageManager logic runs.
-       * ------------------------------------------------------------ */
-      $ct.isolateSubdomain = ((_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.isolateSubdomain) === true;
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
 
@@ -17144,9 +17140,9 @@
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
       encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id; // Custom Guid will be set here
 
-      const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId);
+      const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
 
-      if (!result.isValid && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config3 = clevertap.config) === null || _clevertap$config3 === void 0 ? void 0 : _clevertap$config3.customId)) {
+      if (!result.isValid && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId)) {
         _classPrivateFieldLooseBase(this, _logger)[_logger].error(result.error);
       }
 
@@ -17830,13 +17826,13 @@
         addAntiFlicker(config.antiFlicker);
       }
 
+      if (config === null || config === void 0 ? void 0 : config.isolateSubdomain) {
+        StorageManager.saveToLSorCookie(ISOLATE_COOKIE, true);
+      }
+
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
         // already initailsed
         return;
-      }
-
-      if (config === null || config === void 0 ? void 0 : config.isolateSubdomain) {
-        $ct.isolateSubdomain = config.isolateSubdomain;
       }
 
       if (accountId) {
