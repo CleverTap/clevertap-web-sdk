@@ -71,6 +71,7 @@ export const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview'
 export const QUALIFIED_CAMPAIGNS = 'WZRK_QC'
 export const CUSTOM_CT_ID_PREFIX = '_w_'
 export const BLOCK_OUL_REQUEST_KEY = 'blockOulReq'
+export const OFFLINE_KEY = 'offline'
 
 export const WEB_NATIVE_TEMPLATES = {
   KV_PAIR: 1,

@@ -3,7 +3,8 @@ import {
   META_COOKIE,
   KCOOKIE_NAME,
   LCOOKIE_NAME,
-  BLOCK_OUL_REQUEST_KEY
+  BLOCK_OUL_REQUEST_KEY,
+  OFFLINE_KEY
 } from './constants'
 import encryption from '../modules/security/Encryption'
 
@@ -293,7 +294,13 @@ export const $ct = {
   inbox: null,
   isPrivacyArrPushed: false,
   privacyArray: [],
-  offline: false,
+  // Initialize Offline from storage
+  get offline () {
+    return StorageManager.getMetaProp(OFFLINE_KEY) || false
+  },
+  set offline (value) {
+    StorageManager.setMetaProp(OFFLINE_KEY, value)
+  },
   location: null,
   dismissSpamControl: true,
   globalUnsubscribe: true,

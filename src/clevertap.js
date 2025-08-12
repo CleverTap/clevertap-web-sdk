@@ -126,6 +126,12 @@ export default class CleverTap {
       session: this.#session,
       isPersonalisationActive: this._isPersonalisationActive
     })
+    // Only process OUL backup events if BLOCK_OUL_REQUEST_KEY is set
+    // This ensures user identity is established before other events
+    if (StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY)) {
+      console.log('Processing OUL backup events first to establish user identity')
+      this.#request.processBackupEvents(true)
+    }
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
       logger: this.#logger,
@@ -716,12 +722,7 @@ export default class CleverTap {
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
     }
-    // Only process OUL backup events if BLOCK_OUL_REQUEST_KEY is set
-    // This ensures user identity is established before other events
-    if (StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY)) {
-      this.#logger.debug('Processing OUL backup events first to establish user identity')
-      this.#request.processBackupEvents(true)
-    }
+
     const currLocation = location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
 

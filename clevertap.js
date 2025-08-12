@@ -221,6 +221,7 @@
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
   const BLOCK_OUL_REQUEST_KEY = 'blockOulReq';
+  const OFFLINE_KEY = 'offline';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -7482,7 +7483,16 @@
     inbox: null,
     isPrivacyArrPushed: false,
     privacyArray: [],
-    offline: false,
+
+    // Initialize Offline from storage
+    get offline() {
+      return StorageManager.getMetaProp(OFFLINE_KEY) || false;
+    },
+
+    set offline(value) {
+      StorageManager.setMetaProp(OFFLINE_KEY, value);
+    },
+
     location: null,
     dismissSpamControl: true,
     globalUnsubscribe: true,
@@ -17242,7 +17252,15 @@
         device: _classPrivateFieldLooseBase(this, _device)[_device],
         session: _classPrivateFieldLooseBase(this, _session)[_session],
         isPersonalisationActive: this._isPersonalisationActive
-      });
+      }); // Only process OUL backup events if BLOCK_OUL_REQUEST_KEY is set
+      // This ensures user identity is established before other events
+
+      if (StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY)) {
+        console.log('Processing OUL backup events first to establish user identity');
+
+        _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents(true);
+      }
+
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
@@ -17947,14 +17965,6 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
-      } // Only process OUL backup events if BLOCK_OUL_REQUEST_KEY is set
-      // This ensures user identity is established before other events
-
-
-      if (StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY)) {
-        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Processing OUL backup events first to establish user identity');
-
-        _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents(true);
       }
 
       const currLocation = location.href;
