@@ -818,9 +818,14 @@ export const commonCampaignUtils = {
           exitintentObj = targetingMsgJson
 
           /* Show it only once per callback */
-          window.document.body.addEventListener('mouseleave', (event) => {
-            this.showExitIntent(event, targetingMsgJson, null, exitintentObj)
-          }, { once: true })
+          const handleMouseLeave = (event) => {
+            const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj)
+            if (wasRendered) {
+              window.document.body.removeEventListener('mouseleave', handleMouseLeave)
+            }
+          }
+
+          window.document.body.addEventListener('mouseleave', handleMouseLeave)
         }
         const delay =
           displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed
@@ -992,7 +997,7 @@ export const commonCampaignUtils = {
       (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER ||
         layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
       this.createTemplate(targetingMsgJson, true)
-      return
+      return true
     }
     // Skips if frequency limits are exceeded
     if (this.doCampHouseKeeping(targetingMsgJson) === false) {
@@ -1196,6 +1201,7 @@ export const commonCampaignUtils = {
         legacy
       )
     }
+    return true
   },
 
   // Processes native display campaigns (e.g., banners, carousels)
@@ -1287,9 +1293,14 @@ export const commonCampaignUtils = {
         exitintentObj = targetNotif
 
         /* Show it only once per callback */
-        window.document.body.addEventListener('mouseleave', (event) => {
-          this.showExitIntent(event, targetNotif, null, exitintentObj)
-        }, { once: true })
+        const handleMouseLeave = (event) => {
+          const wasRendered = this.showExitIntent(event, targetNotif, null, exitintentObj)
+          if (wasRendered) {
+            window.document.body.removeEventListener('mouseleave', handleMouseLeave)
+          }
+        }
+
+        window.document.body.addEventListener('mouseleave', handleMouseLeave)
       } else if (
         targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY
       ) {
