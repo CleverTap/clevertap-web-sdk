@@ -220,8 +220,7 @@
   const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
-  const BLOCK_OUL_REQUEST_KEY = 'blockOulReq';
-  const OFFLINE_KEY = 'offline';
+  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -7460,11 +7459,12 @@
 
     // Initialize blockRequest from storage
     get blockRequest() {
-      return StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY) || false;
+      const value = StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE);
+      return value === true;
     },
 
     set blockRequest(value) {
-      StorageManager.setMetaProp(BLOCK_OUL_REQUEST_KEY, value);
+      StorageManager.saveToLSorCookie(BLOCK_REQUEST_COOKIE, value);
     },
 
     isOptInRequest: false,
@@ -7483,17 +7483,7 @@
     inbox: null,
     isPrivacyArrPushed: false,
     privacyArray: [],
-
-    // Initialize Offline from storage
-    get offline() {
-      const value = StorageManager.getMetaProp(OFFLINE_KEY);
-      return value === true; // Returns false if undefined/null, true only if explicitly set to true
-    },
-
-    set offline(value) {
-      StorageManager.setMetaProp(OFFLINE_KEY, value);
-    },
-
+    offline: false,
     location: null,
     dismissSpamControl: true,
     globalUnsubscribe: true,
@@ -16167,9 +16157,7 @@
       } // Skip regular processing if there are unprocessed OUL requests
 
 
-      const isCurrentlyOffline = StorageManager.getMetaProp(OFFLINE_KEY) === true;
-
-      if (!oulOnly && this.hasUnprocessedOULRequests() && isCurrentlyOffline) {
+      if (!oulOnly && this.hasUnprocessedOULRequests()) {
         _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Unprocessed OUL requests found, skipping regular backup processing');
 
         return;
@@ -16318,17 +16306,11 @@
       } // if offline is set to true, save the request in backup and return
 
 
-      const isOffline = StorageManager.getMetaProp(OFFLINE_KEY) === true;
-
-      if (isOffline) {
-        return;
-      } // if ($ct.offline) return
-      // if there is no override
+      if ($ct.offline) return; // if there is no override
       // and an OUL request is not in progress
       // then process the request as it is
       // else block the request
       // note - $ct.blockRequest should ideally be used for override
-
 
       if ((!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) && !window.isOULInProgress) {
         if (now === requestTime) {
@@ -17261,17 +17243,7 @@
         device: _classPrivateFieldLooseBase(this, _device)[_device],
         session: _classPrivateFieldLooseBase(this, _session)[_session],
         isPersonalisationActive: this._isPersonalisationActive
-      }); // Only process OUL backup events if BLOCK_OUL_REQUEST_KEY is set
-      // This ensures user identity is established before other events
-
-      console.log('META is ', decodeURIComponent(localStorage.getItem(META_COOKIE)));
-
-      if (StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY)) {
-        console.log('Processing OUL backup events first to establish user identity');
-
-        _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents(true);
-      }
-
+      });
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
@@ -17976,6 +17948,14 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
+      } // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
+      // This ensures user identity is established before other events
+
+
+      if (StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Processing OUL backup events first to establish user identity');
+
+        _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents(true);
       }
 
       const currLocation = location.href;
@@ -18144,15 +18124,11 @@
       // If offline is being disabled (arg is false), process any cached events
 
 
-      const currentOfflineState = StorageManager.getMetaProp(OFFLINE_KEY) === true;
-
-      if (currentOfflineState !== arg && !arg) {
-        console.log('Going from offline to online, processing backup events');
-
+      if ($ct.offline !== arg && !arg) {
         _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
       }
 
-      StorageManager.setMetaProp(OFFLINE_KEY, arg);
+      $ct.offline = arg;
     }
 
     getSDKVersion() {

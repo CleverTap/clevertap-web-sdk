@@ -3,8 +3,7 @@ import {
   META_COOKIE,
   KCOOKIE_NAME,
   LCOOKIE_NAME,
-  BLOCK_OUL_REQUEST_KEY,
-  OFFLINE_KEY
+  BLOCK_REQUEST_COOKIE
 } from './constants'
 import encryption from '../modules/security/Encryption'
 
@@ -275,10 +274,11 @@ export const $ct = {
   globalEventsMap: undefined,
   // Initialize blockRequest from storage
   get blockRequest () {
-    return StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY) || false
+    const value = StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE)
+    return value === true
   },
   set blockRequest (value) {
-    StorageManager.setMetaProp(BLOCK_OUL_REQUEST_KEY, value)
+    StorageManager.saveToLSorCookie(BLOCK_REQUEST_COOKIE, value)
   },
   isOptInRequest: false,
   broadDomain: null,
@@ -294,14 +294,7 @@ export const $ct = {
   inbox: null,
   isPrivacyArrPushed: false,
   privacyArray: [],
-  // Initialize Offline from storage
-  get offline () {
-    const value = StorageManager.getMetaProp(OFFLINE_KEY)
-    return value === true // Returns false if undefined/null, true only if explicitly set to true
-  },
-  set offline (value) {
-    StorageManager.setMetaProp(OFFLINE_KEY, value)
-  },
+  offline: false,
   location: null,
   dismissSpamControl: true,
   globalUnsubscribe: true,

@@ -36,9 +36,7 @@ import {
   VARIABLES,
   GCOOKIE_NAME,
   QUALIFIED_CAMPAIGNS,
-  BLOCK_OUL_REQUEST_KEY,
-  META_COOKIE,
-  OFFLINE_KEY
+  BLOCK_REQUEST_COOKIE
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -128,13 +126,6 @@ export default class CleverTap {
       session: this.#session,
       isPersonalisationActive: this._isPersonalisationActive
     })
-    // Only process OUL backup events if BLOCK_OUL_REQUEST_KEY is set
-    // This ensures user identity is established before other events
-    console.log('META is ', decodeURIComponent(localStorage.getItem(META_COOKIE)))
-    if (StorageManager.getMetaProp(BLOCK_OUL_REQUEST_KEY)) {
-      console.log('Processing OUL backup events first to establish user identity')
-      this.#request.processBackupEvents(true)
-    }
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
       logger: this.#logger,
@@ -725,7 +716,12 @@ export default class CleverTap {
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
     }
-
+    // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
+    // This ensures user identity is established before other events
+    if (StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
+      this.#logger.debug('Processing OUL backup events first to establish user identity')
+      this.#request.processBackupEvents(true)
+    }
     const currLocation = location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
 
@@ -991,13 +987,10 @@ export default class CleverTap {
     }
     // Check if the offline state is changing from true to false
     // If offline is being disabled (arg is false), process any cached events
-    const currentOfflineState = StorageManager.getMetaProp(OFFLINE_KEY) === true
-
-    if (currentOfflineState !== arg && !arg) {
-      console.log('Going from offline to online, processing backup events')
+    if ($ct.offline !== arg && !arg) {
       this.#request.processBackupEvents()
     }
-    StorageManager.setMetaProp(OFFLINE_KEY, arg)
+    $ct.offline = arg
   }
 
   getSDKVersion () {
