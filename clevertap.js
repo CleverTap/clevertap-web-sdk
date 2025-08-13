@@ -15742,6 +15742,8 @@
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
+          /* Show it only once per callback */
+
           window.document.body.addEventListener('mouseleave', event => {
             this.showExitIntent(event, targetNotif, null, exitintentObj);
           }, {

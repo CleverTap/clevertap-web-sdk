@@ -821,7 +821,6 @@ export const commonCampaignUtils = {
           window.document.body.addEventListener('mouseleave', (event) => {
             this.showExitIntent(event, targetingMsgJson, null, exitintentObj)
           }, { once: true })
-
         }
         const delay =
           displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed
@@ -1291,7 +1290,6 @@ export const commonCampaignUtils = {
         window.document.body.addEventListener('mouseleave', (event) => {
           this.showExitIntent(event, targetNotif, null, exitintentObj)
         }, { once: true })
-
       } else if (
         targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY
       ) {
