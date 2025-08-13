@@ -52,6 +52,7 @@ import { addAntiFlicker, handleActionMode } from './modules/visualBuilder/pageBu
 import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
+import { checkWebPopupPreview } from './util/campaignRender/webPopup'
 import { reconstructNestedObject, validateCustomCleverTapID } from './util/helpers'
 
 export default class CleverTap {
@@ -708,6 +709,7 @@ export default class CleverTap {
     }
     handleActionMode(this.#logger, this.#account.id)
     checkCustomHtmlNativeDisplayPreview(this.#logger)
+    checkWebPopupPreview()
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
 
     if (region) {
