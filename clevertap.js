@@ -15350,10 +15350,13 @@
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
+            /* Show it only once per callback */
 
-            window.document.body.onmouseleave = event => {
+            window.document.body.addEventListener('mouseleave', event => {
               this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
-            };
+            }, {
+              once: true
+            });
           }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
@@ -15739,10 +15742,13 @@
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
+          /* Show it only once per callback */
 
-          window.document.body.onmouseleave = event => {
+          window.document.body.addEventListener('mouseleave', event => {
             this.showExitIntent(event, targetNotif, null, exitintentObj);
-          };
+          }, {
+            once: true
+          });
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
           // Skips duplicate custom event campaigns
