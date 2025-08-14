@@ -72,20 +72,6 @@ export default class RequestManager {
     this.processingBackup = false
   }
 
-  // Add helper method to check if there are pending OUL requests
-  hasUnprocessedOULRequests () {
-    const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
-    if (!backupMap) return false
-
-    for (const idx in backupMap) {
-      const backupEvent = backupMap[idx]
-      if (backupEvent.fired === undefined && StorageManager.isBackupOUL(parseInt(idx))) {
-        return true
-      }
-    }
-    return false
-  }
-
   addSystemDataToObject (dataObject, ignoreTrim) {
     // ignore trim for chrome notifications; undefined everywhere else
     if (typeof ignoreTrim === 'undefined') {

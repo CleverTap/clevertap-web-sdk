@@ -7426,13 +7426,10 @@
         oulRequests.push(reqNo);
         this.setMetaProp('OUL_REQUESTS', oulRequests);
       }
-
-      console.log('Backup marked as OUL ', decodeURIComponent(localStorage.getItem(META_COOKIE)));
     }
 
     static isBackupOUL(reqNo) {
       const oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
-      console.log('Is Backup marked OUL ', decodeURIComponent(localStorage.getItem(META_COOKIE)));
       return oulRequests.includes(reqNo);
     }
 
@@ -16157,7 +16154,6 @@
         return;
       }
 
-      console.log('processBackupEvents called with oulOnly:', oulOnly);
       this.processingBackup = true;
 
       for (const idx in backupMap) {
@@ -16173,8 +16169,6 @@
 
           if (shouldProcess) {
             _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event : ").concat(backupEvent.q));
-
-            console.log("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event: ").concat(idx));
 
             if (typeof backupEvent.q !== 'undefined') {
               const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
@@ -16193,23 +16187,6 @@
 
       StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap);
       this.processingBackup = false;
-      console.log("processBackupEvents completed - processed ".concat(oulOnly ? 'OUL only' : 'all events'));
-    } // Add helper method to check if there are pending OUL requests
-
-
-    hasUnprocessedOULRequests() {
-      const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
-      if (!backupMap) return false;
-
-      for (const idx in backupMap) {
-        const backupEvent = backupMap[idx];
-
-        if (backupEvent.fired === undefined && StorageManager.isBackupOUL(parseInt(idx))) {
-          return true;
-        }
-      }
-
-      return false;
     }
 
     addSystemDataToObject(dataObject, ignoreTrim) {
@@ -16304,7 +16281,6 @@
       } // if offline is set to true, save the request in backup and return
 
 
-      console.log('Enable Backup Flag Request ', $ct.delayEvents);
       if ($ct.offline || $ct.delayEvents) return; // if there is no override
       // and an OUL request is not in progress
       // then process the request as it is
@@ -17951,8 +17927,6 @@
       // This ensures user identity is established before other events
 
 
-      console.log('Enable Backup Flag INIT ', $ct.delayEvents);
-
       if (StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
         _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Processing OUL backup events first to establish user identity');
 
@@ -17978,8 +17952,6 @@
       const backupInterval = setInterval(() => {
         if (_classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
           clearInterval(backupInterval);
-
-          _classPrivateFieldLooseBase(this, _logger)[_logger].debug('CleverTap ID established, processing any remaining backup events');
 
           _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents();
         }
@@ -18134,7 +18106,8 @@
 
     delayEvents(arg) {
       if (typeof arg !== 'boolean') {
-        console.error('setOffline should be called with a value of type boolean');
+        console.error('delayEvents should be called with a value of type boolean');
+        return;
       }
 
       $ct.delayEvents = arg;
