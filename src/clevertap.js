@@ -35,7 +35,8 @@ import {
   APPLICATION_SERVER_KEY_RECEIVED,
   VARIABLES,
   GCOOKIE_NAME,
-  QUALIFIED_CAMPAIGNS
+  QUALIFIED_CAMPAIGNS,
+  BLOCK_REQUEST_COOKIE
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -705,7 +706,6 @@ export default class CleverTap {
     checkCustomHtmlNativeDisplayPreview(this.#logger)
     checkWebPopupPreview()
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
-
     if (region) {
       this.#account.region = region
     }
@@ -718,7 +718,12 @@ export default class CleverTap {
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
     }
-
+    // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
+    // This ensures user identity is established before other events
+    if (StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
+      this.#logger.debug('Processing OUL backup events first to establish user identity')
+      this.#request.processBackupEvents(true)
+    }
     const currLocation = location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
 
@@ -987,6 +992,14 @@ export default class CleverTap {
       this.#request.processBackupEvents()
     }
     $ct.offline = arg
+  }
+
+  delayEvents (arg) {
+    if (typeof arg !== 'boolean') {
+      console.error('delayEvents should be called with a value of type boolean')
+      return
+    }
+    $ct.delayEvents = arg
   }
 
   getSDKVersion () {
