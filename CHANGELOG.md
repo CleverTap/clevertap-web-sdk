@@ -1,8 +1,8 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.0.2] 8th August 2025
-- Fixed the request handling flow for multi User Login.
+## [2.0.2] 7th August 2025
+- Introduced preview in 'Advanced Web-popup Builder' in 'Web Popup'.
 
 ## [2.0.1] 7th August 2025
 - Corrected click actions for web popup image only template
