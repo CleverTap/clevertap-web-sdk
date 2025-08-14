@@ -740,7 +740,6 @@ export default class CleverTap {
     const backupInterval = setInterval(() => {
       if (this.#device.gcookie) {
         clearInterval(backupInterval)
-        this.#logger.debug('CleverTap ID established, processing any remaining backup events')
         this.#request.processBackupEvents()
       }
     }, 3000)
@@ -991,6 +990,14 @@ export default class CleverTap {
       this.#request.processBackupEvents()
     }
     $ct.offline = arg
+  }
+
+  delayEvents (arg) {
+    if (typeof arg !== 'boolean') {
+      console.error('delayEvents should be called with a value of type boolean')
+      return
+    }
+    $ct.delayEvents = arg
   }
 
   getSDKVersion () {

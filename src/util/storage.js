@@ -244,12 +244,10 @@ export class StorageManager {
       oulRequests.push(reqNo)
       this.setMetaProp('OUL_REQUESTS', oulRequests)
     }
-    console.log('Backup marked as OUL ', decodeURIComponent(localStorage.getItem(META_COOKIE)))
   }
 
   static isBackupOUL (reqNo) {
     const oulRequests = this.getMetaProp('OUL_REQUESTS') || []
-    console.log('Is Backup marked OUL ', decodeURIComponent(localStorage.getItem(META_COOKIE)))
     return oulRequests.includes(reqNo)
   }
 
@@ -300,7 +298,8 @@ export const $ct = {
   globalUnsubscribe: true,
   flutterVersion: null,
   variableStore: {},
-  pushConfig: null
+  pushConfig: null,
+  delayEvents: false
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }

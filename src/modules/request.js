@@ -40,11 +40,6 @@ export default class RequestManager {
     if (typeof backupMap === 'undefined' || backupMap === null) {
       return
     }
-    // Skip regular processing if there are unprocessed OUL requests
-    if (!oulOnly && this.hasUnprocessedOULRequests()) {
-      this.#logger.debug('Unprocessed OUL requests found, skipping regular backup processing')
-      return
-    }
 
     this.processingBackup = true
 
@@ -173,7 +168,7 @@ export default class RequestManager {
     }
 
     // if offline is set to true, save the request in backup and return
-    if ($ct.offline) return
+    if ($ct.offline || $ct.delayEvents) return
 
     // if there is no override
     // and an OUL request is not in progress

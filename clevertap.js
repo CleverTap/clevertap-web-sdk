@@ -7489,7 +7489,8 @@
     globalUnsubscribe: true,
     flutterVersion: null,
     variableStore: {},
-    pushConfig: null // domain: window.location.hostname, url -> getHostName()
+    pushConfig: null,
+    delayEvents: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -16154,15 +16155,9 @@
 
       if (typeof backupMap === 'undefined' || backupMap === null) {
         return;
-      } // Skip regular processing if there are unprocessed OUL requests
-
-
-      if (!oulOnly && this.hasUnprocessedOULRequests()) {
-        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Unprocessed OUL requests found, skipping regular backup processing');
-
-        return;
       }
 
+      console.log('processBackupEvents called with oulOnly:', oulOnly);
       this.processingBackup = true;
 
       for (const idx in backupMap) {
@@ -16178,6 +16173,8 @@
 
           if (shouldProcess) {
             _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event : ").concat(backupEvent.q));
+
+            console.log("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event: ").concat(idx));
 
             if (typeof backupEvent.q !== 'undefined') {
               const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
@@ -16196,6 +16193,7 @@
 
       StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap);
       this.processingBackup = false;
+      console.log("processBackupEvents completed - processed ".concat(oulOnly ? 'OUL only' : 'all events'));
     } // Add helper method to check if there are pending OUL requests
 
 
@@ -16306,7 +16304,8 @@
       } // if offline is set to true, save the request in backup and return
 
 
-      if ($ct.offline) return; // if there is no override
+      console.log('Enable Backup Flag Request ', $ct.delayEvents);
+      if ($ct.offline || $ct.delayEvents) return; // if there is no override
       // and an OUL request is not in progress
       // then process the request as it is
       // else block the request
@@ -17952,6 +17951,8 @@
       // This ensures user identity is established before other events
 
 
+      console.log('Enable Backup Flag INIT ', $ct.delayEvents);
+
       if (StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
         _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Processing OUL backup events first to establish user identity');
 
@@ -18129,6 +18130,14 @@
       }
 
       $ct.offline = arg;
+    }
+
+    delayEvents(arg) {
+      if (typeof arg !== 'boolean') {
+        console.error('setOffline should be called with a value of type boolean');
+      }
+
+      $ct.delayEvents = arg;
     }
 
     getSDKVersion() {
