@@ -14738,6 +14738,24 @@
       obj[campaignId] = currentCount;
     },
 
+    /**
+     * Creates a reusable mouse leave handler for exit intent campaigns
+     * @param {Object} targetingMsgJson - Campaign configuration
+     * @param {Object} exitintentObj - Exit intent object
+     * @returns {Function} - Mouse leave event handler
+     */
+    createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj) {
+      const handleMouseLeave = event => {
+        const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
+
+        if (wasRendered) {
+          window.document.body.removeEventListener('mouseleave', handleMouseLeave);
+        }
+      };
+
+      return handleMouseLeave;
+    },
+
     /*
        * @param {Object} campTypeObj - Campaign type object to check/modify
        * @param {string} campaignId - Current campaign ID
@@ -15352,14 +15370,7 @@
             exitintentObj = targetingMsgJson;
             /* Show it only once per callback */
 
-            const handleMouseLeave = event => {
-              const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
-
-              if (wasRendered) {
-                window.document.body.removeEventListener('mouseleave', handleMouseLeave);
-              }
-            };
-
+            const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj);
             window.document.body.addEventListener('mouseleave', handleMouseLeave);
           }
 
@@ -15750,14 +15761,7 @@
           exitintentObj = targetNotif;
           /* Show it only once per callback */
 
-          const handleMouseLeave = event => {
-            const wasRendered = this.showExitIntent(event, targetNotif, null, exitintentObj);
-
-            if (wasRendered) {
-              window.document.body.removeEventListener('mouseleave', handleMouseLeave);
-            }
-          };
-
+          const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetNotif, exitintentObj);
           window.document.body.addEventListener('mouseleave', handleMouseLeave);
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
