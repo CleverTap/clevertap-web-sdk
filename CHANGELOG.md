@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] 19th August 2025
+- Multi-page support in web native display Visual Editor.
+
 ## [2.0.2] 7th August 2025
 - Introduced preview in 'Advanced Web-popup Builder' in 'Web Popup'.
 
