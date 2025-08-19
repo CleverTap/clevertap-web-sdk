@@ -12243,7 +12243,7 @@
           window.clevertap.renderNotificationClicked(payload);
         }
 
-        closeIframe(campaignId, divId, _session.sessionId);
+        closeIframe(campaignId, divId, _session === null || _session === void 0 ? void 0 : _session.sessionId);
         break;
 
       case ACTION_TYPES.OPEN_WEB_URL:
@@ -12256,7 +12256,7 @@
           window.open(detail.url.value.replacements, '_blank', 'noopener');
 
           if (detail.closeOnClick) {
-            closeIframe(campaignId, divId, _session.sessionId);
+            closeIframe(campaignId, divId, _session === null || _session === void 0 ? void 0 : _session.sessionId);
           }
         } else {
           window.location.href = detail.url.value.replacements;

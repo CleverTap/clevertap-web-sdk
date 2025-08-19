@@ -90,7 +90,7 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPrev
       if (!isPreview) {
         window.clevertap.renderNotificationClicked(payload)
       }
-      closeIframe(campaignId, divId, _session.sessionId)
+      closeIframe(campaignId, divId, _session?.sessionId)
       break
     case ACTION_TYPES.OPEN_WEB_URL:
       // handle opening of url
@@ -100,7 +100,7 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPrev
       if (detail.openInNewTab) {
         window.open(detail.url.value.replacements, '_blank', 'noopener')
         if (detail.closeOnClick) {
-          closeIframe(campaignId, divId, _session.sessionId)
+          closeIframe(campaignId, divId, _session?.sessionId)
         }
       } else {
         window.location.href = detail.url.value.replacements
