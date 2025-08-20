@@ -93,7 +93,7 @@ export const commonCampaignUtils = {
     const handleMouseLeave = (event) => {
       const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj)
       if (wasRendered) {
-        window.document.body.removeEventListener('mouseleave', handleMouseLeave)
+        window.document.removeEventListener('mouseleave', handleMouseLeave)
       }
     }
     return handleMouseLeave
@@ -407,7 +407,7 @@ export const commonCampaignUtils = {
   handleImageOnlyPopup (targetingMsgJson) {
     const divId = 'wzrkImageOnlyDiv'
     // Skips if frequency limits are exceeded
-    if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+    if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
       return
     }
     // Removes existing popup if spam control is active
@@ -463,7 +463,7 @@ export const commonCampaignUtils = {
     }
 
     // Skips if frequency limits are exceeded
-    if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+    if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
       return
     }
     if (displayObj.layout === WEB_POPUP_TEMPLATES.ADVANCED_BUILDER) {
@@ -836,7 +836,7 @@ export const commonCampaignUtils = {
           /* Show it only once per callback */
           const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj)
 
-          window.document.body.addEventListener('mouseleave', handleMouseLeave)
+          window.document.addEventListener('mouseleave', handleMouseLeave)
         }
         const delay =
           displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed
@@ -1011,7 +1011,7 @@ export const commonCampaignUtils = {
       return true
     }
     // Skips if frequency limits are exceeded
-    if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+    if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
       return
     }
 
@@ -1263,7 +1263,7 @@ export const commonCampaignUtils = {
       const msgArr = []
       for (let index = 0; index < msg.inbox_notifs.length; index++) {
         addCampaignToLocalStorage(msg.inbox_notifs[index], CampaignContext.region, CampaignContext.msg?.arp?.id)
-        if (this.doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
+        if (this.doCampHouseKeeping(msg.inbox_notifs[index], Logger.getInstance()) !== false) {
           msgArr.push(msg.inbox_notifs[index])
         }
       }
@@ -1306,7 +1306,7 @@ export const commonCampaignUtils = {
         /* Show it only once per callback */
         const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetNotif, exitintentObj)
 
-        window.document.body.addEventListener('mouseleave', handleMouseLeave)
+        window.document.addEventListener('mouseleave', handleMouseLeave)
       } else if (
         targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY
       ) {
