@@ -7460,7 +7460,8 @@
     globalUnsubscribe: true,
     flutterVersion: null,
     variableStore: {},
-    pushConfig: null // domain: window.location.hostname, url -> getHostName()
+    pushConfig: null,
+    intervalArray: [] // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -13789,7 +13790,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.0.2';
+            const sdkVersion = '2.1.0';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -13946,15 +13947,12 @@
       logger = _logger;
     }
 
-    const insertedElements = [];
-    const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
-    const url = window.location.href;
-
     if (isPreview) {
-      const currentUrl = new URL(url);
-      currentUrl.searchParams.delete('ctActionMode');
+      sessionStorage.setItem('visualEditorData', JSON.stringify(targetingMsgJson));
     }
 
+    const insertedElements = [];
+    const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let notificationViewed = false;
     const payload = {
       msgId: targetingMsgJson.wzrk_id,
@@ -14036,6 +14034,7 @@
           clearInterval(intervalId);
         }
       }, 500);
+      $ct.intervalArray.push(intervalId);
     };
 
     details.forEach(d => {
@@ -14095,6 +14094,7 @@
           clearInterval(intervalId);
         }
       }, 500);
+      $ct.intervalArray.push(intervalId);
     };
 
     if (insertedElements.length > 0) {
@@ -16253,7 +16253,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.0.2',
+        lib: 'web-sdk-v2.1.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18064,6 +18064,23 @@
       }, FIRST_PING_FREQ_IN_MILLIS);
 
       _classPrivateFieldLooseBase(this, _updateUnviewedBadgePosition)[_updateUnviewedBadgePosition]();
+
+      this._handleVisualEditorPreview();
+    }
+
+    _handleVisualEditorPreview() {
+      if ($ct.intervalArray.length) {
+        $ct.intervalArray.forEach(interval => {
+          clearInterval(interval);
+        });
+      }
+
+      const storedData = sessionStorage.getItem('visualEditorData');
+      const targetJson = storedData ? JSON.parse(storedData) : null;
+
+      if (targetJson) {
+        renderVisualBuilder(targetJson, true, _classPrivateFieldLooseBase(this, _logger)[_logger]);
+      }
     }
 
     _isPersonalisationActive() {
@@ -18103,7 +18120,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.0.2';
+      return 'web-sdk-v2.1.0';
     }
 
     defineVariable(name, defaultValue) {
