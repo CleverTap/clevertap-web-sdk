@@ -275,7 +275,8 @@ export const $ct = {
   globalUnsubscribe: true,
   flutterVersion: null,
   variableStore: {},
-  pushConfig: null
+  pushConfig: null,
+  intervalArray: []
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }

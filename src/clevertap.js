@@ -47,10 +47,11 @@ import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
-import { addAntiFlicker, handleActionMode } from './modules/visualBuilder/pageBuilder'
+import { addAntiFlicker, handleActionMode, renderVisualBuilder } from './modules/visualBuilder/pageBuilder'
 import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
+import { checkWebPopupPreview } from './util/campaignRender/webPopup'
 import { reconstructNestedObject, validateCustomCleverTapID } from './util/helpers'
 
 export default class CleverTap {
@@ -702,6 +703,7 @@ export default class CleverTap {
     }
     handleActionMode(this.#logger, this.#account.id)
     checkCustomHtmlNativeDisplayPreview(this.#logger)
+    checkWebPopupPreview()
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
 
     if (region) {
@@ -900,6 +902,20 @@ export default class CleverTap {
     }, FIRST_PING_FREQ_IN_MILLIS)
 
     this.#updateUnviewedBadgePosition()
+    this._handleVisualEditorPreview()
+  }
+
+  _handleVisualEditorPreview () {
+    if ($ct.intervalArray.length) {
+      $ct.intervalArray.forEach(interval => {
+        clearInterval(interval)
+      })
+    }
+    const storedData = sessionStorage.getItem('visualEditorData')
+    const targetJson = storedData ? JSON.parse(storedData) : null
+    if (targetJson) {
+      renderVisualBuilder(targetJson, true, this.#logger)
+    }
   }
 
   #pingRequest () {
