@@ -14746,7 +14746,7 @@
         const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
 
         if (wasRendered) {
-          window.document.body.removeEventListener('mouseleave', handleMouseLeave);
+          window.document.removeEventListener('mouseleave', handleMouseLeave);
         }
       };
 
@@ -15082,6 +15082,10 @@
 
       if (displayObj.layout === WEB_POPUP_TEMPLATES.INTERSTITIAL) {
         // Handling Web Exit Intent
+
+        /* Show it only once per callback */
+        const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson);
+        window.document.addEventListener('mouseleave', handleMouseLeave);
         return this.showExitIntent(undefined, targetingMsgJson, wtq);
       }
 
