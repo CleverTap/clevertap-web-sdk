@@ -9416,9 +9416,6 @@
         campaignObj[frequencyControlKey] = deliveryPreferenceUtils.updateTimestampTracker([campaignId], campaignObj[frequencyControlKey] || {});
       }
 
-      console.log({
-        campaignObj
-      });
       saveCampaignObject(campaignObj);
     } catch (error) {
       logger.error("Campaign delivery preference update failed: ".concat(error.message));
@@ -13790,7 +13787,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.1.0';
+            const sdkVersion = '2.1.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -15039,7 +15036,7 @@
     handleImageOnlyPopup(targetingMsgJson) {
       const divId = 'wzrkImageOnlyDiv'; // Skips if frequency limits are exceeded
 
-      if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+      if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
         return;
       } // Removes existing popup if spam control is active
 
@@ -15095,7 +15092,7 @@
       } // Skips if frequency limits are exceeded
 
 
-      if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+      if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
         return;
       }
 
@@ -15371,7 +15368,7 @@
             /* Show it only once per callback */
 
             const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj);
-            window.document.body.addEventListener('mouseleave', handleMouseLeave);
+            window.document.addEventListener('mouseleave', handleMouseLeave);
           }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
@@ -15550,7 +15547,7 @@
       } // Skips if frequency limits are exceeded
 
 
-      if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+      if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
         return;
       } // Removes existing exit intent elements if spam control is active
 
@@ -15731,7 +15728,7 @@
 
           addCampaignToLocalStorage(msg.inbox_notifs[index], CampaignContext.region, (_CampaignContext$msg = CampaignContext.msg) === null || _CampaignContext$msg === void 0 ? void 0 : (_CampaignContext$msg$ = _CampaignContext$msg.arp) === null || _CampaignContext$msg$ === void 0 ? void 0 : _CampaignContext$msg$.id);
 
-          if (this.doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
+          if (this.doCampHouseKeeping(msg.inbox_notifs[index], Logger.getInstance()) !== false) {
             msgArr.push(msg.inbox_notifs[index]);
           }
         }
@@ -15762,7 +15759,7 @@
           /* Show it only once per callback */
 
           const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetNotif, exitintentObj);
-          window.document.body.addEventListener('mouseleave', handleMouseLeave);
+          window.document.addEventListener('mouseleave', handleMouseLeave);
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
           // Skips duplicate custom event campaigns
@@ -16253,7 +16250,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.1.0',
+        lib: 'web-sdk-v2.1.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18120,7 +18117,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.1.0';
+      return 'web-sdk-v2.1.1';
     }
 
     defineVariable(name, defaultValue) {
