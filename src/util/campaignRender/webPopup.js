@@ -1,8 +1,9 @@
 import { invokeExternalJs } from './utilities'
 import { $ct } from '../storage'
 import { closeIframe } from '../clevertap'
-import { ACTION_TYPES } from '../constants'
+import { ACTION_TYPES, WEB_POPUP_PREVIEW } from '../constants'
 import { WVE_URL_ORIGIN } from '../../modules/visualBuilder/builder_constants'
+import { Logger } from '../../modules/logger'
 
 export const renderPopUpImageOnly = (targetingMsgJson, _session) => {
   const divId = 'wzrkImageOnlyDiv'
@@ -33,7 +34,7 @@ const IFRAME_STYLE = `
   border: 0 !important;
 `
 
-export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
+export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger, isPreview = false) => {
   const divId = 'wizAdvBuilder'
   const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
 
@@ -52,7 +53,9 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
     return
   }
 
-  setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger)
+  // Setup event handling
+  setupIframeEventListeners(iframe, targetingMsgJson, divId, _session, _logger, isPreview)
+
   // Append to DOM
   msgDiv.appendChild(iframe)
   document.body.appendChild(msgDiv)
@@ -64,7 +67,7 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger) => {
   })
 }
 
-const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
+const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPreview) => {
   const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
   const { detail } = e
 
@@ -84,16 +87,20 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
   switch (detail.type) {
     case ACTION_TYPES.CLOSE:
       // close Iframe
-      window.clevertap.renderNotificationClicked(payload)
-      closeIframe(campaignId, divId, _session.sessionId)
+      if (!isPreview) {
+        window.clevertap.renderNotificationClicked(payload)
+      }
+      closeIframe(campaignId, divId, _session?.sessionId)
       break
     case ACTION_TYPES.OPEN_WEB_URL:
       // handle opening of url
-      window.clevertap.renderNotificationClicked(payload)
+      if (!isPreview) {
+        window.clevertap.renderNotificationClicked(payload)
+      }
       if (detail.openInNewTab) {
         window.open(detail.url.value.replacements, '_blank', 'noopener')
         if (detail.closeOnClick) {
-          closeIframe(campaignId, divId, _session.sessionId)
+          closeIframe(campaignId, divId, _session?.sessionId)
         }
       } else {
         window.location.href = detail.url.value.replacements
@@ -101,12 +108,16 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger) => {
       break
     case ACTION_TYPES.SOFT_PROMPT:
       // Handle soft prompt
-      window.clevertap.renderNotificationClicked(payload)
+      if (!isPreview) {
+        window.clevertap.renderNotificationClicked(payload)
+      }
       window.clevertap.notifications.push({ skipDialog: true })
       break
     case ACTION_TYPES.RUN_JS:
       // Handle JS code
-      window.clevertap.renderNotificationClicked(payload)
+      if (!isPreview) {
+        window.clevertap.renderNotificationClicked(payload)
+      }
       invokeExternalJs(e.detail.js.name, targetingMsgJson)
       break
     default:
@@ -158,13 +169,13 @@ const createIframe = (targetingMsgJson, _logger) => {
 }
 
 // Utility: Setup iframe event listeners
-const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger) => {
+const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger, isPreview) => {
   iframe.onload = () => {
     try {
       // Try direct document access first
       iframe.contentDocument.addEventListener('CT_custom_event', (e) => {
         _logger.debug('Event received ', e)
-        handleIframeEvent(e, targetingMsgJson, divId, _session, _logger)
+        handleIframeEvent(e, targetingMsgJson, divId, _session, _logger, isPreview)
       })
     } catch (error) {
       // Fallback to postMessage
@@ -188,4 +199,46 @@ const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) =>
 
   window.removeEventListener('message', messageHandler) // Avoid duplicate bindings
   window.addEventListener('message', messageHandler)
+}
+
+function handleWebPopupPreviewPostMessageEvent (event) {
+  if (
+    !event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP) &&
+    !event.origin.endsWith(window.location.origin)
+  ) {
+    return
+  }
+  const logger = Logger.getInstance()
+  try {
+    const eventData = JSON.parse(event.data)
+    const inAppNotifs = eventData.inapp_notifs
+    const msgContent = inAppNotifs[0].msgContent
+    if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
+      renderAdvancedBuilder(inAppNotifs[0], null, Logger.getInstance(), true)
+    }
+  } catch (error) {
+    logger.error('Error parsing event data:', error)
+  }
+}
+
+export const checkWebPopupPreview = () => {
+  const logger = Logger.getInstance()
+  const searchParams = new URLSearchParams(window.location.search)
+  const ctType = searchParams.get('ctActionMode')
+  if (ctType) {
+    const parentWindow = window.opener
+    const referrer = new URL(document.referrer)
+    switch (ctType) {
+      case WEB_POPUP_PREVIEW:
+        if (parentWindow) {
+          parentWindow.postMessage('ready', referrer.origin)
+          const eventHandler = (event) => handleWebPopupPreviewPostMessageEvent(event)
+          window.addEventListener('message', eventHandler, false)
+        }
+        break
+      default:
+        logger.debug(`unknown query param ${ctType}`)
+        break
+    }
+  }
 }
