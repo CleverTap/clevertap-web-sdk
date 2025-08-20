@@ -83,6 +83,22 @@ export const commonCampaignUtils = {
     obj[campaignId] = currentCount
   },
 
+  /**
+   * Creates a reusable mouse leave handler for exit intent campaigns
+   * @param {Object} targetingMsgJson - Campaign configuration
+   * @param {Object} exitintentObj - Exit intent object
+   * @returns {Function} - Mouse leave event handler
+   */
+  createExitIntentMouseLeaveHandler (targetingMsgJson, exitintentObj) {
+    const handleMouseLeave = (event) => {
+      const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj)
+      if (wasRendered) {
+        window.document.body.removeEventListener('mouseleave', handleMouseLeave)
+      }
+    }
+    return handleMouseLeave
+  },
+
   /*
      * @param {Object} campTypeObj - Campaign type object to check/modify
      * @param {string} campaignId - Current campaign ID
@@ -816,9 +832,11 @@ export const commonCampaignUtils = {
         }
         if (displayObj.deliveryTrigger.isExitIntent) {
           exitintentObj = targetingMsgJson
-          window.document.body.onmouseleave = (event) => {
-            this.showExitIntent(event, targetingMsgJson, null, exitintentObj)
-          }
+
+          /* Show it only once per callback */
+          const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj)
+
+          window.document.body.addEventListener('mouseleave', handleMouseLeave)
         }
         const delay =
           displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed
@@ -990,7 +1008,7 @@ export const commonCampaignUtils = {
       (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER ||
         layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
       this.createTemplate(targetingMsgJson, true)
-      return
+      return true
     }
     // Skips if frequency limits are exceeded
     if (this.doCampHouseKeeping(targetingMsgJson) === false) {
@@ -1194,6 +1212,7 @@ export const commonCampaignUtils = {
         legacy
       )
     }
+    return true
   },
 
   // Processes native display campaigns (e.g., banners, carousels)
@@ -1283,9 +1302,11 @@ export const commonCampaignUtils = {
       ) {
         // if display['wtarget_type']==1 then exit intent
         exitintentObj = targetNotif
-        window.document.body.onmouseleave = (event) => {
-          this.showExitIntent(event, targetNotif, null, exitintentObj)
-        }
+
+        /* Show it only once per callback */
+        const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetNotif, exitintentObj)
+
+        window.document.body.addEventListener('mouseleave', handleMouseLeave)
       } else if (
         targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY
       ) {

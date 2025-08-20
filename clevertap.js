@@ -14738,6 +14738,24 @@
       obj[campaignId] = currentCount;
     },
 
+    /**
+     * Creates a reusable mouse leave handler for exit intent campaigns
+     * @param {Object} targetingMsgJson - Campaign configuration
+     * @param {Object} exitintentObj - Exit intent object
+     * @returns {Function} - Mouse leave event handler
+     */
+    createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj) {
+      const handleMouseLeave = event => {
+        const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
+
+        if (wasRendered) {
+          window.document.body.removeEventListener('mouseleave', handleMouseLeave);
+        }
+      };
+
+      return handleMouseLeave;
+    },
+
     /*
        * @param {Object} campTypeObj - Campaign type object to check/modify
        * @param {string} campaignId - Current campaign ID
@@ -15350,10 +15368,10 @@
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
+            /* Show it only once per callback */
 
-            window.document.body.onmouseleave = event => {
-              this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
-            };
+            const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj);
+            window.document.body.addEventListener('mouseleave', handleMouseLeave);
           }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
@@ -15528,7 +15546,7 @@
 
       if (targetingMsgJson.display.wtarget_type === 0 && (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER || layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
         this.createTemplate(targetingMsgJson, true);
-        return;
+        return true;
       } // Skips if frequency limits are exceeded
 
 
@@ -15653,6 +15671,8 @@
         const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
         this.setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
+
+      return true;
     },
 
     // Processes native display campaigns (e.g., banners, carousels)
@@ -15739,10 +15759,10 @@
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
+          /* Show it only once per callback */
 
-          window.document.body.onmouseleave = event => {
-            this.showExitIntent(event, targetNotif, null, exitintentObj);
-          };
+          const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetNotif, exitintentObj);
+          window.document.body.addEventListener('mouseleave', handleMouseLeave);
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
           // Skips duplicate custom event campaigns
