@@ -7488,11 +7488,8 @@
     flutterVersion: null,
     variableStore: {},
     pushConfig: null,
-<<<<<<< HEAD
-    delayEvents: false // domain: window.location.hostname, url -> getHostName()
-=======
+    delayEvents: false,
     intervalArray: [] // domain: window.location.hostname, url -> getHostName()
->>>>>>> origin/develop
     // gcookie: -> device
 
   };
@@ -13818,11 +13815,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-<<<<<<< HEAD
-            const sdkVersion = '2.0.3';
-=======
-            const sdkVersion = '2.1.1';
->>>>>>> origin/develop
+            const sdkVersion = '2.1.2';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -16301,11 +16294,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-<<<<<<< HEAD
-        lib: 'web-sdk-v2.0.3',
-=======
-        lib: 'web-sdk-v2.1.1',
->>>>>>> origin/develop
+        lib: 'web-sdk-v2.1.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18222,11 +18211,7 @@
     }
 
     getSDKVersion() {
-<<<<<<< HEAD
-      return 'web-sdk-v2.0.3';
-=======
-      return 'web-sdk-v2.1.1';
->>>>>>> origin/develop
+      return 'web-sdk-v2.1.2';
     }
 
     defineVariable(name, defaultValue) {

@@ -299,11 +299,8 @@ export const $ct = {
   flutterVersion: null,
   variableStore: {},
   pushConfig: null,
-<<<<<<< HEAD
-  delayEvents: false
-=======
+  delayEvents: false,
   intervalArray: []
->>>>>>> origin/develop
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }
