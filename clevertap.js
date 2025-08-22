@@ -7488,7 +7488,11 @@
     flutterVersion: null,
     variableStore: {},
     pushConfig: null,
+<<<<<<< HEAD
     delayEvents: false // domain: window.location.hostname, url -> getHostName()
+=======
+    intervalArray: [] // domain: window.location.hostname, url -> getHostName()
+>>>>>>> origin/develop
     // gcookie: -> device
 
   };
@@ -9443,9 +9447,6 @@
         campaignObj[frequencyControlKey] = deliveryPreferenceUtils.updateTimestampTracker([campaignId], campaignObj[frequencyControlKey] || {});
       }
 
-      console.log({
-        campaignObj
-      });
       saveCampaignObject(campaignObj);
     } catch (error) {
       logger.error("Campaign delivery preference update failed: ".concat(error.message));
@@ -12270,7 +12271,7 @@
           window.clevertap.renderNotificationClicked(payload);
         }
 
-        closeIframe(campaignId, divId, _session.sessionId);
+        closeIframe(campaignId, divId, _session === null || _session === void 0 ? void 0 : _session.sessionId);
         break;
 
       case ACTION_TYPES.OPEN_WEB_URL:
@@ -12283,7 +12284,7 @@
           window.open(detail.url.value.replacements, '_blank', 'noopener');
 
           if (detail.closeOnClick) {
-            closeIframe(campaignId, divId, _session.sessionId);
+            closeIframe(campaignId, divId, _session === null || _session === void 0 ? void 0 : _session.sessionId);
           }
         } else {
           window.location.href = detail.url.value.replacements;
@@ -13817,7 +13818,11 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
+<<<<<<< HEAD
             const sdkVersion = '2.0.3';
+=======
+            const sdkVersion = '2.1.1';
+>>>>>>> origin/develop
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -13974,15 +13979,12 @@
       logger = _logger;
     }
 
-    const insertedElements = [];
-    const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
-    const url = window.location.href;
-
     if (isPreview) {
-      const currentUrl = new URL(url);
-      currentUrl.searchParams.delete('ctActionMode');
+      sessionStorage.setItem('visualEditorData', JSON.stringify(targetingMsgJson));
     }
 
+    const insertedElements = [];
+    const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let notificationViewed = false;
     const payload = {
       msgId: targetingMsgJson.wzrk_id,
@@ -14064,6 +14066,7 @@
           clearInterval(intervalId);
         }
       }, 500);
+      $ct.intervalArray.push(intervalId);
     };
 
     details.forEach(d => {
@@ -14123,6 +14126,7 @@
           clearInterval(intervalId);
         }
       }, 500);
+      $ct.intervalArray.push(intervalId);
     };
 
     if (insertedElements.length > 0) {
@@ -14766,6 +14770,24 @@
       obj[campaignId] = currentCount;
     },
 
+    /**
+     * Creates a reusable mouse leave handler for exit intent campaigns
+     * @param {Object} targetingMsgJson - Campaign configuration
+     * @param {Object} exitintentObj - Exit intent object
+     * @returns {Function} - Mouse leave event handler
+     */
+    createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj) {
+      const handleMouseLeave = event => {
+        const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
+
+        if (wasRendered) {
+          window.document.removeEventListener('mouseleave', handleMouseLeave);
+        }
+      };
+
+      return handleMouseLeave;
+    },
+
     /*
        * @param {Object} campTypeObj - Campaign type object to check/modify
        * @param {string} campaignId - Current campaign ID
@@ -15049,7 +15071,7 @@
     handleImageOnlyPopup(targetingMsgJson) {
       const divId = 'wzrkImageOnlyDiv'; // Skips if frequency limits are exceeded
 
-      if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+      if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
         return;
       } // Removes existing popup if spam control is active
 
@@ -15105,7 +15127,7 @@
       } // Skips if frequency limits are exceeded
 
 
-      if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+      if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
         return;
       }
 
@@ -15378,10 +15400,10 @@
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
+            /* Show it only once per callback */
 
-            window.document.body.onmouseleave = event => {
-              this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
-            };
+            const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj);
+            window.document.addEventListener('mouseleave', handleMouseLeave);
           }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
@@ -15556,11 +15578,11 @@
 
       if (targetingMsgJson.display.wtarget_type === 0 && (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER || layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
         this.createTemplate(targetingMsgJson, true);
-        return;
+        return true;
       } // Skips if frequency limits are exceeded
 
 
-      if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+      if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
         return;
       } // Removes existing exit intent elements if spam control is active
 
@@ -15681,6 +15703,8 @@
         const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
         this.setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
+
+      return true;
     },
 
     // Processes native display campaigns (e.g., banners, carousels)
@@ -15739,7 +15763,7 @@
 
           addCampaignToLocalStorage(msg.inbox_notifs[index], CampaignContext.region, (_CampaignContext$msg = CampaignContext.msg) === null || _CampaignContext$msg === void 0 ? void 0 : (_CampaignContext$msg$ = _CampaignContext$msg.arp) === null || _CampaignContext$msg$ === void 0 ? void 0 : _CampaignContext$msg$.id);
 
-          if (this.doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
+          if (this.doCampHouseKeeping(msg.inbox_notifs[index], Logger.getInstance()) !== false) {
             msgArr.push(msg.inbox_notifs[index]);
           }
         }
@@ -15767,10 +15791,10 @@
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
+          /* Show it only once per callback */
 
-          window.document.body.onmouseleave = event => {
-            this.showExitIntent(event, targetNotif, null, exitintentObj);
-          };
+          const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetNotif, exitintentObj);
+          window.document.addEventListener('mouseleave', handleMouseLeave);
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
           // Skips duplicate custom event campaigns
@@ -16277,7 +16301,11 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
+<<<<<<< HEAD
         lib: 'web-sdk-v2.0.3',
+=======
+        lib: 'web-sdk-v2.1.1',
+>>>>>>> origin/develop
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18129,6 +18157,23 @@
       }, FIRST_PING_FREQ_IN_MILLIS);
 
       _classPrivateFieldLooseBase(this, _updateUnviewedBadgePosition)[_updateUnviewedBadgePosition]();
+
+      this._handleVisualEditorPreview();
+    }
+
+    _handleVisualEditorPreview() {
+      if ($ct.intervalArray.length) {
+        $ct.intervalArray.forEach(interval => {
+          clearInterval(interval);
+        });
+      }
+
+      const storedData = sessionStorage.getItem('visualEditorData');
+      const targetJson = storedData ? JSON.parse(storedData) : null;
+
+      if (targetJson) {
+        renderVisualBuilder(targetJson, true, _classPrivateFieldLooseBase(this, _logger)[_logger]);
+      }
     }
 
     _isPersonalisationActive() {
@@ -18177,7 +18222,11 @@
     }
 
     getSDKVersion() {
+<<<<<<< HEAD
       return 'web-sdk-v2.0.3';
+=======
+      return 'web-sdk-v2.1.1';
+>>>>>>> origin/develop
     }
 
     defineVariable(name, defaultValue) {
