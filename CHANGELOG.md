@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.1.2] 22nd August 2025
+- Fixed the request handling flow for multi User Login.
+
 ## [2.1.1] 20th August 2025
 - Exit Intent Fixes 
 
