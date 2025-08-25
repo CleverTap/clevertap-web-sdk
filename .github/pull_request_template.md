@@ -34,4 +34,4 @@ Just add a empty commit after all your changes are done in the PR with the comma
  git commit --allow-empty -m "[run-test] Testing Automation"
 ```
 
-This will trigger the automation suite
+This will trigger the [automation](https://github.com/singhkunal2050/ct-web-sdk-automation/actions) suite

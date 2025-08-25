@@ -3,6 +3,7 @@ import {
   META_COOKIE,
   KCOOKIE_NAME,
   LCOOKIE_NAME,
+  BLOCK_REQUEST_COOKIE,
   ISOLATE_COOKIE
 } from './constants'
 import encryption from '../modules/security/Encryption'
@@ -253,6 +254,21 @@ export class StorageManager {
     logger.debug(`stored in ${LCOOKIE_NAME} reqNo : ${reqNo} -> ${data}`)
   }
 
+  // Add new method for OUL tracking
+  static markBackupAsOUL (reqNo) {
+    // Store OUL request numbers in a separate meta property
+    const oulRequests = this.getMetaProp('OUL_REQUESTS') || []
+    if (!oulRequests.includes(reqNo)) {
+      oulRequests.push(reqNo)
+      this.setMetaProp('OUL_REQUESTS', oulRequests)
+    }
+  }
+
+  static isBackupOUL (reqNo) {
+    const oulRequests = this.getMetaProp('OUL_REQUESTS') || []
+    return oulRequests.includes(reqNo)
+  }
+
   static removeBackup (respNo, logger) {
     const backupMap = this.readFromLSorCookie(LCOOKIE_NAME)
     if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
@@ -272,7 +288,14 @@ export const $ct = {
   LRU_CACHE: null,
   globalProfileMap: undefined,
   globalEventsMap: undefined,
-  blockRequest: false,
+  // Initialize blockRequest from storage
+  get blockRequest () {
+    const value = StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE)
+    return value === true
+  },
+  set blockRequest (value) {
+    StorageManager.saveToLSorCookie(BLOCK_REQUEST_COOKIE, value)
+  },
   isOptInRequest: false,
   broadDomain: null,
   webPushEnabled: null,
@@ -293,7 +316,9 @@ export const $ct = {
   globalUnsubscribe: true,
   flutterVersion: null,
   variableStore: {},
-  pushConfig: null
+  pushConfig: null,
+  delayEvents: false,
+  intervalArray: []
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }
