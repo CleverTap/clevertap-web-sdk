@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] 26th August 2025
+- Added Isolate Sub-Domain flag in init fn.
+
 ## [2.1.2] 22nd August 2025
 - Fixed the request handling flow for multi User Login.
 
