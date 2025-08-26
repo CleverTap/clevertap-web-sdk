@@ -3,7 +3,8 @@ import {
   META_COOKIE,
   KCOOKIE_NAME,
   LCOOKIE_NAME,
-  BLOCK_REQUEST_COOKIE
+  BLOCK_REQUEST_COOKIE,
+  ISOLATE_COOKIE
 } from './constants'
 import encryption from '../modules/security/Encryption'
 
@@ -142,6 +143,23 @@ export class StorageManager {
   }
 
   static createBroadCookie (name, value, seconds, domain) {
+    /* -------------------------------------------------------------
+     * Sub-domain isolation: when the global flag is set, skip the
+     * broad-domain logic and write a cookie scoped to the current
+     * host only.  Also remove any legacy broad-domain copy so that
+     * the host-level cookie has precedence.
+     * ----------------------------------------------------------- */
+    const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE)
+    if (isolate) {
+      // remove any legacy broad-domain cookie
+      if ($ct.broadDomain) {
+        this.removeCookie(name, $ct.broadDomain)
+      }
+
+      // write host-scoped cookie and stop
+      this.createCookie(name, value, seconds, domain)
+      return
+    }
     // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
     // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
     // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
