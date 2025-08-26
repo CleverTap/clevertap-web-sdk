@@ -36,7 +36,8 @@ import {
   VARIABLES,
   GCOOKIE_NAME,
   QUALIFIED_CAMPAIGNS,
-  BLOCK_REQUEST_COOKIE
+  BLOCK_REQUEST_COOKIE,
+  ISOLATE_COOKIE
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -679,10 +680,15 @@ export default class CleverTap {
     }
   }
 
-  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null }) {
+  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false }) {
     if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
     }
+
+    if (config?.isolateSubdomain) {
+      StorageManager.saveToLSorCookie(ISOLATE_COOKIE, true)
+    }
+
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
