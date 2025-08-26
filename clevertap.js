@@ -221,7 +221,9 @@
   const WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
-  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK';
+  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'; // Flag key for optional sub-domain profile isolation
+
+  const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -7309,11 +7311,30 @@
     }
 
     static createBroadCookie(name, value, seconds, domain) {
-      // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
+      /* -------------------------------------------------------------
+       * Sub-domain isolation: when the global flag is set, skip the
+       * broad-domain logic and write a cookie scoped to the current
+       * host only.  Also remove any legacy broad-domain copy so that
+       * the host-level cookie has precedence.
+       * ----------------------------------------------------------- */
+      const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE);
+
+      if (isolate) {
+        // remove any legacy broad-domain cookie
+        if ($ct.broadDomain) {
+          this.removeCookie(name, $ct.broadDomain);
+        } // write host-scoped cookie and stop
+
+
+        this.createCookie(name, value, seconds, domain);
+        return;
+      } // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
       // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
       // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
       // to find out which "broadest" domain the cookie was set on. Then delete the test cookie, and use that domain
       // for updating the actual cookie.
+
+
       if (domain) {
         let broadDomain = $ct.broadDomain;
 
@@ -13815,7 +13836,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.1.2';
+            const sdkVersion = '2.2.0';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -16294,7 +16315,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.1.2',
+        lib: 'web-sdk-v2.2.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17953,11 +17974,16 @@
     init(accountId, region, targetDomain, token) {
       let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
         antiFlicker: {},
-        customId: null
+        customId: null,
+        isolateSubdomain: false
       };
 
       if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
         addAntiFlicker(config.antiFlicker);
+      }
+
+      if (config === null || config === void 0 ? void 0 : config.isolateSubdomain) {
+        StorageManager.saveToLSorCookie(ISOLATE_COOKIE, true);
       }
 
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
@@ -18211,7 +18237,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.1.2';
+      return 'web-sdk-v2.2.0';
     }
 
     defineVariable(name, defaultValue) {
