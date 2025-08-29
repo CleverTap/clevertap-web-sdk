@@ -348,7 +348,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
       })
     })
   }
-  applyReorder()
+  applyReorder(reorderingOptions)
 }
 
 function findSiblingSelector (input) {

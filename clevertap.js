@@ -13998,6 +13998,7 @@
     }
 
     const insertedElements = [];
+    const reorderingOptions = []; // Collect reordering operations to execute at the end
 
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let notificationViewed = false;
@@ -14020,7 +14021,13 @@
     const processElement = (element, selector) => {
       var _selector$reorderingO, _selector$isTrackingC;
 
-      if (selector === null || selector === void 0 ? void 0 : (_selector$reorderingO = selector.reorderingOptions) === null || _selector$reorderingO === void 0 ? void 0 : _selector$reorderingO.positionsChanged) ;
+      if (selector === null || selector === void 0 ? void 0 : (_selector$reorderingO = selector.reorderingOptions) === null || _selector$reorderingO === void 0 ? void 0 : _selector$reorderingO.positionsChanged) {
+        // Collect drag operation to execute later (after all elements are processed)
+        reorderingOptions.push({
+          element,
+          selector
+        });
+      }
 
       if (selector.elementCSS) {
         updateElementCSS(selector);
@@ -14192,7 +14199,7 @@
       });
     };
 
-    applyReorder();
+    applyReorder(reorderingOptions);
   };
 
   function findSiblingSelector(input) {
