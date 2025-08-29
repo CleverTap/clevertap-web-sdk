@@ -14108,6 +14108,7 @@
           if (element) {
             raiseViewed();
             processElement(element, s);
+            applyReorder();
           } else {
             tryFindingElement(s);
           }
