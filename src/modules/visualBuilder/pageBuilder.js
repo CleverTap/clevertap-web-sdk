@@ -319,7 +319,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
   }
 
   // Execute all drag operations after all elements have been processed
-  const applyReorder = () => {
+  const applyReorder = (reorderingOptions) => {
     reorderingOptions.forEach(({ element, selector }) => {
     // ensure DOM matches layout (safety sync)
     // newOrder contains ALL child elements in their desired order
