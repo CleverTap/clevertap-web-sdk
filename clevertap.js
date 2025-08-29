@@ -12098,8 +12098,8 @@
 
   };
 
-  const OVERLAY_PATH = 'http://localhost:3000/overlay';
-  const CSS_PATH = 'http://localhost:3000/style';
+  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/staging/lib-overlay/overlay.js';
+  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/staging/lib-overlay/style.css';
   const WVE_CLASS = {
     FLICKER_SHOW: 'wve-anti-flicker-show',
     FLICKER_HIDE: 'wve-anti-flicker-hide',
