@@ -201,6 +201,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
   }
 
   const processElement = (element, selector) => {
+    pendingElements-- // Decrement when processing element
     if (selector?.reorderingOptions?.positionsChanged) {
       // Collect drag operation to execute later (after all elements are processed)
       reorderingOptions.push({ element, selector })
@@ -241,7 +242,6 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
 
   const tryFindingElement = (selector) => {
     let count = 0
-    pendingElements++ // Increment pending counter
     const intervalId = setInterval(() => {
       let retryElement
       try {
@@ -251,12 +251,10 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
         raiseViewed()
         processElement(retryElement, selector)
         clearInterval(intervalId)
-        pendingElements-- // Decrement when found
         checkAndApplyReorder() // Check if we can apply reordering now
       } else if (++count >= 20) {
         logger.debug(`No element present on DOM with selector '${selector}'.`)
         clearInterval(intervalId)
-        pendingElements-- // Decrement when giving up
         checkAndApplyReorder() // Check if we can apply reordering now
       }
     }, 500)
@@ -264,6 +262,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
   }
 
   details.forEach(d => {
+    pendingElements = d.selectorData.length
     d.selectorData.forEach(s => {
       if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) &&
           s.values.initialHtml) {
@@ -286,7 +285,6 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
   const addNewEl = (selector) => {
     const { pos, sibling } = findSiblingSelector(selector.selector)
     let count = 0
-    pendingElements++ // Increment pending counter for inserted elements too
     const intervalId = setInterval(() => {
       let element = null
       try {
@@ -308,12 +306,11 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
         raiseViewed()
         processElement(insertedElement, selector)
         clearInterval(intervalId)
-        pendingElements-- // Decrement when inserted element is processed
+
         checkAndApplyReorder() // Check if we can apply reordering now
       } else if (++count >= 20) {
         logger.debug(`No element present on DOM with selector '${sibling}'.`)
         clearInterval(intervalId)
-        pendingElements-- // Decrement when giving up on inserted element
         checkAndApplyReorder() // Check if we can apply reordering now
       }
     }, 500)
@@ -336,7 +333,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
     }
   }
 
-  // Execute all drag operations after all elements have been processed
+  // Execute all reordering operations after all elements have been processed
   const applyReorder = (reorderingOptions) => {
     reorderingOptions.forEach(({ element, selector }) => {
     // ensure DOM matches layout (safety sync)

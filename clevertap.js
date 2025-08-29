@@ -14023,6 +14023,8 @@
     const processElement = (element, selector) => {
       var _selector$reorderingO, _selector$isTrackingC;
 
+      pendingElements--; // Decrement when processing element
+
       if (selector === null || selector === void 0 ? void 0 : (_selector$reorderingO = selector.reorderingOptions) === null || _selector$reorderingO === void 0 ? void 0 : _selector$reorderingO.positionsChanged) {
         // Collect drag operation to execute later (after all elements are processed)
         reorderingOptions.push({
@@ -14076,8 +14078,6 @@
 
     const tryFindingElement = selector => {
       let count = 0;
-      pendingElements++; // Increment pending counter
-
       const intervalId = setInterval(() => {
         let retryElement;
 
@@ -14089,14 +14089,10 @@
           raiseViewed();
           processElement(retryElement, selector);
           clearInterval(intervalId);
-          pendingElements--; // Decrement when found
-
           checkAndApplyReorder(); // Check if we can apply reordering now
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(selector, "'."));
           clearInterval(intervalId);
-          pendingElements--; // Decrement when giving up
-
           checkAndApplyReorder(); // Check if we can apply reordering now
         }
       }, 500);
@@ -14104,6 +14100,7 @@
     };
 
     details.forEach(d => {
+      pendingElements = d.selectorData.length;
       d.selectorData.forEach(s => {
         if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
           insertedElements.push(s);
@@ -14130,8 +14127,6 @@
         sibling
       } = findSiblingSelector(selector.selector);
       let count = 0;
-      pendingElements++; // Increment pending counter for inserted elements too
-
       const intervalId = setInterval(() => {
         let element = null;
 
@@ -14157,14 +14152,10 @@
           raiseViewed();
           processElement(insertedElement, selector);
           clearInterval(intervalId);
-          pendingElements--; // Decrement when inserted element is processed
-
           checkAndApplyReorder(); // Check if we can apply reordering now
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(sibling, "'."));
           clearInterval(intervalId);
-          pendingElements--; // Decrement when giving up on inserted element
-
           checkAndApplyReorder(); // Check if we can apply reordering now
         }
       }, 500);
@@ -14185,7 +14176,7 @@
       if (pendingElements === 0 && reorderingOptions.length > 0) {
         applyReorder(reorderingOptions);
       }
-    }; // Execute all drag operations after all elements have been processed
+    }; // Execute all reordering operations after all elements have been processed
 
 
     const applyReorder = reorderingOptions => {
