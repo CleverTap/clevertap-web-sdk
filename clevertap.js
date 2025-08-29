@@ -221,6 +221,9 @@
   const WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
+  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'; // Flag key for optional sub-domain profile isolation
+
+  const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -7308,11 +7311,30 @@
     }
 
     static createBroadCookie(name, value, seconds, domain) {
-      // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
+      /* -------------------------------------------------------------
+       * Sub-domain isolation: when the global flag is set, skip the
+       * broad-domain logic and write a cookie scoped to the current
+       * host only.  Also remove any legacy broad-domain copy so that
+       * the host-level cookie has precedence.
+       * ----------------------------------------------------------- */
+      const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE);
+
+      if (isolate) {
+        // remove any legacy broad-domain cookie
+        if ($ct.broadDomain) {
+          this.removeCookie(name, $ct.broadDomain);
+        } // write host-scoped cookie and stop
+
+
+        this.createCookie(name, value, seconds, domain);
+        return;
+      } // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
       // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
       // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
       // to find out which "broadest" domain the cookie was set on. Then delete the test cookie, and use that domain
       // for updating the actual cookie.
+
+
       if (domain) {
         let broadDomain = $ct.broadDomain;
 
@@ -7415,6 +7437,22 @@
       };
       this.saveToLSorCookie(LCOOKIE_NAME, backupArr);
       logger.debug("stored in ".concat(LCOOKIE_NAME, " reqNo : ").concat(reqNo, " -> ").concat(data));
+    } // Add new method for OUL tracking
+
+
+    static markBackupAsOUL(reqNo) {
+      // Store OUL request numbers in a separate meta property
+      const oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
+
+      if (!oulRequests.includes(reqNo)) {
+        oulRequests.push(reqNo);
+        this.setMetaProp('OUL_REQUESTS', oulRequests);
+      }
+    }
+
+    static isBackupOUL(reqNo) {
+      const oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
+      return oulRequests.includes(reqNo);
     }
 
     static removeBackup(respNo, logger) {
@@ -7437,7 +7475,17 @@
     LRU_CACHE: null,
     globalProfileMap: undefined,
     globalEventsMap: undefined,
-    blockRequest: false,
+
+    // Initialize blockRequest from storage
+    get blockRequest() {
+      const value = StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE);
+      return value === true;
+    },
+
+    set blockRequest(value) {
+      StorageManager.saveToLSorCookie(BLOCK_REQUEST_COOKIE, value);
+    },
+
     isOptInRequest: false,
     broadDomain: null,
     webPushEnabled: null,
@@ -7460,7 +7508,9 @@
     globalUnsubscribe: true,
     flutterVersion: null,
     variableStore: {},
-    pushConfig: null // domain: window.location.hostname, url -> getHostName()
+    pushConfig: null,
+    delayEvents: false,
+    intervalArray: [] // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -9415,9 +9465,6 @@
         campaignObj[frequencyControlKey] = deliveryPreferenceUtils.updateTimestampTracker([campaignId], campaignObj[frequencyControlKey] || {});
       }
 
-      console.log({
-        campaignObj
-      });
       saveCampaignObject(campaignObj);
     } catch (error) {
       logger.error("Campaign delivery preference update failed: ".concat(error.message));
@@ -12242,7 +12289,7 @@
           window.clevertap.renderNotificationClicked(payload);
         }
 
-        closeIframe(campaignId, divId, _session.sessionId);
+        closeIframe(campaignId, divId, _session === null || _session === void 0 ? void 0 : _session.sessionId);
         break;
 
       case ACTION_TYPES.OPEN_WEB_URL:
@@ -12255,7 +12302,7 @@
           window.open(detail.url.value.replacements, '_blank', 'noopener');
 
           if (detail.closeOnClick) {
-            closeIframe(campaignId, divId, _session.sessionId);
+            closeIframe(campaignId, divId, _session === null || _session === void 0 ? void 0 : _session.sessionId);
           }
         } else {
           window.location.href = detail.url.value.replacements;
@@ -13789,7 +13836,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.0.2';
+            const sdkVersion = '2.2.0';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -13946,15 +13993,12 @@
       logger = _logger;
     }
 
-    const insertedElements = [];
-    const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
-    const url = window.location.href;
-
     if (isPreview) {
-      const currentUrl = new URL(url);
-      currentUrl.searchParams.delete('ctActionMode');
+      sessionStorage.setItem('visualEditorData', JSON.stringify(targetingMsgJson));
     }
 
+    const insertedElements = [];
+    const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let notificationViewed = false;
     const payload = {
       msgId: targetingMsgJson.wzrk_id,
@@ -14044,6 +14088,7 @@
           clearInterval(intervalId);
         }
       }, 500);
+      $ct.intervalArray.push(intervalId);
     };
 
     details.forEach(d => {
@@ -14103,6 +14148,7 @@
           clearInterval(intervalId);
         }
       }, 500);
+      $ct.intervalArray.push(intervalId);
     };
 
     if (insertedElements.length > 0) {
@@ -14746,6 +14792,24 @@
       obj[campaignId] = currentCount;
     },
 
+    /**
+     * Creates a reusable mouse leave handler for exit intent campaigns
+     * @param {Object} targetingMsgJson - Campaign configuration
+     * @param {Object} exitintentObj - Exit intent object
+     * @returns {Function} - Mouse leave event handler
+     */
+    createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj) {
+      const handleMouseLeave = event => {
+        const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
+
+        if (wasRendered) {
+          window.document.removeEventListener('mouseleave', handleMouseLeave);
+        }
+      };
+
+      return handleMouseLeave;
+    },
+
     /*
        * @param {Object} campTypeObj - Campaign type object to check/modify
        * @param {string} campaignId - Current campaign ID
@@ -15029,7 +15093,7 @@
     handleImageOnlyPopup(targetingMsgJson) {
       const divId = 'wzrkImageOnlyDiv'; // Skips if frequency limits are exceeded
 
-      if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+      if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
         return;
       } // Removes existing popup if spam control is active
 
@@ -15085,7 +15149,7 @@
       } // Skips if frequency limits are exceeded
 
 
-      if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+      if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
         return;
       }
 
@@ -15358,10 +15422,10 @@
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
+            /* Show it only once per callback */
 
-            window.document.body.onmouseleave = event => {
-              this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
-            };
+            const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj);
+            window.document.addEventListener('mouseleave', handleMouseLeave);
           }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
@@ -15536,11 +15600,11 @@
 
       if (targetingMsgJson.display.wtarget_type === 0 && (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER || layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
         this.createTemplate(targetingMsgJson, true);
-        return;
+        return true;
       } // Skips if frequency limits are exceeded
 
 
-      if (this.doCampHouseKeeping(targetingMsgJson) === false) {
+      if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
         return;
       } // Removes existing exit intent elements if spam control is active
 
@@ -15661,6 +15725,8 @@
         const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
         this.setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
+
+      return true;
     },
 
     // Processes native display campaigns (e.g., banners, carousels)
@@ -15719,7 +15785,7 @@
 
           addCampaignToLocalStorage(msg.inbox_notifs[index], CampaignContext.region, (_CampaignContext$msg = CampaignContext.msg) === null || _CampaignContext$msg === void 0 ? void 0 : (_CampaignContext$msg$ = _CampaignContext$msg.arp) === null || _CampaignContext$msg$ === void 0 ? void 0 : _CampaignContext$msg$.id);
 
-          if (this.doCampHouseKeeping(msg.inbox_notifs[index]) !== false) {
+          if (this.doCampHouseKeeping(msg.inbox_notifs[index], Logger.getInstance()) !== false) {
             msgArr.push(msg.inbox_notifs[index]);
           }
         }
@@ -15747,10 +15813,10 @@
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
+          /* Show it only once per callback */
 
-          window.document.body.onmouseleave = event => {
-            this.showExitIntent(event, targetNotif, null, exitintentObj);
-          };
+          const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetNotif, exitintentObj);
+          window.document.addEventListener('mouseleave', handleMouseLeave);
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
           // Skips duplicate custom event campaigns
@@ -16129,6 +16195,8 @@
 
   var _clearCookie = _classPrivateFieldLooseKey("clearCookie");
 
+  var _getNextAvailableReqN = _classPrivateFieldLooseKey("getNextAvailableReqN");
+
   var _addToLocalEventMap = _classPrivateFieldLooseKey("addToLocalEventMap");
 
   class RequestManager {
@@ -16142,6 +16210,9 @@
       } = _ref;
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
+      });
+      Object.defineProperty(this, _getNextAvailableReqN, {
+        value: _getNextAvailableReqN2
       });
       Object.defineProperty(this, _logger$3, {
         writable: true,
@@ -16177,8 +16248,14 @@
       RequestDispatcher.device = device;
       RequestDispatcher.account = account;
     }
+    /**
+    * Unified backup processing method
+    * @param {boolean} oulOnly - If true, process only OUL requests. If false, process all non-fired requests.
+    */
+
 
     processBackupEvents() {
+      let oulOnly = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
       const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
 
       if (typeof backupMap === 'undefined' || backupMap === null) {
@@ -16191,12 +16268,17 @@
         if (backupMap.hasOwnProperty(idx)) {
           const backupEvent = backupMap[idx];
 
-          if (typeof backupEvent.fired === 'undefined') {
-            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Processing backup event : ' + backupEvent.q);
+          if (typeof backupEvent.fired !== 'undefined') {
+            continue;
+          }
+
+          const isOULRequest = StorageManager.isBackupOUL(parseInt(idx));
+          const shouldProcess = oulOnly ? isOULRequest : true;
+
+          if (shouldProcess) {
+            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event : ").concat(backupEvent.q));
 
             if (typeof backupEvent.q !== 'undefined') {
-              /* For extremely slow networks we often recreate the session from the SE hence appending
-              the session to the request */
               const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
 
               if (session === null || session === void 0 ? void 0 : session.s) {
@@ -16241,7 +16323,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.0.2',
+        lib: 'web-sdk-v2.2.0',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -16293,12 +16375,21 @@
 
 
     saveAndFireRequest(url, override, sendOULFlag, evtName) {
-      const now = getNow();
-      url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
-      const data = url + '&i=' + now + '&sn=' + seqNo;
-      StorageManager.backupEvent(data, $ct.globalCache.REQ_N, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]); // if offline is set to true, save the request in backup and return
+      const now = getNow(); // Get the next available request number that doesn't conflict with existing backups
 
-      if ($ct.offline) return; // if there is no override
+      const nextReqN = _classPrivateFieldLooseBase(this, _getNextAvailableReqN)[_getNextAvailableReqN]();
+
+      $ct.globalCache.REQ_N = nextReqN;
+      url = addToURL(url, 'rn', nextReqN);
+      const data = url + '&i=' + now + '&sn=' + seqNo;
+      StorageManager.backupEvent(data, nextReqN, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]); // Mark as OUL if it's an OUL request
+
+      if (sendOULFlag) {
+        StorageManager.markBackupAsOUL(nextReqN);
+      } // if offline is set to true, save the request in backup and return
+
+
+      if ($ct.offline || $ct.delayEvents) return; // if there is no override
       // and an OUL request is not in progress
       // then process the request as it is
       // else block the request
@@ -16312,7 +16403,7 @@
           seqNo = 0;
         }
 
-        window.oulReqN = $ct.globalCache.REQ_N;
+        window.oulReqN = nextReqN;
         RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
       } else {
         _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
@@ -16406,6 +16497,28 @@
     }
 
   }
+
+  var _getNextAvailableReqN2 = function _getNextAvailableReqN2() {
+    // Read existing backup data to check for conflicts
+    const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME); // Start from the current REQ_N + 1
+
+    let candidateReqN = $ct.globalCache.REQ_N + 1; // If no backup data exists, use the candidate
+
+    if (!backupMap || typeof backupMap !== 'object') {
+      return candidateReqN;
+    } // Keep incrementing until we find a request number that doesn't exist in backup
+
+
+    while (backupMap.hasOwnProperty(candidateReqN.toString())) {
+      candidateReqN++;
+
+      _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Request number ".concat(candidateReqN - 1, " already exists in backup, trying ").concat(candidateReqN));
+    }
+
+    _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Using request number: ".concat(candidateReqN));
+
+    return candidateReqN;
+  };
 
   var _addToLocalEventMap2 = function _addToLocalEventMap2(evtName) {
     if (StorageManager._isLocalStorageSupported()) {
@@ -16834,7 +16947,8 @@
         name
       } = varInstance;
       _classPrivateFieldLooseBase(this, _variables)[_variables][name] = varInstance;
-      console.log('registerVariable', _classPrivateFieldLooseBase(this, _variables)[_variables]);
+
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug('registerVariable', _classPrivateFieldLooseBase(this, _variables)[_variables]);
     }
     /**
      * Retrieves a variable by its name.
@@ -16955,7 +17069,8 @@
     }
 
     mergeVariables(vars) {
-      console.log('msg vars is ', vars);
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug('msg vars is ', vars);
+
       _classPrivateFieldLooseBase(this, _hasVarsRequestCompleted)[_hasVarsRequestCompleted] = true;
       StorageManager.saveToLSorCookie(VARIABLES, vars);
       _classPrivateFieldLooseBase(this, _remoteVariables)[_remoteVariables] = vars;
@@ -17867,11 +17982,16 @@
     init(accountId, region, targetDomain, token) {
       let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
         antiFlicker: {},
-        customId: null
+        customId: null,
+        isolateSubdomain: false
       };
 
       if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
         addAntiFlicker(config.antiFlicker);
+      }
+
+      if (config === null || config === void 0 ? void 0 : config.isolateSubdomain) {
+        StorageManager.saveToLSorCookie(ISOLATE_COOKIE, true);
       }
 
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
@@ -17917,6 +18037,14 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
+      } // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
+      // This ensures user identity is established before other events
+
+
+      if (StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
+        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Processing OUL backup events first to establish user identity');
+
+        _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents(true);
       }
 
       const currLocation = location.href;
@@ -18052,6 +18180,23 @@
       }, FIRST_PING_FREQ_IN_MILLIS);
 
       _classPrivateFieldLooseBase(this, _updateUnviewedBadgePosition)[_updateUnviewedBadgePosition]();
+
+      this._handleVisualEditorPreview();
+    }
+
+    _handleVisualEditorPreview() {
+      if ($ct.intervalArray.length) {
+        $ct.intervalArray.forEach(interval => {
+          clearInterval(interval);
+        });
+      }
+
+      const storedData = sessionStorage.getItem('visualEditorData');
+      const targetJson = storedData ? JSON.parse(storedData) : null;
+
+      if (targetJson) {
+        renderVisualBuilder(targetJson, true, _classPrivateFieldLooseBase(this, _logger)[_logger]);
+      }
     }
 
     _isPersonalisationActive() {
@@ -18090,8 +18235,17 @@
       $ct.offline = arg;
     }
 
+    delayEvents(arg) {
+      if (typeof arg !== 'boolean') {
+        console.error('delayEvents should be called with a value of type boolean');
+        return;
+      }
+
+      $ct.delayEvents = arg;
+    }
+
     getSDKVersion() {
-      return 'web-sdk-v2.0.2';
+      return 'web-sdk-v2.2.0';
     }
 
     defineVariable(name, defaultValue) {

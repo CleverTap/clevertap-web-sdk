@@ -1,6 +1,7 @@
 import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_QUERY_PARAMS, WVE_URL_ORIGIN } from './builder_constants'
 import { updateFormData, updateElementCSS } from './dataUpdate'
 import { addScriptTo } from '../../util/campaignRender/utilities'
+import { $ct } from '../../util/storage'
 
 let logger = null
 
@@ -175,13 +176,11 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
   if (_logger) {
     logger = _logger
   }
+  if (isPreview) {
+    sessionStorage.setItem('visualEditorData', JSON.stringify(targetingMsgJson))
+  }
   const insertedElements = []
   const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details
-  const url = window.location.href
-  if (isPreview) {
-    const currentUrl = new URL(url)
-    currentUrl.searchParams.delete('ctActionMode')
-  }
   let notificationViewed = false
   const payload = {
     msgId: targetingMsgJson.wzrk_id,
@@ -257,6 +256,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
         clearInterval(intervalId)
       }
     }, 500)
+    $ct.intervalArray.push(intervalId)
   }
 
   details.forEach(d => {
@@ -308,6 +308,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
         clearInterval(intervalId)
       }
     }, 500)
+    $ct.intervalArray.push(intervalId)
   }
 
   if (insertedElements.length > 0) {
