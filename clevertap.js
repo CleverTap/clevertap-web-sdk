@@ -14002,6 +14002,8 @@
 
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let notificationViewed = false;
+    let pendingElements = 0; // Track elements being processed by tryFindingElement
+
     const payload = {
       msgId: targetingMsgJson.wzrk_id,
       pivotId: targetingMsgJson.wzrk_pivot
@@ -14074,6 +14076,8 @@
 
     const tryFindingElement = selector => {
       let count = 0;
+      pendingElements++; // Increment pending counter
+
       const intervalId = setInterval(() => {
         let retryElement;
 
@@ -14085,9 +14089,15 @@
           raiseViewed();
           processElement(retryElement, selector);
           clearInterval(intervalId);
+          pendingElements--; // Decrement when found
+
+          checkAndApplyReorder(); // Check if we can apply reordering now
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(selector, "'."));
           clearInterval(intervalId);
+          pendingElements--; // Decrement when giving up
+
+          checkAndApplyReorder(); // Check if we can apply reordering now
         }
       }, 500);
       $ct.intervalArray.push(intervalId);
@@ -14120,6 +14130,8 @@
         sibling
       } = findSiblingSelector(selector.selector);
       let count = 0;
+      pendingElements++; // Increment pending counter for inserted elements too
+
       const intervalId = setInterval(() => {
         let element = null;
 
@@ -14145,9 +14157,15 @@
           raiseViewed();
           processElement(insertedElement, selector);
           clearInterval(intervalId);
+          pendingElements--; // Decrement when inserted element is processed
+
+          checkAndApplyReorder(); // Check if we can apply reordering now
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(sibling, "'."));
           clearInterval(intervalId);
+          pendingElements--; // Decrement when giving up on inserted element
+
+          checkAndApplyReorder(); // Check if we can apply reordering now
         }
       }, 500);
       $ct.intervalArray.push(intervalId);
@@ -14160,7 +14178,14 @@
         return numA - numB;
       });
       sortedArr.forEach(addNewEl);
-    } // Execute all drag operations after all elements have been processed
+    } // Check if all elements are processed and apply reordering if ready
+
+
+    const checkAndApplyReorder = () => {
+      if (pendingElements === 0 && reorderingOptions.length > 0) {
+        applyReorder(reorderingOptions);
+      }
+    }; // Execute all drag operations after all elements have been processed
 
 
     const applyReorder = reorderingOptions => {
@@ -14197,9 +14222,10 @@
           }
         });
       });
-    };
+    }; // Apply reordering immediately if no elements are pending
 
-    applyReorder(reorderingOptions);
+
+    checkAndApplyReorder();
   };
 
   function findSiblingSelector(input) {
