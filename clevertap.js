@@ -12098,8 +12098,8 @@
 
   };
 
-  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
-  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
+  const OVERLAY_PATH = 'http://localhost:3000/overlay';
+  const CSS_PATH = 'http://localhost:3000/style';
   const WVE_CLASS = {
     FLICKER_SHOW: 'wve-anti-flicker-show',
     FLICKER_HIDE: 'wve-anti-flicker-hide',
@@ -14017,7 +14017,37 @@
     };
 
     const processElement = (element, selector) => {
-      var _selector$isTrackingC;
+      var _selector$dragOptions, _selector$isTrackingC;
+
+      if (selector === null || selector === void 0 ? void 0 : (_selector$dragOptions = selector.dragOptions) === null || _selector$dragOptions === void 0 ? void 0 : _selector$dragOptions.positionsChanged) {
+        // ensure DOM matches layout (safety sync)
+        // newOrder contains ALL child elements in their desired order
+        // First, collect all elements before any DOM manipulation
+        // This prevents nth-child selectors from becoming invalid during reordering
+        const orderedChildren = [];
+        selector.dragOptions.newOrder.forEach(cssSelector => {
+          const child = document.querySelector(cssSelector);
+
+          if (child && element.contains(child)) {
+            orderedChildren.push(child);
+          }
+        }); // Now reorder using insertBefore with index-based positioning
+
+        orderedChildren.forEach((child, targetIndex) => {
+          const currentIndex = Array.from(element.children).indexOf(child);
+
+          if (currentIndex !== targetIndex) {
+            // Insert child at the correct position
+            const referenceChild = element.children[targetIndex];
+
+            if (referenceChild) {
+              element.insertBefore(child, referenceChild);
+            } else {
+              element.appendChild(child);
+            }
+          }
+        });
+      }
 
       if (selector.elementCSS) {
         updateElementCSS(selector);
