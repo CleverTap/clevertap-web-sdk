@@ -12098,8 +12098,8 @@
 
   };
 
-  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
-  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
+  const OVERLAY_PATH = 'http://localhost:3000/overlay';
+  const CSS_PATH = 'http://localhost:3000/style';
   const WVE_CLASS = {
     FLICKER_SHOW: 'wve-anti-flicker-show',
     FLICKER_HIDE: 'wve-anti-flicker-hide',
@@ -14017,7 +14017,21 @@
     };
 
     const processElement = (element, selector) => {
-      var _selector$isTrackingC;
+      var _selector$dragOptions, _selector$isTrackingC;
+
+      if (selector === null || selector === void 0 ? void 0 : (_selector$dragOptions = selector.dragOptions) === null || _selector$dragOptions === void 0 ? void 0 : _selector$dragOptions.positionsChanged) {
+        // ensure DOM matches layout (safety sync)
+        // newOrder contains ALL child elements in their desired order
+        // Simply append each child in the order specified by newOrder
+        // appendChild will move the element to the end, maintaining event handlers
+        selector.dragOptions.newOrder.forEach(cssSelector => {
+          const child = document.querySelector(cssSelector);
+
+          if (child && element.contains(child)) {
+            element.appendChild(child);
+          }
+        });
+      }
 
       if (selector.elementCSS) {
         updateElementCSS(selector);
