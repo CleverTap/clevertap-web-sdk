@@ -248,7 +248,6 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
       if (retryElement) {
         raiseViewed()
         processElement(retryElement, selector)
-        applyReorder()
         clearInterval(intervalId)
       } else if (++count >= 20) {
         logger.debug(`No element present on DOM with selector '${selector}'.`)
@@ -271,7 +270,6 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
         if (element) {
           raiseViewed()
           processElement(element, s)
-          applyReorder()
         } else {
           tryFindingElement(s)
         }
@@ -350,6 +348,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
       })
     })
   }
+  applyReorder()
 }
 
 function findSiblingSelector (input) {

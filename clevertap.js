@@ -14084,7 +14084,6 @@
         if (retryElement) {
           raiseViewed();
           processElement(retryElement, selector);
-          applyReorder();
           clearInterval(intervalId);
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(selector, "'."));
@@ -14108,7 +14107,6 @@
           if (element) {
             raiseViewed();
             processElement(element, s);
-            applyReorder();
           } else {
             tryFindingElement(s);
           }
@@ -14200,6 +14198,8 @@
         });
       });
     };
+
+    applyReorder();
   };
 
   function findSiblingSelector(input) {
