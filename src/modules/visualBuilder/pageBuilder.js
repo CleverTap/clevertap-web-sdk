@@ -201,10 +201,22 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
   const processElement = (element, selector) => {
     if (selector?.dragOptions?.positionsChanged) {
       // ensure DOM matches layout (safety sync)
-      selector.dragOptions.newOrder.forEach(id => {
-        const child = document.querySelector(`[ct-selector="${id}"]`)
-        if (child) element.appendChild(child) // appends in correct order
+      const childrenToReorder = []
+
+      // First, collect all valid children that need reordering
+      selector.dragOptions.newOrder.forEach(cssSelector => {
+        const child = document.querySelector(cssSelector)
+        // Only reorder if the child exists and is actually a child of this element
+        if (child && element.contains(child)) {
+          childrenToReorder.push(child)
+        }
       })
+
+      // Remove all children that need reordering from DOM
+      childrenToReorder.forEach(child => child.remove())
+
+      // Re-append them in the correct order specified by newOrder
+      childrenToReorder.forEach(child => element.appendChild(child))
     }
     if (selector.elementCSS) {
       updateElementCSS(selector)
