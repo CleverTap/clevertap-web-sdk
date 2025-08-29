@@ -199,6 +199,13 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
   }
 
   const processElement = (element, selector) => {
+    if (selector?.dragOptions?.positionsChanged) {
+      // ensure DOM matches layout (safety sync)
+      selector.dragOptions.newOrder.forEach(id => {
+        const child = document.querySelector(`[ct-selector="${id}"]`)
+        if (child) element.appendChild(child) // appends in correct order
+      })
+    }
     if (selector.elementCSS) {
       updateElementCSS(selector)
     }
