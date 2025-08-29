@@ -12098,8 +12098,8 @@
 
   };
 
-  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
-  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
+  const OVERLAY_PATH = 'http://localhost:3000/overlay';
+  const CSS_PATH = 'http://localhost:3000/style';
   const WVE_CLASS = {
     FLICKER_SHOW: 'wve-anti-flicker-show',
     FLICKER_HIDE: 'wve-anti-flicker-hide',
@@ -14017,7 +14017,15 @@
     };
 
     const processElement = (element, selector) => {
-      var _selector$isTrackingC;
+      var _selector$dragOptions, _selector$isTrackingC;
+
+      if (selector === null || selector === void 0 ? void 0 : (_selector$dragOptions = selector.dragOptions) === null || _selector$dragOptions === void 0 ? void 0 : _selector$dragOptions.positionChanged) {
+        // ensure DOM matches layout (safety sync)
+        selector.dragOptions.newOrder.forEach(id => {
+          const child = document.querySelector("[ct-selector=\"".concat(id, "\"]"));
+          if (child) element.appendChild(child); // appends in correct order
+        });
+      }
 
       if (selector.elementCSS) {
         updateElementCSS(selector);
