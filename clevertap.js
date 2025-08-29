@@ -14021,19 +14021,16 @@
 
       if (selector === null || selector === void 0 ? void 0 : (_selector$dragOptions = selector.dragOptions) === null || _selector$dragOptions === void 0 ? void 0 : _selector$dragOptions.positionsChanged) {
         // ensure DOM matches layout (safety sync)
-        const childrenToReorder = []; // First, collect all valid children that need reordering
-
+        // newOrder contains ALL child elements in their desired order
+        // Simply append each child in the order specified by newOrder
+        // appendChild will move the element to the end, maintaining event handlers
         selector.dragOptions.newOrder.forEach(cssSelector => {
-          const child = document.querySelector(cssSelector); // Only reorder if the child exists and is actually a child of this element
+          const child = document.querySelector(cssSelector);
 
           if (child && element.contains(child)) {
-            childrenToReorder.push(child);
+            element.appendChild(child);
           }
-        }); // Remove all children that need reordering from DOM
-
-        childrenToReorder.forEach(child => child.remove()); // Re-append them in the correct order specified by newOrder
-
-        childrenToReorder.forEach(child => element.appendChild(child));
+        });
       }
 
       if (selector.elementCSS) {
