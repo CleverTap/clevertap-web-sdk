@@ -12580,7 +12580,13 @@
           switch (this.onClickAction) {
             case ACTION_TYPES.OPEN_LINK_AND_CLOSE:
               this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
-              this.closeIcon.click();
+
+              if (this.closeIcon) {
+                this.closeIcon.click();
+              } else {
+                closeFn();
+              }
+
               break;
 
             case ACTION_TYPES.OPEN_LINK:
