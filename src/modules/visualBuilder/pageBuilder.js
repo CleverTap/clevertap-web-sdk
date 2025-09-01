@@ -342,6 +342,9 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
     // This prevents nth-child selectors from becoming invalid during reordering
       const orderedChildren = []
       selector.reorderingOptions.newOrder.forEach(cssSelector => {
+        if (cssSelector.includes('-afterend-') || cssSelector.includes('-beforebegin-')) {
+          cssSelector = `[ct-selector="${cssSelector}"]`
+        }
         const child = document.querySelector(cssSelector)
         if (child && element.contains(child)) {
           orderedChildren.push(child)

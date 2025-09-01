@@ -14191,6 +14191,10 @@
         // This prevents nth-child selectors from becoming invalid during reordering
         const orderedChildren = [];
         selector.reorderingOptions.newOrder.forEach(cssSelector => {
+          if (cssSelector.includes('-afterend-') || cssSelector.includes('-beforebegin-')) {
+            cssSelector = "[ct-selector=\"".concat(cssSelector, "\"]");
+          }
+
           const child = document.querySelector(cssSelector);
 
           if (child && element.contains(child)) {
