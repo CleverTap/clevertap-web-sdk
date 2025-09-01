@@ -9,6 +9,12 @@ export default class RequestDispatcher {
   static logger
   static device
   static account
+  /**
+   * Controls whether Fetch API should be used instead of the JSONP <script> fallback.
+   * This is configured at runtime by the CleverTap SDK during initialisation.
+   * Do NOT access this flag via the global $ct map anymore.
+   */
+  static enableFetchApi = false
   networkRetryCount = 0
   minDelayFrequency = 0
 
@@ -83,7 +89,8 @@ export default class RequestDispatcher {
     while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
     }
-    if (!$ct.enableFetchApi) {
+    // Use the static flag instead of the global $ct map
+    if (!this.enableFetchApi) {
       const s = document.createElement('script')
       s.setAttribute('type', 'text/javascript')
       s.setAttribute('src', url)

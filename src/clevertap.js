@@ -9,6 +9,7 @@ import User from './modules/user'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
+import RequestDispatcher from './util/requestDispatcher'
 import {
   CAMP_COOKIE_NAME,
   SCOOKIE_PREFIX,
@@ -106,7 +107,8 @@ export default class CleverTap {
 
   set enableFetchApi (value) {
     this.#enableFetchApi = value
-    $ct.enableFetchApi = value
+    // propagate the setting to RequestDispatcher so util layer can honour it
+    RequestDispatcher.enableFetchApi = value
   }
 
   constructor (clevertap = {}) {
@@ -128,6 +130,7 @@ export default class CleverTap {
     this.#dismissSpamControl = clevertap.dismissSpamControl ?? true
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#enableFetchApi = clevertap.enableFetchApi || false
+    RequestDispatcher.enableFetchApi = this.#enableFetchApi
     this.#session = new SessionManager({
       logger: this.#logger,
       isPersonalisationActive: this._isPersonalisationActive
@@ -738,7 +741,7 @@ export default class CleverTap {
 
     if (config.enableFetchApi) {
       this.#enableFetchApi = config.enableFetchApi
-      $ct.enableFetchApi = config.enableFetchApi
+      RequestDispatcher.enableFetchApi = config.enableFetchApi
     }
 
     // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set

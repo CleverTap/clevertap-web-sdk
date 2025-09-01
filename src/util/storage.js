@@ -317,7 +317,6 @@ export const $ct = {
   flutterVersion: null,
   variableStore: {},
   pushConfig: null,
-  enableFetchApi: false,
   delayEvents: false,
   intervalArray: []
   // domain: window.location.hostname, url -> getHostName()
