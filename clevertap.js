@@ -12555,7 +12555,9 @@
         }
       };
 
-      this.closeIcon.addEventListener('click', closeFn);
+      if (this.closeIcon) {
+        this.closeIcon.addEventListener('click', closeFn);
+      }
 
       if (!this.target.display.preview) {
         window.clevertap.renderNotificationViewed({
