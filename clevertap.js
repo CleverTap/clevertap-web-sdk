@@ -12555,7 +12555,9 @@
         }
       };
 
-      this.closeIcon.addEventListener('click', closeFn);
+      if (this.closeIcon) {
+        this.closeIcon.addEventListener('click', closeFn);
+      }
 
       if (!this.target.display.preview) {
         window.clevertap.renderNotificationViewed({
@@ -12578,7 +12580,13 @@
           switch (this.onClickAction) {
             case ACTION_TYPES.OPEN_LINK_AND_CLOSE:
               this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl;
-              this.closeIcon.click();
+
+              if (this.closeIcon) {
+                this.closeIcon.click();
+              } else {
+                closeFn();
+              }
+
               break;
 
             case ACTION_TYPES.OPEN_LINK:
@@ -12612,7 +12620,11 @@
         this.container.style.setProperty('height', 'auto');
         this.container.style.setProperty('position', 'fixed');
         this.popup.style.setProperty('visibility', 'visible');
-        this.closeIcon.style.setProperty('visibility', 'visible');
+
+        if (this.closeIcon) {
+          this.closeIcon.style.setProperty('visibility', 'visible');
+        }
+
         document.getElementById('wzrkImageOnlyDiv').style.visibility = 'visible';
       };
     }
@@ -13836,7 +13848,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.2.0';
+            const sdkVersion = '2.2.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -16385,7 +16397,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.2.0',
+        lib: 'web-sdk-v2.2.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18307,7 +18319,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.2.0';
+      return 'web-sdk-v2.2.1';
     }
 
     defineVariable(name, defaultValue) {
