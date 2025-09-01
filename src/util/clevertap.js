@@ -141,8 +141,6 @@ export const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
       )
     }
 
-    console.log({ campaignObj })
-
     saveCampaignObject(campaignObj)
   } catch (error) {
     logger.error(`Campaign delivery preference update failed: ${error.message}`)

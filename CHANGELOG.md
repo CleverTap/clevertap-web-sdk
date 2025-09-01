@@ -1,9 +1,26 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.0.1] 25th July 2025
-- Corrected click actions for web popup image only template
+## [2.3.0] 2nd Sept 2025
 - Added Fetch API support for network requests
+
+## [2.2.0] 26th August 2025
+- Added Isolate Sub-Domain flag in init fn.
+
+## [2.1.2] 22nd August 2025
+- Fixed the request handling flow for multi User Login.
+
+## [2.1.1] 20th August 2025
+- Exit Intent Fixes 
+
+## [2.1.0] 20th August 2025
+- Multi-page support in web native display Visual Editor.
+- Introduced preview in 'Advanced Web-popup Builder' in 'Web Popup'.
+- Exit Intent Fix to show once per unique lc event
+
+## [2.0.1] 7th August 2025
+- Corrected click actions for web popup image only template
+- Bug Fix for Web Popup Exit Intent 
 
 ## [2.0.0] 22nd July, 2025
 - Added Delivery Preference Support for Web Popups & Web Native Displays

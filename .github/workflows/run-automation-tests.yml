@@ -1,0 +1,57 @@
+# .github/workflows/trigger-automation-tests.yml
+name: Trigger Automation Suite
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+      - ready_for_review
+
+jobs:
+  check-trigger:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+      commit_message: ${{ steps.check.outputs.commit_message }}
+      branch_name: ${{ steps.check.outputs.branch_name }}
+    steps:
+      - name: Checkout PR Branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Check if should run
+        id: check
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          BRANCH_NAME="${GITHUB_HEAD_REF}"
+          echo "Latest commit message: $COMMIT_MSG"
+          
+          if [[ "$COMMIT_MSG" == *"[run-test]"* ]]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "✅ Found [run-test] in commit message - will proceed"
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "❌ No [run-test] found in commit message - skipping"
+          fi
+          
+          echo "commit_message=${COMMIT_MSG}" >> $GITHUB_OUTPUT
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+
+  trigger-tests:
+    runs-on: ubuntu-latest
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_run == 'true'
+    steps:
+      - name: Clone Automation Repo
+        run: |
+          git clone https://x-access-token:${{ secrets.AUTOMATION_REPO_ACCESS_TOKEN }}@github.com/singhkunal2050/ct-web-sdk-automation.git
+          cd ct-web-sdk-automation
+          git config user.name "CT Web Automation Bot"
+          git config user.email "automation@clevertap.com"
+          echo "Trigger commit from PR..."
+          git commit --allow-empty -m "[run-test] ${{ needs.check-trigger.outputs.commit_message }} branch:${{ needs.check-trigger.outputs.branch_name }}"
+          git push origin main

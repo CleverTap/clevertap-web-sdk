@@ -35,7 +35,9 @@ import {
   APPLICATION_SERVER_KEY_RECEIVED,
   VARIABLES,
   GCOOKIE_NAME,
-  QUALIFIED_CAMPAIGNS
+  QUALIFIED_CAMPAIGNS,
+  BLOCK_REQUEST_COOKIE,
+  ISOLATE_COOKIE
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -47,10 +49,11 @@ import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
-import { addAntiFlicker, handleActionMode } from './modules/visualBuilder/pageBuilder'
+import { addAntiFlicker, handleActionMode, renderVisualBuilder } from './modules/visualBuilder/pageBuilder'
 import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
+import { checkWebPopupPreview } from './util/campaignRender/webPopup'
 import { reconstructNestedObject, validateCustomCleverTapID } from './util/helpers'
 
 export default class CleverTap {
@@ -688,10 +691,15 @@ export default class CleverTap {
     }
   }
 
-  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null }) {
+  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false }) {
     if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
     }
+
+    if (config?.isolateSubdomain) {
+      StorageManager.saveToLSorCookie(ISOLATE_COOKIE, true)
+    }
+
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
@@ -713,8 +721,8 @@ export default class CleverTap {
     }
     handleActionMode(this.#logger, this.#account.id)
     checkCustomHtmlNativeDisplayPreview(this.#logger)
+    checkWebPopupPreview()
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
-
     if (region) {
       this.#account.region = region
     }
@@ -733,6 +741,12 @@ export default class CleverTap {
       $ct.enableFetchApi = config.enableFetchApi
     }
 
+    // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
+    // This ensures user identity is established before other events
+    if (StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
+      this.#logger.debug('Processing OUL backup events first to establish user identity')
+      this.#request.processBackupEvents(true)
+    }
     const currLocation = location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
 
@@ -916,6 +930,20 @@ export default class CleverTap {
     }, FIRST_PING_FREQ_IN_MILLIS)
 
     this.#updateUnviewedBadgePosition()
+    this._handleVisualEditorPreview()
+  }
+
+  _handleVisualEditorPreview () {
+    if ($ct.intervalArray.length) {
+      $ct.intervalArray.forEach(interval => {
+        clearInterval(interval)
+      })
+    }
+    const storedData = sessionStorage.getItem('visualEditorData')
+    const targetJson = storedData ? JSON.parse(storedData) : null
+    if (targetJson) {
+      renderVisualBuilder(targetJson, true, this.#logger)
+    }
   }
 
   #pingRequest () {
@@ -1001,6 +1029,14 @@ export default class CleverTap {
       this.#request.processBackupEvents()
     }
     $ct.offline = arg
+  }
+
+  delayEvents (arg) {
+    if (typeof arg !== 'boolean') {
+      console.error('delayEvents should be called with a value of type boolean')
+      return
+    }
+    $ct.delayEvents = arg
   }
 
   getSDKVersion () {
