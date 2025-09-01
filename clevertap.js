@@ -12620,7 +12620,11 @@
         this.container.style.setProperty('height', 'auto');
         this.container.style.setProperty('position', 'fixed');
         this.popup.style.setProperty('visibility', 'visible');
-        this.closeIcon.style.setProperty('visibility', 'visible');
+
+        if (this.closeIcon) {
+          this.closeIcon.style.setProperty('visibility', 'visible');
+        }
+
         document.getElementById('wzrkImageOnlyDiv').style.visibility = 'visible';
       };
     }
