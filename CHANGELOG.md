@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] 2nd Sept 2025
+- Added Fetch API support for network requests
+
 ## [2.2.0] 26th August 2025
 - Added Isolate Sub-Domain flag in init fn.
 
