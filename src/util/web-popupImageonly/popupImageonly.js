@@ -92,7 +92,9 @@ export class CTWebPopupImageOnly extends HTMLElement {
         }
       }
 
-      this.closeIcon.addEventListener('click', closeFn)
+      if (this.closeIcon) {
+        this.closeIcon.addEventListener('click', closeFn)
+      }
 
       if (!this.target.display.preview) {
         window.clevertap.renderNotificationViewed({
@@ -114,7 +116,11 @@ export class CTWebPopupImageOnly extends HTMLElement {
           switch (this.onClickAction) {
             case ACTION_TYPES.OPEN_LINK_AND_CLOSE:
               this.target.display.window ? window.open(this.onClickUrl, '_blank') : window.parent.location.href = this.onClickUrl
-              this.closeIcon.click()
+              if (this.closeIcon) {
+                this.closeIcon.click()
+              } else {
+                closeFn()
+              }
               break
             case ACTION_TYPES.OPEN_LINK:
             default:
@@ -149,7 +155,9 @@ export class CTWebPopupImageOnly extends HTMLElement {
         this.container.style.setProperty('height', 'auto')
         this.container.style.setProperty('position', 'fixed')
         this.popup.style.setProperty('visibility', 'visible')
-        this.closeIcon.style.setProperty('visibility', 'visible')
+        if (this.closeIcon) {
+          this.closeIcon.style.setProperty('visibility', 'visible')
+        }
         document.getElementById('wzrkImageOnlyDiv').style.visibility = 'visible'
       }
     }
