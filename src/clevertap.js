@@ -9,6 +9,7 @@ import User from './modules/user'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
+import RequestDispatcher from './util/requestDispatcher'
 import {
   CAMP_COOKIE_NAME,
   SCOOKIE_PREFIX,
@@ -71,6 +72,8 @@ export default class CleverTap {
   #dismissSpamControl
   enablePersonalization
   #pageChangeTimeoutId
+  #enableFetchApi
+  #enableEncryptionInTransit
 
   get spa () {
     return this.#isSpa
@@ -99,6 +102,26 @@ export default class CleverTap {
     $ct.dismissSpamControl = dismissSpamControl
   }
 
+  get enableFetchApi () {
+    return this.#enableFetchApi
+  }
+
+  set enableFetchApi (value) {
+    this.#enableFetchApi = value
+    // propagate the setting to RequestDispatcher so util layer can honour it
+    RequestDispatcher.enableFetchApi = value
+  }
+
+  get enableEncryptionInTransit () {
+    return this.#enableEncryptionInTransit
+  }
+
+  set enableEncryptionInTransit (value) {
+    this.#enableEncryptionInTransit = value
+    // propagate the setting to RequestDispatcher so util layer can honour it
+    RequestDispatcher.enableEncryptionInTransit = value
+  }
+
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
@@ -117,6 +140,10 @@ export default class CleverTap {
     this.#device = new DeviceManager({ logger: this.#logger, customId: result?.isValid ? result?.sanitizedId : null })
     this.#dismissSpamControl = clevertap.dismissSpamControl ?? true
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
+    this.#enableFetchApi = clevertap.enableFetchApi || false
+    RequestDispatcher.enableFetchApi = this.#enableFetchApi
+    this.#enableEncryptionInTransit = clevertap.enableEncryptionInTransit || false
+    RequestDispatcher.enableEncryptionInTransit = this.#enableEncryptionInTransit
     this.#session = new SessionManager({
       logger: this.#logger,
       isPersonalisationActive: this._isPersonalisationActive
@@ -724,6 +751,17 @@ export default class CleverTap {
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
     }
+
+    if (config.enableFetchApi) {
+      this.#enableFetchApi = config.enableFetchApi
+      RequestDispatcher.enableFetchApi = config.enableFetchApi
+    }
+
+    if (config.enableEncryptionInTransit) {
+      this.#enableEncryptionInTransit = config.enableEncryptionInTransit
+      RequestDispatcher.enableEncryptionInTransit = config.enableEncryptionInTransit
+    }
+
     // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
     // This ensures user identity is established before other events
     if (StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
