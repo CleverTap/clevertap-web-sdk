@@ -7509,12 +7509,8 @@
     flutterVersion: null,
     variableStore: {},
     pushConfig: null,
-<<<<<<< HEAD
-    enableFetchApi: false // domain: window.location.hostname, url -> getHostName()
-=======
     delayEvents: false,
     intervalArray: [] // domain: window.location.hostname, url -> getHostName()
->>>>>>> a301e9f9d43b355db36f7470487865a74d4305b6
     // gcookie: -> device
 
   };
@@ -8548,20 +8544,19 @@
       _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
     }
 
-    static async handleFetchResponse(url) {
-      try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json'
-          }
-        });
-
+    static handleFetchResponse(url) {
+      return fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json'
+        }
+      }).then(response => {
         if (!response.ok) {
           throw new Error("Network response was not ok: ".concat(response.statusText));
         }
 
-        const jsonResponse = await response.json();
+        return response.json();
+      }).then(jsonResponse => {
         const {
           tr,
           meta,
@@ -8597,9 +8592,9 @@
         }
 
         this.logger.debug('req snt -> url: ' + url);
-      } catch (error) {
+      }).catch(error => {
         this.logger.error('Fetch error:', error);
-      }
+      });
     }
 
     getDelayFrequency() {
@@ -8668,7 +8663,7 @@
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
   };
 
-  var _fireRequest2 = async function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
+  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
     var _window$location$orig, _window, _window$location, _window2, _window2$location, _window$clevertap, _window$wizrocket;
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
@@ -8746,9 +8741,10 @@
 
     while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
-    }
+    } // Use the static flag instead of the global $ct map
 
-    if (!$ct.enableFetchApi) {
+
+    if (!this.enableFetchApi) {
       const s = document.createElement('script');
       s.setAttribute('type', 'text/javascript');
       s.setAttribute('src', url);
@@ -8765,6 +8761,7 @@
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
   RequestDispatcher.account = void 0;
+  RequestDispatcher.enableFetchApi = false;
   Object.defineProperty(RequestDispatcher, _fireRequest, {
     value: _fireRequest2
   });
@@ -17273,8 +17270,9 @@
     }
 
     set enableFetchApi(value) {
-      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value;
-      $ct.enableFetchApi = value;
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value; // propagate the setting to RequestDispatcher so util layer can honour it
+
+      RequestDispatcher.enableFetchApi = value;
     }
 
     constructor() {
@@ -17386,6 +17384,7 @@
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = (_clevertap$dismissSpa = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa !== void 0 ? _clevertap$dismissSpa : true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
       _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = clevertap.enableFetchApi || false;
+      RequestDispatcher.enableFetchApi = _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         isPersonalisationActive: this._isPersonalisationActive
@@ -18107,6 +18106,11 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
+      }
+
+      if (config.enableFetchApi) {
+        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
+        RequestDispatcher.enableFetchApi = config.enableFetchApi;
       } // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
       // This ensures user identity is established before other events
 
@@ -18115,11 +18119,6 @@
         _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Processing OUL backup events first to establish user identity');
 
         _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents(true);
-      }
-
-      if (config.enableFetchApi) {
-        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
-        $ct.enableFetchApi = config.enableFetchApi;
       }
 
       const currLocation = location.href;
