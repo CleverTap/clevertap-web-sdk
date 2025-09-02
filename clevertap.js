@@ -7509,12 +7509,8 @@
     flutterVersion: null,
     variableStore: {},
     pushConfig: null,
-<<<<<<< HEAD
-    enableFetchApi: false // domain: window.location.hostname, url -> getHostName()
-=======
     delayEvents: false,
     intervalArray: [] // domain: window.location.hostname, url -> getHostName()
->>>>>>> a301e9f9d43b355db36f7470487865a74d4305b6
     // gcookie: -> device
 
   };
@@ -8478,6 +8474,221 @@
 
     return output;
   };
+  const decompressFromBase64 = input => {
+    if (input == null || input === '') return '';
+    var output = '';
+    var chr1, chr2, chr3;
+    var enc1, enc2, enc3, enc4;
+    var i = 0;
+    input = input.replace(/[^A-Za-z0-9\+\/\=]/g, '');
+
+    while (i < input.length) {
+      enc1 = _keyStr.indexOf(input.charAt(i++));
+      enc2 = _keyStr.indexOf(input.charAt(i++));
+      enc3 = _keyStr.indexOf(input.charAt(i++));
+      enc4 = _keyStr.indexOf(input.charAt(i++));
+      chr1 = enc1 << 2 | enc2 >> 4;
+      chr2 = (enc2 & 15) << 4 | enc3 >> 2;
+      chr3 = (enc3 & 3) << 6 | enc4;
+
+      if (output.length % 2 === 0) {
+        output += String.fromCharCode(chr1 << 8 | chr2);
+
+        if (enc3 != 64) {
+          output += String.fromCharCode(chr3 << 8 | (enc4 === 64 ? 0 : enc4));
+        }
+      } else {
+        output = output.substring(0, output.length - 1) + String.fromCharCode(output.charCodeAt(output.length - 1) & 255 | chr1 << 8);
+
+        if (enc3 != 64) {
+          output += String.fromCharCode(chr2 << 8 | chr3);
+        }
+      }
+    }
+
+    return decompress(output);
+  };
+  const decompress = compressed => {
+    if (compressed == null || compressed === '') return '';
+    var dictionary = {};
+    var dictSize = 4;
+    var numBits = 3;
+    var entry = '';
+    var result = '';
+    var w;
+    var c;
+    var enlargeIn = 4;
+    var data = {
+      val: compressed.charCodeAt(0),
+      position: 32768,
+      index: 1
+    };
+    var bits = 0;
+    var maxpower = 2;
+    var power = 1;
+
+    while (power != maxpower) {
+      var resb = data.val & data.position;
+      data.position >>= 1;
+
+      if (data.position === 0) {
+        data.position = 32768;
+        data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0;
+      }
+
+      bits |= (resb > 0 ? 1 : 0) * power;
+      power <<= 1;
+    }
+
+    switch (bits) {
+      case 0:
+        bits = 0;
+        maxpower = Math.pow(2, 8);
+        power = 1;
+
+        while (power != maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+
+          if (data.position === 0) {
+            data.position = 32768;
+            data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0;
+          }
+
+          bits |= (resb > 0 ? 1 : 0) * power;
+          power <<= 1;
+        }
+
+        c = String.fromCharCode(bits);
+        break;
+
+      case 1:
+        bits = 0;
+        maxpower = Math.pow(2, 16);
+        power = 1;
+
+        while (power != maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+
+          if (data.position === 0) {
+            data.position = 32768;
+            data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0;
+          }
+
+          bits |= (resb > 0 ? 1 : 0) * power;
+          power <<= 1;
+        }
+
+        c = String.fromCharCode(bits);
+        break;
+
+      case 2:
+        return '';
+    }
+
+    dictionary[3] = c;
+    w = result = c;
+
+    while (true) {
+      if (data.index > compressed.length) {
+        return '';
+      }
+
+      bits = 0;
+      maxpower = Math.pow(2, numBits);
+      power = 1;
+
+      while (power != maxpower) {
+        resb = data.val & data.position;
+        data.position >>= 1;
+
+        if (data.position === 0) {
+          data.position = 32768;
+          data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0;
+        }
+
+        bits |= (resb > 0 ? 1 : 0) * power;
+        power <<= 1;
+      }
+
+      switch (c = bits) {
+        case 0:
+          bits = 0;
+          maxpower = Math.pow(2, 8);
+          power = 1;
+
+          while (power != maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+
+            if (data.position === 0) {
+              data.position = 32768;
+              data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0;
+            }
+
+            bits |= (resb > 0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+
+          dictionary[dictSize++] = String.fromCharCode(bits);
+          c = dictSize - 1;
+          enlargeIn--;
+          break;
+
+        case 1:
+          bits = 0;
+          maxpower = Math.pow(2, 16);
+          power = 1;
+
+          while (power != maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+
+            if (data.position === 0) {
+              data.position = 32768;
+              data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0;
+            }
+
+            bits |= (resb > 0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+
+          dictionary[dictSize++] = String.fromCharCode(bits);
+          c = dictSize - 1;
+          enlargeIn--;
+          break;
+
+        case 2:
+          return result;
+      }
+
+      if (enlargeIn === 0) {
+        enlargeIn = Math.pow(2, numBits);
+        numBits++;
+      }
+
+      if (dictionary[c]) {
+        entry = dictionary[c];
+      } else {
+        if (c === dictSize) {
+          entry = w + w.charAt(0);
+        } else {
+          return null;
+        }
+      }
+
+      result += entry;
+      dictionary[dictSize++] = w + entry.charAt(0);
+      enlargeIn--;
+      w = entry;
+
+      if (enlargeIn === 0) {
+        enlargeIn = Math.pow(2, numBits);
+        numBits++;
+      }
+    }
+  };
 
   const getURLParams = url => {
     const urlParams = {};
@@ -8524,6 +8735,95 @@
     return window.location.hostname;
   };
 
+  const utf8 = new TextEncoder();
+
+  const toB64 = u8 => btoa(String.fromCharCode(...u8));
+
+  const fromB64 = b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+  const rnd = n => crypto.getRandomValues(new Uint8Array(n));
+  /**
+   * Encrypts payload for backend transmission using AES-GCM-256.
+   *
+   * @param {string|Object} payload - The payload to encrypt (string or object to stringify)
+   * @param {Object} options - Options object
+   * @param {string} options.id - Optional identifier (defaults to 'ZWW-WWW-WWRZ')
+   * @returns {Promise<string>} - Base64 compressed encrypted envelope
+   */
+
+
+  function encryptForBackend(payload) {
+    let {
+      id = 'ZWW-WWW-WWRZ'
+    } = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    const key = rnd(32); // 256-bit key
+
+    const iv = rnd(12); // 96-bit IV
+
+    const alg = {
+      name: 'AES-GCM',
+      iv,
+      tagLength: 128
+    };
+    const plainBuf = utf8.encode(typeof payload === 'string' ? payload : JSON.stringify(payload));
+    return crypto.subtle.importKey('raw', key, alg, false, ['encrypt']).then(keyObj => crypto.subtle.encrypt(alg, keyObj, plainBuf)).then(cipherBuf => {
+      const cipher = new Uint8Array(cipherBuf);
+      const envelope = {
+        itp: toB64(cipher),
+        // payload
+        itk: toB64(key),
+        // key
+        itv: toB64(iv),
+        // iv
+        id,
+        encrypted: true
+      };
+      return compressData(JSON.stringify(envelope));
+    }).catch(error => {
+      throw new Error("Encryption failed: ".concat(error.message));
+    });
+  }
+  /**
+   * Decrypts response from backend using AES-GCM-256.
+   * This is a stub implementation for Phase 2.
+   *
+   * @param {string} envelopeB64 - Base64 compressed encrypted envelope
+   * @returns {Promise<string>} - Decrypted plaintext
+   */
+
+  function decryptFromBackend(envelopeB64) {
+    try {
+      // Decompress the base64 envelope using LZS decompression
+      const envelopeJson = decompressFromBase64(envelopeB64);
+      const envelope = JSON.parse(envelopeJson);
+      const {
+        itp,
+        itk,
+        itv
+      } = envelope;
+
+      if (!itp || !itk || !itv) {
+        return Promise.reject(new Error('Decryption failed: Invalid envelope format'));
+      }
+
+      const payload = fromB64(itp);
+      const key = fromB64(itk);
+      const iv = fromB64(itv);
+      const alg = {
+        name: 'AES-GCM',
+        iv,
+        tagLength: 128
+      };
+      return crypto.subtle.importKey('raw', key, alg, false, ['decrypt']).then(keyObj => crypto.subtle.decrypt(alg, keyObj, payload)).then(plainBuf => new TextDecoder().decode(plainBuf)).catch(error => {
+        throw new Error("Decryption failed: ".concat(error.message));
+      });
+    } catch (error) {
+      return Promise.reject(new Error("Decryption failed: ".concat(error.message)));
+    }
+  }
+
+  var _prepareEncryptedRequest = _classPrivateFieldLooseKey("prepareEncryptedRequest");
+
   var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
 
   var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
@@ -8548,20 +8848,63 @@
       _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
     }
 
-    static async handleFetchResponse(url) {
-      try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json'
-          }
-        });
-
+    static handleFetchResponse(url) {
+      const fetchOptions = {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json'
+        }
+      };
+      fetch(url, fetchOptions).then(response => {
         if (!response.ok) {
+          // Check for server-side EIT disabled scenario
+          if (response.status === 400) {
+            return response.text().then(errorText => {
+              if (errorText.includes('EIT_DISABLED')) {
+                console.error('Encryption in Transit is disabled on server side – disable flag or contact support', {
+                  status: response.status,
+                  statusText: response.statusText,
+                  error: errorText
+                });
+              }
+
+              throw new Error("Network response was not ok: ".concat(response.statusText));
+            });
+          }
+
           throw new Error("Network response was not ok: ".concat(response.statusText));
         }
 
-        const jsonResponse = await response.json();
+        return response.text();
+      }).then(rawResponse => {
+        // Phase 2: Attempt to decrypt the response if it might be encrypted
+        const tryDecryption = () => {
+          if (rawResponse && rawResponse.length > 0) {
+            return decryptFromBackend(rawResponse).then(decryptedResponse => {
+              this.logger.debug('Successfully decrypted response');
+              return decryptedResponse;
+            }).catch(decryptError => {
+              // If decryption fails, assume the response was not encrypted
+              this.logger.debug('Response decryption failed, assuming unencrypted:', decryptError.message);
+              return rawResponse;
+            });
+          }
+
+          return Promise.resolve(rawResponse);
+        };
+
+        return tryDecryption();
+      }).then(processedResponse => {
+        // Parse the final response as JSON
+        let jsonResponse;
+
+        try {
+          jsonResponse = JSON.parse(processedResponse);
+        } catch (parseError) {
+          this.logger.error('Failed to parse response as JSON:', parseError);
+          throw new Error('Invalid JSON response');
+        }
+
         const {
           tr,
           meta,
@@ -8597,9 +8940,15 @@
         }
 
         this.logger.debug('req snt -> url: ' + url);
-      } catch (error) {
+      }).catch(error => {
+        if (error.message && error.message.includes('EIT decryption failed')) {
+          this.logger.error('EIT decryption failed', error); // Safely ignore the response payload and proceed without applying server changes
+
+          return;
+        }
+
         this.logger.error('Fetch error:', error);
-      }
+      });
     }
 
     getDelayFrequency() {
@@ -8668,7 +9017,7 @@
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
   };
 
-  var _fireRequest2 = async function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
+  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
     var _window$location$orig, _window, _window$location, _window2, _window2$location, _window$clevertap, _window$wizrocket;
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
@@ -8739,32 +9088,95 @@
 
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:');
-    } // TODO: Try using Function constructor instead of appending script.
+    } // Prepare request with optional encryption
 
 
-    var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
+    _classPrivateFieldLooseBase(this, _prepareEncryptedRequest)[_prepareEncryptedRequest](url).then(requestConfig => {
+      // TODO: Try using Function constructor instead of appending script.
+      var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
 
-    while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
-      ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
-    }
+      while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+        ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
+      } // Use the static flag instead of the global $ct map
+      // When encryption is enabled, always use Fetch API
 
-    if (!$ct.enableFetchApi) {
-      const s = document.createElement('script');
-      s.setAttribute('type', 'text/javascript');
-      s.setAttribute('src', url);
-      s.setAttribute('class', 'ct-jp-cb');
-      s.setAttribute('rel', 'nofollow');
-      s.async = true;
-      document.getElementsByTagName('head')[0].appendChild(s);
-      this.logger.debug('req snt -> url: ' + url);
-    } else {
-      this.handleFetchResponse(url);
+
+      if (!this.enableFetchApi && !this.enableEncryptionInTransit) {
+        const s = document.createElement('script');
+        s.setAttribute('type', 'text/javascript');
+        s.setAttribute('src', requestConfig.url);
+        s.setAttribute('class', 'ct-jp-cb');
+        s.setAttribute('rel', 'nofollow');
+        s.async = true;
+        document.getElementsByTagName('head')[0].appendChild(s);
+        this.logger.debug('req snt -> url: ' + requestConfig.url);
+      } else {
+        this.handleFetchResponse(requestConfig.url);
+      }
+    }).catch(error => {
+      this.logger.error('Request preparation failed:', error);
+    });
+  };
+
+  var _prepareEncryptedRequest2 = function _prepareEncryptedRequest2(url) {
+    if (!this.enableEncryptionInTransit) {
+      return Promise.resolve({
+        url,
+        method: 'GET'
+      });
+    } // Force Fetch API when encryption is enabled
+
+
+    this.enableFetchApi = true;
+
+    try {
+      // Extract query string from URL
+      const urlObj = new URL(url);
+      const searchParams = new URLSearchParams(urlObj.search); // Check if 'd' parameter exists
+
+      const dParam = searchParams.get('d');
+
+      if (!dParam) {
+        return Promise.resolve({
+          url,
+          method: 'GET'
+        });
+      } // Encrypt only the 'd' parameter value
+
+
+      return encryptForBackend(dParam).then(encryptedData => {
+        // Replace the 'd' parameter with encrypted data
+        searchParams.set('d', encryptedData); // Reconstruct the URL with encrypted 'd' parameter
+
+        const newUrl = "".concat(urlObj.protocol, "//").concat(urlObj.host).concat(urlObj.pathname, "?").concat(searchParams.toString());
+        return {
+          url: newUrl,
+          method: 'GET'
+        };
+      }).catch(error => {
+        this.logger.error('Encryption failed, falling back to unencrypted request:', error);
+        return {
+          url,
+          method: 'GET'
+        };
+      });
+    } catch (error) {
+      this.logger.error('URL parsing failed, falling back to unencrypted request:', error);
+      return Promise.resolve({
+        url,
+        method: 'GET'
+      });
     }
   };
 
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
   RequestDispatcher.account = void 0;
+  RequestDispatcher.enableFetchApi = false;
+  RequestDispatcher.enableEncryptionInTransit = false;
+  Object.defineProperty(RequestDispatcher, _prepareEncryptedRequest, {
+    value: _prepareEncryptedRequest2
+  });
   Object.defineProperty(RequestDispatcher, _fireRequest, {
     value: _fireRequest2
   });
@@ -17222,6 +17634,8 @@
 
   var _enableFetchApi = _classPrivateFieldLooseKey("enableFetchApi");
 
+  var _enableEncryptionInTransit = _classPrivateFieldLooseKey("enableEncryptionInTransit");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _debounce = _classPrivateFieldLooseKey("debounce");
@@ -17273,8 +17687,19 @@
     }
 
     set enableFetchApi(value) {
-      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value;
-      $ct.enableFetchApi = value;
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value; // propagate the setting to RequestDispatcher so util layer can honour it
+
+      RequestDispatcher.enableFetchApi = value;
+    }
+
+    get enableEncryptionInTransit() {
+      return _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit];
+    }
+
+    set enableEncryptionInTransit(value) {
+      _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = value; // propagate the setting to RequestDispatcher so util layer can honour it
+
+      RequestDispatcher.enableEncryptionInTransit = value;
     }
 
     constructor() {
@@ -17362,6 +17787,10 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _enableEncryptionInTransit, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
@@ -17386,6 +17815,9 @@
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = (_clevertap$dismissSpa = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa !== void 0 ? _clevertap$dismissSpa : true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
       _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = clevertap.enableFetchApi || false;
+      RequestDispatcher.enableFetchApi = _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
+      _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = clevertap.enableEncryptionInTransit || false;
+      RequestDispatcher.enableEncryptionInTransit = _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit];
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         isPersonalisationActive: this._isPersonalisationActive
@@ -18107,6 +18539,16 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
+      }
+
+      if (config.enableFetchApi) {
+        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
+        RequestDispatcher.enableFetchApi = config.enableFetchApi;
+      }
+
+      if (config.enableEncryptionInTransit) {
+        _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = config.enableEncryptionInTransit;
+        RequestDispatcher.enableEncryptionInTransit = config.enableEncryptionInTransit;
       } // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
       // This ensures user identity is established before other events
 
@@ -18115,11 +18557,6 @@
         _classPrivateFieldLooseBase(this, _logger)[_logger].debug('Processing OUL backup events first to establish user identity');
 
         _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents(true);
-      }
-
-      if (config.enableFetchApi) {
-        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
-        $ct.enableFetchApi = config.enableFetchApi;
       }
 
       const currLocation = location.href;

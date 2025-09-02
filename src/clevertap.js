@@ -73,6 +73,7 @@ export default class CleverTap {
   enablePersonalization
   #pageChangeTimeoutId
   #enableFetchApi
+  #enableEncryptionInTransit
 
   get spa () {
     return this.#isSpa
@@ -111,6 +112,16 @@ export default class CleverTap {
     RequestDispatcher.enableFetchApi = value
   }
 
+  get enableEncryptionInTransit () {
+    return this.#enableEncryptionInTransit
+  }
+
+  set enableEncryptionInTransit (value) {
+    this.#enableEncryptionInTransit = value
+    // propagate the setting to RequestDispatcher so util layer can honour it
+    RequestDispatcher.enableEncryptionInTransit = value
+  }
+
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
@@ -131,6 +142,8 @@ export default class CleverTap {
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#enableFetchApi = clevertap.enableFetchApi || false
     RequestDispatcher.enableFetchApi = this.#enableFetchApi
+    this.#enableEncryptionInTransit = clevertap.enableEncryptionInTransit || false
+    RequestDispatcher.enableEncryptionInTransit = this.#enableEncryptionInTransit
     this.#session = new SessionManager({
       logger: this.#logger,
       isPersonalisationActive: this._isPersonalisationActive
@@ -742,6 +755,11 @@ export default class CleverTap {
     if (config.enableFetchApi) {
       this.#enableFetchApi = config.enableFetchApi
       RequestDispatcher.enableFetchApi = config.enableFetchApi
+    }
+
+    if (config.enableEncryptionInTransit) {
+      this.#enableEncryptionInTransit = config.enableEncryptionInTransit
+      RequestDispatcher.enableEncryptionInTransit = config.enableEncryptionInTransit
     }
 
     // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
