@@ -1,4 +1,3 @@
-import 'regenerator-runtime/runtime'
 import { ARP_COOKIE, OPTOUT_COOKIE_ENDSWITH } from '../../../src/util/constants'
 import { compressData } from '../../../src/util/encoder'
 import RequestDispatcher from '../../../src/util/requestDispatcher'
@@ -22,9 +21,9 @@ describe('util/requestDispatcher', function () {
       // Mock the handleFetchResponse method to avoid actual fetch calls
       RequestDispatcher.handleFetchResponse = jest.fn().mockResolvedValue()
 
-      // Mock $ct object completely
+      // Set RequestDispatcher flag instead of using $ct global
+      RequestDispatcher.enableFetchApi = false
       Object.assign($ct, {
-        enableFetchApi: false,
         blockRequest: false,
         isOptInRequest: false,
         globalCache: {
@@ -132,7 +131,7 @@ describe('util/requestDispatcher', function () {
 
       describe('fetch API feature flag', () => {
         test('should use script tag when enableFetchApi is false', () => {
-          $ct.enableFetchApi = false
+          RequestDispatcher.enableFetchApi = false
           const mockAppendChild = jest.fn()
           document.getElementsByTagName = jest.fn().mockReturnValue([{ appendChild: mockAppendChild }])
           document.createElement = jest.fn().mockReturnValue({
@@ -147,7 +146,7 @@ describe('util/requestDispatcher', function () {
         })
 
         test('should use fetch API when enableFetchApi is true', () => {
-          $ct.enableFetchApi = true
+          RequestDispatcher.enableFetchApi = true
 
           RequestDispatcher.fireRequest('test url', false, false)
 

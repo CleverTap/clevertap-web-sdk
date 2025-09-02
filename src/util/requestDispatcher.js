@@ -19,7 +19,7 @@ export default class RequestDispatcher {
   minDelayFrequency = 0
 
   // ANCHOR - Requests get fired from here
-  static async #fireRequest (url, tries, skipARP, sendOULFlag, evtName) {
+  static #fireRequest(url, tries, skipARP, sendOULFlag, evtName) {
     if (this.#dropRequestDueToOptOut()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
@@ -47,9 +47,9 @@ export default class RequestDispatcher {
       }
     } else {
       if (!isValueValid(this.device.gcookie) &&
-      ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
-      tries < MAX_TRIES) {
-      // if ongoing First Request is in progress, initiate retry
+        ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
+        tries < MAX_TRIES) {
+        // if ongoing First Request is in progress, initiate retry
         setTimeout(() => {
           this.logger.debug(`retrying fire request for url: ${url}, tries: ${tries}`)
           this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
@@ -110,11 +110,11 @@ export default class RequestDispatcher {
    * @param {*} skipARP
    * @param {boolean} sendOULFlag
    */
-  static fireRequest (url, skipARP, sendOULFlag, evtName) {
+  static fireRequest(url, skipARP, sendOULFlag, evtName) {
     this.#fireRequest(url, 1, skipARP, sendOULFlag, evtName)
   }
 
-  static #dropRequestDueToOptOut () {
+  static #dropRequestDueToOptOut() {
     if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
       $ct.isOptInRequest = false
       return false
@@ -122,7 +122,7 @@ export default class RequestDispatcher {
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH
   }
 
-  static #addUseIPToRequest (pageLoadUrl) {
+  static #addUseIPToRequest(pageLoadUrl) {
     var useIP = StorageManager.getMetaProp(USEIP_KEY)
     if (typeof useIP !== 'boolean') {
       useIP = false
@@ -130,7 +130,7 @@ export default class RequestDispatcher {
     return addToURL(pageLoadUrl, USEIP_KEY, useIP ? 'true' : 'false')
   };
 
-  static #addARPToRequest (url, skipResARP) {
+  static #addARPToRequest(url, skipResARP) {
     if (skipResARP === true) {
       const _arp = {}
       _arp.skipResARP = true
@@ -142,40 +142,47 @@ export default class RequestDispatcher {
     return url
   }
 
-  static async handleFetchResponse (url) {
-    try {
-      const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
-      if (!response.ok) {
-        throw new Error(`Network response was not ok: ${response.statusText}`)
-      }
-      const jsonResponse = await response.json()
-      const { tr, meta, wpe } = jsonResponse
-      if (tr) {
-        window.$WZRK_WR.tr(tr)
-      }
-      if (meta) {
-        const { g, sid, rf, rn, optOut } = meta
-        if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
-          const parsedRn = parseInt(rn)
+  static handleFetchResponse(url) {
+    return fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Network response was not ok: ${response.statusText}`)
+        }
+        return response.json()
+      })
+      .then(jsonResponse => {
+        const { tr, meta, wpe } = jsonResponse
 
-          // Include optOut as 5th parameter if present
-          if (optOut !== undefined) {
-            window.$WZRK_WR.s(g, sid, rf, parsedRn, optOut)
-          } else {
-            window.$WZRK_WR.s(g, sid, rf, parsedRn)
+        if (tr) {
+          window.$WZRK_WR.tr(tr)
+        }
+
+        if (meta) {
+          const { g, sid, rf, rn, optOut } = meta
+          if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
+            const parsedRn = parseInt(rn)
+
+            // Include optOut as 5th parameter if present
+            if (optOut !== undefined) {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn, optOut)
+            } else {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn)
+            }
           }
         }
-      }
-      if (wpe) {
-        window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key)
-      }
-      this.logger.debug('req snt -> url: ' + url)
-    } catch (error) {
-      this.logger.error('Fetch error:', error)
-    }
+
+        if (wpe) {
+          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key)
+        }
+
+        this.logger.debug('req snt -> url: ' + url)
+      })
+      .catch(error => {
+        this.logger.error('Fetch error:', error)
+      })
   }
 
-  getDelayFrequency () {
+  getDelayFrequency() {
     this.logger.debug('Network retry #' + this.networkRetryCount)
 
     // Retry with delay as 1s for first 10 retries

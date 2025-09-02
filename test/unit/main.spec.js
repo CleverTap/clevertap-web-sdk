@@ -21,7 +21,7 @@ describe('main.js', function () {
     RequestDispatcher.fireRequest = jest.fn()
 
     // Mock $ct object with default values to prevent undefined errors
-    $ct.enableFetchApi = false
+    RequestDispatcher.enableFetchApi = false
     $ct.blockRequest = false
     $ct.globalCache = {
       REQ_N: 0,

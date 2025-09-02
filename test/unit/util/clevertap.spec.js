@@ -1,4 +1,3 @@
-import 'regenerator-runtime/runtime'
 import {
   addToLocalProfileMap,
   getCampaignObject,
@@ -35,6 +34,7 @@ describe('util/clevertap', function () {
     RequestDispatcher.fireRequest = jest.fn()
 
     // Mock $ct object with default values to prevent undefined errors
+    RequestDispatcher.enableFetchApi = false
     Object.assign($ct, {
       enableFetchApi: false,
       blockRequest: false,
