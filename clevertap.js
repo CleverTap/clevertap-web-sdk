@@ -7986,7 +7986,7 @@
 
 
     return false;
-  };
+  }; // Validation results structure
 
   var _logger$8 = _classPrivateFieldLooseKey("logger");
 
