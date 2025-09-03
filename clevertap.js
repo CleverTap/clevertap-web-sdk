@@ -11866,6 +11866,7 @@
     } else {
       if (isSafari()) {
         // This is for migration case for safari from apns to vapid, show popup even when timer is not expired.
+        // If PushManager is not available then return
         if (vapidSupportedAndMigrated || fcmPublicKey === null || !('PushManager' in window)) {
           return;
         }
