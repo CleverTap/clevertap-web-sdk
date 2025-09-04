@@ -13,7 +13,8 @@ import {
   IS_OUL,
   categoryLongKey,
   CAMP_COOKIE_G,
-  GLOBAL
+  GLOBAL,
+  CAMPAIGN_TYPES
 } from './constants'
 import {
   GENDER_ERROR,
@@ -41,6 +42,8 @@ import {
   isValueValid
 } from './datatypes'
 
+import { deliveryPreferenceUtils } from '../../src/util/campaignRender/utilities'
+
 import { addToURL, getURLParams } from './url'
 import { compressData } from './encoder'
 import RequestDispatcher from './requestDispatcher'
@@ -51,11 +54,7 @@ export const getCampaignObject = () => {
     let campObj = StorageManager.read(CAMP_COOKIE_NAME)
     if (campObj != null) {
       campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'))
-      if (campObj.hasOwnProperty('global')) {
-        finalcampObj.wp = campObj
-      } else {
-        finalcampObj = campObj
-      }
+      finalcampObj = campObj
     } else {
       finalcampObj = {}
     }
@@ -63,6 +62,7 @@ export const getCampaignObject = () => {
   return finalcampObj
 }
 
+// Save Camp here
 export const saveCampaignObject = (campaignObj) => {
   if (StorageManager._isLocalStorageSupported()) {
     const newObj = { ...getCampaignObject(), ...campaignObj }
@@ -70,6 +70,80 @@ export const saveCampaignObject = (campaignObj) => {
     StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj))
     // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
     setCampaignObjectForGuid()
+  }
+}
+
+/**
+ * Updates campaign delivery preferences and tracking counters
+ *
+ * This function updates the campaign tracking object in the CAMP localstorage variables based on the campaign type,
+ * increments appropriate show counters, and updates frequency control timestamps.
+ *
+ * @param {CampaignDetails} campaignDetails - The campaign information object
+ * @param {any} wtq - Additional query parameters (if needed)
+ * @returns {void}
+ */
+export const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
+  try {
+    if (!campaignDetails || !campaignDetails.wzrk_id) {
+      throw new Error('Invalid campaign details provided')
+    }
+
+    const campaignObj = getCampaignObject() || {}
+
+    const campaignIdParts = campaignDetails.wzrk_id.split('_')
+    const campaignId = campaignIdParts[0]
+    const isCampaignExcludedFromFrequencyLimits = campaignDetails?.display?.efc
+
+    if (!campaignId) {
+      throw new Error('Failed to parse campaign ID')
+    }
+
+    const campaignType = campaignDetails?.display?.wtarget_type
+
+    const campaignTypeConfig = {
+      [CAMPAIGN_TYPES.FOOTER_NOTIFICATION]: {
+        showCountKey: 'wsc',
+        frequencyControlKey: 'wfc',
+        dailyCountKey: 'wmp'
+      },
+      [CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY]: {
+        showCountKey: 'wndsc',
+        frequencyControlKey: 'wndfc',
+        dailyCountKey: 'wndmp'
+      }
+    }
+
+    const config = campaignTypeConfig[campaignType]
+
+    if (!config) {
+      throw new Error(`Unsupported campaign type: ${campaignType}`)
+    }
+
+    if (!isCampaignExcludedFromFrequencyLimits) {
+      const showCountKey = config.showCountKey
+      const dailyCountKey = config.dailyCountKey
+
+      const currentShowCount =
+        typeof campaignObj[showCountKey] === 'number'
+          ? campaignObj[showCountKey]
+          : 0
+      campaignObj[showCountKey] = currentShowCount + 1
+
+      campaignObj[dailyCountKey] = deliveryPreferenceUtils.getDailyCount(campaignObj, dailyCountKey)
+    }
+
+    if (campaignDetails?.display?.adp) {
+      const frequencyControlKey = config.frequencyControlKey
+      campaignObj[frequencyControlKey] = deliveryPreferenceUtils.updateTimestampTracker(
+        [campaignId],
+        campaignObj[frequencyControlKey] || {}
+      )
+    }
+
+    saveCampaignObject(campaignObj)
+  } catch (error) {
+    logger.error(`Campaign delivery preference update failed: ${error.message}`)
   }
 }
 
@@ -84,6 +158,8 @@ export const setCampaignObjectForGuid = () => {
         if (guid && StorageManager._isLocalStorageSupported()) {
           var finalCampObj = {}
           var campObj = getCampaignObject()
+
+          /* TODO: Check if Webinbox needs these keys or get rid of them */
           Object.keys(campObj).forEach(key => {
             const campKeyObj = (guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key]) ? guidCampObj[guid][key] : {}
             const globalObj = campObj[key].global
@@ -111,8 +187,25 @@ export const setCampaignObjectForGuid = () => {
                 }
               }
             }
-            finalCampObj = { ...finalCampObj, [key]: campKeyObj }
+            finalCampObj = {
+              ...finalCampObj,
+              [key]: campKeyObj
+            }
           })
+
+          finalCampObj = {
+            ...finalCampObj,
+            wsc: campObj.wsc,
+            wfc: campObj.wfc,
+            woc: campObj.woc,
+            wmp: campObj.wmp,
+            dnd: campObj.dnd,
+            wndsc: campObj.wndsc,
+            wndfc: campObj.wndfc,
+            wndoc: campObj.wndoc,
+            wndmp: campObj.wndmp
+          }
+
           guidCampObj[guid] = finalCampObj
           StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
         }
@@ -134,32 +227,37 @@ export const getCampaignObjForLc = () => {
     const decodedValue = storageValue ? decodeURIComponent(storageValue) : null
     const parsedValue = decodedValue ? JSON.parse(decodedValue) : null
 
-    const resultObjWP = (!!guid &&
-                        storageValue !== undefined && storageValue !== null &&
-                        parsedValue && parsedValue[guid] && parsedValue[guid].wp)
-      ? Object.values(parsedValue[guid].wp)
-      : []
-
     const resultObjWI = (!!guid &&
                         storageValue !== undefined && storageValue !== null &&
                         parsedValue && parsedValue[guid] && parsedValue[guid].wi)
       ? Object.values(parsedValue[guid].wi)
       : []
 
-    const today = getToday()
-    let todayCwp = 0
-    let todayCwi = 0
-    if (campObj.wp && campObj.wp[today] && campObj.wp[today].tc !== 'undefined') {
-      todayCwp = campObj.wp[today].tc
+    const webPopupDeliveryPreferenceDeatils = {
+      wsc: campObj?.wsc ?? 0,
+      wfc: campObj?.wfc ?? {},
+      woc: campObj?.woc ?? {}
     }
+
+    const webNativeDisplayDeliveryPreferenceDeatils = {
+      wndsc: campObj?.wndsc ?? 0,
+      wndfc: campObj?.wndfc ?? {},
+      wndoc: campObj?.wndoc ?? {}
+    }
+
+    const today = getToday()
+    // let todayCwp = 0
+    let todayCwi = 0
     if (campObj.wi && campObj.wi[today] && campObj.wi[today].tc !== 'undefined') {
       todayCwi = campObj.wi[today].tc
     }
+
+    // CAMP Is generated here
     resultObj = {
-      wmp: todayCwp,
       wimp: todayCwi,
-      tlc: resultObjWP,
-      witlc: resultObjWI
+      witlc: resultObjWI,
+      ...webPopupDeliveryPreferenceDeatils,
+      ...webNativeDisplayDeliveryPreferenceDeatils
     }
     return resultObj
   }
@@ -177,7 +275,7 @@ export const isProfileValid = (profileObj, { logger }) => {
           delete profileObj[profileKey]
           continue
         }
-        if (profileKey === 'Gender' && !profileVal.match(/^M$|^F$/)) {
+        if (profileKey === 'Gender' && !profileVal.match(/\b(?:[mM](?:ale)?|[fF](?:emale)?|[oO](?:thers)?|[uU](?:nknown)?)\b/)) {
           valid = false
           logger.error(GENDER_ERROR)
         }
@@ -415,22 +513,29 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     if (StorageManager._isLocalStorageSupported()) {
       const campaignObj = getCampaignObject()
 
-      let sessionCampaignObj = campaignObj.wp[currentSessionId]
-      if (sessionCampaignObj == null) {
-        sessionCampaignObj = {}
-        campaignObj[currentSessionId] = sessionCampaignObj
-      }
-      sessionCampaignObj[campaignId] = 'dnd'
+      // CurrentSesion Id is the problem
+      campaignObj.dnd = [...new Set([
+        ...(campaignObj.dnd ?? []),
+        campaignId
+      ])]
       saveCampaignObject(campaignObj)
     }
   }
   if ($ct.campaignDivMap != null) {
     const divId = $ct.campaignDivMap[campaignId]
     if (divId != null) {
-      document.getElementById(divId).style.display = 'none'
+      document.getElementById(divId).remove()
       if (divId === 'intentPreview') {
         if (document.getElementById('intentOpacityDiv') != null) {
-          document.getElementById('intentOpacityDiv').style.display = 'none'
+          document.getElementById('intentOpacityDiv').remove()
+        }
+      } else if (divId === 'wizParDiv0') {
+        if (document.getElementById('intentOpacityDiv0') != null) {
+          document.getElementById('intentOpacityDiv0').remove()
+        }
+      } else if (divId === 'wizParDiv2') {
+        if (document.getElementById('intentOpacityDiv2') != null) {
+          document.getElementById('intentOpacityDiv2').remove()
         }
       }
     }

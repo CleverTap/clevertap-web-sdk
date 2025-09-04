@@ -10,7 +10,7 @@ import { getURLParams, getDomain, addToURL } from '../../src/util/url'
 import { StorageManager } from '../../src/util/storage'
 import { CONTINUOUS_PING_FREQ_IN_MILLIS, FIRST_PING_FREQ_IN_MILLIS } from '../../src/util/constants'
 import UserLoginHandler from '../../src/modules/userLogin'
-
+import { validateCustomCleverTapID } from '../../src/util/helpers'
 // mock everything except for the module that's being tested and constants
 jest.enableAutomock().unmock('../../src/clevertap').unmock('../../src/util/constants')
 
@@ -21,6 +21,7 @@ const accountId = 'WWW'
 const region = 'in'
 const targetDomain = 'foo.com'
 const dataPostURL = 'data.post.url'
+const token = undefined
 let mockLogger, mockDevice, mockSessionObject, mockRequestObject, mockOUL
 
 describe('clevertap.js', function () {
@@ -61,6 +62,7 @@ describe('clevertap.js', function () {
     RequestManager.mockReturnValue(mockRequestObject)
     StorageManager._isLocalStorageSupported.mockReturnValue(true)
     UserLoginHandler.mockReturnValue(mockOUL)
+    validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null })
   })
 
   describe('constructor', () => {
@@ -82,9 +84,21 @@ describe('clevertap.js', function () {
       getURLParams.mockReturnValue({})
       getDomain.mockReturnValue(location.hostname)
       // eslint-disable-next-line no-new
-      new Clevertap({ account: [accountObj], region, targetDomain })
-      expect(Account).toHaveBeenCalledWith(accountObj, region, targetDomain)
+      new Clevertap({ account: [accountObj], region, targetDomain, token })
+      expect(Account).toHaveBeenCalledWith(accountObj, region, targetDomain, token)
       expect(mockRequestObject.saveAndFireRequest).toHaveBeenCalled()
+    })
+
+    test('should init with Custom CT ID when provided', () => {
+      validateCustomCleverTapID.mockReturnValue({ isValid: true, sanitizedId: '_w_custom_ct_id' })
+      this.clevertap = new Clevertap()
+      expect(DeviceManager).toHaveBeenCalledWith({ logger: new Logger(logLevels.INFO), customId: '_w_custom_ct_id' })
+    })
+
+    test('should init with Regular ID when Custom ID is invalid or Not provided', () => {
+      validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null })
+      this.clevertap = new Clevertap()
+      expect(DeviceManager).toHaveBeenCalledWith({ logger: new Logger(logLevels.INFO), customId: null })
     })
   })
 

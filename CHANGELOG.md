@@ -1,7 +1,253 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.6.10] - 17 Jan, 2023
+## [2.2.1] 1st Sept 2025
+- Added handling for close icon in web popup image only template.
+
+## [2.2.0] 26th August 2025
+- Added Isolate Sub-Domain flag in init fn.
+
+## [2.1.2] 22nd August 2025
+- Fixed the request handling flow for multi User Login.
+
+## [2.1.1] 20th August 2025
+- Exit Intent Fixes 
+
+## [2.1.0] 20th August 2025
+- Multi-page support in web native display Visual Editor.
+- Introduced preview in 'Advanced Web-popup Builder' in 'Web Popup'.
+- Exit Intent Fix to show once per unique lc event
+
+## [2.0.1] 7th August 2025
+- Corrected click actions for web popup image only template
+- Bug Fix for Web Popup Exit Intent 
+
+## [2.0.0] 22nd July, 2025
+- Added Delivery Preference Support for Web Popups & Web Native Displays
+- Enabled dismissSpamControl to true by default
+- Refactored campaignHouseKeeping and Logger 
+- Added Migration Mechanism for old local CAMP data to the new format
+- Refactored logger to support singleton pattern
+- Added deliveryTriggers to notification callback object.
+
+## [1.17.1] 15th July 2025
+- Added retry mechanism for web native display
+
+## [1.17.0] 8th July 2025
+- Added changes to support personalisation in 'Advanced Web-popup Builder' in 'Web Popup'.
+- Sending Origin details for domain whitelisting 
+
+## [1.16.2] 3rd July 2025
+- Introduces the new templates 'Advanced Web-popup Builder' in 'Web Popup'.
+
+## [1.16.1] 1st July 2025
+- Removed URL check from Visual Editor rendering
+
+## [1.16.0] 27th June 2025
+- Added Support for Accessiblity in Soft Prompt
+- Fix for Exit Intent Issue
+
+## [1.15.3] 28nd May, 2025
+- Stricter Origin Checks for postMessage communication
+
+## [1.15.2] 22nd May, 2025
+- Added origin check in postMessage for solve XSS vulnerability
+
+## [1.15.1] 20th May, 2025
+- Bug fix for Webpopup Preview
+
+## [1.15.0] 13th May, 2025
+- Added Clevertap Custom Id Support
+- Added Public API `getAllQualifiedCampaignDetails` for debugging purpose
+
+## [1.14.4] 24th Apr, 2025
+- Updated rendering logic for Web Native Display Custom Html Template.
+
+## [1.14.3] 16th Apr, 2025
+- Corrected the addScriptTo call to prevent wrong arguments
+
+## [1.14.2] 14th Apr, 2025
+- Added support for scripts tags in Web Native Display Custom Html Template.
+- Better guarding mechanism for postMessage
+
+## [1.14.1] 9th Apr, 2025
+- Added support for scripts tags in Web Native Display Visual Editor Template.
+
+## [1.14.0] 24th Mar, 2025
+- Added JSON and File Vars Support
+
+## [1.13.7] 19th Mar, 2025
+- Added option to close image only popup on click action
+
+## [1.13.6] 13th Mar, 2025
+- Fixed Overlay issue for soft prompt
+
+## [1.13.5] 7th Mar, 2025
+- Added Null Checks for Web Native Campaigns Utils
+- Fixed WebInbox Runtime Issues
+- Skipped WebInbox Retries when config not present
+- Native Display KV_Pair Custom Event Paylaod Backward Compatibility
+- Enhanced session storage check for WZRK_D with fallback and error handling.
+
+
+## [1.13.4] 7th Mar, 2025
+- Added support to preview html for custom native html
+- Fixed white background around web-popup
+
+## [1.13.3] 5th Mar, 2025
+- Web Native Display - Campaign Priority Support
+
+## [1.13.2] 5th Mar, 2025
+- Deprecated notification.enable api, using notification.push api for rendering new prompt
+- Bug fixes/enhancements like clevertap not initialised, race conditions etc
+- Vapid migration and APNS support for new soft prompt
+
+## [1.13.1] 21st Feb, 2025
+- Added search parameter ctActionMode to handle all url query parameter
+
+## [1.13.0] 19th Feb, 2025
+- Added encryption support for PII data
+- Fixed: Jio XSS issue in web popup
+
+## [1.12.1] 28th Jan, 2025
+- Added WebNative Custom Html and Json templates Support
+- Fixed duplicate session issue for extremely slow networks
+- Support for Change Log in Visual Builder
+- Support for insert elements in Visual Builder
+- Added Check for Soft prompt to not show if already exists
+- Added Check before events & notifications push for AccountId
+- Changed setOffline to process events if state changes
+- Fixed SPA unviewed badge issue
+
+## [1.12.0] 27th Jan, 2025
+- Added Support for Vapid Web Push for Safari Mac
+- Added Support for Web Push on Safari IOS 
+- Fixed Browser Identification methods
+- Fixed mobile issue marking all messages as read; added sticky header to web inbox.
+- Improved PWA route detection for browser back/forward buttons.
+- Optimized badge updates in SPA with delayed DOM checks on route changes.
+
+## [1.11.16] 20nd Jan, 2025
+- Fixed Web Inbox Notification for SPA route changes
+
+## [1.11.15] 14th Jan, 2025
+- Fixed Custom Web Inbox Init issue
+
+## [1.11.14] 17th Dec, 2024
+- Fixed Custom Web Inbox APIs
+
+## [1.11.13] 12th Dec, 2024
+- Fixed web push soft prompt bug
+
+## [1.11.12] 11th Dec, 2024
+- Initialize Web Inbox on document readyState complete
+
+## [1.11.11] 3rd Dec, 2024
+- Support for Personalisation in HTML & JSON for Visual Editor
+
+## [1.11.10] 22nd Nov, 2024
+- Fixed Web Popup Stale Nodes Cleanup
+
+## [1.11.9] 14th Nov, 2024
+- Fixed delete & read web-inbox messages for custom inbox
+
+## [1.11.8] 13th Nov, 2024
+- Fixed anti-flicker for visual editor 
+- Fixed White Background issue in Web Popup
+
+## [1.11.7] 11th Nov, 2024
+- Fixed saving/fetching inbox messages for custom inbox
+- Added undefined check for 'Notification' in web push
+
+## [1.11.6] 04th Nov, 2024
+- Fix for Checking Web Inbox when inbox Node becomes stale
+
+## [1.11.5] 30th Oct, 2024
+- Added support for personalisation in visual editor
+
+## [1.11.4] 24th Oct, 2024
+- Fix for gender values. Have removed frontend validation
+
+## [1.11.3] - 17 Oct, 2024
+- Support for new payload structure of Visual Editor
+- Moved version check of SDK to Dashboard
+
+## [1.11.2] - 17 Oct, 2024
+- Fixes a bug where Web Popup Campaign was not working if other iframes present on DOM.
+
+## [1.11.1] - 16 Oct, 2024
+- Fixes a bug where delay was not working for Web Popup Campaigns
+
+## [1.11.0] - 14 Oct, 2024
+- Adds Additional triggers and clicks handling for Web Popup template
+- Adds a fix for account id undefined for visual editor
+- Adds a fix for css in soft prompt
+
+## [1.10.1] - 8 Oct, 2024
+- Adding a fix for the version check in visual editor
+
+## [1.10.0] - 8 Oct, 2024
+- Adds new api to handle rendering of customized web push prompt
+
+## [1.9.6] - 23 Sept, 2024
+- Shopify support for visual builder
+
+## [1.9.5] - 23 Sept, 2024
+- Elimninates the use for migration service worker.
+
+## [1.9.4] - 18 Sept, 2024
+- Added anti flicker solution for visual editor
+
+## [1.9.3] - 16 Sept, 2024
+- Fixes a bug where multivalue feature was giving error.
+
+## [1.9.2] - 4 Sept, 2024
+- Sending SDK and account ID via post message
+
+## [1.9.1] - 29 Aug, 2024
+- Added origin check in Visual Editor template.
+
+## [1.9.0] - 31 July, 2024
+- Renamed the template 'In Page Customisation' to 'Visual Editor'.
+- Introduces Basic(Form) editor in 'Visual Editor'.
+
+## [1.8.3] - 10 July, 2024
+- Fixes an issue where contentDocument was not getting accessed for Web Popups as iframe wasn't ready.
+
+## [1.8.2] - 18 June, 2024
+- Fixes an issue in getLocation function where the location data was not sent in requests.
+- Exposes a method getSDKVersion
+
+## [1.8.1] - 14 June, 2024
+- Fixes an issue with Preview of webpopups related XSS changes.
+
+## [1.8.0] - 12 June, 2024
+- Introduces the new templates 'In Page Customisation' in 'Web Native Display'.
+
+## [1.7.6] - 11 June, 2024
+- Adds Iframe sandboxing for enhanced security against cross-site scripting (XSS) vulnerabilities.
+
+## [1.7.5] - 28 May, 2024
+- Fixes a issue Banner and carousel templates regarding background color.
+
+## [1.7.4] - 17 May, 2024
+- Fixes a issue in path for installation of Service worker for shopify.
+
+## [1.7.3] - 3 Apr, 2024
+- Fixes a issue in release pipeline of Service worker.
+
+## [1.7.2] - 2 Apr, 2024
+- Fixes a bug in service worker file having deeplink issue
+
+## [1.7.1] - 1 Apr, 2024
+- Fixes a bug where clevertap script was not working due to dependency added for PE
+- Fixes a bug where setMultiValue was not working
+
+## [1.7.0] - 27 Mar, 2024
+- Product experiences in Web SDK
+- Carousel preview bug fix
+
+## [1.6.10] - 17 Jan, 2024
 - Fixes a bug related to Web Inbox rendering on mobile browser
 
 ## [1.6.9] - 6 Dec, 2023

@@ -6,15 +6,31 @@ export const logLevels = {
   DISABLE: 0,
   ERROR: 1,
   INFO: 2,
-  DEBUG: 3
+  DEBUG: 3,
+  DEBUG_PE: 4
 }
 
 export class Logger {
-  logLevel
+  #logLevel
   wzrkError = {}
   constructor (logLevel) {
-    this.logLevel = logLevel != null ? logLevel : logLevels.INFO
+    // Singleton pattern - return existing instance if it exists
+    if (Logger.instance) {
+      return Logger.instance
+    }
+
+    this.#logLevel = logLevel == null ? logLevels.INFO : logLevel
     this.wzrkError = {}
+
+    Logger.instance = this
+  }
+
+  // Static method for explicit singleton access
+  static getInstance (logLevel) {
+    if (!Logger.instance) {
+      Logger.instance = new Logger(logLevel)
+    }
+    return Logger.instance
   }
 
   get logLevelValue () {
@@ -46,6 +62,12 @@ export class Logger {
   debugShopify (message, type = 'web') {
     if (this.logLevelValue >= logLevels.DEBUG || this.#isLegacyDebug) {
       this.#log('debug', message, type)
+    }
+  }
+
+  debugPE (message) {
+    if (this.#logLevel >= logLevels.DEBUG_PE) {
+      this.#log('debug_pe', message)
     }
   }
 

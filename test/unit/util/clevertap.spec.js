@@ -80,8 +80,19 @@ describe('util/clevertap', function () {
       StorageManager.read.mockReturnValue(null)
       const result = getCampaignObjForLc()
       const expectedObj = {
-        wmp: 0,
-        tlc: []
+        /* Webpopup */
+        wfc: {},
+        wsc: 0,
+        woc: {},
+
+        /* Web Native Display */
+        wndfc: {},
+        wndsc: 0,
+        wndoc: {},
+
+        /* Web Inbox */
+        wimp: 0,
+        witlc: []
       }
       expect(result).toMatchObject(expectedObj)
     })
@@ -142,10 +153,10 @@ describe('util/clevertap', function () {
       expect(input).toMatchObject({ name: 'fooBar' })
     })
 
-    test('should delete Gender key and log error if value is not "M" or "F"', () => {
+    test('should delete Gender key and log error if value is not "M","F","O","U","male","female","others","unknown"', () => {
       const input = {
         name: 'fooBar',
-        Gender: 'male'
+        Gender: 'hello'
       }
 
       isProfileValid(input, { logger: this.logger })

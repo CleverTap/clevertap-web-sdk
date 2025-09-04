@@ -1,11 +1,22 @@
 import { StorageManager, $ct } from '../util/storage'
 import { isObject } from '../util/datatypes'
 import {
-  PUSH_SUBSCRIPTION_DATA
+  PUSH_SUBSCRIPTION_DATA,
+  VAPID_MIGRATION_PROMPT_SHOWN,
+  NOTIF_LAST_TIME,
+  ACCOUNT_ID,
+  POPUP_LOADING,
+  OLD_SOFT_PROMPT_SELCTOR_ID,
+  APPLICATION_SERVER_KEY_RECEIVED,
+  NOTIFICATION_PUSH_METHOD_DEFERRED,
+  WEBPUSH_CONFIG_RECEIVED
 } from '../util/constants'
 import {
   urlBase64ToUint8Array
 } from '../util/encoder'
+import { setNotificationHandlerValues, processSoftPrompt } from './webPushPrompt/prompt'
+
+import { isChrome, isFirefox, isSafari } from '../util/helpers'
 
 export default class NotificationHandler extends Array {
   #oldValues
@@ -30,13 +41,57 @@ export default class NotificationHandler extends Array {
     this.#account = account
   }
 
-  push (...displayArgs) {
+  setupWebPush (displayArgs) {
+    /*
+      A method in notification.js which can be accessed in prompt.js file to call the
+      private method this.#setUpWebPush
+    */
     this.#setUpWebPush(displayArgs)
-    return 0
+  }
+
+  push (...displayArgs) {
+    if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+      /*
+        To handle a potential race condition, two flags are stored in Local Storage:
+        - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
+        - `NOTIFICATION_PUSH_METHOD_DEFERRED`: Tracks if `clevertap.notifications.push` was called before receiving the webPushConfig.
+
+        This ensures the soft prompt is rendered correctly:
+        - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
+        - Otherwise, `NOTIFICATION_PUSH_METHOD_DEFERRED` is set to true, and the rendering is deferred until the webPushConfig is received.
+      */
+      const isWebPushConfigPresent = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED)
+      const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED)
+      setNotificationHandlerValues({
+        logger: this.#logger,
+        account: this.#account,
+        request: this.#request,
+        displayArgs,
+        fcmPublicKey: this.#fcmPublicKey
+      })
+      if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
+        processSoftPrompt()
+      } else {
+        StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
+      }
+    } else {
+      this.#logger.error('Account ID is not set')
+    }
   }
 
   _processOldValues () {
     if (this.#oldValues) {
+      if (Array.isArray(this.#oldValues) && this.#oldValues.length > 0) {
+        setNotificationHandlerValues({
+          logger: this.#logger,
+          account: this.#account,
+          request: this.#request,
+          displayArgs: this.#oldValues.slice(),
+          fcmPublicKey: this.#fcmPublicKey
+        })
+        StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
+      }
+
       this.#setUpWebPush(this.#oldValues)
     }
     this.#oldValues = null
@@ -53,42 +108,136 @@ export default class NotificationHandler extends Array {
     }
   }
 
-  #setUpWebPushNotifications (subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
-    if (navigator.userAgent.indexOf('Chrome') !== -1 || navigator.userAgent.indexOf('Firefox') !== -1) {
+  setUpWebPushNotifications (subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsServiceUrl) {
+    if (isChrome() || isFirefox()) {
       this.#setUpChromeFirefoxNotifications(subscriptionCallback, serviceWorkerPath)
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-      this.#setUpSafariNotifications(subscriptionCallback, apnsWebPushId, apnsServiceUrl)
+    } else if (isSafari()) {
+      this.#setUpSafariNotifications(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath)
     }
   }
 
-  #setApplicationServerKey (applicationServerKey) {
+  setApplicationServerKey (applicationServerKey) {
     this.#fcmPublicKey = applicationServerKey
   }
 
-  #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl) {
-    // ensure that proper arguments are passed
-    if (typeof apnsWebPushId === 'undefined') {
-      this.#logger.error('Ensure that APNS Web Push ID is supplied')
-    }
-    if (typeof apnsServiceUrl === 'undefined') {
-      this.#logger.error('Ensure that APNS Web Push service path is supplied')
-    }
-    if ('safari' in window && 'pushNotification' in window.safari) {
-      window.safari.pushNotification.requestPermission(
-        apnsServiceUrl,
-        apnsWebPushId, {}, (subscription) => {
-          if (subscription.permission === 'granted') {
-            const subscriptionData = JSON.parse(JSON.stringify(subscription))
-            subscriptionData.endpoint = subscription.deviceToken
-            subscriptionData.browser = 'Safari'
-            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+  #isNativeWebPushSupported () {
+    return 'PushManager' in window
+  }
 
-            this.#request.registerToken(subscriptionData)
-            this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
-          } else if (subscription.permission === 'denied') {
+  #setUpSafariNotifications (subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
+    const softPromptCard = document.getElementById('pnWrapper')
+    const oldSoftPromptCard = document.getElementById('wzrk_wrapper')
+    if (this.#isNativeWebPushSupported() && this.#fcmPublicKey != null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
+      navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
+        window.Notification.requestPermission().then((permission) => {
+          if (permission === 'granted') {
+            const subscribeObj = {
+              applicationServerKey: this.#fcmPublicKey,
+              userVisibleOnly: true
+            }
+            this.#logger.info('Sub Obj' + JSON.stringify(subscribeObj))
+            const subscribeForPush = () => {
+              registration.pushManager.subscribe(subscribeObj).then((subscription) => {
+                this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
+                this.#logger.info('Service Data Sent: ' + JSON.stringify({
+                  applicationServerKey: this.#fcmPublicKey,
+                  userVisibleOnly: true
+                }))
+                this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
+
+                const subscriptionData = JSON.parse(JSON.stringify(subscription))
+
+                subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
+                StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+                this.#request.registerToken(subscriptionData)
+
+                if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
+                  subscriptionCallback()
+                }
+                const existingBellWrapper = document.getElementById('bell_wrapper')
+                if (existingBellWrapper) {
+                  existingBellWrapper.parentNode.removeChild(existingBellWrapper)
+                }
+                if (softPromptCard) {
+                  softPromptCard.parentNode.removeChild(softPromptCard)
+                }
+                if (oldSoftPromptCard) {
+                  oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+                }
+              })
+            }
+
+            const serviceWorker = registration.installing || registration.waiting || registration.active
+            if (serviceWorker && serviceWorker.state === 'activated') {
+              // Already activated, proceed with subscription
+              subscribeForPush()
+            } else if (serviceWorker) {
+              // Listen for state changes to handle activation
+              serviceWorker.addEventListener('statechange', (event) => {
+                if (event.target.state === 'activated') {
+                  this.#logger.info('Service Worker activated. Proceeding with subscription.')
+                  subscribeForPush()
+                }
+              })
+            }
+          } else if (permission === 'denied') {
             this.#logger.info('Error subscribing to Safari web push')
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard)
+            }
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+            }
           }
         })
+      })
+    } else {
+      // ensure that proper arguments are passed
+      if (typeof apnsWebPushId === 'undefined') {
+        this.#logger.error('Ensure that APNS Web Push ID is supplied')
+      }
+      if (typeof apnsServiceUrl === 'undefined') {
+        this.#logger.error('Ensure that APNS Web Push service path is supplied')
+      }
+      if ('safari' in window && 'pushNotification' in window.safari) {
+        window.safari.pushNotification.requestPermission(
+          apnsServiceUrl,
+          apnsWebPushId, {}, (subscription) => {
+            if (subscription.permission === 'granted') {
+              const subscriptionData = JSON.parse(JSON.stringify(subscription))
+              subscriptionData.endpoint = subscription.deviceToken
+              subscriptionData.browser = 'Safari'
+              this.#logger.info('Service Data Sent: ' + JSON.stringify({
+                apnsServiceUrl,
+                apnsWebPushId
+              }))
+              this.#logger.info('Subscription Data Received: ' + JSON.stringify(subscription))
+              const existingBellWrapper = document.getElementById('bell_wrapper')
+              if (existingBellWrapper) {
+                existingBellWrapper.parentNode.removeChild(existingBellWrapper)
+              }
+              if (softPromptCard) {
+                softPromptCard.parentNode.removeChild(softPromptCard)
+              }
+              if (oldSoftPromptCard) {
+                oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+              }
+              StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+
+              this.#request.registerToken(subscriptionData)
+              this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
+            } else if (subscription.permission === 'denied') {
+              this.#logger.info('Error subscribing to Safari web push')
+              if (softPromptCard) {
+                softPromptCard.parentNode.removeChild(softPromptCard)
+              }
+              if (oldSoftPromptCard) {
+                oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+              }
+            }
+          })
+      }
     }
   }
 
@@ -115,7 +264,7 @@ export default class NotificationHandler extends Array {
         if (isServiceWorkerAtRoot) {
           return navigator.serviceWorker.ready
         } else {
-          if (navigator.userAgent.indexOf('Chrome') !== -1) {
+          if (isChrome()) {
             return new Promise(resolve => setTimeout(() => resolve(registration), 5000))
           } else {
             return navigator.serviceWorker.getRegistrations()
@@ -123,7 +272,7 @@ export default class NotificationHandler extends Array {
         }
       }).then((serviceWorkerRegistration) => {
         // ITS AN ARRAY IN CASE OF FIREFOX, SO USE THE REGISTRATION WITH PROPER SCOPE
-        if (navigator.userAgent.indexOf('Firefox') !== -1 && Array.isArray(serviceWorkerRegistration)) {
+        if (isFirefox() && Array.isArray(serviceWorkerRegistration)) {
           serviceWorkerRegistration = serviceWorkerRegistration.filter((i) => i.scope === registrationScope)[0]
         }
         const subscribeObj = { userVisibleOnly: true }
@@ -132,18 +281,23 @@ export default class NotificationHandler extends Array {
           subscribeObj.applicationServerKey = urlBase64ToUint8Array(this.#fcmPublicKey)
         }
 
+        const softPromptCard = document.getElementById('pnWrapper')
+        const oldSoftPromptCard = document.getElementById('wzrk_wrapper')
+
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj)
           .then((subscription) => {
             this.#logger.info('Service Worker registered. Endpoint: ' + subscription.endpoint)
+            this.#logger.debug('Service Data Sent: ' + JSON.stringify(subscribeObj))
+            this.#logger.debug('Subscription Data Received: ' + JSON.stringify(subscription))
 
             // convert the subscription keys to strings; this sets it up nicely for pushing to LC
             const subscriptionData = JSON.parse(JSON.stringify(subscription))
 
             // remove the common chrome/firefox endpoint at the beginning of the token
-            if (navigator.userAgent.indexOf('Chrome') !== -1) {
+            if (isChrome()) {
               subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
               subscriptionData.browser = 'Chrome'
-            } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
+            } else if (isFirefox()) {
               subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
               subscriptionData.browser = 'Firefox'
             }
@@ -153,20 +307,40 @@ export default class NotificationHandler extends Array {
             if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
               subscriptionCallback()
             }
+            const existingBellWrapper = document.getElementById('bell_wrapper')
+
+            if (existingBellWrapper) {
+              existingBellWrapper.parentNode.removeChild(existingBellWrapper)
+            }
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard)
+            }
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+            }
           }).catch((error) => {
-            this.#logger.error('Error subscribing: ' + error)
             // unsubscribe from webpush if error
             serviceWorkerRegistration.pushManager.getSubscription().then((subscription) => {
               if (subscription !== null) {
                 subscription.unsubscribe().then((successful) => {
                   // You've successfully unsubscribed
                   this.#logger.info('Unsubscription successful')
+                  window.clevertap.notifications.push({
+                    skipDialog: true
+                  })
                 }).catch((e) => {
                   // Unsubscription failed
                   this.#logger.error('Error unsubscribing: ' + e)
                 })
               }
             })
+            this.#logger.error('Error subscribing: ' + error)
+            if (softPromptCard) {
+              softPromptCard.parentNode.removeChild(softPromptCard)
+            }
+            if (oldSoftPromptCard) {
+              oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
+            }
           })
       }).catch((err) => {
         this.#logger.error('error registering service worker: ' + err)
@@ -208,6 +382,10 @@ export default class NotificationHandler extends Array {
     let httpsIframePath
     let apnsWebPushId
     let apnsWebPushServiceUrl
+    let okButtonAriaLabel
+    let rejectButtonAriaLabel
+
+    const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && this.#fcmPublicKey !== null
 
     if (displayArgs.length === 1) {
       if (isObject(displayArgs[0])) {
@@ -216,6 +394,8 @@ export default class NotificationHandler extends Array {
         bodyText = notifObj.bodyText
         okButtonText = notifObj.okButtonText
         rejectButtonText = notifObj.rejectButtonText
+        okButtonAriaLabel = notifObj.okButtonAriaLabel
+        rejectButtonAriaLabel = notifObj.rejectButtonAriaLabel
         okButtonColor = notifObj.okButtonColor
         skipDialog = notifObj.skipDialog
         askAgainTimeInSeconds = notifObj.askAgainTimeInSeconds
@@ -251,6 +431,8 @@ export default class NotificationHandler extends Array {
       return
     }
 
+    // Used for Shopify Web Push mentioned here
+    // (https://wizrocket.atlassian.net/wiki/spaces/TAMKB/pages/1824325665/Implementing+Web+Push+in+Shopify+if+not+using+the+Shopify+App+approach)
     const isHTTP = httpsPopupPath != null && httpsIframePath != null
 
     // make sure the site is on https for chrome notifications
@@ -259,30 +441,29 @@ export default class NotificationHandler extends Array {
       return
     }
 
-    // right now, we only support Chrome V50 & higher & Firefox
-    if (navigator.userAgent.indexOf('Chrome') !== -1) {
-      const chromeAgent = navigator.userAgent.match(/Chrome\/(\d+)/)
-      if (chromeAgent == null || parseInt(chromeAgent[1], 10) < 50) { return }
-    } else if (navigator.userAgent.indexOf('Firefox') !== -1) {
-      const firefoxAgent = navigator.userAgent.match(/Firefox\/(\d+)/)
-      if (firefoxAgent == null || parseInt(firefoxAgent[1], 10) < 50) { return }
-    } else if (navigator.userAgent.indexOf('Safari') !== -1) {
-      const safariAgent = navigator.userAgent.match(/Safari\/(\d+)/)
-      if (safariAgent == null || parseInt(safariAgent[1], 10) < 50) { return }
-    } else {
-      return
+    /*
+       If it is chrome or firefox and the nativeWebPush is not supported then return
+       For Safari the APNs route is open if nativeWebPush is not supported
+    */
+    if (isChrome() || isFirefox()) {
+      if (!this.#isNativeWebPushSupported()) {
+        this.#logger.error('Web Push Notification is not supported on this browser')
+        return
+      }
     }
 
     // we check for the cookie in setUpChromeNotifications() the tokens may have changed
 
     if (!isHTTP) {
-      if (Notification == null) {
+      const hasNotification = 'Notification' in window
+      if (!hasNotification || Notification == null) {
+        this.#logger.error('Notification not supported on this Device or Browser')
         return
       }
       // handle migrations from other services -> chrome notifications may have already been asked for before
-      if (Notification.permission === 'granted') {
+      if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
         // skip the dialog and register
-        this.#setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
         return
       } else if (Notification.permission === 'denied') {
         // we've lost this profile :'(
@@ -290,7 +471,7 @@ export default class NotificationHandler extends Array {
       }
 
       if (skipDialog) {
-        this.#setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
+        this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
         return
       }
     }
@@ -308,103 +489,78 @@ export default class NotificationHandler extends Array {
 
     // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
     const now = new Date().getTime() / 1000
-    if ((StorageManager.getMetaProp('notif_last_time')) == null) {
-      StorageManager.setMetaProp('notif_last_time', now)
+    if ((StorageManager.getMetaProp(NOTIF_LAST_TIME)) == null) {
+      StorageManager.setMetaProp(NOTIF_LAST_TIME, now)
     } else {
       if (askAgainTimeInSeconds == null) {
         // 7 days by default
         askAgainTimeInSeconds = 7 * 24 * 60 * 60
       }
 
-      if (now - StorageManager.getMetaProp('notif_last_time') < askAgainTimeInSeconds) {
-        return
+      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME)
+      if (now - notifLastTime < askAgainTimeInSeconds) {
+        if (!isSafari()) {
+          return
+        }
+        // If Safari is migrated already or only APNS, then return
+        if (vapidSupportedAndMigrated || this.#fcmPublicKey === null) {
+          return
+        }
       } else {
-        // continue asking
-        StorageManager.setMetaProp('notif_last_time', now)
+        StorageManager.setMetaProp(NOTIF_LAST_TIME, now)
       }
     }
 
-    if (isHTTP) {
-      // add the https iframe
-      const httpsIframe = document.createElement('iframe')
-      httpsIframe.setAttribute('style', 'display:none;')
-      httpsIframe.setAttribute('src', httpsIframePath)
-      document.body.appendChild(httpsIframe)
-      window.addEventListener('message', (event) => {
-        if (event.data != null) {
-          let obj = {}
-          try {
-            obj = JSON.parse(event.data)
-          } catch (e) {
-            // not a call from our iframe
-            return
+    if (isSafari() && this.#isNativeWebPushSupported() && this.#fcmPublicKey !== null) {
+      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
+    }
+
+    if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+      this.#logger.debug('Soft prompt wrapper is already loading or loaded')
+      return
+    }
+
+    StorageManager.saveToLSorCookie(POPUP_LOADING, true)
+    this.#addWizAlertJS().onload = () => {
+      StorageManager.saveToLSorCookie(POPUP_LOADING, false)
+      // create our wizrocket popup
+      window.wzrkPermissionPopup.wizAlert({
+        title: titleText,
+        body: bodyText,
+        confirmButtonText: okButtonText,
+        confirmButtonColor: okButtonColor,
+        rejectButtonText: rejectButtonText,
+        confirmButtonAriaLabel: okButtonAriaLabel,
+        rejectButtonAriaLabel: rejectButtonAriaLabel
+      }, (enabled) => { // callback function
+        if (enabled) {
+          // the user accepted on the dialog box
+          if (typeof okCallback === 'function') {
+            okCallback()
           }
-          if (obj.state != null) {
-            if (obj.from === 'ct' && obj.state === 'not') {
-              this.#addWizAlertJS().onload = () => {
-                // create our wizrocket popup
-                window.wzrkPermissionPopup.wizAlert({
-                  title: titleText,
-                  body: bodyText,
-                  confirmButtonText: okButtonText,
-                  confirmButtonColor: okButtonColor,
-                  rejectButtonText: rejectButtonText
-                }, (enabled) => { // callback function
-                  if (enabled) {
-                    // the user accepted on the dialog box
-                    if (typeof okCallback === 'function') {
-                      okCallback()
-                    }
-                    // redirect to popup.html
-                    window.open(httpsPopupPath)
-                  } else {
-                    if (typeof rejectCallback === 'function') {
-                      rejectCallback()
-                    }
-                  }
-                  this.#removeWizAlertJS()
-                })
-              }
-            }
+          this.setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
+        } else {
+          if (typeof rejectCallback === 'function') {
+            rejectCallback()
           }
         }
-      }, false)
-    } else {
-      this.#addWizAlertJS().onload = () => {
-        // create our wizrocket popup
-        window.wzrkPermissionPopup.wizAlert({
-          title: titleText,
-          body: bodyText,
-          confirmButtonText: okButtonText,
-          confirmButtonColor: okButtonColor,
-          rejectButtonText: rejectButtonText
-        }, (enabled) => { // callback function
-          if (enabled) {
-            // the user accepted on the dialog box
-            if (typeof okCallback === 'function') {
-              okCallback()
-            }
-            this.#setUpWebPushNotifications(subscriptionCallback, serviceWorkerPath, apnsWebPushId, apnsWebPushServiceUrl)
-          } else {
-            if (typeof rejectCallback === 'function') {
-              rejectCallback()
-            }
-          }
-          this.#removeWizAlertJS()
-        })
-      }
+        this.#removeWizAlertJS()
+      })
     }
   }
 
   _enableWebPush (enabled, applicationServerKey) {
     $ct.webPushEnabled = enabled
     if (applicationServerKey != null) {
-      this.#setApplicationServerKey(applicationServerKey)
+      this.setApplicationServerKey(applicationServerKey)
+    }
+    const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED)
+    if (isNotificationPushCalled) {
+      return
     }
     if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
       this.#handleNotificationRegistration($ct.notifApi.displayArgs)
     } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-      this.#logger.error('Ensure that web push notifications are fully enabled and integrated before requesting them')
     }
   }
 }

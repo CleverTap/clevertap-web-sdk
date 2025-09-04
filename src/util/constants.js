@@ -14,6 +14,7 @@ export const SCOOKIE_EXP_TIME_IN_SECS = 60 * 20 // 20 mins
 export const EV_COOKIE = 'WZRK_EV'
 export const META_COOKIE = 'WZRK_META'
 export const PR_COOKIE = 'WZRK_PR'
+export const ACCOUNT_ID = 'WZRK_ACCOUNT_ID'
 export const ARP_COOKIE = 'WZRK_ARP'
 export const LCOOKIE_NAME = 'WZRK_L'
 export const NOTIF_COOKIE_NAME = 'WZRK_N'
@@ -53,6 +54,65 @@ export const COMMAND_DELETE = '$delete'
 export const WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG'
 export const WEBINBOX = 'WZRK_INBOX'
 export const MAX_INBOX_MSG = 15
+export const VARIABLES = 'WZRK_PE'
+export const PUSH_DELAY_MS = 1000
+export const MAX_DELAY_FREQUENCY = 1000 * 60 * 10
+export const WZRK_FETCH = 'wzrk_fetch'
+export const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG'
+export const APPLICATION_SERVER_KEY_RECEIVED = 'WZRK_APPLICATION_SERVER_KEY_RECIEVED'
+export const WEBPUSH_CONFIG_RECEIVED = 'WZRK_WEB_PUSH_CONFIG_RECEIVED'
+export const NOTIFICATION_PUSH_METHOD_DEFERRED = 'WZRK_NOTIFICATION_PUSH_DEFERRED'
+export const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown'
+export const NOTIF_LAST_TIME = 'notif_last_time'
+export const TIMER_FOR_NOTIF_BADGE_UPDATE = 300
+export const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper'
+export const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper'
+export const POPUP_LOADING = 'WZRK_POPUP_LOADING'
+export const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview'
+export const WEB_POPUP_PREVIEW = 'ctWebPopupPreview'
+export const QUALIFIED_CAMPAIGNS = 'WZRK_QC'
+export const CUSTOM_CT_ID_PREFIX = '_w_'
+export const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'
+
+// Flag key for optional sub-domain profile isolation
+export const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'
+
+export const WEB_NATIVE_TEMPLATES = {
+  KV_PAIR: 1,
+  BANNER: 2,
+  CAROUSEL: 3,
+  VISUAL_BUILDER: 4,
+  CUSTOM_HTML: 5,
+  JSON: 6
+}
+
+export const WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES = {
+  HTML: 'html',
+  FORM: 'form',
+  JSON: 'json'
+}
+
+export const WEB_POPUP_TEMPLATES = {
+  BOX: 0,
+  INTERSTITIAL: 1,
+  BANNER: 2,
+  IMAGE_ONLY: 3,
+  ADVANCED_BUILDER: 4
+}
+
+export const CAMPAIGN_TYPES = {
+  EXIT_INTENT: 1, /* Deprecated */
+  WEB_NATIVE_DISPLAY: 2,
+  FOOTER_NOTIFICATION: 0, /* Web Popup */
+  FOOTER_NOTIFICATION_2: null /* Web Popup */
+}
+
+export const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
+  KV_PAIR: 'KV_Pair',
+  JSON: 'JSON',
+  VISUAL_BUILDER: 'Visual_Builder',
+  ADVANCED_BUILDER: 'advanced-web-popup-builder'
+}
 
 export const SYSTEM_EVENTS = [
   'Stayed',
@@ -62,3 +122,40 @@ export const SYSTEM_EVENTS = [
   NOTIFICATION_VIEWED,
   NOTIFICATION_CLICKED
 ]
+
+export const KEYS_TO_ENCRYPT = [
+  KCOOKIE_NAME,
+  LRU_CACHE,
+  PR_COOKIE
+]
+
+export const DELIVERY_PREFERENCE_KEYS = {
+  EXCLUDE_FROM_FREQUENCY_CAP: 'efc',
+  ADVANCE_DELIVERY_PREFERENEC: 'adp',
+  WEB_POPUP: {
+    SESSION_COUNT: 'wsc',
+    FREQUENCY_COUNT: 'wfc',
+    OCCURENCE_COUNT: 'woc',
+    wtq: 'wtq',
+    GLOBAL_SESSION_LIMIT: 'wmc',
+    LEGACY: {
+      ONCE_PER_SESSION: 'mdc',
+      ONCE_PER_DAY: 'tdc'
+    }
+  },
+  WEB_NATIVE_DISPLAY: {
+    SESSION_COUNT: 'wndsc',
+    FREQUENCY_COUNT: 'wndfc',
+    OCCURENCE_COUNT: 'wndoc',
+    wndtq: 'wndtq'
+  }
+}
+
+export const ACTION_TYPES = {
+  OPEN_LINK: 'url',
+  OPEN_LINK_AND_CLOSE: 'urlCloseNotification',
+  CLOSE: 'close',
+  OPEN_WEB_URL: 'open-web-url',
+  SOFT_PROMPT: 'soft-prompt',
+  RUN_JS: 'js'
+}

@@ -4,9 +4,12 @@ import {
   GCOOKIE_NAME,
   META_COOKIE,
   KCOOKIE_NAME,
-  LCOOKIE_NAME
+  LCOOKIE_NAME,
+  BLOCK_REQUEST_COOKIE,
+  ISOLATE_COOKIE
 } from './constants'
 import { getHostName } from './url'
+import encryption from '../modules/security/Encryption'
 
 export class StorageManager extends ShopifyStorageManager {
   static save (key, value) {
@@ -14,6 +17,10 @@ export class StorageManager extends ShopifyStorageManager {
       return false
     }
     if (this._isLocalStorageSupported()) {
+      if (encryption.shouldEncrypt(key)) {
+        localStorage.setItem(key, encryption.encrypt(value))
+        return true
+      }
       localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
       return true
     }
@@ -29,6 +36,9 @@ export class StorageManager extends ShopifyStorageManager {
     }
     if (data != null) {
       try {
+        if (encryption.shouldDecrypt(key)) {
+          data = encryption.decrypt(data)
+        }
         data = JSON.parse(data)
       } catch (e) {}
     }
@@ -137,6 +147,23 @@ export class StorageManager extends ShopifyStorageManager {
   }
 
   static async createBroadCookie (name, value, seconds, domain) {
+    /* -------------------------------------------------------------
+     * Sub-domain isolation: when the global flag is set, skip the
+     * broad-domain logic and write a cookie scoped to the current
+     * host only.  Also remove any legacy broad-domain copy so that
+     * the host-level cookie has precedence.
+     * ----------------------------------------------------------- */
+    const isolate = !!await this.retrieveData('localStorage', ISOLATE_COOKIE)
+    if (isolate) {
+      // remove any legacy broad-domain cookie
+      if ($ct.broadDomain) {
+        await this.deleteData('cookie', name, $ct.broadDomain)
+      }
+
+      // write host-scoped cookie and stop
+      await this.addData('cookie', name, value, seconds, domain)
+      return
+    }
     // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
     // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
     // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
@@ -232,6 +259,21 @@ export class StorageManager extends ShopifyStorageManager {
     backupArr[reqNo] = { q: data }
     await this.saveToLSorCookie(LCOOKIE_NAME, backupArr)
     logger.debug(`stored in ${LCOOKIE_NAME} reqNo : ${reqNo} -> ${data}`)
+  }
+
+  // Add new method for OUL tracking
+  static markBackupAsOUL (reqNo) {
+    // Store OUL request numbers in a separate meta property
+    const oulRequests = this.getMetaProp('OUL_REQUESTS') || []
+    if (!oulRequests.includes(reqNo)) {
+      oulRequests.push(reqNo)
+      this.setMetaProp('OUL_REQUESTS', oulRequests)
+    }
+  }
+
+  static isBackupOUL (reqNo) {
+    const oulRequests = this.getMetaProp('OUL_REQUESTS') || []
+    return oulRequests.includes(reqNo)
   }
 
   static async removeBackup (respNo, logger) {
@@ -343,7 +385,14 @@ export const $ct = {
   LRU_CACHE: null,
   globalProfileMap: undefined,
   globalEventsMap: undefined,
-  blockRequest: false,
+  // Initialize blockRequest from storage
+  get blockRequest () {
+    const value = StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE)
+    return value === true
+  },
+  set blockRequest (value) {
+    StorageManager.saveToLSorCookie(BLOCK_REQUEST_COOKIE, value)
+  },
   isOptInRequest: false,
   broadDomain: null,
   webPushEnabled: null,
@@ -360,9 +409,13 @@ export const $ct = {
   privacyArray: [],
   offline: false,
   location: null,
-  dismissSpamControl: false,
+  dismissSpamControl: true,
   globalUnsubscribe: true,
-  flutterVersion: null
+  flutterVersion: null,
+  variableStore: {},
+  pushConfig: null,
+  delayEvents: false,
+  intervalArray: []
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }

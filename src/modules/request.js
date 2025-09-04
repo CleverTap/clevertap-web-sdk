@@ -1,4 +1,4 @@
-import { CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY } from '../util/constants'
+import { SCOOKIE_PREFIX, CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY } from '../util/constants'
 import { isObjectEmpty, isValueValid, removeUnsupportedChars } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
@@ -29,20 +29,40 @@ export default class RequestManager {
 
     RequestDispatcher.logger = logger
     RequestDispatcher.device = device
+    RequestDispatcher.account = account
   }
 
-  processBackupEvents () {
+  /**
+ * Unified backup processing method
+ * @param {boolean} oulOnly - If true, process only OUL requests. If false, process all non-fired requests.
+ */
+  processBackupEvents (oulOnly = false) {
     const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
     if (typeof backupMap === 'undefined' || backupMap === null) {
       return
     }
+
     this.processingBackup = true
+
     for (const idx in backupMap) {
       if (backupMap.hasOwnProperty(idx)) {
         const backupEvent = backupMap[idx]
-        if (typeof backupEvent.fired === 'undefined') {
-          this.#logger.debug('Processing backup event : ' + backupEvent.q)
+
+        if (typeof backupEvent.fired !== 'undefined') {
+          continue
+        }
+
+        const isOULRequest = StorageManager.isBackupOUL(parseInt(idx))
+        const shouldProcess = oulOnly ? isOULRequest : true
+
+        if (shouldProcess) {
+          this.#logger.debug(`Processing ${isOULRequest ? 'OUL' : 'regular'} backup event : ${backupEvent.q}`)
+
           if (typeof backupEvent.q !== 'undefined') {
+            const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + this.#account.id))
+            if (session?.s) {
+              backupEvent.q = backupEvent.q + '&s=' + session.s
+            }
             RequestDispatcher.fireRequest(backupEvent.q)
           }
           backupEvent.fired = true
@@ -131,15 +151,21 @@ export default class RequestManager {
    * @param {boolean} override whether the request can go through or not
    * @param {Boolean} sendOULFlag - true in case of a On User Login request
    */
-  async saveAndFireRequest (url, override, sendOULFlag) {
+  async saveAndFireRequest (url, override, sendOULFlag, evtName) {
     const now = getNow()
-    url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N)
+
+    // Get the next available request number that doesn't conflict with existing backups
+    const nextReqN = this.#getNextAvailableReqN()
+    $ct.globalCache.REQ_N = nextReqN
+
+    url = addToURL(url, 'rn', nextReqN)
     const data = url + '&i=' + now + '&sn=' + seqNo
     // TODO: Enable this
     // StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.#logger)
 
     // if offline is set to true, save the request in backup and return
-    if ($ct.offline) return
+    if ($ct.offline || $ct.delayEvents) return
+
     // if there is no override
     // and an OUL request is not in progress
     // then process the request as it is
@@ -153,7 +179,7 @@ export default class RequestManager {
         seqNo = 0
       }
       globalWindow.oulReqN = $ct.globalCache.REQ_N
-      await RequestDispatcher.fireRequest(data, false, sendOULFlag)
+      await RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName)
     } else {
       this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${globalWindow.isOULInProgress}`)
     }
@@ -209,8 +235,34 @@ export default class RequestManager {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-    await this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+    await this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
   }
+
+registerToken (payload) {
+  if (!payload) return
+  // add gcookie etc to the payload
+  payload = this.addSystemDataToObject(payload, true)
+  payload = JSON.stringify(payload)
+  let pageLoadUrl = this.#account.dataPostURL
+  pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
+  pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
+  RequestDispatcher.fireRequest(pageLoadUrl)
+  // set in localstorage
+  StorageManager.save(WEBPUSH_LS_KEY, 'ok')
+}
+
+processEvent (data) {
+  this.#addToLocalEventMap(data.evtName)
+  data = this.addSystemDataToObject(data, undefined)
+  this.addFlags(data)
+  data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+  const compressedData = compressData(JSON.stringify(data), this.#logger)
+  let pageLoadUrl = this.#account.dataPostURL
+  pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
+  pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+
+  this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
+}
 
   async #addToLocalEventMap (evtName) {
     if (StorageManager._isLocalStorageSupported()) {
@@ -235,5 +287,27 @@ export default class RequestManager {
       $ct.globalEventsMap[evtName] = evtDetail
       await StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap)
     }
+  }
+
+  post (url, body) {
+    return fetch(url, {
+      method: 'post',
+      headers: { 'Content-Type': 'application/json' },
+      body: body
+    })
+      .then((response) => {
+        if (response.ok) {
+          return response.json()
+        }
+        throw response
+      })
+      .then((data) => {
+        this.#logger.debug('Sync data successful', data)
+        return data
+      })
+      .catch((e) => {
+        this.#logger.debug('Error in syncing variables', e)
+        throw e
+      })
   }
 }

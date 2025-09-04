@@ -3,7 +3,7 @@ import { clevertapApi } from '../modules/api'
 import ModeManager from '../modules/mode'
 import globalWindow from '../modules/window'
 import { arp } from './clevertap'
-import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY } from './constants'
+import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY, MAX_DELAY_FREQUENCY, PUSH_DELAY_MS, WZRK_FETCH } from './constants'
 import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
 import { StorageManager, $ct } from './storage'
@@ -14,9 +14,12 @@ export default class RequestDispatcher {
   static device
   static mode
   static api
+  static account
+  networkRetryCount = 0
+  minDelayFrequency = 0
 
   // ANCHOR - Requests get fired from here
-  static async #fireRequest (url, tries, skipARP, sendOULFlag) {
+  static async #fireRequest (url, tries, skipARP, sendOULFlag, evtName) {
     if (this.#dropRequestDueToOptOut()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
@@ -33,7 +36,17 @@ export default class RequestDispatcher {
      * and the tries are less than max tries
      * keep retrying
      */
-    if (!isValueValid(this.device.gcookie) &&
+
+    if (evtName && evtName === WZRK_FETCH) {
+      // New retry mechanism
+      if (!isValueValid(this.device.gcookie) && ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1)) {
+        setTimeout(() => {
+          this.logger.debug(`retrying fire request for url: ${url}, tries: ${this.networkRetryCount}`)
+          this.#fireRequest(url, undefined, skipARP, sendOULFlag)
+        }, this.getDelayFrequency())
+      }
+    } else {
+      if (!isValueValid(this.device.gcookie) &&
       ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
       tries < MAX_TRIES) {
       // if ongoing First Request is in progress, initiate retry
@@ -57,6 +70,7 @@ export default class RequestDispatcher {
     }
 
     url = addToURL(url, 'tries', tries) // Add tries to URL
+    url = addToURL(url, 'origin', window?.location?.origin ?? window?.location?.href) // Add origin to URL
 
     url = await this.#addUseIPToRequest(url)
     url = addToURL(url, 'r', new Date().getTime()) // add epoch to beat caching of the URL
@@ -115,8 +129,8 @@ export default class RequestDispatcher {
    * @param {*} skipARP
    * @param {boolean} sendOULFlag
    */
-  static async fireRequest (url, skipARP, sendOULFlag) {
-    await this.#fireRequest(url, 1, skipARP, sendOULFlag)
+  static async fireRequest (url, skipARP, sendOULFlag, evtName) {
+    await this.#fireRequest(url, 1, skipARP, sendOULFlag, evtName)
   }
 
   static #dropRequestDueToOptOut () {
@@ -146,5 +160,34 @@ export default class RequestDispatcher {
       return addToURL(url, 'arp', compressData(JSON.stringify(arpValue), this.logger))
     }
     return url
+  }
+
+  getDelayFrequency () {
+    this.logger.debug('Network retry #' + this.networkRetryCount)
+
+    // Retry with delay as 1s for first 10 retries
+    if (this.networkRetryCount < 10) {
+      this.logger.debug(this.account.id, 'Failure count is ' + this.networkRetryCount + '. Setting delay frequency to 1s')
+      this.minDelayFrequency = PUSH_DELAY_MS // Reset minimum delay to 1s
+      return this.minDelayFrequency
+    }
+
+    if (this.account.region == null) {
+      // Retry with delay as 1s if region is null in case of eu1
+      this.logger.debug(this.account.id, 'Setting delay frequency to 1s')
+      return PUSH_DELAY_MS
+    } else {
+      // Retry with delay as minimum delay frequency and add random number of seconds to scatter traffic
+      const randomDelay = (Math.floor(Math.random() * 10) + 1) * 1000
+      this.minDelayFrequency += randomDelay
+      if (this.minDelayFrequency < MAX_DELAY_FREQUENCY) {
+        this.logger.debug(this.account.id, 'Setting delay frequency to ' + this.minDelayFrequency)
+        return this.minDelayFrequency
+      } else {
+        this.minDelayFrequency = PUSH_DELAY_MS
+      }
+      this.logger.debug(this.account.id, 'Setting delay frequency to ' + this.minDelayFrequency)
+      return this.minDelayFrequency
+    }
   }
 }
