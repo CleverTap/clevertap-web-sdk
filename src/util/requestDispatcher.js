@@ -19,7 +19,7 @@ export default class RequestDispatcher {
   minDelayFrequency = 0
 
   // ANCHOR - Requests get fired from here
-  static async #fireRequest (url, tries, skipARP, sendOULFlag, evtName) {
+  static async #fireRequest (url, tries, skipARP, sendOULFlag, evtName, evtData) {
     if (this.#dropRequestDueToOptOut()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
@@ -42,7 +42,7 @@ export default class RequestDispatcher {
       if (!isValueValid(this.device.gcookie) && ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1)) {
         setTimeout(() => {
           this.logger.debug(`retrying fire request for url: ${url}, tries: ${this.networkRetryCount}`)
-          this.#fireRequest(url, undefined, skipARP, sendOULFlag)
+          this.#fireRequest(url, undefined, skipARP, sendOULFlag, evtName, evtData)
         }, this.getDelayFrequency())
       }
     } else {
@@ -52,7 +52,7 @@ export default class RequestDispatcher {
       // if ongoing First Request is in progress, initiate retry
         setTimeout(async () => {
           this.logger.debug(`retrying fire request for url: ${url}, tries: ${tries}`)
-          await this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
+          await this.#fireRequest(url, tries + 1, skipARP, sendOULFlag, evtName, evtData)
         }, 50)
         return
       }
@@ -99,7 +99,14 @@ export default class RequestDispatcher {
         s.async = true
         document.getElementsByTagName('head')[0].appendChild(s)
       } else {
-        fetch(url, { headers: { accept: 'application/json' } }).then(res => res.json()).then(async () => {
+        fetch(
+          url,
+          {
+            headers: { accept: 'application/json' },
+            body: evtData,
+            method: 'POST'
+          }
+        ).then(res => res.json()).then(async () => {
           if (response.arp) {
             await arp(response.arp)
           }
@@ -124,8 +131,8 @@ export default class RequestDispatcher {
    * @param {*} skipARP
    * @param {boolean} sendOULFlag
    */
-  static async fireRequest (url, skipARP, sendOULFlag, evtName) {
-    await this.#fireRequest(url, 1, skipARP, sendOULFlag, evtName)
+  static async fireRequest (url, skipARP, sendOULFlag, evtName, evtData) {
+    await this.#fireRequest(url, 1, skipARP, sendOULFlag, evtName, evtData)
   }
 
   static #dropRequestDueToOptOut () {

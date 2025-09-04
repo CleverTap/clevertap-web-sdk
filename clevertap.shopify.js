@@ -2472,11 +2472,11 @@ var clevertapShopify = (function () {
      * @param {*} skipARP
      * @param {boolean} sendOULFlag
      */
-    static fireRequest(url, skipARP, sendOULFlag, evtName) {
+    static fireRequest(url, skipARP, sendOULFlag, evtName, evtData) {
       var _this = this;
 
       return _asyncToGenerator(function* () {
-        yield _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
+        yield _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName, evtData);
       })();
     }
 
@@ -2565,7 +2565,7 @@ var clevertapShopify = (function () {
   };
 
   var _fireRequest2 = /*#__PURE__*/function () {
-    var _fireRequest3 = _asyncToGenerator(function* (url, tries, skipARP, sendOULFlag, evtName) {
+    var _fireRequest3 = _asyncToGenerator(function* (url, tries, skipARP, sendOULFlag, evtName, evtData) {
       var _this2 = this;
 
       if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
@@ -2592,7 +2592,7 @@ var clevertapShopify = (function () {
           setTimeout(() => {
             this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(this.networkRetryCount));
 
-            _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, undefined, skipARP, sendOULFlag);
+            _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, undefined, skipARP, sendOULFlag, evtName, evtData);
           }, this.getDelayFrequency());
         }
       } else {
@@ -2603,7 +2603,7 @@ var clevertapShopify = (function () {
           setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
             _this2.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
 
-            yield _classPrivateFieldLooseBase(_this2, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
+            yield _classPrivateFieldLooseBase(_this2, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag, evtName, evtData);
           }), 50);
           return;
         } // set isOULInProgress to true
@@ -2660,7 +2660,9 @@ var clevertapShopify = (function () {
           fetch(url, {
             headers: {
               accept: 'application/json'
-            }
+            },
+            body: evtData,
+            method: 'POST'
           }).then(res => res.json()).then( /*#__PURE__*/_asyncToGenerator(function* () {
             if (response.arp) {
               yield arp(response.arp);
@@ -2680,7 +2682,7 @@ var clevertapShopify = (function () {
       }
     });
 
-    function _fireRequest2(_x4, _x5, _x6, _x7, _x8) {
+    function _fireRequest2(_x4, _x5, _x6, _x7, _x8, _x9) {
       return _fireRequest3.apply(this, arguments);
     }
 
@@ -2926,7 +2928,7 @@ var clevertapShopify = (function () {
      * @param {boolean} override whether the request can go through or not
      * @param {Boolean} sendOULFlag - true in case of a On User Login request
      */
-    saveAndFireRequest(url, override, sendOULFlag, evtName) {
+    saveAndFireRequest(url, override, sendOULFlag, evtName, evtData) {
       var _this4 = this;
 
       return _asyncToGenerator(function* () {
@@ -2950,7 +2952,7 @@ var clevertapShopify = (function () {
           }
 
           globalWindow.oulReqN = $ct.globalCache.REQ_N;
-          yield RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
+          yield RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName, evtData);
         } else {
           _classPrivateFieldLooseBase(_this4, _logger$3)[_logger$3].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(_this4, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(globalWindow.isOULInProgress));
         }
@@ -3014,50 +3016,24 @@ var clevertapShopify = (function () {
       var _this7 = this;
 
       return _asyncToGenerator(function* () {
+        var otherData = {};
         yield _classPrivateFieldLooseBase(_this7, _addToLocalEventMap)[_addToLocalEventMap](data.evtName);
-        data = _this7.addSystemDataToObject(data, undefined);
+        otherData = yield _this7.addSystemDataToObject(otherData, undefined);
+        yield _this7.addFlags(otherData);
 
-        _this7.addFlags(data);
+        if (mode.mode === 'WEB') {
+          otherData[CAMP_COOKIE_NAME] = getCampaignObjForLc();
+        }
 
-        data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
         var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this7, _logger$3)[_logger$3]);
+        var compressedOtherData = compressData(JSON.stringify(otherData), _classPrivateFieldLooseBase(_this7, _logger$3)[_logger$3]);
 
         var pageLoadUrl = _classPrivateFieldLooseBase(_this7, _account$2)[_account$2].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-        yield _this7.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName);
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedOtherData);
+        yield _this7.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName, compressedData);
       })();
-    }
-
-    registerToken(payload) {
-      if (!payload) return; // add gcookie etc to the payload
-
-      payload = this.addSystemDataToObject(payload, true);
-      payload = JSON.stringify(payload);
-
-      var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
-
-      pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]));
-      RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
-
-      StorageManager.save(WEBPUSH_LS_KEY, 'ok');
-    }
-
-    processEvent(data) {
-      _classPrivateFieldLooseBase(this, _addToLocalEventMap)[_addToLocalEventMap](data.evtName);
-
-      data = this.addSystemDataToObject(data, undefined);
-      this.addFlags(data);
-      data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
-      var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
-
-      var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
-
-      pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-      this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName);
     }
 
     post(url, body) {
@@ -3337,7 +3313,7 @@ var clevertapShopify = (function () {
             continue;
           }
 
-          if (eventName.length > 1024) {
+          if (eventName.length > 1024 && mode.mode === 'WEB') {
             eventName = eventName.substring(0, 1024);
 
             _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].reportError(510, eventName + '... length exceeded 1024 chars. Trimmed.');

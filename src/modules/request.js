@@ -7,6 +7,7 @@ import { StorageManager, $ct } from '../util/storage'
 import { addToURL } from '../util/url'
 import { getCampaignObjForLc } from '../util/clevertap'
 import globalWindow from './window'
+import ModeManager from './mode'
 
 let seqNo = 0
 let requestTime = 0
@@ -173,7 +174,7 @@ export default class RequestManager {
    * @param {boolean} override whether the request can go through or not
    * @param {Boolean} sendOULFlag - true in case of a On User Login request
    */
-  async saveAndFireRequest (url, override, sendOULFlag, evtName) {
+  async saveAndFireRequest (url, override, sendOULFlag, evtName, evtData) {
     const now = getNow()
 
     // Get the next available request number that doesn't conflict with existing backups
@@ -201,7 +202,7 @@ export default class RequestManager {
         seqNo = 0
       }
       globalWindow.oulReqN = $ct.globalCache.REQ_N
-      await RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName)
+      await RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName, evtData)
     } else {
       this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${globalWindow.isOULInProgress}`)
     }
@@ -248,42 +249,20 @@ export default class RequestManager {
   }
 
   async processEvent (data) {
+    let otherData = {}
     await this.#addToLocalEventMap(data.evtName)
-    data = this.addSystemDataToObject(data, undefined)
-    this.addFlags(data)
-    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    otherData = await this.addSystemDataToObject(otherData, undefined)
+    await this.addFlags(otherData)
+    if (ModeManager.mode === 'WEB') {
+      otherData[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    }
     const compressedData = compressData(JSON.stringify(data), this.#logger)
+    const compressedOtherData = compressData(JSON.stringify(otherData), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedOtherData)
 
-    await this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
-  }
-
-  registerToken (payload) {
-    if (!payload) return
-    // add gcookie etc to the payload
-    payload = this.addSystemDataToObject(payload, true)
-    payload = JSON.stringify(payload)
-    let pageLoadUrl = this.#account.dataPostURL
-    pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
-    RequestDispatcher.fireRequest(pageLoadUrl)
-    // set in localstorage
-    StorageManager.save(WEBPUSH_LS_KEY, 'ok')
-  }
-
-  processEvent (data) {
-    this.#addToLocalEventMap(data.evtName)
-    data = this.addSystemDataToObject(data, undefined)
-    this.addFlags(data)
-    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
-    const compressedData = compressData(JSON.stringify(data), this.#logger)
-    let pageLoadUrl = this.#account.dataPostURL
-    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
-
-    this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
+    await this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName, compressedData)
   }
 
   async #addToLocalEventMap (evtName) {
