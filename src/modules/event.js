@@ -3,6 +3,7 @@ import { EVENT_ERROR } from '../util/messages'
 import { ACCOUNT_ID, EV_COOKIE, SYSTEM_EVENTS, unsupportedKeyCharRegex } from '../util/constants'
 import { isChargedEventStructureValid, isEventStructureFlat } from '../util/validator'
 import { StorageManager, $ct } from '../util/storage'
+import ModeManager from './mode'
 
 export default class EventHandler extends Array {
   #logger
@@ -34,7 +35,7 @@ export default class EventHandler extends Array {
     this.#oldValues = null
   }
 
-  #processEventArray (eventsArr) {
+  async #processEventArray (eventsArr) {
     if (Array.isArray(eventsArr)) {
       while (eventsArr.length > 0) {
         var eventName = eventsArr.shift()
@@ -43,7 +44,7 @@ export default class EventHandler extends Array {
           continue
         }
 
-        if (eventName.length > 1024) {
+        if (eventName.length > 1024 && ModeManager.mode === 'WEB') {
           eventName = eventName.substring(0, 1024)
           this.#logger.reportError(510, eventName + '... length exceeded 1024 chars. Trimmed.')
         }
@@ -56,7 +57,6 @@ export default class EventHandler extends Array {
         const data = {}
         data.type = 'event'
         data.evtName = sanitize(eventName, unsupportedKeyCharRegex)
-
         if (eventsArr.length !== 0) {
           const eventObj = eventsArr.shift()
           if (!isObject(eventObj)) {
@@ -65,7 +65,8 @@ export default class EventHandler extends Array {
           } else {
             // check Charged Event vs. other events.
             if (eventName === 'Charged') {
-              if (!isChargedEventStructureValid(eventObj, this.#logger)) {
+              const isValid = await isChargedEventStructureValid(eventObj, this.#logger)
+              if (!isValid) {
                 this.#logger.reportError(511, 'Charged event structure invalid. Not sent.')
                 continue
               }
@@ -79,7 +80,7 @@ export default class EventHandler extends Array {
           }
         }
 
-        this.#request.processEvent(data)
+        await this.#request.processEvent(data)
       }
     }
   }

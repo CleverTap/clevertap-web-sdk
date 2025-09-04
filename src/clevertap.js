@@ -57,6 +57,9 @@ import { checkWebPopupPreview } from './util/campaignRender/webPopup'
 import { reconstructNestedObject, validateCustomCleverTapID } from './util/helpers'
 
 export default class CleverTap {
+  /**
+   * The logger Object
+   */
   #logger
   #api
   #onloadcalled

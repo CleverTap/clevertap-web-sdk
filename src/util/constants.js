@@ -18,6 +18,7 @@ export const ACCOUNT_ID = 'WZRK_ACCOUNT_ID'
 export const ARP_COOKIE = 'WZRK_ARP'
 export const LCOOKIE_NAME = 'WZRK_L'
 export const NOTIF_COOKIE_NAME = 'WZRK_N'
+export const SHOPIFY_DEBUG = 'WZRK_LOG_LEVEL'
 export const GLOBAL = 'global' // used for email unsubscribe also
 export const TOTAL_COUNT = 'tc'
 export const DISPLAY = 'display'
