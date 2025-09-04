@@ -6,6 +6,7 @@ import RequestDispatcher from '../util/requestDispatcher'
 import { StorageManager, $ct } from '../util/storage'
 import { addToURL } from '../util/url'
 import { getCampaignObjForLc } from '../util/clevertap'
+import globalWindow from './window'
 
 let seqNo = 0
 let requestTime = 0
@@ -72,7 +73,7 @@ export default class RequestManager {
     this.processingBackup = false
   }
 
-  addSystemDataToObject (dataObject, ignoreTrim) {
+  async addSystemDataToObject (dataObject, ignoreTrim) {
     // ignore trim for chrome notifications; undefined everywhere else
     if (typeof ignoreTrim === 'undefined') {
       dataObject = removeUnsupportedChars(dataObject, this.#logger)
@@ -89,33 +90,46 @@ export default class RequestManager {
       dataObject.g = this.#device.gcookie
     }
 
-    const obj = this.#session.getSessionCookieObject()
+    const obj = await this.#session.getSessionCookieObject()
     dataObject.s = obj.s // session cookie
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
-    let proto = document.location.protocol
-    proto = proto.replace(':', '')
-    dataObject.af = { ...dataObject.af, lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...$ct.flutterVersion } // app fields
-    try {
-      if (sessionStorage.hasOwnProperty('WZRK_D') || sessionStorage.getItem('WZRK_D')) {
-        dataObject.debug = true
-      }
-    } catch (e) {
-      this.#logger.debug('Error in reading WZRK_D from session storage')
+    if (typeof sessionStorage === 'object') {
+      if (sessionStorage.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
     }
 
     return dataObject
   }
 
-  addFlags (data) {
+  async addSystemDataToProfileObject (dataObject, ignoreTrim) {
+    if (!isObjectEmpty(this.#logger.wzrkError)) {
+      dataObject.wzrk_error = this.#logger.wzrkError
+      this.#logger.wzrkError = {}
+    }
+
+    dataObject.id = this.#account.id
+
+    if (isValueValid(this.#device.gcookie)) {
+      dataObject.g = this.#device.gcookie
+    }
+
+    const obj = await this.#session.getSessionCookieObject()
+    dataObject.s = obj.s // session cookie
+    dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
+    if (sessionStorage?.hasOwnProperty('WZRK_D')) { dataObject.debug = true }
+
+    return dataObject
+  }
+
+  async addFlags (data) {
     // check if cookie should be cleared.
-    this.#clearCookie = StorageManager.getAndClearMetaProp(CLEAR)
+    this.#clearCookie = await StorageManager.getAndClearMetaProp(CLEAR)
     if (this.#clearCookie !== undefined && this.#clearCookie) {
       data.rc = true
       this.#logger.debug('reset cookie sent in request and cleared from meta for future requests.')
     }
     if (this.#isPersonalisationActive()) {
-      const lastSyncTime = StorageManager.getMetaProp('lsTime')
-      const expirySeconds = StorageManager.getMetaProp('exTs')
+      const lastSyncTime = await StorageManager.getMetaProp('lsTime')
+      const expirySeconds = await StorageManager.getMetaProp('exTs')
 
       // dsync not found in local storage - get data from server
       if (typeof lastSyncTime === 'undefined' || typeof expirySeconds === 'undefined') {
@@ -137,7 +151,7 @@ export default class RequestManager {
    * @param {boolean} override whether the request can go through or not
    * @param {Boolean} sendOULFlag - true in case of a On User Login request
    */
-  saveAndFireRequest (url, override, sendOULFlag, evtName) {
+  async saveAndFireRequest (url, override, sendOULFlag, evtName) {
     const now = getNow()
 
     // Get the next available request number that doesn't conflict with existing backups
@@ -146,12 +160,8 @@ export default class RequestManager {
 
     url = addToURL(url, 'rn', nextReqN)
     const data = url + '&i=' + now + '&sn=' + seqNo
-    StorageManager.backupEvent(data, nextReqN, this.#logger)
-
-    // Mark as OUL if it's an OUL request
-    if (sendOULFlag) {
-      StorageManager.markBackupAsOUL(nextReqN)
-    }
+    // TODO: Enable this
+    // StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.#logger)
 
     // if offline is set to true, save the request in backup and return
     if ($ct.offline || $ct.delayEvents) return
@@ -161,68 +171,72 @@ export default class RequestManager {
     // then process the request as it is
     // else block the request
     // note - $ct.blockRequest should ideally be used for override
-    if ((!override || (this.#clearCookie !== undefined && this.#clearCookie)) && !window.isOULInProgress) {
+    if ((!override || (this.#clearCookie !== undefined && this.#clearCookie)) && !globalWindow.isOULInProgress) {
       if (now === requestTime) {
         seqNo++
       } else {
         requestTime = now
         seqNo = 0
       }
-      window.oulReqN = nextReqN
-      RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName)
+      globalWindow.oulReqN = $ct.globalCache.REQ_N
+      await RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName)
     } else {
-      this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)
+      this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${globalWindow.isOULInProgress}`)
     }
   }
 
-#getNextAvailableReqN () {
-  // Read existing backup data to check for conflicts
-  const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
+  async unregisterTokenForGuid (givenGUID) {
+    const payload = await StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
+    // Send unregister event only when token is available
+    if (payload) {
+      const data = {}
+      data.type = 'data'
+      if (isValueValid(givenGUID)) {
+        data.g = givenGUID
+      }
+      data.action = 'unregister'
+      data.id = this.#account.id
 
-  // Start from the current REQ_N + 1
-  let candidateReqN = $ct.globalCache.REQ_N + 1
+      const obj = await this.#session.getSessionCookieObject()
 
-  // If no backup data exists, use the candidate
-  if (!backupMap || typeof backupMap !== 'object') {
-    return candidateReqN
-  }
+      data.s = obj.s // session cookie
+      const compressedData = compressData(JSON.stringify(data), this.#logger)
 
-  // Keep incrementing until we find a request number that doesn't exist in backup
-  while (backupMap.hasOwnProperty(candidateReqN.toString())) {
-    candidateReqN++
-    this.#logger.debug(`Request number ${candidateReqN - 1} already exists in backup, trying ${candidateReqN}`)
-  }
-
-  this.#logger.debug(`Using request number: ${candidateReqN}`)
-  return candidateReqN
-}
-
-unregisterTokenForGuid (givenGUID) {
-  const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
-  // Send unregister event only when token is available
-  if (payload) {
-    const data = {}
-    data.type = 'data'
-    if (isValueValid(givenGUID)) {
-      data.g = givenGUID
+      let pageLoadUrl = this.#account.dataPostURL
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+      await RequestDispatcher.fireRequest(pageLoadUrl, true)
+      await StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
     }
-    data.action = 'unregister'
-    data.id = this.#account.id
+    // REGISTER TOKEN
+    await this.registerToken(payload)
+  }
 
-    const obj = this.#session.getSessionCookieObject()
-
-    data.s = obj.s // session cookie
-    const compressedData = compressData(JSON.stringify(data), this.#logger)
-
+  async registerToken (payload) {
+    if (!payload) return
+    // add gcookie etc to the payload
+    payload = await this.addSystemDataToObject(payload, true)
+    payload = JSON.stringify(payload)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
-    RequestDispatcher.fireRequest(pageLoadUrl, true)
-    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
+    await RequestDispatcher.fireRequest(pageLoadUrl)
+    // set in localstorage
+    StorageManager.addData('localStorage', WEBPUSH_LS_KEY, 'ok')
   }
-  // REGISTER TOKEN
-  this.registerToken(payload)
-}
+
+  async processEvent (data) {
+    await this.#addToLocalEventMap(data.evtName)
+    data = this.addSystemDataToObject(data, undefined)
+    this.addFlags(data)
+    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    const compressedData = compressData(JSON.stringify(data), this.#logger)
+    let pageLoadUrl = this.#account.dataPostURL
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+
+    await this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
+  }
 
 registerToken (payload) {
   if (!payload) return
@@ -250,10 +264,10 @@ processEvent (data) {
   this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
 }
 
-  #addToLocalEventMap (evtName) {
+  async #addToLocalEventMap (evtName) {
     if (StorageManager._isLocalStorageSupported()) {
       if (typeof $ct.globalEventsMap === 'undefined') {
-        $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE)
+        $ct.globalEventsMap = await StorageManager.readFromLSorCookie(EV_COOKIE)
         if (typeof $ct.globalEventsMap === 'undefined') {
           $ct.globalEventsMap = {}
         }
@@ -271,7 +285,7 @@ processEvent (data) {
         evtDetail.push(nowTs)
       }
       $ct.globalEventsMap[evtName] = evtDetail
-      StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap)
+      await StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap)
     }
   }
 
