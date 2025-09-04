@@ -33,29 +33,35 @@ export class Logger {
     return Logger.instance
   }
 
-  get logLevel () {
-    return this.#logLevel
+  get logLevelValue () {
+    return this.logLevel
   }
 
-  set logLevel (logLevel) {
-    this.#logLevel = logLevel
+  set logLevelValue (logLevel) {
+    this.logLevel = logLevel
   }
 
   error (message) {
-    if (this.#logLevel >= logLevels.ERROR) {
+    if (this.logLevelValue >= logLevels.ERROR) {
       this.#log('error', message)
     }
   }
 
   info (message) {
-    if (this.#logLevel >= logLevels.INFO) {
+    if (this.logLevelValue >= logLevels.INFO) {
       this.#log('log', message)
     }
   }
 
   debug (message) {
-    if (this.#logLevel >= logLevels.DEBUG || this.#isLegacyDebug) {
+    if (this.logLevelValue >= logLevels.DEBUG || this.#isLegacyDebug) {
       this.#log('debug', message)
+    }
+  }
+
+  debugShopify (message, type = 'web') {
+    if (this.logLevelValue >= logLevels.DEBUG || this.#isLegacyDebug) {
+      this.#log('debug', message, type)
     }
   }
 
@@ -71,13 +77,16 @@ export class Logger {
     this.error(`${CLEVERTAP_ERROR_PREFIX} ${code}: ${description}`)
   }
 
-  #log (level, message) {
-    if (window.console) {
-      try {
-        const ts = new Date().getTime()
-        console[level](`CleverTap [${ts}]: ${message}`)
-      } catch (e) {}
-    }
+  #log (level, message, eventType = 'web') {
+    try {
+      const ts = new Date().getTime()
+      if (eventType === 'shopify_standard_event') {
+        console.log(`CleverTap [${ts}]: `)
+        console.log(JSON.parse(message))
+      } else {
+        console.log(`CleverTap [${ts}]: ${message}`)
+      }
+    } catch (e) {}
   }
 
   get #isLegacyDebug () {

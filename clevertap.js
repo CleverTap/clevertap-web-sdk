@@ -4,6 +4,91 @@
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.clevertap = factory());
 })(this, (function () { 'use strict';
 
+  function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+    try {
+      var info = gen[key](arg);
+      var value = info.value;
+    } catch (error) {
+      reject(error);
+      return;
+    }
+
+    if (info.done) {
+      resolve(value);
+    } else {
+      Promise.resolve(value).then(_next, _throw);
+    }
+  }
+
+  function _asyncToGenerator(fn) {
+    return function () {
+      var self = this,
+          args = arguments;
+      return new Promise(function (resolve, reject) {
+        var gen = fn.apply(self, args);
+
+        function _next(value) {
+          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+        }
+
+        function _throw(err) {
+          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+        }
+
+        _next(undefined);
+      });
+    };
+  }
+
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
+  }
+
   var id = 0;
 
   function _classPrivateFieldLooseKey(name) {
@@ -18,9 +103,57 @@
     return receiver;
   }
 
-  const TARGET_DOMAIN = 'clevertap-prod.com';
-  const TARGET_PROTOCOL = 'https:';
-  const DEFAULT_REGION = 'eu1';
+  var TARGET_DOMAIN = 'clevertap-prod.com';
+  var TARGET_PROTOCOL = 'https:';
+  var DEFAULT_REGION = 'eu1';
+
+  var _mode = _classPrivateFieldLooseKey("mode");
+
+  var _browser = _classPrivateFieldLooseKey("browser");
+
+  /**
+   * The Mode Class. This class stores information about the mode
+   * of the SDK. There are two modes in which SDK runs
+   * 1. SHOPIFY
+   * 2. WEB
+   * This also keeps track of the browser object from shopify
+   * @class
+   */
+  class ModeManager {
+    constructor() {
+      Object.defineProperty(this, _mode, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _browser, {
+        writable: true,
+        value: void 0
+      });
+    }
+
+    set mode(mode) {
+      _classPrivateFieldLooseBase(this, _mode)[_mode] = mode;
+    }
+
+    get mode() {
+      return _classPrivateFieldLooseBase(this, _mode)[_mode];
+    }
+
+    set browser(browser) {
+      _classPrivateFieldLooseBase(this, _browser)[_browser] = browser;
+    }
+
+    get browser() {
+      return _classPrivateFieldLooseBase(this, _browser)[_browser];
+    }
+
+  }
+  /**
+   * Exporting this class as a singleton so that it can be imported in other classes as well
+   */
+
+
+  var mode = new ModeManager();
 
   var _accountId = _classPrivateFieldLooseKey("accountId");
 
@@ -34,12 +167,12 @@
 
   class Account {
     constructor() {
-      let {
+      var {
         id
       } = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-      let region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
-      let targetDomain = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : TARGET_DOMAIN;
-      let token = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '';
+      var region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+      var targetDomain = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : TARGET_DOMAIN;
+      var token = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '';
       Object.defineProperty(this, _accountId, {
         writable: true,
         value: void 0
@@ -127,12 +260,20 @@
       }
     }
 
+    get endpoint() {
+      if (mode.mode === 'SHOPIFY') {
+        return 'shopifyAppPixel';
+      }
+
+      return 'a';
+    }
+
     get dataPostPEURL() {
       return "".concat(TARGET_PROTOCOL, "//").concat(this.finalTargetDomain, "/defineVars");
     }
 
     get dataPostURL() {
-      return "".concat(TARGET_PROTOCOL, "//").concat(this.finalTargetDomain, "/a?t=96");
+      return "".concat(TARGET_PROTOCOL, "//").concat(this.finalTargetDomain, "/").concat(this.endpoint, "?t=96");
     }
 
     get recorderURL() {
@@ -145,86 +286,86 @@
 
   }
 
-  const unsupportedKeyCharRegex = new RegExp('^\\s+|\\\.|\:|\\\$|\'|\"|\\\\|\\s+$', 'g');
-  const unsupportedValueCharRegex = new RegExp("^\\s+|\'|\"|\\\\|\\s+$", 'g');
-  const singleQuoteRegex = new RegExp('\'', 'g');
-  const CLEAR = 'clear';
-  const CHARGED_ID = 'Charged ID';
-  const CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID';
-  const GCOOKIE_NAME = 'WZRK_G';
-  const KCOOKIE_NAME = 'WZRK_K';
-  const CAMP_COOKIE_NAME = 'WZRK_CAMP';
-  const CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
+  var unsupportedKeyCharRegex = new RegExp('^\\s+|\\\.|\:|\\\$|\'|\"|\\\\|\\s+$', 'g');
+  var unsupportedValueCharRegex = new RegExp("^\\s+|\'|\"|\\\\|\\s+$", 'g');
+  var singleQuoteRegex = new RegExp('\'', 'g');
+  var CLEAR = 'clear';
+  var CHARGED_ID = 'Charged ID';
+  var CHARGEDID_COOKIE_NAME = 'WZRK_CHARGED_ID';
+  var GCOOKIE_NAME = 'WZRK_G';
+  var KCOOKIE_NAME = 'WZRK_K';
+  var CAMP_COOKIE_NAME = 'WZRK_CAMP';
+  var CAMP_COOKIE_G = 'WZRK_CAMP_G'; // cookie for storing campaign details against guid
 
-  const SCOOKIE_PREFIX = 'WZRK_S';
-  const SCOOKIE_EXP_TIME_IN_SECS = 60 * 20; // 20 mins
+  var SCOOKIE_PREFIX = 'WZRK_S';
+  var SCOOKIE_EXP_TIME_IN_SECS = 60 * 20; // 20 mins
 
-  const EV_COOKIE = 'WZRK_EV';
-  const META_COOKIE = 'WZRK_META';
-  const PR_COOKIE = 'WZRK_PR';
-  const ACCOUNT_ID = 'WZRK_ACCOUNT_ID';
-  const ARP_COOKIE = 'WZRK_ARP';
-  const LCOOKIE_NAME = 'WZRK_L';
-  const GLOBAL = 'global'; // used for email unsubscribe also
-  const DISPLAY = 'display';
-  const WEBPUSH_LS_KEY = 'WZRK_WPR';
-  const OPTOUT_KEY = 'optOut';
-  const CT_OPTOUT_KEY = 'ct_optout';
-  const OPTOUT_COOKIE_ENDSWITH = ':OO';
-  const USEIP_KEY = 'useIP';
-  const LRU_CACHE = 'WZRK_X';
-  const LRU_CACHE_SIZE = 100;
-  const IS_OUL = 'isOUL';
-  const EVT_PUSH = 'push';
-  const EVT_PING = 'ping';
-  const COOKIE_EXPIRY = 86400 * 365; // 1 Year in seconds
+  var EV_COOKIE = 'WZRK_EV';
+  var META_COOKIE = 'WZRK_META';
+  var PR_COOKIE = 'WZRK_PR';
+  var ACCOUNT_ID = 'WZRK_ACCOUNT_ID';
+  var ARP_COOKIE = 'WZRK_ARP';
+  var LCOOKIE_NAME = 'WZRK_L';
+  var GLOBAL = 'global'; // used for email unsubscribe also
+  var DISPLAY = 'display';
+  var WEBPUSH_LS_KEY = 'WZRK_WPR';
+  var OPTOUT_KEY = 'optOut';
+  var CT_OPTOUT_KEY = 'ct_optout';
+  var OPTOUT_COOKIE_ENDSWITH = ':OO';
+  var USEIP_KEY = 'useIP';
+  var LRU_CACHE = 'WZRK_X';
+  var LRU_CACHE_SIZE = 100;
+  var IS_OUL = 'isOUL';
+  var EVT_PUSH = 'push';
+  var EVT_PING = 'ping';
+  var COOKIE_EXPIRY = 86400 * 365; // 1 Year in seconds
 
-  const MAX_TRIES = 200; // API tries
+  var MAX_TRIES = 200; // API tries
 
-  const FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000; // 2 mins
+  var FIRST_PING_FREQ_IN_MILLIS = 2 * 60 * 1000; // 2 mins
 
-  const CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000; // 5 mins
+  var CONTINUOUS_PING_FREQ_IN_MILLIS = 5 * 60 * 1000; // 5 mins
 
-  const GROUP_SUBSCRIPTION_REQUEST_ID = '2';
-  const categoryLongKey = 'cUsY';
-  const WZRK_PREFIX = 'wzrk_';
-  const WZRK_ID = 'wzrk_id';
-  const NOTIFICATION_VIEWED = 'Notification Viewed';
-  const NOTIFICATION_CLICKED = 'Notification Clicked';
-  const FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
-  const PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD'; // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
+  var GROUP_SUBSCRIPTION_REQUEST_ID = '2';
+  var categoryLongKey = 'cUsY';
+  var WZRK_PREFIX = 'wzrk_';
+  var WZRK_ID = 'wzrk_id';
+  var NOTIFICATION_VIEWED = 'Notification Viewed';
+  var NOTIFICATION_CLICKED = 'Notification Clicked';
+  var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
+  var PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD'; // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
 
-  const COMMAND_INCREMENT = '$incr';
-  const COMMAND_DECREMENT = '$decr';
-  const COMMAND_SET = '$set';
-  const COMMAND_ADD = '$add';
-  const COMMAND_REMOVE = '$remove';
-  const COMMAND_DELETE = '$delete';
-  const WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG';
-  const WEBINBOX = 'WZRK_INBOX';
-  const MAX_INBOX_MSG = 15;
-  const VARIABLES = 'WZRK_PE';
-  const PUSH_DELAY_MS = 1000;
-  const MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
-  const WZRK_FETCH = 'wzrk_fetch';
-  const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
-  const APPLICATION_SERVER_KEY_RECEIVED = 'WZRK_APPLICATION_SERVER_KEY_RECIEVED';
-  const WEBPUSH_CONFIG_RECEIVED = 'WZRK_WEB_PUSH_CONFIG_RECEIVED';
-  const NOTIFICATION_PUSH_METHOD_DEFERRED = 'WZRK_NOTIFICATION_PUSH_DEFERRED';
-  const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
-  const NOTIF_LAST_TIME = 'notif_last_time';
-  const TIMER_FOR_NOTIF_BADGE_UPDATE = 300;
-  const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
-  const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
-  const POPUP_LOADING = 'WZRK_POPUP_LOADING';
-  const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
-  const WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
-  const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
-  const CUSTOM_CT_ID_PREFIX = '_w_';
-  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'; // Flag key for optional sub-domain profile isolation
+  var COMMAND_INCREMENT = '$incr';
+  var COMMAND_DECREMENT = '$decr';
+  var COMMAND_SET = '$set';
+  var COMMAND_ADD = '$add';
+  var COMMAND_REMOVE = '$remove';
+  var COMMAND_DELETE = '$delete';
+  var WEBINBOX_CONFIG = 'WZRK_INBOX_CONFIG';
+  var WEBINBOX = 'WZRK_INBOX';
+  var MAX_INBOX_MSG = 15;
+  var VARIABLES = 'WZRK_PE';
+  var PUSH_DELAY_MS = 1000;
+  var MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
+  var WZRK_FETCH = 'wzrk_fetch';
+  var WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG';
+  var APPLICATION_SERVER_KEY_RECEIVED = 'WZRK_APPLICATION_SERVER_KEY_RECIEVED';
+  var WEBPUSH_CONFIG_RECEIVED = 'WZRK_WEB_PUSH_CONFIG_RECEIVED';
+  var NOTIFICATION_PUSH_METHOD_DEFERRED = 'WZRK_NOTIFICATION_PUSH_DEFERRED';
+  var VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown';
+  var NOTIF_LAST_TIME = 'notif_last_time';
+  var TIMER_FOR_NOTIF_BADGE_UPDATE = 300;
+  var OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper';
+  var NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper';
+  var POPUP_LOADING = 'WZRK_POPUP_LOADING';
+  var CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
+  var WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
+  var QUALIFIED_CAMPAIGNS = 'WZRK_QC';
+  var CUSTOM_CT_ID_PREFIX = '_w_';
+  var BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'; // Flag key for optional sub-domain profile isolation
 
-  const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD';
-  const WEB_NATIVE_TEMPLATES = {
+  var ISOLATE_COOKIE = 'WZRK_ISOLATE_SD';
+  var WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
     CAROUSEL: 3,
@@ -232,19 +373,19 @@
     CUSTOM_HTML: 5,
     JSON: 6
   };
-  const WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES = {
+  var WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES = {
     HTML: 'html',
     FORM: 'form',
     JSON: 'json'
   };
-  const WEB_POPUP_TEMPLATES = {
+  var WEB_POPUP_TEMPLATES = {
     BOX: 0,
     INTERSTITIAL: 1,
     BANNER: 2,
     IMAGE_ONLY: 3,
     ADVANCED_BUILDER: 4
   };
-  const CAMPAIGN_TYPES = {
+  var CAMPAIGN_TYPES = {
     EXIT_INTENT: 1,
 
     /* Deprecated */
@@ -256,9 +397,9 @@
     /* Web Popup */
 
   };
-  const SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
-  const KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
-  const ACTION_TYPES = {
+  var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
+  var KEYS_TO_ENCRYPT = [KCOOKIE_NAME, LRU_CACHE, PR_COOKIE];
+  var ACTION_TYPES = {
     OPEN_LINK: 'url',
     OPEN_LINK_AND_CLOSE: 'urlCloseNotification',
     CLOSE: 'close',
@@ -267,18 +408,18 @@
     RUN_JS: 'js'
   };
 
-  const isString = input => {
+  var isString = input => {
     return typeof input === 'string' || input instanceof String;
   };
-  const isObject = input => {
+  var isObject = input => {
     // TODO: refine
     return Object.prototype.toString.call(input) === '[object Object]';
   };
-  const isDateObject = input => {
+  var isDateObject = input => {
     return typeof input === 'object' && input instanceof Date;
   };
-  const isObjectEmpty = obj => {
-    for (const prop in obj) {
+  var isObjectEmpty = obj => {
+    for (var prop in obj) {
       if (obj.hasOwnProperty(prop)) {
         return false;
       }
@@ -286,26 +427,26 @@
 
     return true;
   };
-  const isConvertibleToNumber = n => {
+  var isConvertibleToNumber = n => {
     return !isNaN(parseFloat(n)) && isFinite(n);
   };
-  const isNumber = n => {
+  var isNumber = n => {
     return /^-?[\d.]+(?:e-?\d+)?$/.test(n) && typeof n === 'number';
   };
-  const isValueValid = value => {
+  var isValueValid = value => {
     if (value === null || value === undefined || value === 'undefined') {
       return false;
     }
 
     return true;
   };
-  const removeUnsupportedChars = (o, logger) => {
+  var removeUnsupportedChars = (o, logger) => {
     // keys can't be greater than 1024 chars, values can't be greater than 1024 chars
     if (typeof o === 'object') {
-      for (const key in o) {
+      for (var key in o) {
         if (o.hasOwnProperty(key)) {
-          const sanitizedVal = removeUnsupportedChars(o[key], logger);
-          let sanitizedKey;
+          var sanitizedVal = removeUnsupportedChars(o[key], logger);
+          var sanitizedKey = void 0;
           sanitizedKey = sanitize(key, unsupportedKeyCharRegex);
 
           if (sanitizedKey.length > 1024) {
@@ -318,7 +459,7 @@
         }
       }
     } else {
-      let val;
+      var val;
 
       if (isString(o)) {
         val = sanitize(o, unsupportedValueCharRegex);
@@ -336,35 +477,240 @@
 
     return o;
   };
-  const sanitize = (input, regex) => {
+  var sanitize = (input, regex) => {
     return input.replace(regex, '');
   };
 
-  const getToday = () => {
-    const today = new Date();
+  var getToday = () => {
+    var today = new Date();
     return today.getFullYear() + '' + today.getMonth() + '' + today.getDay();
   };
-  const getNow = () => {
+  var getNow = () => {
     return Math.floor(new Date().getTime() / 1000);
   };
-  const convertToWZRKDate = dateObj => {
+  var convertToWZRKDate = dateObj => {
     return '$D_' + Math.round(dateObj.getTime() / 1000);
   };
-  const setDate = dt => {
+  var setDate = dt => {
     // expecting  yyyymmdd format either as a number or a string
     if (isDateValid(dt)) {
       return '$D_' + dt;
     }
   };
-  const isDateValid = date => {
-    const matches = /^(\d{4})(\d{2})(\d{2})$/.exec(date);
+  var isDateValid = date => {
+    var matches = /^(\d{4})(\d{2})(\d{2})$/.exec(date);
     if (matches == null) return false;
-    const d = matches[3];
-    const m = matches[2] - 1;
-    const y = matches[1];
-    const composedDate = new Date(y, m, d); // eslint-disable-next-line eqeqeq
+    var d = matches[3];
+    var m = matches[2] - 1;
+    var y = matches[1];
+    var composedDate = new Date(y, m, d); // eslint-disable-next-line eqeqeq
 
     return composedDate.getDate() == d && composedDate.getMonth() == m && composedDate.getFullYear() == y;
+  };
+
+  class ShopifyStorageManager {
+    /**
+     * saves to localStorage
+     * @param {string} key
+     * @param {*} value
+     * @returns {Promise<boolean>} true if the value is saved
+     */
+    static saveAsync(key, value) {
+      return _asyncToGenerator(function* () {
+        if (!key || !value) {
+          return false;
+        }
+
+        try {
+          yield mode.browser.localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+          return true;
+        } catch (e) {
+          return false;
+        }
+      })();
+    }
+    /**
+     * reads from localStorage
+     * @param {string} key
+     * @returns {Promise<string | null>}
+     */
+
+
+    static readAsync(key) {
+      return _asyncToGenerator(function* () {
+        if (!key) {
+          return false;
+        }
+
+        var data = null;
+
+        try {
+          data = yield mode.browser.localStorage.getItem(key);
+        } catch (e) {}
+
+        if (data != null) {
+          try {
+            data = JSON.parse(data);
+          } catch (e) {}
+        }
+
+        return data;
+      })();
+    }
+    /**
+     * removes item from localStorage
+     * @param {string} key
+     * @returns {Promise<boolean>}
+     */
+
+
+    static removeAsync(key) {
+      return _asyncToGenerator(function* () {
+        if (!key) {
+          return false;
+        }
+
+        try {
+          yield mode.browser.localStorage.removeItem(key);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      })();
+    }
+    /**
+     * creates a cookie and sets it in the browser
+     * @param {string} name
+     * @param {string} value
+     * @param {strings} seconds
+     * @param {*} domain
+     * @returns {Promise<boolean>} true if the cookie was created, false if it is not created
+     */
+
+
+    static createCookieAsync(name, value, seconds, domain) {
+      return _asyncToGenerator(function* () {
+        var expires = '';
+        var domainStr = '';
+
+        if (seconds) {
+          var date = new Date();
+          date.setTime(date.getTime() + seconds * 1000);
+          expires = '; expires=' + date.toGMTString();
+        }
+
+        if (domain) {
+          domainStr = '; domain=' + domain;
+        }
+
+        value = encodeURIComponent(value);
+
+        try {
+          yield mode.browser.cookie.set(name, value + expires + domainStr + '; path=/');
+          return true;
+        } catch (e) {
+          return false;
+        }
+      })();
+    }
+    /**
+     * reads the cookie in the browser
+     * @param {string} name
+     * @returns {Promise<string | null>} cookie
+     */
+
+
+    static readCookieAsync(name) {
+      return _asyncToGenerator(function* () {
+        var cookie;
+
+        try {
+          cookie = yield mode.browser.cookie.get(name);
+        } catch (e) {
+          cookie = null;
+        }
+
+        if (cookie === '') {
+          return null;
+        }
+
+        return decodeURIComponent(cookie);
+      })();
+    }
+    /**
+     * removes the cookie
+     * @param {string} name
+     * @param {string} domain
+     * @returns {Promise<boolean>}
+     */
+
+
+    static removeCookieAsync(name, domain) {
+      return _asyncToGenerator(function* () {
+        var cookieStr = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+
+        if (domain) {
+          cookieStr = cookieStr + ' domain=' + domain + '; path=/';
+        }
+
+        try {
+          yield mode.browser.cookie.set(cookieStr);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      })();
+    }
+
+  }
+
+  var getURLParams = url => {
+    var urlParams = {};
+    var idx = url.indexOf('?');
+
+    if (idx > 1) {
+      var uri = url.substring(idx + 1);
+      var match;
+      var pl = /\+/g; // Regex for replacing addition symbol with a space
+
+      var search = /([^&=]+)=?([^&]*)/g;
+
+      var decode = function decode(s) {
+        var replacement = s.replace(pl, ' ');
+
+        try {
+          replacement = decodeURIComponent(replacement);
+        } catch (e) {// eat
+        }
+
+        return replacement;
+      };
+
+      match = search.exec(uri);
+
+      while (match) {
+        urlParams[decode(match[1])] = decode(match[2]);
+        match = search.exec(uri);
+      }
+    }
+
+    return urlParams;
+  };
+  var getDomain = url => {
+    if (url === '') return '';
+    var a = document.createElement('a');
+    a.href = url;
+    return a.hostname;
+  };
+  var addToURL = (url, k, v) => {
+    return url + '&' + k + '=' + encodeURIComponent(v);
+  };
+  var getHostName = () => {
+    if (mode.mode === 'SHOPIFY') {
+      return mode.browser.document.location.hostname;
+    }
+
+    return window.location.hostname;
   };
 
   var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -437,7 +783,7 @@
            */
 
 
-          var cryptoSecureRandomInt = function () {
+          var cryptoSecureRandomInt = function cryptoSecureRandomInt() {
             if (crypto) {
               // Use getRandomValues method (Browser)
               if (typeof crypto.getRandomValues === 'function') {
@@ -507,7 +853,7 @@
                *         }
                *     });
                */
-              extend: function (overrides) {
+              extend: function extend(overrides) {
                 // Spawn
                 var subtype = create(this); // Augment
 
@@ -541,7 +887,7 @@
                *
                *     var instance = MyType.create();
                */
-              create: function () {
+              create: function create() {
                 var instance = this.extend();
                 instance.init.apply(instance, arguments);
                 return instance;
@@ -559,7 +905,7 @@
                *         }
                *     });
                */
-              init: function () {},
+              init: function init() {},
 
               /**
                * Copies properties into this object.
@@ -572,7 +918,7 @@
                *         field: 'value'
                *     });
                */
-              mixIn: function (properties) {
+              mixIn: function mixIn(properties) {
                 for (var propertyName in properties) {
                   if (properties.hasOwnProperty(propertyName)) {
                     this[propertyName] = properties[propertyName];
@@ -594,7 +940,7 @@
                *
                *     var clone = instance.clone();
                */
-              clone: function () {
+              clone: function clone() {
                 return this.init.prototype.extend(this);
               }
             };
@@ -620,7 +966,7 @@
              *     var wordArray = CryptoJS.lib.WordArray.create([0x00010203, 0x04050607]);
              *     var wordArray = CryptoJS.lib.WordArray.create([0x00010203, 0x04050607], 6);
              */
-            init: function (words, sigBytes) {
+            init: function init(words, sigBytes) {
               words = this.words = words || [];
 
               if (sigBytes != undefined$1) {
@@ -643,7 +989,7 @@
              *     var string = wordArray.toString();
              *     var string = wordArray.toString(CryptoJS.enc.Utf8);
              */
-            toString: function (encoder) {
+            toString: function toString(encoder) {
               return (encoder || Hex).stringify(this);
             },
 
@@ -658,7 +1004,7 @@
              *
              *     wordArray1.concat(wordArray2);
              */
-            concat: function (wordArray) {
+            concat: function concat(wordArray) {
               // Shortcuts
               var thisWords = this.words;
               var thatWords = wordArray.words;
@@ -692,7 +1038,7 @@
              *
              *     wordArray.clamp();
              */
-            clamp: function () {
+            clamp: function clamp() {
               // Shortcuts
               var words = this.words;
               var sigBytes = this.sigBytes; // Clamp
@@ -710,7 +1056,7 @@
              *
              *     var clone = wordArray.clone();
              */
-            clone: function () {
+            clone: function clone() {
               var clone = Base.clone.call(this);
               clone.words = this.words.slice(0);
               return clone;
@@ -729,7 +1075,7 @@
              *
              *     var wordArray = CryptoJS.lib.WordArray.random(16);
              */
-            random: function (nBytes) {
+            random: function random(nBytes) {
               var words = [];
 
               for (var i = 0; i < nBytes; i += 4) {
@@ -762,7 +1108,7 @@
              *
              *     var hexString = CryptoJS.enc.Hex.stringify(wordArray);
              */
-            stringify: function (wordArray) {
+            stringify: function stringify(wordArray) {
               // Shortcuts
               var words = wordArray.words;
               var sigBytes = wordArray.sigBytes; // Convert
@@ -791,7 +1137,7 @@
              *
              *     var wordArray = CryptoJS.enc.Hex.parse(hexString);
              */
-            parse: function (hexStr) {
+            parse: function parse(hexStr) {
               // Shortcut
               var hexStrLength = hexStr.length; // Convert
 
@@ -822,7 +1168,7 @@
              *
              *     var latin1String = CryptoJS.enc.Latin1.stringify(wordArray);
              */
-            stringify: function (wordArray) {
+            stringify: function stringify(wordArray) {
               // Shortcuts
               var words = wordArray.words;
               var sigBytes = wordArray.sigBytes; // Convert
@@ -850,7 +1196,7 @@
              *
              *     var wordArray = CryptoJS.enc.Latin1.parse(latin1String);
              */
-            parse: function (latin1Str) {
+            parse: function parse(latin1Str) {
               // Shortcut
               var latin1StrLength = latin1Str.length; // Convert
 
@@ -881,7 +1227,7 @@
              *
              *     var utf8String = CryptoJS.enc.Utf8.stringify(wordArray);
              */
-            stringify: function (wordArray) {
+            stringify: function stringify(wordArray) {
               try {
                 return decodeURIComponent(escape(Latin1.stringify(wordArray)));
               } catch (e) {
@@ -902,7 +1248,7 @@
              *
              *     var wordArray = CryptoJS.enc.Utf8.parse(utf8String);
              */
-            parse: function (utf8Str) {
+            parse: function parse(utf8Str) {
               return Latin1.parse(unescape(encodeURIComponent(utf8Str)));
             }
           };
@@ -922,7 +1268,7 @@
              *
              *     bufferedBlockAlgorithm.reset();
              */
-            reset: function () {
+            reset: function reset() {
               // Initial values
               this._data = new WordArray.init();
               this._nDataBytes = 0;
@@ -938,7 +1284,7 @@
              *     bufferedBlockAlgorithm._append('data');
              *     bufferedBlockAlgorithm._append(wordArray);
              */
-            _append: function (data) {
+            _append: function _append(data) {
               // Convert string to WordArray, else assume WordArray already
               if (typeof data == 'string') {
                 data = Utf8.parse(data);
@@ -964,7 +1310,7 @@
              *     var processedData = bufferedBlockAlgorithm._process();
              *     var processedData = bufferedBlockAlgorithm._process(!!'flush');
              */
-            _process: function (doFlush) {
+            _process: function _process(doFlush) {
               var processedWords; // Shortcuts
 
               var data = this._data;
@@ -1013,7 +1359,7 @@
              *
              *     var clone = bufferedBlockAlgorithm.clone();
              */
-            clone: function () {
+            clone: function clone() {
               var clone = Base.clone.call(this);
               clone._data = this._data.clone();
               return clone;
@@ -1041,7 +1387,7 @@
              *
              *     var hasher = CryptoJS.algo.SHA256.create();
              */
-            init: function (cfg) {
+            init: function init(cfg) {
               // Apply config defaults
               this.cfg = this.cfg.extend(cfg); // Set initial values
 
@@ -1055,7 +1401,7 @@
              *
              *     hasher.reset();
              */
-            reset: function () {
+            reset: function reset() {
               // Reset data buffer
               BufferedBlockAlgorithm.reset.call(this); // Perform concrete-hasher logic
 
@@ -1074,7 +1420,7 @@
              *     hasher.update('message');
              *     hasher.update(wordArray);
              */
-            update: function (messageUpdate) {
+            update: function update(messageUpdate) {
               // Append
               this._append(messageUpdate); // Update the hash
 
@@ -1099,7 +1445,7 @@
              *     var hash = hasher.finalize('message');
              *     var hash = hasher.finalize(wordArray);
              */
-            finalize: function (messageUpdate) {
+            finalize: function finalize(messageUpdate) {
               // Final message update
               if (messageUpdate) {
                 this._append(messageUpdate);
@@ -1125,7 +1471,7 @@
              *
              *     var SHA256 = CryptoJS.lib.Hasher._createHelper(CryptoJS.algo.SHA256);
              */
-            _createHelper: function (hasher) {
+            _createHelper: function _createHelper(hasher) {
               return function (message, cfg) {
                 return new hasher.init(cfg).finalize(message);
               };
@@ -1144,7 +1490,7 @@
              *
              *     var HmacSHA256 = CryptoJS.lib.Hasher._createHmacHelper(CryptoJS.algo.SHA256);
              */
-            _createHmacHelper: function (hasher) {
+            _createHmacHelper: function _createHmacHelper(hasher) {
               return function (message, key) {
                 return new C_algo.HMAC.init(hasher, key).finalize(message);
               };
@@ -1208,7 +1554,7 @@
              *
              *     var x64Word = CryptoJS.x64.Word.create(0x00010203, 0x04050607);
              */
-            init: function (high, low) {
+            init: function init(high, low) {
               this.high = high;
               this.low = low;
             }
@@ -1399,7 +1745,7 @@
              *         CryptoJS.x64.Word.create(0x18191a1b, 0x1c1d1e1f)
              *     ], 10);
              */
-            init: function (words, sigBytes) {
+            init: function init(words, sigBytes) {
               words = this.words = words || [];
 
               if (sigBytes != undefined$1) {
@@ -1418,7 +1764,7 @@
              *
              *     var x32WordArray = x64WordArray.toX32();
              */
-            toX32: function () {
+            toX32: function toX32() {
               // Shortcuts
               var x64Words = this.words;
               var x64WordsLength = x64Words.length; // Convert
@@ -1443,7 +1789,7 @@
              *
              *     var clone = x64WordArray.clone();
              */
-            clone: function () {
+            clone: function clone() {
               var clone = Base.clone.call(this); // Clone "words" array
 
               var words = clone.words = this.words.slice(0); // Clone each X64Word object
@@ -1577,7 +1923,7 @@
              *
              *     var utf16String = CryptoJS.enc.Utf16.stringify(wordArray);
              */
-            stringify: function (wordArray) {
+            stringify: function stringify(wordArray) {
               // Shortcuts
               var words = wordArray.words;
               var sigBytes = wordArray.sigBytes; // Convert
@@ -1605,7 +1951,7 @@
              *
              *     var wordArray = CryptoJS.enc.Utf16.parse(utf16String);
              */
-            parse: function (utf16Str) {
+            parse: function parse(utf16Str) {
               // Shortcut
               var utf16StrLength = utf16Str.length; // Convert
 
@@ -1636,7 +1982,7 @@
              *
              *     var utf16Str = CryptoJS.enc.Utf16LE.stringify(wordArray);
              */
-            stringify: function (wordArray) {
+            stringify: function stringify(wordArray) {
               // Shortcuts
               var words = wordArray.words;
               var sigBytes = wordArray.sigBytes; // Convert
@@ -1664,7 +2010,7 @@
              *
              *     var wordArray = CryptoJS.enc.Utf16LE.parse(utf16Str);
              */
-            parse: function (utf16Str) {
+            parse: function parse(utf16Str) {
               // Shortcut
               var utf16StrLength = utf16Str.length; // Convert
 
@@ -1731,7 +2077,7 @@
              *
              *     var base64String = CryptoJS.enc.Base64.stringify(wordArray);
              */
-            stringify: function (wordArray) {
+            stringify: function stringify(wordArray) {
               // Shortcuts
               var words = wordArray.words;
               var sigBytes = wordArray.sigBytes;
@@ -1777,7 +2123,7 @@
              *
              *     var wordArray = CryptoJS.enc.Base64.parse(base64String);
              */
-            parse: function (base64Str) {
+            parse: function parse(base64Str) {
               // Shortcuts
               var base64StrLength = base64Str.length;
               var map = this._map;
@@ -1876,7 +2222,7 @@
              *
              *     var base64String = CryptoJS.enc.Base64url.stringify(wordArray);
              */
-            stringify: function (wordArray, urlSafe) {
+            stringify: function stringify(wordArray, urlSafe) {
               if (urlSafe === undefined) {
                 urlSafe = true;
               } // Shortcuts
@@ -1928,7 +2274,7 @@
              *
              *     var wordArray = CryptoJS.enc.Base64url.parse(base64String);
              */
-            parse: function (base64Str, urlSafe) {
+            parse: function parse(base64Str, urlSafe) {
               if (urlSafe === undefined) {
                 urlSafe = true;
               } // Shortcuts
@@ -2027,10 +2373,10 @@
 
 
           var MD5 = C_algo.MD5 = Hasher.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               this._hash = new WordArray.init([0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]);
             },
-            _doProcessBlock: function (M, offset) {
+            _doProcessBlock: function _doProcessBlock(M, offset) {
               // Swap endian
               for (var i = 0; i < 16; i++) {
                 // Shortcuts
@@ -2133,7 +2479,7 @@
               H[2] = H[2] + c | 0;
               H[3] = H[3] + d | 0;
             },
-            _doFinalize: function () {
+            _doFinalize: function _doFinalize() {
               // Shortcuts
               var data = this._data;
               var dataWords = data.words;
@@ -2162,7 +2508,7 @@
 
               return hash;
             },
-            clone: function () {
+            clone: function clone() {
               var clone = Hasher.clone.call(this);
               clone._hash = this._hash.clone();
               return clone;
@@ -2261,10 +2607,10 @@
            */
 
           var SHA1 = C_algo.SHA1 = Hasher.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               this._hash = new WordArray.init([0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0]);
             },
-            _doProcessBlock: function (M, offset) {
+            _doProcessBlock: function _doProcessBlock(M, offset) {
               // Shortcut
               var H = this._hash.words; // Working variables
 
@@ -2310,7 +2656,7 @@
               H[3] = H[3] + d | 0;
               H[4] = H[4] + e | 0;
             },
-            _doFinalize: function () {
+            _doFinalize: function _doFinalize() {
               // Shortcuts
               var data = this._data;
               var dataWords = data.words;
@@ -2327,7 +2673,7 @@
 
               return this._hash;
             },
-            clone: function () {
+            clone: function clone() {
               var clone = Hasher.clone.call(this);
               clone._hash = this._hash.clone();
               return clone;
@@ -2443,10 +2789,10 @@
            */
 
           var SHA256 = C_algo.SHA256 = Hasher.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               this._hash = new WordArray.init(H.slice(0));
             },
-            _doProcessBlock: function (M, offset) {
+            _doProcessBlock: function _doProcessBlock(M, offset) {
               // Shortcut
               var H = this._hash.words; // Working variables
 
@@ -2496,7 +2842,7 @@
               H[6] = H[6] + g | 0;
               H[7] = H[7] + h | 0;
             },
-            _doFinalize: function () {
+            _doFinalize: function _doFinalize() {
               // Shortcuts
               var data = this._data;
               var dataWords = data.words;
@@ -2513,7 +2859,7 @@
 
               return this._hash;
             },
-            clone: function () {
+            clone: function clone() {
               var clone = Hasher.clone.call(this);
               clone._hash = this._hash.clone();
               return clone;
@@ -2589,10 +2935,10 @@
            */
 
           var SHA224 = C_algo.SHA224 = SHA256.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               this._hash = new WordArray.init([0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, 0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4]);
             },
-            _doFinalize: function () {
+            _doFinalize: function _doFinalize() {
               var hash = SHA256._doFinalize.call(this);
 
               hash.sigBytes -= 4;
@@ -2687,10 +3033,10 @@
 
 
           var SHA512 = C_algo.SHA512 = Hasher.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               this._hash = new X64WordArray.init([new X64Word.init(0x6a09e667, 0xf3bcc908), new X64Word.init(0xbb67ae85, 0x84caa73b), new X64Word.init(0x3c6ef372, 0xfe94f82b), new X64Word.init(0xa54ff53a, 0x5f1d36f1), new X64Word.init(0x510e527f, 0xade682d1), new X64Word.init(0x9b05688c, 0x2b3e6c1f), new X64Word.init(0x1f83d9ab, 0xfb41bd6b), new X64Word.init(0x5be0cd19, 0x137e2179)]);
             },
-            _doProcessBlock: function (M, offset) {
+            _doProcessBlock: function _doProcessBlock(M, offset) {
               // Shortcuts
               var H = this._hash.words;
               var H0 = H[0];
@@ -2834,7 +3180,7 @@
               H7l = H7.low = H7l + hl;
               H7.high = H7h + hh + (H7l >>> 0 < hl >>> 0 ? 1 : 0);
             },
-            _doFinalize: function () {
+            _doFinalize: function _doFinalize() {
               // Shortcuts
               var data = this._data;
               var dataWords = data.words;
@@ -2854,7 +3200,7 @@
 
               return hash;
             },
-            clone: function () {
+            clone: function clone() {
               var clone = Hasher.clone.call(this);
               clone._hash = this._hash.clone();
               return clone;
@@ -2932,10 +3278,10 @@
            */
 
           var SHA384 = C_algo.SHA384 = SHA512.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               this._hash = new X64WordArray.init([new X64Word.init(0xcbbb9d5d, 0xc1059ed8), new X64Word.init(0x629a292a, 0x367cd507), new X64Word.init(0x9159015a, 0x3070dd17), new X64Word.init(0x152fecd8, 0xf70e5939), new X64Word.init(0x67332667, 0xffc00b31), new X64Word.init(0x8eb44a87, 0x68581511), new X64Word.init(0xdb0c2e0d, 0x64f98fa7), new X64Word.init(0x47b5481d, 0xbefa4fa4)]);
             },
-            _doFinalize: function () {
+            _doFinalize: function _doFinalize() {
               var hash = SHA512._doFinalize.call(this);
 
               hash.sigBytes -= 16;
@@ -3092,7 +3438,7 @@
             cfg: Hasher.cfg.extend({
               outputLength: 512
             }),
-            _doReset: function () {
+            _doReset: function _doReset() {
               var state = this._state = [];
 
               for (var i = 0; i < 25; i++) {
@@ -3101,7 +3447,7 @@
 
               this.blockSize = (1600 - 2 * this.cfg.outputLength) / 32;
             },
-            _doProcessBlock: function (M, offset) {
+            _doProcessBlock: function _doProcessBlock(M, offset) {
               // Shortcuts
               var state = this._state;
               var nBlockSizeLanes = this.blockSize / 2; // Absorb
@@ -3209,7 +3555,7 @@
                 lane.low ^= roundConstant.low;
               }
             },
-            _doFinalize: function () {
+            _doFinalize: function _doFinalize() {
               // Shortcuts
               var data = this._data;
               var dataWords = data.words;
@@ -3246,7 +3592,7 @@
 
               return new WordArray.init(hashWords, outputLengthBytes);
             },
-            clone: function () {
+            clone: function clone() {
               var clone = Hasher.clone.call(this);
 
               var state = clone._state = this._state.slice(0);
@@ -3348,10 +3694,10 @@
 
 
           var RIPEMD160 = C_algo.RIPEMD160 = Hasher.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               this._hash = WordArray.create([0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]);
             },
-            _doProcessBlock: function (M, offset) {
+            _doProcessBlock: function _doProcessBlock(M, offset) {
               // Swap endian
               for (var i = 0; i < 16; i++) {
                 // Shortcuts
@@ -3437,7 +3783,7 @@
               H[4] = H[0] + bl + cr | 0;
               H[0] = t;
             },
-            _doFinalize: function () {
+            _doFinalize: function _doFinalize() {
               // Shortcuts
               var data = this._data;
               var dataWords = data.words;
@@ -3464,7 +3810,7 @@
 
               return hash;
             },
-            clone: function () {
+            clone: function clone() {
               var clone = Hasher.clone.call(this);
               clone._hash = this._hash.clone();
               return clone;
@@ -3576,7 +3922,7 @@
              *
              *     var hmacHasher = CryptoJS.algo.HMAC.create(CryptoJS.algo.SHA256, key);
              */
-            init: function (hasher, key) {
+            init: function init(hasher, key) {
               // Init hasher
               hasher = this._hasher = new hasher.init(); // Convert string to WordArray, else assume WordArray already
 
@@ -3618,7 +3964,7 @@
              *
              *     hmacHasher.reset();
              */
-            reset: function () {
+            reset: function reset() {
               // Shortcut
               var hasher = this._hasher; // Reset
 
@@ -3638,7 +3984,7 @@
              *     hmacHasher.update('message');
              *     hmacHasher.update(wordArray);
              */
-            update: function (messageUpdate) {
+            update: function update(messageUpdate) {
               this._hasher.update(messageUpdate); // Chainable
 
 
@@ -3659,7 +4005,7 @@
              *     var hmac = hmacHasher.finalize('message');
              *     var hmac = hmacHasher.finalize(wordArray);
              */
-            finalize: function (messageUpdate) {
+            finalize: function finalize(messageUpdate) {
               // Shortcut
               var hasher = this._hasher; // Compute HMAC
 
@@ -3731,7 +4077,7 @@
              *     var kdf = CryptoJS.algo.PBKDF2.create({ keySize: 8 });
              *     var kdf = CryptoJS.algo.PBKDF2.create({ keySize: 8, iterations: 1000 });
              */
-            init: function (cfg) {
+            init: function init(cfg) {
               this.cfg = this.cfg.extend(cfg);
             },
 
@@ -3747,7 +4093,7 @@
              *
              *     var key = kdf.compute(password, salt);
              */
-            compute: function (password, salt) {
+            compute: function compute(password, salt) {
               // Shortcut
               var cfg = this.cfg; // Init HMAC
 
@@ -3874,7 +4220,7 @@
              *     var kdf = CryptoJS.algo.EvpKDF.create({ keySize: 8 });
              *     var kdf = CryptoJS.algo.EvpKDF.create({ keySize: 8, iterations: 1000 });
              */
-            init: function (cfg) {
+            init: function init(cfg) {
               this.cfg = this.cfg.extend(cfg);
             },
 
@@ -3890,7 +4236,7 @@
              *
              *     var key = kdf.compute(password, salt);
              */
-            compute: function (password, salt) {
+            compute: function compute(password, salt) {
               var block; // Shortcut
 
               var cfg = this.cfg; // Init hasher
@@ -4016,7 +4362,7 @@
              *
              *     var cipher = CryptoJS.algo.AES.createEncryptor(keyWordArray, { iv: ivWordArray });
              */
-            createEncryptor: function (key, cfg) {
+            createEncryptor: function createEncryptor(key, cfg) {
               return this.create(this._ENC_XFORM_MODE, key, cfg);
             },
 
@@ -4034,7 +4380,7 @@
              *
              *     var cipher = CryptoJS.algo.AES.createDecryptor(keyWordArray, { iv: ivWordArray });
              */
-            createDecryptor: function (key, cfg) {
+            createDecryptor: function createDecryptor(key, cfg) {
               return this.create(this._DEC_XFORM_MODE, key, cfg);
             },
 
@@ -4049,7 +4395,7 @@
              *
              *     var cipher = CryptoJS.algo.AES.create(CryptoJS.algo.AES._ENC_XFORM_MODE, keyWordArray, { iv: ivWordArray });
              */
-            init: function (xformMode, key, cfg) {
+            init: function init(xformMode, key, cfg) {
               // Apply config defaults
               this.cfg = this.cfg.extend(cfg); // Store transform mode and key
 
@@ -4066,7 +4412,7 @@
              *
              *     cipher.reset();
              */
-            reset: function () {
+            reset: function reset() {
               // Reset data buffer
               BufferedBlockAlgorithm.reset.call(this); // Perform concrete-cipher logic
 
@@ -4085,7 +4431,7 @@
              *     var encrypted = cipher.process('data');
              *     var encrypted = cipher.process(wordArray);
              */
-            process: function (dataUpdate) {
+            process: function process(dataUpdate) {
               // Append
               this._append(dataUpdate); // Process available blocks
 
@@ -4107,7 +4453,7 @@
              *     var encrypted = cipher.finalize('data');
              *     var encrypted = cipher.finalize(wordArray);
              */
-            finalize: function (dataUpdate) {
+            finalize: function finalize(dataUpdate) {
               // Final data update
               if (dataUpdate) {
                 this._append(dataUpdate);
@@ -4147,10 +4493,10 @@
 
               return function (cipher) {
                 return {
-                  encrypt: function (message, key, cfg) {
+                  encrypt: function encrypt(message, key, cfg) {
                     return selectCipherStrategy(key).encrypt(cipher, message, key, cfg);
                   },
-                  decrypt: function (ciphertext, key, cfg) {
+                  decrypt: function decrypt(ciphertext, key, cfg) {
                     return selectCipherStrategy(key).decrypt(cipher, ciphertext, key, cfg);
                   }
                 };
@@ -4164,7 +4510,7 @@
            */
 
           C_lib.StreamCipher = Cipher.extend({
-            _doFinalize: function () {
+            _doFinalize: function _doFinalize() {
               // Process partial blocks
               var finalProcessedBlocks = this._process(!!'flush');
 
@@ -4194,7 +4540,7 @@
              *
              *     var mode = CryptoJS.mode.CBC.createEncryptor(cipher, iv.words);
              */
-            createEncryptor: function (cipher, iv) {
+            createEncryptor: function createEncryptor(cipher, iv) {
               return this.Encryptor.create(cipher, iv);
             },
 
@@ -4210,7 +4556,7 @@
              *
              *     var mode = CryptoJS.mode.CBC.createDecryptor(cipher, iv.words);
              */
-            createDecryptor: function (cipher, iv) {
+            createDecryptor: function createDecryptor(cipher, iv) {
               return this.Decryptor.create(cipher, iv);
             },
 
@@ -4224,7 +4570,7 @@
              *
              *     var mode = CryptoJS.mode.CBC.Encryptor.create(cipher, iv.words);
              */
-            init: function (cipher, iv) {
+            init: function init(cipher, iv) {
               this._cipher = cipher;
               this._iv = iv;
             }
@@ -4253,7 +4599,7 @@
                *
                *     mode.processBlock(data.words, offset);
                */
-              processBlock: function (words, offset) {
+              processBlock: function processBlock(words, offset) {
                 // Shortcuts
                 var cipher = this._cipher;
                 var blockSize = cipher.blockSize; // XOR and encrypt
@@ -4279,7 +4625,7 @@
                *
                *     mode.processBlock(data.words, offset);
                */
-              processBlock: function (words, offset) {
+              processBlock: function processBlock(words, offset) {
                 // Shortcuts
                 var cipher = this._cipher;
                 var blockSize = cipher.blockSize; // Remember this block to use with next block
@@ -4337,7 +4683,7 @@
              *
              *     CryptoJS.pad.Pkcs7.pad(wordArray, 4);
              */
-            pad: function (data, blockSize) {
+            pad: function pad(data, blockSize) {
               // Shortcut
               var blockSizeBytes = blockSize * 4; // Count padding bytes
 
@@ -4367,7 +4713,7 @@
              *
              *     CryptoJS.pad.Pkcs7.unpad(wordArray);
              */
-            unpad: function (data) {
+            unpad: function unpad(data) {
               // Get number of padding bytes from last byte
               var nPaddingBytes = data.words[data.sigBytes - 1 >>> 2] & 0xff; // Remove padding
 
@@ -4391,7 +4737,7 @@
               mode: CBC,
               padding: Pkcs7
             }),
-            reset: function () {
+            reset: function reset() {
               var modeCreator; // Reset cipher
 
               Cipher.reset.call(this); // Shortcuts
@@ -4417,10 +4763,10 @@
                 this._mode.__creator = modeCreator;
               }
             },
-            _doProcessBlock: function (words, offset) {
+            _doProcessBlock: function _doProcessBlock(words, offset) {
               this._mode.processBlock(words, offset);
             },
-            _doFinalize: function () {
+            _doFinalize: function _doFinalize() {
               var finalProcessedBlocks; // Shortcut
 
               var padding = this.cfg.padding; // Finalize
@@ -4477,7 +4823,7 @@
              *         formatter: CryptoJS.format.OpenSSL
              *     });
              */
-            init: function (cipherParams) {
+            init: function init(cipherParams) {
               this.mixIn(cipherParams);
             },
 
@@ -4496,7 +4842,7 @@
              *     var string = cipherParams.toString();
              *     var string = cipherParams.toString(CryptoJS.format.OpenSSL);
              */
-            toString: function (formatter) {
+            toString: function toString(formatter) {
               return (formatter || this.formatter).stringify(this);
             }
           });
@@ -4523,7 +4869,7 @@
              *
              *     var openSSLString = CryptoJS.format.OpenSSL.stringify(cipherParams);
              */
-            stringify: function (cipherParams) {
+            stringify: function stringify(cipherParams) {
               var wordArray; // Shortcuts
 
               var ciphertext = cipherParams.ciphertext;
@@ -4551,7 +4897,7 @@
              *
              *     var cipherParams = CryptoJS.format.OpenSSL.parse(openSSLString);
              */
-            parse: function (openSSLStr) {
+            parse: function parse(openSSLStr) {
               var salt; // Parse base64
 
               var ciphertext = Base64.parse(openSSLStr); // Shortcut
@@ -4604,7 +4950,7 @@
              *     var ciphertextParams = CryptoJS.lib.SerializableCipher.encrypt(CryptoJS.algo.AES, message, key, { iv: iv });
              *     var ciphertextParams = CryptoJS.lib.SerializableCipher.encrypt(CryptoJS.algo.AES, message, key, { iv: iv, format: CryptoJS.format.OpenSSL });
              */
-            encrypt: function (cipher, message, key, cfg) {
+            encrypt: function encrypt(cipher, message, key, cfg) {
               // Apply config defaults
               cfg = this.cfg.extend(cfg); // Encrypt
 
@@ -4642,7 +4988,7 @@
              *     var plaintext = CryptoJS.lib.SerializableCipher.decrypt(CryptoJS.algo.AES, formattedCiphertext, key, { iv: iv, format: CryptoJS.format.OpenSSL });
              *     var plaintext = CryptoJS.lib.SerializableCipher.decrypt(CryptoJS.algo.AES, ciphertextParams, key, { iv: iv, format: CryptoJS.format.OpenSSL });
              */
-            decrypt: function (cipher, ciphertext, key, cfg) {
+            decrypt: function decrypt(cipher, ciphertext, key, cfg) {
               // Apply config defaults
               cfg = this.cfg.extend(cfg); // Convert string to CipherParams
 
@@ -4667,7 +5013,7 @@
              *
              *     var ciphertextParams = CryptoJS.lib.SerializableCipher._parse(ciphertextStringOrParams, format);
              */
-            _parse: function (ciphertext, format) {
+            _parse: function _parse(ciphertext, format) {
               if (typeof ciphertext == 'string') {
                 return format.parse(ciphertext, this);
               } else {
@@ -4702,7 +5048,7 @@
              *     var derivedParams = CryptoJS.kdf.OpenSSL.execute('Password', 256/32, 128/32);
              *     var derivedParams = CryptoJS.kdf.OpenSSL.execute('Password', 256/32, 128/32, 'saltsalt');
              */
-            execute: function (password, keySize, ivSize, salt, hasher) {
+            execute: function execute(password, keySize, ivSize, salt, hasher) {
               // Generate random salt
               if (!salt) {
                 salt = WordArray.random(64 / 8);
@@ -4763,7 +5109,7 @@
              *     var ciphertextParams = CryptoJS.lib.PasswordBasedCipher.encrypt(CryptoJS.algo.AES, message, 'password');
              *     var ciphertextParams = CryptoJS.lib.PasswordBasedCipher.encrypt(CryptoJS.algo.AES, message, 'password', { format: CryptoJS.format.OpenSSL });
              */
-            encrypt: function (cipher, message, password, cfg) {
+            encrypt: function encrypt(cipher, message, password, cfg) {
               // Apply config defaults
               cfg = this.cfg.extend(cfg); // Derive key and other params
 
@@ -4794,7 +5140,7 @@
              *     var plaintext = CryptoJS.lib.PasswordBasedCipher.decrypt(CryptoJS.algo.AES, formattedCiphertext, 'password', { format: CryptoJS.format.OpenSSL });
              *     var plaintext = CryptoJS.lib.PasswordBasedCipher.decrypt(CryptoJS.algo.AES, ciphertextParams, 'password', { format: CryptoJS.format.OpenSSL });
              */
-            decrypt: function (cipher, ciphertext, password, cfg) {
+            decrypt: function decrypt(cipher, ciphertext, password, cfg) {
               // Apply config defaults
               cfg = this.cfg.extend(cfg); // Convert string to CipherParams
 
@@ -4838,7 +5184,7 @@
         CryptoJS.mode.CFB = function () {
           var CFB = CryptoJS.lib.BlockCipherMode.extend();
           CFB.Encryptor = CFB.extend({
-            processBlock: function (words, offset) {
+            processBlock: function processBlock(words, offset) {
               // Shortcuts
               var cipher = this._cipher;
               var blockSize = cipher.blockSize;
@@ -4848,7 +5194,7 @@
             }
           });
           CFB.Decryptor = CFB.extend({
-            processBlock: function (words, offset) {
+            processBlock: function processBlock(words, offset) {
               // Shortcuts
               var cipher = this._cipher;
               var blockSize = cipher.blockSize; // Remember this block to use with next block
@@ -4913,7 +5259,7 @@
         CryptoJS.mode.CTR = function () {
           var CTR = CryptoJS.lib.BlockCipherMode.extend();
           var Encryptor = CTR.Encryptor = CTR.extend({
-            processBlock: function (words, offset) {
+            processBlock: function processBlock(words, offset) {
               // Shortcuts
               var cipher = this._cipher;
               var blockSize = cipher.blockSize;
@@ -5019,7 +5365,7 @@
           }
 
           var Encryptor = CTRGladman.Encryptor = CTRGladman.extend({
-            processBlock: function (words, offset) {
+            processBlock: function processBlock(words, offset) {
               // Shortcuts
               var cipher = this._cipher;
               var blockSize = cipher.blockSize;
@@ -5075,7 +5421,7 @@
         CryptoJS.mode.OFB = function () {
           var OFB = CryptoJS.lib.BlockCipherMode.extend();
           var Encryptor = OFB.Encryptor = OFB.extend({
-            processBlock: function (words, offset) {
+            processBlock: function processBlock(words, offset) {
               // Shortcuts
               var cipher = this._cipher;
               var blockSize = cipher.blockSize;
@@ -5129,12 +5475,12 @@
         CryptoJS.mode.ECB = function () {
           var ECB = CryptoJS.lib.BlockCipherMode.extend();
           ECB.Encryptor = ECB.extend({
-            processBlock: function (words, offset) {
+            processBlock: function processBlock(words, offset) {
               this._cipher.encryptBlock(words, offset);
             }
           });
           ECB.Decryptor = ECB.extend({
-            processBlock: function (words, offset) {
+            processBlock: function processBlock(words, offset) {
               this._cipher.decryptBlock(words, offset);
             }
           });
@@ -5169,7 +5515,7 @@
          * ANSI X.923 padding strategy.
          */
         CryptoJS.pad.AnsiX923 = {
-          pad: function (data, blockSize) {
+          pad: function pad(data, blockSize) {
             // Shortcuts
             var dataSigBytes = data.sigBytes;
             var blockSizeBytes = blockSize * 4; // Count padding bytes
@@ -5182,7 +5528,7 @@
             data.words[lastBytePos >>> 2] |= nPaddingBytes << 24 - lastBytePos % 4 * 8;
             data.sigBytes += nPaddingBytes;
           },
-          unpad: function (data) {
+          unpad: function unpad(data) {
             // Get number of padding bytes from last byte
             var nPaddingBytes = data.words[data.sigBytes - 1 >>> 2] & 0xff; // Remove padding
 
@@ -5217,7 +5563,7 @@
          * ISO 10126 padding strategy.
          */
         CryptoJS.pad.Iso10126 = {
-          pad: function (data, blockSize) {
+          pad: function pad(data, blockSize) {
             // Shortcut
             var blockSizeBytes = blockSize * 4; // Count padding bytes
 
@@ -5225,7 +5571,7 @@
 
             data.concat(CryptoJS.lib.WordArray.random(nPaddingBytes - 1)).concat(CryptoJS.lib.WordArray.create([nPaddingBytes << 24], 1));
           },
-          unpad: function (data) {
+          unpad: function unpad(data) {
             // Get number of padding bytes from last byte
             var nPaddingBytes = data.words[data.sigBytes - 1 >>> 2] & 0xff; // Remove padding
 
@@ -5260,13 +5606,13 @@
          * ISO/IEC 9797-1 Padding Method 2.
          */
         CryptoJS.pad.Iso97971 = {
-          pad: function (data, blockSize) {
+          pad: function pad(data, blockSize) {
             // Add 0x80 byte
             data.concat(CryptoJS.lib.WordArray.create([0x80000000], 1)); // Zero pad the rest
 
             CryptoJS.pad.ZeroPadding.pad(data, blockSize);
           },
-          unpad: function (data) {
+          unpad: function unpad(data) {
             // Remove zero padding
             CryptoJS.pad.ZeroPadding.unpad(data); // Remove one more byte -- the 0x80 byte
 
@@ -5301,14 +5647,14 @@
          * Zero padding strategy.
          */
         CryptoJS.pad.ZeroPadding = {
-          pad: function (data, blockSize) {
+          pad: function pad(data, blockSize) {
             // Shortcut
             var blockSizeBytes = blockSize * 4; // Pad
 
             data.clamp();
             data.sigBytes += blockSizeBytes - (data.sigBytes % blockSizeBytes || blockSizeBytes);
           },
-          unpad: function (data) {
+          unpad: function unpad(data) {
             // Shortcut
             var dataWords = data.words; // Unpad
 
@@ -5350,8 +5696,8 @@
          * A noop padding strategy.
          */
         CryptoJS.pad.NoPadding = {
-          pad: function () {},
-          unpad: function () {}
+          pad: function pad() {},
+          unpad: function unpad() {}
         };
         return CryptoJS.pad.NoPadding;
       });
@@ -5399,7 +5745,7 @@
              *
              *     var hexString = CryptoJS.format.Hex.stringify(cipherParams);
              */
-            stringify: function (cipherParams) {
+            stringify: function stringify(cipherParams) {
               return cipherParams.ciphertext.toString(Hex);
             },
 
@@ -5416,7 +5762,7 @@
              *
              *     var cipherParams = CryptoJS.format.Hex.parse(hexString);
              */
-            parse: function (input) {
+            parse: function parse(input) {
               var ciphertext = Hex.parse(input);
               return CipherParams.create({
                 ciphertext: ciphertext
@@ -5522,7 +5868,7 @@
            */
 
           var AES = C_algo.AES = BlockCipher.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               var t; // Skip reset of nRounds has been set before and key did not change
 
               if (this._nRounds && this._keyPriorReset === this._key) {
@@ -5581,10 +5927,10 @@
                 }
               }
             },
-            encryptBlock: function (M, offset) {
+            encryptBlock: function encryptBlock(M, offset) {
               this._doCryptBlock(M, offset, this._keySchedule, SUB_MIX_0, SUB_MIX_1, SUB_MIX_2, SUB_MIX_3, SBOX);
             },
-            decryptBlock: function (M, offset) {
+            decryptBlock: function decryptBlock(M, offset) {
               // Swap 2nd and 4th rows
               var t = M[offset + 1];
               M[offset + 1] = M[offset + 3];
@@ -5597,7 +5943,7 @@
               M[offset + 1] = M[offset + 3];
               M[offset + 3] = t;
             },
-            _doCryptBlock: function (M, offset, keySchedule, SUB_MIX_0, SUB_MIX_1, SUB_MIX_2, SUB_MIX_3, SBOX) {
+            _doCryptBlock: function _doCryptBlock(M, offset, keySchedule, SUB_MIX_0, SUB_MIX_1, SUB_MIX_2, SUB_MIX_3, SBOX) {
               // Shortcut
               var nRounds = this._nRounds; // Get input, add round key
 
@@ -6212,7 +6558,7 @@
            */
 
           var DES = C_algo.DES = BlockCipher.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               // Shortcuts
               var key = this._key;
               var keyWords = key.words; // Select 56 bits according to PC1
@@ -6259,13 +6605,13 @@
                 invSubKeys[i] = subKeys[15 - i];
               }
             },
-            encryptBlock: function (M, offset) {
+            encryptBlock: function encryptBlock(M, offset) {
               this._doCryptBlock(M, offset, this._subKeys);
             },
-            decryptBlock: function (M, offset) {
+            decryptBlock: function decryptBlock(M, offset) {
               this._doCryptBlock(M, offset, this._invSubKeys);
             },
-            _doCryptBlock: function (M, offset, subKeys) {
+            _doCryptBlock: function _doCryptBlock(M, offset, subKeys) {
               // Get input
               this._lBlock = M[offset];
               this._rBlock = M[offset + 1]; // Initial permutation
@@ -6338,7 +6684,7 @@
            */
 
           var TripleDES = C_algo.TripleDES = BlockCipher.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               // Shortcuts
               var key = this._key;
               var keyWords = key.words; // Make sure the key length is valid (64, 128 or >= 192 bit)
@@ -6356,14 +6702,14 @@
               this._des2 = DES.createEncryptor(WordArray.create(key2));
               this._des3 = DES.createEncryptor(WordArray.create(key3));
             },
-            encryptBlock: function (M, offset) {
+            encryptBlock: function encryptBlock(M, offset) {
               this._des1.encryptBlock(M, offset);
 
               this._des2.decryptBlock(M, offset);
 
               this._des3.encryptBlock(M, offset);
             },
-            decryptBlock: function (M, offset) {
+            decryptBlock: function decryptBlock(M, offset) {
               this._des3.decryptBlock(M, offset);
 
               this._des2.encryptBlock(M, offset);
@@ -6421,7 +6767,7 @@
            */
 
           var RC4 = C_algo.RC4 = StreamCipher.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               // Shortcuts
               var key = this._key;
               var keyWords = key.words;
@@ -6447,7 +6793,7 @@
 
               this._i = this._j = 0;
             },
-            _doProcessBlock: function (M, offset) {
+            _doProcessBlock: function _doProcessBlock(M, offset) {
               M[offset] ^= generateKeystreamWord.call(this);
             },
             keySize: 256 / 32,
@@ -6501,7 +6847,7 @@
             cfg: RC4.cfg.extend({
               drop: 192
             }),
-            _doReset: function () {
+            _doReset: function _doReset() {
               RC4._doReset.call(this); // Drop
 
 
@@ -6561,7 +6907,7 @@
            */
 
           var Rabbit = C_algo.Rabbit = StreamCipher.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               // Shortcuts
               var K = this._key.words;
               var iv = this.cfg.iv; // Swap endian
@@ -6612,7 +6958,7 @@
                 }
               }
             },
-            _doProcessBlock: function (M, offset) {
+            _doProcessBlock: function _doProcessBlock(M, offset) {
               // Shortcut
               var X = this._X; // Iterate the system
 
@@ -6732,7 +7078,7 @@
            */
 
           var RabbitLegacy = C_algo.RabbitLegacy = StreamCipher.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               // Shortcuts
               var K = this._key.words;
               var iv = this.cfg.iv; // Generate initial state values
@@ -6778,7 +7124,7 @@
                 }
               }
             },
-            _doProcessBlock: function (M, offset) {
+            _doProcessBlock: function _doProcessBlock(M, offset) {
               // Shortcut
               var X = this._X; // Iterate the system
 
@@ -6885,32 +7231,32 @@
           var C_lib = C.lib;
           var BlockCipher = C_lib.BlockCipher;
           var C_algo = C.algo;
-          const N = 16; //Origin pbox and sbox, derived from PI
+          var N = 16; //Origin pbox and sbox, derived from PI
 
-          const ORIG_P = [0x243F6A88, 0x85A308D3, 0x13198A2E, 0x03707344, 0xA4093822, 0x299F31D0, 0x082EFA98, 0xEC4E6C89, 0x452821E6, 0x38D01377, 0xBE5466CF, 0x34E90C6C, 0xC0AC29B7, 0xC97C50DD, 0x3F84D5B5, 0xB5470917, 0x9216D5D9, 0x8979FB1B];
-          const ORIG_S = [[0xD1310BA6, 0x98DFB5AC, 0x2FFD72DB, 0xD01ADFB7, 0xB8E1AFED, 0x6A267E96, 0xBA7C9045, 0xF12C7F99, 0x24A19947, 0xB3916CF7, 0x0801F2E2, 0x858EFC16, 0x636920D8, 0x71574E69, 0xA458FEA3, 0xF4933D7E, 0x0D95748F, 0x728EB658, 0x718BCD58, 0x82154AEE, 0x7B54A41D, 0xC25A59B5, 0x9C30D539, 0x2AF26013, 0xC5D1B023, 0x286085F0, 0xCA417918, 0xB8DB38EF, 0x8E79DCB0, 0x603A180E, 0x6C9E0E8B, 0xB01E8A3E, 0xD71577C1, 0xBD314B27, 0x78AF2FDA, 0x55605C60, 0xE65525F3, 0xAA55AB94, 0x57489862, 0x63E81440, 0x55CA396A, 0x2AAB10B6, 0xB4CC5C34, 0x1141E8CE, 0xA15486AF, 0x7C72E993, 0xB3EE1411, 0x636FBC2A, 0x2BA9C55D, 0x741831F6, 0xCE5C3E16, 0x9B87931E, 0xAFD6BA33, 0x6C24CF5C, 0x7A325381, 0x28958677, 0x3B8F4898, 0x6B4BB9AF, 0xC4BFE81B, 0x66282193, 0x61D809CC, 0xFB21A991, 0x487CAC60, 0x5DEC8032, 0xEF845D5D, 0xE98575B1, 0xDC262302, 0xEB651B88, 0x23893E81, 0xD396ACC5, 0x0F6D6FF3, 0x83F44239, 0x2E0B4482, 0xA4842004, 0x69C8F04A, 0x9E1F9B5E, 0x21C66842, 0xF6E96C9A, 0x670C9C61, 0xABD388F0, 0x6A51A0D2, 0xD8542F68, 0x960FA728, 0xAB5133A3, 0x6EEF0B6C, 0x137A3BE4, 0xBA3BF050, 0x7EFB2A98, 0xA1F1651D, 0x39AF0176, 0x66CA593E, 0x82430E88, 0x8CEE8619, 0x456F9FB4, 0x7D84A5C3, 0x3B8B5EBE, 0xE06F75D8, 0x85C12073, 0x401A449F, 0x56C16AA6, 0x4ED3AA62, 0x363F7706, 0x1BFEDF72, 0x429B023D, 0x37D0D724, 0xD00A1248, 0xDB0FEAD3, 0x49F1C09B, 0x075372C9, 0x80991B7B, 0x25D479D8, 0xF6E8DEF7, 0xE3FE501A, 0xB6794C3B, 0x976CE0BD, 0x04C006BA, 0xC1A94FB6, 0x409F60C4, 0x5E5C9EC2, 0x196A2463, 0x68FB6FAF, 0x3E6C53B5, 0x1339B2EB, 0x3B52EC6F, 0x6DFC511F, 0x9B30952C, 0xCC814544, 0xAF5EBD09, 0xBEE3D004, 0xDE334AFD, 0x660F2807, 0x192E4BB3, 0xC0CBA857, 0x45C8740F, 0xD20B5F39, 0xB9D3FBDB, 0x5579C0BD, 0x1A60320A, 0xD6A100C6, 0x402C7279, 0x679F25FE, 0xFB1FA3CC, 0x8EA5E9F8, 0xDB3222F8, 0x3C7516DF, 0xFD616B15, 0x2F501EC8, 0xAD0552AB, 0x323DB5FA, 0xFD238760, 0x53317B48, 0x3E00DF82, 0x9E5C57BB, 0xCA6F8CA0, 0x1A87562E, 0xDF1769DB, 0xD542A8F6, 0x287EFFC3, 0xAC6732C6, 0x8C4F5573, 0x695B27B0, 0xBBCA58C8, 0xE1FFA35D, 0xB8F011A0, 0x10FA3D98, 0xFD2183B8, 0x4AFCB56C, 0x2DD1D35B, 0x9A53E479, 0xB6F84565, 0xD28E49BC, 0x4BFB9790, 0xE1DDF2DA, 0xA4CB7E33, 0x62FB1341, 0xCEE4C6E8, 0xEF20CADA, 0x36774C01, 0xD07E9EFE, 0x2BF11FB4, 0x95DBDA4D, 0xAE909198, 0xEAAD8E71, 0x6B93D5A0, 0xD08ED1D0, 0xAFC725E0, 0x8E3C5B2F, 0x8E7594B7, 0x8FF6E2FB, 0xF2122B64, 0x8888B812, 0x900DF01C, 0x4FAD5EA0, 0x688FC31C, 0xD1CFF191, 0xB3A8C1AD, 0x2F2F2218, 0xBE0E1777, 0xEA752DFE, 0x8B021FA1, 0xE5A0CC0F, 0xB56F74E8, 0x18ACF3D6, 0xCE89E299, 0xB4A84FE0, 0xFD13E0B7, 0x7CC43B81, 0xD2ADA8D9, 0x165FA266, 0x80957705, 0x93CC7314, 0x211A1477, 0xE6AD2065, 0x77B5FA86, 0xC75442F5, 0xFB9D35CF, 0xEBCDAF0C, 0x7B3E89A0, 0xD6411BD3, 0xAE1E7E49, 0x00250E2D, 0x2071B35E, 0x226800BB, 0x57B8E0AF, 0x2464369B, 0xF009B91E, 0x5563911D, 0x59DFA6AA, 0x78C14389, 0xD95A537F, 0x207D5BA2, 0x02E5B9C5, 0x83260376, 0x6295CFA9, 0x11C81968, 0x4E734A41, 0xB3472DCA, 0x7B14A94A, 0x1B510052, 0x9A532915, 0xD60F573F, 0xBC9BC6E4, 0x2B60A476, 0x81E67400, 0x08BA6FB5, 0x571BE91F, 0xF296EC6B, 0x2A0DD915, 0xB6636521, 0xE7B9F9B6, 0xFF34052E, 0xC5855664, 0x53B02D5D, 0xA99F8FA1, 0x08BA4799, 0x6E85076A], [0x4B7A70E9, 0xB5B32944, 0xDB75092E, 0xC4192623, 0xAD6EA6B0, 0x49A7DF7D, 0x9CEE60B8, 0x8FEDB266, 0xECAA8C71, 0x699A17FF, 0x5664526C, 0xC2B19EE1, 0x193602A5, 0x75094C29, 0xA0591340, 0xE4183A3E, 0x3F54989A, 0x5B429D65, 0x6B8FE4D6, 0x99F73FD6, 0xA1D29C07, 0xEFE830F5, 0x4D2D38E6, 0xF0255DC1, 0x4CDD2086, 0x8470EB26, 0x6382E9C6, 0x021ECC5E, 0x09686B3F, 0x3EBAEFC9, 0x3C971814, 0x6B6A70A1, 0x687F3584, 0x52A0E286, 0xB79C5305, 0xAA500737, 0x3E07841C, 0x7FDEAE5C, 0x8E7D44EC, 0x5716F2B8, 0xB03ADA37, 0xF0500C0D, 0xF01C1F04, 0x0200B3FF, 0xAE0CF51A, 0x3CB574B2, 0x25837A58, 0xDC0921BD, 0xD19113F9, 0x7CA92FF6, 0x94324773, 0x22F54701, 0x3AE5E581, 0x37C2DADC, 0xC8B57634, 0x9AF3DDA7, 0xA9446146, 0x0FD0030E, 0xECC8C73E, 0xA4751E41, 0xE238CD99, 0x3BEA0E2F, 0x3280BBA1, 0x183EB331, 0x4E548B38, 0x4F6DB908, 0x6F420D03, 0xF60A04BF, 0x2CB81290, 0x24977C79, 0x5679B072, 0xBCAF89AF, 0xDE9A771F, 0xD9930810, 0xB38BAE12, 0xDCCF3F2E, 0x5512721F, 0x2E6B7124, 0x501ADDE6, 0x9F84CD87, 0x7A584718, 0x7408DA17, 0xBC9F9ABC, 0xE94B7D8C, 0xEC7AEC3A, 0xDB851DFA, 0x63094366, 0xC464C3D2, 0xEF1C1847, 0x3215D908, 0xDD433B37, 0x24C2BA16, 0x12A14D43, 0x2A65C451, 0x50940002, 0x133AE4DD, 0x71DFF89E, 0x10314E55, 0x81AC77D6, 0x5F11199B, 0x043556F1, 0xD7A3C76B, 0x3C11183B, 0x5924A509, 0xF28FE6ED, 0x97F1FBFA, 0x9EBABF2C, 0x1E153C6E, 0x86E34570, 0xEAE96FB1, 0x860E5E0A, 0x5A3E2AB3, 0x771FE71C, 0x4E3D06FA, 0x2965DCB9, 0x99E71D0F, 0x803E89D6, 0x5266C825, 0x2E4CC978, 0x9C10B36A, 0xC6150EBA, 0x94E2EA78, 0xA5FC3C53, 0x1E0A2DF4, 0xF2F74EA7, 0x361D2B3D, 0x1939260F, 0x19C27960, 0x5223A708, 0xF71312B6, 0xEBADFE6E, 0xEAC31F66, 0xE3BC4595, 0xA67BC883, 0xB17F37D1, 0x018CFF28, 0xC332DDEF, 0xBE6C5AA5, 0x65582185, 0x68AB9802, 0xEECEA50F, 0xDB2F953B, 0x2AEF7DAD, 0x5B6E2F84, 0x1521B628, 0x29076170, 0xECDD4775, 0x619F1510, 0x13CCA830, 0xEB61BD96, 0x0334FE1E, 0xAA0363CF, 0xB5735C90, 0x4C70A239, 0xD59E9E0B, 0xCBAADE14, 0xEECC86BC, 0x60622CA7, 0x9CAB5CAB, 0xB2F3846E, 0x648B1EAF, 0x19BDF0CA, 0xA02369B9, 0x655ABB50, 0x40685A32, 0x3C2AB4B3, 0x319EE9D5, 0xC021B8F7, 0x9B540B19, 0x875FA099, 0x95F7997E, 0x623D7DA8, 0xF837889A, 0x97E32D77, 0x11ED935F, 0x16681281, 0x0E358829, 0xC7E61FD6, 0x96DEDFA1, 0x7858BA99, 0x57F584A5, 0x1B227263, 0x9B83C3FF, 0x1AC24696, 0xCDB30AEB, 0x532E3054, 0x8FD948E4, 0x6DBC3128, 0x58EBF2EF, 0x34C6FFEA, 0xFE28ED61, 0xEE7C3C73, 0x5D4A14D9, 0xE864B7E3, 0x42105D14, 0x203E13E0, 0x45EEE2B6, 0xA3AAABEA, 0xDB6C4F15, 0xFACB4FD0, 0xC742F442, 0xEF6ABBB5, 0x654F3B1D, 0x41CD2105, 0xD81E799E, 0x86854DC7, 0xE44B476A, 0x3D816250, 0xCF62A1F2, 0x5B8D2646, 0xFC8883A0, 0xC1C7B6A3, 0x7F1524C3, 0x69CB7492, 0x47848A0B, 0x5692B285, 0x095BBF00, 0xAD19489D, 0x1462B174, 0x23820E00, 0x58428D2A, 0x0C55F5EA, 0x1DADF43E, 0x233F7061, 0x3372F092, 0x8D937E41, 0xD65FECF1, 0x6C223BDB, 0x7CDE3759, 0xCBEE7460, 0x4085F2A7, 0xCE77326E, 0xA6078084, 0x19F8509E, 0xE8EFD855, 0x61D99735, 0xA969A7AA, 0xC50C06C2, 0x5A04ABFC, 0x800BCADC, 0x9E447A2E, 0xC3453484, 0xFDD56705, 0x0E1E9EC9, 0xDB73DBD3, 0x105588CD, 0x675FDA79, 0xE3674340, 0xC5C43465, 0x713E38D8, 0x3D28F89E, 0xF16DFF20, 0x153E21E7, 0x8FB03D4A, 0xE6E39F2B, 0xDB83ADF7], [0xE93D5A68, 0x948140F7, 0xF64C261C, 0x94692934, 0x411520F7, 0x7602D4F7, 0xBCF46B2E, 0xD4A20068, 0xD4082471, 0x3320F46A, 0x43B7D4B7, 0x500061AF, 0x1E39F62E, 0x97244546, 0x14214F74, 0xBF8B8840, 0x4D95FC1D, 0x96B591AF, 0x70F4DDD3, 0x66A02F45, 0xBFBC09EC, 0x03BD9785, 0x7FAC6DD0, 0x31CB8504, 0x96EB27B3, 0x55FD3941, 0xDA2547E6, 0xABCA0A9A, 0x28507825, 0x530429F4, 0x0A2C86DA, 0xE9B66DFB, 0x68DC1462, 0xD7486900, 0x680EC0A4, 0x27A18DEE, 0x4F3FFEA2, 0xE887AD8C, 0xB58CE006, 0x7AF4D6B6, 0xAACE1E7C, 0xD3375FEC, 0xCE78A399, 0x406B2A42, 0x20FE9E35, 0xD9F385B9, 0xEE39D7AB, 0x3B124E8B, 0x1DC9FAF7, 0x4B6D1856, 0x26A36631, 0xEAE397B2, 0x3A6EFA74, 0xDD5B4332, 0x6841E7F7, 0xCA7820FB, 0xFB0AF54E, 0xD8FEB397, 0x454056AC, 0xBA489527, 0x55533A3A, 0x20838D87, 0xFE6BA9B7, 0xD096954B, 0x55A867BC, 0xA1159A58, 0xCCA92963, 0x99E1DB33, 0xA62A4A56, 0x3F3125F9, 0x5EF47E1C, 0x9029317C, 0xFDF8E802, 0x04272F70, 0x80BB155C, 0x05282CE3, 0x95C11548, 0xE4C66D22, 0x48C1133F, 0xC70F86DC, 0x07F9C9EE, 0x41041F0F, 0x404779A4, 0x5D886E17, 0x325F51EB, 0xD59BC0D1, 0xF2BCC18F, 0x41113564, 0x257B7834, 0x602A9C60, 0xDFF8E8A3, 0x1F636C1B, 0x0E12B4C2, 0x02E1329E, 0xAF664FD1, 0xCAD18115, 0x6B2395E0, 0x333E92E1, 0x3B240B62, 0xEEBEB922, 0x85B2A20E, 0xE6BA0D99, 0xDE720C8C, 0x2DA2F728, 0xD0127845, 0x95B794FD, 0x647D0862, 0xE7CCF5F0, 0x5449A36F, 0x877D48FA, 0xC39DFD27, 0xF33E8D1E, 0x0A476341, 0x992EFF74, 0x3A6F6EAB, 0xF4F8FD37, 0xA812DC60, 0xA1EBDDF8, 0x991BE14C, 0xDB6E6B0D, 0xC67B5510, 0x6D672C37, 0x2765D43B, 0xDCD0E804, 0xF1290DC7, 0xCC00FFA3, 0xB5390F92, 0x690FED0B, 0x667B9FFB, 0xCEDB7D9C, 0xA091CF0B, 0xD9155EA3, 0xBB132F88, 0x515BAD24, 0x7B9479BF, 0x763BD6EB, 0x37392EB3, 0xCC115979, 0x8026E297, 0xF42E312D, 0x6842ADA7, 0xC66A2B3B, 0x12754CCC, 0x782EF11C, 0x6A124237, 0xB79251E7, 0x06A1BBE6, 0x4BFB6350, 0x1A6B1018, 0x11CAEDFA, 0x3D25BDD8, 0xE2E1C3C9, 0x44421659, 0x0A121386, 0xD90CEC6E, 0xD5ABEA2A, 0x64AF674E, 0xDA86A85F, 0xBEBFE988, 0x64E4C3FE, 0x9DBC8057, 0xF0F7C086, 0x60787BF8, 0x6003604D, 0xD1FD8346, 0xF6381FB0, 0x7745AE04, 0xD736FCCC, 0x83426B33, 0xF01EAB71, 0xB0804187, 0x3C005E5F, 0x77A057BE, 0xBDE8AE24, 0x55464299, 0xBF582E61, 0x4E58F48F, 0xF2DDFDA2, 0xF474EF38, 0x8789BDC2, 0x5366F9C3, 0xC8B38E74, 0xB475F255, 0x46FCD9B9, 0x7AEB2661, 0x8B1DDF84, 0x846A0E79, 0x915F95E2, 0x466E598E, 0x20B45770, 0x8CD55591, 0xC902DE4C, 0xB90BACE1, 0xBB8205D0, 0x11A86248, 0x7574A99E, 0xB77F19B6, 0xE0A9DC09, 0x662D09A1, 0xC4324633, 0xE85A1F02, 0x09F0BE8C, 0x4A99A025, 0x1D6EFE10, 0x1AB93D1D, 0x0BA5A4DF, 0xA186F20F, 0x2868F169, 0xDCB7DA83, 0x573906FE, 0xA1E2CE9B, 0x4FCD7F52, 0x50115E01, 0xA70683FA, 0xA002B5C4, 0x0DE6D027, 0x9AF88C27, 0x773F8641, 0xC3604C06, 0x61A806B5, 0xF0177A28, 0xC0F586E0, 0x006058AA, 0x30DC7D62, 0x11E69ED7, 0x2338EA63, 0x53C2DD94, 0xC2C21634, 0xBBCBEE56, 0x90BCB6DE, 0xEBFC7DA1, 0xCE591D76, 0x6F05E409, 0x4B7C0188, 0x39720A3D, 0x7C927C24, 0x86E3725F, 0x724D9DB9, 0x1AC15BB4, 0xD39EB8FC, 0xED545578, 0x08FCA5B5, 0xD83D7CD3, 0x4DAD0FC4, 0x1E50EF5E, 0xB161E6F8, 0xA28514D9, 0x6C51133C, 0x6FD5C7E7, 0x56E14EC4, 0x362ABFCE, 0xDDC6C837, 0xD79A3234, 0x92638212, 0x670EFA8E, 0x406000E0], [0x3A39CE37, 0xD3FAF5CF, 0xABC27737, 0x5AC52D1B, 0x5CB0679E, 0x4FA33742, 0xD3822740, 0x99BC9BBE, 0xD5118E9D, 0xBF0F7315, 0xD62D1C7E, 0xC700C47B, 0xB78C1B6B, 0x21A19045, 0xB26EB1BE, 0x6A366EB4, 0x5748AB2F, 0xBC946E79, 0xC6A376D2, 0x6549C2C8, 0x530FF8EE, 0x468DDE7D, 0xD5730A1D, 0x4CD04DC6, 0x2939BBDB, 0xA9BA4650, 0xAC9526E8, 0xBE5EE304, 0xA1FAD5F0, 0x6A2D519A, 0x63EF8CE2, 0x9A86EE22, 0xC089C2B8, 0x43242EF6, 0xA51E03AA, 0x9CF2D0A4, 0x83C061BA, 0x9BE96A4D, 0x8FE51550, 0xBA645BD6, 0x2826A2F9, 0xA73A3AE1, 0x4BA99586, 0xEF5562E9, 0xC72FEFD3, 0xF752F7DA, 0x3F046F69, 0x77FA0A59, 0x80E4A915, 0x87B08601, 0x9B09E6AD, 0x3B3EE593, 0xE990FD5A, 0x9E34D797, 0x2CF0B7D9, 0x022B8B51, 0x96D5AC3A, 0x017DA67D, 0xD1CF3ED6, 0x7C7D2D28, 0x1F9F25CF, 0xADF2B89B, 0x5AD6B472, 0x5A88F54C, 0xE029AC71, 0xE019A5E6, 0x47B0ACFD, 0xED93FA9B, 0xE8D3C48D, 0x283B57CC, 0xF8D56629, 0x79132E28, 0x785F0191, 0xED756055, 0xF7960E44, 0xE3D35E8C, 0x15056DD4, 0x88F46DBA, 0x03A16125, 0x0564F0BD, 0xC3EB9E15, 0x3C9057A2, 0x97271AEC, 0xA93A072A, 0x1B3F6D9B, 0x1E6321F5, 0xF59C66FB, 0x26DCF319, 0x7533D928, 0xB155FDF5, 0x03563482, 0x8ABA3CBB, 0x28517711, 0xC20AD9F8, 0xABCC5167, 0xCCAD925F, 0x4DE81751, 0x3830DC8E, 0x379D5862, 0x9320F991, 0xEA7A90C2, 0xFB3E7BCE, 0x5121CE64, 0x774FBE32, 0xA8B6E37E, 0xC3293D46, 0x48DE5369, 0x6413E680, 0xA2AE0810, 0xDD6DB224, 0x69852DFD, 0x09072166, 0xB39A460A, 0x6445C0DD, 0x586CDECF, 0x1C20C8AE, 0x5BBEF7DD, 0x1B588D40, 0xCCD2017F, 0x6BB4E3BB, 0xDDA26A7E, 0x3A59FF45, 0x3E350A44, 0xBCB4CDD5, 0x72EACEA8, 0xFA6484BB, 0x8D6612AE, 0xBF3C6F47, 0xD29BE463, 0x542F5D9E, 0xAEC2771B, 0xF64E6370, 0x740E0D8D, 0xE75B1357, 0xF8721671, 0xAF537D5D, 0x4040CB08, 0x4EB4E2CC, 0x34D2466A, 0x0115AF84, 0xE1B00428, 0x95983A1D, 0x06B89FB4, 0xCE6EA048, 0x6F3F3B82, 0x3520AB82, 0x011A1D4B, 0x277227F8, 0x611560B1, 0xE7933FDC, 0xBB3A792B, 0x344525BD, 0xA08839E1, 0x51CE794B, 0x2F32C9B7, 0xA01FBAC9, 0xE01CC87E, 0xBCC7D1F6, 0xCF0111C3, 0xA1E8AAC7, 0x1A908749, 0xD44FBD9A, 0xD0DADECB, 0xD50ADA38, 0x0339C32A, 0xC6913667, 0x8DF9317C, 0xE0B12B4F, 0xF79E59B7, 0x43F5BB3A, 0xF2D519FF, 0x27D9459C, 0xBF97222C, 0x15E6FC2A, 0x0F91FC71, 0x9B941525, 0xFAE59361, 0xCEB69CEB, 0xC2A86459, 0x12BAA8D1, 0xB6C1075E, 0xE3056A0C, 0x10D25065, 0xCB03A442, 0xE0EC6E0E, 0x1698DB3B, 0x4C98A0BE, 0x3278E964, 0x9F1F9532, 0xE0D392DF, 0xD3A0342B, 0x8971F21E, 0x1B0A7441, 0x4BA3348C, 0xC5BE7120, 0xC37632D8, 0xDF359F8D, 0x9B992F2E, 0xE60B6F47, 0x0FE3F11D, 0xE54CDA54, 0x1EDAD891, 0xCE6279CF, 0xCD3E7E6F, 0x1618B166, 0xFD2C1D05, 0x848FD2C5, 0xF6FB2299, 0xF523F357, 0xA6327623, 0x93A83531, 0x56CCCD02, 0xACF08162, 0x5A75EBB5, 0x6E163697, 0x88D273CC, 0xDE966292, 0x81B949D0, 0x4C50901B, 0x71C65614, 0xE6C6C7BD, 0x327A140A, 0x45E1D006, 0xC3F27B9A, 0xC9AA53FD, 0x62A80F00, 0xBB25BFE2, 0x35BDD2F6, 0x71126905, 0xB2040222, 0xB6CBCF7C, 0xCD769C2B, 0x53113EC0, 0x1640E3D3, 0x38ABBD60, 0x2547ADF0, 0xBA38209C, 0xF746CE76, 0x77AFA1C5, 0x20756060, 0x85CBFE4E, 0x8AE88DD8, 0x7AAAF9B0, 0x4CF9AA7E, 0x1948C25C, 0x02FB8A8C, 0x01C36AE4, 0xD6EBE1F9, 0x90D4F869, 0xA65CDEA0, 0x3F09252D, 0xC208E69F, 0xB74E6132, 0xCE77E25B, 0x578FDFE3, 0x3AC372E6]];
+          var ORIG_P = [0x243F6A88, 0x85A308D3, 0x13198A2E, 0x03707344, 0xA4093822, 0x299F31D0, 0x082EFA98, 0xEC4E6C89, 0x452821E6, 0x38D01377, 0xBE5466CF, 0x34E90C6C, 0xC0AC29B7, 0xC97C50DD, 0x3F84D5B5, 0xB5470917, 0x9216D5D9, 0x8979FB1B];
+          var ORIG_S = [[0xD1310BA6, 0x98DFB5AC, 0x2FFD72DB, 0xD01ADFB7, 0xB8E1AFED, 0x6A267E96, 0xBA7C9045, 0xF12C7F99, 0x24A19947, 0xB3916CF7, 0x0801F2E2, 0x858EFC16, 0x636920D8, 0x71574E69, 0xA458FEA3, 0xF4933D7E, 0x0D95748F, 0x728EB658, 0x718BCD58, 0x82154AEE, 0x7B54A41D, 0xC25A59B5, 0x9C30D539, 0x2AF26013, 0xC5D1B023, 0x286085F0, 0xCA417918, 0xB8DB38EF, 0x8E79DCB0, 0x603A180E, 0x6C9E0E8B, 0xB01E8A3E, 0xD71577C1, 0xBD314B27, 0x78AF2FDA, 0x55605C60, 0xE65525F3, 0xAA55AB94, 0x57489862, 0x63E81440, 0x55CA396A, 0x2AAB10B6, 0xB4CC5C34, 0x1141E8CE, 0xA15486AF, 0x7C72E993, 0xB3EE1411, 0x636FBC2A, 0x2BA9C55D, 0x741831F6, 0xCE5C3E16, 0x9B87931E, 0xAFD6BA33, 0x6C24CF5C, 0x7A325381, 0x28958677, 0x3B8F4898, 0x6B4BB9AF, 0xC4BFE81B, 0x66282193, 0x61D809CC, 0xFB21A991, 0x487CAC60, 0x5DEC8032, 0xEF845D5D, 0xE98575B1, 0xDC262302, 0xEB651B88, 0x23893E81, 0xD396ACC5, 0x0F6D6FF3, 0x83F44239, 0x2E0B4482, 0xA4842004, 0x69C8F04A, 0x9E1F9B5E, 0x21C66842, 0xF6E96C9A, 0x670C9C61, 0xABD388F0, 0x6A51A0D2, 0xD8542F68, 0x960FA728, 0xAB5133A3, 0x6EEF0B6C, 0x137A3BE4, 0xBA3BF050, 0x7EFB2A98, 0xA1F1651D, 0x39AF0176, 0x66CA593E, 0x82430E88, 0x8CEE8619, 0x456F9FB4, 0x7D84A5C3, 0x3B8B5EBE, 0xE06F75D8, 0x85C12073, 0x401A449F, 0x56C16AA6, 0x4ED3AA62, 0x363F7706, 0x1BFEDF72, 0x429B023D, 0x37D0D724, 0xD00A1248, 0xDB0FEAD3, 0x49F1C09B, 0x075372C9, 0x80991B7B, 0x25D479D8, 0xF6E8DEF7, 0xE3FE501A, 0xB6794C3B, 0x976CE0BD, 0x04C006BA, 0xC1A94FB6, 0x409F60C4, 0x5E5C9EC2, 0x196A2463, 0x68FB6FAF, 0x3E6C53B5, 0x1339B2EB, 0x3B52EC6F, 0x6DFC511F, 0x9B30952C, 0xCC814544, 0xAF5EBD09, 0xBEE3D004, 0xDE334AFD, 0x660F2807, 0x192E4BB3, 0xC0CBA857, 0x45C8740F, 0xD20B5F39, 0xB9D3FBDB, 0x5579C0BD, 0x1A60320A, 0xD6A100C6, 0x402C7279, 0x679F25FE, 0xFB1FA3CC, 0x8EA5E9F8, 0xDB3222F8, 0x3C7516DF, 0xFD616B15, 0x2F501EC8, 0xAD0552AB, 0x323DB5FA, 0xFD238760, 0x53317B48, 0x3E00DF82, 0x9E5C57BB, 0xCA6F8CA0, 0x1A87562E, 0xDF1769DB, 0xD542A8F6, 0x287EFFC3, 0xAC6732C6, 0x8C4F5573, 0x695B27B0, 0xBBCA58C8, 0xE1FFA35D, 0xB8F011A0, 0x10FA3D98, 0xFD2183B8, 0x4AFCB56C, 0x2DD1D35B, 0x9A53E479, 0xB6F84565, 0xD28E49BC, 0x4BFB9790, 0xE1DDF2DA, 0xA4CB7E33, 0x62FB1341, 0xCEE4C6E8, 0xEF20CADA, 0x36774C01, 0xD07E9EFE, 0x2BF11FB4, 0x95DBDA4D, 0xAE909198, 0xEAAD8E71, 0x6B93D5A0, 0xD08ED1D0, 0xAFC725E0, 0x8E3C5B2F, 0x8E7594B7, 0x8FF6E2FB, 0xF2122B64, 0x8888B812, 0x900DF01C, 0x4FAD5EA0, 0x688FC31C, 0xD1CFF191, 0xB3A8C1AD, 0x2F2F2218, 0xBE0E1777, 0xEA752DFE, 0x8B021FA1, 0xE5A0CC0F, 0xB56F74E8, 0x18ACF3D6, 0xCE89E299, 0xB4A84FE0, 0xFD13E0B7, 0x7CC43B81, 0xD2ADA8D9, 0x165FA266, 0x80957705, 0x93CC7314, 0x211A1477, 0xE6AD2065, 0x77B5FA86, 0xC75442F5, 0xFB9D35CF, 0xEBCDAF0C, 0x7B3E89A0, 0xD6411BD3, 0xAE1E7E49, 0x00250E2D, 0x2071B35E, 0x226800BB, 0x57B8E0AF, 0x2464369B, 0xF009B91E, 0x5563911D, 0x59DFA6AA, 0x78C14389, 0xD95A537F, 0x207D5BA2, 0x02E5B9C5, 0x83260376, 0x6295CFA9, 0x11C81968, 0x4E734A41, 0xB3472DCA, 0x7B14A94A, 0x1B510052, 0x9A532915, 0xD60F573F, 0xBC9BC6E4, 0x2B60A476, 0x81E67400, 0x08BA6FB5, 0x571BE91F, 0xF296EC6B, 0x2A0DD915, 0xB6636521, 0xE7B9F9B6, 0xFF34052E, 0xC5855664, 0x53B02D5D, 0xA99F8FA1, 0x08BA4799, 0x6E85076A], [0x4B7A70E9, 0xB5B32944, 0xDB75092E, 0xC4192623, 0xAD6EA6B0, 0x49A7DF7D, 0x9CEE60B8, 0x8FEDB266, 0xECAA8C71, 0x699A17FF, 0x5664526C, 0xC2B19EE1, 0x193602A5, 0x75094C29, 0xA0591340, 0xE4183A3E, 0x3F54989A, 0x5B429D65, 0x6B8FE4D6, 0x99F73FD6, 0xA1D29C07, 0xEFE830F5, 0x4D2D38E6, 0xF0255DC1, 0x4CDD2086, 0x8470EB26, 0x6382E9C6, 0x021ECC5E, 0x09686B3F, 0x3EBAEFC9, 0x3C971814, 0x6B6A70A1, 0x687F3584, 0x52A0E286, 0xB79C5305, 0xAA500737, 0x3E07841C, 0x7FDEAE5C, 0x8E7D44EC, 0x5716F2B8, 0xB03ADA37, 0xF0500C0D, 0xF01C1F04, 0x0200B3FF, 0xAE0CF51A, 0x3CB574B2, 0x25837A58, 0xDC0921BD, 0xD19113F9, 0x7CA92FF6, 0x94324773, 0x22F54701, 0x3AE5E581, 0x37C2DADC, 0xC8B57634, 0x9AF3DDA7, 0xA9446146, 0x0FD0030E, 0xECC8C73E, 0xA4751E41, 0xE238CD99, 0x3BEA0E2F, 0x3280BBA1, 0x183EB331, 0x4E548B38, 0x4F6DB908, 0x6F420D03, 0xF60A04BF, 0x2CB81290, 0x24977C79, 0x5679B072, 0xBCAF89AF, 0xDE9A771F, 0xD9930810, 0xB38BAE12, 0xDCCF3F2E, 0x5512721F, 0x2E6B7124, 0x501ADDE6, 0x9F84CD87, 0x7A584718, 0x7408DA17, 0xBC9F9ABC, 0xE94B7D8C, 0xEC7AEC3A, 0xDB851DFA, 0x63094366, 0xC464C3D2, 0xEF1C1847, 0x3215D908, 0xDD433B37, 0x24C2BA16, 0x12A14D43, 0x2A65C451, 0x50940002, 0x133AE4DD, 0x71DFF89E, 0x10314E55, 0x81AC77D6, 0x5F11199B, 0x043556F1, 0xD7A3C76B, 0x3C11183B, 0x5924A509, 0xF28FE6ED, 0x97F1FBFA, 0x9EBABF2C, 0x1E153C6E, 0x86E34570, 0xEAE96FB1, 0x860E5E0A, 0x5A3E2AB3, 0x771FE71C, 0x4E3D06FA, 0x2965DCB9, 0x99E71D0F, 0x803E89D6, 0x5266C825, 0x2E4CC978, 0x9C10B36A, 0xC6150EBA, 0x94E2EA78, 0xA5FC3C53, 0x1E0A2DF4, 0xF2F74EA7, 0x361D2B3D, 0x1939260F, 0x19C27960, 0x5223A708, 0xF71312B6, 0xEBADFE6E, 0xEAC31F66, 0xE3BC4595, 0xA67BC883, 0xB17F37D1, 0x018CFF28, 0xC332DDEF, 0xBE6C5AA5, 0x65582185, 0x68AB9802, 0xEECEA50F, 0xDB2F953B, 0x2AEF7DAD, 0x5B6E2F84, 0x1521B628, 0x29076170, 0xECDD4775, 0x619F1510, 0x13CCA830, 0xEB61BD96, 0x0334FE1E, 0xAA0363CF, 0xB5735C90, 0x4C70A239, 0xD59E9E0B, 0xCBAADE14, 0xEECC86BC, 0x60622CA7, 0x9CAB5CAB, 0xB2F3846E, 0x648B1EAF, 0x19BDF0CA, 0xA02369B9, 0x655ABB50, 0x40685A32, 0x3C2AB4B3, 0x319EE9D5, 0xC021B8F7, 0x9B540B19, 0x875FA099, 0x95F7997E, 0x623D7DA8, 0xF837889A, 0x97E32D77, 0x11ED935F, 0x16681281, 0x0E358829, 0xC7E61FD6, 0x96DEDFA1, 0x7858BA99, 0x57F584A5, 0x1B227263, 0x9B83C3FF, 0x1AC24696, 0xCDB30AEB, 0x532E3054, 0x8FD948E4, 0x6DBC3128, 0x58EBF2EF, 0x34C6FFEA, 0xFE28ED61, 0xEE7C3C73, 0x5D4A14D9, 0xE864B7E3, 0x42105D14, 0x203E13E0, 0x45EEE2B6, 0xA3AAABEA, 0xDB6C4F15, 0xFACB4FD0, 0xC742F442, 0xEF6ABBB5, 0x654F3B1D, 0x41CD2105, 0xD81E799E, 0x86854DC7, 0xE44B476A, 0x3D816250, 0xCF62A1F2, 0x5B8D2646, 0xFC8883A0, 0xC1C7B6A3, 0x7F1524C3, 0x69CB7492, 0x47848A0B, 0x5692B285, 0x095BBF00, 0xAD19489D, 0x1462B174, 0x23820E00, 0x58428D2A, 0x0C55F5EA, 0x1DADF43E, 0x233F7061, 0x3372F092, 0x8D937E41, 0xD65FECF1, 0x6C223BDB, 0x7CDE3759, 0xCBEE7460, 0x4085F2A7, 0xCE77326E, 0xA6078084, 0x19F8509E, 0xE8EFD855, 0x61D99735, 0xA969A7AA, 0xC50C06C2, 0x5A04ABFC, 0x800BCADC, 0x9E447A2E, 0xC3453484, 0xFDD56705, 0x0E1E9EC9, 0xDB73DBD3, 0x105588CD, 0x675FDA79, 0xE3674340, 0xC5C43465, 0x713E38D8, 0x3D28F89E, 0xF16DFF20, 0x153E21E7, 0x8FB03D4A, 0xE6E39F2B, 0xDB83ADF7], [0xE93D5A68, 0x948140F7, 0xF64C261C, 0x94692934, 0x411520F7, 0x7602D4F7, 0xBCF46B2E, 0xD4A20068, 0xD4082471, 0x3320F46A, 0x43B7D4B7, 0x500061AF, 0x1E39F62E, 0x97244546, 0x14214F74, 0xBF8B8840, 0x4D95FC1D, 0x96B591AF, 0x70F4DDD3, 0x66A02F45, 0xBFBC09EC, 0x03BD9785, 0x7FAC6DD0, 0x31CB8504, 0x96EB27B3, 0x55FD3941, 0xDA2547E6, 0xABCA0A9A, 0x28507825, 0x530429F4, 0x0A2C86DA, 0xE9B66DFB, 0x68DC1462, 0xD7486900, 0x680EC0A4, 0x27A18DEE, 0x4F3FFEA2, 0xE887AD8C, 0xB58CE006, 0x7AF4D6B6, 0xAACE1E7C, 0xD3375FEC, 0xCE78A399, 0x406B2A42, 0x20FE9E35, 0xD9F385B9, 0xEE39D7AB, 0x3B124E8B, 0x1DC9FAF7, 0x4B6D1856, 0x26A36631, 0xEAE397B2, 0x3A6EFA74, 0xDD5B4332, 0x6841E7F7, 0xCA7820FB, 0xFB0AF54E, 0xD8FEB397, 0x454056AC, 0xBA489527, 0x55533A3A, 0x20838D87, 0xFE6BA9B7, 0xD096954B, 0x55A867BC, 0xA1159A58, 0xCCA92963, 0x99E1DB33, 0xA62A4A56, 0x3F3125F9, 0x5EF47E1C, 0x9029317C, 0xFDF8E802, 0x04272F70, 0x80BB155C, 0x05282CE3, 0x95C11548, 0xE4C66D22, 0x48C1133F, 0xC70F86DC, 0x07F9C9EE, 0x41041F0F, 0x404779A4, 0x5D886E17, 0x325F51EB, 0xD59BC0D1, 0xF2BCC18F, 0x41113564, 0x257B7834, 0x602A9C60, 0xDFF8E8A3, 0x1F636C1B, 0x0E12B4C2, 0x02E1329E, 0xAF664FD1, 0xCAD18115, 0x6B2395E0, 0x333E92E1, 0x3B240B62, 0xEEBEB922, 0x85B2A20E, 0xE6BA0D99, 0xDE720C8C, 0x2DA2F728, 0xD0127845, 0x95B794FD, 0x647D0862, 0xE7CCF5F0, 0x5449A36F, 0x877D48FA, 0xC39DFD27, 0xF33E8D1E, 0x0A476341, 0x992EFF74, 0x3A6F6EAB, 0xF4F8FD37, 0xA812DC60, 0xA1EBDDF8, 0x991BE14C, 0xDB6E6B0D, 0xC67B5510, 0x6D672C37, 0x2765D43B, 0xDCD0E804, 0xF1290DC7, 0xCC00FFA3, 0xB5390F92, 0x690FED0B, 0x667B9FFB, 0xCEDB7D9C, 0xA091CF0B, 0xD9155EA3, 0xBB132F88, 0x515BAD24, 0x7B9479BF, 0x763BD6EB, 0x37392EB3, 0xCC115979, 0x8026E297, 0xF42E312D, 0x6842ADA7, 0xC66A2B3B, 0x12754CCC, 0x782EF11C, 0x6A124237, 0xB79251E7, 0x06A1BBE6, 0x4BFB6350, 0x1A6B1018, 0x11CAEDFA, 0x3D25BDD8, 0xE2E1C3C9, 0x44421659, 0x0A121386, 0xD90CEC6E, 0xD5ABEA2A, 0x64AF674E, 0xDA86A85F, 0xBEBFE988, 0x64E4C3FE, 0x9DBC8057, 0xF0F7C086, 0x60787BF8, 0x6003604D, 0xD1FD8346, 0xF6381FB0, 0x7745AE04, 0xD736FCCC, 0x83426B33, 0xF01EAB71, 0xB0804187, 0x3C005E5F, 0x77A057BE, 0xBDE8AE24, 0x55464299, 0xBF582E61, 0x4E58F48F, 0xF2DDFDA2, 0xF474EF38, 0x8789BDC2, 0x5366F9C3, 0xC8B38E74, 0xB475F255, 0x46FCD9B9, 0x7AEB2661, 0x8B1DDF84, 0x846A0E79, 0x915F95E2, 0x466E598E, 0x20B45770, 0x8CD55591, 0xC902DE4C, 0xB90BACE1, 0xBB8205D0, 0x11A86248, 0x7574A99E, 0xB77F19B6, 0xE0A9DC09, 0x662D09A1, 0xC4324633, 0xE85A1F02, 0x09F0BE8C, 0x4A99A025, 0x1D6EFE10, 0x1AB93D1D, 0x0BA5A4DF, 0xA186F20F, 0x2868F169, 0xDCB7DA83, 0x573906FE, 0xA1E2CE9B, 0x4FCD7F52, 0x50115E01, 0xA70683FA, 0xA002B5C4, 0x0DE6D027, 0x9AF88C27, 0x773F8641, 0xC3604C06, 0x61A806B5, 0xF0177A28, 0xC0F586E0, 0x006058AA, 0x30DC7D62, 0x11E69ED7, 0x2338EA63, 0x53C2DD94, 0xC2C21634, 0xBBCBEE56, 0x90BCB6DE, 0xEBFC7DA1, 0xCE591D76, 0x6F05E409, 0x4B7C0188, 0x39720A3D, 0x7C927C24, 0x86E3725F, 0x724D9DB9, 0x1AC15BB4, 0xD39EB8FC, 0xED545578, 0x08FCA5B5, 0xD83D7CD3, 0x4DAD0FC4, 0x1E50EF5E, 0xB161E6F8, 0xA28514D9, 0x6C51133C, 0x6FD5C7E7, 0x56E14EC4, 0x362ABFCE, 0xDDC6C837, 0xD79A3234, 0x92638212, 0x670EFA8E, 0x406000E0], [0x3A39CE37, 0xD3FAF5CF, 0xABC27737, 0x5AC52D1B, 0x5CB0679E, 0x4FA33742, 0xD3822740, 0x99BC9BBE, 0xD5118E9D, 0xBF0F7315, 0xD62D1C7E, 0xC700C47B, 0xB78C1B6B, 0x21A19045, 0xB26EB1BE, 0x6A366EB4, 0x5748AB2F, 0xBC946E79, 0xC6A376D2, 0x6549C2C8, 0x530FF8EE, 0x468DDE7D, 0xD5730A1D, 0x4CD04DC6, 0x2939BBDB, 0xA9BA4650, 0xAC9526E8, 0xBE5EE304, 0xA1FAD5F0, 0x6A2D519A, 0x63EF8CE2, 0x9A86EE22, 0xC089C2B8, 0x43242EF6, 0xA51E03AA, 0x9CF2D0A4, 0x83C061BA, 0x9BE96A4D, 0x8FE51550, 0xBA645BD6, 0x2826A2F9, 0xA73A3AE1, 0x4BA99586, 0xEF5562E9, 0xC72FEFD3, 0xF752F7DA, 0x3F046F69, 0x77FA0A59, 0x80E4A915, 0x87B08601, 0x9B09E6AD, 0x3B3EE593, 0xE990FD5A, 0x9E34D797, 0x2CF0B7D9, 0x022B8B51, 0x96D5AC3A, 0x017DA67D, 0xD1CF3ED6, 0x7C7D2D28, 0x1F9F25CF, 0xADF2B89B, 0x5AD6B472, 0x5A88F54C, 0xE029AC71, 0xE019A5E6, 0x47B0ACFD, 0xED93FA9B, 0xE8D3C48D, 0x283B57CC, 0xF8D56629, 0x79132E28, 0x785F0191, 0xED756055, 0xF7960E44, 0xE3D35E8C, 0x15056DD4, 0x88F46DBA, 0x03A16125, 0x0564F0BD, 0xC3EB9E15, 0x3C9057A2, 0x97271AEC, 0xA93A072A, 0x1B3F6D9B, 0x1E6321F5, 0xF59C66FB, 0x26DCF319, 0x7533D928, 0xB155FDF5, 0x03563482, 0x8ABA3CBB, 0x28517711, 0xC20AD9F8, 0xABCC5167, 0xCCAD925F, 0x4DE81751, 0x3830DC8E, 0x379D5862, 0x9320F991, 0xEA7A90C2, 0xFB3E7BCE, 0x5121CE64, 0x774FBE32, 0xA8B6E37E, 0xC3293D46, 0x48DE5369, 0x6413E680, 0xA2AE0810, 0xDD6DB224, 0x69852DFD, 0x09072166, 0xB39A460A, 0x6445C0DD, 0x586CDECF, 0x1C20C8AE, 0x5BBEF7DD, 0x1B588D40, 0xCCD2017F, 0x6BB4E3BB, 0xDDA26A7E, 0x3A59FF45, 0x3E350A44, 0xBCB4CDD5, 0x72EACEA8, 0xFA6484BB, 0x8D6612AE, 0xBF3C6F47, 0xD29BE463, 0x542F5D9E, 0xAEC2771B, 0xF64E6370, 0x740E0D8D, 0xE75B1357, 0xF8721671, 0xAF537D5D, 0x4040CB08, 0x4EB4E2CC, 0x34D2466A, 0x0115AF84, 0xE1B00428, 0x95983A1D, 0x06B89FB4, 0xCE6EA048, 0x6F3F3B82, 0x3520AB82, 0x011A1D4B, 0x277227F8, 0x611560B1, 0xE7933FDC, 0xBB3A792B, 0x344525BD, 0xA08839E1, 0x51CE794B, 0x2F32C9B7, 0xA01FBAC9, 0xE01CC87E, 0xBCC7D1F6, 0xCF0111C3, 0xA1E8AAC7, 0x1A908749, 0xD44FBD9A, 0xD0DADECB, 0xD50ADA38, 0x0339C32A, 0xC6913667, 0x8DF9317C, 0xE0B12B4F, 0xF79E59B7, 0x43F5BB3A, 0xF2D519FF, 0x27D9459C, 0xBF97222C, 0x15E6FC2A, 0x0F91FC71, 0x9B941525, 0xFAE59361, 0xCEB69CEB, 0xC2A86459, 0x12BAA8D1, 0xB6C1075E, 0xE3056A0C, 0x10D25065, 0xCB03A442, 0xE0EC6E0E, 0x1698DB3B, 0x4C98A0BE, 0x3278E964, 0x9F1F9532, 0xE0D392DF, 0xD3A0342B, 0x8971F21E, 0x1B0A7441, 0x4BA3348C, 0xC5BE7120, 0xC37632D8, 0xDF359F8D, 0x9B992F2E, 0xE60B6F47, 0x0FE3F11D, 0xE54CDA54, 0x1EDAD891, 0xCE6279CF, 0xCD3E7E6F, 0x1618B166, 0xFD2C1D05, 0x848FD2C5, 0xF6FB2299, 0xF523F357, 0xA6327623, 0x93A83531, 0x56CCCD02, 0xACF08162, 0x5A75EBB5, 0x6E163697, 0x88D273CC, 0xDE966292, 0x81B949D0, 0x4C50901B, 0x71C65614, 0xE6C6C7BD, 0x327A140A, 0x45E1D006, 0xC3F27B9A, 0xC9AA53FD, 0x62A80F00, 0xBB25BFE2, 0x35BDD2F6, 0x71126905, 0xB2040222, 0xB6CBCF7C, 0xCD769C2B, 0x53113EC0, 0x1640E3D3, 0x38ABBD60, 0x2547ADF0, 0xBA38209C, 0xF746CE76, 0x77AFA1C5, 0x20756060, 0x85CBFE4E, 0x8AE88DD8, 0x7AAAF9B0, 0x4CF9AA7E, 0x1948C25C, 0x02FB8A8C, 0x01C36AE4, 0xD6EBE1F9, 0x90D4F869, 0xA65CDEA0, 0x3F09252D, 0xC208E69F, 0xB74E6132, 0xCE77E25B, 0x578FDFE3, 0x3AC372E6]];
           var BLOWFISH_CTX = {
             pbox: [],
             sbox: []
           };
 
           function F(ctx, x) {
-            let a = x >> 24 & 0xFF;
-            let b = x >> 16 & 0xFF;
-            let c = x >> 8 & 0xFF;
-            let d = x & 0xFF;
-            let y = ctx.sbox[0][a] + ctx.sbox[1][b];
+            var a = x >> 24 & 0xFF;
+            var b = x >> 16 & 0xFF;
+            var c = x >> 8 & 0xFF;
+            var d = x & 0xFF;
+            var y = ctx.sbox[0][a] + ctx.sbox[1][b];
             y = y ^ ctx.sbox[2][c];
             y = y + ctx.sbox[3][d];
             return y;
           }
 
           function BlowFish_Encrypt(ctx, left, right) {
-            let Xl = left;
-            let Xr = right;
-            let temp;
+            var Xl = left;
+            var Xr = right;
+            var temp;
 
-            for (let i = 0; i < N; ++i) {
+            for (var i = 0; i < N; ++i) {
               Xl = Xl ^ ctx.pbox[i];
               Xr = F(ctx, Xl) ^ Xr;
               temp = Xl;
@@ -6930,11 +7276,11 @@
           }
 
           function BlowFish_Decrypt(ctx, left, right) {
-            let Xl = left;
-            let Xr = right;
-            let temp;
+            var Xl = left;
+            var Xr = right;
+            var temp;
 
-            for (let i = N + 1; i > 1; --i) {
+            for (var i = N + 1; i > 1; --i) {
               Xl = Xl ^ ctx.pbox[i];
               Xr = F(ctx, Xl) ^ Xr;
               temp = Xl;
@@ -6966,17 +7312,17 @@
 
 
           function BlowFishInit(ctx, key, keysize) {
-            for (let Row = 0; Row < 4; Row++) {
+            for (var Row = 0; Row < 4; Row++) {
               ctx.sbox[Row] = [];
 
-              for (let Col = 0; Col < 256; Col++) {
+              for (var Col = 0; Col < 256; Col++) {
                 ctx.sbox[Row][Col] = ORIG_S[Row][Col];
               }
             }
 
-            let keyIndex = 0;
+            var keyIndex = 0;
 
-            for (let index = 0; index < N + 2; index++) {
+            for (var index = 0; index < N + 2; index++) {
               ctx.pbox[index] = ORIG_P[index] ^ key[keyIndex];
               keyIndex++;
 
@@ -6985,11 +7331,11 @@
               }
             }
 
-            let Data1 = 0;
-            let Data2 = 0;
-            let res = 0;
+            var Data1 = 0;
+            var Data2 = 0;
+            var res = 0;
 
-            for (let i = 0; i < N + 2; i += 2) {
+            for (var i = 0; i < N + 2; i += 2) {
               res = BlowFish_Encrypt(ctx, Data1, Data2);
               Data1 = res.left;
               Data2 = res.right;
@@ -6997,13 +7343,13 @@
               ctx.pbox[i + 1] = Data2;
             }
 
-            for (let i = 0; i < 4; i++) {
-              for (let j = 0; j < 256; j += 2) {
+            for (var _i = 0; _i < 4; _i++) {
+              for (var j = 0; j < 256; j += 2) {
                 res = BlowFish_Encrypt(ctx, Data1, Data2);
                 Data1 = res.left;
                 Data2 = res.right;
-                ctx.sbox[i][j] = Data1;
-                ctx.sbox[i][j + 1] = Data2;
+                ctx.sbox[_i][j] = Data1;
+                ctx.sbox[_i][j + 1] = Data2;
               }
             }
 
@@ -7015,7 +7361,7 @@
 
 
           var Blowfish = C_algo.Blowfish = BlockCipher.extend({
-            _doReset: function () {
+            _doReset: function _doReset() {
               // Skip reset of nRounds has been set before and key did not change
               if (this._keyPriorReset === this._key) {
                 return;
@@ -7028,12 +7374,12 @@
 
               BlowFishInit(BLOWFISH_CTX, keyWords, keySize);
             },
-            encryptBlock: function (M, offset) {
+            encryptBlock: function encryptBlock(M, offset) {
               var res = BlowFish_Encrypt(BLOWFISH_CTX, M[offset], M[offset + 1]);
               M[offset] = res.left;
               M[offset + 1] = res.right;
             },
-            decryptBlock: function (M, offset) {
+            decryptBlock: function decryptBlock(M, offset) {
               var res = BlowFish_Decrypt(BLOWFISH_CTX, M[offset], M[offset + 1]);
               M[offset] = res.left;
               M[offset + 1] = res.right;
@@ -7146,7 +7492,7 @@
     }
 
     decrypt(data) {
-      const decryptedData = cryptoJsExports.AES.decrypt(data, this.key).toString(cryptoJsExports.enc.Utf8);
+      var decryptedData = cryptoJsExports.AES.decrypt(data, this.key).toString(cryptoJsExports.enc.Utf8);
 
       if (decryptedData === '') {
         return data;
@@ -7157,9 +7503,9 @@
 
   }
 
-  const encryption = new Encryption();
+  var encryption = new Encryption();
 
-  class StorageManager {
+  class StorageManager extends ShopifyStorageManager {
     static save(key, value) {
       if (!key || !value) {
         return false;
@@ -7181,7 +7527,7 @@
         return false;
       }
 
-      let data = null;
+      var data = null;
 
       if (this._isLocalStorageSupported()) {
         data = localStorage.getItem(key);
@@ -7212,7 +7558,7 @@
     }
 
     static removeCookie(name, domain) {
-      let cookieStr = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      var cookieStr = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 
       if (domain) {
         cookieStr = cookieStr + ' domain=' + domain + '; path=/';
@@ -7222,11 +7568,11 @@
     }
 
     static createCookie(name, value, seconds, domain) {
-      let expires = '';
-      let domainStr = '';
+      var expires = '';
+      var domainStr = '';
 
       if (seconds) {
-        const date = new Date();
+        var date = new Date();
         date.setTime(date.getTime() + seconds * 1000);
         expires = '; expires=' + date.toGMTString();
       }
@@ -7240,11 +7586,11 @@
     }
 
     static readCookie(name) {
-      const nameEQ = name + '=';
-      const ca = document.cookie.split(';');
+      var nameEQ = name + '=';
+      var ca = document.cookie.split(';');
 
-      for (let idx = 0; idx < ca.length; idx++) {
-        let c = ca[idx];
+      for (var idx = 0; idx < ca.length; idx++) {
+        var c = ca[idx];
 
         while (c.charAt(0) === ' ') {
           c = c.substring(1, c.length);
@@ -7260,189 +7606,226 @@
     }
 
     static _isLocalStorageSupported() {
+      if (mode.mode === 'SHOPIFY') return true;
       return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function';
     }
 
     static saveToLSorCookie(property, value) {
-      if (value == null) {
-        return;
-      }
+      var _this = this;
 
-      try {
-        if (this._isLocalStorageSupported()) {
-          this.save(property, encodeURIComponent(JSON.stringify(value)));
-        } else {
-          if (property === GCOOKIE_NAME) {
-            this.createCookie(property, encodeURIComponent(value), 0, window.location.hostname);
-          } else {
-            this.createCookie(property, encodeURIComponent(JSON.stringify(value)), 0, window.location.hostname);
-          }
+      return _asyncToGenerator(function* () {
+        if (value == null) {
+          return;
         }
 
-        $ct.globalCache[property] = value;
-      } catch (e) {}
+        try {
+          if (_this._isLocalStorageSupported()) {
+            yield _this.addData('localStorage', property, encodeURIComponent(JSON.stringify(value)));
+          } else {
+            if (property === GCOOKIE_NAME) {
+              yield _this.addData('cookie', property, encodeURIComponent(value), 0, getHostName());
+            } else {
+              yield _this.addData('cookie', property, encodeURIComponent(JSON.stringify(value)), 0, getHostName());
+            }
+          }
+
+          $ct.globalCache[property] = value;
+        } catch (e) {}
+      })();
     }
 
     static readFromLSorCookie(property) {
-      let data;
+      var _this2 = this;
 
-      if ($ct.globalCache.hasOwnProperty(property)) {
-        return $ct.globalCache[property];
-      }
+      return _asyncToGenerator(function* () {
+        var data;
 
-      if (this._isLocalStorageSupported()) {
-        data = this.read(property);
-      } else {
-        data = this.readCookie(property);
-      }
-
-      if (data !== null && data !== undefined && !(typeof data.trim === 'function' && data.trim() === '')) {
-        let value;
-
-        try {
-          value = JSON.parse(decodeURIComponent(data));
-        } catch (err) {
-          value = decodeURIComponent(data);
+        if ($ct.globalCache.hasOwnProperty(property)) {
+          return $ct.globalCache[property];
         }
 
-        $ct.globalCache[property] = value;
-        return value;
-      }
+        if (_this2._isLocalStorageSupported()) {
+          data = yield _this2.retrieveData('localStorage', property);
+        } else {
+          data = yield _this2.retrieveData('cookie', property);
+        }
+
+        if (data !== null && data !== undefined && !(typeof data.trim === 'function' && data.trim() === '')) {
+          var value;
+
+          try {
+            value = JSON.parse(decodeURIComponent(data));
+          } catch (err) {
+            value = decodeURIComponent(data);
+          }
+
+          $ct.globalCache[property] = value;
+          return value;
+        }
+      })();
     }
 
     static createBroadCookie(name, value, seconds, domain) {
-      /* -------------------------------------------------------------
-       * Sub-domain isolation: when the global flag is set, skip the
-       * broad-domain logic and write a cookie scoped to the current
-       * host only.  Also remove any legacy broad-domain copy so that
-       * the host-level cookie has precedence.
-       * ----------------------------------------------------------- */
-      const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE);
+      var _this3 = this;
 
-      if (isolate) {
-        // remove any legacy broad-domain cookie
-        if ($ct.broadDomain) {
-          this.removeCookie(name, $ct.broadDomain);
-        } // write host-scoped cookie and stop
+      return _asyncToGenerator(function* () {
+        /* -------------------------------------------------------------
+         * Sub-domain isolation: when the global flag is set, skip the
+         * broad-domain logic and write a cookie scoped to the current
+         * host only.  Also remove any legacy broad-domain copy so that
+         * the host-level cookie has precedence.
+         * ----------------------------------------------------------- */
+        var isolate = !!(yield _this3.retrieveData('localStorage', ISOLATE_COOKIE));
 
-
-        this.createCookie(name, value, seconds, domain);
-        return;
-      } // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
-      // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
-      // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
-      // to find out which "broadest" domain the cookie was set on. Then delete the test cookie, and use that domain
-      // for updating the actual cookie.
+        if (isolate) {
+          // remove any legacy broad-domain cookie
+          if ($ct.broadDomain) {
+            yield _this3.deleteData('cookie', name, $ct.broadDomain);
+          } // write host-scoped cookie and stop
 
 
-      if (domain) {
-        let broadDomain = $ct.broadDomain;
-
-        if (broadDomain == null) {
-          // if we don't know the broadDomain yet, then find out
-          const domainParts = domain.split('.');
-          let testBroadDomain = '';
-
-          for (let idx = domainParts.length - 1; idx >= 0; idx--) {
-            if (idx === 0) {
-              testBroadDomain = domainParts[idx] + testBroadDomain;
-            } else {
-              testBroadDomain = '.' + domainParts[idx] + testBroadDomain;
-            } // only needed if the cookie already exists and needs to be updated. See note above.
+          yield _this3.addData('cookie', name, value, seconds, domain);
+          return;
+        } // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
+        // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
+        // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
+        // to find out which "broadest" domain the cookie was set on. Then delete the test cookie, and use that domain
+        // for updating the actual cookie.
+        // This if condition is redundant. Domain will never be not defined.
+        // even if it is undefined we directly pass it in the else.
 
 
-            if (this.readCookie(name)) {
-              // no guarantee that browser will delete cookie, hence create short lived cookies
-              var testCookieName = 'test_' + name + idx;
-              this.createCookie(testCookieName, value, 10, testBroadDomain); // self-destruct after 10 seconds
+        if (domain) {
+          var broadDomain = $ct.broadDomain;
 
-              if (!this.readCookie(testCookieName)) {
-                // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
-                continue;
+          if (broadDomain == null) {
+            // if we don't know the broadDomain yet, then find out
+            var domainParts = domain.split('.');
+            var testBroadDomain = '';
+
+            for (var idx = domainParts.length - 1; idx >= 0; idx--) {
+              if (idx === 0) {
+                testBroadDomain = domainParts[idx] + testBroadDomain;
               } else {
-                // else if cookie set, then delete the test and the original cookie
-                this.removeCookie(testCookieName, testBroadDomain);
+                testBroadDomain = '.' + domainParts[idx] + testBroadDomain;
+              } // only needed if the cookie already exists and needs to be updated. See note above.
+
+
+              if (yield _this3.retrieveData('cookie', name)) {
+                // no guarantee that browser will delete cookie, hence create short lived cookies
+                var testCookieName = 'test_' + name + idx;
+                yield _this3.addData('cookie', testCookieName, value, 10, testBroadDomain); // self-destruct after 10 seconds
+
+                var testCookie = yield _this3.retrieveData('cookie', testCookieName);
+
+                if (!testCookie) {
+                  // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
+                  continue;
+                } else {
+                  // else if cookie set, then delete the test and the original cookie
+                  yield _this3.deleteData('cookie', testCookieName, testBroadDomain);
+                }
+              }
+
+              yield _this3.addData('cookie', name, value, seconds, testBroadDomain);
+              var tempCookie = yield _this3.retrieveData('cookie', name); // eslint-disable-next-line eqeqeq
+
+              if (tempCookie == value) {
+                broadDomain = testBroadDomain;
+                $ct.broadDomain = broadDomain;
+                break;
               }
             }
-
-            this.createCookie(name, value, seconds, testBroadDomain);
-            const tempCookie = this.readCookie(name); // eslint-disable-next-line eqeqeq
-
-            if (tempCookie == value) {
-              broadDomain = testBroadDomain;
-              $ct.broadDomain = broadDomain;
-              break;
-            }
+          } else {
+            yield _this3.addData('cookie', name, value, seconds, broadDomain);
           }
         } else {
-          this.createCookie(name, value, seconds, broadDomain);
+          yield _this3.addData('cookie', name, value, seconds, domain);
         }
-      } else {
-        this.createCookie(name, value, seconds, domain);
-      }
+      })();
     }
 
     static getMetaProp(property) {
-      const metaObj = this.readFromLSorCookie(META_COOKIE);
+      var _this4 = this;
 
-      if (metaObj != null) {
-        return metaObj[property];
-      }
+      return _asyncToGenerator(function* () {
+        var metaObj = yield _this4.readFromLSorCookie(META_COOKIE);
+
+        if (metaObj != null) {
+          return metaObj[property];
+        }
+      })();
     }
 
     static setMetaProp(property, value) {
-      if (this._isLocalStorageSupported()) {
-        let wzrkMetaObj = this.readFromLSorCookie(META_COOKIE);
+      var _this5 = this;
 
-        if (wzrkMetaObj == null) {
-          wzrkMetaObj = {};
+      return _asyncToGenerator(function* () {
+        if (_this5._isLocalStorageSupported()) {
+          var wzrkMetaObj = yield _this5.readFromLSorCookie(META_COOKIE);
+
+          if (wzrkMetaObj == null) {
+            wzrkMetaObj = {};
+          }
+
+          if (value === undefined) {
+            delete wzrkMetaObj[property];
+          } else {
+            wzrkMetaObj[property] = value;
+          }
+
+          yield _this5.saveToLSorCookie(META_COOKIE, wzrkMetaObj);
         }
-
-        if (value === undefined) {
-          delete wzrkMetaObj[property];
-        } else {
-          wzrkMetaObj[property] = value;
-        }
-
-        this.saveToLSorCookie(META_COOKIE, wzrkMetaObj);
-      }
+      })();
     }
 
     static getAndClearMetaProp(property) {
-      const value = this.getMetaProp(property);
-      this.setMetaProp(property, undefined);
-      return value;
+      var _this6 = this;
+
+      return _asyncToGenerator(function* () {
+        var value = yield _this6.getMetaProp(property);
+        yield _this6.setMetaProp(property, undefined);
+        return value;
+      })();
     }
 
     static setInstantDeleteFlagInK() {
-      let k = this.readFromLSorCookie(KCOOKIE_NAME);
+      var _this7 = this;
 
-      if (k == null) {
-        k = {};
-      }
+      return _asyncToGenerator(function* () {
+        var k = yield _this7.readFromLSorCookie(KCOOKIE_NAME);
 
-      k.flag = true;
-      this.saveToLSorCookie(KCOOKIE_NAME, k);
+        if (k == null) {
+          k = {};
+        }
+
+        k.flag = true;
+        yield _this7.saveToLSorCookie(KCOOKIE_NAME, k);
+      })();
     }
 
     static backupEvent(data, reqNo, logger) {
-      let backupArr = this.readFromLSorCookie(LCOOKIE_NAME);
+      var _this8 = this;
 
-      if (typeof backupArr === 'undefined') {
-        backupArr = {};
-      }
+      return _asyncToGenerator(function* () {
+        var backupArr = yield _this8.readFromLSorCookie(LCOOKIE_NAME);
 
-      backupArr[reqNo] = {
-        q: data
-      };
-      this.saveToLSorCookie(LCOOKIE_NAME, backupArr);
-      logger.debug("stored in ".concat(LCOOKIE_NAME, " reqNo : ").concat(reqNo, " -> ").concat(data));
+        if (typeof backupArr === 'undefined') {
+          backupArr = {};
+        }
+
+        backupArr[reqNo] = {
+          q: data
+        };
+        yield _this8.saveToLSorCookie(LCOOKIE_NAME, backupArr);
+        logger.debug("stored in ".concat(LCOOKIE_NAME, " reqNo : ").concat(reqNo, " -> ").concat(data));
+      })();
     } // Add new method for OUL tracking
 
 
     static markBackupAsOUL(reqNo) {
       // Store OUL request numbers in a separate meta property
-      const oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
+      var oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
 
       if (!oulRequests.includes(reqNo)) {
         oulRequests.push(reqNo);
@@ -7451,22 +7834,147 @@
     }
 
     static isBackupOUL(reqNo) {
-      const oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
+      var oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
       return oulRequests.includes(reqNo);
     }
 
     static removeBackup(respNo, logger) {
-      const backupMap = this.readFromLSorCookie(LCOOKIE_NAME);
+      var _this9 = this;
 
-      if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
-        logger.debug("del event: ".concat(respNo, " data-> ").concat(backupMap[respNo].q));
-        delete backupMap[respNo];
-        this.saveToLSorCookie(LCOOKIE_NAME, backupMap);
-      }
+      return _asyncToGenerator(function* () {
+        var backupMap = yield _this9.readFromLSorCookie(LCOOKIE_NAME);
+
+        if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
+          logger.debug("del event: ".concat(respNo, " data-> ").concat(backupMap[respNo].q));
+          delete backupMap[respNo];
+          yield _this9.saveToLSorCookie(LCOOKIE_NAME, backupMap);
+        }
+      })();
+    }
+    /**
+     * A helper method to get data from either cookies or local storage.
+     * This also checks the mode of the SDK and decides which methods to call
+     * @param {('cookie' | 'localStorage')} type
+     * @param {string} name
+     * @returns {Promise<any>} cookieOrLocalStorageValue
+     */
+
+
+    static retrieveData(type, name) {
+      var _this10 = this;
+
+      return _asyncToGenerator(function* () {
+        var cookieOrLocalStorageValue;
+
+        switch (type) {
+          case 'cookie':
+            {
+              if (mode.mode === 'WEB') {
+                cookieOrLocalStorageValue = _this10.readCookie(name);
+              } else {
+                cookieOrLocalStorageValue = yield _this10.readCookieAsync(name);
+              }
+
+              break;
+            }
+
+          case 'localStorage':
+            {
+              if (mode.mode === 'WEB') {
+                cookieOrLocalStorageValue = _this10.read(name);
+              } else {
+                cookieOrLocalStorageValue = yield _this10.readAsync(name);
+              }
+
+              break;
+            }
+        }
+
+        return cookieOrLocalStorageValue;
+      })();
+    }
+    /**
+     * A helper method to add data to either cookies or local storage.
+     * This also checks the mode of the SDK and decides which methods to call
+     * @param {('cookie' | 'localStorage')} type
+     * @param {string} name
+     * @param {string} value
+     * @param {string} seconds
+     * @param {string} domain
+     * @returns {Promise<any>} saved
+     */
+
+
+    static addData(type, name, value, seconds, domain) {
+      var _this11 = this;
+
+      return _asyncToGenerator(function* () {
+        switch (type) {
+          case 'cookie':
+            {
+              if (mode.mode === 'WEB') {
+                _this11.createCookie(name, value, seconds, domain);
+              } else {
+                yield _this11.createCookieAsync(name, value, seconds, domain);
+              }
+
+              break;
+            }
+
+          case 'localStorage':
+            {
+              if (mode.mode === 'WEB') {
+                _this11.save(name, value);
+              } else {
+                yield _this11.saveAsync(name, value);
+              }
+
+              break;
+            }
+        }
+      })();
+    }
+    /**
+     * A helper method to get data from either cookies or local storage.
+     * This also checks the mode of the SDK and decides which methods to call
+     * @param {('cookie' | 'localStorage')} type
+     * @param {string} name
+     * @returns {Promise<any>} cookieOrLocalStorageValue
+     */
+
+
+    static deleteData(type, name, domain) {
+      var _this12 = this;
+
+      return _asyncToGenerator(function* () {
+        switch (type) {
+          case 'cookie':
+            {
+              if (mode.mode === 'WEB') {
+                _this12.removeCookie(name);
+              } else {
+                yield _this12.removeCookieAsync(name, domain);
+              }
+
+              break;
+            }
+
+          case 'localStorage':
+            {
+              if (mode.mode === 'WEB') {
+                _this12.remove(name);
+              } else {
+                yield _this12.removeAsync(name);
+              }
+
+              break;
+            }
+        }
+      })();
     }
 
   }
-  const $ct = {
+  var $ct = {
     globalCache: {
       gcookie: null,
       REQ_N: 0,
@@ -7478,7 +7986,7 @@
 
     // Initialize blockRequest from storage
     get blockRequest() {
-      const value = StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE);
+      var value = StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE);
       return value === true;
     },
 
@@ -7529,79 +8037,98 @@
         value: void 0
       });
       this.max = max;
-      let lruCache = StorageManager.readFromLSorCookie(LRU_CACHE);
+    }
 
-      if (lruCache) {
-        const tempLruCache = {};
-        _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder] = [];
-        lruCache = lruCache.cache;
+    init() {
+      var _this = this;
 
-        for (const entry in lruCache) {
-          if (lruCache.hasOwnProperty(entry)) {
-            tempLruCache[lruCache[entry][0]] = lruCache[entry][1];
+      return _asyncToGenerator(function* () {
+        var lruCache = yield StorageManager.readFromLSorCookie(LRU_CACHE);
 
-            _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder].push(lruCache[entry][0]);
+        if (lruCache) {
+          var tempLruCache = {};
+          _classPrivateFieldLooseBase(_this, _keyOrder)[_keyOrder] = [];
+          lruCache = lruCache.cache;
+
+          for (var entry in lruCache) {
+            if (lruCache.hasOwnProperty(entry)) {
+              tempLruCache[lruCache[entry][0]] = lruCache[entry][1];
+
+              _classPrivateFieldLooseBase(_this, _keyOrder)[_keyOrder].push(lruCache[entry][0]);
+            }
           }
-        }
 
-        this.cache = tempLruCache;
-      } else {
-        this.cache = {};
-        _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder] = [];
-      }
+          _this.cache = tempLruCache;
+        } else {
+          _this.cache = {};
+          _classPrivateFieldLooseBase(_this, _keyOrder)[_keyOrder] = [];
+        }
+      })();
     }
 
     get(key) {
-      const item = this.cache[key];
+      var _this2 = this;
 
-      if (item) {
-        this.cache = _classPrivateFieldLooseBase(this, _deleteFromObject)[_deleteFromObject](key, this.cache);
-        this.cache[key] = item;
+      return _asyncToGenerator(function* () {
+        var item = _this2.cache[key];
 
-        _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder].push(key);
-      }
+        if (item) {
+          _this2.cache = _classPrivateFieldLooseBase(_this2, _deleteFromObject)[_deleteFromObject](key, _this2.cache);
+          _this2.cache[key] = item;
 
-      this.saveCacheToLS(this.cache);
-      return item;
+          _classPrivateFieldLooseBase(_this2, _keyOrder)[_keyOrder].push(key);
+        }
+
+        yield _this2.saveCacheToLS(_this2.cache);
+        return item;
+      })();
     }
 
     set(key, value) {
-      const item = this.cache[key];
+      var _this3 = this;
 
-      const allKeys = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder];
+      return _asyncToGenerator(function* () {
+        var item = _this3.cache[key];
 
-      if (item != null) {
-        this.cache = _classPrivateFieldLooseBase(this, _deleteFromObject)[_deleteFromObject](key, this.cache);
-      } else if (allKeys.length === this.max) {
-        this.cache = _classPrivateFieldLooseBase(this, _deleteFromObject)[_deleteFromObject](allKeys[0], this.cache);
-      }
+        var allKeys = _classPrivateFieldLooseBase(_this3, _keyOrder)[_keyOrder];
 
-      this.cache[key] = value;
+        if (item != null) {
+          _this3.cache = _classPrivateFieldLooseBase(_this3, _deleteFromObject)[_deleteFromObject](key, _this3.cache);
+        } else if (allKeys.length === _this3.max) {
+          _this3.cache = _classPrivateFieldLooseBase(_this3, _deleteFromObject)[_deleteFromObject](allKeys[0], _this3.cache);
+        }
 
-      if (_classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder][_classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder] - 1] !== key) {
-        _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder].push(key);
-      }
+        _this3.cache[key] = value;
 
-      this.saveCacheToLS(this.cache);
+        if (_classPrivateFieldLooseBase(_this3, _keyOrder)[_keyOrder][_classPrivateFieldLooseBase(_this3, _keyOrder)[_keyOrder] - 1] !== key) {
+          _classPrivateFieldLooseBase(_this3, _keyOrder)[_keyOrder].push(key);
+        }
+
+        yield _this3.saveCacheToLS(_this3.cache);
+      })();
     }
 
     saveCacheToLS(cache) {
-      const objToArray = [];
+      var _this4 = this;
 
-      const allKeys = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder];
+      return _asyncToGenerator(function* () {
+        var objToArray = [];
 
-      for (const index in allKeys) {
-        if (allKeys.hasOwnProperty(index)) {
-          const temp = [];
-          temp.push(allKeys[index]);
-          temp.push(cache[allKeys[index]]);
-          objToArray.push(temp);
+        var allKeys = _classPrivateFieldLooseBase(_this4, _keyOrder)[_keyOrder];
+
+        for (var index in allKeys) {
+          if (allKeys.hasOwnProperty(index)) {
+            var temp = [];
+            temp.push(allKeys[index]);
+            temp.push(cache[allKeys[index]]);
+            objToArray.push(temp);
+          }
         }
-      }
 
-      StorageManager.saveToLSorCookie(LRU_CACHE, {
-        cache: objToArray
-      });
+        yield StorageManager.saveToLSorCookie(LRU_CACHE, {
+          cache: objToArray
+        });
+      })();
     }
 
     getKey(value) {
@@ -7609,9 +8136,9 @@
         return null;
       }
 
-      const allKeys = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder];
+      var allKeys = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder];
 
-      for (const index in allKeys) {
+      for (var index in allKeys) {
         if (allKeys.hasOwnProperty(index)) {
           if (this.cache[allKeys[index]] === value) {
             return allKeys[index];
@@ -7623,7 +8150,7 @@
     }
 
     getSecondLastKey() {
-      const keysArr = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder];
+      var keysArr = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder];
 
       if (keysArr != null && keysArr.length > 1) {
         return keysArr[keysArr.length - 2];
@@ -7633,7 +8160,7 @@
     }
 
     getLastKey() {
-      const keysLength = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder].length;
+      var keysLength = _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder].length;
 
       if (keysLength) {
         return _classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder][keysLength - 1];
@@ -7643,11 +8170,11 @@
   }
 
   var _deleteFromObject2 = function _deleteFromObject2(key, obj) {
-    const allKeys = JSON.parse(JSON.stringify(_classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder]));
-    const newCache = {};
-    let indexToDelete;
+    var allKeys = JSON.parse(JSON.stringify(_classPrivateFieldLooseBase(this, _keyOrder)[_keyOrder]));
+    var newCache = {};
+    var indexToDelete;
 
-    for (const index in allKeys) {
+    for (var index in allKeys) {
       if (allKeys.hasOwnProperty(index)) {
         if (allKeys[index] !== key) {
           newCache[allKeys[index]] = obj[allKeys[index]];
@@ -7662,6 +8189,66 @@
     return newCache;
   };
 
+  /**
+   * A utility class which contains just getters and setters
+   * for certain properties defined on window.
+   * @class
+   */
+
+  var _isOULInProgress = _classPrivateFieldLooseKey("isOULInProgress");
+
+  var _oulReqN = _classPrivateFieldLooseKey("oulReqN");
+
+  class GlobalWindow {
+    constructor() {
+      Object.defineProperty(this, _isOULInProgress, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _oulReqN, {
+        writable: true,
+        value: void 0
+      });
+    }
+
+    get isOULInProgress() {
+      if (mode.mode === 'WEB') {
+        return window.isOULInProgress;
+      }
+
+      return _classPrivateFieldLooseBase(this, _isOULInProgress)[_isOULInProgress];
+    }
+
+    set isOULInProgress(value) {
+      if (mode.mode === 'WEB') {
+        window.isOULInProgress = value;
+        return;
+      }
+
+      _classPrivateFieldLooseBase(this, _isOULInProgress)[_isOULInProgress] = value;
+    }
+
+    get oulReqN() {
+      if (mode.mode === 'WEB') {
+        return window.oulReqN;
+      }
+
+      return _classPrivateFieldLooseBase(this, _oulReqN)[_oulReqN];
+    }
+
+    set oulReqN(value) {
+      if (mode.mode === 'WEB') {
+        window.oulReqN = value;
+        return;
+      }
+
+      _classPrivateFieldLooseBase(this, _oulReqN)[_oulReqN] = value;
+    }
+
+  }
+
+  var globalWindow = new GlobalWindow();
+
   var _logger$a = _classPrivateFieldLooseKey("logger");
 
   var _request$7 = _classPrivateFieldLooseKey("request");
@@ -7671,13 +8258,7 @@
   var _session$3 = _classPrivateFieldLooseKey("session");
 
   class CleverTapAPI {
-    constructor(_ref) {
-      let {
-        logger,
-        request,
-        device,
-        session
-      } = _ref;
+    constructor(props) {
       Object.defineProperty(this, _logger$a, {
         writable: true,
         value: void 0
@@ -7694,6 +8275,16 @@
         writable: true,
         value: void 0
       });
+      this.setPrivateProperties(props);
+    }
+
+    setPrivateProperties(_ref) {
+      var {
+        logger,
+        request,
+        device,
+        session
+      } = _ref;
       _classPrivateFieldLooseBase(this, _logger$a)[_logger$a] = logger;
       _classPrivateFieldLooseBase(this, _request$7)[_request$7] = request;
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = device;
@@ -7711,129 +8302,138 @@
 
 
     s(global, session, resume, respNumber, optOutResponse) {
-      let oulReq = false;
-      let newGuid = false; // for a scenario when OUL request is true from client side
-      // but resume is returned as false from server end
-      // we maintan a OulReqN var in the window object
-      // and compare with respNumber to determine the response of an OUL request
+      var _this = this;
 
-      if (window.isOULInProgress) {
-        if (resume || respNumber !== 'undefined' && respNumber === window.oulReqN) {
-          window.isOULInProgress = false;
-          oulReq = true;
+      return _asyncToGenerator(function* () {
+        var oulReq = false;
+        var newGuid = false; // for a scenario when OUL request is true from client side
+        // but resume is returned as false from server end
+        // we maintan a OulReqN var in the window object
+        // and compare with respNumber to determine the response of an OUL request
+
+        if (globalWindow.isOULInProgress) {
+          if (resume || respNumber !== 'undefined' && Number(respNumber) === globalWindow.oulReqN) {
+            globalWindow.isOULInProgress = false;
+            oulReq = true;
+          }
+        } // call back function used to store global and session ids for the user
+
+
+        if (typeof respNumber === 'undefined') {
+          respNumber = 0;
         }
-      } // call back function used to store global and session ids for the user
 
+        yield StorageManager.removeBackup(Number(respNumber), _classPrivateFieldLooseBase(_this, _logger$a)[_logger$a]);
 
-      if (typeof respNumber === 'undefined') {
-        respNumber = 0;
-      }
-
-      StorageManager.removeBackup(respNumber, _classPrivateFieldLooseBase(this, _logger$a)[_logger$a]);
-
-      if (respNumber > $ct.globalCache.REQ_N) {
-        // request for some other user so ignore
-        return;
-      }
-
-      if (!isValueValid(_classPrivateFieldLooseBase(this, _device$3)[_device$3].gcookie)) {
-        if (global) {
-          newGuid = true;
-        }
-      }
-
-      if (!isValueValid(_classPrivateFieldLooseBase(this, _device$3)[_device$3].gcookie) || resume || typeof optOutResponse === 'boolean') {
-        const sessionObj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
-        /*  If the received session is less than the session in the cookie,
-            then don't update guid as it will be response for old request
-        */
-
-
-        if (window.isOULInProgress || sessionObj.s && session < sessionObj.s) {
+        if (Number(respNumber) > $ct.globalCache.REQ_N) {
+          // request for some other user so ignore
           return;
         }
 
-        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].debug("Cookie was ".concat(_classPrivateFieldLooseBase(this, _device$3)[_device$3].gcookie, " set to ").concat(global));
-
-        _classPrivateFieldLooseBase(this, _device$3)[_device$3].gcookie = global;
-
-        if (!isValueValid(_classPrivateFieldLooseBase(this, _device$3)[_device$3].gcookie)) {
-          // clear useIP meta prop
-          StorageManager.getAndClearMetaProp(USEIP_KEY);
+        if (!isValueValid(_classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie)) {
+          if (global) {
+            newGuid = true;
+          }
         }
 
-        if (global && StorageManager._isLocalStorageSupported()) {
-          if ($ct.LRU_CACHE == null) {
-            $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
+        if (!isValueValid(_classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie) || resume || typeof optOutResponse === 'boolean') {
+          var sessionObj = yield _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getSessionCookieObject();
+          /*  If the received session is less than the session in the cookie,
+              then don't update guid as it will be response for old request
+          */
+
+          if (globalWindow.isOULInProgress || sessionObj.s && session < sessionObj.s) {
+            return;
           }
 
-          const kIdFromLS = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
-          let guidFromLRUCache;
+          _classPrivateFieldLooseBase(_this, _logger$a)[_logger$a].debug("Cookie was ".concat(_classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie, " set to ").concat(global));
 
-          if (kIdFromLS != null && kIdFromLS.id) {
-            guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
+          _classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie = global;
 
-            if (resume) {
-              if (!guidFromLRUCache) {
-                StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true); // replace login identity in OUL request
-                // with the gcookie returned in exchange
+          if (!isValueValid(_classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie)) {
+            // clear useIP meta prop
+            yield StorageManager.getAndClearMetaProp(USEIP_KEY);
+          }
 
-                $ct.LRU_CACHE.set(kIdFromLS.id, global);
+          if (global && StorageManager._isLocalStorageSupported()) {
+            if ($ct.LRU_CACHE == null) {
+              $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
+              yield $ct.LRU_CACHE.init();
+            }
+
+            var kIdFromLS = yield StorageManager.readFromLSorCookie(KCOOKIE_NAME);
+            var guidFromLRUCache;
+
+            if (kIdFromLS != null && kIdFromLS.id) {
+              guidFromLRUCache = $ct.LRU_CACHE.cache[kIdFromLS.id];
+
+              if (resume) {
+                if (!guidFromLRUCache) {
+                  yield StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, true); // replace login identity in OUL request
+                  // with the gcookie returned in exchange
+
+                  $ct.LRU_CACHE.set(kIdFromLS.id, global);
+                }
               }
+            }
+
+            yield StorageManager.saveToLSorCookie(GCOOKIE_NAME, global); // lastk provides the guid
+
+            var lastK = $ct.LRU_CACHE.getSecondLastKey();
+
+            if ((yield StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED)) && lastK !== -1) {
+              var lastGUID = $ct.LRU_CACHE.cache[lastK]; // fire the request directly via fireRequest to unregister the token
+              // then other requests with the updated guid should follow
+
+              _classPrivateFieldLooseBase(_this, _request$7)[_request$7].unregisterTokenForGuid(lastGUID);
             }
           }
 
-          StorageManager.saveToLSorCookie(GCOOKIE_NAME, global); // lastk provides the guid
-
-          const lastK = $ct.LRU_CACHE.getSecondLastKey();
-
-          if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
-            const lastGUID = $ct.LRU_CACHE.cache[lastK]; // fire the request directly via fireRequest to unregister the token
-            // then other requests with the updated guid should follow
-
-            _classPrivateFieldLooseBase(this, _request$7)[_request$7].unregisterTokenForGuid(lastGUID);
-          }
+          yield StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, getHostName());
+          yield StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
         }
 
-        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
-        StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
-      }
-
-      if (StorageManager._isLocalStorageSupported()) {
-        _classPrivateFieldLooseBase(this, _session$3)[_session$3].manageSession(session);
-      } // session cookie
+        if (StorageManager._isLocalStorageSupported()) {
+          yield _classPrivateFieldLooseBase(_this, _session$3)[_session$3].manageSession(session);
+        } // session cookie
 
 
-      const obj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject(); // for the race-condition where two responses come back with different session ids. don't write the older session id.
+        var obj = yield _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getSessionCookieObject(); // for the race-condition where two responses come back with different session ids. don't write the older session id.
+
+        if (typeof obj.s === 'undefined' || obj.s <= session) {
+          obj.s = session;
+          obj.t = getNow(); // time of last response from server
+
+          _classPrivateFieldLooseBase(_this, _session$3)[_session$3].setSessionCookieObject(obj);
+        } // set blockRequest to false only if the device has a valid gcookie
 
 
-      if (typeof obj.s === 'undefined' || obj.s <= session) {
-        obj.s = session;
-        obj.t = getNow(); // time of last response from server
-
-        _classPrivateFieldLooseBase(this, _session$3)[_session$3].setSessionCookieObject(obj);
-      } // set blockRequest to false only if the device has a valid gcookie
+        if (isValueValid(_classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie)) {
+          $ct.blockRequest = false;
+        } // only process the backup events after an OUL request or a new guid is recieved
 
 
-      if (isValueValid(_classPrivateFieldLooseBase(this, _device$3)[_device$3].gcookie)) {
-        $ct.blockRequest = false;
-      } // only process the backup events after an OUL request or a new guid is recieved
+        if ((oulReq || newGuid) && !_classPrivateFieldLooseBase(_this, _request$7)[_request$7].processingBackup) {
+          _classPrivateFieldLooseBase(_this, _request$7)[_request$7].processBackupEvents();
+        }
 
-
-      if ((oulReq || newGuid) && !_classPrivateFieldLooseBase(this, _request$7)[_request$7].processingBackup) {
-        _classPrivateFieldLooseBase(this, _request$7)[_request$7].processBackupEvents();
-      }
-
-      $ct.globalCache.RESP_N = respNumber;
+        $ct.globalCache.RESP_N = Number(respNumber);
+      })();
     }
 
   }
+  var clevertapApi = new CleverTapAPI({
+    logger: '',
+    request: '',
+    device: '',
+    session: ''
+  });
 
   var _logger$9 = _classPrivateFieldLooseKey("logger");
 
   class DeviceManager {
     constructor(_ref) {
-      let {
+      var {
         logger,
         customId
       } = _ref;
@@ -7847,74 +8447,78 @@
     }
 
     getGuid() {
-      let guid = null;
+      var _this = this;
 
-      if (isValueValid(this.gcookie)) {
-        return this.gcookie;
-      }
+      return _asyncToGenerator(function* () {
+        var guid = null;
 
-      if (StorageManager._isLocalStorageSupported()) {
-        const value = StorageManager.read(GCOOKIE_NAME);
+        if (isValueValid(_this.gcookie)) {
+          return _this.gcookie;
+        }
 
-        if (isValueValid(value)) {
-          try {
-            guid = JSON.parse(decodeURIComponent(value));
-          } catch (e) {
-            _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].debug('Cannot parse Gcookie from localstorage - must be encoded ' + value); // assumming guids are of size 32. supporting both formats.
-            // guid can have encodedURIComponent or be without it.
-            // 1.56e4078ed15749928c042479ec2b4d47 - breaks on JSON.parse(decodeURIComponent())
-            // 2.%2256e4078ed15749928c042479ec2b4d47%22
+        if (StorageManager._isLocalStorageSupported()) {
+          var value = yield StorageManager.retrieveData('localStorage', GCOOKIE_NAME);
+
+          if (isValueValid(value)) {
+            try {
+              guid = JSON.parse(decodeURIComponent(value));
+            } catch (e) {
+              _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].debug('Cannot parse Gcookie from localstorage - must be encoded ' + value); // assumming guids are of size 32. supporting both formats.
+              // guid can have encodedURIComponent or be without it.
+              // 1.56e4078ed15749928c042479ec2b4d47 - breaks on JSON.parse(decodeURIComponent())
+              // 2.%2256e4078ed15749928c042479ec2b4d47%22
 
 
-            if (value.length === 32) {
-              guid = value;
-              StorageManager.saveToLSorCookie(GCOOKIE_NAME, value);
-            } else {
-              _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].error('Illegal guid ' + value);
+              if (value.length === 32) {
+                guid = value;
+                yield StorageManager.saveToLSorCookie(GCOOKIE_NAME, value);
+              } else {
+                _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9].error('Illegal guid ' + value);
+              }
+            } // Persist to cookie storage if not present there.
+
+
+            if (isValueValid(guid)) {
+              yield StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, getHostName());
             }
-          } // Persist to cookie storage if not present there.
-
-
-          if (isValueValid(guid)) {
-            StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname);
           }
         }
-      }
 
-      if (!isValueValid(guid)) {
-        guid = StorageManager.readCookie(GCOOKIE_NAME);
+        if (!isValueValid(guid)) {
+          guid = yield StorageManager.retrieveData('cookie', GCOOKIE_NAME);
 
-        if (isValueValid(guid) && (guid.indexOf('%') === 0 || guid.indexOf('\'') === 0 || guid.indexOf('"') === 0)) {
-          guid = null;
+          if (isValueValid(guid) && (guid.indexOf('%') === 0 || guid.indexOf('\'') === 0 || guid.indexOf('"') === 0)) {
+            guid = null;
+          }
+
+          if (isValueValid(guid)) {
+            yield StorageManager.saveToLSorCookie(GCOOKIE_NAME, guid);
+          }
         }
 
-        if (isValueValid(guid)) {
-          StorageManager.saveToLSorCookie(GCOOKIE_NAME, guid);
-        }
-      }
-
-      return guid;
+        return guid;
+      })();
     }
 
   }
 
-  const DATA_NOT_SENT_TEXT = 'This property has been ignored.';
-  const CLEVERTAP_ERROR_PREFIX = 'CleverTap error:'; // Formerly wzrk_error_txt
+  var DATA_NOT_SENT_TEXT = 'This property has been ignored.';
+  var CLEVERTAP_ERROR_PREFIX = 'CleverTap error:'; // Formerly wzrk_error_txt
 
-  const EMBED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Incorrect embed script.");
-  const EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
-  const GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should one of the following: m,f,o,u,male,female,unknown,others (case insensitive). ").concat(DATA_NOT_SENT_TEXT);
-  const EMPLOYED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Employed value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
-  const MARRIED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Married value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
-  const EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
-  const AGE_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Age value should be a number. ").concat(DATA_NOT_SENT_TEXT);
-  const DOB_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " DOB value should be a Date Object");
-  const ENUM_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " setEnum(value). value should be a string or a number");
-  const PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
+  var EMBED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Incorrect embed script.");
+  var EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
+  var GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should one of the following: m,f,o,u,male,female,unknown,others (case insensitive). ").concat(DATA_NOT_SENT_TEXT);
+  var EMPLOYED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Employed value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
+  var MARRIED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Married value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
+  var EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
+  var AGE_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Age value should be a number. ").concat(DATA_NOT_SENT_TEXT);
+  var DOB_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " DOB value should be a Date Object");
+  var ENUM_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " setEnum(value). value should be a string or a number");
+  var PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
 
-  let _globalChargedId;
+  var _globalChargedId;
 
-  const isEventStructureFlat = eventObj => {
+  var isEventStructureFlat = eventObj => {
     // Events cannot have nested structure or Arrays
     if (isObject(eventObj)) {
       for (var key in eventObj) {
@@ -7932,61 +8536,67 @@
 
     return false;
   };
-  const isChargedEventStructureValid = (chargedObj, logger) => {
-    if (isObject(chargedObj)) {
-      for (var key in chargedObj) {
-        if (chargedObj.hasOwnProperty(key)) {
-          if (key === 'Items') {
-            if (!Array.isArray(chargedObj[key])) {
-              return false;
-            }
+  var isChargedEventStructureValid = /*#__PURE__*/function () {
+    var _ref = _asyncToGenerator(function* (chargedObj, logger) {
+      if (isObject(chargedObj)) {
+        for (var key in chargedObj) {
+          if (chargedObj.hasOwnProperty(key)) {
+            if (key === 'Items') {
+              if (!Array.isArray(chargedObj[key])) {
+                return false;
+              }
 
-            if (chargedObj[key].length > 50) {
-              logger.reportError(522, 'Charged Items exceed 50 limit. Actual count: ' + chargedObj[key].length);
-            }
+              if (chargedObj[key].length > 50) {
+                logger.reportError(522, 'Charged Items exceed 50 limit. Actual count: ' + chargedObj[key].length);
+              }
 
-            for (var itemKey in chargedObj[key]) {
-              if (chargedObj[key].hasOwnProperty(itemKey)) {
-                // since default array implementation could be overridden - e.g. Teabox site
-                if (!isObject(chargedObj[key][itemKey]) || !isEventStructureFlat(chargedObj[key][itemKey])) {
-                  return false;
+              for (var itemKey in chargedObj[key]) {
+                if (chargedObj[key].hasOwnProperty(itemKey)) {
+                  // since default array implementation could be overridden - e.g. Teabox site
+                  if (!isObject(chargedObj[key][itemKey]) || !isEventStructureFlat(chargedObj[key][itemKey])) {
+                    return false;
+                  }
                 }
               }
-            }
-          } else {
-            if (isObject(chargedObj[key]) || Array.isArray(chargedObj[key])) {
-              return false;
-            } else if (isDateObject(chargedObj[key])) {
-              chargedObj[key] = convertToWZRKDate(chargedObj[key]);
+            } else {
+              if (isObject(chargedObj[key]) || Array.isArray(chargedObj[key])) {
+                return false;
+              } else if (isDateObject(chargedObj[key])) {
+                chargedObj[key] = convertToWZRKDate(chargedObj[key]);
+              }
             }
           }
         }
-      }
 
-      if (isString(chargedObj[CHARGED_ID]) || isNumber(chargedObj[CHARGED_ID])) {
-        // save charged Id
-        const chargedId = chargedObj[CHARGED_ID] + ''; // casting chargedId to string
+        if (isString(chargedObj[CHARGED_ID]) || isNumber(chargedObj[CHARGED_ID])) {
+          // save charged Id
+          var chargedId = chargedObj[CHARGED_ID] + ''; // casting chargedId to string
 
-        if (typeof _globalChargedId === 'undefined') {
-          _globalChargedId = StorageManager.readFromLSorCookie(CHARGEDID_COOKIE_NAME);
+          if (typeof _globalChargedId === 'undefined') {
+            _globalChargedId = yield StorageManager.readFromLSorCookie(CHARGEDID_COOKIE_NAME);
+          }
+
+          if (typeof _globalChargedId !== 'undefined' && _globalChargedId.trim() === chargedId.trim()) {
+            // drop event- duplicate charged id
+            logger.error('Duplicate charged Id - Dropped' + chargedObj);
+            return false;
+          }
+
+          _globalChargedId = chargedId;
+          yield StorageManager.saveToLSorCookie(CHARGEDID_COOKIE_NAME, chargedId);
         }
 
-        if (typeof _globalChargedId !== 'undefined' && _globalChargedId.trim() === chargedId.trim()) {
-          // drop event- duplicate charged id
-          logger.error('Duplicate charged Id - Dropped' + chargedObj);
-          return false;
-        }
-
-        _globalChargedId = chargedId;
-        StorageManager.saveToLSorCookie(CHARGEDID_COOKIE_NAME, chargedId);
-      }
-
-      return true;
-    } // if object (chargedObject)
+        return true;
+      } // if object (chargedObject)
 
 
-    return false;
-  };
+      return false;
+    });
+
+    return function isChargedEventStructureValid(_x, _x2) {
+      return _ref.apply(this, arguments);
+    };
+  }();
 
   var _logger$8 = _classPrivateFieldLooseKey("logger");
 
@@ -8000,7 +8610,7 @@
 
   class EventHandler extends Array {
     constructor(_ref, values) {
-      let {
+      var {
         logger,
         request,
         isPersonalisationActive
@@ -8066,8 +8676,8 @@
         return;
       }
 
-      const evtObj = $ct.globalEventsMap[evtName];
-      const respObj = {};
+      var evtObj = $ct.globalEventsMap[evtName];
+      var respObj = {};
 
       if (typeof evtObj !== 'undefined') {
         respObj.firstTime = new Date(evtObj[1] * 1000);
@@ -8079,84 +8689,94 @@
 
   }
 
-  var _processEventArray2 = function _processEventArray2(eventsArr) {
-    if (Array.isArray(eventsArr)) {
-      while (eventsArr.length > 0) {
-        var eventName = eventsArr.shift();
+  var _processEventArray2 = /*#__PURE__*/function () {
+    var _processEventArray3 = _asyncToGenerator(function* (eventsArr) {
+      if (Array.isArray(eventsArr)) {
+        while (eventsArr.length > 0) {
+          var eventName = eventsArr.shift();
 
-        if (!isString(eventName)) {
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error(EVENT_ERROR);
+          if (!isString(eventName)) {
+            _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].error(EVENT_ERROR);
 
-          continue;
-        }
-
-        if (eventName.length > 1024) {
-          eventName = eventName.substring(0, 1024);
-
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(510, eventName + '... length exceeded 1024 chars. Trimmed.');
-        }
-
-        if (SYSTEM_EVENTS.includes(eventName)) {
-          _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(513, eventName + ' is a restricted system event. It cannot be used as an event name.');
-
-          continue;
-        }
-
-        const data = {};
-        data.type = 'event';
-        data.evtName = sanitize(eventName, unsupportedKeyCharRegex);
-
-        if (eventsArr.length !== 0) {
-          const eventObj = eventsArr.shift();
-
-          if (!isObject(eventObj)) {
-            // put it back if it is not an object
-            eventsArr.unshift(eventObj);
-          } else {
-            // check Charged Event vs. other events.
-            if (eventName === 'Charged') {
-              if (!isChargedEventStructureValid(eventObj, _classPrivateFieldLooseBase(this, _logger$8)[_logger$8])) {
-                _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(511, 'Charged event structure invalid. Not sent.');
-
-                continue;
-              }
-            } else {
-              if (!isEventStructureFlat(eventObj)) {
-                _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(512, eventName + ' event structure invalid. Not sent.');
-
-                continue;
-              }
-            }
-
-            data.evtData = eventObj;
+            continue;
           }
-        }
 
-        _classPrivateFieldLooseBase(this, _request$6)[_request$6].processEvent(data);
+          if (eventName.length > 1024) {
+            eventName = eventName.substring(0, 1024);
+
+            _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(510, eventName + '... length exceeded 1024 chars. Trimmed.');
+          }
+
+          if (SYSTEM_EVENTS.includes(eventName)) {
+            _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(513, eventName + ' is a restricted system event. It cannot be used as an event name.');
+
+            continue;
+          }
+
+          var data = {};
+          data.type = 'event';
+          data.evtName = sanitize(eventName, unsupportedKeyCharRegex);
+
+          if (eventsArr.length !== 0) {
+            var eventObj = eventsArr.shift();
+
+            if (!isObject(eventObj)) {
+              // put it back if it is not an object
+              eventsArr.unshift(eventObj);
+            } else {
+              // check Charged Event vs. other events.
+              if (eventName === 'Charged') {
+                var isValid = yield isChargedEventStructureValid(eventObj, _classPrivateFieldLooseBase(this, _logger$8)[_logger$8]);
+
+                if (!isValid) {
+                  _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(511, 'Charged event structure invalid. Not sent.');
+
+                  continue;
+                }
+              } else {
+                if (!isEventStructureFlat(eventObj)) {
+                  _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(512, eventName + ' event structure invalid. Not sent.');
+
+                  continue;
+                }
+              }
+
+              data.evtData = eventObj;
+            }
+          }
+
+          yield _classPrivateFieldLooseBase(this, _request$6)[_request$6].processEvent(data);
+        }
       }
+    });
+
+    function _processEventArray2(_x) {
+      return _processEventArray3.apply(this, arguments);
     }
-  };
+
+    return _processEventArray2;
+  }();
 
   /* eslint-disable */
-  const urlBase64ToUint8Array = base64String => {
-    let padding = '='.repeat((4 - base64String.length % 4) % 4);
-    let base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-    let rawData = window.atob(base64);
-    let processedData = [];
+  var urlBase64ToUint8Array = base64String => {
+    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    var rawData = window.atob(base64);
+    var processedData = [];
 
-    for (let i = 0; i < rawData.length; i++) {
+    for (var i = 0; i < rawData.length; i++) {
       processedData.push(rawData.charCodeAt(i));
     }
 
     return new Uint8Array(processedData);
   };
-  const compressData = (dataObject, logger) => {
+  var compressData = (dataObject, logger) => {
     logger && typeof logger.debug === 'function' && logger.debug('dobj:' + dataObject);
     return compressToBase64(dataObject);
   };
-  const compress = uncompressed => {
+  var compress = uncompressed => {
     if (uncompressed == null) return '';
-    let i,
+    var i,
         value,
         context_dictionary = {},
         context_dictionaryToCreate = {},
@@ -8416,9 +9036,9 @@
 
     return context_data_string;
   };
-  const getKeyStr = () => {
-    let key = '';
-    let i = 0;
+  var getKeyStr = () => {
+    var key = '';
+    var i = 0;
 
     for (i = 0; i <= 25; i++) {
       key = key + String.fromCharCode(i + 65);
@@ -8435,8 +9055,8 @@
     return key + '+/=';
   };
 
-  const _keyStr = getKeyStr();
-  const compressToBase64 = input => {
+  var _keyStr = getKeyStr();
+  var compressToBase64 = input => {
     if (input == null) return '';
     var output = '';
     var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
@@ -8475,51 +9095,6 @@
     return output;
   };
 
-  const getURLParams = url => {
-    const urlParams = {};
-    const idx = url.indexOf('?');
-
-    if (idx > 1) {
-      const uri = url.substring(idx + 1);
-      let match;
-      const pl = /\+/g; // Regex for replacing addition symbol with a space
-
-      const search = /([^&=]+)=?([^&]*)/g;
-
-      const decode = function (s) {
-        let replacement = s.replace(pl, ' ');
-
-        try {
-          replacement = decodeURIComponent(replacement);
-        } catch (e) {// eat
-        }
-
-        return replacement;
-      };
-
-      match = search.exec(uri);
-
-      while (match) {
-        urlParams[decode(match[1])] = decode(match[2]);
-        match = search.exec(uri);
-      }
-    }
-
-    return urlParams;
-  };
-  const getDomain = url => {
-    if (url === '') return '';
-    var a = document.createElement('a');
-    a.href = url;
-    return a.hostname;
-  };
-  const addToURL = (url, k, v) => {
-    return url + '&' + k + '=' + encodeURIComponent(v);
-  };
-  const getHostName = () => {
-    return window.location.hostname;
-  };
-
   var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
 
   var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
@@ -8541,7 +9116,11 @@
      * @param {boolean} sendOULFlag
      */
     static fireRequest(url, skipARP, sendOULFlag, evtName) {
-      _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
+      var _this = this;
+
+      return _asyncToGenerator(function* () {
+        yield _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
+      })();
     }
 
     getDelayFrequency() {
@@ -8560,7 +9139,7 @@
         return PUSH_DELAY_MS;
       } else {
         // Retry with delay as minimum delay frequency and add random number of seconds to scatter traffic
-        const randomDelay = (Math.floor(Math.random() * 10) + 1) * 1000;
+        var randomDelay = (Math.floor(Math.random() * 10) + 1) * 1000;
         this.minDelayFrequency += randomDelay;
 
         if (this.minDelayFrequency < MAX_DELAY_FREQUENCY) {
@@ -8577,29 +9156,47 @@
 
   }
 
-  var _addARPToRequest2 = function _addARPToRequest2(url, skipResARP) {
-    if (skipResARP === true) {
-      const _arp = {};
-      _arp.skipResARP = true;
-      return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger));
+  var _addARPToRequest2 = /*#__PURE__*/function () {
+    var _addARPToRequest3 = _asyncToGenerator(function* (url, skipResARP) {
+      if (skipResARP === true) {
+        var _arp = {};
+        _arp.skipResARP = true;
+        return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger));
+      }
+
+      var arpValue = yield StorageManager.readFromLSorCookie(ARP_COOKIE);
+
+      if (typeof arpValue !== 'undefined' && arpValue !== null) {
+        return addToURL(url, 'arp', compressData(JSON.stringify(arpValue), this.logger));
+      }
+
+      return url;
+    });
+
+    function _addARPToRequest2(_x, _x2) {
+      return _addARPToRequest3.apply(this, arguments);
     }
 
-    if (StorageManager._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
-      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE)), this.logger));
+    return _addARPToRequest2;
+  }();
+
+  var _addUseIPToRequest2 = /*#__PURE__*/function () {
+    var _addUseIPToRequest3 = _asyncToGenerator(function* (pageLoadUrl) {
+      var useIP = yield StorageManager.getMetaProp(USEIP_KEY);
+
+      if (typeof useIP !== 'boolean') {
+        useIP = false;
+      }
+
+      return addToURL(pageLoadUrl, USEIP_KEY, useIP ? 'true' : 'false');
+    });
+
+    function _addUseIPToRequest2(_x3) {
+      return _addUseIPToRequest3.apply(this, arguments);
     }
 
-    return url;
-  };
-
-  var _addUseIPToRequest2 = function _addUseIPToRequest2(pageLoadUrl) {
-    var useIP = StorageManager.getMetaProp(USEIP_KEY);
-
-    if (typeof useIP !== 'boolean') {
-      useIP = false;
-    }
-
-    return addToURL(pageLoadUrl, USEIP_KEY, useIP ? 'true' : 'false');
-  };
+    return _addUseIPToRequest2;
+  }();
 
   var _dropRequestDueToOptOut2 = function _dropRequestDueToOptOut2() {
     if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
@@ -8610,98 +9207,133 @@
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH;
   };
 
-  var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
-    var _window$location$orig, _window, _window$location, _window2, _window2$location, _window$clevertap, _window$wizrocket;
+  var _fireRequest2 = /*#__PURE__*/function () {
+    var _fireRequest3 = _asyncToGenerator(function* (url, tries, skipARP, sendOULFlag, evtName) {
+      var _this2 = this;
 
-    if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
-      this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
-      return;
-    } // set a request in progress
-    // so that if gcookie is not present, no other request can be made asynchronusly
-
-
-    if (!isValueValid(this.device.gcookie)) {
-      $ct.blockRequest = true;
-    }
-    /**
-     * if the gcookie is null
-     * and the request is not the first request
-     * and the tries are less than max tries
-     * keep retrying
-     */
-
-
-    if (evtName && evtName === WZRK_FETCH) {
-      // New retry mechanism
-      if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) {
-        setTimeout(() => {
-          this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(this.networkRetryCount));
-
-          _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, undefined, skipARP, sendOULFlag);
-        }, this.getDelayFrequency());
-      }
-    } else {
-      if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
-        // if ongoing First Request is in progress, initiate retry
-        setTimeout(() => {
-          this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
-
-          _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
-        }, 50);
+      if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
+        this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
         return;
+      } // set a request in progress
+      // so that if gcookie is not present, no other request can be made asynchronusly
+
+
+      if (!isValueValid(this.device.gcookie)) {
+        $ct.blockRequest = true;
       }
-    } // set isOULInProgress to true
-    // when sendOULFlag is set to true
+      /**
+       * if the gcookie is null
+       * and the request is not the first request
+       * and the tries are less than max tries
+       * keep retrying
+       */
 
 
-    if (!sendOULFlag) {
-      if (isValueValid(this.device.gcookie)) {
-        // add gcookie to url
-        url = addToURL(url, 'gc', this.device.gcookie);
+      if (evtName && evtName === WZRK_FETCH) {
+        // New retry mechanism
+        if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) {
+          setTimeout(() => {
+            this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(this.networkRetryCount));
+
+            _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, undefined, skipARP, sendOULFlag);
+          }, this.getDelayFrequency());
+        }
+      } else {
+        var _window$location$orig, _window, _window$location, _window2, _window2$location;
+
+        if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
+          // if ongoing First Request is in progress, initiate retry
+          setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
+            _this2.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
+
+            yield _classPrivateFieldLooseBase(_this2, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
+          }), 50);
+          return;
+        } // set isOULInProgress to true
+        // when sendOULFlag is set to true
+
+
+        if (!sendOULFlag) {
+          if (isValueValid(this.device.gcookie)) {
+            // add gcookie to url
+            url = addToURL(url, 'gc', this.device.gcookie);
+          }
+
+          url = yield _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
+        } else {
+          globalWindow.isOULInProgress = true;
+        }
+
+        url = addToURL(url, 'tries', tries); // Add tries to URL
+
+        url = addToURL(url, 'origin', (_window$location$orig = (_window = window) === null || _window === void 0 ? void 0 : (_window$location = _window.location) === null || _window$location === void 0 ? void 0 : _window$location.origin) !== null && _window$location$orig !== void 0 ? _window$location$orig : (_window2 = window) === null || _window2 === void 0 ? void 0 : (_window2$location = _window2.location) === null || _window2$location === void 0 ? void 0 : _window2$location.href); // Add origin to URL
+
+        url = yield _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
+        url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
+
+        if (url.indexOf('chrome-extension:') !== -1) {
+          url = url.replace('chrome-extension:', 'https:');
+        }
+
+        if (mode.mode === 'WEB') {
+          var _window$clevertap, _window$wizrocket;
+
+          // TODO: Figure out a better way to handle plugin check
+          if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
+            // used to add plugin name in request parameter
+            var plugin = window.clevertap.plugin || window.wizrocket.plugin;
+            url = addToURL(url, 'ct_pl', plugin);
+          } // TODO: Try using Function constructor instead of appending script.
+
+
+          var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
+
+          while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+            ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
+          }
+
+          var s = document.createElement('script');
+          s.setAttribute('type', 'text/javascript');
+          s.setAttribute('src', url);
+          s.setAttribute('class', 'ct-jp-cb');
+          s.setAttribute('rel', 'nofollow');
+          s.async = true;
+          document.getElementsByTagName('head')[0].appendChild(s);
+        } else {
+          fetch(url, {
+            headers: {
+              accept: 'application/json'
+            }
+          }).then(res => res.json()).then( /*#__PURE__*/_asyncToGenerator(function* () {
+            if (response.arp) {
+              yield arp(response.arp);
+            }
+
+            if (response.meta) {
+              yield clevertapApi.s(response.meta.g, // cookie
+              response.meta.sid, // session id
+              response.meta.rf, // resume
+              response.meta.rn // response number for backup manager
+              );
+            }
+          }));
+        }
+
+        this.logger.debug('req snt -> url: ' + url);
       }
+    });
 
-      url = _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
-    } else {
-      window.isOULInProgress = true;
+    function _fireRequest2(_x4, _x5, _x6, _x7, _x8) {
+      return _fireRequest3.apply(this, arguments);
     }
 
-    url = addToURL(url, 'tries', tries); // Add tries to URL
-
-    url = addToURL(url, 'origin', (_window$location$orig = (_window = window) === null || _window === void 0 ? void 0 : (_window$location = _window.location) === null || _window$location === void 0 ? void 0 : _window$location.origin) !== null && _window$location$orig !== void 0 ? _window$location$orig : (_window2 = window) === null || _window2 === void 0 ? void 0 : (_window2$location = _window2.location) === null || _window2$location === void 0 ? void 0 : _window2$location.href); // Add origin to URL
-
-    url = _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
-    url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
-    // TODO: Figure out a better way to handle plugin check
-
-    if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
-      // used to add plugin name in request parameter
-      const plugin = window.clevertap.plugin || window.wizrocket.plugin;
-      url = addToURL(url, 'ct_pl', plugin);
-    }
-
-    if (url.indexOf('chrome-extension:') !== -1) {
-      url = url.replace('chrome-extension:', 'https:');
-    } // TODO: Try using Function constructor instead of appending script.
-
-
-    var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
-
-    while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
-      ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
-    }
-
-    const s = document.createElement('script');
-    s.setAttribute('type', 'text/javascript');
-    s.setAttribute('src', url);
-    s.setAttribute('class', 'ct-jp-cb');
-    s.setAttribute('rel', 'nofollow');
-    s.async = true;
-    document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url);
-  };
+    return _fireRequest2;
+  }();
 
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
+  RequestDispatcher.mode = void 0;
+  RequestDispatcher.api = void 0;
   RequestDispatcher.account = void 0;
   Object.defineProperty(RequestDispatcher, _fireRequest, {
     value: _fireRequest2
@@ -8716,8 +9348,8 @@
     value: _addARPToRequest2
   });
 
-  const invokeExternalJs = (jsFunc, targetingMsgJson) => {
-    const func = window.parent[jsFunc];
+  var invokeExternalJs = (jsFunc, targetingMsgJson) => {
+    var func = window.parent[jsFunc];
 
     if (typeof func === 'function') {
       if (targetingMsgJson.display.kv != null) {
@@ -8727,22 +9359,22 @@
       }
     }
   };
-  const appendScriptForCustomEvent = (targetingMsgJson, html) => {
-    const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
+  var appendScriptForCustomEvent = (targetingMsgJson, html) => {
+    var script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
     return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
   };
-  const staleDataUpdate = (staledata, campType) => {
-    const campObj = getCampaignObject();
-    const globalObj = campObj[campType].global;
+  var staleDataUpdate = (staledata, campType) => {
+    var campObj = getCampaignObject();
+    var globalObj = campObj[campType].global;
 
     if (globalObj != null && campType) {
-      for (const idx in staledata) {
+      for (var idx in staledata) {
         if (staledata.hasOwnProperty(idx)) {
           delete globalObj[staledata[idx]];
 
           if (StorageManager.read(CAMP_COOKIE_G)) {
-            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+            var guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+            var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
 
             if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
               delete guidCampObj[guid][campType][staledata[idx]];
@@ -8755,7 +9387,7 @@
 
     saveCampaignObject(campObj);
   };
-  const mergeEventMap = newEvtMap => {
+  var mergeEventMap = newEvtMap => {
     if ($ct.globalEventsMap == null) {
       $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
 
@@ -8765,10 +9397,10 @@
       }
     }
 
-    for (const key in newEvtMap) {
+    for (var key in newEvtMap) {
       if (newEvtMap.hasOwnProperty(key)) {
-        const oldEvtObj = $ct.globalEventsMap[key];
-        const newEvtObj = newEvtMap[key];
+        var oldEvtObj = $ct.globalEventsMap[key];
+        var newEvtObj = newEvtMap[key];
 
         if ($ct.globalEventsMap[key] != null) {
           if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
@@ -8780,8 +9412,8 @@
       }
     }
   };
-  const incrementImpression = (targetingMsgJson, _request) => {
-    const data = {};
+  var incrementImpression = (targetingMsgJson, _request) => {
+    var data = {};
     data.type = 'event';
     data.evtName = NOTIFICATION_VIEWED;
     data.evtData = {
@@ -8789,17 +9421,17 @@
     };
 
     if (targetingMsgJson.wzrk_pivot) {
-      data.evtData = { ...data.evtData,
+      data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
         wzrk_pivot: targetingMsgJson.wzrk_pivot
-      };
+      });
     }
 
     _request.processEvent(data);
   };
-  const setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session) => {
+  var setupClickEvent = (onClick, targetingMsgJson, contentDiv, divId, isLegacy, _device, _session) => {
     if (onClick !== '' && onClick != null) {
-      let ctaElement;
-      let jsCTAElements;
+      var ctaElement;
+      var jsCTAElements;
 
       if (isLegacy) {
         ctaElement = contentDiv;
@@ -8811,8 +9443,8 @@
         }
       }
 
-      const jsFunc = targetingMsgJson.display.jsFunc;
-      const isPreview = targetingMsgJson.display.preview;
+      var jsFunc = targetingMsgJson.display.jsFunc;
+      var isPreview = targetingMsgJson.display.preview;
 
       if (isPreview == null) {
         onClick += getCookieParams(_device, _session);
@@ -8831,8 +9463,8 @@
 
             closeIframe('-1', divId, _session.sessionId);
           } else {
-            const rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
-            const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+            var rValue = targetingMsgJson.display.preview ? targetingMsgJson.display.onClick : new URL(targetingMsgJson.display.onClick).searchParams.get('r');
+            var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
 
             if (rValue === 'pushPrompt') {
               if (!targetingMsgJson.display.preview) {
@@ -8874,14 +9506,14 @@
       }
     }
   };
-  const getCookieParams = (_device, _session) => {
-    const gcookie = _device.getGuid();
+  var getCookieParams = (_device, _session) => {
+    var gcookie = _device.getGuid();
 
-    const scookieObj = _session.getSessionCookieObject();
+    var scookieObj = _session.getSessionCookieObject();
 
     return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
   };
-  const webNativeDisplayCampaignUtils = {
+  var webNativeDisplayCampaignUtils = {
     /**
      * Checks if a campaign triggers a custom event push based on its template type.
      *
@@ -8933,11 +9565,11 @@
     getCampaignNodes: campaign => {
       var _display$details, _display$details$, _display$details$$sel, _display$details$$sel2;
 
-      const {
+      var {
         msgContent,
         display
       } = campaign;
-      const {
+      var {
         type
       } = msgContent;
 
@@ -8971,12 +9603,12 @@
     shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets) {
       var _targetNotif$msgConte2, _currentSameTypeCampa, _targetNotif$display, _targetNotif$display$;
 
-      const currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => {
+      var currentSameTypeCampaigns = executedTargets.customEvents.filter(customEvent => {
         var _targetNotif$msgConte;
 
         return customEvent.customEventType === (targetNotif === null || targetNotif === void 0 ? void 0 : (_targetNotif$msgConte = targetNotif.msgContent) === null || _targetNotif$msgConte === void 0 ? void 0 : _targetNotif$msgConte.type);
       });
-      let shouldSkip = false; // If KV Pair, check for topic and type
+      var shouldSkip = false; // If KV Pair, check for topic and type
       // if visual builder or JSON, just check for the type of event, because we do not have `topic`
 
       if (currentSameTypeCampaigns === null || currentSameTypeCampaigns === void 0 ? void 0 : currentSameTypeCampaigns.length) {
@@ -9009,7 +9641,7 @@
     }
 
   };
-  const deliveryPreferenceUtils = {
+  var deliveryPreferenceUtils = {
     /**
      * Updates a frequency counter object based on the given array.
      * If a key from the array exists in the object, its value is incremented.
@@ -9027,7 +9659,7 @@
      * console.log(freq); // { a: 2, b: 2, c: 1 }
      */
     updateFrequencyCounter(arr) {
-      let obj = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      var obj = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
       if (!arr || arr.length === 0) {
         return obj;
@@ -9057,13 +9689,13 @@
      * // { a: [1712134567, 1712134570], b: [1712134567, 1712134570], c: [1712134567] }
      */
     updateTimestampTracker(arr) {
-      let obj = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      var obj = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
       if (!arr || arr.length === 0) {
         return obj;
       }
 
-      const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds (Epoch UTC)
+      var now = Math.floor(Date.now() / 1000); // Current timestamp in seconds (Epoch UTC)
 
       arr.forEach(key => {
         if (!obj[key]) {
@@ -9094,51 +9726,52 @@
       var _existingCamp$wp, _existingCamp$wp2;
 
       // TODO: Add the campaignId keys which has value as `dnd` to the `dnd` array
-      const existingCamp = getCampaignObject();
-      const dnd = [];
+      var existingCamp = getCampaignObject();
+      var dnd = [];
       /* If no campaigns are present, then we don't need to port anything */
 
       if (!(existingCamp === null || existingCamp === void 0 ? void 0 : existingCamp.wp) || Object.keys(existingCamp === null || existingCamp === void 0 ? void 0 : existingCamp.wp).length === 0) {
         return;
       }
 
-      const webPopupGlobalDetails = (existingCamp === null || existingCamp === void 0 ? void 0 : (_existingCamp$wp = existingCamp.wp) === null || _existingCamp$wp === void 0 ? void 0 : _existingCamp$wp.global) || {};
-      const webPopupSessionDetails = (existingCamp === null || existingCamp === void 0 ? void 0 : (_existingCamp$wp2 = existingCamp.wp) === null || _existingCamp$wp2 === void 0 ? void 0 : _existingCamp$wp2[_session.sessionId]) || {};
-      const campaignIds = Object.keys(webPopupGlobalDetails);
+      var webPopupGlobalDetails = (existingCamp === null || existingCamp === void 0 ? void 0 : (_existingCamp$wp = existingCamp.wp) === null || _existingCamp$wp === void 0 ? void 0 : _existingCamp$wp.global) || {};
+      var webPopupSessionDetails = (existingCamp === null || existingCamp === void 0 ? void 0 : (_existingCamp$wp2 = existingCamp.wp) === null || _existingCamp$wp2 === void 0 ? void 0 : _existingCamp$wp2[_session.sessionId]) || {};
+      var campaignIds = Object.keys(webPopupGlobalDetails);
 
-      for (const campaignId of campaignIds) {
+      for (var campaignId of campaignIds) {
         if (campaignId !== 'tc') {
-          const globalCampaignCount = webPopupGlobalDetails[campaignId];
-          const sessionCampaignCount = webPopupSessionDetails[campaignId];
+          var globalCampaignCount = webPopupGlobalDetails[campaignId];
+          var sessionCampaignCount = webPopupSessionDetails[campaignId];
 
           if (sessionCampaignCount === 'dnd') {
             dnd.push(campaignId);
           }
 
-          const updatedCamp = deliveryPreferenceUtils.portCampaignDetails(campaignId, sessionCampaignCount, globalCampaignCount);
-          saveCampaignObject(updatedCamp);
+          var _updatedCamp = deliveryPreferenceUtils.portCampaignDetails(campaignId, sessionCampaignCount, globalCampaignCount);
+
+          saveCampaignObject(_updatedCamp);
         }
       }
 
-      const updatedCamp = getCampaignObject();
-      saveCampaignObject({ ...updatedCamp,
+      var updatedCamp = getCampaignObject();
+      saveCampaignObject(_objectSpread2(_objectSpread2({}, updatedCamp), {}, {
         dnd: [...new Set([...(updatedCamp.dnd || []), ...dnd])],
         wp: {}
-      });
+      }));
     },
 
     portCampaignDetails(campaignId, sessionCount, globalCount) {
       var _campaignObj$wsc;
 
       /* If we have a dnd count for sesion then we will default its count to globalCount */
-      const sCount = sessionCount === 'dnd' ? globalCount : sessionCount;
-      const campaignObj = getCampaignObject(); // Ensure campaignObj and campaignObj.wfc exist
+      var sCount = sessionCount === 'dnd' ? globalCount : sessionCount;
+      var campaignObj = getCampaignObject(); // Ensure campaignObj and campaignObj.wfc exist
 
       campaignObj.wfc = campaignObj.wfc || {}; // Fallback to an empty array if campaignObj.wfc[campaignId] is undefined
 
-      const existingTimestamps = Array.isArray(campaignObj.wfc[campaignId]) ? campaignObj.wfc[campaignId] : []; // Generate new timestamps safely
+      var existingTimestamps = Array.isArray(campaignObj.wfc[campaignId]) ? campaignObj.wfc[campaignId] : []; // Generate new timestamps safely
 
-      let newTimestamps = [];
+      var newTimestamps = [];
 
       try {
         newTimestamps = deliveryPreferenceUtils.generateTimestamps(globalCount, sCount);
@@ -9147,9 +9780,9 @@
       } // Safely update the object
 
 
-      campaignObj.wfc = { ...campaignObj.wfc,
+      campaignObj.wfc = _objectSpread2(_objectSpread2({}, campaignObj.wfc), {}, {
         [campaignId]: [...existingTimestamps, ...newTimestamps]
-      };
+      });
       /* Or tc can also be used to assign once */
 
       campaignObj.wsc = ((_campaignObj$wsc = campaignObj === null || campaignObj === void 0 ? void 0 : campaignObj.wsc) !== null && _campaignObj$wsc !== void 0 ? _campaignObj$wsc : 0) + globalCount;
@@ -9168,18 +9801,18 @@
      */
     generateTimestamps(globalCount, sessionCount) {
       try {
-        const now = Math.floor(Date.now() / 1000);
-        const oneDay = 24 * 60 * 60; // (globalCount - sessionCount) timestamps: today - 1 day + 1ms, today - 1 day + 2ms, ...
+        var now = Math.floor(Date.now() / 1000);
+        var oneDay = 24 * 60 * 60; // (globalCount - sessionCount) timestamps: today - 1 day + 1ms, today - 1 day + 2ms, ...
 
-        const pastDays = Array.from({
+        var pastDays = Array.from({
           length: globalCount - sessionCount
         }, (_, i) => now - oneDay + (i + 1)); // a timestamps: today, today + 1ms, today + 2ms, ...
 
-        const recentMs = Array.from({
+        var recentMs = Array.from({
           length: sessionCount
         }, (_, i) => now + i + 1);
         return [...recentMs, ...pastDays];
-      } catch {
+      } catch (_unused) {
         return [];
       }
     },
@@ -9187,15 +9820,15 @@
     isPopupCampaignAlreadyShown(campaignId) {
       var _campaignObj$wfc;
 
-      const campaignObj = getCampaignObject();
-      const campaignDetails = campaignObj === null || campaignObj === void 0 ? void 0 : (_campaignObj$wfc = campaignObj.wfc) === null || _campaignObj$wfc === void 0 ? void 0 : _campaignObj$wfc[campaignId];
+      var campaignObj = getCampaignObject();
+      var campaignDetails = campaignObj === null || campaignObj === void 0 ? void 0 : (_campaignObj$wfc = campaignObj.wfc) === null || _campaignObj$wfc === void 0 ? void 0 : _campaignObj$wfc[campaignId];
       return (campaignDetails === null || campaignDetails === void 0 ? void 0 : campaignDetails.length) > 0;
     },
 
     isCampaignAddedToDND(campaignId) {
       var _campaignObj$dnd;
 
-      const campaignObj = getCampaignObject();
+      var campaignObj = getCampaignObject();
       return campaignObj === null || campaignObj === void 0 ? void 0 : (_campaignObj$dnd = campaignObj.dnd) === null || _campaignObj$dnd === void 0 ? void 0 : _campaignObj$dnd.includes(campaignId);
     },
 
@@ -9203,24 +9836,24 @@
       var _getCampaignObject$wi, _getCampaignObject, _getCampaignObject$wp, _getCampaignObject2, _getCampaignObject$ws, _getCampaignObject3, _getCampaignObject$wn, _getCampaignObject4;
 
       // If the guid is present in CAMP_G retain it instead of using the CAMP
-      const globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-      const currentIdCamp = globalCamp === null || globalCamp === void 0 ? void 0 : globalCamp[device === null || device === void 0 ? void 0 : device.gcookie];
-      let campaignObj = currentIdCamp || getCampaignObject();
-      const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc);
-      const wndoc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wndtq, campaignObj.wndoc); // If we are retreiving CAMP_G data, we can not retain details on web inbox as they are only session based.
+      var globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+      var currentIdCamp = globalCamp === null || globalCamp === void 0 ? void 0 : globalCamp[device === null || device === void 0 ? void 0 : device.gcookie];
+      var campaignObj = currentIdCamp || getCampaignObject();
+      var woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc);
+      var wndoc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wndtq, campaignObj.wndoc); // If we are retreiving CAMP_G data, we can not retain details on web inbox as they are only session based.
 
-      const wi = (_getCampaignObject$wi = (_getCampaignObject = getCampaignObject()) === null || _getCampaignObject === void 0 ? void 0 : _getCampaignObject.wi) !== null && _getCampaignObject$wi !== void 0 ? _getCampaignObject$wi : {};
-      const wp = (_getCampaignObject$wp = (_getCampaignObject2 = getCampaignObject()) === null || _getCampaignObject2 === void 0 ? void 0 : _getCampaignObject2.wp) !== null && _getCampaignObject$wp !== void 0 ? _getCampaignObject$wp : {};
-      const wsc = (_getCampaignObject$ws = (_getCampaignObject3 = getCampaignObject()) === null || _getCampaignObject3 === void 0 ? void 0 : _getCampaignObject3.wsc) !== null && _getCampaignObject$ws !== void 0 ? _getCampaignObject$ws : 0;
-      const wndsc = (_getCampaignObject$wn = (_getCampaignObject4 = getCampaignObject()) === null || _getCampaignObject4 === void 0 ? void 0 : _getCampaignObject4.wndsc) !== null && _getCampaignObject$wn !== void 0 ? _getCampaignObject$wn : 0;
-      campaignObj = { ...campaignObj,
+      var wi = (_getCampaignObject$wi = (_getCampaignObject = getCampaignObject()) === null || _getCampaignObject === void 0 ? void 0 : _getCampaignObject.wi) !== null && _getCampaignObject$wi !== void 0 ? _getCampaignObject$wi : {};
+      var wp = (_getCampaignObject$wp = (_getCampaignObject2 = getCampaignObject()) === null || _getCampaignObject2 === void 0 ? void 0 : _getCampaignObject2.wp) !== null && _getCampaignObject$wp !== void 0 ? _getCampaignObject$wp : {};
+      var wsc = (_getCampaignObject$ws = (_getCampaignObject3 = getCampaignObject()) === null || _getCampaignObject3 === void 0 ? void 0 : _getCampaignObject3.wsc) !== null && _getCampaignObject$ws !== void 0 ? _getCampaignObject$ws : 0;
+      var wndsc = (_getCampaignObject$wn = (_getCampaignObject4 = getCampaignObject()) === null || _getCampaignObject4 === void 0 ? void 0 : _getCampaignObject4.wndsc) !== null && _getCampaignObject$wn !== void 0 ? _getCampaignObject$wn : 0;
+      campaignObj = _objectSpread2(_objectSpread2({}, campaignObj), {}, {
         woc,
         wndoc,
         wi,
         wp,
         wsc,
         wndsc
-      };
+      });
       saveCampaignObject(campaignObj);
     },
 
@@ -9232,13 +9865,13 @@
      * @returns {number} The new daily count (incremented from previous or reset to 1)
      */
     getDailyCount(campaignObj, dailyCountKey) {
-      const DATE_TRACKER_KEY = 'ct_daily_date_tracker';
-      const today = new Date().toISOString().split('T')[0];
-      let storedDate = null;
+      var DATE_TRACKER_KEY = 'ct_daily_date_tracker';
+      var today = new Date().toISOString().split('T')[0];
+      var storedDate = null;
       storedDate = localStorage.getItem(DATE_TRACKER_KEY); // Get current count
 
-      const storedCount = typeof campaignObj[dailyCountKey] === 'number' ? campaignObj[dailyCountKey] : 0;
-      let newDailyCount;
+      var storedCount = typeof campaignObj[dailyCountKey] === 'number' ? campaignObj[dailyCountKey] : 0;
+      var newDailyCount;
 
       if (storedDate !== today) {
         newDailyCount = 1;
@@ -9270,19 +9903,19 @@
     clearStaleCampaigns(msg, logger) {
       try {
         // Get current campaign object
-        const campaignObject = getCampaignObject();
+        var campaignObject = getCampaignObject();
 
         if (!campaignObject) {
           logger.debug('No campaign object found');
           return;
         }
 
-        let modified = false; // Handle inbox_stale campaigns - clear wfc and woc entries
+        var modified = false; // Handle inbox_stale campaigns - clear wfc and woc entries
 
         if (msg.inbox_stale && Array.isArray(msg.inbox_stale)) {
           logger.debug("Processing ".concat(msg.inbox_stale.length, " inbox stale campaigns"));
 
-          for (const campaignId of msg.inbox_stale) {
+          for (var campaignId of msg.inbox_stale) {
             // Clear wfc entry
             if (campaignObject.wfc && campaignObject.wfc[campaignId]) {
               delete campaignObject.wfc[campaignId];
@@ -9303,18 +9936,18 @@
         if (msg.native_display_stale && Array.isArray(msg.native_display_stale)) {
           logger.debug("Processing ".concat(msg.native_display_stale.length, " native display stale campaigns"));
 
-          for (const campaignId of msg.native_display_stale) {
+          for (var _campaignId of msg.native_display_stale) {
             // Clear wndfc entry
-            if (campaignObject.wndfc && campaignObject.wndfc[campaignId]) {
-              delete campaignObject.wndfc[campaignId];
-              logger.debug("Cleared wndfc entry for campaign ".concat(campaignId));
+            if (campaignObject.wndfc && campaignObject.wndfc[_campaignId]) {
+              delete campaignObject.wndfc[_campaignId];
+              logger.debug("Cleared wndfc entry for campaign ".concat(_campaignId));
               modified = true;
             } // Clear wndoc entry
 
 
-            if (campaignObject.wndoc && campaignObject.wndoc[campaignId]) {
-              delete campaignObject.wndoc[campaignId];
-              logger.debug("Cleared wndoc entry for campaign ".concat(campaignId));
+            if (campaignObject.wndoc && campaignObject.wndoc[_campaignId]) {
+              delete campaignObject.wndoc[_campaignId];
+              logger.debug("Cleared wndoc entry for campaign ".concat(_campaignId));
               modified = true;
             }
           }
@@ -9335,10 +9968,10 @@
 
   };
   function addScriptTo(script) {
-    let target = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'body';
-    const targetEl = document.querySelector(target);
+    var target = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'body';
+    var targetEl = document.querySelector(target);
     if (!targetEl) return;
-    const newScript = document.createElement('script');
+    var newScript = document.createElement('script');
     newScript.textContent = script.textContent;
     if (script.src) newScript.src = script.src;
     newScript.async = script.async;
@@ -9353,35 +9986,36 @@
   function addCampaignToLocalStorage(campaign) {
     var _campaign$display3;
 
-    let region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'eu1';
-    let accountId = arguments.length > 2 ? arguments[2] : undefined;
+    var region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'eu1';
+    var accountId = arguments.length > 2 ? arguments[2] : undefined;
 
     /* No Need to store campaigns in local storage in preview mode */
     if ((campaign === null || campaign === void 0 ? void 0 : (_campaign$display3 = campaign.display) === null || _campaign$display3 === void 0 ? void 0 : _campaign$display3.preview) === true) {
       return;
     }
 
-    const campaignId = campaign.wzrk_id.split('_')[0];
-    const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
-    const enrichedCampaign = { ...campaign,
+    var campaignId = campaign.wzrk_id.split('_')[0];
+    var dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
+
+    var enrichedCampaign = _objectSpread2(_objectSpread2({}, campaign), {}, {
       url: dashboardUrl
-    };
-    const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
-    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
-    const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
+    });
+
+    var storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
+    var existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    var isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
 
     if (!isDuplicate) {
-      const updatedCampaigns = [...existingCampaigns, enrichedCampaign];
+      var updatedCampaigns = [...existingCampaigns, enrichedCampaign];
       StorageManager.saveToLSorCookie(QUALIFIED_CAMPAIGNS, encodeURIComponent(JSON.stringify(updatedCampaigns)));
     }
   }
 
-  // CleverTap specific utilities
-  const getCampaignObject = () => {
-    let finalcampObj = {};
+  var getCampaignObject = () => {
+    var finalcampObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
-      let campObj = StorageManager.read(CAMP_COOKIE_NAME);
+      var campObj = StorageManager.read(CAMP_COOKIE_NAME);
 
       if (campObj != null) {
         campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
@@ -9394,12 +10028,11 @@
     return finalcampObj;
   }; // Save Camp here
 
-  const saveCampaignObject = campaignObj => {
+  var saveCampaignObject = campaignObj => {
     if (StorageManager._isLocalStorageSupported()) {
-      const newObj = { ...getCampaignObject(),
-        ...campaignObj
-      };
-      const campObj = JSON.stringify(newObj);
+      var newObj = _objectSpread2(_objectSpread2({}, getCampaignObject()), campaignObj);
+
+      var campObj = JSON.stringify(newObj);
       StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj)); // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
 
       setCampaignObjectForGuid();
@@ -9416,7 +10049,7 @@
    * @returns {void}
    */
 
-  const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
+  var addDeliveryPreferenceDetails = (campaignDetails, logger) => {
     try {
       var _campaignDetails$disp, _campaignDetails$disp2, _campaignDetails$disp3;
 
@@ -9424,17 +10057,17 @@
         throw new Error('Invalid campaign details provided');
       }
 
-      const campaignObj = getCampaignObject() || {};
-      const campaignIdParts = campaignDetails.wzrk_id.split('_');
-      const campaignId = campaignIdParts[0];
-      const isCampaignExcludedFromFrequencyLimits = campaignDetails === null || campaignDetails === void 0 ? void 0 : (_campaignDetails$disp = campaignDetails.display) === null || _campaignDetails$disp === void 0 ? void 0 : _campaignDetails$disp.efc;
+      var campaignObj = getCampaignObject() || {};
+      var campaignIdParts = campaignDetails.wzrk_id.split('_');
+      var campaignId = campaignIdParts[0];
+      var isCampaignExcludedFromFrequencyLimits = campaignDetails === null || campaignDetails === void 0 ? void 0 : (_campaignDetails$disp = campaignDetails.display) === null || _campaignDetails$disp === void 0 ? void 0 : _campaignDetails$disp.efc;
 
       if (!campaignId) {
         throw new Error('Failed to parse campaign ID');
       }
 
-      const campaignType = campaignDetails === null || campaignDetails === void 0 ? void 0 : (_campaignDetails$disp2 = campaignDetails.display) === null || _campaignDetails$disp2 === void 0 ? void 0 : _campaignDetails$disp2.wtarget_type;
-      const campaignTypeConfig = {
+      var campaignType = campaignDetails === null || campaignDetails === void 0 ? void 0 : (_campaignDetails$disp2 = campaignDetails.display) === null || _campaignDetails$disp2 === void 0 ? void 0 : _campaignDetails$disp2.wtarget_type;
+      var campaignTypeConfig = {
         [CAMPAIGN_TYPES.FOOTER_NOTIFICATION]: {
           showCountKey: 'wsc',
           frequencyControlKey: 'wfc',
@@ -9446,22 +10079,22 @@
           dailyCountKey: 'wndmp'
         }
       };
-      const config = campaignTypeConfig[campaignType];
+      var config = campaignTypeConfig[campaignType];
 
       if (!config) {
         throw new Error("Unsupported campaign type: ".concat(campaignType));
       }
 
       if (!isCampaignExcludedFromFrequencyLimits) {
-        const showCountKey = config.showCountKey;
-        const dailyCountKey = config.dailyCountKey;
-        const currentShowCount = typeof campaignObj[showCountKey] === 'number' ? campaignObj[showCountKey] : 0;
+        var showCountKey = config.showCountKey;
+        var dailyCountKey = config.dailyCountKey;
+        var currentShowCount = typeof campaignObj[showCountKey] === 'number' ? campaignObj[showCountKey] : 0;
         campaignObj[showCountKey] = currentShowCount + 1;
         campaignObj[dailyCountKey] = deliveryPreferenceUtils.getDailyCount(campaignObj, dailyCountKey);
       }
 
       if (campaignDetails === null || campaignDetails === void 0 ? void 0 : (_campaignDetails$disp3 = campaignDetails.display) === null || _campaignDetails$disp3 === void 0 ? void 0 : _campaignDetails$disp3.adp) {
-        const frequencyControlKey = config.frequencyControlKey;
+        var frequencyControlKey = config.frequencyControlKey;
         campaignObj[frequencyControlKey] = deliveryPreferenceUtils.updateTimestampTracker([campaignId], campaignObj[frequencyControlKey] || {});
       }
 
@@ -9471,14 +10104,14 @@
     }
   }; // set Campaign Object against the guid, with daily count and total count details
 
-  const setCampaignObjectForGuid = () => {
+  var setCampaignObjectForGuid = () => {
     if (StorageManager._isLocalStorageSupported()) {
-      let guid = StorageManager.read(GCOOKIE_NAME);
+      var guid = StorageManager.read(GCOOKIE_NAME);
 
       if (isValueValid(guid)) {
         try {
           guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-          const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
+          var guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
 
           if (guid && StorageManager._isLocalStorageSupported()) {
             var finalCampObj = {};
@@ -9486,21 +10119,21 @@
             /* TODO: Check if Webinbox needs these keys or get rid of them */
 
             Object.keys(campObj).forEach(key => {
-              const campKeyObj = guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key] ? guidCampObj[guid][key] : {};
-              const globalObj = campObj[key].global;
-              const today = getToday();
-              const dailyObj = campObj[key][today];
+              var campKeyObj = guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key] ? guidCampObj[guid][key] : {};
+              var globalObj = campObj[key].global;
+              var today = getToday();
+              var dailyObj = campObj[key][today];
 
               if (typeof globalObj !== 'undefined') {
-                const campaignIdArray = Object.keys(globalObj);
+                var campaignIdArray = Object.keys(globalObj);
 
-                for (const index in campaignIdArray) {
-                  let resultObj = [];
+                for (var index in campaignIdArray) {
+                  var resultObj = [];
 
                   if (campaignIdArray.hasOwnProperty(index)) {
-                    let dailyC = 0;
-                    let totalC = 0;
-                    const campaignId = campaignIdArray[index];
+                    var dailyC = 0;
+                    var totalC = 0;
+                    var campaignId = campaignIdArray[index];
 
                     if (campaignId === 'tc') {
                       continue;
@@ -9520,11 +10153,11 @@
                 }
               }
 
-              finalCampObj = { ...finalCampObj,
+              finalCampObj = _objectSpread2(_objectSpread2({}, finalCampObj), {}, {
                 [key]: campKeyObj
-              };
+              });
             });
-            finalCampObj = { ...finalCampObj,
+            finalCampObj = _objectSpread2(_objectSpread2({}, finalCampObj), {}, {
               wsc: campObj.wsc,
               wfc: campObj.wfc,
               woc: campObj.woc,
@@ -9534,7 +10167,7 @@
               wndfc: campObj.wndfc,
               wndoc: campObj.wndoc,
               wndmp: campObj.wndmp
-            };
+            });
             guidCampObj[guid] = finalCampObj;
             StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)));
           }
@@ -9544,59 +10177,57 @@
       }
     }
   };
-  const getCampaignObjForLc = () => {
+  var getCampaignObjForLc = () => {
     // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-    let campObj = {};
+    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    var campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
       var _campObj$wsc, _campObj, _campObj$wfc, _campObj2, _campObj$woc, _campObj3, _campObj$wndsc, _campObj4, _campObj$wndfc, _campObj5, _campObj$wndoc, _campObj6;
 
-      let resultObj = {};
+      var resultObj = {};
       campObj = getCampaignObject();
-      const storageValue = StorageManager.read(CAMP_COOKIE_G);
-      const decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
-      const parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
-      const resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
-      const webPopupDeliveryPreferenceDeatils = {
+      var storageValue = StorageManager.read(CAMP_COOKIE_G);
+      var decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
+      var parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      var resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
+      var webPopupDeliveryPreferenceDeatils = {
         wsc: (_campObj$wsc = (_campObj = campObj) === null || _campObj === void 0 ? void 0 : _campObj.wsc) !== null && _campObj$wsc !== void 0 ? _campObj$wsc : 0,
         wfc: (_campObj$wfc = (_campObj2 = campObj) === null || _campObj2 === void 0 ? void 0 : _campObj2.wfc) !== null && _campObj$wfc !== void 0 ? _campObj$wfc : {},
         woc: (_campObj$woc = (_campObj3 = campObj) === null || _campObj3 === void 0 ? void 0 : _campObj3.woc) !== null && _campObj$woc !== void 0 ? _campObj$woc : {}
       };
-      const webNativeDisplayDeliveryPreferenceDeatils = {
+      var webNativeDisplayDeliveryPreferenceDeatils = {
         wndsc: (_campObj$wndsc = (_campObj4 = campObj) === null || _campObj4 === void 0 ? void 0 : _campObj4.wndsc) !== null && _campObj$wndsc !== void 0 ? _campObj$wndsc : 0,
         wndfc: (_campObj$wndfc = (_campObj5 = campObj) === null || _campObj5 === void 0 ? void 0 : _campObj5.wndfc) !== null && _campObj$wndfc !== void 0 ? _campObj$wndfc : {},
         wndoc: (_campObj$wndoc = (_campObj6 = campObj) === null || _campObj6 === void 0 ? void 0 : _campObj6.wndoc) !== null && _campObj$wndoc !== void 0 ? _campObj$wndoc : {}
       };
-      const today = getToday(); // let todayCwp = 0
+      var today = getToday(); // let todayCwp = 0
 
-      let todayCwi = 0;
+      var todayCwi = 0;
 
       if (campObj.wi && campObj.wi[today] && campObj.wi[today].tc !== 'undefined') {
         todayCwi = campObj.wi[today].tc;
       } // CAMP Is generated here
 
 
-      resultObj = {
+      resultObj = _objectSpread2(_objectSpread2({
         wimp: todayCwi,
-        witlc: resultObjWI,
-        ...webPopupDeliveryPreferenceDeatils,
-        ...webNativeDisplayDeliveryPreferenceDeatils
-      };
+        witlc: resultObjWI
+      }, webPopupDeliveryPreferenceDeatils), webNativeDisplayDeliveryPreferenceDeatils);
       return resultObj;
     }
   };
-  const isProfileValid = (profileObj, _ref) => {
-    let {
+  var isProfileValid = (profileObj, _ref) => {
+    var {
       logger
     } = _ref;
-    let valid = false;
+    var valid = false;
 
     if (isObject(profileObj)) {
-      for (const profileKey in profileObj) {
+      for (var profileKey in profileObj) {
         if (profileObj.hasOwnProperty(profileKey)) {
           valid = true;
-          let profileVal = profileObj[profileKey];
+          var profileVal = profileObj[profileKey];
 
           if (profileVal == null) {
             delete profileObj[profileKey];
@@ -9672,8 +10303,8 @@
 
     return valid;
   };
-  const processFBUserObj = user => {
-    const profileData = {};
+  var processFBUserObj = user => {
+    var profileData = {};
     profileData.Name = user.name;
 
     if (user.id != null) {
@@ -9689,16 +10320,16 @@
       profileData.Gender = 'O';
     }
 
-    const getHighestEducation = function (eduArr) {
+    var getHighestEducation = function getHighestEducation(eduArr) {
       if (eduArr != null) {
-        let college = '';
-        let highschool = '';
+        var college = '';
+        var highschool = '';
 
-        for (let i = 0; i < eduArr.length; i++) {
-          const edu = eduArr[i];
+        for (var i = 0; i < eduArr.length; i++) {
+          var _edu = eduArr[i];
 
-          if (edu.type != null) {
-            const type = edu.type;
+          if (_edu.type != null) {
+            var type = _edu.type;
 
             if (type === 'Graduate School') {
               return 'Graduate';
@@ -9726,13 +10357,13 @@
       }
     }
 
-    const edu = getHighestEducation(user.education);
+    var edu = getHighestEducation(user.education);
 
     if (edu != null) {
       profileData.Education = edu;
     }
 
-    const work = user.work != null ? user.work.length : 0;
+    var work = user.work != null ? user.work.length : 0;
 
     if (work > 0) {
       profileData.Employed = 'Y';
@@ -9745,18 +10376,18 @@
     }
 
     if (user.birthday != null) {
-      const mmddyy = user.birthday.split('/'); // comes in as "08/15/1947"
+      var mmddyy = user.birthday.split('/'); // comes in as "08/15/1947"
 
       profileData.DOB = setDate(mmddyy[2] + mmddyy[0] + mmddyy[1]);
     }
 
     return profileData;
   };
-  const processGPlusUserObj = (user, _ref2) => {
-    let {
+  var processGPlusUserObj = (user, _ref2) => {
+    var {
       logger
     } = _ref2;
-    const profileData = {};
+    var profileData = {};
 
     if (user.displayName != null) {
       profileData.Name = user.displayName;
@@ -9783,8 +10414,8 @@
     }
 
     if (user.emails != null) {
-      for (let emailIdx = 0; emailIdx < user.emails.length; emailIdx++) {
-        const emailObj = user.emails[emailIdx];
+      for (var emailIdx = 0; emailIdx < user.emails.length; emailIdx++) {
+        var emailObj = user.emails[emailIdx];
 
         if (emailObj.type === 'account') {
           profileData.Email = emailObj.value;
@@ -9795,8 +10426,8 @@
     if (user.organizations != null) {
       profileData.Employed = 'N';
 
-      for (let i = 0; i < user.organizations.length; i++) {
-        const orgObj = user.organizations[i];
+      for (var i = 0; i < user.organizations.length; i++) {
+        var orgObj = user.organizations[i];
 
         if (orgObj.type === 'work') {
           profileData.Employed = 'Y';
@@ -9805,7 +10436,7 @@
     }
 
     if (user.birthday != null) {
-      const yyyymmdd = user.birthday.split('-'); // comes in as "1976-07-27"
+      var yyyymmdd = user.birthday.split('-'); // comes in as "1976-07-27"
 
       profileData.DOB = setDate(yyyymmdd[0] + yyyymmdd[1] + yyyymmdd[2]);
     }
@@ -9821,52 +10452,58 @@
     logger.debug('gplus usr profile ' + JSON.stringify(profileData));
     return profileData;
   };
-  const addToLocalProfileMap = (profileObj, override) => {
-    if (StorageManager._isLocalStorageSupported()) {
-      if ($ct.globalProfileMap == null) {
-        $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
-
+  var addToLocalProfileMap = /*#__PURE__*/function () {
+    var _ref3 = _asyncToGenerator(function* (profileObj, override) {
+      if (StorageManager._isLocalStorageSupported()) {
         if ($ct.globalProfileMap == null) {
-          $ct.globalProfileMap = {};
+          $ct.globalProfileMap = yield StorageManager.readFromLSorCookie(PR_COOKIE);
+
+          if ($ct.globalProfileMap == null) {
+            $ct.globalProfileMap = {};
+          }
+        } // Move props from custom bucket to outside.
+
+
+        if (profileObj._custom != null) {
+          var keys = profileObj._custom;
+
+          for (var key in keys) {
+            if (keys.hasOwnProperty(key)) {
+              profileObj[key] = keys[key];
+            }
+          }
+
+          delete profileObj._custom;
         }
-      } // Move props from custom bucket to outside.
 
+        for (var prop in profileObj) {
+          if (profileObj.hasOwnProperty(prop)) {
+            if ($ct.globalProfileMap.hasOwnProperty(prop) && !override) {
+              continue;
+            }
 
-      if (profileObj._custom != null) {
-        const keys = profileObj._custom;
-
-        for (const key in keys) {
-          if (keys.hasOwnProperty(key)) {
-            profileObj[key] = keys[key];
+            $ct.globalProfileMap[prop] = profileObj[prop];
           }
         }
 
-        delete profileObj._custom;
-      }
-
-      for (const prop in profileObj) {
-        if (profileObj.hasOwnProperty(prop)) {
-          if ($ct.globalProfileMap.hasOwnProperty(prop) && !override) {
-            continue;
-          }
-
-          $ct.globalProfileMap[prop] = profileObj[prop];
+        if ($ct.globalProfileMap._custom != null) {
+          delete $ct.globalProfileMap._custom;
         }
-      }
 
-      if ($ct.globalProfileMap._custom != null) {
-        delete $ct.globalProfileMap._custom;
+        yield StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
       }
+    });
 
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-    }
-  };
-  const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
+    return function addToLocalProfileMap(_x, _x2) {
+      return _ref3.apply(this, arguments);
+    };
+  }();
+  var closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     if (campaignId != null && campaignId !== '-1') {
       if (StorageManager._isLocalStorageSupported()) {
         var _campaignObj$dnd;
 
-        const campaignObj = getCampaignObject(); // CurrentSesion Id is the problem
+        var campaignObj = getCampaignObject(); // CurrentSesion Id is the problem
 
         campaignObj.dnd = [...new Set([...((_campaignObj$dnd = campaignObj.dnd) !== null && _campaignObj$dnd !== void 0 ? _campaignObj$dnd : []), campaignId])];
         saveCampaignObject(campaignObj);
@@ -9874,7 +10511,7 @@
     }
 
     if ($ct.campaignDivMap != null) {
-      const divId = $ct.campaignDivMap[campaignId];
+      var divId = $ct.campaignDivMap[campaignId];
 
       if (divId != null) {
         document.getElementById(divId).remove();
@@ -9895,56 +10532,62 @@
       }
     }
   };
-  const arp = jsonMap => {
-    // For unregister calls dont set arp in LS
-    if (jsonMap.skipResARP != null && jsonMap.skipResARP) {
-      console.debug('Update ARP Request rejected', jsonMap);
-      return null;
-    }
+  var arp = /*#__PURE__*/function () {
+    var _ref4 = _asyncToGenerator(function* (jsonMap) {
+      // For unregister calls dont set arp in LS
+      if (jsonMap.skipResARP != null && jsonMap.skipResARP) {
+        console.debug('Update ARP Request rejected', jsonMap);
+        return null;
+      }
 
-    const isOULARP = jsonMap[IS_OUL] === true;
+      var isOULARP = jsonMap[IS_OUL] === true;
 
-    if (StorageManager._isLocalStorageSupported()) {
-      // Update arp only if it is null or an oul request
-      try {
-        let arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE);
+      if (StorageManager._isLocalStorageSupported()) {
+        // Update arp only if it is null or an oul request
+        try {
+          var arpFromStorage = yield StorageManager.readFromLSorCookie(ARP_COOKIE);
 
-        if (arpFromStorage == null || isOULARP) {
-          arpFromStorage = {};
+          if (arpFromStorage == null || isOULARP) {
+            arpFromStorage = {};
 
-          for (const key in jsonMap) {
-            if (jsonMap.hasOwnProperty(key)) {
-              if (jsonMap[key] === -1) {
-                delete arpFromStorage[key];
-              } else {
-                arpFromStorage[key] = jsonMap[key];
+            for (var key in jsonMap) {
+              if (jsonMap.hasOwnProperty(key)) {
+                if (jsonMap[key] === -1) {
+                  delete arpFromStorage[key];
+                } else {
+                  arpFromStorage[key] = jsonMap[key];
+                }
               }
             }
-          }
 
-          StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage);
+            yield StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage);
+          }
+        } catch (e) {
+          console.error('Unable to parse ARP JSON: ' + e);
         }
-      } catch (e) {
-        console.error('Unable to parse ARP JSON: ' + e);
       }
-    }
-  };
-  const setEnum = (enumVal, logger) => {
+    });
+
+    return function arp(_x3) {
+      return _ref4.apply(this, arguments);
+    };
+  }();
+  var setEnum = (enumVal, logger) => {
     if (isString(enumVal) || isNumber(enumVal)) {
       return '$E_' + enumVal;
     }
 
     logger.error(ENUM_FORMAT_ERROR);
   };
-  const handleEmailSubscription = (subscription, reEncoded, fetchGroups, account, logger) => {
-    const urlParamsAsIs = getURLParams(location.href); // can't use url_params as it is in lowercase above
+  var handleEmailSubscription = (subscription, reEncoded, fetchGroups, account, logger) => {
+    var urlParamsAsIs = getURLParams(location.href); // can't use url_params as it is in lowercase above
 
-    const encodedEmailId = urlParamsAsIs.e;
-    const encodedProfileProps = urlParamsAsIs.p;
-    const pageType = urlParamsAsIs.page_type;
+    var encodedEmailId = urlParamsAsIs.e;
+    var encodedProfileProps = urlParamsAsIs.p;
+    var pageType = urlParamsAsIs.page_type;
 
     if (typeof encodedEmailId !== 'undefined') {
-      const data = {};
+      var data = {};
       data.id = account.id; // accountId
 
       data.unsubGroups = $ct.unsubGroups; // unsubscribe groups
@@ -9953,7 +10596,7 @@
         data[categoryLongKey] = $ct.updatedCategoryLong;
       }
 
-      let url = account.emailURL;
+      var url = account.emailURL;
 
       if (fetchGroups) {
         url = addToURL(url, 'fetchGroups', fetchGroups);
@@ -9997,7 +10640,7 @@
 
   class ProfileHandler extends Array {
     constructor(_ref, values) {
-      let {
+      var {
         logger,
         request,
         account,
@@ -10100,8 +10743,8 @@
 
         StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Send the updated value to LC
 
-        let data = {};
-        const profileObj = {};
+        var data = {};
+        var profileObj = {};
         data.type = 'profile';
         profileObj[key] = {
           [command]: value
@@ -10117,9 +10760,9 @@
 
         _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data);
 
-        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
 
-        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -10137,9 +10780,9 @@
 
 
     _handleMultiValueSet(key, arrayVal, command) {
-      const array = [];
+      var array = [];
 
-      for (let i = 0; i < arrayVal.length; i++) {
+      for (var i = 0; i < arrayVal.length; i++) {
         if (typeof arrayVal[i] === 'number' && !array.includes(arrayVal[i])) {
           array.push(arrayVal[i]);
         } else if (typeof arrayVal[i] === 'string' && !array.includes(arrayVal[i].toLowerCase())) {
@@ -10173,11 +10816,11 @@
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
       }
 
-      const existingValue = $ct.globalProfileMap[propKey];
-      const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : [];
+      var existingValue = $ct.globalProfileMap[propKey];
+      var array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : [];
 
-      const addValue = value => {
-        const normalizedValue = typeof value === 'number' ? value : value.toLowerCase();
+      var addValue = value => {
+        var normalizedValue = typeof value === 'number' ? value : value.toLowerCase();
 
         if (!array.includes(normalizedValue)) {
           array.push(normalizedValue);
@@ -10224,8 +10867,8 @@
         return;
       }
 
-      const removeValue = value => {
-        const index = $ct.globalProfileMap[propKey].indexOf(value);
+      var removeValue = value => {
+        var index = $ct.globalProfileMap[propKey].indexOf(value);
 
         if (index !== -1) {
           $ct.globalProfileMap[propKey].splice(index, 1);
@@ -10277,8 +10920,8 @@
 
     sendMultiValueData(propKey, propVal, command) {
       // Send the updated value to LC
-      let data = {};
-      const profileObj = {};
+      var data = {};
+      var profileObj = {};
       data.type = 'profile'; // this removes the property at backend
 
       profileObj[propKey] = {
@@ -10294,9 +10937,9 @@
 
       _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data);
 
-      const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
+      var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
 
-      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
+      var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
 
       pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -10308,11 +10951,11 @@
 
   var _processProfileArray2 = function _processProfileArray2(profileArr) {
     if (Array.isArray(profileArr) && profileArr.length > 0) {
-      for (const index in profileArr) {
+      for (var index in profileArr) {
         if (profileArr.hasOwnProperty(index)) {
-          const outerObj = profileArr[index];
-          let data = {};
-          let profileObj;
+          var outerObj = profileArr[index];
+          var data = {};
+          var profileObj = void 0;
 
           if (outerObj.Site != null) {
             // organic data from the site
@@ -10325,13 +10968,13 @@
             }
           } else if (outerObj.Facebook != null) {
             // fb connect data
-            const FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
+            var FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
 
             if (!isObjectEmpty(FbProfileObj) && !FbProfileObj.error) {
               profileObj = processFBUserObj(FbProfileObj);
             }
           } else if (outerObj['Google Plus'] != null) {
-            const GPlusProfileObj = outerObj['Google Plus'];
+            var GPlusProfileObj = outerObj['Google Plus'];
 
             if (!isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
               profileObj = processGPlusUserObj(GPlusProfileObj, {
@@ -10355,9 +10998,9 @@
 
             _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data);
 
-            const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
+            var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
 
-            let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
+            var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
 
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
             pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -10391,7 +11034,7 @@
 
   class UserLoginHandler extends Array {
     constructor(_ref, values) {
-      let {
+      var {
         request,
         account,
         session,
@@ -10445,21 +11088,28 @@
 
 
     clear() {
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('clear called. Reset flag has been set.');
+      var _this = this;
 
-      _classPrivateFieldLooseBase(this, _deleteUser)[_deleteUser]();
+      return _asyncToGenerator(function* () {
+        _classPrivateFieldLooseBase(_this, _logger$6)[_logger$6].debug('clear called. Reset flag has been set.');
 
-      StorageManager.setMetaProp(CLEAR, true);
+        yield _classPrivateFieldLooseBase(_this, _deleteUser)[_deleteUser]();
+        yield StorageManager.setMetaProp(CLEAR, true);
+      })();
     }
 
     push() {
-      for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
-        profilesArr[_key] = arguments[_key];
-      }
+      var _arguments = arguments,
+          _this2 = this;
 
-      _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](profilesArr);
+      return _asyncToGenerator(function* () {
+        for (var _len = _arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          profilesArr[_key] = _arguments[_key];
+        }
 
-      return 0;
+        yield _classPrivateFieldLooseBase(_this2, _processLoginArray)[_processLoginArray](profilesArr);
+        return 0;
+      })();
     }
 
     _processOldValues() {
@@ -10472,284 +11122,324 @@
 
   }
 
-  var _processOUL2 = function _processOUL2(profileArr) {
-    let sendOULFlag = true;
-    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
+  var _processOUL2 = /*#__PURE__*/function () {
+    var _processOUL3 = _asyncToGenerator(function* (profileArr) {
+      var _this3 = this;
 
-    const addToK = ids => {
-      let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
-      const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME);
-      let kId;
+      var sendOULFlag = true;
+      yield StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
 
-      if (k == null) {
-        k = {};
-        kId = ids;
-      } else {
-        /* check if already exists */
-        kId = k.id;
-        let anonymousUser = false;
-        let foundInCache = false;
+      var addToK = /*#__PURE__*/function () {
+        var _ref2 = _asyncToGenerator(function* (ids) {
+          var k = yield StorageManager.readFromLSorCookie(KCOOKIE_NAME);
+          var g = yield StorageManager.readFromLSorCookie(GCOOKIE_NAME);
+          var kId;
 
-        if (kId == null) {
-          kId = ids[0];
-          anonymousUser = true;
-        }
+          if (k == null) {
+            k = {};
+            kId = ids;
+          } else {
+            /* check if already exists */
+            kId = k.id;
+            var anonymousUser = false;
+            var foundInCache = false;
 
-        if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
-          $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
-        }
+            if (kId == null) {
+              kId = ids[0];
+              anonymousUser = true;
+            }
 
-        if (anonymousUser) {
-          if (g != null) {
-            // if have gcookie
-            $ct.LRU_CACHE.set(kId, g);
-            $ct.blockRequest = false;
-          }
-        } else {
-          // check if the id is present in the cache
-          // set foundInCache to true
-          for (const idx in ids) {
-            if (ids.hasOwnProperty(idx)) {
-              const id = ids[idx];
+            if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
+              $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
+              yield $ct.LRU_CACHE.init();
+            }
 
-              if ($ct.LRU_CACHE.cache[id]) {
-                kId = id;
-                foundInCache = true;
-                break;
+            if (anonymousUser) {
+              if (g != null) {
+                // if have gcookie
+                $ct.LRU_CACHE.set(kId, g);
+                $ct.blockRequest = false;
+              }
+            } else {
+              // check if the id is present in the cache
+              // set foundInCache to true
+              for (var idx in ids) {
+                if (ids.hasOwnProperty(idx)) {
+                  var id = ids[idx];
+
+                  if ($ct.LRU_CACHE.cache[id]) {
+                    kId = id;
+                    foundInCache = true;
+                    break;
+                  }
+                }
               }
             }
-          }
-        }
 
-        if (foundInCache) {
-          if (kId !== $ct.LRU_CACHE.getLastKey()) {
-            // New User found
-            // remove the entire cache
-            _classPrivateFieldLooseBase(this, _handleCookieFromCache)[_handleCookieFromCache]();
-          } else {
-            sendOULFlag = false;
-            StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
-          }
+            if (foundInCache) {
+              if (kId !== $ct.LRU_CACHE.getLastKey()) {
+                // New User found
+                // remove the entire cache
+                yield _classPrivateFieldLooseBase(_this3, _handleCookieFromCache)[_handleCookieFromCache]();
+              } else {
+                sendOULFlag = false;
+                yield StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
+              }
 
-          const gFromCache = $ct.LRU_CACHE.get(kId);
-          $ct.LRU_CACHE.set(kId, gFromCache);
-          StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
-          _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = gFromCache;
-          const lastK = $ct.LRU_CACHE.getSecondLastKey();
+              var gFromCache = yield $ct.LRU_CACHE.get(kId);
+              yield $ct.LRU_CACHE.set(kId, gFromCache);
+              yield StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
+              _classPrivateFieldLooseBase(_this3, _device$2)[_device$2].gcookie = gFromCache;
+              var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
-          if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
-            // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
-            const lastGUID = $ct.LRU_CACHE.cache[lastK];
+              if ((yield StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED)) && lastK !== -1) {
+                // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
+                var lastGUID = $ct.LRU_CACHE.cache[lastK];
+                yield _classPrivateFieldLooseBase(_this3, _request$4)[_request$4].unregisterTokenForGuid(lastGUID);
+              }
+            } else {
+              if (!anonymousUser) {
+                yield _this3.clear();
+              } else {
+                if (g != null) {
+                  _classPrivateFieldLooseBase(_this3, _device$2)[_device$2].gcookie = g;
+                  yield StorageManager.saveToLSorCookie(GCOOKIE_NAME, g);
+                  sendOULFlag = false;
+                }
+              }
 
-            _classPrivateFieldLooseBase(this, _request$4)[_request$4].unregisterTokenForGuid(lastGUID);
-          }
-        } else {
-          if (!anonymousUser) {
-            this.clear();
-          } else {
-            if (g != null) {
-              _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = g;
-              StorageManager.saveToLSorCookie(GCOOKIE_NAME, g);
-              sendOULFlag = false;
+              yield StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
+              kId = ids[0];
             }
           }
 
-          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
-          kId = ids[0];
-        }
-      }
+          k.id = kId;
+          yield StorageManager.saveToLSorCookie(KCOOKIE_NAME, k);
+        });
 
-      k.id = kId;
-      StorageManager.saveToLSorCookie(KCOOKIE_NAME, k);
-    };
+        return function addToK(_x2) {
+          return _ref2.apply(this, arguments);
+        };
+      }();
 
-    if (Array.isArray(profileArr) && profileArr.length > 0) {
-      for (const index in profileArr) {
-        if (profileArr.hasOwnProperty(index)) {
-          const outerObj = profileArr[index];
-          let data = {};
-          let profileObj;
+      if (Array.isArray(profileArr) && profileArr.length > 0) {
+        for (var index in profileArr) {
+          if (profileArr.hasOwnProperty(index)) {
+            var outerObj = profileArr[index];
+            var data = {};
+            var profileObj = void 0;
 
-          if (outerObj.Site != null) {
-            // organic data from the site
-            profileObj = outerObj.Site;
+            if (outerObj.Site != null) {
+              // organic data from the site
+              profileObj = outerObj.Site;
 
-            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
-              logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
-            })) {
-              return;
-            }
-          } else if (outerObj.Facebook != null) {
-            // fb connect data
-            const FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
-
-            if (!isObjectEmpty(FbProfileObj) && !FbProfileObj.error) {
-              profileObj = processFBUserObj(FbProfileObj);
-            }
-          } else if (outerObj['Google Plus'] != null) {
-            const GPlusProfileObj = outerObj['Google Plus'];
-
-            if (isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
-              profileObj = processGPlusUserObj(GPlusProfileObj, {
+              if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
                 logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
-              });
-            }
-          }
-
-          if (profileObj != null && !isObjectEmpty(profileObj)) {
-            // profile got set from above
-            data.type = 'profile';
-
-            if (profileObj.tz == null) {
-              // try to auto capture user timezone if not present
-              profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
-            }
-
-            data.profile = profileObj;
-            const ids = [];
-
-            if (StorageManager._isLocalStorageSupported()) {
-              if (profileObj.Identity) {
-                ids.push(profileObj.Identity);
+              })) {
+                return;
               }
+            } else if (outerObj.Facebook != null) {
+              // fb connect data
+              var FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
 
-              if (profileObj.Email) {
-                ids.push(profileObj.Email);
+              if (!isObjectEmpty(FbProfileObj) && !FbProfileObj.error) {
+                profileObj = processFBUserObj(FbProfileObj);
               }
+            } else if (outerObj['Google Plus'] != null) {
+              var GPlusProfileObj = outerObj['Google Plus'];
 
-              if (profileObj.GPID) {
-                ids.push('GP:' + profileObj.GPID);
-              }
-
-              if (profileObj.FBID) {
-                ids.push('FB:' + profileObj.FBID);
-              }
-
-              if (ids.length > 0) {
-                addToK(ids);
+              if (isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
+                profileObj = processGPlusUserObj(GPlusProfileObj, {
+                  logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
+                });
               }
             }
 
-            addToLocalProfileMap(profileObj, true);
-            data = _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
+            if (profileObj != null && !isObjectEmpty(profileObj)) {
+              // profile got set from above
+              data.type = 'profile';
 
-            _classPrivateFieldLooseBase(this, _request$4)[_request$4].addFlags(data); // Adding 'isOUL' flag in true for OUL cases which.
-            // This flag tells LC to create a new arp object.
-            // Also we will receive the same flag in response arp which tells to delete existing arp object.
+              if (profileObj.tz == null) {
+                // try to auto capture user timezone if not present
+                profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+              }
 
+              data.profile = profileObj;
+              var ids = [];
 
-            if (sendOULFlag) {
-              data[IS_OUL] = true;
+              if (StorageManager._isLocalStorageSupported()) {
+                if (profileObj.Identity) {
+                  ids.push(profileObj.Identity);
+                }
+
+                if (profileObj.Email) {
+                  ids.push(profileObj.Email);
+                }
+
+                if (profileObj.GPID) {
+                  ids.push('GP:' + profileObj.GPID);
+                }
+
+                if (profileObj.FBID) {
+                  ids.push('FB:' + profileObj.FBID);
+                }
+
+                if (ids.length > 0) {
+                  yield addToK(ids);
+                }
+              }
+
+              yield addToLocalProfileMap(profileObj, true);
+              data = yield _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
+              yield _classPrivateFieldLooseBase(this, _request$4)[_request$4].addFlags(data); // Adding 'isOUL' flag in true for OUL cases which.
+              // This flag tells LC to create a new arp object.
+              // Also we will receive the same flag in response arp which tells to delete existing arp object.
+
+              if (sendOULFlag) {
+                data[IS_OUL] = true;
+              }
+
+              var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+
+              var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
+
+              pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+              pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData); // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
+              // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
+              // stored in the cache and replace it with the response arp.
+
+              yield _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag);
             }
-
-            const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
-
-            let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
-
-            pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData); // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
-            // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
-            // stored in the cache and replace it with the response arp.
-
-            _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag);
           }
         }
       }
-    }
-  };
+    });
 
-  var _handleCookieFromCache2 = function _handleCookieFromCache2() {
-    $ct.blockRequest = false;
-    console.debug('Block request is false');
-
-    if (StorageManager._isLocalStorageSupported()) {
-      delete localStorage[PR_COOKIE];
-      delete localStorage[EV_COOKIE];
-      delete localStorage[META_COOKIE];
-      delete localStorage[ARP_COOKIE];
-      delete localStorage[CAMP_COOKIE_NAME];
-      delete localStorage[CHARGEDID_COOKIE_NAME];
+    function _processOUL2(_x) {
+      return _processOUL3.apply(this, arguments);
     }
 
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
-    StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
-    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
+    return _processOUL2;
+  }();
 
-    _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
-  };
+  var _handleCookieFromCache2 = /*#__PURE__*/function () {
+    var _handleCookieFromCache3 = _asyncToGenerator(function* () {
+      $ct.blockRequest = false;
+      console.debug('Block request is false');
 
-  var _deleteUser2 = function _deleteUser2() {
-    $ct.blockRequest = true;
+      if (StorageManager._isLocalStorageSupported()) {
+        [PR_COOKIE, EV_COOKIE, META_COOKIE, ARP_COOKIE, CAMP_COOKIE_NAME, CHARGEDID_COOKIE_NAME].forEach( /*#__PURE__*/function () {
+          var _ref3 = _asyncToGenerator(function* (cookie) {
+            yield StorageManager.deleteData('localStorage', cookie);
+          });
 
-    _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Block request is true');
-
-    $ct.globalCache = {
-      gcookie: null,
-      REQ_N: 0,
-      RESP_N: 0
-    };
-
-    if (StorageManager._isLocalStorageSupported()) {
-      delete localStorage[GCOOKIE_NAME];
-      delete localStorage[KCOOKIE_NAME];
-      delete localStorage[PR_COOKIE];
-      delete localStorage[EV_COOKIE];
-      delete localStorage[META_COOKIE];
-      delete localStorage[ARP_COOKIE];
-      delete localStorage[CAMP_COOKIE_NAME];
-      delete localStorage[CHARGEDID_COOKIE_NAME];
-    }
-
-    StorageManager.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
-    StorageManager.removeCookie(KCOOKIE_NAME, getHostName());
-    StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
-    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
-    _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = null;
-
-    _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
-  };
-
-  var _processLoginArray2 = function _processLoginArray2(loginArr) {
-    if (Array.isArray(loginArr) && loginArr.length > 0) {
-      const profileObj = loginArr.pop();
-      const processProfile = profileObj != null && isObject(profileObj) && (profileObj.Site != null && Object.keys(profileObj.Site).length > 0 || profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0 || profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0);
-
-      if (processProfile) {
-        StorageManager.setInstantDeleteFlagInK();
-
-        try {
-          _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
-        } catch (e) {
-          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug(e);
-        }
-      } else {
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error('Profile object is in incorrect format');
+          return function (_x3) {
+            return _ref3.apply(this, arguments);
+          };
+        }());
       }
+
+      yield StorageManager.deleteData('cookie', CAMP_COOKIE_NAME, getHostName());
+      yield StorageManager.deleteData('cookie', _classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
+      yield StorageManager.deleteData('cookie', ARP_COOKIE, $ct.broadDomain);
+      yield _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
+    });
+
+    function _handleCookieFromCache2() {
+      return _handleCookieFromCache3.apply(this, arguments);
     }
-  };
 
-  const getBoxPromptStyles = style => {
-    const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
-    const cardPadding = 16 * 2; // Left and right padding
+    return _handleCookieFromCache2;
+  }();
 
-    const cardContentWidth = 360 - cardPadding - totalBorderWidth;
+  var _deleteUser2 = /*#__PURE__*/function () {
+    var _deleteUser3 = _asyncToGenerator(function* () {
+      $ct.blockRequest = true;
+
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Block request is true');
+
+      $ct.globalCache = {
+        gcookie: null,
+        REQ_N: 0,
+        RESP_N: 0
+      };
+
+      if (StorageManager._isLocalStorageSupported()) {
+        [GCOOKIE_NAME, KCOOKIE_NAME, PR_COOKIE, EV_COOKIE, META_COOKIE, ARP_COOKIE, CAMP_COOKIE_NAME, CHARGEDID_COOKIE_NAME].forEach( /*#__PURE__*/function () {
+          var _ref4 = _asyncToGenerator(function* (cookie) {
+            yield StorageManager.deleteData('localStorage', cookie);
+          });
+
+          return function (_x4) {
+            return _ref4.apply(this, arguments);
+          };
+        }());
+      }
+
+      yield StorageManager.retrieveData('cookie', GCOOKIE_NAME, $ct.broadDomain);
+      yield StorageManager.retrieveData('cookie', CAMP_COOKIE_NAME, getHostName());
+      yield StorageManager.retrieveData('cookie', KCOOKIE_NAME, getHostName());
+      yield StorageManager.retrieveData('cookie', _classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
+      yield StorageManager.retrieveData('cookie', ARP_COOKIE, $ct.broadDomain);
+      _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = null;
+      yield _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
+    });
+
+    function _deleteUser2() {
+      return _deleteUser3.apply(this, arguments);
+    }
+
+    return _deleteUser2;
+  }();
+
+  var _processLoginArray2 = /*#__PURE__*/function () {
+    var _processLoginArray3 = _asyncToGenerator(function* (loginArr) {
+      if (Array.isArray(loginArr) && loginArr.length > 0) {
+        var profileObj = loginArr.pop();
+        var processProfile = profileObj != null && isObject(profileObj) && (profileObj.Site != null && Object.keys(profileObj.Site).length > 0 || profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0 || profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0);
+
+        if (processProfile) {
+          yield StorageManager.setInstantDeleteFlagInK();
+
+          try {
+            yield _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
+          } catch (e) {
+            _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug(e);
+          }
+        } else {
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error('Profile object is in incorrect format');
+        }
+      }
+    });
+
+    function _processLoginArray2(_x5) {
+      return _processLoginArray3.apply(this, arguments);
+    }
+
+    return _processLoginArray2;
+  }();
+
+  var getBoxPromptStyles = style => {
+    var totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
+    var cardPadding = 16 * 2; // Left and right padding
+
+    var cardContentWidth = 360 - cardPadding - totalBorderWidth;
     return "\n    #pnWrapper {\n      width: 360px;\n      font-family: proxima-nova, Arial, sans-serif;\n    }\n    \n    #pnWrapper * {\n       margin: 0px;\n       padding: 0px;\n       text-align: left;\n    }\n    ".concat(style.overlay.enabled ? "#pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n") : '', "\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n      text-align: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
   };
-  const getBellIconStyles = style => {
+  var getBellIconStyles = style => {
     return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
   };
 
-  const isChrome = () => {
-    const ua = navigator.userAgent;
+  var isChrome = () => {
+    var ua = navigator.userAgent;
     return ua.includes('Chrome') || ua.includes('CriOS');
   };
-  const isFirefox = () => {
-    const ua = navigator.userAgent;
+  var isFirefox = () => {
+    var ua = navigator.userAgent;
     return ua.includes('Firefox') || ua.includes('FxiOS');
   };
-  const isSafari = () => {
-    const ua = navigator.userAgent; // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
+  var isSafari = () => {
+    var ua = navigator.userAgent; // Ignoring the False Positive of Safari on iOS devices because it gives Safari in all Browsers
 
     return ua.includes('Safari') && !ua.includes('CriOS') && !ua.includes('FxiOS') && !ua.includes('Chrome') && !ua.includes('Firefox');
   };
@@ -10760,7 +11450,7 @@
    * @returns {boolean} - Returns `true` if the object contains an array or function, otherwise `false`.
    */
 
-  const objectHasNestedArrayOrFunction = obj => {
+  var objectHasNestedArrayOrFunction = obj => {
     if (!obj || typeof obj !== 'object') return false;
     if (Array.isArray(obj)) return true;
     return Object.values(obj).some(value => typeof value === 'function' || objectHasNestedArrayOrFunction(value));
@@ -10774,14 +11464,14 @@
    * @returns {Object} - The transformed object with dot notation keys.
    */
 
-  const flattenObjectToDotNotation = function (obj) {
-    let parentKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
-    const result = {};
+  var flattenObjectToDotNotation = function flattenObjectToDotNotation(obj) {
+    var parentKey = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+    var result = {};
 
-    for (const key in obj) {
+    for (var key in obj) {
       if (Object.hasOwnProperty.call(obj, key)) {
-        const value = obj[key];
-        const newKey = parentKey ? "".concat(parentKey, ".").concat(key) : key;
+        var value = obj[key];
+        var newKey = parentKey ? "".concat(parentKey, ".").concat(key) : key;
 
         if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
           // Recursively process nested objects
@@ -10805,24 +11495,26 @@
    * @returns {Object} - The reconstructed object with proper nesting.
    */
 
-  const reconstructNestedObject = payload => {
-    const result = {};
+  var reconstructNestedObject = payload => {
+    var result = {};
 
-    for (const key in payload) {
+    for (var key in payload) {
       if (Object.hasOwnProperty.call(payload, key)) {
-        const value = payload[key];
-        const keys = key.split('.'); // Split keys on dot notation
+        (function () {
+          var value = payload[key];
+          var keys = key.split('.'); // Split keys on dot notation
 
-        let current = result;
-        keys.forEach((part, index) => {
-          if (index === keys.length - 1) {
-            // Assign value at the last key level
-            current[part] = value;
-          } else {
-            // Ensure intermediate levels exist
-            current = current[part] = current[part] || {};
-          }
-        });
+          var current = result;
+          keys.forEach((part, index) => {
+            if (index === keys.length - 1) {
+              // Assign value at the last key level
+              current[part] = value;
+            } else {
+              // Ensure intermediate levels exist
+              current = current[part] = current[part] || {};
+            }
+          });
+        })();
       }
     }
 
@@ -10848,8 +11540,8 @@
       };
     }
 
-    const lowercaseId = id.toLowerCase();
-    const length = lowercaseId.length;
+    var lowercaseId = id.toLowerCase();
+    var length = lowercaseId.length;
 
     if (length < 1 || length > 64) {
       return {
@@ -10858,7 +11550,7 @@
       };
     }
 
-    const allowedPattern = /^[a-z0-9()!:@$_-]+$/;
+    var allowedPattern = /^[a-z0-9()!:@$_-]+$/;
 
     if (!allowedPattern.test(lowercaseId)) {
       return {
@@ -10918,7 +11610,7 @@
 
   class NotificationHandler extends Array {
     constructor(_ref, values) {
-      let {
+      var {
         logger,
         session,
         request,
@@ -10996,8 +11688,8 @@
           - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
           - Otherwise, `NOTIFICATION_PUSH_METHOD_DEFERRED` is set to true, and the rendering is deferred until the webPushConfig is received.
         */
-        const isWebPushConfigPresent = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED);
-        const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED);
+        var isWebPushConfigPresent = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED);
+        var isApplicationServerKeyReceived = StorageManager.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED);
 
         for (var _len = arguments.length, displayArgs = new Array(_len), _key = 0; _key < _len; _key++) {
           displayArgs[_key] = arguments[_key];
@@ -11059,7 +11751,7 @@
         this.setApplicationServerKey(applicationServerKey);
       }
 
-      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
+      var isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
 
       if (isNotificationPushCalled) {
         return;
@@ -11088,22 +11780,22 @@
   };
 
   var _setUpSafariNotifications2 = function _setUpSafariNotifications2(subscriptionCallback, apnsWebPushId, apnsServiceUrl, serviceWorkerPath) {
-    const softPromptCard = document.getElementById('pnWrapper');
-    const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+    var softPromptCard = document.getElementById('pnWrapper');
+    var oldSoftPromptCard = document.getElementById('wzrk_wrapper');
 
     if (_classPrivateFieldLooseBase(this, _isNativeWebPushSupported)[_isNativeWebPushSupported]() && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] != null) {
       StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true);
       navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
         window.Notification.requestPermission().then(permission => {
           if (permission === 'granted') {
-            const subscribeObj = {
+            var subscribeObj = {
               applicationServerKey: _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey],
               userVisibleOnly: true
             };
 
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Sub Obj' + JSON.stringify(subscribeObj));
 
-            const subscribeForPush = () => {
+            var subscribeForPush = () => {
               registration.pushManager.subscribe(subscribeObj).then(subscription => {
                 _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
 
@@ -11114,7 +11806,7 @@
 
                 _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
 
-                const subscriptionData = JSON.parse(JSON.stringify(subscription));
+                var subscriptionData = JSON.parse(JSON.stringify(subscription));
                 subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
                 StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData);
 
@@ -11124,7 +11816,7 @@
                   subscriptionCallback();
                 }
 
-                const existingBellWrapper = document.getElementById('bell_wrapper');
+                var existingBellWrapper = document.getElementById('bell_wrapper');
 
                 if (existingBellWrapper) {
                   existingBellWrapper.parentNode.removeChild(existingBellWrapper);
@@ -11140,7 +11832,7 @@
               });
             };
 
-            const serviceWorker = registration.installing || registration.waiting || registration.active;
+            var serviceWorker = registration.installing || registration.waiting || registration.active;
 
             if (serviceWorker && serviceWorker.state === 'activated') {
               // Already activated, proceed with subscription
@@ -11181,7 +11873,7 @@
       if ('safari' in window && 'pushNotification' in window.safari) {
         window.safari.pushNotification.requestPermission(apnsServiceUrl, apnsWebPushId, {}, subscription => {
           if (subscription.permission === 'granted') {
-            const subscriptionData = JSON.parse(JSON.stringify(subscription));
+            var subscriptionData = JSON.parse(JSON.stringify(subscription));
             subscriptionData.endpoint = subscription.deviceToken;
             subscriptionData.browser = 'Safari';
 
@@ -11192,7 +11884,7 @@
 
             _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Subscription Data Received: ' + JSON.stringify(subscription));
 
-            const existingBellWrapper = document.getElementById('bell_wrapper');
+            var existingBellWrapper = document.getElementById('bell_wrapper');
 
             if (existingBellWrapper) {
               existingBellWrapper.parentNode.removeChild(existingBellWrapper);
@@ -11228,7 +11920,7 @@
   };
 
   var _setUpChromeFirefoxNotifications2 = function _setUpChromeFirefoxNotifications2(subscriptionCallback, serviceWorkerPath) {
-    let registrationScope = '';
+    var registrationScope = '';
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register(serviceWorkerPath).then(registration => {
@@ -11243,8 +11935,8 @@
         // ELSE IF CHROME RETURN PROMISE AFTER 5 SECONDS
         // OR getRegistrations PROMISE IF ITS FIREFOX
 
-        const rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
-        const isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
+        var rootDirRegex = /^(\.?)(\/?)([^/]*).js$/;
+        var isServiceWorkerAtRoot = rootDirRegex.test(serviceWorkerPath);
 
         if (isServiceWorkerAtRoot) {
           return navigator.serviceWorker.ready;
@@ -11261,7 +11953,7 @@
           serviceWorkerRegistration = serviceWorkerRegistration.filter(i => i.scope === registrationScope)[0];
         }
 
-        const subscribeObj = {
+        var subscribeObj = {
           userVisibleOnly: true
         };
 
@@ -11269,8 +11961,8 @@
           subscribeObj.applicationServerKey = urlBase64ToUint8Array(_classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey]);
         }
 
-        const softPromptCard = document.getElementById('pnWrapper');
-        const oldSoftPromptCard = document.getElementById('wzrk_wrapper');
+        var softPromptCard = document.getElementById('pnWrapper');
+        var oldSoftPromptCard = document.getElementById('wzrk_wrapper');
         serviceWorkerRegistration.pushManager.subscribe(subscribeObj).then(subscription => {
           _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].info('Service Worker registered. Endpoint: ' + subscription.endpoint);
 
@@ -11279,7 +11971,7 @@
           _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Subscription Data Received: ' + JSON.stringify(subscription)); // convert the subscription keys to strings; this sets it up nicely for pushing to LC
 
 
-          const subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
+          var subscriptionData = JSON.parse(JSON.stringify(subscription)); // remove the common chrome/firefox endpoint at the beginning of the token
 
           if (isChrome()) {
             subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop();
@@ -11297,7 +11989,7 @@
             subscriptionCallback();
           }
 
-          const existingBellWrapper = document.getElementById('bell_wrapper');
+          var existingBellWrapper = document.getElementById('bell_wrapper');
 
           if (existingBellWrapper) {
             existingBellWrapper.parentNode.removeChild(existingBellWrapper);
@@ -11345,7 +12037,7 @@
   };
 
   var _addWizAlertJS2 = function _addWizAlertJS2() {
-    const scriptTag = document.createElement('script');
+    var scriptTag = document.createElement('script');
     scriptTag.setAttribute('type', 'text/javascript');
     scriptTag.setAttribute('id', 'wzrk-alert-js');
     scriptTag.setAttribute('src', _classPrivateFieldLooseBase(this, _wizAlertJSPath)[_wizAlertJSPath]); // add the script tag to the end of the body
@@ -11355,34 +12047,34 @@
   };
 
   var _removeWizAlertJS2 = function _removeWizAlertJS2() {
-    const scriptTag = document.getElementById('wzrk-alert-js');
+    var scriptTag = document.getElementById('wzrk-alert-js');
     scriptTag.parentNode.removeChild(scriptTag);
   };
 
   var _handleNotificationRegistration2 = function _handleNotificationRegistration2(displayArgs) {
     // make sure everything is specified
-    let titleText;
-    let bodyText;
-    let okButtonText;
-    let rejectButtonText;
-    let okButtonColor;
-    let skipDialog;
-    let askAgainTimeInSeconds;
-    let okCallback;
-    let rejectCallback;
-    let subscriptionCallback;
-    let serviceWorkerPath;
-    let httpsPopupPath;
-    let httpsIframePath;
-    let apnsWebPushId;
-    let apnsWebPushServiceUrl;
-    let okButtonAriaLabel;
-    let rejectButtonAriaLabel;
-    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
+    var titleText;
+    var bodyText;
+    var okButtonText;
+    var rejectButtonText;
+    var okButtonColor;
+    var skipDialog;
+    var askAgainTimeInSeconds;
+    var okCallback;
+    var rejectCallback;
+    var subscriptionCallback;
+    var serviceWorkerPath;
+    var httpsPopupPath;
+    var httpsIframePath;
+    var apnsWebPushId;
+    var apnsWebPushServiceUrl;
+    var okButtonAriaLabel;
+    var rejectButtonAriaLabel;
+    var vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && _classPrivateFieldLooseBase(this, _fcmPublicKey)[_fcmPublicKey] !== null;
 
     if (displayArgs.length === 1) {
       if (isObject(displayArgs[0])) {
-        const notifObj = displayArgs[0];
+        var notifObj = displayArgs[0];
         titleText = notifObj.titleText;
         bodyText = notifObj.bodyText;
         okButtonText = notifObj.okButtonText;
@@ -11426,7 +12118,7 @@
     // (https://wizrocket.atlassian.net/wiki/spaces/TAMKB/pages/1824325665/Implementing+Web+Push+in+Shopify+if+not+using+the+Shopify+App+approach)
 
 
-    const isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
+    var isHTTP = httpsPopupPath != null && httpsIframePath != null; // make sure the site is on https for chrome notifications
 
     if (window.location.protocol !== 'https:' && document.location.hostname !== 'localhost' && !isHTTP) {
       _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Make sure you are https or localhost to register for notifications');
@@ -11449,7 +12141,7 @@
 
 
     if (!isHTTP) {
-      const hasNotification = ('Notification' in window);
+      var hasNotification = ('Notification' in window);
 
       if (!hasNotification || Notification == null) {
         _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Notification not supported on this Device or Browser');
@@ -11486,7 +12178,7 @@
     } // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
 
 
-    const now = new Date().getTime() / 1000;
+    var now = new Date().getTime() / 1000;
 
     if (StorageManager.getMetaProp(NOTIF_LAST_TIME) == null) {
       StorageManager.setMetaProp(NOTIF_LAST_TIME, now);
@@ -11496,7 +12188,7 @@
         askAgainTimeInSeconds = 7 * 24 * 60 * 60;
       }
 
-      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME);
+      var notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME);
 
       if (now - notifLastTime < askAgainTimeInSeconds) {
         if (!isSafari()) {
@@ -11555,29 +12247,29 @@
     };
   };
 
-  const BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi40OTYyIDUuMjQzOTVDMTIuODM5MSA1LjAzMzE3IDEzLjI4NDcgNS4xNDY4OSAxMy40OTczIDUuNDg4NjdDMTMuNzIyMyA1Ljg1MDE4IDEzLjYwMDIgNi4zMjUxOCAxMy4yMzggNi41NDkwMkM3LjM5Mzk5IDEwLjE2MDYgMy41IDE2LjYyNTcgMy41IDI0LjAwMDNDMy41IDM1LjMyMjEgMTIuNjc4MiA0NC41MDAzIDI0IDQ0LjUwMDNDMjguMDA1NSA0NC41MDAzIDMxLjc0MjYgNDMuMzUxNSAzNC45IDQxLjM2NTVDMzUuMjYwOCA0MS4xMzg1IDM1Ljc0MTYgNDEuMjM4NiAzNS45NjY4IDQxLjYwMDZDMzYuMTc5MiA0MS45NDE5IDM2LjA4NSA0Mi4zOTExIDM1Ljc0NTIgNDIuNjA2QzMyLjM0NjggNDQuNzU1OSAyOC4zMTg3IDQ2LjAwMDMgMjQgNDYuMDAwM0MxMS44NDk3IDQ2LjAwMDMgMiAzNi4xNTA1IDIgMjQuMDAwM0MyIDE2LjA2NjkgNi4xOTkyMSA5LjExNDMyIDEyLjQ5NjIgNS4yNDM5NVpNMzguOCAzOS45MDAzQzM4LjggNDAuMzk3MyAzOC4zOTcxIDQwLjgwMDMgMzcuOSA0MC44MDAzQzM3LjQwMjkgNDAuODAwMyAzNyA0MC4zOTczIDM3IDM5LjkwMDNDMzcgMzkuNDAzMiAzNy40MDI5IDM5LjAwMDMgMzcuOSAzOS4wMDAzQzM4LjM5NzEgMzkuMDAwMyAzOC44IDM5LjQwMzIgMzguOCAzOS45MDAzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMkMyMi44OTU0IDEyIDIyIDEyLjg5NTQgMjIgMTRWMTQuMjUyQzE4LjU0OTUgMTUuMTQwMSAxNiAxOC4yNzIzIDE2IDIyVjI5LjVIMTUuNDc2OUMxNC42NjEyIDI5LjUgMTQgMzAuMTYxMiAxNCAzMC45NzY5VjMxLjAyMzFDMTQgMzEuODM4OCAxNC42NjEyIDMyLjUgMTUuNDc2OSAzMi41SDMyLjUyMzFDMzMuMzM4OCAzMi41IDM0IDMxLjgzODggMzQgMzEuMDIzMVYzMC45NzY5QzM0IDMwLjE2MTIgMzMuMzM4OCAyOS41IDMyLjUyMzEgMjkuNUgzMlYyMkMzMiAxOC4yNzIzIDI5LjQ1MDUgMTUuMTQwMSAyNiAxNC4yNTJWMTRDMjYgMTIuODk1NCAyNS4xMDQ2IDEyIDI0IDEyWk0yNiAzNFYzMy41SDIyVjM0QzIyIDM1LjEwNDYgMjIuODk1NCAzNiAyNCAzNkMyNS4xMDQ2IDM2IDI2IDM1LjEwNDYgMjYgMzRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
-  const PROMPT_BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMzIiIGZpbGw9IiMwMEFFQjkiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0zMS45OTg2IDIwQzMwLjkxOTggMjAgMzAuMDQyOCAyMC44NzQ2IDMwLjA0MjggMjEuOTUzNEwzMC4wNDI5IDIxLjk3MzRDMjYuNTQzNCAyMi41NTM1IDIzLjg3NSAyNS41OTQzIDIzLjg3NSAyOS4yNTgyVjM4LjA5OTVIMjMuODczNUMyMy4wNTg5IDM4LjA5OTUgMjIuMzk4NCAzOC43NiAyMi4zOTg0IDM5LjU3NDZDMjIuMzk4NCA0MC4zODkzIDIzLjA1ODkgNDEuMDQ5NyAyMy44NzM1IDQxLjA0OTdIMjkuNzgxMlY0MS43ODQyQzI5Ljc4MTIgNDMuMDA3NyAzMC43NzMxIDQzLjk5OTYgMzEuOTk2NiA0My45OTk2QzMzLjIyMDIgNDMuOTk5NiAzNC4yMTIgNDMuMDA3NyAzNC4yMTIgNDEuNzg0MlY0MS4wNDk3SDQwLjEyMzNDNDAuOTM4IDQxLjA0OTcgNDEuNTk4NCA0MC4zODkzIDQxLjU5ODQgMzkuNTc0NkM0MS41OTg0IDM4Ljc2IDQwLjkzOCAzOC4wOTk1IDQwLjEyMzMgMzguMDk5NUg0MC4xMjEyVjI5LjI1ODJDNDAuMTIxMiAyNS41OTQ2IDM3LjQ1MzMgMjIuNTU0MiAzMy45NTQzIDIxLjk3MzZMMzMuOTU0NCAyMS45NTM0QzMzLjk1NDQgMjAuODc0NiAzMy4wNzc1IDIwIDMxLjk5ODYgMjBaIiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCBvcGFjaXR5PSIwLjUiIHg9IjcuNSIgeT0iNy41IiB3aWR0aD0iNDkiIGhlaWdodD0iNDkiIHJ4PSIyNC41IiBzdHJva2U9IndoaXRlIi8+CjxyZWN0IG9wYWNpdHk9IjAuMyIgeD0iNC41IiB5PSI0LjUiIHdpZHRoPSI1NSIgaGVpZ2h0PSI1NSIgcng9IjI3LjUiIHN0cm9rZT0id2hpdGUiLz4KPHJlY3Qgb3BhY2l0eT0iMC44IiB4PSIxMC41IiB5PSIxMC41IiB3aWR0aD0iNDMiIGhlaWdodD0iNDMiIHJ4PSIyMS41IiBzdHJva2U9IndoaXRlIi8+Cjwvc3ZnPgo=';
+  var BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi40OTYyIDUuMjQzOTVDMTIuODM5MSA1LjAzMzE3IDEzLjI4NDcgNS4xNDY4OSAxMy40OTczIDUuNDg4NjdDMTMuNzIyMyA1Ljg1MDE4IDEzLjYwMDIgNi4zMjUxOCAxMy4yMzggNi41NDkwMkM3LjM5Mzk5IDEwLjE2MDYgMy41IDE2LjYyNTcgMy41IDI0LjAwMDNDMy41IDM1LjMyMjEgMTIuNjc4MiA0NC41MDAzIDI0IDQ0LjUwMDNDMjguMDA1NSA0NC41MDAzIDMxLjc0MjYgNDMuMzUxNSAzNC45IDQxLjM2NTVDMzUuMjYwOCA0MS4xMzg1IDM1Ljc0MTYgNDEuMjM4NiAzNS45NjY4IDQxLjYwMDZDMzYuMTc5MiA0MS45NDE5IDM2LjA4NSA0Mi4zOTExIDM1Ljc0NTIgNDIuNjA2QzMyLjM0NjggNDQuNzU1OSAyOC4zMTg3IDQ2LjAwMDMgMjQgNDYuMDAwM0MxMS44NDk3IDQ2LjAwMDMgMiAzNi4xNTA1IDIgMjQuMDAwM0MyIDE2LjA2NjkgNi4xOTkyMSA5LjExNDMyIDEyLjQ5NjIgNS4yNDM5NVpNMzguOCAzOS45MDAzQzM4LjggNDAuMzk3MyAzOC4zOTcxIDQwLjgwMDMgMzcuOSA0MC44MDAzQzM3LjQwMjkgNDAuODAwMyAzNyA0MC4zOTczIDM3IDM5LjkwMDNDMzcgMzkuNDAzMiAzNy40MDI5IDM5LjAwMDMgMzcuOSAzOS4wMDAzQzM4LjM5NzEgMzkuMDAwMyAzOC44IDM5LjQwMzIgMzguOCAzOS45MDAzWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0yNCAxMkMyMi44OTU0IDEyIDIyIDEyLjg5NTQgMjIgMTRWMTQuMjUyQzE4LjU0OTUgMTUuMTQwMSAxNiAxOC4yNzIzIDE2IDIyVjI5LjVIMTUuNDc2OUMxNC42NjEyIDI5LjUgMTQgMzAuMTYxMiAxNCAzMC45NzY5VjMxLjAyMzFDMTQgMzEuODM4OCAxNC42NjEyIDMyLjUgMTUuNDc2OSAzMi41SDMyLjUyMzFDMzMuMzM4OCAzMi41IDM0IDMxLjgzODggMzQgMzEuMDIzMVYzMC45NzY5QzM0IDMwLjE2MTIgMzMuMzM4OCAyOS41IDMyLjUyMzEgMjkuNUgzMlYyMkMzMiAxOC4yNzIzIDI5LjQ1MDUgMTUuMTQwMSAyNiAxNC4yNTJWMTRDMjYgMTIuODk1NCAyNS4xMDQ2IDEyIDI0IDEyWk0yNiAzNFYzMy41SDIyVjM0QzIyIDM1LjEwNDYgMjIuODk1NCAzNiAyNCAzNkMyNS4xMDQ2IDM2IDI2IDM1LjEwNDYgMjYgMzRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
+  var PROMPT_BELL_BASE64 = 'PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMzIiIGZpbGw9IiMwMEFFQjkiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0zMS45OTg2IDIwQzMwLjkxOTggMjAgMzAuMDQyOCAyMC44NzQ2IDMwLjA0MjggMjEuOTUzNEwzMC4wNDI5IDIxLjk3MzRDMjYuNTQzNCAyMi41NTM1IDIzLjg3NSAyNS41OTQzIDIzLjg3NSAyOS4yNTgyVjM4LjA5OTVIMjMuODczNUMyMy4wNTg5IDM4LjA5OTUgMjIuMzk4NCAzOC43NiAyMi4zOTg0IDM5LjU3NDZDMjIuMzk4NCA0MC4zODkzIDIzLjA1ODkgNDEuMDQ5NyAyMy44NzM1IDQxLjA0OTdIMjkuNzgxMlY0MS43ODQyQzI5Ljc4MTIgNDMuMDA3NyAzMC43NzMxIDQzLjk5OTYgMzEuOTk2NiA0My45OTk2QzMzLjIyMDIgNDMuOTk5NiAzNC4yMTIgNDMuMDA3NyAzNC4yMTIgNDEuNzg0MlY0MS4wNDk3SDQwLjEyMzNDNDAuOTM4IDQxLjA0OTcgNDEuNTk4NCA0MC4zODkzIDQxLjU5ODQgMzkuNTc0NkM0MS41OTg0IDM4Ljc2IDQwLjkzOCAzOC4wOTk1IDQwLjEyMzMgMzguMDk5NUg0MC4xMjEyVjI5LjI1ODJDNDAuMTIxMiAyNS41OTQ2IDM3LjQ1MzMgMjIuNTU0MiAzMy45NTQzIDIxLjk3MzZMMzMuOTU0NCAyMS45NTM0QzMzLjk1NDQgMjAuODc0NiAzMy4wNzc1IDIwIDMxLjk5ODYgMjBaIiBmaWxsPSJ3aGl0ZSIvPgo8cmVjdCBvcGFjaXR5PSIwLjUiIHg9IjcuNSIgeT0iNy41IiB3aWR0aD0iNDkiIGhlaWdodD0iNDkiIHJ4PSIyNC41IiBzdHJva2U9IndoaXRlIi8+CjxyZWN0IG9wYWNpdHk9IjAuMyIgeD0iNC41IiB5PSI0LjUiIHdpZHRoPSI1NSIgaGVpZ2h0PSI1NSIgcng9IjI3LjUiIHN0cm9rZT0id2hpdGUiLz4KPHJlY3Qgb3BhY2l0eT0iMC44IiB4PSIxMC41IiB5PSIxMC41IiB3aWR0aD0iNDMiIGhlaWdodD0iNDMiIHJ4PSIyMS41IiBzdHJva2U9IndoaXRlIi8+Cjwvc3ZnPgo=';
 
-  let appServerKey = null;
-  let swPath = '/clevertap_sw.js';
-  let notificationHandler = null;
-  let logger$1 = null;
-  let account = null;
-  let request = null;
-  let displayArgs = null;
-  let fcmPublicKey = null;
-  const setNotificationHandlerValues = function () {
-    let notificationValues = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  var appServerKey = null;
+  var swPath = '/clevertap_sw.js';
+  var notificationHandler = null;
+  var logger$1 = null;
+  var account = null;
+  var request = null;
+  var displayArgs = null;
+  var fcmPublicKey = null;
+  var setNotificationHandlerValues = function setNotificationHandlerValues() {
+    var notificationValues = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
     logger$1 = notificationValues.logger;
     account = notificationValues.account;
     request = notificationValues.request;
     displayArgs = notificationValues.displayArgs;
     fcmPublicKey = notificationValues.fcmPublicKey;
   };
-  const processWebPushConfig = (webPushConfig, logger, request) => {
+  var processWebPushConfig = (webPushConfig, logger, request) => {
     StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true);
 
-    const updatePushConfig = () => {
+    var updatePushConfig = () => {
       $ct.pushConfig = webPushConfig;
       StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig);
     };
@@ -11592,7 +12284,7 @@
     }
 
     try {
-      const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
+      var isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED);
 
       if (isNotificationPushCalled) {
         try {
@@ -11609,8 +12301,8 @@
       processSoftPrompt();
     }
   };
-  const processSoftPrompt = () => {
-    const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+  var processSoftPrompt = () => {
+    var webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
     notificationHandler = new NotificationHandler({
       logger: logger$1,
       session: {},
@@ -11624,12 +12316,12 @@
       return;
     }
 
-    const {
+    var {
       showBox,
       showBellIcon,
       boxType
     } = webPushConfig;
-    const {
+    var {
       serviceWorkerPath,
       skipDialog,
       okCallback,
@@ -11638,10 +12330,10 @@
       apnsWebPushId,
       apnsWebPushServiceUrl
     } = parseDisplayArgs(displayArgs);
-    const isSoftPromptNew = showBellIcon || showBox && boxType === 'new';
+    var isSoftPromptNew = showBellIcon || showBox && boxType === 'new';
 
     if (isSoftPromptNew) {
-      const enablePushParams = {
+      var enablePushParams = {
         serviceWorkerPath,
         skipDialog,
         okCallback,
@@ -11665,9 +12357,9 @@
     StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, false);
     StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, false);
   };
-  const parseDisplayArgs = displayArgs => {
+  var parseDisplayArgs = displayArgs => {
     if (displayArgs && displayArgs.length === 1 && isObject(displayArgs[0])) {
-      const {
+      var {
         serviceWorkerPath,
         skipDialog,
         okCallback,
@@ -11697,8 +12389,8 @@
       apnsWebPushId: undefined
     };
   };
-  const enablePush = enablePushParams => {
-    const {
+  var enablePush = enablePushParams => {
+    var {
       serviceWorkerPath: customSwPath,
       okCallback,
       subscriptionCallback,
@@ -11708,11 +12400,11 @@
       apnsWebPushId,
       apnsWebPushServiceUrl
     } = enablePushParams;
-    let {
+    var {
       skipDialog
     } = enablePushParams;
 
-    const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
+    var _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {};
 
     $ct.pushConfig = _pushConfig;
 
@@ -11736,7 +12428,7 @@
       return;
     }
 
-    const {
+    var {
       showBox,
       boxType,
       showBellIcon,
@@ -11752,46 +12444,46 @@
     }
   };
 
-  const createElementWithAttributes = function (tag) {
-    let attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-    const element = document.createElement(tag);
+  var createElementWithAttributes = function createElementWithAttributes(tag) {
+    var attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var element = document.createElement(tag);
     Object.entries(attributes).forEach((_ref) => {
-      let [key, value] = _ref;
+      var [key, value] = _ref;
       element[key] = value;
     });
     return element;
   };
 
-  const createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+  var createNotificationBox = (configData, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     var _content$icon;
 
     if (document.getElementById(NEW_SOFT_PROMPT_SELCTOR_ID)) return;
-    const {
+    var {
       boxConfig: {
         content,
         style
       }
     } = configData; // Create the wrapper div
 
-    const wrapper = createElementWithAttributes('div', {
+    var wrapper = createElementWithAttributes('div', {
       id: NEW_SOFT_PROMPT_SELCTOR_ID
     });
-    const overlayDiv = style.overlay.enabled ? createElementWithAttributes('div', {
+    var overlayDiv = style.overlay.enabled ? createElementWithAttributes('div', {
       id: 'pnOverlay'
     }) : '';
-    const pnCard = createElementWithAttributes('div', {
+    var pnCard = createElementWithAttributes('div', {
       id: 'pnCard'
     });
-    const iconTitleDescWrapper = createElementWithAttributes('div', {
+    var iconTitleDescWrapper = createElementWithAttributes('div', {
       id: 'iconTitleDescWrapper'
     });
-    const iconContainer = createElementWithAttributes('img', {
+    var iconContainer = createElementWithAttributes('img', {
       id: 'iconContainer',
       src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(PROMPT_BELL_BASE64) : content.icon.url,
       alt: ((_content$icon = content.icon) === null || _content$icon === void 0 ? void 0 : _content$icon.altText) || ''
     });
     iconTitleDescWrapper.appendChild(iconContainer);
-    const titleDescWrapper = createElementWithAttributes('div', {
+    var titleDescWrapper = createElementWithAttributes('div', {
       id: 'titleDescWrapper'
     });
     titleDescWrapper.appendChild(createElementWithAttributes('div', {
@@ -11803,15 +12495,15 @@
       textContent: content.description
     }));
     iconTitleDescWrapper.appendChild(titleDescWrapper);
-    const buttonsContainer = createElementWithAttributes('div', {
+    var buttonsContainer = createElementWithAttributes('div', {
       id: 'buttonsContainer'
     });
-    const primaryButton = createElementWithAttributes('button', {
+    var primaryButton = createElementWithAttributes('button', {
       id: 'primaryButton',
       textContent: content.buttons.primaryButtonText,
       ariaLabel: content.buttons.primaryButtonAriaLabel || content.buttons.primaryButtonText
     });
-    const secondaryButton = createElementWithAttributes('button', {
+    var secondaryButton = createElementWithAttributes('button', {
       id: 'secondaryButton',
       textContent: content.buttons.secondaryButtonText,
       ariaLabel: content.buttons.secondaryButtonAriaLabel || content.buttons.secondaryButtonText
@@ -11821,7 +12513,7 @@
     pnCard.appendChild(iconTitleDescWrapper);
     pnCard.appendChild(buttonsContainer); // Apply styles
 
-    const styleElement = createElementWithAttributes('style', {
+    var styleElement = createElementWithAttributes('style', {
       textContent: getBoxPromptStyles(style)
     });
     wrapper.appendChild(styleElement);
@@ -11832,7 +12524,7 @@
     }
 
     setElementPosition(pnCard, style.card.position);
-    const vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
+    var vapidSupportedAndMigrated = isSafari() && 'PushManager' in window && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null;
 
     if (!configData.isPreview) {
       if ('Notification' in window && Notification !== null) {
@@ -11846,11 +12538,11 @@
       }
     }
 
-    const now = new Date().getTime() / 1000;
-    const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
-    const popupFrequency = content.popupFrequency || 7; // number of days
+    var now = new Date().getTime() / 1000;
+    var lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time');
+    var popupFrequency = content.popupFrequency || 7; // number of days
 
-    const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
+    var shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60;
 
     if (shouldShowNotification) {
       document.body.insertBefore(wrapper, document.body.firstChild);
@@ -11879,31 +12571,31 @@
       }
     }
   };
-  const createBellIcon = (configData, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+  var createBellIcon = (configData, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
     if (document.getElementById('bell_wrapper') || Notification.permission === 'granted') return;
-    const {
+    var {
       bellIconConfig: {
         content,
         style
       }
     } = configData;
-    const bellWrapper = createElementWithAttributes('div', {
+    var bellWrapper = createElementWithAttributes('div', {
       id: 'bell_wrapper'
     });
-    const bellIcon = createElementWithAttributes('img', {
+    var bellIcon = createElementWithAttributes('img', {
       id: 'bell_icon',
       src: content.icon.type === 'default' ? "data:image/svg+xml;base64,".concat(BELL_BASE64) : content.icon.url
     }); // For playing gif
 
-    const gifModal = createElementWithAttributes('div', {
+    var gifModal = createElementWithAttributes('div', {
       id: 'gif_modal',
       style: 'display: none;'
     });
-    const gifImage = createElementWithAttributes('img', {
+    var gifImage = createElementWithAttributes('img', {
       id: 'gif_image',
       src: 'https://d2r1yp2w7bby2u.cloudfront.net/js/permission_grant.gif'
     });
-    const closeModal = createElementWithAttributes('div', {
+    var closeModal = createElementWithAttributes('div', {
       id: 'close_modal',
       innerHTML: '&times;'
     });
@@ -11913,7 +12605,7 @@
     bellWrapper.appendChild(gifModal);
 
     if (content.hoverText.enabled) {
-      const tooltip = createElementWithAttributes('div', {
+      var tooltip = createElementWithAttributes('div', {
         id: 'bell_tooltip',
         textContent: content.hoverText.text
       });
@@ -11922,7 +12614,7 @@
 
     setElementPosition(bellWrapper, style.card.position); // Apply styles
 
-    const styleElement = createElementWithAttributes('style', {
+    var styleElement = createElementWithAttributes('style', {
       textContent: getBellIconStyles(style)
     });
     document.head.appendChild(styleElement);
@@ -11934,15 +12626,15 @@
 
     return bellWrapper;
   };
-  const setServerKey = serverKey => {
+  var setServerKey = serverKey => {
     appServerKey = serverKey;
     fcmPublicKey = serverKey;
   };
-  const addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
-    const primaryButton = wrapper.querySelector('#primaryButton');
-    const secondaryButton = wrapper.querySelector('#secondaryButton');
+  var addEventListeners = (wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    var primaryButton = wrapper.querySelector('#primaryButton');
+    var secondaryButton = wrapper.querySelector('#secondaryButton');
 
-    const removeWrapper = () => {
+    var removeWrapper = () => {
       var _wrapper$parentNode;
 
       return (_wrapper$parentNode = wrapper.parentNode) === null || _wrapper$parentNode === void 0 ? void 0 : _wrapper$parentNode.removeChild(wrapper);
@@ -11965,8 +12657,8 @@
       }
     });
   };
-  const addBellEventListeners = (bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
-    const bellIcon = bellWrapper.querySelector('#bell_icon');
+  var addBellEventListeners = (bellWrapper, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl) => {
+    var bellIcon = bellWrapper.querySelector('#bell_icon');
     bellIcon.addEventListener('click', () => {
       if (Notification.permission === 'denied') {
         toggleGifModal(bellWrapper);
@@ -11983,12 +12675,12 @@
     bellIcon.addEventListener('mouseleave', () => clearTooltip(bellWrapper));
     bellWrapper.querySelector('#close_modal').addEventListener('click', () => toggleGifModal(bellWrapper));
   };
-  const setElementPosition = (element, position) => {
+  var setElementPosition = (element, position) => {
     Object.assign(element.style, {
       inset: 'auto',
       transform: 'none'
     });
-    const positions = {
+    var positions = {
       'Top Right': {
         inset: '16px 16px auto auto'
       },
@@ -12017,43 +12709,43 @@
     Object.assign(element.style, positions[position] || positions['top-right']);
   };
 
-  const displayTooltip = bellWrapper => {
-    const gifModal = bellWrapper.querySelector('#gif_modal');
+  var displayTooltip = bellWrapper => {
+    var gifModal = bellWrapper.querySelector('#gif_modal');
 
     if (gifModal.style.display === 'flex') {
       return;
     }
 
-    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+    var tooltip = bellWrapper.querySelector('#bell_tooltip');
 
     if (tooltip) {
       tooltip.style.display = 'flex';
     }
 
-    const bellIcon = bellWrapper.querySelector('#bell_icon');
-    const bellRect = bellIcon.getBoundingClientRect();
+    var bellIcon = bellWrapper.querySelector('#bell_icon');
+    var bellRect = bellIcon.getBoundingClientRect();
     var midX = window.innerWidth / 2;
     var midY = window.innerHeight / 2;
     bellWrapper.style['flex-direction'] = bellRect.y > midY ? 'column-reverse' : 'column';
     bellWrapper.style['align-items'] = bellRect.x > midX ? 'flex-end' : 'flex-start';
   };
 
-  const clearTooltip = bellWrapper => {
-    const tooltip = bellWrapper.querySelector('#bell_tooltip');
+  var clearTooltip = bellWrapper => {
+    var tooltip = bellWrapper.querySelector('#bell_tooltip');
 
     if (tooltip) {
       tooltip.style.display = 'none';
     }
   };
 
-  const toggleGifModal = bellWrapper => {
+  var toggleGifModal = bellWrapper => {
     clearTooltip(bellWrapper);
-    const gifModal = bellWrapper.querySelector('#gif_modal');
+    var gifModal = bellWrapper.querySelector('#gif_modal');
     gifModal.style.display = gifModal.style.display === 'none' ? 'flex' : 'none';
   };
 
   // contextManager.js
-  const CampaignContext = {
+  var CampaignContext = {
     _device: null,
     _session: null,
     _request: null,
@@ -12098,24 +12790,24 @@
 
   };
 
-  const OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
-  const CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
-  const WVE_CLASS = {
+  var OVERLAY_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/overlay.js';
+  var CSS_PATH = 'https://web-native-display-campaign.clevertap.com/production/lib-overlay/style.css';
+  var WVE_CLASS = {
     FLICKER_SHOW: 'wve-anti-flicker-show',
     FLICKER_HIDE: 'wve-anti-flicker-hide',
     FLICKER_ID: 'wve-flicker-style'
   };
-  const WVE_QUERY_PARAMS = {
+  var WVE_QUERY_PARAMS = {
     BUILDER: 'ctBuilder',
     PREVIEW: 'ctBuilderPreview',
     SDK_CHECK: 'ctBuilderSDKCheck'
   };
-  const WVE_URL_ORIGIN = {
+  var WVE_URL_ORIGIN = {
     CLEVERTAP: 'dashboard.clevertap.com',
     LOCAL: 'localhost'
   };
 
-  const logLevels = {
+  var logLevels = {
     DISABLE: 0,
     ERROR: 1,
     INFO: 2,
@@ -12163,29 +12855,37 @@
       return Logger.instance;
     }
 
-    get logLevel() {
-      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
+    get logLevelValue() {
+      return this.logLevel;
     }
 
-    set logLevel(logLevel) {
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
+    set logLevelValue(logLevel) {
+      this.logLevel = logLevel;
     }
 
     error(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
+      if (this.logLevelValue >= logLevels.ERROR) {
         _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
       }
     }
 
     info(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
+      if (this.logLevelValue >= logLevels.INFO) {
         _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
       }
     }
 
     debug(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
+      if (this.logLevelValue >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
         _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
+      }
+    }
+
+    debugShopify(message) {
+      var type = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'web';
+
+      if (this.logLevelValue >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message, type);
       }
     }
 
@@ -12204,34 +12904,40 @@
   }
 
   var _log2 = function _log2(level, message) {
-    if (window.console) {
-      try {
-        const ts = new Date().getTime();
-        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
-    }
+    var eventType = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'web';
+
+    try {
+      var ts = new Date().getTime();
+
+      if (eventType === 'shopify_standard_event') {
+        console.log("CleverTap [".concat(ts, "]: "));
+        console.log(JSON.parse(message));
+      } else {
+        console.log("CleverTap [".concat(ts, "]: ").concat(message));
+      }
+    } catch (e) {}
   };
 
-  var _get_isLegacyDebug = function () {
+  var _get_isLegacyDebug = function _get_isLegacyDebug() {
     return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
   };
 
-  const renderPopUpImageOnly = (targetingMsgJson, _session) => {
-    const divId = 'wzrkImageOnlyDiv';
-    const popupImageOnly = document.createElement('ct-web-popup-imageonly');
+  var renderPopUpImageOnly = (targetingMsgJson, _session) => {
+    var divId = 'wzrkImageOnlyDiv';
+    var popupImageOnly = document.createElement('ct-web-popup-imageonly');
     popupImageOnly.session = _session;
     popupImageOnly.target = targetingMsgJson;
-    const containerEl = document.getElementById(divId);
+    var containerEl = document.getElementById(divId);
     containerEl.innerHTML = '';
     containerEl.style.visibility = 'hidden';
     containerEl.appendChild(popupImageOnly);
   };
-  const FULLSCREEN_STYLE = "\n  z-index: 2147483647;\n  display: block;\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100vw !important;\n  height: 100vh !important;\n  margin: 0;\n  padding: 0;\n  background: transparent;\n";
-  const IFRAME_STYLE = "\n  ".concat(FULLSCREEN_STYLE, "\n  border: 0 !important;\n");
-  const renderAdvancedBuilder = function (targetingMsgJson, _session, _logger) {
-    let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
-    const divId = 'wizAdvBuilder';
-    const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Check for existing wrapper and handle accordingly
+  var FULLSCREEN_STYLE = "\n  z-index: 2147483647;\n  display: block;\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100vw !important;\n  height: 100vh !important;\n  margin: 0;\n  padding: 0;\n  background: transparent;\n";
+  var IFRAME_STYLE = "\n  ".concat(FULLSCREEN_STYLE, "\n  border: 0 !important;\n");
+  var renderAdvancedBuilder = function renderAdvancedBuilder(targetingMsgJson, _session, _logger) {
+    var isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+    var divId = 'wizAdvBuilder';
+    var campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Check for existing wrapper and handle accordingly
 
     if (handleExistingWrapper(divId)) {
       return; // Early exit if existing wrapper should not be replaced
@@ -12239,8 +12945,8 @@
 
     $ct.campaignDivMap[campaignId] = divId; // Create DOM elements
 
-    const msgDiv = createWrapperDiv(divId);
-    const iframe = createIframe(targetingMsgJson, _logger);
+    var msgDiv = createWrapperDiv(divId);
+    var iframe = createIframe(targetingMsgJson, _logger);
 
     if (!iframe) {
       _logger.error('Failed to create iframe for Advanced Builder');
@@ -12260,11 +12966,11 @@
     });
   };
 
-  const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPreview) => {
+  var handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPreview) => {
     var _e$detail, _e$detail$elementDeta;
 
-    const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-    const {
+    var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+    var {
       detail
     } = e;
 
@@ -12274,7 +12980,7 @@
 
     _logger.debug('Received event type:', detail);
 
-    const payload = {
+    var payload = {
       msgId: targetingMsgJson.wzrk_id,
       pivotId: targetingMsgJson.wzrk_pivot,
       kv: {
@@ -12337,8 +13043,8 @@
   }; // Utility: Check and handle existing wrapper
 
 
-  const handleExistingWrapper = divId => {
-    const existingWrapper = document.getElementById(divId);
+  var handleExistingWrapper = divId => {
+    var existingWrapper = document.getElementById(divId);
 
     if (existingWrapper) {
       if ($ct.dismissSpamControl) {
@@ -12353,21 +13059,21 @@
   }; // Utility: Create wrapper div
 
 
-  const createWrapperDiv = divId => {
-    const msgDiv = document.createElement('div');
+  var createWrapperDiv = divId => {
+    var msgDiv = document.createElement('div');
     msgDiv.id = divId;
     msgDiv.setAttribute('style', FULLSCREEN_STYLE);
     return msgDiv;
   }; // Utility: Create iframe with attributes and content
 
 
-  const createIframe = (targetingMsgJson, _logger) => {
+  var createIframe = (targetingMsgJson, _logger) => {
     try {
-      const staticHTML = targetingMsgJson.msgContent.html;
-      const isDesktop = window.matchMedia('(min-width: 480px)').matches;
-      const config = isDesktop ? targetingMsgJson.display.desktopConfig : targetingMsgJson.display.mobileConfig;
-      const html = staticHTML.replace('"##Vars##"', JSON.stringify(config));
-      const iframe = document.createElement('iframe');
+      var staticHTML = targetingMsgJson.msgContent.html;
+      var isDesktop = window.matchMedia('(min-width: 480px)').matches;
+      var config = isDesktop ? targetingMsgJson.display.desktopConfig : targetingMsgJson.display.mobileConfig;
+      var html = staticHTML.replace('"##Vars##"', JSON.stringify(config));
+      var iframe = document.createElement('iframe');
       iframe.id = 'wiz-iframe';
       iframe.srcdoc = html;
       iframe.setAttribute('style', IFRAME_STYLE);
@@ -12380,7 +13086,7 @@
   }; // Utility: Setup iframe event listeners
 
 
-  const setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger, isPreview) => {
+  var setupIframeEventListeners = (iframe, targetingMsgJson, divId, _session, _logger, isPreview) => {
     iframe.onload = () => {
       try {
         // Try direct document access first
@@ -12399,8 +13105,8 @@
   }; // Utility: Setup postMessage listener as fallback
 
 
-  const setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) => {
-    const messageHandler = event => {
+  var setupPostMessageListener = (targetingMsgJson, divId, _session, _logger) => {
+    var messageHandler = event => {
       var _event$data;
 
       if (!event.origin.endsWith(WVE_URL_ORIGIN.CLEVERTAP)) {
@@ -12426,12 +13132,12 @@
       return;
     }
 
-    const logger = Logger.getInstance();
+    var logger = Logger.getInstance();
 
     try {
-      const eventData = JSON.parse(event.data);
-      const inAppNotifs = eventData.inapp_notifs;
-      const msgContent = inAppNotifs[0].msgContent;
+      var eventData = JSON.parse(event.data);
+      var inAppNotifs = eventData.inapp_notifs;
+      var msgContent = inAppNotifs[0].msgContent;
 
       if (eventData && msgContent && msgContent.templateType === 'advanced-web-popup-builder') {
         renderAdvancedBuilder(inAppNotifs[0], null, Logger.getInstance(), true);
@@ -12441,21 +13147,21 @@
     }
   }
 
-  const checkWebPopupPreview = () => {
-    const logger = Logger.getInstance();
-    const searchParams = new URLSearchParams(window.location.search);
-    const ctType = searchParams.get('ctActionMode');
+  var checkWebPopupPreview = () => {
+    var logger = Logger.getInstance();
+    var searchParams = new URLSearchParams(window.location.search);
+    var ctType = searchParams.get('ctActionMode');
 
     if (ctType) {
-      const parentWindow = window.opener;
-      const referrer = new URL(document.referrer);
+      var parentWindow = window.opener;
+      var referrer = new URL(document.referrer);
 
       switch (ctType) {
         case WEB_POPUP_PREVIEW:
           if (parentWindow) {
             parentWindow.postMessage('ready', referrer.origin);
 
-            const eventHandler = event => handleWebPopupPreviewPostMessageEvent(event);
+            var eventHandler = event => handleWebPopupPreviewPostMessageEvent(event);
 
             window.addEventListener('message', eventHandler, false);
           }
@@ -12537,8 +13243,8 @@
       this.resizeObserver = new ResizeObserver(() => this.handleResize(this.popup, this.container));
       this.resizeObserver.observe(this.popup);
 
-      const closeFn = () => {
-        const campaignId = this.target.wzrk_id.split('_')[0]; // const currentSessionId = this.session.sessionId
+      var closeFn = () => {
+        var campaignId = this.target.wzrk_id.split('_')[0]; // const currentSessionId = this.session.sessionId
 
         this.resizeObserver.unobserve(this.popup);
         document.getElementById('wzrkImageOnlyDiv').style.display = 'none';
@@ -12548,7 +13254,7 @@
           if (StorageManager._isLocalStorageSupported()) {
             var _campaignObj$dnd;
 
-            const campaignObj = getCampaignObject();
+            var campaignObj = getCampaignObject();
             campaignObj.dnd = [...new Set([...((_campaignObj$dnd = campaignObj.dnd) !== null && _campaignObj$dnd !== void 0 ? _campaignObj$dnd : []), campaignId])];
             saveCampaignObject(campaignObj);
           }
@@ -12598,7 +13304,7 @@
     }
 
     handleResize(popup, container) {
-      const width = this.getRenderedImageWidth(popup);
+      var width = this.getRenderedImageWidth(popup);
       container.style.setProperty('width', "".concat(width, "px"));
 
       if (window.innerWidth > 480) {
@@ -12614,7 +13320,7 @@
 
     updateImageAndContainerWidth() {
       return () => {
-        const width = this.getRenderedImageWidth(this.popup);
+        var width = this.getRenderedImageWidth(this.popup);
         this.popup.style.setProperty('width', "".concat(width, "px"));
         this.container.style.setProperty('width', "".concat(width, "px"));
         this.container.style.setProperty('height', 'auto');
@@ -12630,7 +13336,7 @@
     }
 
     getRenderedImageWidth(img) {
-      const ratio = img.naturalWidth / img.naturalHeight;
+      var ratio = img.naturalWidth / img.naturalHeight;
       return img.height * ratio;
     }
 
@@ -12658,7 +13364,7 @@
     }
 
     createEl(type, id, part) {
-      const _el = document.createElement(type);
+      var _el = document.createElement(type);
 
       _el.setAttribute('id', id);
 
@@ -12675,16 +13381,16 @@
         case 'text-with-icon':
         case 'text-with-icon-and-image':
           {
-            const message = this.prepareBasicMessage(msg.msg[0]);
+            var message = this.prepareBasicMessage(msg.msg[0]);
             this.wrapper.appendChild(message);
           }
       }
 
-      const timeStamp = this.createEl('div', 'timeStamp');
+      var timeStamp = this.createEl('div', 'timeStamp');
       timeStamp.innerHTML = "<span>".concat(determineTimeStampText(msg.id.split('_')[1]), "<span>");
 
       if (!msg.viewed) {
-        const unreadMarker = this.createEl('span', 'unreadMarker');
+        var unreadMarker = this.createEl('span', 'unreadMarker');
         timeStamp.appendChild(unreadMarker);
       }
 
@@ -12693,30 +13399,30 @@
     }
 
     prepareBasicMessage(msg) {
-      const message = this.createEl('div', 'message');
+      var message = this.createEl('div', 'message');
 
       if (msg.imageUrl) {
-        const imageContainer = this.addImage(msg.imageUrl, 'mainImg');
+        var imageContainer = this.addImage(msg.imageUrl, 'mainImg');
         message.appendChild(imageContainer);
       }
 
-      const iconTitleDescWrapper = this.createEl('div', 'iconTitleDescWrapper');
+      var iconTitleDescWrapper = this.createEl('div', 'iconTitleDescWrapper');
 
       if (msg.iconUrl) {
-        const iconContainer = this.addImage(msg.iconUrl, 'iconImg');
+        var iconContainer = this.addImage(msg.iconUrl, 'iconImg');
         iconTitleDescWrapper.appendChild(iconContainer);
       }
 
-      const titleDescWrapper = this.createEl('div', 'titleDescWrapper');
+      var titleDescWrapper = this.createEl('div', 'titleDescWrapper');
 
       if (msg.title) {
-        const title = this.createEl('div', 'title');
+        var title = this.createEl('div', 'title');
         title.innerText = msg.title;
         titleDescWrapper.appendChild(title);
       }
 
       if (msg.description) {
-        const description = this.createEl('div', 'description');
+        var description = this.createEl('div', 'description');
         description.innerText = msg.description;
         titleDescWrapper.appendChild(description);
       }
@@ -12730,7 +13436,7 @@
       }
 
       if (msg.buttons && msg.buttons.length) {
-        const buttonsContainer = this.addButtons(msg.buttons);
+        var buttonsContainer = this.addButtons(msg.buttons);
         message.appendChild(buttonsContainer);
       }
 
@@ -12738,11 +13444,11 @@
     }
 
     addButtons() {
-      let buttons = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-      const buttonsContainer = this.createEl('div', 'buttonsContainer');
-      let hasCopyAction = false;
+      var buttons = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+      var buttonsContainer = this.createEl('div', 'buttonsContainer');
+      var hasCopyAction = false;
       buttons.forEach((b, i) => {
-        const button = this.createEl('button', "button-".concat(i), 'button');
+        var button = this.createEl('button', "button-".concat(i), 'button');
         button.innerText = b.text;
 
         if (i > 0) {
@@ -12766,15 +13472,15 @@
     addSnackbar(buttonsContainer) {
       this.snackBar = this.createEl('div', "snackbar-".concat(this.campaignId), 'snackbar');
       this.snackBar.innerHTML = greenTickSvg;
-      const clipboardMsg = this.createEl('span', "snackbar-msg-".concat(this.campaignId), 'snackbar-msg');
+      var clipboardMsg = this.createEl('span', "snackbar-msg-".concat(this.campaignId), 'snackbar-msg');
       clipboardMsg.innerText = 'Copied to clipboard';
       this.snackBar.appendChild(clipboardMsg);
       buttonsContainer.appendChild(this.snackBar);
     }
 
     addImage(url, type) {
-      const imageContainer = this.createEl('div', "".concat(type, "Container"));
-      const image = this.createEl('img', type);
+      var imageContainer = this.createEl('div', "".concat(type, "Container"));
+      var image = this.createEl('img', type);
       image.setAttribute('src', url); // images will be fetched as and when the element comes into the viewport
 
       image.setAttribute('loading', 'lazy');
@@ -12794,15 +13500,15 @@
     }
 
     raiseClickedForBasicTemplates(path, isPreview) {
-      const msg = this.message.msg[0];
-      const payload = {
+      var msg = this.message.msg[0];
+      var payload = {
         msgId: this.campaignId,
         pivotId: this.pivotId
       };
 
       if (path.tagName === 'BUTTON') {
-        const id = path.id.split('-')[1];
-        const button = msg.buttons[id];
+        var id = path.id.split('-')[1];
+        var button = msg.buttons[id];
         payload.kv = {
           wzrk_c2a: button.text
         };
@@ -12830,8 +13536,8 @@
 
   }
 
-  const messageStyles = (_ref) => {
-    let {
+  var messageStyles = (_ref) => {
+    var {
       backgroundColor,
       borderColor,
       titleColor,
@@ -12842,8 +13548,8 @@
     } = _ref;
     return "\n    <style id=\"messageStyles\">\n      ct-inbox-message::part(messageWrapper) {\n        margin-bottom: 16px; \n      }\n      ct-inbox-message::part(message) {\n        background-color: ".concat(backgroundColor, "; \n        border: 1px solid ").concat(borderColor, ";\n        border-radius: 4px; \n        overflow: hidden;\n        min-height: 40px;\n      }\n      ct-inbox-message::part(message):hover {\n        box-shadow: 0px 4px 8px rgb(0 0 0 / 10%);\n        cursor: pointer;\n      }\n      ct-inbox-message::part(iconTitleDescWrapper) {\n        display: flex; \n        padding: 16px;\n      }\n      ct-inbox-message::part(titleDescWrapper) {\n        display: flex; \n        flex-direction: column;\n      }\n      ct-inbox-message::part(iconImgContainer) {\n        display: flex; \n        margin-right: 16px;\n      }\n      ct-inbox-message::part(mainImgContainer) {\n        line-height: 0;\n      }\n      ct-inbox-message::part(mainImg) {\n        width: 100%; \n        background: #b2b1ae;\n      }\n      ct-inbox-message::part(iconImg) {\n        height: 40px; \n        width: 40px;\n      }\n      ct-inbox-message::part(title) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 600; \n        color: ").concat(titleColor, "\n      }\n      ct-inbox-message::part(description) {\n        font-size: 14px !important; \n        line-height: 20px; \n        font-weight: 400; \n        color: ").concat(descriptionColor, "\n      }\n      ct-inbox-message::part(button) {\n        background-color: ").concat(buttonColor, "; \n        color: ").concat(buttonTextColor, "; \n        padding: 8px 16px; \n        font-size: 12px; \n        line-height: 16px; \n        font-weight: 600; \n        flex: 1; \n        border-radius: 0px; \n        text-transform: capitalize; \n        cursor: pointer; \n        border: none;\n      }\n      ct-inbox-message::part(buttonsContainer) {\n        display: flex;\n        position: relative;\n      }\n      ct-inbox-message::part(snackbar) {\n        position: absolute;\n        top: calc(-100% - 12px);\n        left: 50%;\n        transform: translate(-50%, 0px);\n        font-size: 14px;\n        font-weight: 400;\n        background: #FFFFFF;\n        border: 1px solid #ECEDF2;\n        box-shadow: 0px 4px 8px rgb(0 0 0 / 6%), 0px 0px 2px rgb(0 0 0 / 4%);\n        border-radius: 4px;\n        z-index: 2;\n        display: none;\n        width: max-content;\n        align-items: center;\n        padding: 8px 16px;\n        justify-content: center;\n      }\n\n      ct-inbox-message::part(snackbar-msg) {\n        color: black;\n        margin-left: 8px;\n      }\n\n      ct-inbox-message::part(timeStamp) {\n        display: flex; \n        justify-content: end; \n        align-items: center; \n        margin-top: 4px; \n        font-size: 12px !important; \n        line-height: 16px; \n        color: black;\n      }\n      ct-inbox-message::part(unreadMarker) {\n        height: 8px; \n        width: 8px; \n        border-radius: 50%; \n        background-color: ").concat(unreadMarkerColor, "; \n        margin-left: 8px;\n      }\n      @media only screen and (min-width: 420px) {\n        ct-inbox-message::part(mainImg) {\n          height: 180px;\n        }\n      }\n    </style>\n  ");
   };
-  const inboxContainerStyles = (_ref2) => {
-    let {
+  var inboxContainerStyles = (_ref2) => {
+    var {
       panelBackgroundColor,
       panelBorderColor,
       headerBackgroundColor,
@@ -12882,10 +13588,10 @@
         return e => {
           if (e.composedPath().includes(this.inbox)) {
             // path is not supported on FF. So we fallback to e.composedPath
-            const path = e.path || e.composedPath && e.composedPath();
+            var path = e.path || e.composedPath && e.composedPath();
 
             if (path.length) {
-              const id = path[0].id;
+              var id = path[0].id;
 
               if (id === 'closeInbox') {
                 this.toggleInbox();
@@ -12894,14 +13600,14 @@
                 this.selectedCategoryRef = path[0];
                 this.updateActiveCategory(path[0].innerText);
               } else {
-                const _path = path.filter(p => {
+                var _path = path.filter(p => {
                   var _p$id;
 
                   return ((_p$id = p.id) === null || _p$id === void 0 ? void 0 : _p$id.startsWith('button-')) || p.tagName === 'CT-INBOX-MESSAGE';
                 });
 
                 if (_path.length) {
-                  const messageEl = _path[_path.length - 1];
+                  var messageEl = _path[_path.length - 1];
                   messageEl.raiseClickedEvent(_path[0], this.isPreview);
                 }
               }
@@ -12919,7 +13625,7 @@
       this.setBadgeStyle = msgCount => {
         if (this.unviewedBadge !== null) {
           this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount;
-          const shouldShowUnviewedBadge = msgCount > 0 && document.getElementById(this.config.inboxSelector);
+          var shouldShowUnviewedBadge = msgCount > 0 && document.getElementById(this.config.inboxSelector);
           this.unviewedBadge.style.display = shouldShowUnviewedBadge ? 'flex' : 'none';
         }
       };
@@ -12953,13 +13659,13 @@
         msgs = [];
       }
 
-      const previewMsgs = {};
+      var previewMsgs = {};
 
       if (msgs.length > 0 && this.inbox) {
         this.isPreview = true;
         this.unviewedCounter = 0;
         msgs.forEach(m => {
-          const key = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
+          var key = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
           m.id = key;
           previewMsgs[key] = m;
           this.unviewedMessages[key] = m;
@@ -13008,8 +13714,8 @@
     }
 
     addMsgsToInboxFromLS() {
-      const messages = this.deleteExpiredAndGetUnexpiredMsgs(false);
-      const msgIds = messages ? Object.keys(messages) : [];
+      var messages = this.deleteExpiredAndGetUnexpiredMsgs(false);
+      var msgIds = messages ? Object.keys(messages) : [];
 
       if (msgIds.length === 0) {
         return;
@@ -13045,14 +13751,14 @@
 
 
     deleteExpiredAndGetUnexpiredMsgs() {
-      let deleteMsgsFromUI = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
-      let messages = getInboxMessages();
-      const now = Math.floor(Date.now() / 1000);
+      var deleteMsgsFromUI = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+      var messages = getInboxMessages();
+      var now = Math.floor(Date.now() / 1000);
 
-      for (const msg in messages) {
+      for (var msg in messages) {
         if (messages[msg].wzrk_ttl && messages[msg].wzrk_ttl > 0 && messages[msg].wzrk_ttl < now) {
           if (deleteMsgsFromUI && this.inbox) {
-            const el = this.shadowRoot.getElementById(messages[msg].id);
+            var el = this.shadowRoot.getElementById(messages[msg].id);
             el && el.remove();
 
             if (!messages[msg].viewed) {
@@ -13077,12 +13783,12 @@
     }
 
     updateInboxMessages() {
-      let msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-      const inboxMsgs = this.deleteExpiredAndGetUnexpiredMsgs();
-      const date = Date.now();
-      const incomingMsgs = {};
+      var msgs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+      var inboxMsgs = this.deleteExpiredAndGetUnexpiredMsgs();
+      var date = Date.now();
+      var incomingMsgs = {};
       msgs.forEach((m, i) => {
-        const key = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
+        var key = "".concat(m.wzrk_id.split('_')[0], "_").concat(Date.now());
         m.id = key; // We are doing this to preserve the order of the messages
 
         m.date = date - i;
@@ -13101,7 +13807,7 @@
     }
 
     createEl(type, id, part) {
-      const _el = document.createElement(type);
+      var _el = document.createElement(type);
 
       _el.setAttribute('id', id);
 
@@ -13127,8 +13833,8 @@
 
     updateUnviewedBadgePosition() {
       try {
-        const inboxNode = document.getElementById(this.config.inboxSelector) || this.inboxSelector;
-        const {
+        var inboxNode = document.getElementById(this.config.inboxSelector) || this.inboxSelector;
+        var {
           top,
           right
         } = inboxNode.getBoundingClientRect();
@@ -13141,17 +13847,17 @@
 
     createinbox() {
       this.inbox = this.createEl('div', 'inbox');
-      const header = this.createEl('div', 'header');
-      const headerTitle = this.createEl('div', 'headerTitle');
+      var header = this.createEl('div', 'header');
+      var headerTitle = this.createEl('div', 'headerTitle');
       headerTitle.innerText = this.config.title;
-      const closeIcon = this.createEl('div', 'closeInbox');
+      var closeIcon = this.createEl('div', 'closeInbox');
       closeIcon.innerHTML = '&times';
       header.appendChild(headerTitle);
       header.appendChild(closeIcon);
       this.inbox.appendChild(header);
 
       if (this.config.categories.length) {
-        const categories = this.createCategories();
+        var categories = this.createCategories();
         this.inbox.appendChild(categories);
       }
 
@@ -13161,7 +13867,7 @@
       this.emptyInboxMsg.innerText = 'All messages will be displayed here.';
       this.inboxCard.appendChild(this.emptyInboxMsg); // Intersection observer for notification viewed
 
-      const options = {
+      var options = {
         root: this.inboxCard,
         rootMargin: '0px',
         threshold: 0.5
@@ -13173,19 +13879,19 @@
     }
 
     createCategories() {
-      const categoriesContainer = this.createEl('div', 'categoriesContainer');
-      const leftArrow = this.createEl('div', 'leftArrow');
+      var categoriesContainer = this.createEl('div', 'categoriesContainer');
+      var leftArrow = this.createEl('div', 'leftArrow');
       leftArrow.innerHTML = arrowSvg;
       leftArrow.children[0].style = 'transform: rotate(180deg)';
       leftArrow.addEventListener('click', () => {
         this.shadowRoot.getElementById('categoriesWrapper').scrollBy(-70, 0);
       });
       categoriesContainer.appendChild(leftArrow);
-      const categoriesWrapper = this.createEl('div', 'categoriesWrapper');
-      const _categories = ['All', ...this.config.categories];
+      var categoriesWrapper = this.createEl('div', 'categoriesWrapper');
+      var _categories = ['All', ...this.config.categories];
 
       _categories.forEach((c, i) => {
-        const category = this.createEl('div', "category-".concat(i), 'category');
+        var category = this.createEl('div', "category-".concat(i), 'category');
         category.innerText = c;
 
         if (i === 0) {
@@ -13196,23 +13902,23 @@
       });
 
       categoriesContainer.appendChild(categoriesWrapper);
-      const rightArrow = this.createEl('div', 'rightArrow');
+      var rightArrow = this.createEl('div', 'rightArrow');
       rightArrow.innerHTML = arrowSvg;
       rightArrow.addEventListener('click', () => {
         this.shadowRoot.getElementById('categoriesWrapper').scrollBy(70, 0);
       });
       categoriesContainer.appendChild(rightArrow);
-      const options = {
+      var options = {
         root: categoriesContainer,
         threshold: 0.9
       };
-      const firstCategory = categoriesWrapper.children[0];
-      const lastCategory = categoriesWrapper.children[this.config.categories.length];
-      const firstCategoryObserver = new IntersectionObserver(e => {
+      var firstCategory = categoriesWrapper.children[0];
+      var lastCategory = categoriesWrapper.children[this.config.categories.length];
+      var firstCategoryObserver = new IntersectionObserver(e => {
         this.categoryObserverCb(leftArrow, e[0].intersectionRatio >= 0.9);
       }, options);
       firstCategoryObserver.observe(firstCategory);
-      const lastCategoryObserver = new IntersectionObserver(e => {
+      var lastCategoryObserver = new IntersectionObserver(e => {
         this.categoryObserverCb(rightArrow, e[0].intersectionRatio >= 0.9);
       }, options);
       lastCategoryObserver.observe(lastCategory);
@@ -13230,7 +13936,7 @@
     updateActiveCategory(activeCategory) {
       this.selectedCategory = activeCategory;
       this.inboxCard.scrollTop = 0;
-      let counter = 0;
+      var counter = 0;
       this.prevCategoryRef && this.prevCategoryRef.setAttribute('selected', 'false');
       this.selectedCategoryRef.setAttribute('selected', 'true');
       this.inboxCard.childNodes.forEach(c => {
@@ -13254,15 +13960,15 @@
     buildUIForMessages() {
       var _this$config$maxMsgsI;
 
-      let messages = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      var messages = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       !this.isPreview && this.updateTSForRenderedMsgs();
       this.inboxCard.scrollTop = 0;
-      const maxMsgsInInbox = (_this$config$maxMsgsI = this.config.maxMsgsInInbox) !== null && _this$config$maxMsgsI !== void 0 ? _this$config$maxMsgsI : MAX_INBOX_MSG;
-      const firstChild = this.inboxCard.firstChild;
-      const sortedMsgs = Object.values(messages).sort((a, b) => b.date - a.date).map(m => m.id);
+      var maxMsgsInInbox = (_this$config$maxMsgsI = this.config.maxMsgsInInbox) !== null && _this$config$maxMsgsI !== void 0 ? _this$config$maxMsgsI : MAX_INBOX_MSG;
+      var firstChild = this.inboxCard.firstChild;
+      var sortedMsgs = Object.values(messages).sort((a, b) => b.date - a.date).map(m => m.id);
 
-      for (const m of sortedMsgs) {
-        const item = new Message(this.config, messages[m]);
+      for (var m of sortedMsgs) {
+        var item = new Message(this.config, messages[m]);
         item.setAttribute('id', messages[m].id);
         item.setAttribute('pivot', messages[m].wzrk_pivot);
         item.setAttribute('part', 'ct-inbox-message');
@@ -13278,10 +13984,10 @@
         this.observer.observe(item);
       }
 
-      let msgTotalCount = this.inboxCard.querySelectorAll('ct-inbox-message').length;
+      var msgTotalCount = this.inboxCard.querySelectorAll('ct-inbox-message').length;
 
       while (msgTotalCount > maxMsgsInInbox) {
-        const ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message');
+        var ctInboxMsgs = this.inboxCard.querySelectorAll('ct-inbox-message');
 
         if (ctInboxMsgs.length > 0) {
           ctInboxMsgs[ctInboxMsgs.length - 1].remove();
@@ -13290,7 +13996,7 @@
         msgTotalCount--;
       }
 
-      const hasMessages = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]').length;
+      var hasMessages = this.inboxCard.querySelectorAll('ct-inbox-message[style*="display: block"]').length;
       this.emptyInboxMsg.style.display = hasMessages ? 'none' : 'block';
     }
     /**
@@ -13313,8 +14019,8 @@
     checkForWebInbox(e) {
       var _this$inboxSelector;
 
-      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-      const inboxElement = document.getElementById(config.inboxSelector);
+      var config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+      var inboxElement = document.getElementById(config.inboxSelector);
       return ((_this$inboxSelector = this.inboxSelector) === null || _this$inboxSelector === void 0 ? void 0 : _this$inboxSelector.contains(e.target)) || (inboxElement === null || inboxElement === void 0 ? void 0 : inboxElement.contains(e.target));
     }
     /**
@@ -13324,7 +14030,7 @@
 
 
     handleMessageViewed(entries) {
-      const raiseViewedEvent = !this.isPreview;
+      var raiseViewedEvent = !this.isPreview;
 
       if (this.isInboxOpen) {
         entries.forEach(e => {
@@ -13336,9 +14042,9 @@
                 msgId: e.target.campaignId,
                 pivotId: e.target.pivotId
               });
-              this.updateMessageInLS(e.target.id, { ...e.target.message,
+              this.updateMessageInLS(e.target.id, _objectSpread2(_objectSpread2({}, e.target.message), {}, {
                 viewed: 1
-              });
+              }));
               setTimeout(() => {
                 e.target.shadowRoot.getElementById('unreadMarker').style.display = 'none';
               }, 1000);
@@ -13359,7 +14065,7 @@
 
     updateMessageInLS(key, value) {
       if (!this.isPreview) {
-        const messages = getInboxMessages();
+        var messages = getInboxMessages();
         messages[key] = value;
         saveInboxMessages(messages);
       }
@@ -13390,18 +14096,18 @@
     }
 
     setInboxPosition(e) {
-      const windowWidth = window.outerWidth;
-      const customInboxStyles = getComputedStyle($ct.inbox);
-      const top = customInboxStyles.getPropertyValue('--inbox-top');
-      const bottom = customInboxStyles.getPropertyValue('--inbox-bottom');
-      const left = customInboxStyles.getPropertyValue('--inbox-left');
-      const right = customInboxStyles.getPropertyValue('--inbox-right');
-      const hasPositionDefined = top || bottom || left || right;
+      var windowWidth = window.outerWidth;
+      var customInboxStyles = getComputedStyle($ct.inbox);
+      var top = customInboxStyles.getPropertyValue('--inbox-top');
+      var bottom = customInboxStyles.getPropertyValue('--inbox-bottom');
+      var left = customInboxStyles.getPropertyValue('--inbox-left');
+      var right = customInboxStyles.getPropertyValue('--inbox-right');
+      var hasPositionDefined = top || bottom || left || right;
 
       if (windowWidth > 481 && !hasPositionDefined) {
-        const res = getInboxPosition(e, this.inbox.clientHeight, this.inbox.clientWidth);
-        const xPos = res.xPos;
-        const yPos = res.yPos;
+        var res = getInboxPosition(e, this.inbox.clientHeight, this.inbox.clientWidth);
+        var xPos = res.xPos;
+        var yPos = res.yPos;
         this.inbox.style.top = yPos + 'px';
         this.inbox.style.left = xPos + 'px';
       }
@@ -13419,9 +14125,9 @@
         return;
       }
 
-      let counter = 0;
+      var counter = 0;
       this.inboxCard.querySelectorAll('ct-inbox-message').forEach(m => {
-        const messages = getInboxMessages();
+        var messages = getInboxMessages();
 
         if (messages[m.id] && messages[m.id].viewed === 0) {
           counter++;
@@ -13432,15 +14138,15 @@
 
     updateTSForRenderedMsgs() {
       this.inboxCard.querySelectorAll('ct-inbox-message').forEach(m => {
-        const ts = m.id.split('_')[1];
+        var ts = m.id.split('_')[1];
         m.shadow.getElementById('timeStamp').firstChild.innerText = determineTimeStampText(ts);
       });
     }
 
     getInboxStyles() {
-      const headerHeight = 36;
-      const categoriesHeight = this.config.categories.length ? 64 : 16;
-      const styles = {
+      var headerHeight = 36;
+      var categoriesHeight = this.config.categories.length ? 64 : 16;
+      var styles = {
         panelBackgroundColor: this.config.styles.panelBackgroundColor,
         panelBorderColor: this.config.styles.panelBorderColor,
         headerBackgroundColor: this.config.styles.header.backgroundColor,
@@ -13461,9 +14167,9 @@
         styles.selectedCategoryBorderColor = this.config.styles.categories.selectedTab.borderColor;
       }
 
-      const inboxStyles = inboxContainerStyles(styles);
-      const cardStyles = this.config.styles.cards;
-      const msgStyles = messageStyles({
+      var inboxStyles = inboxContainerStyles(styles);
+      var cardStyles = this.config.styles.cards;
+      var msgStyles = messageStyles({
         backgroundColor: cardStyles.backgroundColor,
         borderColor: cardStyles.borderColor,
         titleColor: cardStyles.titleColor,
@@ -13477,10 +14183,10 @@
 
   }
 
-  const processWebInboxSettings = function (webInboxSetting) {
-    let isPreview = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  var processWebInboxSettings = function processWebInboxSettings(webInboxSetting) {
+    var isPreview = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-    const _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+    var _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
 
     if (isPreview) {
       $ct.inbox.inboxConfigForPreview = webInboxSetting;
@@ -13491,14 +14197,14 @@
       $ct.inbox && $ct.inbox.init();
     }
   };
-  const processInboxNotifs = msg => {
+  var processInboxNotifs = msg => {
     if (msg.inbox_preview) {
       $ct.inbox.incomingMessagesForPreview = msg.inbox_notifs;
     } else {
       $ct.inbox.incomingMessages = msg;
     }
   };
-  const addWebInbox = logger => {
+  var addWebInbox = logger => {
     checkAndRegisterWebInboxElements();
     $ct.inbox = new Inbox({
       logger
@@ -13506,11 +14212,11 @@
     document.body.appendChild($ct.inbox);
   };
 
-  const getAndMigrateInboxMessages = guid => {
-    const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}; // Doing this to migrate message to guid level
+  var getAndMigrateInboxMessages = guid => {
+    var messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}; // Doing this to migrate message to guid level
 
     if (Object.keys(messages).length > 0 && Object.keys(messages)[0].includes('_')) {
-      const gudInboxObj = {};
+      var gudInboxObj = {};
       gudInboxObj[guid] = messages;
       StorageManager.saveToLSorCookie(WEBINBOX, gudInboxObj);
       return gudInboxObj;
@@ -13519,37 +14225,39 @@
     return messages;
   };
 
-  const getInboxMessages = () => {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+  var getInboxMessages = () => {
+    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
 
     if (!isValueValid(guid)) {
       return {};
     }
 
-    const messages = getAndMigrateInboxMessages(guid);
+    var messages = getAndMigrateInboxMessages(guid);
     return messages.hasOwnProperty(guid) ? messages[guid] : {};
   };
-  const saveInboxMessages = messages => {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+  var saveInboxMessages = messages => {
+    var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
 
     if (!isValueValid(guid)) {
       return;
     }
 
-    const storedInboxObj = getAndMigrateInboxMessages(guid);
-    const newObj = { ...storedInboxObj,
+    var storedInboxObj = getAndMigrateInboxMessages(guid);
+
+    var newObj = _objectSpread2(_objectSpread2({}, storedInboxObj), {}, {
       [guid]: messages
-    };
+    });
+
     StorageManager.saveToLSorCookie(WEBINBOX, newObj);
   };
-  const initializeWebInbox = logger => {
+  var initializeWebInbox = logger => {
     return new Promise((resolve, reject) => {
-      const retryUntil = function (condition) {
-        let interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 500;
-        let maxRetries = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 20;
+      var retryUntil = function retryUntil(condition) {
+        var interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 500;
+        var maxRetries = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 20;
         return new Promise((resolve, reject) => {
-          let attempts = 0;
-          const retry = setInterval(() => {
+          var attempts = 0;
+          var retry = setInterval(() => {
             logger.debug("Retry attempt: ".concat(attempts + 1));
 
             if (condition()) {
@@ -13568,25 +14276,25 @@
         });
       };
 
-      const addInboxSafely = () => {
+      var addInboxSafely = () => {
         if ($ct.inbox === null) {
           addWebInbox(logger);
         }
       };
 
-      const checkElementCondition = () => {
-        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+      var checkElementCondition = () => {
+        var config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
         return document.getElementById(config.inboxSelector) && $ct.inbox === null;
       };
 
-      const onFailure = () => {
+      var onFailure = () => {
         logger.debug('Failed to add inbox');
       };
 
-      let retryStarted = false; // Guard flag
+      var retryStarted = false; // Guard flag
 
-      const startRetry = () => {
-        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+      var startRetry = () => {
+        var config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
 
         if (!config.inboxSelector) {
           logger.debug('Web Inbox Retry Skipped, Inbox selector is not configured');
@@ -13602,7 +14310,7 @@
         }
       };
 
-      const setupEventListeners = () => {
+      var setupEventListeners = () => {
         if (document.readyState === 'complete') {
           startRetry();
         } else {
@@ -13618,36 +14326,36 @@
       setupEventListeners();
     });
   };
-  const checkAndRegisterWebInboxElements = () => {
+  var checkAndRegisterWebInboxElements = () => {
     if (customElements.get('ct-web-inbox') === undefined) {
       customElements.define('ct-web-inbox', Inbox);
       customElements.define('ct-inbox-message', Message);
     }
   };
-  const getInboxPosition = (e, inboxHeight, inboxWidth) => {
-    const horizontalScroll = document.scrollingElement.scrollLeft;
-    const verticalScroll = document.scrollingElement.scrollTop;
-    const windowWidth = window.innerWidth + horizontalScroll;
-    const windowHeight = window.innerHeight + verticalScroll;
-    const selectorRect = e.rect || e.target.getBoundingClientRect();
-    const selectorX = selectorRect.x + horizontalScroll;
-    const selectorY = selectorRect.y + verticalScroll;
-    const selectorLeft = selectorRect.left + horizontalScroll;
-    const selectorRight = selectorRect.right + horizontalScroll;
-    const selectorTop = selectorRect.top + verticalScroll; // const selectorBottom = selectorRect.bottom + verticalScroll
+  var getInboxPosition = (e, inboxHeight, inboxWidth) => {
+    var horizontalScroll = document.scrollingElement.scrollLeft;
+    var verticalScroll = document.scrollingElement.scrollTop;
+    var windowWidth = window.innerWidth + horizontalScroll;
+    var windowHeight = window.innerHeight + verticalScroll;
+    var selectorRect = e.rect || e.target.getBoundingClientRect();
+    var selectorX = selectorRect.x + horizontalScroll;
+    var selectorY = selectorRect.y + verticalScroll;
+    var selectorLeft = selectorRect.left + horizontalScroll;
+    var selectorRight = selectorRect.right + horizontalScroll;
+    var selectorTop = selectorRect.top + verticalScroll; // const selectorBottom = selectorRect.bottom + verticalScroll
 
-    const selectorBottom = selectorRect.bottom;
-    const selectorHeight = selectorRect.height;
-    const selectorWidth = selectorRect.width;
-    const selectorCenter = {
+    var selectorBottom = selectorRect.bottom;
+    var selectorHeight = selectorRect.height;
+    var selectorWidth = selectorRect.width;
+    var selectorCenter = {
       x: selectorX + selectorWidth / 2,
       y: selectorY + selectorHeight / 2
     };
-    const halfOfInboxHeight = inboxHeight / 2;
-    const halfOfInboxWidth = inboxWidth / 2;
-    let inboxOnSide = false;
-    let xPos, yPos;
-    const padding = 16;
+    var halfOfInboxHeight = inboxHeight / 2;
+    var halfOfInboxWidth = inboxWidth / 2;
+    var inboxOnSide = false;
+    var xPos, yPos;
+    var padding = 16;
     /**
      * y co-ordinates:
      * Try to push the card downwards
@@ -13670,12 +14378,13 @@
 
     if (selectorBottom + inboxHeight <= windowHeight) {
       // try to place the card down
-      const availableHeight = windowHeight - (selectorBottom + inboxHeight);
+      var availableHeight = windowHeight - (selectorBottom + inboxHeight);
       yPos = availableHeight >= padding ? selectorBottom + padding : selectorBottom + availableHeight;
     } else if (selectorTop - inboxHeight >= verticalScroll) {
       // try to place the card up
-      const availableHeight = selectorTop - inboxHeight;
-      yPos = availableHeight >= padding ? selectorTop - inboxHeight - padding : selectorTop - inboxHeight - availableHeight;
+      var _availableHeight = selectorTop - inboxHeight;
+
+      yPos = _availableHeight >= padding ? selectorTop - inboxHeight - padding : selectorTop - inboxHeight - _availableHeight;
     } else {
       inboxOnSide = true;
       yPos = selectorCenter.y - halfOfInboxHeight; // with this the y co-ordinate of the selector center and the inbox card center become the same
@@ -13689,15 +14398,17 @@
 
     if (inboxOnSide) {
       // See if we can place the card to the right of the selector
-      const inboxRight = selectorRight + inboxWidth;
+      var inboxRight = selectorRight + inboxWidth;
 
       if (inboxRight <= windowWidth) {
-        const availableWidth = inboxRight + padding <= windowWidth ? padding : windowWidth - inboxRight;
+        var availableWidth = inboxRight + padding <= windowWidth ? padding : windowWidth - inboxRight;
         xPos = selectorRight + availableWidth;
       } else {
-        const inboxLeft = selectorLeft - inboxWidth;
-        const availableWidth = inboxLeft - padding >= horizontalScroll ? padding : inboxLeft - horizontalScroll;
-        xPos = inboxLeft - availableWidth;
+        var inboxLeft = selectorLeft - inboxWidth;
+
+        var _availableWidth = inboxLeft - padding >= horizontalScroll ? padding : inboxLeft - horizontalScroll;
+
+        xPos = inboxLeft - _availableWidth;
       }
     } else {
       xPos = selectorCenter.x - halfOfInboxWidth;
@@ -13722,9 +14433,9 @@
       yPos
     };
   };
-  const determineTimeStampText = ts => {
-    const now = Date.now();
-    let diff = Math.floor((now - ts) / 60000);
+  var determineTimeStampText = ts => {
+    var now = Date.now();
+    var diff = Math.floor((now - ts) / 60000);
 
     if (diff < 5) {
       return 'Just now';
@@ -13743,14 +14454,14 @@
     diff = Math.floor(diff / 24);
     return "".concat(diff, " day").concat(diff > 1 ? 's' : '', " ago");
   };
-  const hasWebInboxSettingsInLS = () => {
+  var hasWebInboxSettingsInLS = () => {
     return Object.keys(StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}).length > 0;
   };
-  const arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
-  const greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
+  var arrowSvg = "<svg width=\"6\" height=\"10\" viewBox=\"0 0 6 10\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0.258435 9.74751C-0.0478584 9.44825 -0.081891 8.98373 0.156337 8.64775L0.258435 8.52836L3.87106 5L0.258435 1.47164C-0.0478588 1.17239 -0.0818914 0.707867 0.156337 0.371887L0.258435 0.252494C0.564728 -0.0467585 1.04018 -0.0800085 1.38407 0.152743L1.50627 0.252494L5.74156 4.39042C6.04786 4.68968 6.08189 5.1542 5.84366 5.49018L5.74156 5.60957L1.50627 9.74751C1.16169 10.0842 0.603015 10.0842 0.258435 9.74751Z\" fill=\"#63698F\"/>\n</svg>\n";
+  var greenTickSvg = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8ZM9.6839 5.93602C9.97083 5.55698 10.503 5.48833 10.8725 5.78269C11.2135 6.0544 11.2968 6.54044 11.0819 6.91173L11.0219 7.00198L8.09831 10.864C7.80581 11.2504 7.26654 11.3086 6.90323 11.0122L6.82822 10.9433L5.04597 9.10191C4.71635 8.76136 4.71826 8.21117 5.05023 7.87303C5.35666 7.5609 5.83722 7.53855 6.16859 7.80482L6.24814 7.87739L7.35133 9.01717L9.6839 5.93602Z\" fill=\"#03A387\"/>\n</svg>\n";
 
-  const updateFormData = function (element, formStyle, payload) {
-    let isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+  var updateFormData = function updateFormData(element, formStyle, payload) {
+    var isPreview = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
     if (formStyle !== undefined) {
       // Update the element style
@@ -13762,7 +14473,7 @@
 
 
       if (formStyle.underline !== undefined) {
-        const curTextDecoration = element.style.textDecoration;
+        var curTextDecoration = element.style.textDecoration;
 
         if (formStyle.underline) {
           element.style.textDecoration = "".concat(curTextDecoration, " underline").trim();
@@ -13778,7 +14489,7 @@
 
 
       if (formStyle.clickDetails !== undefined) {
-        const url = formStyle.clickDetails.clickUrl;
+        var url = formStyle.clickDetails.clickUrl;
         element.onclick = formStyle.clickDetails.newTab ? () => {
           if (!isPreview) {
             window.clevertap.raiseNotificationClicked(payload);
@@ -13800,23 +14511,23 @@
       }
     }
   };
-  const updateElementCSS = element => {
+  var updateElementCSS = element => {
     // Handle elementCss
     if (element.elementCSS !== undefined) {
-      const style = document.createElement('style');
+      var style = document.createElement('style');
       style.innerHTML = element.elementCSS;
       document.head.appendChild(style);
     }
   };
 
-  let logger = null;
-  const handleActionMode = (_logger, accountId) => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const ctType = searchParams.get('ctActionMode');
+  var logger = null;
+  var handleActionMode = (_logger, accountId) => {
+    var searchParams = new URLSearchParams(window.location.search);
+    var ctType = searchParams.get('ctActionMode');
     logger = _logger;
 
     if (ctType) {
-      const parentWindow = window.opener;
+      var parentWindow = window.opener;
 
       switch (ctType) {
         case WVE_QUERY_PARAMS.BUILDER:
@@ -13848,7 +14559,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.2.1';
+            var sdkVersion = '2.2.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -13866,7 +14577,7 @@
     }
   };
 
-  const handleMessageEvent = event => {
+  var handleMessageEvent = event => {
     if (event.data && isValidUrl(event.data.originUrl)) {
       // Visual Editor is opened from only dashboard, while preview can be opened from both dashboard & Visual Editor
       // therefore adding check for self origin
@@ -13897,7 +14608,7 @@
    */
 
 
-  const initialiseCTBuilder = (url, variant, details, personalisation) => {
+  var initialiseCTBuilder = (url, variant, details, personalisation) => {
     if (document.readyState === 'complete') {
       onContentLoad(url, variant, details, personalisation);
     } else {
@@ -13909,9 +14620,9 @@
     }
   };
 
-  let container;
-  let contentLoaded = false;
-  let isShopify = false;
+  var container;
+  var contentLoaded = false;
+  var isShopify = false;
   /**
    * Handles content load for Clevertap builder.
    */
@@ -14000,7 +14711,7 @@
    */
 
 
-  const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
+  var renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
     if (_logger) {
       logger = _logger;
     }
@@ -14009,26 +14720,26 @@
       sessionStorage.setItem('visualEditorData', JSON.stringify(targetingMsgJson));
     }
 
-    const insertedElements = [];
-    const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
-    let notificationViewed = false;
-    const payload = {
+    var insertedElements = [];
+    var details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
+    var notificationViewed = false;
+    var payload = {
       msgId: targetingMsgJson.wzrk_id,
       pivotId: targetingMsgJson.wzrk_pivot
     };
 
-    const raiseViewed = () => {
+    var raiseViewed = () => {
       if (!isPreview && !notificationViewed) {
         notificationViewed = true;
         window.clevertap.renderNotificationViewed(payload);
       }
     };
 
-    const raiseClicked = payload => {
+    var raiseClicked = payload => {
       window.clevertap.renderNotificationClicked(payload);
     };
 
-    const processElement = (element, selector) => {
+    var processElement = (element, selector) => {
       var _selector$isTrackingC;
 
       if (selector.elementCSS) {
@@ -14037,7 +14748,7 @@
 
       if ((_selector$isTrackingC = selector.isTrackingClicks) === null || _selector$isTrackingC === void 0 ? void 0 : _selector$isTrackingC.name) {
         element.addEventListener('click', () => {
-          const clickedPayload = {
+          var clickedPayload = {
             msgId: targetingMsgJson.wzrk_id,
             pivotId: targetingMsgJson.wzrk_pivot,
             msgCTkv: {
@@ -14074,10 +14785,10 @@
       }
     };
 
-    const tryFindingElement = selector => {
-      let count = 0;
-      const intervalId = setInterval(() => {
-        let retryElement;
+    var tryFindingElement = selector => {
+      var count = 0;
+      var intervalId = setInterval(() => {
+        var retryElement;
 
         try {
           retryElement = document.querySelector(selector.selector);
@@ -14100,7 +14811,7 @@
         if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
           insertedElements.push(s);
         } else {
-          let element;
+          var element;
 
           try {
             element = document.querySelector(s.selector);
@@ -14116,34 +14827,34 @@
       });
     });
 
-    const addNewEl = selector => {
-      const {
+    var addNewEl = selector => {
+      var {
         pos,
         sibling
       } = findSiblingSelector(selector.selector);
-      let count = 0;
-      const intervalId = setInterval(() => {
-        let element = null;
+      var count = 0;
+      var intervalId = setInterval(() => {
+        var element = null;
 
         try {
-          const siblingEl = document.querySelector(sibling);
-          const ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
+          var siblingEl = document.querySelector(sibling);
+          var ctEl = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
           element = ctEl || siblingEl;
         } catch (_) {
           element = document.querySelector("[ct-selector=\"".concat(sibling, "\"]"));
         }
 
         if (element) {
-          const tempDiv = document.createElement('div');
+          var tempDiv = document.createElement('div');
           tempDiv.innerHTML = selector.values.initialHtml;
-          const newElement = tempDiv.firstElementChild;
+          var newElement = tempDiv.firstElementChild;
           element.insertAdjacentElement(pos, newElement);
 
           if (!element.getAttribute('ct-selector')) {
             element.setAttribute('ct-selector', sibling);
           }
 
-          const insertedElement = document.querySelector("[ct-selector=\"".concat(selector.selector, "\"]"));
+          var insertedElement = document.querySelector("[ct-selector=\"".concat(selector.selector, "\"]"));
           raiseViewed();
           processElement(insertedElement, selector);
           clearInterval(intervalId);
@@ -14156,9 +14867,9 @@
     };
 
     if (insertedElements.length > 0) {
-      const sortedArr = insertedElements.sort((a, b) => {
-        const numA = parseInt(a.selector.split('-')[0], 10);
-        const numB = parseInt(b.selector.split('-')[0], 10);
+      var sortedArr = insertedElements.sort((a, b) => {
+        var numA = parseInt(a.selector.split('-')[0], 10);
+        var numB = parseInt(b.selector.split('-')[0], 10);
         return numA - numB;
       });
       sortedArr.forEach(addNewEl);
@@ -14166,8 +14877,8 @@
   };
 
   function findSiblingSelector(input) {
-    const regex = /^(\d+)-(afterend|beforebegin)-(.+)$/;
-    const match = input.match(regex);
+    var regex = /^(\d+)-(afterend|beforebegin)-(.+)$/;
+    var match = input.match(regex);
 
     if (match) {
       return {
@@ -14190,8 +14901,8 @@
 
 
   function dispatchJsonData(targetingMsgJson, selector) {
-    let isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-    const inaObj = {};
+    var isPreview = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+    var inaObj = {};
     inaObj.msgId = targetingMsgJson.wzrk_id;
 
     if (targetingMsgJson.wzrk_pivot) {
@@ -14206,7 +14917,7 @@
       }
     }
 
-    const kvPairsEvent = new CustomEvent('CT_web_native_display_buider', {
+    var kvPairsEvent = new CustomEvent('CT_web_native_display_buider', {
       detail: inaObj
     });
     document.dispatchEvent(kvPairsEvent);
@@ -14214,7 +14925,7 @@
 
   function isValidUrl(string) {
     try {
-      const url = new URL(string);
+      var url = new URL(string);
       return Boolean(url);
     } catch (_err) {
       return false;
@@ -14222,19 +14933,19 @@
   }
 
   function addAntiFlicker(antiFlicker) {
-    const {
+    var {
       personalizedSelectors = [],
       delayTime = 2000
     } = antiFlicker;
-    const retryElements = {}; // Track selectors that need retry
+    var retryElements = {}; // Track selectors that need retry
 
-    let retryCount = 0; // Counter for retries
+    var retryCount = 0; // Counter for retries
 
-    let retryInterval;
+    var retryInterval;
 
     function isInViewport(element) {
-      const rect = element.getBoundingClientRect();
-      const {
+      var rect = element.getBoundingClientRect();
+      var {
         innerHeight: windowHeight,
         innerWidth: windowWidth
       } = window;
@@ -14242,12 +14953,12 @@
     }
 
     (function () {
-      const styleContent = "\n      .wve-anti-flicker-hide {\n        opacity: 0 !important;\n      }\n      .wve-anti-flicker-show {\n        transition: opacity 0.5s, filter 0.5s !important;\n      }\n    "; // Create and append the style element if it doesn't exist
+      var styleContent = "\n      .wve-anti-flicker-hide {\n        opacity: 0 !important;\n      }\n      .wve-anti-flicker-show {\n        transition: opacity 0.5s, filter 0.5s !important;\n      }\n    "; // Create and append the style element if it doesn't exist
 
-      const styleId = WVE_CLASS.FLICKER_ID;
+      var styleId = WVE_CLASS.FLICKER_ID;
 
       if (!document.getElementById(styleId)) {
-        const styleElement = document.createElement('style');
+        var styleElement = document.createElement('style');
         styleElement.id = styleId;
         styleElement.textContent = styleContent;
         document.head.appendChild(styleElement);
@@ -14256,9 +14967,9 @@
 
     function applyAntiFlicker(selectors) {
       function processSelectors(selectorElements) {
-        const elements = [];
+        var elements = [];
         selectorElements.forEach(selector => {
-          const matchedElements = document.querySelectorAll(selector);
+          var matchedElements = document.querySelectorAll(selector);
 
           if (matchedElements.length) {
             matchedElements.forEach(el => {
@@ -14302,8 +15013,8 @@
     }
 
     function observeUrlChange() {
-      let previousHref = document.location.href;
-      const observer = new MutationObserver(() => {
+      var previousHref = document.location.href;
+      var observer = new MutationObserver(() => {
         if (previousHref !== document.location.href) {
           previousHref = document.location.href;
           applyAntiFlicker(personalizedSelectors);
@@ -14322,7 +15033,7 @@
   }
   function executeScripts(selector) {
     try {
-      let newElement;
+      var newElement;
 
       if (selector.includes('-afterend-') || selector.includes('-beforebegin-')) {
         // doing this because inserted elements saved selectors do not follow normal conventions
@@ -14333,7 +15044,7 @@
       }
 
       if (!newElement) return;
-      const scripts = newElement.querySelectorAll('script');
+      var scripts = newElement.querySelectorAll('script');
       scripts.forEach(script => {
         addScriptTo(script);
       });
@@ -14368,7 +15079,7 @@
 
       if (this.trackClick !== false) {
         this.addEventListener('click', () => {
-          const onClickUrl = this.details.onClick;
+          var onClickUrl = this.details.onClick;
 
           if (onClickUrl) {
             this.details.window ? window.open(onClickUrl, '_blank') : window.parent.location.href = onClickUrl;
@@ -14435,7 +15146,7 @@
     renderCarousel() {
       this.slides = this.details.length;
       this.shadow.innerHTML = this.getStyles();
-      const carousel = this.getCarouselContent();
+      var carousel = this.getCarouselContent();
 
       if (this.display.showNavBtns) {
         carousel.insertAdjacentHTML('beforeend', this.display.navBtnsHtml);
@@ -14461,10 +15172,10 @@
 
     setupClick() {
       this._carousel.addEventListener('click', event => {
-        const eventID = event.target.id;
+        var eventID = event.target.id;
 
         if (eventID.startsWith('carousel__button')) {
-          const selected = +eventID.split('-')[1];
+          var selected = +eventID.split('-')[1];
 
           if (selected !== this.selectedItem) {
             this.previouslySelectedItem = this.selectedItem;
@@ -14476,8 +15187,8 @@
           eventID.endsWith('right') ? this.goToNext() : this.goToPrev();
           this.startAutoSlide();
         } else if (eventID.indexOf('-') > -1) {
-          const item = +eventID.split('-')[1];
-          const index = item - 1;
+          var item = +eventID.split('-')[1];
+          var index = item - 1;
 
           if (window.parent.clevertap) {
             window.clevertap.renderNotificationClicked({
@@ -14487,7 +15198,7 @@
             });
           }
 
-          const url = this.details[index].onClick;
+          var url = this.details[index].onClick;
 
           if (url !== '') {
             this.details[index].window ? window.open(url, '_blank') : window.location.href = url;
@@ -14513,10 +15224,10 @@
     }
 
     getCarouselContent() {
-      const carousel = document.createElement('div');
+      var carousel = document.createElement('div');
       carousel.setAttribute('class', 'carousel');
       this.details.forEach((detail, i) => {
-        const banner = document.createElement('ct-web-personalisation-banner');
+        var banner = document.createElement('ct-web-personalisation-banner');
         banner.classList.add('carousel__item');
         banner.trackClick = false;
         banner.setAttribute('id', "carousel__item-".concat(i + 1));
@@ -14534,8 +15245,8 @@
 
     updateSelectedItem() {
       if (this.previouslySelectedItem !== -1) {
-        const prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
-        const prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
+        var prevItem = this.shadow.getElementById("carousel__item-".concat(this.previouslySelectedItem));
+        var prevButton = this.shadow.getElementById("carousel__button-".concat(this.previouslySelectedItem));
         prevItem.classList.remove('carousel__item--selected');
 
         if (prevButton) {
@@ -14543,8 +15254,8 @@
         }
       }
 
-      const item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
-      const button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
+      var item = this.shadow.getElementById("carousel__item-".concat(this.selectedItem));
+      var button = this.shadow.getElementById("carousel__button-".concat(this.selectedItem));
       item.classList.add('carousel__item--selected');
 
       if (button) {
@@ -14580,41 +15291,41 @@
 
   }
 
-  const renderPersonalisationBanner = targetingMsgJson => {
+  var renderPersonalisationBanner = targetingMsgJson => {
     var _targetingMsgJson$dis;
 
     if (customElements.get('ct-web-personalisation-banner') === undefined) {
       customElements.define('ct-web-personalisation-banner', CTWebPersonalisationBanner);
     }
 
-    const divId = (_targetingMsgJson$dis = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis !== void 0 ? _targetingMsgJson$dis : targetingMsgJson.display.divSelector;
-    const bannerEl = document.createElement('ct-web-personalisation-banner');
+    var divId = (_targetingMsgJson$dis = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis !== void 0 ? _targetingMsgJson$dis : targetingMsgJson.display.divSelector;
+    var bannerEl = document.createElement('ct-web-personalisation-banner');
     bannerEl.msgId = targetingMsgJson.wzrk_id;
     bannerEl.pivotId = targetingMsgJson.wzrk_pivot;
     bannerEl.divHeight = targetingMsgJson.display.divHeight;
     bannerEl.details = targetingMsgJson.display.details[0];
-    const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
+    var containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
     containerEl.innerHTML = '';
     containerEl.appendChild(bannerEl);
     commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
   };
-  const renderPersonalisationCarousel = targetingMsgJson => {
+  var renderPersonalisationCarousel = targetingMsgJson => {
     var _targetingMsgJson$dis2;
 
     if (customElements.get('ct-web-personalisation-carousel') === undefined) {
       customElements.define('ct-web-personalisation-carousel', CTWebPersonalisationCarousel);
     }
 
-    const divId = (_targetingMsgJson$dis2 = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis2 !== void 0 ? _targetingMsgJson$dis2 : targetingMsgJson.display.divSelector;
-    const carousel = document.createElement('ct-web-personalisation-carousel');
+    var divId = (_targetingMsgJson$dis2 = targetingMsgJson.display.divId) !== null && _targetingMsgJson$dis2 !== void 0 ? _targetingMsgJson$dis2 : targetingMsgJson.display.divSelector;
+    var carousel = document.createElement('ct-web-personalisation-carousel');
     carousel.target = targetingMsgJson;
-    const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
+    var container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId);
     container.innerHTML = '';
     container.appendChild(carousel);
     commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
   };
-  const handleKVpairCampaign = targetingMsgJson => {
-    const inaObj = {};
+  var handleKVpairCampaign = targetingMsgJson => {
+    var inaObj = {};
     inaObj.msgId = targetingMsgJson.wzrk_id;
 
     if (targetingMsgJson.wzrk_pivot) {
@@ -14625,23 +15336,23 @@
       inaObj.kv = targetingMsgJson.msgContent.kv;
     }
 
-    const kvPairsEvent = new CustomEvent('CT_web_native_display', {
+    var kvPairsEvent = new CustomEvent('CT_web_native_display', {
       detail: inaObj
     });
     document.dispatchEvent(kvPairsEvent);
     commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, Logger.getInstance());
   };
-  const renderCustomHtml = (targetingMsgJson, logger) => {
-    const {
+  var renderCustomHtml = (targetingMsgJson, logger) => {
+    var {
       display,
       wzrk_id: wzrkId,
       wzrk_pivot: wzrkPivot
     } = targetingMsgJson || {};
-    const {
+    var {
       divId
     } = display || {};
-    const details = display.details[0];
-    let html = details.html;
+    var details = display.details[0];
+    var html = details.html;
 
     if (!divId || !html) {
       logger.error('No div Id or no html found');
@@ -14652,30 +15363,30 @@
       html = appendScriptForCustomEvent(targetingMsgJson, html);
     }
 
-    let notificationViewed = false;
-    const payload = {
+    var notificationViewed = false;
+    var payload = {
       msgId: wzrkId,
       pivotId: wzrkPivot
     };
 
-    const raiseViewed = () => {
+    var raiseViewed = () => {
       if (!notificationViewed) {
         notificationViewed = true;
         window.clevertap.renderNotificationViewed(payload);
       }
     };
 
-    const tryFindingElement = divId => {
-      let count = 0;
-      const intervalId = setInterval(() => {
-        const retryElement = document.querySelector(divId);
+    var tryFindingElement = divId => {
+      var count = 0;
+      var intervalId = setInterval(() => {
+        var retryElement = document.querySelector(divId);
 
         if (retryElement) {
           raiseViewed();
           retryElement.innerHTML = html;
-          const wrapper = document.createElement('div');
+          var wrapper = document.createElement('div');
           wrapper.innerHTML = html;
-          const scripts = wrapper.querySelectorAll('script');
+          var scripts = wrapper.querySelectorAll('script');
           scripts.forEach(script => {
             addScriptTo(script);
           });
@@ -14690,11 +15401,11 @@
 
     tryFindingElement(divId);
   };
-  const handleJson = targetingMsgJson => {
-    const inaObj = {};
+  var handleJson = targetingMsgJson => {
+    var inaObj = {};
     inaObj.msgId = targetingMsgJson.wzrk_id;
-    const details = targetingMsgJson.display.details[0];
-    const json = details.json;
+    var details = targetingMsgJson.display.details[0];
+    var json = details.json;
 
     if (targetingMsgJson.wzrk_pivot) {
       inaObj.pivotId = targetingMsgJson.wzrk_pivot;
@@ -14704,7 +15415,7 @@
       inaObj.json = json;
     }
 
-    const jsonEvent = new CustomEvent('CT_web_native_display_json', {
+    var jsonEvent = new CustomEvent('CT_web_native_display_json', {
       detail: inaObj
     });
     document.dispatchEvent(jsonEvent);
@@ -14716,28 +15427,28 @@
       return;
     }
 
-    const eventData = JSON.parse(event.data);
-    const inAppNotifs = eventData.inapp_notifs;
-    const msgContent = inAppNotifs[0].msgContent;
+    var eventData = JSON.parse(event.data);
+    var inAppNotifs = eventData.inapp_notifs;
+    var msgContent = inAppNotifs[0].msgContent;
 
     if (eventData && msgContent && msgContent.templateType === 'custom-html' && msgContent.type === 5) {
       renderCustomHtml(inAppNotifs[0], logger);
     }
   }
 
-  const checkCustomHtmlNativeDisplayPreview = logger => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const ctType = searchParams.get('ctActionMode');
+  var checkCustomHtmlNativeDisplayPreview = logger => {
+    var searchParams = new URLSearchParams(window.location.search);
+    var ctType = searchParams.get('ctActionMode');
 
     if (ctType) {
-      const parentWindow = window.opener;
+      var parentWindow = window.opener;
 
       switch (ctType) {
         case CUSTOM_HTML_PREVIEW:
           if (parentWindow) {
             parentWindow.postMessage('ready', '*');
 
-            const eventHandler = event => handleCustomHtmlPreviewPostMessageEvent(event, logger);
+            var eventHandler = event => handleCustomHtmlPreviewPostMessageEvent(event, logger);
 
             window.addEventListener('message', eventHandler, false);
           }
@@ -14750,10 +15461,10 @@
       }
     }
   };
-  const renderWebNativeDisplayBanner = (targetNotif, logger, arrInAppNotifs) => {
-    let count = 0;
-    const intervalId = setInterval(() => {
-      const element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
+  var renderWebNativeDisplayBanner = (targetNotif, logger, arrInAppNotifs) => {
+    var count = 0;
+    var intervalId = setInterval(() => {
+      var element = targetNotif.display.divId ? document.getElementById(targetNotif.display.divId) : document.querySelector(targetNotif.display.divSelector);
 
       if (element !== null) {
         targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.BANNER ? renderPersonalisationBanner(targetNotif) : renderPersonalisationCarousel(targetNotif);
@@ -14767,13 +15478,13 @@
     }, 500);
   };
 
-  const commonCampaignUtils = {
+  var commonCampaignUtils = {
     /*
       This function is used to increment the counters for session, daily, and global objects
     */
     incrCount(obj, campaignId, excludeFromFreqCaps) {
-      let currentCount = 0;
-      let totalCount = 0;
+      var currentCount = 0;
+      var totalCount = 0;
 
       if (obj[campaignId] != null) {
         // Current count for this campaign
@@ -14803,8 +15514,8 @@
      * @returns {Function} - Mouse leave event handler
      */
     createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj) {
-      const handleMouseLeave = event => {
-        const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
+      var handleMouseLeave = event => {
+        var wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
 
         if (wasRendered) {
           window.document.removeEventListener('mouseleave', handleMouseLeave);
@@ -14823,12 +15534,12 @@
        */
     checkSessionCapping(campTypeObj, campaignId, targetingMsgJson, capSettings) {
       // Session-level capping: Checks if campaign exceeds session limits
-      const sessionId = CampaignContext.session.sessionId;
-      let sessionObj = campTypeObj[sessionId];
+      var sessionId = CampaignContext.session.sessionId;
+      var sessionObj = campTypeObj[sessionId];
 
       if (sessionObj) {
-        const campaignSessionCount = sessionObj[campaignId];
-        const totalSessionCount = sessionObj.tc; // For web inbox campaigns
+        var campaignSessionCount = sessionObj[campaignId];
+        var totalSessionCount = sessionObj.tc; // For web inbox campaigns
 
         if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
           // Inbox session limit check
@@ -14867,11 +15578,11 @@
        */
     checkDailyCapping(campTypeObj, campaignId, today, capSettings) {
       // Daily-level capping: Checks if campaign exceeds daily limits
-      let dailyObj = campTypeObj[today];
+      var dailyObj = campTypeObj[today];
 
       if (dailyObj != null) {
-        const campaignDailyCount = dailyObj[campaignId];
-        const totalDailyCount = dailyObj.tc; // Total daily limit check
+        var campaignDailyCount = dailyObj[campaignId];
+        var totalDailyCount = dailyObj.tc; // Total daily limit check
 
         if (capSettings.totalDailyLimit > 0 && totalDailyCount >= capSettings.totalDailyLimit && capSettings.excludeFromFreqCaps < 0) {
           return false;
@@ -14901,10 +15612,10 @@
        */
     checkGlobalCapping(campTypeObj, campaignId, campaignTotalLimit) {
       // Global-level capping: Checks lifetime limit for the campaign
-      let globalObj = campTypeObj[GLOBAL];
+      var globalObj = campTypeObj[GLOBAL];
 
       if (globalObj != null) {
-        const campaignTotalCount = globalObj[campaignId]; // Campaign lifetime limit check
+        var campaignTotalCount = globalObj[campaignId]; // Campaign lifetime limit check
 
         if (campaignTotalLimit > 0 && campaignTotalCount >= campaignTotalLimit) {
           return false;
@@ -14927,16 +15638,16 @@
       // Variables to store campaign frequency capping settings
       var excludeFromFreqCaps = -1; // efc - Exclude from frequency caps (-1 means not excluded)
 
-      let campaignSessionLimit = -1; // mdc - Once per session
+      var campaignSessionLimit = -1; // mdc - Once per session
 
-      let campaignDailyLimit = -1; // tdc - Once per day
+      var campaignDailyLimit = -1; // tdc - Once per day
 
-      let campaignTotalLimit = -1; // tlc - Once per user for the duration of campaign
+      var campaignTotalLimit = -1; // tlc - Once per user for the duration of campaign
 
-      let totalDailyLimit = -1;
-      let totalSessionLimit = -1; // wmc - Web Popup Global Session Limit
+      var totalDailyLimit = -1;
+      var totalSessionLimit = -1; // wmc - Web Popup Global Session Limit
 
-      let totalInboxSessionLimit = -1; // wimc - Web Inbox Global Session Limit
+      var totalInboxSessionLimit = -1; // wimc - Web Inbox Global Session Limit
       // Parses frequency capping settings from the message
 
       if (targetingMsgJson[DISPLAY].efc != null) {
@@ -14994,9 +15705,9 @@
 
     doCampHouseKeeping(targetingMsgJson, logger) {
       // Extracts campaign ID from wzrk_id (e.g., "123_456" -> "123")
-      const campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Gets current date for daily capping
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0]; // Gets current date for daily capping
 
-      const today = getToday();
+      var today = getToday();
 
       if (deliveryPreferenceUtils.isCampaignAddedToDND(campaignId) && !$ct.dismissSpamControl) {
         return false;
@@ -15007,7 +15718,7 @@
         delete sessionStorage[CAMP_COOKIE_NAME];
         var campTypeObj = {}; // Retrieves stored campaign data from local storage
 
-        const campObj = getCampaignObject(); // Determines campaign type (web inbox or web popup) and fetches corresponding data
+        var campObj = getCampaignObject(); // Determines campaign type (web inbox or web popup) and fetches corresponding data
 
         if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
           // Web inbox campaigns
@@ -15030,21 +15741,21 @@
           targetingMsgJson[DISPLAY].wimc = 1;
         }
 
-        const capSettings = this.extractFrequencyCappingSettings(targetingMsgJson); // Session-level capping: Checks if campaign exceeds session limits
+        var capSettings = this.extractFrequencyCappingSettings(targetingMsgJson); // Session-level capping: Checks if campaign exceeds session limits
 
-        const sessionObj = this.checkSessionCapping(campTypeObj, campaignId, targetingMsgJson, capSettings);
+        var sessionObj = this.checkSessionCapping(campTypeObj, campaignId, targetingMsgJson, capSettings);
         if (sessionObj === false) return false; // Daily-level capping: Checks if campaign exceeds daily limits
 
-        const dailyObj = this.checkDailyCapping(campTypeObj, campaignId, today, capSettings);
+        var dailyObj = this.checkDailyCapping(campTypeObj, campaignId, today, capSettings);
         if (dailyObj === false) return false; // Global-level capping: Checks lifetime limit for the campaign
 
-        const globalObj = this.checkGlobalCapping(campTypeObj, campaignId, capSettings.campaignTotalLimit);
+        var globalObj = this.checkGlobalCapping(campTypeObj, campaignId, capSettings.campaignTotalLimit);
         if (globalObj === false) return false; // Handles delay in displaying the campaign
 
-        const displayObj = targetingMsgJson.display;
+        var displayObj = targetingMsgJson.display;
 
         if (displayObj.delay != null && displayObj.delay > 0) {
-          const delay = displayObj.delay; // Resets delay to prevent re-triggering
+          var delay = displayObj.delay; // Resets delay to prevent re-triggering
 
           displayObj.delay = 0;
           setTimeout(_tr, delay * 1000, CampaignContext.msg, {
@@ -15062,7 +15773,7 @@
         this.incrCount(dailyObj, campaignId, capSettings.excludeFromFreqCaps);
         this.incrCount(globalObj, campaignId, capSettings.excludeFromFreqCaps); // Determines storage key based on campaign type (web popup or inbox)
 
-        let campKey;
+        var campKey;
 
         if (targetingMsgJson[DISPLAY].wtarget_type === 3) {
           campKey = 'wi';
@@ -15070,7 +15781,7 @@
 
         if (campKey === 'wi') {
           // Updates campaign object with new counts and saves to storage
-          const newCampObj = {};
+          var newCampObj = {};
           newCampObj[CampaignContext.session.sessionId] = sessionObj;
           newCampObj[today] = dailyObj;
           newCampObj[GLOBAL] = globalObj; // Save CAMP to localstorage here
@@ -15095,7 +15806,7 @@
 
     // Handles rendering of image-only popup campaigns
     handleImageOnlyPopup(targetingMsgJson) {
-      const divId = 'wzrkImageOnlyDiv'; // Skips if frequency limits are exceeded
+      var divId = 'wzrkImageOnlyDiv'; // Skips if frequency limits are exceeded
 
       if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
         return;
@@ -15103,7 +15814,7 @@
 
 
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
-        const element = document.getElementById(divId);
+        var element = document.getElementById(divId);
         element.remove();
       } // Prevents coexistence with other popups (e.g., exit intent)
 
@@ -15112,7 +15823,7 @@
         return;
       }
 
-      const msgDiv = document.createElement('div');
+      var msgDiv = document.createElement('div');
       msgDiv.id = divId;
       document.body.appendChild(msgDiv); // Registers custom element for image-only popup if not already defined
 
@@ -15126,10 +15837,10 @@
 
     // Checks if a campaign is already rendered in an iframe
     isExistingCampaign(campaignId) {
-      const testIframe = document.getElementById('wiz-iframe-intent') || document.getElementById('wiz-iframe');
+      var testIframe = document.getElementById('wiz-iframe-intent') || document.getElementById('wiz-iframe');
 
       if (testIframe) {
-        const iframeDocument = testIframe.contentDocument || testIframe.contentWindow.document;
+        var iframeDocument = testIframe.contentDocument || testIframe.contentWindow.document;
         return iframeDocument.documentElement.innerHTML.includes(campaignId);
       }
 
@@ -15138,8 +15849,8 @@
 
     // Creates and renders campaign templates (e.g., exit intent, banners, popups)
     createTemplate(targetingMsgJson, isExitIntent, wtq) {
-      const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-      const displayObj = targetingMsgJson.display; // Handles specific layout types
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      var displayObj = targetingMsgJson.display; // Handles specific layout types
 
       if (displayObj.layout === WEB_POPUP_TEMPLATES.INTERSTITIAL) {
         // Handling Web Exit Intent
@@ -15162,12 +15873,12 @@
         return;
       }
 
-      const divId = 'wizParDiv' + displayObj.layout;
-      const opacityDivId = 'intentOpacityDiv' + displayObj.layout; // Removes existing elements if spam control is active
+      var divId = 'wizParDiv' + displayObj.layout;
+      var opacityDivId = 'intentOpacityDiv' + displayObj.layout; // Removes existing elements if spam control is active
 
       if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
-        const element = document.getElementById(divId);
-        const opacityElement = document.getElementById(opacityDivId);
+        var element = document.getElementById(divId);
+        var opacityElement = document.getElementById(opacityDivId);
 
         if (element) {
           element.remove();
@@ -15188,30 +15899,30 @@
 
 
       $ct.campaignDivMap[campaignId] = divId;
-      const isBanner = displayObj.layout === WEB_POPUP_TEMPLATES.BANNER; // Adds opacity layer for exit intent campaigns
+      var isBanner = displayObj.layout === WEB_POPUP_TEMPLATES.BANNER; // Adds opacity layer for exit intent campaigns
 
       if (isExitIntent) {
-        const opacityDiv = document.createElement('div');
+        var opacityDiv = document.createElement('div');
         opacityDiv.id = opacityDivId;
-        const opacity = targetingMsgJson.display.opacity || 0.7;
-        const rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
+        var opacity = targetingMsgJson.display.opacity || 0.7;
+        var rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
         opacityDiv.setAttribute('style', "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
         document.body.appendChild(opacityDiv);
       }
 
-      const msgDiv = document.createElement('div');
+      var msgDiv = document.createElement('div');
       msgDiv.id = divId;
-      const viewHeight = window.innerHeight;
-      const viewWidth = window.innerWidth;
-      let legacy = false; // Sets styling based on device type and layout
+      var viewHeight = window.innerHeight;
+      var viewWidth = window.innerWidth;
+      var legacy = false; // Sets styling based on device type and layout
 
       if (!isBanner) {
-        const marginBottom = viewHeight * 5 / 100;
+        var marginBottom = viewHeight * 5 / 100;
         var contentHeight = 10;
-        let right = viewWidth * 5 / 100;
-        let bottomPosition = contentHeight + marginBottom;
-        let width = viewWidth * 30 / 100 + 20;
-        let widthPerct = 'width:30%;'; // Adjusts for mobile devices
+        var right = viewWidth * 5 / 100;
+        var bottomPosition = contentHeight + marginBottom;
+        var width = viewWidth * 30 / 100 + 20;
+        var widthPerct = 'width:30%;'; // Adjusts for mobile devices
 
         if ((/mobile/i.test(navigator.userAgent) || /mini/i.test(navigator.userAgent)) && /iPad/i.test(navigator.userAgent) === false) {
           width = viewWidth * 85 / 100 + 20;
@@ -15237,15 +15948,15 @@
       }
 
       document.body.appendChild(msgDiv);
-      const iframe = document.createElement('iframe');
-      const borderRadius = displayObj.br === false ? '0' : '8';
+      var iframe = document.createElement('iframe');
+      var borderRadius = displayObj.br === false ? '0' : '8';
       iframe.frameborder = '0px';
       iframe.marginheight = '0px';
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe';
-      const onClick = targetingMsgJson.display.onClick;
-      let pointerCss = '';
+      var onClick = targetingMsgJson.display.onClick;
+      var pointerCss = '';
 
       if (onClick !== '' && onClick != null) {
         pointerCss = 'cursor:pointer;';
@@ -15255,7 +15966,7 @@
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin';
       }
 
-      let html; // Direct HTML content
+      var html; // Direct HTML content
 
       if (targetingMsgJson.msgContent.type === 1) {
         html = targetingMsgJson.msgContent.html;
@@ -15263,8 +15974,8 @@
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
         // Generated HTML with styling
-        const css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + 'td{vertical-align:top;}' + 'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' + '</style>';
-        let bgColor, textColor, btnBg, leftTd, btColor;
+        var css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 16px;font-family:arial;padding-bottom:10px;word-break: break-word;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + 'td{vertical-align:top;}' + 'td.imgTd{border-top-left-radius:8px;border-bottom-left-radius:8px;}' + '</style>';
+        var bgColor, textColor, btnBg, leftTd, btColor;
 
         if (targetingMsgJson.display.theme === 'dark') {
           bgColor = '#2d2d2e';
@@ -15280,25 +15991,25 @@
           btColor = '#ffffff';
         }
 
-        const titleText = targetingMsgJson.msgContent.title;
-        const descriptionText = targetingMsgJson.msgContent.description;
-        let imageTd = '';
+        var titleText = targetingMsgJson.msgContent.title;
+        var descriptionText = targetingMsgJson.msgContent.description;
+        var imageTd = '';
 
         if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== '') {
           imageTd = "<td class='imgTd' style='background-color:" + leftTd + "'><img src='" + targetingMsgJson.msgContent.imageUrl + "' height='60' width='60'></td>";
         }
 
-        const onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'" + divId + "');";
-        const title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<table cellpadding='0' cellspacing='0' border='0'>" + // "<tr><td colspan='2'></td></tr>"+
+        var onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'" + divId + "');";
+        var title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<table cellpadding='0' cellspacing='0' border='0'>" + // "<tr><td colspan='2'></td></tr>"+
         '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
-        const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>';
+        var body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>';
         html = css + title + body;
       }
 
       iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; width: 100% !important; border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe); // Dispatches event to signal campaign rendering
 
-      const closeCampaign = new Event('CT_campaign_rendered');
+      var closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
 
       if (displayObj['custom-editor']) {
@@ -15308,7 +16019,7 @@
 
       iframe.srcdoc = html; // Adjusts iframe height based on content
 
-      const adjustIFrameHeight = () => {
+      var adjustIFrameHeight = () => {
         // Gets scroll height of content div inside iframe
         contentHeight = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv').scrollHeight;
 
@@ -15320,25 +16031,25 @@
         document.getElementById('wiz-iframe').style.height = contentHeight + 'px';
       };
 
-      const ua = navigator.userAgent.toLowerCase();
+      var ua = navigator.userAgent.toLowerCase();
 
       if (ua.indexOf('safari') !== -1) {
         if (ua.indexOf('chrome') > -1) {
           iframe.onload = () => {
             adjustIFrameHeight();
-            const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+            var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
             this.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
           };
         } else {
-          let inDoc = iframe.contentDocument || iframe.contentWindow;
+          var inDoc = iframe.contentDocument || iframe.contentWindow;
           if (inDoc.document) inDoc = inDoc.document; // safari iphone 7+ needs this.
 
-          const _timer = setInterval(() => {
+          var _timer = setInterval(() => {
             if (inDoc.readyState === 'complete') {
               clearInterval(_timer); // adjust iframe and body height of html inside correctly
 
               adjustIFrameHeight();
-              const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+              var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
               this.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
             }
           }, 300);
@@ -15347,7 +16058,7 @@
         iframe.onload = () => {
           // adjust iframe and body height of html inside correctly
           adjustIFrameHeight();
-          const contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
+          var contentDiv = document.getElementById('wiz-iframe').contentDocument.getElementById('contentDiv');
           this.setupClickUrl(onClick, targetingMsgJson, contentDiv, divId, legacy);
         };
       }
@@ -15360,14 +16071,14 @@
 
     // Displays footer notification with callback handling
     showFooterNotification(targetingMsgJson, _callBackCalled, exitintentObj) {
-      let onClick = targetingMsgJson.display.onClick;
-      const displayObj = targetingMsgJson.display; // Checks for custom notification callback from CleverTap
+      var onClick = targetingMsgJson.display.onClick;
+      var displayObj = targetingMsgJson.display; // Checks for custom notification callback from CleverTap
 
       if (window.clevertap.hasOwnProperty('notificationCallback') && typeof window.clevertap.notificationCallback !== 'undefined' && typeof window.clevertap.notificationCallback === 'function') {
-        const notificationCallback = window.clevertap.notificationCallback;
+        var notificationCallback = window.clevertap.notificationCallback;
 
         if (!_callBackCalled) {
-          const inaObj = {};
+          var inaObj = {};
           inaObj.msgContent = targetingMsgJson.msgContent;
           inaObj.msgId = targetingMsgJson.wzrk_id;
 
@@ -15386,7 +16097,7 @@
 
           window.clevertap.raiseNotificationClicked = () => {
             if (onClick !== '' && onClick != null) {
-              const jsFunc = targetingMsgJson.display.jsFunc;
+              var jsFunc = targetingMsgJson.display.jsFunc;
               onClick += getCookieParams(CampaignContext.device, CampaignContext.session); // Invokes JS function or redirects based on click action
 
               if (jsFunc != null) {
@@ -15428,11 +16139,11 @@
             exitintentObj = targetingMsgJson;
             /* Show it only once per callback */
 
-            const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj);
+            var handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj);
             window.document.addEventListener('mouseleave', handleMouseLeave);
           }
 
-          const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
+          var delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
 
           if (delay != null && delay > 0) {
             setTimeout(() => {
@@ -15445,13 +16156,13 @@
 
 
         if (window.clevertap.hasOwnProperty('popupCallbacks') && typeof window.clevertap.popupCallbacks !== 'undefined' && typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] === 'function') {
-          const popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id];
-          const inaObj = {};
-          inaObj.msgContent = targetingMsgJson.msgContent;
-          inaObj.msgId = targetingMsgJson.wzrk_id;
+          var popupCallback = window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id];
+          var _inaObj = {};
+          _inaObj.msgContent = targetingMsgJson.msgContent;
+          _inaObj.msgId = targetingMsgJson.wzrk_id;
 
           if (targetingMsgJson.wzrk_pivot) {
-            inaObj.pivotId = targetingMsgJson.wzrk_pivot;
+            _inaObj.pivotId = targetingMsgJson.wzrk_pivot;
           }
 
           var msgCTkv = [];
@@ -15459,7 +16170,7 @@
           for (var wzrkPrefixKey in targetingMsgJson) {
             // Adds WZRK prefix key-value pairs to callback data
             if (wzrkPrefixKey.startsWith(WZRK_PREFIX) && wzrkPrefixKey !== WZRK_ID) {
-              const wzrkJson = {
+              var wzrkJson = {
                 [wzrkPrefixKey]: targetingMsgJson[wzrkPrefixKey]
               };
               msgCTkv.push(wzrkJson);
@@ -15467,11 +16178,11 @@
           }
 
           if (msgCTkv.length > 0) {
-            inaObj.msgCTkv = msgCTkv;
+            _inaObj.msgCTkv = msgCTkv;
           }
 
           if (targetingMsgJson.display.kv != null) {
-            inaObj.kv = targetingMsgJson.display.kv;
+            _inaObj.kv = targetingMsgJson.display.kv;
           } // Public API to record clicked event
 
 
@@ -15480,7 +16191,7 @@
               return;
             }
 
-            const eventData = {};
+            var eventData = {};
             eventData.type = 'event';
             eventData.evtName = NOTIFICATION_CLICKED;
             eventData.evtData = {
@@ -15488,36 +16199,34 @@
             };
 
             if (targetingMsgJson.wzrk_pivot) {
-              eventData.evtData = { ...eventData.evtData,
+              eventData.evtData = _objectSpread2(_objectSpread2({}, eventData.evtData), {}, {
                 wzrk_pivot: notificationData.pivotId
-              };
+              });
             } // Adds WZRK prefix key-value pairs to event data
 
 
             if (notificationData.msgCTkv) {
               for (var wzrkPrefixObj of notificationData.msgCTkv) {
-                eventData.evtData = { ...eventData.evtData,
-                  ...wzrkPrefixObj
-                };
+                eventData.evtData = _objectSpread2(_objectSpread2({}, eventData.evtData), wzrkPrefixObj);
               }
             }
 
             CampaignContext.request.processEvent(eventData);
           };
 
-          popupCallback(inaObj);
+          popupCallback(_inaObj);
         }
       }
     },
 
     // Triggers campaign based on user inactivity
     triggerByInactivity(targetNotif) {
-      const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // Convert to milliseconds
+      var IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // Convert to milliseconds
 
-      let idleTimer;
-      const events = ['mousemove', 'keypress', 'scroll', 'mousedown', 'touchmove', 'click'];
+      var idleTimer;
+      var events = ['mousemove', 'keypress', 'scroll', 'mousedown', 'touchmove', 'click'];
 
-      const resetIdleTimer = () => {
+      var resetIdleTimer = () => {
         clearTimeout(idleTimer);
         idleTimer = setTimeout(() => {
           this.renderFooterNotification(targetNotif);
@@ -15525,17 +16234,17 @@
         }, IDLE_TIME_THRESHOLD);
       };
 
-      const eventHandler = () => {
+      var eventHandler = () => {
         resetIdleTimer();
       };
 
-      const setupEventListeners = () => {
+      var setupEventListeners = () => {
         events.forEach(eventType => window.addEventListener(eventType, eventHandler, {
           passive: true
         }));
       };
 
-      const removeEventListeners = () => {
+      var removeEventListeners = () => {
         events.forEach(eventType => window.removeEventListener(eventType, eventHandler));
       };
 
@@ -15547,8 +16256,8 @@
 
     // Triggers campaign based on scroll percentage
     triggerByScroll(targetNotif) {
-      const calculateScrollPercentage = () => {
-        const {
+      var calculateScrollPercentage = () => {
+        var {
           scrollHeight,
           clientHeight,
           scrollTop
@@ -15556,8 +16265,8 @@
         return scrollTop / (scrollHeight - clientHeight) * 100;
       };
 
-      const scrollListener = () => {
-        const scrollPercentage = calculateScrollPercentage();
+      var scrollListener = () => {
+        var scrollPercentage = calculateScrollPercentage();
 
         if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
           this.renderFooterNotification(targetNotif);
@@ -15565,10 +16274,10 @@
         }
       };
 
-      const throttle = (func, limit) => {
-        let inThrottle = false;
+      var throttle = (func, limit) => {
+        var inThrottle = false;
         return function () {
-          const context = this;
+          var context = this;
 
           if (!inThrottle) {
             for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -15584,7 +16293,7 @@
         };
       };
 
-      const throttledScrollListener = throttle(scrollListener, 200);
+      var throttledScrollListener = throttle(scrollListener, 200);
       window.addEventListener('scroll', throttledScrollListener, {
         passive: true
       }); // Returns cleanup function
@@ -15596,9 +16305,9 @@
     showExitIntent(event, targetObj, wtq, exitintentObj) {
       // Only triggers when mouse moves upward out of window
       if ((event === null || event === void 0 ? void 0 : event.clientY) > 0) return;
-      const targetingMsgJson = targetObj || exitintentObj;
-      const campaignId = targetingMsgJson.wzrk_id.split('_')[0];
-      const layout = targetingMsgJson.display.layout; // Skips if campaign is already rendered
+      var targetingMsgJson = targetObj || exitintentObj;
+      var campaignId = targetingMsgJson.wzrk_id.split('_')[0];
+      var layout = targetingMsgJson.display.layout; // Skips if campaign is already rendered
 
       if (this.isExistingCampaign(campaignId)) return;
 
@@ -15614,8 +16323,8 @@
 
 
       if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0) {
-        const intentPreview = document.getElementById('intentPreview');
-        const intentOpacityDiv = document.getElementById('intentOpacityDiv');
+        var intentPreview = document.getElementById('intentPreview');
+        var intentOpacityDiv = document.getElementById('intentOpacityDiv');
 
         if (intentPreview && intentOpacityDiv) {
           intentPreview.remove();
@@ -15634,14 +16343,14 @@
       }
 
       $ct.campaignDivMap[campaignId] = 'intentPreview';
-      let legacy = false;
-      const opacityDiv = document.createElement('div');
+      var legacy = false;
+      var opacityDiv = document.createElement('div');
       opacityDiv.id = 'intentOpacityDiv';
-      const opacity = targetingMsgJson.display.opacity || 0.7;
-      const rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
+      var opacity = targetingMsgJson.display.opacity || 0.7;
+      var rgbaColor = "rgba(0,0,0,".concat(opacity, ")");
       opacityDiv.setAttribute('style', "position: fixed;top: 0;bottom: 0;left: 0;width: 100%;height: 100%;z-index: 2147483646;background: ".concat(rgbaColor, ";"));
       document.body.appendChild(opacityDiv);
-      const msgDiv = document.createElement('div');
+      var msgDiv = document.createElement('div');
       msgDiv.id = 'intentPreview';
 
       if (targetingMsgJson.display.proto == null) {
@@ -15652,15 +16361,15 @@
       }
 
       document.body.appendChild(msgDiv);
-      const iframe = document.createElement('iframe');
-      const borderRadius = targetingMsgJson.display.br === false ? '0' : '8';
+      var iframe = document.createElement('iframe');
+      var borderRadius = targetingMsgJson.display.br === false ? '0' : '8';
       iframe.frameborder = '0px';
       iframe.marginheight = '0px';
       iframe.marginwidth = '0px';
       iframe.scrolling = 'no';
       iframe.id = 'wiz-iframe-intent';
-      const onClick = targetingMsgJson.display.onClick;
-      let pointerCss = '';
+      var onClick = targetingMsgJson.display.onClick;
+      var pointerCss = '';
 
       if (onClick !== '' && onClick != null) {
         pointerCss = 'cursor:pointer;';
@@ -15670,7 +16379,7 @@
         iframe.sandbox = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
       }
 
-      let html; // Direct HTML content
+      var html; // Direct HTML content
 
       if (targetingMsgJson.msgContent.type === 1) {
         html = targetingMsgJson.msgContent.html;
@@ -15678,8 +16387,8 @@
         html = html.replace(/##campaignId_batchId##/g, targetingMsgJson.wzrk_id);
       } else {
         // Generated HTML with styling
-        const css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + '#contentDiv .button{padding-top:20px;}' + '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' + '</style>';
-        let bgColor, textColor, btnBg, btColor;
+        var css = '' + '<style type="text/css">' + 'body{margin:0;padding:0;}' + '#contentDiv.wzrk{overflow:hidden;padding:0 0 20px 0;text-align:center;' + pointerCss + '}' + '#contentDiv.wzrk td{padding:15px 10px;}' + '.wzrkPPtitle{font-weight: bold;font-size: 24px;font-family:arial;word-break: break-word;padding-top:20px;}' + '.wzrkPPdscr{font-size: 14px;font-family:arial;line-height:16px;word-break: break-word;display:inline-block;padding:20px 20px 0 20px;line-height:20px;}' + '.PL15{padding-left:15px;}' + '.wzrkPPwarp{margin:20px 20px 0 5px;padding:0px;border-radius: ' + borderRadius + 'px;box-shadow: 1px 1px 5px #888888;}' + 'a.wzrkClose{cursor:pointer;position: absolute;top: 11px;right: 11px;z-index: 2147483647;font-size:19px;font-family:arial;font-weight:bold;text-decoration: none;width: 25px;/*height: 25px;*/text-align: center; -webkit-appearance: none; line-height: 25px;' + 'background: #353535;border: #fff 2px solid;border-radius: 100%;box-shadow: #777 2px 2px 2px;color:#fff;}' + 'a:hover.wzrkClose{background-color:#d1914a !important;color:#fff !important; -webkit-appearance: none;}' + '#contentDiv .button{padding-top:20px;}' + '#contentDiv .button a{font-size: 14px;font-weight:bold;font-family:arial;text-align:center;display:inline-block;text-decoration:none;padding:0 30px;height:40px;line-height:40px;background:#ea693b;color:#fff;border-radius:4px;-webkit-border-radius:4px;-moz-border-radius:4px;}' + '</style>';
+        var bgColor, textColor, btnBg, btColor;
 
         if (targetingMsgJson.display.theme === 'dark') {
           bgColor = '#2d2d2e';
@@ -15693,30 +16402,30 @@
           btColor = '#ffffff';
         }
 
-        const titleText = targetingMsgJson.msgContent.title;
-        const descriptionText = targetingMsgJson.msgContent.description;
-        let ctaText = '';
+        var titleText = targetingMsgJson.msgContent.title;
+        var descriptionText = targetingMsgJson.msgContent.description;
+        var ctaText = '';
 
         if (targetingMsgJson.msgContent.ctaText != null && targetingMsgJson.msgContent.ctaText !== '') {
           ctaText = "<div class='button'><a href='#'>" + targetingMsgJson.msgContent.ctaText + '</a></div>';
         }
 
-        let imageTd = '';
+        var imageTd = '';
 
         if (targetingMsgJson.msgContent.imageUrl != null && targetingMsgJson.msgContent.imageUrl !== '') {
           imageTd = "<div style='padding-top:20px;'><img src='" + targetingMsgJson.msgContent.imageUrl + "' width='500' alt=" + titleText + ' /></div>';
         }
 
-        const onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'intentPreview');";
-        const title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
-        const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '</div>' + imageTd + ctaText + '</div></div>';
+        var onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'intentPreview');";
+        var title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
+        var body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '</div>' + imageTd + ctaText + '</div></div>';
         html = css + title + body;
       }
 
       iframe.setAttribute('style', 'color-scheme: none; z-index: 2147483647; display:block; height: 100% !important; width: 100% !important;min-height:80px !important;border:0px !important; border-color:none !important;');
       msgDiv.appendChild(iframe); // Dispatches event for interstitial/exit intent close
 
-      const closeCampaign = new Event('CT_campaign_rendered');
+      var closeCampaign = new Event('CT_campaign_rendered');
       document.dispatchEvent(closeCampaign);
 
       if (targetingMsgJson.display['custom-editor']) {
@@ -15726,7 +16435,7 @@
       iframe.srcdoc = html;
 
       iframe.onload = () => {
-        const contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
+        var contentDiv = document.getElementById('wiz-iframe-intent').contentDocument.getElementById('contentDiv');
         this.setupClickUrl(onClick, targetingMsgJson, contentDiv, 'intentPreview', legacy);
       };
 
@@ -15757,10 +16466,10 @@
     // Adds listener to process native displays after page load
     addLoadListener(arrInAppNotifs) {
       window.addEventListener('load', () => {
-        let count = 0;
+        var count = 0;
 
         if (count < 20) {
-          const t = setInterval(() => {
+          var t = setInterval(() => {
             this.processNativeDisplayArr(arrInAppNotifs);
 
             if (Object.keys(arrInAppNotifs).length === 0 || count === 20) {
@@ -15782,9 +16491,9 @@
       }
 
       if (msg.inbox_notifs) {
-        const msgArr = [];
+        var msgArr = [];
 
-        for (let index = 0; index < msg.inbox_notifs.length; index++) {
+        for (var index = 0; index < msg.inbox_notifs.length; index++) {
           var _CampaignContext$msg, _CampaignContext$msg$;
 
           addCampaignToLocalStorage(msg.inbox_notifs[index], CampaignContext.region, (_CampaignContext$msg = CampaignContext.msg) === null || _CampaignContext$msg === void 0 ? void 0 : (_CampaignContext$msg$ = _CampaignContext$msg.arp) === null || _CampaignContext$msg$ === void 0 ? void 0 : _CampaignContext$msg$.id);
@@ -15799,34 +16508,37 @@
     },
 
     processCampaigns(msg, _callBackCalled, exitintentObj, logger) {
-      const arrInAppNotifs = {};
-      const sortedCampaigns = webNativeDisplayCampaignUtils.sortCampaignsByPriority(msg.inapp_notifs);
-      const executedTargets = {
+      var _this = this;
+
+      var arrInAppNotifs = {};
+      var sortedCampaigns = webNativeDisplayCampaignUtils.sortCampaignsByPriority(msg.inapp_notifs);
+      var executedTargets = {
         nodes: [],
         customEvents: []
       };
 
-      for (let index = 0; index < sortedCampaigns.length; index++) {
+      var _loop = function _loop(index) {
         var _CampaignContext$msg2, _CampaignContext$msg3;
 
         addCampaignToLocalStorage(sortedCampaigns[index], CampaignContext.region, (_CampaignContext$msg2 = CampaignContext.msg) === null || _CampaignContext$msg2 === void 0 ? void 0 : (_CampaignContext$msg3 = _CampaignContext$msg2.arp) === null || _CampaignContext$msg3 === void 0 ? void 0 : _CampaignContext$msg3.id);
-        const targetNotif = sortedCampaigns[index];
+        var targetNotif = sortedCampaigns[index];
 
         if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
-          this.showFooterNotification(targetNotif, _callBackCalled, exitintentObj);
+          _this.showFooterNotification(targetNotif, _callBackCalled, exitintentObj);
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.EXIT_INTENT) {
           // if display['wtarget_type']==1 then exit intent
           exitintentObj = targetNotif;
           /* Show it only once per callback */
 
-          const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetNotif, exitintentObj);
+          var handleMouseLeave = _this.createExitIntentMouseLeaveHandler(targetNotif, exitintentObj);
+
           window.document.addEventListener('mouseleave', handleMouseLeave);
         } else if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY) {
           // if display['wtarget_type']==2 then web native display
           // Skips duplicate custom event campaigns
           if (webNativeDisplayCampaignUtils.doesCampaignPushCustomEvent(targetNotif) && executedTargets.customEvents.length > 0 && webNativeDisplayCampaignUtils.shouldCurrentCustomEventCampaignBeSkipped(targetNotif, executedTargets)) {
             logger.debug('Custom Event Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
-            continue;
+            return "continue";
           } // Skips duplicate DOM node campaigns
 
 
@@ -15836,7 +16548,7 @@
             return (_webNativeDisplayCamp = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif)) === null || _webNativeDisplayCamp === void 0 ? void 0 : _webNativeDisplayCamp.includes(node);
           })) {
             logger.debug('DOM Campaign Skipped with id :: ' + (targetNotif === null || targetNotif === void 0 ? void 0 : targetNotif.wzrk_id));
-            continue;
+            return "continue";
           } // Tracks executed custom events
 
 
@@ -15845,14 +16557,14 @@
                 This basically stores the CustomEvents with their type that we will push so that
                 the next time we receive a CustomEvent with the same type we can skip it
               */
-            const eventTopic = targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR ? targetNotif.display.kv.topic : null;
+            var eventTopic = targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.KV_PAIR ? targetNotif.display.kv.topic : null;
             executedTargets.customEvents.push({
               customEventType: targetNotif.msgContent.type,
               eventTopic
             });
           } else if (webNativeDisplayCampaignUtils.doesCampaignMutateDOMNode(targetNotif)) {
             // Tracks executed DOM nodes
-            const nodes = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif);
+            var nodes = webNativeDisplayCampaignUtils.getCampaignNodes(targetNotif);
             executedTargets.nodes.push(...nodes);
           } // Handles different native display types
 
@@ -15868,9 +16580,15 @@
           } else if (targetNotif.msgContent.type === WEB_NATIVE_TEMPLATES.JSON) {
             handleJson(targetNotif);
           } else {
-            this.showFooterNotification(targetNotif, _callBackCalled, exitintentObj);
+            _this.showFooterNotification(targetNotif, _callBackCalled, exitintentObj);
           }
         }
+      };
+
+      for (var index = 0; index < sortedCampaigns.length; index++) {
+        var _ret = _loop(index);
+
+        if (_ret === "continue") continue;
       } // Processes banner or carousel campaign array
 
 
@@ -15903,10 +16621,10 @@
       if (StorageManager._isLocalStorageSupported()) {
         try {
           if (msg.evpr != null) {
-            const eventsMap = msg.evpr.events;
-            const profileMap = msg.evpr.profile;
-            const syncExpiry = msg.evpr.expires_in;
-            const now = getNow();
+            var eventsMap = msg.evpr.events;
+            var profileMap = msg.evpr.profile;
+            var syncExpiry = msg.evpr.expires_in;
+            var now = getNow();
             StorageManager.setMetaProp('lsTime', now);
             StorageManager.setMetaProp('exTs', syncExpiry);
             mergeEventMap(eventsMap);
@@ -15947,26 +16665,26 @@
 
   };
 
-  const _tr = (msg, _ref) => {
-    let {
+  var _tr = (msg, _ref) => {
+    var {
       device,
       session,
       request,
       logger,
       region
     } = _ref;
-    const _device = device;
-    const _session = session;
-    const _request = request;
-    const _logger = logger;
-    let _wizCounter = 0; // Campaign House keeping
+    var _device = device;
+    var _session = session;
+    var _request = request;
+    var _logger = logger;
+    var _wizCounter = 0; // Campaign House keeping
 
     CampaignContext.update(device, session, request, logger, msg, region);
     deliveryPreferenceUtils.clearStaleCampaigns(msg, logger);
     deliveryPreferenceUtils.updateOccurenceForPopupAndNativeDisplay(msg, device, logger);
     deliveryPreferenceUtils.portTLC(_session, logger);
-    const _callBackCalled = false;
-    let exitintentObj; // Retries processing if document.body isn't ready (up to 6 attempts)
+    var _callBackCalled = false;
+    var exitintentObj; // Retries processing if document.body isn't ready (up to 6 attempts)
 
     if (!document.body) {
       if (_wizCounter < 6) {
@@ -16010,7 +16728,7 @@
 
   class User {
     constructor(_ref) {
-      let {
+      var {
         isPersonalisationActive
       } = _ref;
       Object.defineProperty(this, _isPersonalisationActive$2, {
@@ -16025,7 +16743,7 @@
         return;
       }
 
-      let visitCount = StorageManager.getMetaProp('sc');
+      var visitCount = StorageManager.getMetaProp('sc');
 
       if (visitCount == null) {
         visitCount = 1;
@@ -16039,7 +16757,7 @@
         return;
       }
 
-      const prevSession = StorageManager.getMetaProp('ps');
+      var prevSession = StorageManager.getMetaProp('ps');
 
       if (prevSession != null) {
         return new Date(prevSession * 1000);
@@ -16057,7 +16775,7 @@
   class SessionManager {
     // SCOOKIE_NAME
     constructor(_ref) {
-      let {
+      var {
         logger,
         isPersonalisationActive
       } = _ref;
@@ -16089,103 +16807,123 @@
     }
 
     getSessionCookieObject() {
-      let scookieStr = StorageManager.readCookie(this.cookieName);
-      let obj = {};
+      var _this = this;
 
-      if (scookieStr != null) {
-        // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
-        scookieStr = scookieStr.replace(singleQuoteRegex, '"');
-        obj = JSON.parse(scookieStr);
+      return _asyncToGenerator(function* () {
+        var scookieStr = yield StorageManager.retrieveData('cookie', _this.cookieName);
+        var obj = {};
 
-        if (!isObject(obj)) {
-          obj = {};
-        } else {
-          if (typeof obj.t !== 'undefined') {
-            // check time elapsed since last request
-            const lastTime = obj.t;
-            const now = getNow();
+        if (scookieStr != null) {
+          // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
+          scookieStr = scookieStr.replace(singleQuoteRegex, '"');
+          obj = JSON.parse(scookieStr);
 
-            if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
-              // adding 60 seconds to compensate for in-journey requests
-              // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
-              // hence we shouldn't use it.
-              obj = {};
+          if (!isObject(obj)) {
+            obj = {};
+          } else {
+            if (typeof obj.t !== 'undefined') {
+              // check time elapsed since last request
+              var lastTime = obj.t;
+              var now = getNow();
+
+              if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
+                // adding 60 seconds to compensate for in-journey requests
+                // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
+                // hence we shouldn't use it.
+                obj = {};
+              }
             }
           }
         }
-      }
 
-      this.scookieObj = obj;
-      return obj;
+        _this.scookieObj = obj;
+        return obj;
+      })();
     }
 
     setSessionCookieObject(obj) {
-      const objStr = JSON.stringify(obj);
-      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
+      var _this2 = this;
+
+      return _asyncToGenerator(function* () {
+        var objStr = JSON.stringify(obj);
+        yield StorageManager.createBroadCookie(_this2.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
+      })();
     }
 
     manageSession(session) {
-      // first time. check if current session id in localstorage is same
-      // if not same then prev = current and current = this new session
-      if (typeof this.sessionId === 'undefined' || this.sessionId !== session) {
-        const currentSessionInLS = StorageManager.getMetaProp('cs'); // if sessionId in meta is undefined - set current to both
+      var _this3 = this;
 
-        if (typeof currentSessionInLS === 'undefined') {
-          StorageManager.setMetaProp('ps', session);
-          StorageManager.setMetaProp('cs', session);
-          StorageManager.setMetaProp('sc', 1);
-        } else if (currentSessionInLS !== session) {
-          // not same as session in local storage. new session
-          StorageManager.setMetaProp('ps', currentSessionInLS);
-          StorageManager.setMetaProp('cs', session);
-          let sessionCount = StorageManager.getMetaProp('sc');
+      return _asyncToGenerator(function* () {
+        // first time. check if current session id in localstorage is same
+        // if not same then prev = current and current = this new session
+        if (typeof _this3.sessionId === 'undefined' || _this3.sessionId !== session) {
+          var currentSessionInLS = StorageManager.getMetaProp('cs'); // if sessionId in meta is undefined - set current to both
 
-          if (typeof sessionCount === 'undefined') {
-            sessionCount = 0;
+          if (typeof currentSessionInLS === 'undefined') {
+            yield StorageManager.setMetaProp('ps', session);
+            yield StorageManager.setMetaProp('cs', session);
+            yield StorageManager.setMetaProp('sc', 1);
+          } else if (currentSessionInLS !== session) {
+            // not same as session in local storage. new session
+            yield StorageManager.setMetaProp('ps', currentSessionInLS);
+            yield StorageManager.setMetaProp('cs', session);
+            var sessionCount = StorageManager.getMetaProp('sc');
+
+            if (typeof sessionCount === 'undefined') {
+              sessionCount = 0;
+            }
+
+            yield StorageManager.setMetaProp('sc', sessionCount + 1);
           }
 
-          StorageManager.setMetaProp('sc', sessionCount + 1);
+          _this3.sessionId = session;
         }
-
-        this.sessionId = session;
-      }
+      })();
     }
 
     getTimeElapsed() {
-      if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
-        return;
-      }
+      var _this4 = this;
 
-      if (this.scookieObj != null) {
-        // TODO: check logic?
-        this.scookieObj = this.getSessionCookieObject();
-      }
+      return _asyncToGenerator(function* () {
+        if (!_classPrivateFieldLooseBase(_this4, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
+          return;
+        }
 
-      const sessionStart = this.scookieObj.s;
+        if (_this4.scookieObj != null) {
+          // TODO: check logic?
+          _this4.scookieObj = yield _this4.getSessionCookieObject();
+        }
 
-      if (sessionStart != null) {
-        const ts = getNow();
-        return Math.floor(ts - sessionStart);
-      }
+        var sessionStart = _this4.scookieObj.s;
+
+        if (sessionStart != null) {
+          var ts = getNow();
+          return Math.floor(ts - sessionStart);
+        }
+      })();
     }
 
     getPageCount() {
-      if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
-        return;
-      }
+      var _this5 = this;
 
-      if (this.scookieObj != null) {
-        // TODO: check logic
-        this.scookieObj = this.getSessionCookieObject();
-      }
+      return _asyncToGenerator(function* () {
+        if (!_classPrivateFieldLooseBase(_this5, _isPersonalisationActive$1)[_isPersonalisationActive$1]()) {
+          return;
+        }
 
-      return this.scookieObj.p;
+        if (_this5.scookieObj != null) {
+          // TODO: check logic
+          _this5.scookieObj = yield _this5.getSessionCookieObject();
+        }
+
+        return _this5.scookieObj.p;
+      })();
     }
 
   }
 
-  let seqNo = 0;
-  let requestTime = 0;
+  var seqNo = 0;
+  var requestTime = 0;
 
   var _logger$3 = _classPrivateFieldLooseKey("logger");
 
@@ -16205,7 +16943,7 @@
 
   class RequestManager {
     constructor(_ref) {
-      let {
+      var {
         logger,
         account,
         device,
@@ -16259,8 +16997,8 @@
 
 
     processBackupEvents() {
-      let oulOnly = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-      const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
+      var oulOnly = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+      var backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
 
       if (typeof backupMap === 'undefined' || backupMap === null) {
         return;
@@ -16268,22 +17006,22 @@
 
       this.processingBackup = true;
 
-      for (const idx in backupMap) {
+      for (var idx in backupMap) {
         if (backupMap.hasOwnProperty(idx)) {
-          const backupEvent = backupMap[idx];
+          var backupEvent = backupMap[idx];
 
           if (typeof backupEvent.fired !== 'undefined') {
             continue;
           }
 
-          const isOULRequest = StorageManager.isBackupOUL(parseInt(idx));
-          const shouldProcess = oulOnly ? isOULRequest : true;
+          var isOULRequest = StorageManager.isBackupOUL(parseInt(idx));
+          var shouldProcess = oulOnly ? isOULRequest : true;
 
           if (shouldProcess) {
             _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event : ").concat(backupEvent.q));
 
             if (typeof backupEvent.q !== 'undefined') {
-              const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
+              var session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
 
               if (session === null || session === void 0 ? void 0 : session.s) {
                 backupEvent.q = backupEvent.q + '&s=' + session.s;
@@ -16302,73 +17040,102 @@
     }
 
     addSystemDataToObject(dataObject, ignoreTrim) {
-      // ignore trim for chrome notifications; undefined everywhere else
-      if (typeof ignoreTrim === 'undefined') {
-        dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
-      }
+      var _this = this;
 
-      if (!isObjectEmpty(_classPrivateFieldLooseBase(this, _logger$3)[_logger$3].wzrkError)) {
-        dataObject.wzrk_error = _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].wzrkError;
-        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].wzrkError = {};
-      }
+      return _asyncToGenerator(function* () {
+        // ignore trim for chrome notifications; undefined everywhere else
+        if (typeof ignoreTrim === 'undefined') {
+          dataObject = removeUnsupportedChars(dataObject, _classPrivateFieldLooseBase(_this, _logger$3)[_logger$3]);
+        }
 
-      dataObject.id = _classPrivateFieldLooseBase(this, _account$3)[_account$3].id;
+        if (!isObjectEmpty(_classPrivateFieldLooseBase(_this, _logger$3)[_logger$3].wzrkError)) {
+          dataObject.wzrk_error = _classPrivateFieldLooseBase(_this, _logger$3)[_logger$3].wzrkError;
+          _classPrivateFieldLooseBase(_this, _logger$3)[_logger$3].wzrkError = {};
+        }
 
-      if (isValueValid(_classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie)) {
-        dataObject.g = _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie;
-      }
+        dataObject.id = _classPrivateFieldLooseBase(_this, _account$3)[_account$3].id;
 
-      const obj = _classPrivateFieldLooseBase(this, _session$1)[_session$1].getSessionCookieObject();
+        if (isValueValid(_classPrivateFieldLooseBase(_this, _device$1)[_device$1].gcookie)) {
+          dataObject.g = _classPrivateFieldLooseBase(_this, _device$1)[_device$1].gcookie;
+        }
 
-      dataObject.s = obj.s; // session cookie
+        var obj = yield _classPrivateFieldLooseBase(_this, _session$1)[_session$1].getSessionCookieObject();
+        dataObject.s = obj.s; // session cookie
 
-      dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
+        dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
 
-      let proto = document.location.protocol;
-      proto = proto.replace(':', '');
-      dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.2.1',
-        protocol: proto,
-        ...$ct.flutterVersion
-      }; // app fields
+        if (typeof sessionStorage === 'object') {
+          if (sessionStorage.hasOwnProperty('WZRK_D')) {
+            dataObject.debug = true;
+          }
+        }
 
-      try {
-        if (sessionStorage.hasOwnProperty('WZRK_D') || sessionStorage.getItem('WZRK_D')) {
+        return dataObject;
+      })();
+    }
+
+    addSystemDataToProfileObject(dataObject, ignoreTrim) {
+      var _this2 = this;
+
+      return _asyncToGenerator(function* () {
+        var _sessionStorage;
+
+        if (!isObjectEmpty(_classPrivateFieldLooseBase(_this2, _logger$3)[_logger$3].wzrkError)) {
+          dataObject.wzrk_error = _classPrivateFieldLooseBase(_this2, _logger$3)[_logger$3].wzrkError;
+          _classPrivateFieldLooseBase(_this2, _logger$3)[_logger$3].wzrkError = {};
+        }
+
+        dataObject.id = _classPrivateFieldLooseBase(_this2, _account$3)[_account$3].id;
+
+        if (isValueValid(_classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie)) {
+          dataObject.g = _classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie;
+        }
+
+        var obj = yield _classPrivateFieldLooseBase(_this2, _session$1)[_session$1].getSessionCookieObject();
+        dataObject.s = obj.s; // session cookie
+
+        dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
+
+        if ((_sessionStorage = sessionStorage) === null || _sessionStorage === void 0 ? void 0 : _sessionStorage.hasOwnProperty('WZRK_D')) {
           dataObject.debug = true;
         }
-      } catch (e) {
-        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Error in reading WZRK_D from session storage');
-      }
 
-      return dataObject;
+        return dataObject;
+      })();
     }
 
     addFlags(data) {
-      // check if cookie should be cleared.
-      _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] = StorageManager.getAndClearMetaProp(CLEAR);
+      var _this3 = this;
 
-      if (_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) {
-        data.rc = true;
+      return _asyncToGenerator(function* () {
+        // check if cookie should be cleared.
+        _classPrivateFieldLooseBase(_this3, _clearCookie)[_clearCookie] = yield StorageManager.getAndClearMetaProp(CLEAR);
 
-        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('reset cookie sent in request and cleared from meta for future requests.');
-      }
+        if (_classPrivateFieldLooseBase(_this3, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(_this3, _clearCookie)[_clearCookie]) {
+          data.rc = true;
 
-      if (_classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive]()) {
-        const lastSyncTime = StorageManager.getMetaProp('lsTime');
-        const expirySeconds = StorageManager.getMetaProp('exTs'); // dsync not found in local storage - get data from server
-
-        if (typeof lastSyncTime === 'undefined' || typeof expirySeconds === 'undefined') {
-          data.dsync = true;
-          return;
+          _classPrivateFieldLooseBase(_this3, _logger$3)[_logger$3].debug('reset cookie sent in request and cleared from meta for future requests.');
         }
 
-        const now = getNow(); // last sync time has expired - get fresh data from server
+        if (_classPrivateFieldLooseBase(_this3, _isPersonalisationActive)[_isPersonalisationActive]()) {
+          var lastSyncTime = yield StorageManager.getMetaProp('lsTime');
+          var expirySeconds = yield StorageManager.getMetaProp('exTs'); // dsync not found in local storage - get data from server
 
-        if (lastSyncTime + expirySeconds < now) {
-          data.dsync = true;
+          if (typeof lastSyncTime === 'undefined' || typeof expirySeconds === 'undefined') {
+            data.dsync = true;
+            return;
+          }
+
+          var now = getNow(); // last sync time has expired - get fresh data from server
+
+          if (lastSyncTime + expirySeconds < now) {
+            data.dsync = true;
+          }
         }
-      }
-    } // saves url to backup cache and fires the request
+      })();
+    }
+
+    // saves url to backup cache and fires the request
 
     /**
      *
@@ -16376,74 +17143,112 @@
      * @param {boolean} override whether the request can go through or not
      * @param {Boolean} sendOULFlag - true in case of a On User Login request
      */
-
-
     saveAndFireRequest(url, override, sendOULFlag, evtName) {
-      const now = getNow(); // Get the next available request number that doesn't conflict with existing backups
+      var _this4 = this;
 
-      const nextReqN = _classPrivateFieldLooseBase(this, _getNextAvailableReqN)[_getNextAvailableReqN]();
+      return _asyncToGenerator(function* () {
+        var now = getNow(); // Get the next available request number that doesn't conflict with existing backups
 
-      $ct.globalCache.REQ_N = nextReqN;
-      url = addToURL(url, 'rn', nextReqN);
-      const data = url + '&i=' + now + '&sn=' + seqNo;
-      StorageManager.backupEvent(data, nextReqN, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]); // Mark as OUL if it's an OUL request
+        var nextReqN = yield _classPrivateFieldLooseBase(_this4, _getNextAvailableReqN)[_getNextAvailableReqN]();
+        $ct.globalCache.REQ_N = nextReqN;
+        url = addToURL(url, 'rn', nextReqN);
+        var data = url + '&i=' + now + '&sn=' + seqNo; // TODO: Enable this
+        // StorageManager.backupEvent(data, $ct.globalCache.REQ_N, this.#logger)
+        // if offline is set to true, save the request in backup and return
 
-      if (sendOULFlag) {
-        StorageManager.markBackupAsOUL(nextReqN);
-      } // if offline is set to true, save the request in backup and return
+        if ($ct.offline || $ct.delayEvents) return; // if there is no override
+        // and an OUL request is not in progress
+        // then process the request as it is
+        // else block the request
+        // note - $ct.blockRequest should ideally be used for override
 
+        if ((!override || _classPrivateFieldLooseBase(_this4, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(_this4, _clearCookie)[_clearCookie]) && !globalWindow.isOULInProgress) {
+          if (now === requestTime) {
+            seqNo++;
+          } else {
+            requestTime = now;
+            seqNo = 0;
+          }
 
-      if ($ct.offline || $ct.delayEvents) return; // if there is no override
-      // and an OUL request is not in progress
-      // then process the request as it is
-      // else block the request
-      // note - $ct.blockRequest should ideally be used for override
-
-      if ((!override || _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie] !== undefined && _classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie]) && !window.isOULInProgress) {
-        if (now === requestTime) {
-          seqNo++;
+          globalWindow.oulReqN = $ct.globalCache.REQ_N;
+          yield RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
         } else {
-          requestTime = now;
-          seqNo = 0;
+          _classPrivateFieldLooseBase(_this4, _logger$3)[_logger$3].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(_this4, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(globalWindow.isOULInProgress));
         }
-
-        window.oulReqN = nextReqN;
-        RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
-      } else {
-        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(this, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(window.isOULInProgress));
-      }
+      })();
     }
 
     unregisterTokenForGuid(givenGUID) {
-      const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA); // Send unregister event only when token is available
+      var _this5 = this;
 
-      if (payload) {
-        const data = {};
-        data.type = 'data';
+      return _asyncToGenerator(function* () {
+        var payload = yield StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA); // Send unregister event only when token is available
 
-        if (isValueValid(givenGUID)) {
-          data.g = givenGUID;
-        }
+        if (payload) {
+          var data = {};
+          data.type = 'data';
 
-        data.action = 'unregister';
-        data.id = _classPrivateFieldLooseBase(this, _account$3)[_account$3].id;
+          if (isValueValid(givenGUID)) {
+            data.g = givenGUID;
+          }
 
-        const obj = _classPrivateFieldLooseBase(this, _session$1)[_session$1].getSessionCookieObject();
+          data.action = 'unregister';
+          data.id = _classPrivateFieldLooseBase(_this5, _account$3)[_account$3].id;
+          var obj = yield _classPrivateFieldLooseBase(_this5, _session$1)[_session$1].getSessionCookieObject();
+          data.s = obj.s; // session cookie
 
-        data.s = obj.s; // session cookie
+          var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this5, _logger$3)[_logger$3]);
 
-        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
+          var pageLoadUrl = _classPrivateFieldLooseBase(_this5, _account$3)[_account$3].dataPostURL;
 
-        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
+          pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
+          pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+          yield RequestDispatcher.fireRequest(pageLoadUrl, true);
+          yield StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
+        } // REGISTER TOKEN
+
+
+        yield _this5.registerToken(payload);
+      })();
+    }
+
+    registerToken(payload) {
+      var _this6 = this;
+
+      return _asyncToGenerator(function* () {
+        if (!payload) return; // add gcookie etc to the payload
+
+        payload = yield _this6.addSystemDataToObject(payload, true);
+        payload = JSON.stringify(payload);
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(_this6, _account$3)[_account$3].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(_this6, _logger$3)[_logger$3]));
+        yield RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
+
+        StorageManager.addData('localStorage', WEBPUSH_LS_KEY, 'ok');
+      })();
+    }
+
+    processEvent(data) {
+      var _this7 = this;
+
+      return _asyncToGenerator(function* () {
+        yield _classPrivateFieldLooseBase(_this7, _addToLocalEventMap)[_addToLocalEventMap](data.evtName);
+        data = _this7.addSystemDataToObject(data, undefined);
+
+        _this7.addFlags(data);
+
+        data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this7, _logger$3)[_logger$3]);
+
+        var pageLoadUrl = _classPrivateFieldLooseBase(_this7, _account$3)[_account$3].dataPostURL;
+
+        pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-        RequestDispatcher.fireRequest(pageLoadUrl, true);
-        StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
-      } // REGISTER TOKEN
-
-
-      this.registerToken(payload);
+        yield _this7.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName);
+      })();
     }
 
     registerToken(payload) {
@@ -16452,7 +17257,7 @@
       payload = this.addSystemDataToObject(payload, true);
       payload = JSON.stringify(payload);
 
-      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
+      var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]));
@@ -16467,9 +17272,9 @@
       data = this.addSystemDataToObject(data, undefined);
       this.addFlags(data);
       data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
-      const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
+      var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
 
-      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
+      var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$3)[_account$3].dataPostURL;
 
       pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -16502,55 +17307,71 @@
 
   }
 
-  var _getNextAvailableReqN2 = function _getNextAvailableReqN2() {
-    // Read existing backup data to check for conflicts
-    const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME); // Start from the current REQ_N + 1
+  var _getNextAvailableReqN2 = /*#__PURE__*/function () {
+    var _getNextAvailableReqN3 = _asyncToGenerator(function* () {
+      // Read existing backup data to check for conflicts
+      var backupMap = yield StorageManager.readFromLSorCookie(LCOOKIE_NAME); // Start from the current REQ_N + 1
 
-    let candidateReqN = $ct.globalCache.REQ_N + 1; // If no backup data exists, use the candidate
+      var candidateReqN = $ct.globalCache.REQ_N + 1; // If no backup data exists, use the candidate
 
-    if (!backupMap || typeof backupMap !== 'object') {
+      if (!backupMap || typeof backupMap !== 'object') {
+        return candidateReqN;
+      } // Keep incrementing until we find a request number that doesn't exist in backup
+
+
+      while (backupMap.hasOwnProperty(candidateReqN.toString())) {
+        candidateReqN++;
+
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Request number ".concat(candidateReqN - 1, " already exists in backup, trying ").concat(candidateReqN));
+      }
+
+      _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Using request number: ".concat(candidateReqN));
+
       return candidateReqN;
-    } // Keep incrementing until we find a request number that doesn't exist in backup
+    });
 
-
-    while (backupMap.hasOwnProperty(candidateReqN.toString())) {
-      candidateReqN++;
-
-      _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Request number ".concat(candidateReqN - 1, " already exists in backup, trying ").concat(candidateReqN));
+    function _getNextAvailableReqN2() {
+      return _getNextAvailableReqN3.apply(this, arguments);
     }
 
-    _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Using request number: ".concat(candidateReqN));
+    return _getNextAvailableReqN2;
+  }();
 
-    return candidateReqN;
-  };
-
-  var _addToLocalEventMap2 = function _addToLocalEventMap2(evtName) {
-    if (StorageManager._isLocalStorageSupported()) {
-      if (typeof $ct.globalEventsMap === 'undefined') {
-        $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE);
-
+  var _addToLocalEventMap2 = /*#__PURE__*/function () {
+    var _addToLocalEventMap3 = _asyncToGenerator(function* (evtName) {
+      if (StorageManager._isLocalStorageSupported()) {
         if (typeof $ct.globalEventsMap === 'undefined') {
-          $ct.globalEventsMap = {};
+          $ct.globalEventsMap = yield StorageManager.readFromLSorCookie(EV_COOKIE);
+
+          if (typeof $ct.globalEventsMap === 'undefined') {
+            $ct.globalEventsMap = {};
+          }
         }
+
+        var nowTs = getNow();
+        var evtDetail = $ct.globalEventsMap[evtName];
+
+        if (typeof evtDetail !== 'undefined') {
+          evtDetail[2] = nowTs;
+          evtDetail[0]++;
+        } else {
+          evtDetail = [];
+          evtDetail.push(1);
+          evtDetail.push(nowTs);
+          evtDetail.push(nowTs);
+        }
+
+        $ct.globalEventsMap[evtName] = evtDetail;
+        yield StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
       }
+    });
 
-      const nowTs = getNow();
-      let evtDetail = $ct.globalEventsMap[evtName];
-
-      if (typeof evtDetail !== 'undefined') {
-        evtDetail[2] = nowTs;
-        evtDetail[0]++;
-      } else {
-        evtDetail = [];
-        evtDetail.push(1);
-        evtDetail.push(nowTs);
-        evtDetail.push(nowTs);
-      }
-
-      $ct.globalEventsMap[evtName] = evtDetail;
-      StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap);
+    function _addToLocalEventMap2(_x) {
+      return _addToLocalEventMap3.apply(this, arguments);
     }
-  };
+
+    return _addToLocalEventMap2;
+  }();
 
   var _request$2 = _classPrivateFieldLooseKey("request");
 
@@ -16564,7 +17385,7 @@
 
   class Privacy extends Array {
     constructor(_ref, values) {
-      let {
+      var {
         request,
         account,
         logger
@@ -16622,11 +17443,9 @@
 
   var _processPrivacyArray2 = function _processPrivacyArray2(privacyArr) {
     if (Array.isArray(privacyArr) && privacyArr.length > 0) {
-      const privacyObj = privacyArr.reduce((prev, curr) => ({ ...prev,
-        ...curr
-      }), {});
-      let data = {};
-      const profileObj = {};
+      var privacyObj = privacyArr.reduce((prev, curr) => _objectSpread2(_objectSpread2({}, prev), curr), {});
+      var data = {};
+      var profileObj = {};
       var optOut = false;
 
       if (privacyObj.hasOwnProperty(OPTOUT_KEY)) {
@@ -16640,8 +17459,8 @@
       }
 
       if (privacyObj.hasOwnProperty(USEIP_KEY)) {
-        const useIP = privacyObj[USEIP_KEY];
-        const shouldUseIP = typeof useIP === 'boolean' ? useIP : false;
+        var useIP = privacyObj[USEIP_KEY];
+        var shouldUseIP = typeof useIP === 'boolean' ? useIP : false;
         StorageManager.setMetaProp(USEIP_KEY, shouldUseIP);
       }
 
@@ -16649,9 +17468,9 @@
         data.type = 'profile';
         data.profile = profileObj;
         data = _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
-        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$2)[_logger$2]);
+        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$2)[_logger$2]);
 
-        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -16680,7 +17499,7 @@
      * @param {Function[]} options.valueChangedCallbacks - Array to store callbacks to be executed when the variable value changes.
      */
     constructor(_ref) {
-      let {
+      var {
         variableStore
       } = _ref;
       Object.defineProperty(this, _variableStore$1, {
@@ -16724,7 +17543,7 @@
         return null;
       }
 
-      const typeOfDefaultValue = typeof defaultValue;
+      var typeOfDefaultValue = typeof defaultValue;
 
       if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean' && typeOfDefaultValue !== 'object') {
         logger.error('Only (string, number, boolean, objects) are accepted as value');
@@ -16736,13 +17555,13 @@
         return null;
       }
 
-      const existing = variableStore.getVariable(name);
+      var existing = variableStore.getVariable(name);
 
       if (existing) {
         return existing;
       }
 
-      const varInstance = new Variable({
+      var varInstance = new Variable({
         variableStore
       });
 
@@ -16766,7 +17585,7 @@
         return null;
       }
 
-      const varInstance = new Variable({
+      var varInstance = new Variable({
         variableStore
       });
 
@@ -16789,7 +17608,7 @@
 
 
     update(newValue) {
-      const oldValue = this.value;
+      var oldValue = this.value;
       this.value = newValue;
 
       if (newValue === null && oldValue === null) {
@@ -16840,7 +17659,7 @@
 
 
     removeValueChangedCallback(onValueChanged) {
-      const index = this.valueChangedCallbacks.indexOf(onValueChanged);
+      var index = this.valueChangedCallbacks.indexOf(onValueChanged);
 
       if (index !== -1) {
         this.valueChangedCallbacks.splice(index, 1);
@@ -16881,7 +17700,7 @@
 
   class VariableStore {
     constructor(_ref) {
-      let {
+      var {
         logger,
         request,
         account,
@@ -16947,7 +17766,7 @@
 
 
     registerVariable(varInstance) {
-      const {
+      var {
         name
       } = varInstance;
       _classPrivateFieldLooseBase(this, _variables)[_variables][name] = varInstance;
@@ -16979,27 +17798,27 @@
 
     syncVariables(onSyncSuccess, onSyncFailure) {
       if (!_classPrivateFieldLooseBase(this, _account$1)[_account$1].token) {
-        const m = 'Account token is missing.';
+        var m = 'Account token is missing.';
 
         _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error(m);
 
         return Promise.reject(new Error(m));
       }
 
-      const payload = {
+      var payload = {
         type: 'varsPayload',
         vars: {}
       };
 
-      for (const name in _classPrivateFieldLooseBase(this, _variables)[_variables]) {
+      for (var name in _classPrivateFieldLooseBase(this, _variables)[_variables]) {
         if (typeof _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue === 'object') {
           var _classPrivateFieldLoo;
 
-          const flattenedPayload = flattenObjectToDotNotation({
+          var flattenedPayload = flattenObjectToDotNotation({
             [(_classPrivateFieldLoo = _classPrivateFieldLooseBase(this, _variables)[_variables][name]) === null || _classPrivateFieldLoo === void 0 ? void 0 : _classPrivateFieldLoo.name]: _classPrivateFieldLooseBase(this, _variables)[_variables][name].defaultValue
           });
 
-          for (const key in flattenedPayload) {
+          for (var key in flattenedPayload) {
             payload.vars[key] = {
               defaultValue: flattenedPayload[key].defaultValue,
               type: flattenedPayload[key].type
@@ -17019,20 +17838,20 @@
 
 
       if (Object.keys(payload.vars).length === 0) {
-        const m = 'No variables are defined.';
+        var _m = 'No variables are defined.';
 
-        _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error(m);
+        _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error(_m);
 
-        return Promise.reject(new Error(m));
+        return Promise.reject(new Error(_m));
       }
 
-      let meta = {};
+      var meta = {};
       meta = _classPrivateFieldLooseBase(this, _request$1)[_request$1].addSystemDataToObject(meta, undefined);
       meta.tk = _classPrivateFieldLooseBase(this, _account$1)[_account$1].token;
       meta.type = 'meta';
-      const body = JSON.stringify([meta, payload]);
+      var body = JSON.stringify([meta, payload]);
 
-      const url = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostPEURL;
+      var url = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostPEURL;
 
       return _classPrivateFieldLooseBase(this, _request$1)[_request$1].post(url, body).then(r => {
         if (onSyncSuccess && typeof onSyncSuccess === 'function') {
@@ -17079,7 +17898,7 @@
       StorageManager.saveToLSorCookie(VARIABLES, vars);
       _classPrivateFieldLooseBase(this, _remoteVariables)[_remoteVariables] = vars;
 
-      for (const name in _classPrivateFieldLooseBase(this, _variables)[_variables]) {
+      for (var name in _classPrivateFieldLooseBase(this, _variables)[_variables]) {
         if (vars.hasOwnProperty(name)) {
           _classPrivateFieldLooseBase(this, _variables)[_variables][name].update(vars[name]);
         }
@@ -17115,7 +17934,7 @@
     }
 
     removeVariablesChangedCallback(callback) {
-      const index = _classPrivateFieldLooseBase(this, _variablesChangedCallbacks)[_variablesChangedCallbacks].indexOf(callback);
+      var index = _classPrivateFieldLooseBase(this, _variablesChangedCallbacks)[_variablesChangedCallbacks].indexOf(callback);
 
       if (index !== -1) {
         _classPrivateFieldLooseBase(this, _variablesChangedCallbacks)[_variablesChangedCallbacks].splice(index, 1);
@@ -17123,7 +17942,7 @@
     }
 
     removeOneTimeVariablesChangedCallback(callback) {
-      const index = _classPrivateFieldLooseBase(this, _oneTimeVariablesChangedCallbacks)[_oneTimeVariablesChangedCallbacks].indexOf(callback);
+      var index = _classPrivateFieldLooseBase(this, _oneTimeVariablesChangedCallbacks)[_oneTimeVariablesChangedCallbacks].indexOf(callback);
 
       if (index !== -1) {
         _classPrivateFieldLooseBase(this, _oneTimeVariablesChangedCallbacks)[_oneTimeVariablesChangedCallbacks].splice(index, 1);
@@ -17187,12 +18006,15 @@
   var _sendLocationData = _classPrivateFieldLooseKey("sendLocationData");
 
   class CleverTap {
+    /**
+     * The logger Object
+     */
     get spa() {
       return _classPrivateFieldLooseBase(this, _isSpa)[_isSpa];
     }
 
     set spa(value) {
-      const isSpa = value === true;
+      var isSpa = value === true;
 
       if (_classPrivateFieldLooseBase(this, _isSpa)[_isSpa] !== isSpa && _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
         // if clevertap.spa is changed after init has been called then update the click listeners
@@ -17211,7 +18033,7 @@
     }
 
     set dismissSpamControl(value) {
-      const dismissSpamControl = value === true;
+      var dismissSpamControl = value === true;
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
       $ct.dismissSpamControl = dismissSpamControl;
     }
@@ -17219,7 +18041,7 @@
     constructor() {
       var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$account6;
 
-      let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      var clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
         value: _sendLocationData2
       });
@@ -17308,7 +18130,7 @@
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
       encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id; // Custom Guid will be set here
 
-      const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
+      var result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.customId);
 
       if (!result.isValid && (clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId)) {
         _classPrivateFieldLooseBase(this, _logger)[_logger].error(result.error);
@@ -17418,12 +18240,12 @@
 
       this.setSCSDKVersion = ver => {
         _classPrivateFieldLooseBase(this, _account)[_account].scSDKVersion = ver;
-        const data = {};
+        var data = {};
         data.af = {
           scv: 'sc-sdk-v' + _classPrivateFieldLooseBase(this, _account)[_account].scSDKVersion
         };
 
-        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger)[_logger]));
@@ -17438,16 +18260,16 @@
 
 
       this.getInboxMessageCount = () => {
-        const msgCount = getInboxMessages();
+        var msgCount = getInboxMessages();
         return Object.keys(msgCount).length;
       }; // Get Inbox Unread Message Count
 
 
       this.getInboxMessageUnreadCount = () => {
         try {
-          const unreadMessages = this.getUnreadInboxMessages();
-          const result = Object.keys(unreadMessages).length;
-          return result;
+          var unreadMessages = this.getUnreadInboxMessages();
+          var _result = Object.keys(unreadMessages).length;
+          return _result;
         } catch (e) {
           _classPrivateFieldLooseBase(this, _logger)[_logger].error('Error in getInboxMessageUnreadCount' + e);
         }
@@ -17461,18 +18283,18 @@
 
       this.getUnreadInboxMessages = () => {
         try {
-          const messages = getInboxMessages();
-          const result = {};
+          var messages = getInboxMessages();
+          var _result2 = {};
 
           if (Object.keys(messages).length > 0) {
-            for (const message in messages) {
+            for (var message in messages) {
               if (messages[message].viewed === 0) {
-                result[message] = messages[message];
+                _result2[message] = messages[message];
               }
             }
           }
 
-          return result;
+          return _result2;
         } catch (e) {
           _classPrivateFieldLooseBase(this, _logger)[_logger].error('Error in getUnreadInboxMessages' + e);
         }
@@ -17480,7 +18302,7 @@
 
 
       this.getInboxMessageForId = messageId => {
-        const messages = getInboxMessages();
+        var messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
           return messages[messageId];
@@ -17493,7 +18315,7 @@
 
 
       this.deleteInboxMessage = messageId => {
-        const messages = getInboxMessages();
+        var messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
           if (messages[messageId].viewed === 0) {
@@ -17502,7 +18324,7 @@
               delete $ct.inbox.unviewedMessages[messageId];
             }
 
-            const unViewedBadge = document.getElementById('unviewedBadge');
+            var unViewedBadge = document.getElementById('unviewedBadge');
 
             if (unViewedBadge) {
               unViewedBadge.innerText = $ct.inbox.unviewedCounter;
@@ -17510,10 +18332,10 @@
             }
           }
 
-          const ctInbox = document.querySelector('ct-web-inbox');
+          var ctInbox = document.querySelector('ct-web-inbox');
 
           if (ctInbox) {
-            const el = ctInbox.shadowRoot.getElementById(messageId);
+            var el = ctInbox.shadowRoot.getElementById(messageId);
             el && el.remove();
           }
 
@@ -17530,17 +18352,17 @@
 
 
       this.markReadInboxMessage = messageId => {
-        const messages = getInboxMessages();
+        var messages = getInboxMessages();
 
         if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
           if (messages[messageId].viewed === 1) {
             return _classPrivateFieldLooseBase(this, _logger)[_logger].error('Message already viewed' + messageId);
           }
 
-          const ctInbox = document.querySelector('ct-web-inbox');
+          var ctInbox = document.querySelector('ct-web-inbox');
 
           if (ctInbox) {
-            const el = ctInbox.shadowRoot.getElementById(messageId);
+            var el = ctInbox.shadowRoot.getElementById(messageId);
 
             if (el !== null) {
               el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
@@ -17548,7 +18370,7 @@
           }
 
           messages[messageId].viewed = 1;
-          const unViewedBadge = document.getElementById('unviewedBadge');
+          var unViewedBadge = document.getElementById('unviewedBadge');
 
           if (unViewedBadge) {
             var counter = parseInt(unViewedBadge.innerText) - 1;
@@ -17588,16 +18410,16 @@
 
 
       this.markReadAllInboxMessage = () => {
-        const messages = getInboxMessages();
-        const unreadMsg = this.getUnreadInboxMessages();
+        var messages = getInboxMessages();
+        var unreadMsg = this.getUnreadInboxMessages();
 
         if (Object.keys(unreadMsg).length > 0) {
-          const msgIds = Object.keys(unreadMsg);
+          var msgIds = Object.keys(unreadMsg);
           msgIds.forEach(key => {
-            const ctInbox = document.querySelector('ct-web-inbox');
+            var ctInbox = document.querySelector('ct-web-inbox');
 
             if (ctInbox) {
-              const el = ctInbox.shadowRoot.getElementById(key);
+              var el = ctInbox.shadowRoot.getElementById(key);
 
               if (el !== null) {
                 el.shadowRoot.getElementById('unreadMarker').style.display = 'none';
@@ -17610,7 +18432,7 @@
               pivotId: messages[key].wzrk_pivot
             });
           });
-          const unViewedBadge = document.getElementById('unviewedBadge');
+          var unViewedBadge = document.getElementById('unviewedBadge');
 
           if (unViewedBadge) {
             unViewedBadge.innerText = 0;
@@ -17641,12 +18463,12 @@
         processNotificationEvent(NOTIFICATION_CLICKED, detail);
       };
 
-      const processNotificationEvent = (eventName, eventDetail) => {
+      var processNotificationEvent = (eventName, eventDetail) => {
         if (!eventDetail || !eventDetail.msgId) {
           return;
         }
 
-        const data = {};
+        var data = {};
         data.type = 'event';
         data.evtName = eventName;
         data.evtData = {
@@ -17654,35 +18476,35 @@
         };
 
         if (eventDetail.pivotId) {
-          data.evtData = { ...data.evtData,
+          data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
             wzrk_pivot: eventDetail.pivotId
-          };
+          });
         }
 
         if (eventDetail.wzrk_slideNo) {
-          data.evtData = { ...data.evtData,
+          data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
             wzrk_slideNo: eventDetail.wzrk_slideNo
-          };
+          });
         } // Adding kv pair to event data
 
 
         if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
-          for (const key in eventDetail.kv) {
+          for (var key in eventDetail.kv) {
             if (key.startsWith(WZRK_PREFIX)) {
-              data.evtData = { ...data.evtData,
+              data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
                 [key]: eventDetail.kv[key]
-              };
+              });
             }
           }
         } // Adding msgCTkv to event data
 
 
         if (eventDetail.msgCTkv && eventDetail.msgCTkv !== null && eventDetail.msgCTkv !== undefined) {
-          for (const key in eventDetail.msgCTkv) {
-            if (key.startsWith(WZRK_PREFIX)) {
-              data.evtData = { ...data.evtData,
-                [key]: eventDetail.msgCTkv[key]
-              };
+          for (var _key in eventDetail.msgCTkv) {
+            if (_key.startsWith(WZRK_PREFIX)) {
+              data.evtData = _objectSpread2(_objectSpread2({}, data.evtData), {}, {
+                [_key]: eventDetail.msgCTkv[_key]
+              });
             }
           }
         }
@@ -17765,7 +18587,7 @@
         return encryption.enableLocalStorageEncryption;
       };
 
-      const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
+      var _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
         handleEmailSubscription(subscription, reEncoded, fetchGroups, _classPrivateFieldLooseBase(this, _account)[_account], _classPrivateFieldLooseBase(this, _logger)[_logger]);
       };
       /**
@@ -17849,7 +18671,7 @@
         }
       }
 
-      const api = _classPrivateFieldLooseBase(this, _api)[_api];
+      var api = _classPrivateFieldLooseBase(this, _api)[_api];
 
       api.logout = this.logout;
       api.clear = this.clear;
@@ -17902,13 +18724,13 @@
 
       api.unsubEmailGroups = reEncoded => {
         $ct.unsubGroups = [];
-        const elements = document.getElementsByClassName('ct-unsub-group-input-item');
+        var elements = document.getElementsByClassName('ct-unsub-group-input-item');
 
-        for (let i = 0; i < elements.length; i++) {
-          const element = elements[i];
+        for (var i = 0; i < elements.length; i++) {
+          var element = elements[i];
 
           if (element.name) {
-            const data = {
+            var data = {
               name: element.name,
               isUnsubscribed: element.checked
             };
@@ -17961,7 +18783,7 @@
     }
 
     createCustomIdIfValid(customId) {
-      const result = validateCustomCleverTapID(customId);
+      var result = validateCustomCleverTapID(customId);
 
       if (!result.isValid) {
         _classPrivateFieldLooseBase(this, _logger)[_logger].error(result.error);
@@ -17984,7 +18806,7 @@
     }
 
     init(accountId, region, targetDomain, token) {
-      let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
+      var config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
         antiFlicker: {},
         customId: null,
         isolateSubdomain: false
@@ -18051,8 +18873,8 @@
         _classPrivateFieldLooseBase(this, _request)[_request].processBackupEvents(true);
       }
 
-      const currLocation = location.href;
-      const urlParams = getURLParams(currLocation.toLowerCase()); // eslint-disable-next-line eqeqeq
+      var currLocation = location.href;
+      var urlParams = getURLParams(currLocation.toLowerCase()); // eslint-disable-next-line eqeqeq
 
       if (typeof urlParams.e !== 'undefined' && urlParams.wzrk_ex == '0') {
         return;
@@ -18067,7 +18889,7 @@
       _classPrivateFieldLooseBase(this, _processOldValues)[_processOldValues]();
 
       this.pageChanged();
-      const backupInterval = setInterval(() => {
+      var backupInterval = setInterval(() => {
         if (_classPrivateFieldLooseBase(this, _device)[_device].gcookie) {
           clearInterval(backupInterval);
 
@@ -18092,43 +18914,43 @@
 
 
     pageChanged() {
-      const currLocation = window.location.href;
-      const urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
+      var currLocation = window.location.href;
+      var urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
 
-      const obj = _classPrivateFieldLooseBase(this, _session)[_session].getSessionCookieObject();
+      var obj = _classPrivateFieldLooseBase(this, _session)[_session].getSessionCookieObject();
 
-      let pgCount = typeof obj.p === 'undefined' ? 0 : obj.p;
+      var pgCount = typeof obj.p === 'undefined' ? 0 : obj.p;
       obj.p = ++pgCount;
 
       _classPrivateFieldLooseBase(this, _session)[_session].setSessionCookieObject(obj); // -- update page count
 
 
-      let data = {};
-      let referrerDomain = getDomain(document.referrer);
+      var data = {};
+      var referrerDomain = getDomain(document.referrer);
 
       if (window.location.hostname !== referrerDomain) {
-        const maxLen = 120;
+        var maxLen = 120;
 
         if (referrerDomain !== '') {
           referrerDomain = referrerDomain.length > maxLen ? referrerDomain.substring(0, maxLen) : referrerDomain;
           data.referrer = referrerDomain;
         }
 
-        let utmSource = urlParams.utm_source || urlParams.wzrk_source;
+        var utmSource = urlParams.utm_source || urlParams.wzrk_source;
 
         if (typeof utmSource !== 'undefined') {
           utmSource = utmSource.length > maxLen ? utmSource.substring(0, maxLen) : utmSource;
           data.us = utmSource; // utm_source
         }
 
-        let utmMedium = urlParams.utm_medium || urlParams.wzrk_medium;
+        var utmMedium = urlParams.utm_medium || urlParams.wzrk_medium;
 
         if (typeof utmMedium !== 'undefined') {
           utmMedium = utmMedium.length > maxLen ? utmMedium.substring(0, maxLen) : utmMedium;
           data.um = utmMedium; // utm_medium
         }
 
-        let utmCampaign = urlParams.utm_campaign || urlParams.wzrk_campaign;
+        var utmCampaign = urlParams.utm_campaign || urlParams.wzrk_campaign;
 
         if (typeof utmCampaign !== 'undefined') {
           utmCampaign = utmCampaign.length > maxLen ? utmCampaign.substring(0, maxLen) : utmCampaign;
@@ -18137,7 +18959,7 @@
 
 
         if (typeof urlParams.wzrk_medium !== 'undefined') {
-          const wm = urlParams.wzrk_medium;
+          var wm = urlParams.wzrk_medium;
 
           if (wm.match(/^email$|^social$|^search$/)) {
             data.wm = wm; // wzrk_medium
@@ -18149,7 +18971,7 @@
       data.cpg = currLocation;
       data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
 
-      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+      var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
 
       _classPrivateFieldLooseBase(this, _request)[_request].addFlags(data); // send dsync flag when page = 1
 
@@ -18195,8 +19017,8 @@
         });
       }
 
-      const storedData = sessionStorage.getItem('visualEditorData');
-      const targetJson = storedData ? JSON.parse(storedData) : null;
+      var storedData = sessionStorage.getItem('visualEditorData');
+      var targetJson = storedData ? JSON.parse(storedData) : null;
 
       if (targetJson) {
         renderVisualBuilder(targetJson, true, _classPrivateFieldLooseBase(this, _logger)[_logger]);
@@ -18264,7 +19086,7 @@
       if (_classPrivateFieldLooseBase(this, _logger)[_logger].logLevel === 4) {
         return _classPrivateFieldLooseBase(this, _variableStore)[_variableStore].syncVariables(onSyncSuccess, onSyncFailure);
       } else {
-        const m = 'App log level is not set to 4';
+        var m = 'App log level is not set to 4';
 
         _classPrivateFieldLooseBase(this, _logger)[_logger].error(m);
 
@@ -18281,8 +19103,8 @@
     }
 
     getVariableValue(variableName) {
-      const variables = StorageManager.readFromLSorCookie(VARIABLES);
-      const reconstructedVariables = reconstructNestedObject(variables);
+      var variables = StorageManager.readFromLSorCookie(VARIABLES);
+      var reconstructedVariables = reconstructNestedObject(variables);
 
       if (variables.hasOwnProperty(variableName)) {
         return variables[variableName];
@@ -18305,7 +19127,7 @@
 
 
     getAllQualifiedCampaignDetails() {
-      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
+      var existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
       return existingCampaign;
     }
 
@@ -18324,8 +19146,8 @@
   };
 
   var _debounce2 = function _debounce2(func) {
-    let delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 50;
-    let timeout;
+    var delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 50;
+    var timeout;
     return function () {
       clearTimeout(timeout);
       timeout = setTimeout(func, delay);
@@ -18333,7 +19155,7 @@
   };
 
   var _checkPageChanged2 = function _checkPageChanged2() {
-    const debouncedPageChanged = _classPrivateFieldLooseBase(this, _debounce)[_debounce](() => {
+    var debouncedPageChanged = _classPrivateFieldLooseBase(this, _debounce)[_debounce](() => {
       if (_classPrivateFieldLooseBase(this, _previousUrl)[_previousUrl] !== location.href) {
         this.pageChanged();
       }
@@ -18348,7 +19170,7 @@
         clearTimeout(_classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId]);
       }
 
-      const unViewedBadge = document.getElementById('unviewedBadge');
+      var unViewedBadge = document.getElementById('unviewedBadge');
 
       if (!unViewedBadge) {
         _classPrivateFieldLooseBase(this, _logger)[_logger].debug('unViewedBadge not found');
@@ -18362,11 +19184,11 @@
       /* Set Timeout to let the page load and then update the position and display the badge */
 
       _classPrivateFieldLooseBase(this, _pageChangeTimeoutId)[_pageChangeTimeoutId] = setTimeout(() => {
-        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
-        const inboxNode = document.getElementById(config === null || config === void 0 ? void 0 : config.inboxSelector);
+        var config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {};
+        var inboxNode = document.getElementById(config === null || config === void 0 ? void 0 : config.inboxSelector);
         /* Creating a Local Variable to avoid reference to stale DOM Node */
 
-        const unViewedBadge = document.getElementById('unviewedBadge');
+        var unViewedBadge = document.getElementById('unviewedBadge');
 
         if (!unViewedBadge) {
           _classPrivateFieldLooseBase(this, _logger)[_logger].debug('unViewedBadge not found');
@@ -18375,7 +19197,7 @@
         }
 
         if (inboxNode) {
-          const {
+          var {
             top,
             right
           } = inboxNode.getBoundingClientRect();
@@ -18394,9 +19216,9 @@
   };
 
   var _pingRequest2 = function _pingRequest2() {
-    let pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+    var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
 
-    let data = {};
+    var data = {};
     data = _classPrivateFieldLooseBase(this, _request)[_request].addSystemDataToObject(data, undefined);
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING);
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger)[_logger]));
@@ -18416,9 +19238,9 @@
 
   var _sendLocationData2 = function _sendLocationData2(payload) {
     // Send the updated value to LC
-    let data = {};
+    var data = {};
     data.af = {};
-    const profileObj = {};
+    var profileObj = {};
     data.type = 'profile';
 
     if (profileObj.tz == null) {
@@ -18428,25 +19250,23 @@
     data.profile = profileObj;
 
     if (payload) {
-      const keys = Object.keys(payload);
+      var keys = Object.keys(payload);
       keys.forEach(key => {
         data.af[key] = payload[key];
       });
     }
 
     if ($ct.location) {
-      data.af = { ...data.af,
-        ...$ct.location
-      };
+      data.af = _objectSpread2(_objectSpread2({}, data.af), $ct.location);
     }
 
     data = _classPrivateFieldLooseBase(this, _request)[_request].addSystemDataToObject(data, true);
 
     _classPrivateFieldLooseBase(this, _request)[_request].addFlags(data);
 
-    const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger)[_logger]);
+    var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger)[_logger]);
 
-    let pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
+    var pageLoadUrl = _classPrivateFieldLooseBase(this, _account)[_account].dataPostURL;
 
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -18454,7 +19274,7 @@
     _classPrivateFieldLooseBase(this, _request)[_request].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
   };
 
-  const clevertap = new CleverTap(window.clevertap);
+  var clevertap = new CleverTap(window.clevertap);
   window.clevertap = window.wizrocket = clevertap;
 
   return clevertap;
