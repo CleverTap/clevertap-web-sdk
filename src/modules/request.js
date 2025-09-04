@@ -144,6 +144,28 @@ export default class RequestManager {
     }
   }
 
+  async #getNextAvailableReqN () {
+    // Read existing backup data to check for conflicts
+    const backupMap = await StorageManager.readFromLSorCookie(LCOOKIE_NAME)
+
+    // Start from the current REQ_N + 1
+    let candidateReqN = $ct.globalCache.REQ_N + 1
+
+    // If no backup data exists, use the candidate
+    if (!backupMap || typeof backupMap !== 'object') {
+      return candidateReqN
+    }
+
+    // Keep incrementing until we find a request number that doesn't exist in backup
+    while (backupMap.hasOwnProperty(candidateReqN.toString())) {
+      candidateReqN++
+      this.#logger.debug(`Request number ${candidateReqN - 1} already exists in backup, trying ${candidateReqN}`)
+    }
+
+    this.#logger.debug(`Using request number: ${candidateReqN}`)
+    return candidateReqN
+  }
+
   // saves url to backup cache and fires the request
   /**
    *
@@ -155,7 +177,7 @@ export default class RequestManager {
     const now = getNow()
 
     // Get the next available request number that doesn't conflict with existing backups
-    const nextReqN = this.#getNextAvailableReqN()
+    const nextReqN = await this.#getNextAvailableReqN()
     $ct.globalCache.REQ_N = nextReqN
 
     url = addToURL(url, 'rn', nextReqN)
@@ -238,31 +260,31 @@ export default class RequestManager {
     await this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
   }
 
-registerToken (payload) {
-  if (!payload) return
-  // add gcookie etc to the payload
-  payload = this.addSystemDataToObject(payload, true)
-  payload = JSON.stringify(payload)
-  let pageLoadUrl = this.#account.dataPostURL
-  pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-  pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
-  RequestDispatcher.fireRequest(pageLoadUrl)
-  // set in localstorage
-  StorageManager.save(WEBPUSH_LS_KEY, 'ok')
-}
+  registerToken (payload) {
+    if (!payload) return
+    // add gcookie etc to the payload
+    payload = this.addSystemDataToObject(payload, true)
+    payload = JSON.stringify(payload)
+    let pageLoadUrl = this.#account.dataPostURL
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
+    RequestDispatcher.fireRequest(pageLoadUrl)
+    // set in localstorage
+    StorageManager.save(WEBPUSH_LS_KEY, 'ok')
+  }
 
-processEvent (data) {
-  this.#addToLocalEventMap(data.evtName)
-  data = this.addSystemDataToObject(data, undefined)
-  this.addFlags(data)
-  data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
-  const compressedData = compressData(JSON.stringify(data), this.#logger)
-  let pageLoadUrl = this.#account.dataPostURL
-  pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-  pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+  processEvent (data) {
+    this.#addToLocalEventMap(data.evtName)
+    data = this.addSystemDataToObject(data, undefined)
+    this.addFlags(data)
+    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    const compressedData = compressData(JSON.stringify(data), this.#logger)
+    let pageLoadUrl = this.#account.dataPostURL
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-  this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
-}
+    this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
+  }
 
   async #addToLocalEventMap (evtName) {
     if (StorageManager._isLocalStorageSupported()) {

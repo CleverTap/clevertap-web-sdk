@@ -9,7 +9,7 @@ import {
   ISOLATE_COOKIE
 } from './constants'
 import { getHostName } from './url'
-import encryption from '../modules/security/Encryption'
+// import encryption from '../modules/security/Encryption'
 
 export class StorageManager extends ShopifyStorageManager {
   static save (key, value) {
@@ -17,10 +17,6 @@ export class StorageManager extends ShopifyStorageManager {
       return false
     }
     if (this._isLocalStorageSupported()) {
-      if (encryption.shouldEncrypt(key)) {
-        localStorage.setItem(key, encryption.encrypt(value))
-        return true
-      }
       localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
       return true
     }
@@ -36,9 +32,6 @@ export class StorageManager extends ShopifyStorageManager {
     }
     if (data != null) {
       try {
-        if (encryption.shouldDecrypt(key)) {
-          data = encryption.decrypt(data)
-        }
         data = JSON.parse(data)
       } catch (e) {}
     }

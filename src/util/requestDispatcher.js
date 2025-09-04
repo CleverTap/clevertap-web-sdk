@@ -50,76 +50,71 @@ export default class RequestDispatcher {
       ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
       tries < MAX_TRIES) {
       // if ongoing First Request is in progress, initiate retry
-      setTimeout(async () => {
-        this.logger.debug(`retrying fire request for url: ${url}, tries: ${tries}`)
-        await this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
-      }, 50)
-      return
-    }
+        setTimeout(async () => {
+          this.logger.debug(`retrying fire request for url: ${url}, tries: ${tries}`)
+          await this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
+        }, 50)
+        return
+      }
 
-    // set isOULInProgress to true
-    // when sendOULFlag is set to true
-    if (!sendOULFlag) {
-      if (isValueValid(this.device.gcookie)) {
+      // set isOULInProgress to true
+      // when sendOULFlag is set to true
+      if (!sendOULFlag) {
+        if (isValueValid(this.device.gcookie)) {
         // add gcookie to url
-        url = addToURL(url, 'gc', this.device.gcookie)
+          url = addToURL(url, 'gc', this.device.gcookie)
+        }
+        url = await this.#addARPToRequest(url, skipARP)
+      } else {
+        globalWindow.isOULInProgress = true
       }
-      url = await this.#addARPToRequest(url, skipARP)
-    } else {
-      globalWindow.isOULInProgress = true
-    }
 
-    url = addToURL(url, 'tries', tries) // Add tries to URL
-    url = addToURL(url, 'origin', window?.location?.origin ?? window?.location?.href) // Add origin to URL
+      url = addToURL(url, 'tries', tries) // Add tries to URL
+      url = addToURL(url, 'origin', window?.location?.origin ?? window?.location?.href) // Add origin to URL
 
-    url = await this.#addUseIPToRequest(url)
-    url = addToURL(url, 'r', new Date().getTime()) // add epoch to beat caching of the URL
-    if (url.indexOf('chrome-extension:') !== -1) {
-      url = url.replace('chrome-extension:', 'https:')
-    }
+      url = await this.#addUseIPToRequest(url)
+      url = addToURL(url, 'r', new Date().getTime()) // add epoch to beat caching of the URL
+      if (url.indexOf('chrome-extension:') !== -1) {
+        url = url.replace('chrome-extension:', 'https:')
+      }
 
-    if (ModeManager.mode === 'WEB') {
+      if (ModeManager.mode === 'WEB') {
       // TODO: Figure out a better way to handle plugin check
-      if (window.clevertap?.hasOwnProperty('plugin') || window.wizrocket?.hasOwnProperty('plugin')) {
+        if (window.clevertap?.hasOwnProperty('plugin') || window.wizrocket?.hasOwnProperty('plugin')) {
         // used to add plugin name in request parameter
-        const plugin = window.clevertap.plugin || window.wizrocket.plugin
-        url = addToURL(url, 'ct_pl', plugin)
+          const plugin = window.clevertap.plugin || window.wizrocket.plugin
+          url = addToURL(url, 'ct_pl', plugin)
+        }
+        // TODO: Try using Function constructor instead of appending script.
+        var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
+        while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+          ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
+        }
+
+        const s = document.createElement('script')
+        s.setAttribute('type', 'text/javascript')
+        s.setAttribute('src', url)
+        s.setAttribute('class', 'ct-jp-cb')
+        s.setAttribute('rel', 'nofollow')
+        s.async = true
+        document.getElementsByTagName('head')[0].appendChild(s)
+      } else {
+        fetch(url, { headers: { accept: 'application/json' } }).then(res => res.json()).then(async () => {
+          if (response.arp) {
+            await arp(response.arp)
+          }
+
+          if (response.meta) {
+            await clevertapApi.s(
+              response.meta.g, // cookie
+              response.meta.sid, // session id
+              response.meta.rf, // resume
+              response.meta.rn // response number for backup manager
+            )
+          }
+        })
       }
-      // TODO: Try using Function constructor instead of appending script.
-      var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
-      while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
-        ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
-      }
-
-      const s = document.createElement('script')
-      s.setAttribute('type', 'text/javascript')
-      s.setAttribute('src', url)
-      s.setAttribute('class', 'ct-jp-cb')
-      s.setAttribute('rel', 'nofollow')
-      s.async = true
-      document.getElementsByTagName('head')[0].appendChild(s)
-    } else {
-      fetch(url, { headers: { accept: 'application/json' } }).then(res => res.json()).then(this.processResponse)
-    }
-    this.logger.debug('req snt -> url: ' + url)
-  }
-
-  /**
-   * processes the response of fired events and calls relevant methods
-   * @param {object} response
-   */
-  static async processResponse (response) {
-    if (response.arp) {
-      await arp(response.arp)
-    }
-
-    if (response.meta) {
-      await clevertapApi.s(
-        response.meta.g, // cookie
-        response.meta.sid, // session id
-        response.meta.rf, // resume
-        response.meta.rn // response number for backup manager
-      )
+      this.logger.debug('req snt -> url: ' + url)
     }
   }
 

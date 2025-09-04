@@ -37,6 +37,55 @@ var clevertapShopify = (function () {
     };
   }
 
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
+  }
+
   var id = 0;
 
   function _classPrivateFieldLooseKey(name) {
@@ -111,6 +160,8 @@ var clevertapShopify = (function () {
 
   var _dcSdkversion = _classPrivateFieldLooseKey("dcSdkversion");
 
+  var _token = _classPrivateFieldLooseKey("token");
+
   class Account {
     constructor() {
       var {
@@ -118,6 +169,7 @@ var clevertapShopify = (function () {
       } = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       var region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
       var targetDomain = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : TARGET_DOMAIN;
+      var token = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '';
       Object.defineProperty(this, _accountId, {
         writable: true,
         value: void 0
@@ -134,6 +186,10 @@ var clevertapShopify = (function () {
         writable: true,
         value: ''
       });
+      Object.defineProperty(this, _token, {
+        writable: true,
+        value: ''
+      });
       this.id = id;
 
       if (region) {
@@ -142,6 +198,10 @@ var clevertapShopify = (function () {
 
       if (targetDomain) {
         this.targetDomain = targetDomain;
+      }
+
+      if (token) {
+        this.token = token;
       }
     }
 
@@ -177,6 +237,14 @@ var clevertapShopify = (function () {
       _classPrivateFieldLooseBase(this, _targetDomain)[_targetDomain] = targetDomain;
     }
 
+    get token() {
+      return _classPrivateFieldLooseBase(this, _token)[_token];
+    }
+
+    set token(token) {
+      _classPrivateFieldLooseBase(this, _token)[_token] = token;
+    }
+
     get finalTargetDomain() {
       if (this.region) {
         return "".concat(this.region, ".").concat(this.targetDomain);
@@ -195,6 +263,10 @@ var clevertapShopify = (function () {
       }
 
       return 'a';
+    }
+
+    get dataPostPEURL() {
+      return "".concat(TARGET_PROTOCOL, "//").concat(this.finalTargetDomain, "/defineVars");
     }
 
     get dataPostURL() {
@@ -228,6 +300,7 @@ var clevertapShopify = (function () {
   var EV_COOKIE = 'WZRK_EV';
   var META_COOKIE = 'WZRK_META';
   var PR_COOKIE = 'WZRK_PR';
+  var ACCOUNT_ID = 'WZRK_ACCOUNT_ID';
   var ARP_COOKIE = 'WZRK_ARP';
   var LCOOKIE_NAME = 'WZRK_L';
   var SHOPIFY_DEBUG = 'WZRK_LOG_LEVEL';
@@ -245,6 +318,12 @@ var clevertapShopify = (function () {
   var NOTIFICATION_CLICKED = 'Notification Clicked';
   var FIRE_PUSH_UNREGISTERED = 'WZRK_FPU';
   var PUSH_SUBSCRIPTION_DATA = 'WZRK_PSD'; // PUSH SUBSCRIPTION DATA FOR REGISTER/UNREGISTER TOKEN
+  var PUSH_DELAY_MS = 1000;
+  var MAX_DELAY_FREQUENCY = 1000 * 60 * 10;
+  var WZRK_FETCH = 'wzrk_fetch';
+  var BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'; // Flag key for optional sub-domain profile isolation
+
+  var ISOLATE_COOKIE = 'WZRK_ISOLATE_SD';
   var SYSTEM_EVENTS = ['Stayed', 'UTM Visited', 'App Launched', 'Notification Sent', NOTIFICATION_VIEWED, NOTIFICATION_CLICKED];
 
   var isString = input => {
@@ -642,13 +721,32 @@ var clevertapShopify = (function () {
       var _this3 = this;
 
       return _asyncToGenerator(function* () {
-        // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
+        /* -------------------------------------------------------------
+         * Sub-domain isolation: when the global flag is set, skip the
+         * broad-domain logic and write a cookie scoped to the current
+         * host only.  Also remove any legacy broad-domain copy so that
+         * the host-level cookie has precedence.
+         * ----------------------------------------------------------- */
+        var isolate = !!(yield _this3.retrieveData('localStorage', ISOLATE_COOKIE));
+
+        if (isolate) {
+          // remove any legacy broad-domain cookie
+          if ($ct.broadDomain) {
+            yield _this3.deleteData('cookie', name, $ct.broadDomain);
+          } // write host-scoped cookie and stop
+
+
+          yield _this3.addData('cookie', name, value, seconds, domain);
+          return;
+        } // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
         // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
         // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
         // to find out which "broadest" domain the cookie was set on. Then delete the test cookie, and use that domain
         // for updating the actual cookie.
         // This if condition is redundant. Domain will never be not defined.
         // even if it is undefined we directly pass it in the else.
+
+
         if (domain) {
           var broadDomain = $ct.broadDomain;
 
@@ -774,6 +872,22 @@ var clevertapShopify = (function () {
         yield _this8.saveToLSorCookie(LCOOKIE_NAME, backupArr);
         logger.debug("stored in ".concat(LCOOKIE_NAME, " reqNo : ").concat(reqNo, " -> ").concat(data));
       })();
+    } // Add new method for OUL tracking
+
+
+    static markBackupAsOUL(reqNo) {
+      // Store OUL request numbers in a separate meta property
+      var oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
+
+      if (!oulRequests.includes(reqNo)) {
+        oulRequests.push(reqNo);
+        this.setMetaProp('OUL_REQUESTS', oulRequests);
+      }
+    }
+
+    static isBackupOUL(reqNo) {
+      var oulRequests = this.getMetaProp('OUL_REQUESTS') || [];
+      return oulRequests.includes(reqNo);
     }
 
     static removeBackup(respNo, logger) {
@@ -921,7 +1035,17 @@ var clevertapShopify = (function () {
     LRU_CACHE: null,
     globalProfileMap: undefined,
     globalEventsMap: undefined,
-    blockRequest: false,
+
+    // Initialize blockRequest from storage
+    get blockRequest() {
+      var value = StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE);
+      return value === true;
+    },
+
+    set blockRequest(value) {
+      StorageManager.saveToLSorCookie(BLOCK_REQUEST_COOKIE, value);
+    },
+
     isOptInRequest: false,
     broadDomain: null,
     webPushEnabled: null,
@@ -940,26 +1064,32 @@ var clevertapShopify = (function () {
     privacyArray: [],
     offline: false,
     location: null,
-    dismissSpamControl: false,
+    dismissSpamControl: true,
     globalUnsubscribe: true,
-    flutterVersion: null // domain: window.location.hostname, url -> getHostName()
+    flutterVersion: null,
+    variableStore: {},
+    pushConfig: null,
+    delayEvents: false,
+    intervalArray: [] // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
 
-  var _logger = _classPrivateFieldLooseKey("logger");
+  var _logger$6 = _classPrivateFieldLooseKey("logger");
 
   class DeviceManager {
     constructor(_ref) {
       var {
-        logger
+        logger,
+        customId
       } = _ref;
-      Object.defineProperty(this, _logger, {
+      Object.defineProperty(this, _logger$6, {
         writable: true,
         value: void 0
       });
       this.gcookie = void 0;
-      _classPrivateFieldLooseBase(this, _logger)[_logger] = logger;
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
+      this.gcookie = this.getGuid() || customId;
     }
 
     getGuid() {
@@ -979,7 +1109,7 @@ var clevertapShopify = (function () {
             try {
               guid = JSON.parse(decodeURIComponent(value));
             } catch (e) {
-              _classPrivateFieldLooseBase(_this, _logger)[_logger].debug('Cannot parse Gcookie from localstorage - must be encoded ' + value); // assumming guids are of size 32. supporting both formats.
+              _classPrivateFieldLooseBase(_this, _logger$6)[_logger$6].debug('Cannot parse Gcookie from localstorage - must be encoded ' + value); // assumming guids are of size 32. supporting both formats.
               // guid can have encodedURIComponent or be without it.
               // 1.56e4078ed15749928c042479ec2b4d47 - breaks on JSON.parse(decodeURIComponent())
               // 2.%2256e4078ed15749928c042479ec2b4d47%22
@@ -989,7 +1119,7 @@ var clevertapShopify = (function () {
                 guid = value;
                 yield StorageManager.saveToLSorCookie(GCOOKIE_NAME, value);
               } else {
-                _classPrivateFieldLooseBase(_this, _logger)[_logger].error('Illegal guid ' + value);
+                _classPrivateFieldLooseBase(_this, _logger$6)[_logger$6].error('Illegal guid ' + value);
               }
             } // Persist to cookie storage if not present there.
 
@@ -1045,11 +1175,11 @@ var clevertapShopify = (function () {
     return composedDate.getDate() == d && composedDate.getMonth() == m && composedDate.getFullYear() == y;
   };
 
-  var _logger$1 = _classPrivateFieldLooseKey("logger");
+  var _logger$5 = _classPrivateFieldLooseKey("logger");
 
   var _sessionId = _classPrivateFieldLooseKey("sessionId");
 
-  var _isPersonalisationActive = _classPrivateFieldLooseKey("isPersonalisationActive");
+  var _isPersonalisationActive$2 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   class SessionManager {
     // SCOOKIE_NAME
@@ -1058,7 +1188,7 @@ var clevertapShopify = (function () {
         logger,
         isPersonalisationActive
       } = _ref;
-      Object.defineProperty(this, _logger$1, {
+      Object.defineProperty(this, _logger$5, {
         writable: true,
         value: void 0
       });
@@ -1066,15 +1196,15 @@ var clevertapShopify = (function () {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _isPersonalisationActive, {
+      Object.defineProperty(this, _isPersonalisationActive$2, {
         writable: true,
         value: void 0
       });
       this.cookieName = void 0;
       this.scookieObj = void 0;
       this.sessionId = StorageManager.getMetaProp('cs');
-      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1] = logger;
-      _classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive] = isPersonalisationActive;
+      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
+      _classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2] = isPersonalisationActive;
     }
 
     get sessionId() {
@@ -1164,7 +1294,7 @@ var clevertapShopify = (function () {
       var _this4 = this;
 
       return _asyncToGenerator(function* () {
-        if (!_classPrivateFieldLooseBase(_this4, _isPersonalisationActive)[_isPersonalisationActive]()) {
+        if (!_classPrivateFieldLooseBase(_this4, _isPersonalisationActive$2)[_isPersonalisationActive$2]()) {
           return;
         }
 
@@ -1186,7 +1316,7 @@ var clevertapShopify = (function () {
       var _this5 = this;
 
       return _asyncToGenerator(function* () {
-        if (!_classPrivateFieldLooseBase(_this5, _isPersonalisationActive)[_isPersonalisationActive]()) {
+        if (!_classPrivateFieldLooseBase(_this5, _isPersonalisationActive$2)[_isPersonalisationActive$2]()) {
           return;
         }
 
@@ -1753,29 +1883,29 @@ var clevertapShopify = (function () {
 
   var globalWindow = new GlobalWindow();
 
-  var _logger$2 = _classPrivateFieldLooseKey("logger");
+  var _logger$4 = _classPrivateFieldLooseKey("logger");
 
-  var _request = _classPrivateFieldLooseKey("request");
+  var _request$3 = _classPrivateFieldLooseKey("request");
 
-  var _device = _classPrivateFieldLooseKey("device");
+  var _device$3 = _classPrivateFieldLooseKey("device");
 
-  var _session = _classPrivateFieldLooseKey("session");
+  var _session$3 = _classPrivateFieldLooseKey("session");
 
   class CleverTapAPI {
     constructor(props) {
-      Object.defineProperty(this, _logger$2, {
+      Object.defineProperty(this, _logger$4, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _request, {
+      Object.defineProperty(this, _request$3, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device, {
+      Object.defineProperty(this, _device$3, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _session, {
+      Object.defineProperty(this, _session$3, {
         writable: true,
         value: void 0
       });
@@ -1789,10 +1919,10 @@ var clevertapShopify = (function () {
         device,
         session
       } = _ref;
-      _classPrivateFieldLooseBase(this, _logger$2)[_logger$2] = logger;
-      _classPrivateFieldLooseBase(this, _request)[_request] = request;
-      _classPrivateFieldLooseBase(this, _device)[_device] = device;
-      _classPrivateFieldLooseBase(this, _session)[_session] = session;
+      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
+      _classPrivateFieldLooseBase(this, _request$3)[_request$3] = request;
+      _classPrivateFieldLooseBase(this, _device$3)[_device$3] = device;
+      _classPrivateFieldLooseBase(this, _session$3)[_session$3] = session;
     }
     /**
      *
@@ -1827,21 +1957,21 @@ var clevertapShopify = (function () {
           respNumber = 0;
         }
 
-        yield StorageManager.removeBackup(Number(respNumber), _classPrivateFieldLooseBase(_this, _logger$2)[_logger$2]);
+        yield StorageManager.removeBackup(Number(respNumber), _classPrivateFieldLooseBase(_this, _logger$4)[_logger$4]);
 
         if (Number(respNumber) > $ct.globalCache.REQ_N) {
           // request for some other user so ignore
           return;
         }
 
-        if (!isValueValid(_classPrivateFieldLooseBase(_this, _device)[_device].gcookie)) {
+        if (!isValueValid(_classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie)) {
           if (global) {
             newGuid = true;
           }
         }
 
-        if (!isValueValid(_classPrivateFieldLooseBase(_this, _device)[_device].gcookie) || resume || typeof optOutResponse === 'boolean') {
-          var sessionObj = yield _classPrivateFieldLooseBase(_this, _session)[_session].getSessionCookieObject();
+        if (!isValueValid(_classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie) || resume || typeof optOutResponse === 'boolean') {
+          var sessionObj = yield _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getSessionCookieObject();
           /*  If the received session is less than the session in the cookie,
               then don't update guid as it will be response for old request
           */
@@ -1850,11 +1980,11 @@ var clevertapShopify = (function () {
             return;
           }
 
-          _classPrivateFieldLooseBase(_this, _logger$2)[_logger$2].debug("Cookie was ".concat(_classPrivateFieldLooseBase(_this, _device)[_device].gcookie, " set to ").concat(global));
+          _classPrivateFieldLooseBase(_this, _logger$4)[_logger$4].debug("Cookie was ".concat(_classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie, " set to ").concat(global));
 
-          _classPrivateFieldLooseBase(_this, _device)[_device].gcookie = global;
+          _classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie = global;
 
-          if (!isValueValid(_classPrivateFieldLooseBase(_this, _device)[_device].gcookie)) {
+          if (!isValueValid(_classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie)) {
             // clear useIP meta prop
             yield StorageManager.getAndClearMetaProp(USEIP_KEY);
           }
@@ -1889,7 +2019,7 @@ var clevertapShopify = (function () {
               var lastGUID = $ct.LRU_CACHE.cache[lastK]; // fire the request directly via fireRequest to unregister the token
               // then other requests with the updated guid should follow
 
-              _classPrivateFieldLooseBase(_this, _request)[_request].unregisterTokenForGuid(lastGUID);
+              _classPrivateFieldLooseBase(_this, _request$3)[_request$3].unregisterTokenForGuid(lastGUID);
             }
           }
 
@@ -1898,27 +2028,27 @@ var clevertapShopify = (function () {
         }
 
         if (StorageManager._isLocalStorageSupported()) {
-          yield _classPrivateFieldLooseBase(_this, _session)[_session].manageSession(session);
+          yield _classPrivateFieldLooseBase(_this, _session$3)[_session$3].manageSession(session);
         } // session cookie
 
 
-        var obj = yield _classPrivateFieldLooseBase(_this, _session)[_session].getSessionCookieObject(); // for the race-condition where two responses come back with different session ids. don't write the older session id.
+        var obj = yield _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getSessionCookieObject(); // for the race-condition where two responses come back with different session ids. don't write the older session id.
 
         if (typeof obj.s === 'undefined' || obj.s <= session) {
           obj.s = session;
           obj.t = getNow(); // time of last response from server
 
-          _classPrivateFieldLooseBase(_this, _session)[_session].setSessionCookieObject(obj);
+          _classPrivateFieldLooseBase(_this, _session$3)[_session$3].setSessionCookieObject(obj);
         } // set blockRequest to false only if the device has a valid gcookie
 
 
-        if (isValueValid(_classPrivateFieldLooseBase(_this, _device)[_device].gcookie)) {
+        if (isValueValid(_classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie)) {
           $ct.blockRequest = false;
         } // only process the backup events after an OUL request or a new guid is recieved
 
 
-        if ((oulReq || newGuid) && !_classPrivateFieldLooseBase(_this, _request)[_request].processingBackup) {
-          _classPrivateFieldLooseBase(_this, _request)[_request].processBackupEvents();
+        if ((oulReq || newGuid) && !_classPrivateFieldLooseBase(_this, _request$3)[_request$3].processingBackup) {
+          _classPrivateFieldLooseBase(_this, _request$3)[_request$3].processBackupEvents();
         }
 
         $ct.globalCache.RESP_N = Number(respNumber);
@@ -1936,7 +2066,7 @@ var clevertapShopify = (function () {
   var DATA_NOT_SENT_TEXT = 'This property has been ignored.';
   var CLEVERTAP_ERROR_PREFIX = 'CleverTap error:'; // Formerly wzrk_error_txt
   var EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
-  var GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should be either M or F. ").concat(DATA_NOT_SENT_TEXT);
+  var GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should one of the following: m,f,o,u,male,female,unknown,others (case insensitive). ").concat(DATA_NOT_SENT_TEXT);
   var EMPLOYED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Employed value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
   var MARRIED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Married value should be either Y or N. ").concat(DATA_NOT_SENT_TEXT);
   var EDUCATION_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Education value should be either School, College or Graduate. ").concat(DATA_NOT_SENT_TEXT);
@@ -1952,50 +2082,51 @@ var clevertapShopify = (function () {
 
       if (campObj != null) {
         campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
-
-        if (campObj.hasOwnProperty('global')) {
-          finalcampObj.wp = campObj;
-        } else {
-          finalcampObj = campObj;
-        }
+        finalcampObj = campObj;
       } else {
         finalcampObj = {};
       }
     }
 
     return finalcampObj;
-  };
+  }; // Save Camp here
   var getCampaignObjForLc = () => {
     // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
     var guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
     var campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
+      var _campObj$wsc, _campObj, _campObj$wfc, _campObj2, _campObj$woc, _campObj3, _campObj$wndsc, _campObj4, _campObj$wndfc, _campObj5, _campObj$wndoc, _campObj6;
+
       var resultObj = {};
       campObj = getCampaignObject();
       var storageValue = StorageManager.read(CAMP_COOKIE_G);
       var decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
       var parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
-      var resultObjWP = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wp ? Object.values(parsedValue[guid].wp) : [];
       var resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
-      var today = getToday();
-      var todayCwp = 0;
-      var todayCwi = 0;
+      var webPopupDeliveryPreferenceDeatils = {
+        wsc: (_campObj$wsc = (_campObj = campObj) === null || _campObj === void 0 ? void 0 : _campObj.wsc) !== null && _campObj$wsc !== void 0 ? _campObj$wsc : 0,
+        wfc: (_campObj$wfc = (_campObj2 = campObj) === null || _campObj2 === void 0 ? void 0 : _campObj2.wfc) !== null && _campObj$wfc !== void 0 ? _campObj$wfc : {},
+        woc: (_campObj$woc = (_campObj3 = campObj) === null || _campObj3 === void 0 ? void 0 : _campObj3.woc) !== null && _campObj$woc !== void 0 ? _campObj$woc : {}
+      };
+      var webNativeDisplayDeliveryPreferenceDeatils = {
+        wndsc: (_campObj$wndsc = (_campObj4 = campObj) === null || _campObj4 === void 0 ? void 0 : _campObj4.wndsc) !== null && _campObj$wndsc !== void 0 ? _campObj$wndsc : 0,
+        wndfc: (_campObj$wndfc = (_campObj5 = campObj) === null || _campObj5 === void 0 ? void 0 : _campObj5.wndfc) !== null && _campObj$wndfc !== void 0 ? _campObj$wndfc : {},
+        wndoc: (_campObj$wndoc = (_campObj6 = campObj) === null || _campObj6 === void 0 ? void 0 : _campObj6.wndoc) !== null && _campObj$wndoc !== void 0 ? _campObj$wndoc : {}
+      };
+      var today = getToday(); // let todayCwp = 0
 
-      if (campObj.wp && campObj.wp[today] && campObj.wp[today].tc !== 'undefined') {
-        todayCwp = campObj.wp[today].tc;
-      }
+      var todayCwi = 0;
 
       if (campObj.wi && campObj.wi[today] && campObj.wi[today].tc !== 'undefined') {
         todayCwi = campObj.wi[today].tc;
-      }
+      } // CAMP Is generated here
 
-      resultObj = {
-        wmp: todayCwp,
+
+      resultObj = _objectSpread2(_objectSpread2({
         wimp: todayCwi,
-        tlc: resultObjWP,
         witlc: resultObjWI
-      };
+      }, webPopupDeliveryPreferenceDeatils), webNativeDisplayDeliveryPreferenceDeatils);
       return resultObj;
     }
   };
@@ -2016,7 +2147,7 @@ var clevertapShopify = (function () {
             continue;
           }
 
-          if (profileKey === 'Gender' && !profileVal.match(/^M$|^F$/)) {
+          if (profileKey === 'Gender' && !profileVal.match(/\b(?:[mM](?:ale)?|[fF](?:emale)?|[oO](?:thers)?|[uU](?:nknown)?)\b/)) {
             valid = false;
             logger.error(GENDER_ERROR);
           }
@@ -2330,41 +2461,54 @@ var clevertapShopify = (function () {
   var _addARPToRequest = _classPrivateFieldLooseKey("addARPToRequest");
 
   class RequestDispatcher {
-    // ANCHOR - Requests get fired from here
-
-    /**
-     * processes the response of fired events and calls relevant methods
-     * @param {object} response
-     */
-    static processResponse(response) {
-      return _asyncToGenerator(function* () {
-        if (response.arp) {
-          yield arp(response.arp);
-        }
-
-        if (response.meta) {
-          yield clevertapApi.s(response.meta.g, // cookie
-          response.meta.sid, // session id
-          response.meta.rf, // resume
-          response.meta.rn // response number for backup manager
-          );
-        }
-      })();
+    constructor() {
+      this.networkRetryCount = 0;
+      this.minDelayFrequency = 0;
     }
+
     /**
      *
      * @param {string} url
      * @param {*} skipARP
      * @param {boolean} sendOULFlag
      */
-
-
-    static fireRequest(url, skipARP, sendOULFlag) {
+    static fireRequest(url, skipARP, sendOULFlag, evtName) {
       var _this = this;
 
       return _asyncToGenerator(function* () {
-        yield _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag);
+        yield _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
       })();
+    }
+
+    getDelayFrequency() {
+      this.logger.debug('Network retry #' + this.networkRetryCount); // Retry with delay as 1s for first 10 retries
+
+      if (this.networkRetryCount < 10) {
+        this.logger.debug(this.account.id, 'Failure count is ' + this.networkRetryCount + '. Setting delay frequency to 1s');
+        this.minDelayFrequency = PUSH_DELAY_MS; // Reset minimum delay to 1s
+
+        return this.minDelayFrequency;
+      }
+
+      if (this.account.region == null) {
+        // Retry with delay as 1s if region is null in case of eu1
+        this.logger.debug(this.account.id, 'Setting delay frequency to 1s');
+        return PUSH_DELAY_MS;
+      } else {
+        // Retry with delay as minimum delay frequency and add random number of seconds to scatter traffic
+        var randomDelay = (Math.floor(Math.random() * 10) + 1) * 1000;
+        this.minDelayFrequency += randomDelay;
+
+        if (this.minDelayFrequency < MAX_DELAY_FREQUENCY) {
+          this.logger.debug(this.account.id, 'Setting delay frequency to ' + this.minDelayFrequency);
+          return this.minDelayFrequency;
+        } else {
+          this.minDelayFrequency = PUSH_DELAY_MS;
+        }
+
+        this.logger.debug(this.account.id, 'Setting delay frequency to ' + this.minDelayFrequency);
+        return this.minDelayFrequency;
+      }
     }
 
   }
@@ -2421,7 +2565,7 @@ var clevertapShopify = (function () {
   };
 
   var _fireRequest2 = /*#__PURE__*/function () {
-    var _fireRequest3 = _asyncToGenerator(function* (url, tries, skipARP, sendOULFlag) {
+    var _fireRequest3 = _asyncToGenerator(function* (url, tries, skipARP, sendOULFlag, evtName) {
       var _this2 = this;
 
       if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
@@ -2442,74 +2586,101 @@ var clevertapShopify = (function () {
        */
 
 
-      if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
-        // if ongoing First Request is in progress, initiate retry
-        setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
-          _this2.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
+      if (evtName && evtName === WZRK_FETCH) {
+        // New retry mechanism
+        if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) {
+          setTimeout(() => {
+            this.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(this.networkRetryCount));
 
-          yield _classPrivateFieldLooseBase(_this2, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
-        }), 50);
-        return;
-      } // set isOULInProgress to true
-      // when sendOULFlag is set to true
-
-
-      if (!sendOULFlag) {
-        if (isValueValid(this.device.gcookie)) {
-          // add gcookie to url
-          url = addToURL(url, 'gc', this.device.gcookie);
+            _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, undefined, skipARP, sendOULFlag);
+          }, this.getDelayFrequency());
         }
-
-        url = yield _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
       } else {
-        globalWindow.isOULInProgress = true;
-      }
+        var _window$location$orig, _window, _window$location, _window2, _window2$location;
 
-      url = addToURL(url, 'tries', tries); // Add tries to URL
+        if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
+          // if ongoing First Request is in progress, initiate retry
+          setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
+            _this2.logger.debug("retrying fire request for url: ".concat(url, ", tries: ").concat(tries));
 
-      url = yield _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
-      url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
-
-      if (url.indexOf('chrome-extension:') !== -1) {
-        url = url.replace('chrome-extension:', 'https:');
-      }
-
-      if (mode.mode === 'WEB') {
-        var _window$clevertap, _window$wizrocket;
-
-        // TODO: Figure out a better way to handle plugin check
-        if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
-          // used to add plugin name in request parameter
-          var plugin = window.clevertap.plugin || window.wizrocket.plugin;
-          url = addToURL(url, 'ct_pl', plugin);
-        } // TODO: Try using Function constructor instead of appending script.
+            yield _classPrivateFieldLooseBase(_this2, _fireRequest)[_fireRequest](url, tries + 1, skipARP, sendOULFlag);
+          }), 50);
+          return;
+        } // set isOULInProgress to true
+        // when sendOULFlag is set to true
 
 
-        var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
-
-        while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
-          ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
-        }
-
-        var s = document.createElement('script');
-        s.setAttribute('type', 'text/javascript');
-        s.setAttribute('src', url);
-        s.setAttribute('class', 'ct-jp-cb');
-        s.setAttribute('rel', 'nofollow');
-        s.async = true;
-        document.getElementsByTagName('head')[0].appendChild(s);
-      } else {
-        fetch(url, {
-          headers: {
-            accept: 'application/json'
+        if (!sendOULFlag) {
+          if (isValueValid(this.device.gcookie)) {
+            // add gcookie to url
+            url = addToURL(url, 'gc', this.device.gcookie);
           }
-        }).then(res => res.json()).then(this.processResponse);
-      }
 
-      this.logger.debug('req snt -> url: ' + url);
+          url = yield _classPrivateFieldLooseBase(this, _addARPToRequest)[_addARPToRequest](url, skipARP);
+        } else {
+          globalWindow.isOULInProgress = true;
+        }
+
+        url = addToURL(url, 'tries', tries); // Add tries to URL
+
+        url = addToURL(url, 'origin', (_window$location$orig = (_window = window) === null || _window === void 0 ? void 0 : (_window$location = _window.location) === null || _window$location === void 0 ? void 0 : _window$location.origin) !== null && _window$location$orig !== void 0 ? _window$location$orig : (_window2 = window) === null || _window2 === void 0 ? void 0 : (_window2$location = _window2.location) === null || _window2$location === void 0 ? void 0 : _window2$location.href); // Add origin to URL
+
+        url = yield _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
+        url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
+
+        if (url.indexOf('chrome-extension:') !== -1) {
+          url = url.replace('chrome-extension:', 'https:');
+        }
+
+        if (mode.mode === 'WEB') {
+          var _window$clevertap, _window$wizrocket;
+
+          // TODO: Figure out a better way to handle plugin check
+          if (((_window$clevertap = window.clevertap) === null || _window$clevertap === void 0 ? void 0 : _window$clevertap.hasOwnProperty('plugin')) || ((_window$wizrocket = window.wizrocket) === null || _window$wizrocket === void 0 ? void 0 : _window$wizrocket.hasOwnProperty('plugin'))) {
+            // used to add plugin name in request parameter
+            var plugin = window.clevertap.plugin || window.wizrocket.plugin;
+            url = addToURL(url, 'ct_pl', plugin);
+          } // TODO: Try using Function constructor instead of appending script.
+
+
+          var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
+
+          while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+            ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
+          }
+
+          var s = document.createElement('script');
+          s.setAttribute('type', 'text/javascript');
+          s.setAttribute('src', url);
+          s.setAttribute('class', 'ct-jp-cb');
+          s.setAttribute('rel', 'nofollow');
+          s.async = true;
+          document.getElementsByTagName('head')[0].appendChild(s);
+        } else {
+          fetch(url, {
+            headers: {
+              accept: 'application/json'
+            }
+          }).then(res => res.json()).then( /*#__PURE__*/_asyncToGenerator(function* () {
+            if (response.arp) {
+              yield arp(response.arp);
+            }
+
+            if (response.meta) {
+              yield clevertapApi.s(response.meta.g, // cookie
+              response.meta.sid, // session id
+              response.meta.rf, // resume
+              response.meta.rn // response number for backup manager
+              );
+            }
+          }));
+        }
+
+        this.logger.debug('req snt -> url: ' + url);
+      }
     });
 
-    function _fireRequest2(_x4, _x5, _x6, _x7) {
+    function _fireRequest2(_x4, _x5, _x6, _x7, _x8) {
       return _fireRequest3.apply(this, arguments);
     }
 
@@ -2520,6 +2691,7 @@ var clevertapShopify = (function () {
   RequestDispatcher.device = void 0;
   RequestDispatcher.mode = void 0;
   RequestDispatcher.api = void 0;
+  RequestDispatcher.account = void 0;
   Object.defineProperty(RequestDispatcher, _fireRequest, {
     value: _fireRequest2
   });
@@ -2538,15 +2710,17 @@ var clevertapShopify = (function () {
 
   var _logger$3 = _classPrivateFieldLooseKey("logger");
 
-  var _account = _classPrivateFieldLooseKey("account");
+  var _account$2 = _classPrivateFieldLooseKey("account");
 
-  var _device$1 = _classPrivateFieldLooseKey("device");
+  var _device$2 = _classPrivateFieldLooseKey("device");
 
-  var _session$1 = _classPrivateFieldLooseKey("session");
+  var _session$2 = _classPrivateFieldLooseKey("session");
 
   var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   var _clearCookie = _classPrivateFieldLooseKey("clearCookie");
+
+  var _getNextAvailableReqN = _classPrivateFieldLooseKey("getNextAvailableReqN");
 
   var _addToLocalEventMap = _classPrivateFieldLooseKey("addToLocalEventMap");
 
@@ -2562,19 +2736,22 @@ var clevertapShopify = (function () {
       Object.defineProperty(this, _addToLocalEventMap, {
         value: _addToLocalEventMap2
       });
+      Object.defineProperty(this, _getNextAvailableReqN, {
+        value: _getNextAvailableReqN2
+      });
       Object.defineProperty(this, _logger$3, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _account, {
+      Object.defineProperty(this, _account$2, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device$1, {
+      Object.defineProperty(this, _device$2, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _session$1, {
+      Object.defineProperty(this, _session$2, {
         writable: true,
         value: void 0
       });
@@ -2588,15 +2765,22 @@ var clevertapShopify = (function () {
       });
       this.processingBackup = false;
       _classPrivateFieldLooseBase(this, _logger$3)[_logger$3] = logger;
-      _classPrivateFieldLooseBase(this, _account)[_account] = account;
-      _classPrivateFieldLooseBase(this, _device$1)[_device$1] = device;
-      _classPrivateFieldLooseBase(this, _session$1)[_session$1] = session;
+      _classPrivateFieldLooseBase(this, _account$2)[_account$2] = account;
+      _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
+      _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
       RequestDispatcher.logger = logger;
       RequestDispatcher.device = device;
+      RequestDispatcher.account = account;
     }
+    /**
+    * Unified backup processing method
+    * @param {boolean} oulOnly - If true, process only OUL requests. If false, process all non-fired requests.
+    */
+
 
     processBackupEvents() {
+      var oulOnly = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
       var backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME);
 
       if (typeof backupMap === 'undefined' || backupMap === null) {
@@ -2609,10 +2793,23 @@ var clevertapShopify = (function () {
         if (backupMap.hasOwnProperty(idx)) {
           var backupEvent = backupMap[idx];
 
-          if (typeof backupEvent.fired === 'undefined') {
-            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Processing backup event : ' + backupEvent.q);
+          if (typeof backupEvent.fired !== 'undefined') {
+            continue;
+          }
+
+          var isOULRequest = StorageManager.isBackupOUL(parseInt(idx));
+          var shouldProcess = oulOnly ? isOULRequest : true;
+
+          if (shouldProcess) {
+            _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event : ").concat(backupEvent.q));
 
             if (typeof backupEvent.q !== 'undefined') {
+              var session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$2)[_account$2].id));
+
+              if (session === null || session === void 0 ? void 0 : session.s) {
+                backupEvent.q = backupEvent.q + '&s=' + session.s;
+              }
+
               RequestDispatcher.fireRequest(backupEvent.q);
             }
 
@@ -2639,13 +2836,13 @@ var clevertapShopify = (function () {
           _classPrivateFieldLooseBase(_this, _logger$3)[_logger$3].wzrkError = {};
         }
 
-        dataObject.id = _classPrivateFieldLooseBase(_this, _account)[_account].id;
+        dataObject.id = _classPrivateFieldLooseBase(_this, _account$2)[_account$2].id;
 
-        if (isValueValid(_classPrivateFieldLooseBase(_this, _device$1)[_device$1].gcookie)) {
-          dataObject.g = _classPrivateFieldLooseBase(_this, _device$1)[_device$1].gcookie;
+        if (isValueValid(_classPrivateFieldLooseBase(_this, _device$2)[_device$2].gcookie)) {
+          dataObject.g = _classPrivateFieldLooseBase(_this, _device$2)[_device$2].gcookie;
         }
 
-        var obj = yield _classPrivateFieldLooseBase(_this, _session$1)[_session$1].getSessionCookieObject();
+        var obj = yield _classPrivateFieldLooseBase(_this, _session$2)[_session$2].getSessionCookieObject();
         dataObject.s = obj.s; // session cookie
 
         dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
@@ -2671,13 +2868,13 @@ var clevertapShopify = (function () {
           _classPrivateFieldLooseBase(_this2, _logger$3)[_logger$3].wzrkError = {};
         }
 
-        dataObject.id = _classPrivateFieldLooseBase(_this2, _account)[_account].id;
+        dataObject.id = _classPrivateFieldLooseBase(_this2, _account$2)[_account$2].id;
 
-        if (isValueValid(_classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie)) {
-          dataObject.g = _classPrivateFieldLooseBase(_this2, _device$1)[_device$1].gcookie;
+        if (isValueValid(_classPrivateFieldLooseBase(_this2, _device$2)[_device$2].gcookie)) {
+          dataObject.g = _classPrivateFieldLooseBase(_this2, _device$2)[_device$2].gcookie;
         }
 
-        var obj = yield _classPrivateFieldLooseBase(_this2, _session$1)[_session$1].getSessionCookieObject();
+        var obj = yield _classPrivateFieldLooseBase(_this2, _session$2)[_session$2].getSessionCookieObject();
         dataObject.s = obj.s; // session cookie
 
         dataObject.pg = typeof obj.p === 'undefined' ? 1 : obj.p; // Page count
@@ -2719,7 +2916,9 @@ var clevertapShopify = (function () {
           }
         }
       })();
-    } // saves url to backup cache and fires the request
+    }
+
+    // saves url to backup cache and fires the request
 
     /**
      *
@@ -2727,14 +2926,15 @@ var clevertapShopify = (function () {
      * @param {boolean} override whether the request can go through or not
      * @param {Boolean} sendOULFlag - true in case of a On User Login request
      */
-
-
-    saveAndFireRequest(url, override, sendOULFlag) {
+    saveAndFireRequest(url, override, sendOULFlag, evtName) {
       var _this4 = this;
 
       return _asyncToGenerator(function* () {
-        var now = getNow();
-        url = addToURL(url, 'rn', ++$ct.globalCache.REQ_N);
+        var now = getNow(); // Get the next available request number that doesn't conflict with existing backups
+
+        var nextReqN = yield _classPrivateFieldLooseBase(_this4, _getNextAvailableReqN)[_getNextAvailableReqN]();
+        $ct.globalCache.REQ_N = nextReqN;
+        url = addToURL(url, 'rn', nextReqN);
         var data = url + '&i=' + now + '&sn=' + seqNo; // TODO: Enable this
         // and an OUL request is not in progress
         // then process the request as it is
@@ -2750,7 +2950,7 @@ var clevertapShopify = (function () {
           }
 
           globalWindow.oulReqN = $ct.globalCache.REQ_N;
-          yield RequestDispatcher.fireRequest(data, false, sendOULFlag);
+          yield RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
         } else {
           _classPrivateFieldLooseBase(_this4, _logger$3)[_logger$3].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(_this4, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(globalWindow.isOULInProgress));
         }
@@ -2772,13 +2972,13 @@ var clevertapShopify = (function () {
           }
 
           data.action = 'unregister';
-          data.id = _classPrivateFieldLooseBase(_this5, _account)[_account].id;
-          var obj = yield _classPrivateFieldLooseBase(_this5, _session$1)[_session$1].getSessionCookieObject();
+          data.id = _classPrivateFieldLooseBase(_this5, _account$2)[_account$2].id;
+          var obj = yield _classPrivateFieldLooseBase(_this5, _session$2)[_session$2].getSessionCookieObject();
           data.s = obj.s; // session cookie
 
           var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this5, _logger$3)[_logger$3]);
 
-          var pageLoadUrl = _classPrivateFieldLooseBase(_this5, _account)[_account].dataPostURL;
+          var pageLoadUrl = _classPrivateFieldLooseBase(_this5, _account$2)[_account$2].dataPostURL;
 
           pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
           pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
@@ -2800,7 +3000,7 @@ var clevertapShopify = (function () {
         payload = yield _this6.addSystemDataToObject(payload, true);
         payload = JSON.stringify(payload);
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(_this6, _account)[_account].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(_this6, _account$2)[_account$2].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(_this6, _logger$3)[_logger$3]));
@@ -2822,15 +3022,99 @@ var clevertapShopify = (function () {
         data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
         var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this7, _logger$3)[_logger$3]);
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(_this7, _account)[_account].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(_this7, _account$2)[_account$2].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-        yield _this7.saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+        yield _this7.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName);
       })();
     }
 
+    registerToken(payload) {
+      if (!payload) return; // add gcookie etc to the payload
+
+      payload = this.addSystemDataToObject(payload, true);
+      payload = JSON.stringify(payload);
+
+      var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]));
+      RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
+
+      StorageManager.save(WEBPUSH_LS_KEY, 'ok');
+    }
+
+    processEvent(data) {
+      _classPrivateFieldLooseBase(this, _addToLocalEventMap)[_addToLocalEventMap](data.evtName);
+
+      data = this.addSystemDataToObject(data, undefined);
+      this.addFlags(data);
+      data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
+      var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
+
+      var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
+
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+      this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName);
+    }
+
+    post(url, body) {
+      return fetch(url, {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: body
+      }).then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+
+        throw response;
+      }).then(data => {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Sync data successful', data);
+
+        return data;
+      }).catch(e => {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Error in syncing variables', e);
+
+        throw e;
+      });
+    }
+
   }
+
+  var _getNextAvailableReqN2 = /*#__PURE__*/function () {
+    var _getNextAvailableReqN3 = _asyncToGenerator(function* () {
+      // Read existing backup data to check for conflicts
+      var backupMap = yield StorageManager.readFromLSorCookie(LCOOKIE_NAME); // Start from the current REQ_N + 1
+
+      var candidateReqN = $ct.globalCache.REQ_N + 1; // If no backup data exists, use the candidate
+
+      if (!backupMap || typeof backupMap !== 'object') {
+        return candidateReqN;
+      } // Keep incrementing until we find a request number that doesn't exist in backup
+
+
+      while (backupMap.hasOwnProperty(candidateReqN.toString())) {
+        candidateReqN++;
+
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Request number ".concat(candidateReqN - 1, " already exists in backup, trying ").concat(candidateReqN));
+      }
+
+      _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Using request number: ".concat(candidateReqN));
+
+      return candidateReqN;
+    });
+
+    function _getNextAvailableReqN2() {
+      return _getNextAvailableReqN3.apply(this, arguments);
+    }
+
+    return _getNextAvailableReqN2;
+  }();
 
   var _addToLocalEventMap2 = /*#__PURE__*/function () {
     var _addToLocalEventMap3 = _asyncToGenerator(function* (evtName) {
@@ -2950,13 +3234,13 @@ var clevertapShopify = (function () {
     };
   }();
 
-  var _logger$4 = _classPrivateFieldLooseKey("logger");
+  var _logger$2 = _classPrivateFieldLooseKey("logger");
 
-  var _oldValues = _classPrivateFieldLooseKey("oldValues");
+  var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
 
-  var _request$1 = _classPrivateFieldLooseKey("request");
+  var _request$2 = _classPrivateFieldLooseKey("request");
 
-  var _isPersonalisationActive$2 = _classPrivateFieldLooseKey("isPersonalisationActive");
+  var _isPersonalisationActive = _classPrivateFieldLooseKey("isPersonalisationActive");
 
   var _processEventArray = _classPrivateFieldLooseKey("processEventArray");
 
@@ -2971,52 +3255,52 @@ var clevertapShopify = (function () {
       Object.defineProperty(this, _processEventArray, {
         value: _processEventArray2
       });
-      Object.defineProperty(this, _logger$4, {
+      Object.defineProperty(this, _logger$2, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _oldValues, {
+      Object.defineProperty(this, _oldValues$1, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _request$1, {
+      Object.defineProperty(this, _request$2, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _isPersonalisationActive$2, {
+      Object.defineProperty(this, _isPersonalisationActive, {
         writable: true,
         value: void 0
       });
-      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
-      _classPrivateFieldLooseBase(this, _oldValues)[_oldValues] = values;
-      _classPrivateFieldLooseBase(this, _request$1)[_request$1] = request;
-      _classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2] = isPersonalisationActive;
+      _classPrivateFieldLooseBase(this, _logger$2)[_logger$2] = logger;
+      _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = values;
+      _classPrivateFieldLooseBase(this, _request$2)[_request$2] = request;
+      _classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive] = isPersonalisationActive;
     }
 
     push() {
-      var _arguments = arguments,
-          _this = this;
-
-      return _asyncToGenerator(function* () {
-        for (var _len = _arguments.length, eventsArr = new Array(_len), _key = 0; _key < _len; _key++) {
-          eventsArr[_key] = _arguments[_key];
+      if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+        for (var _len = arguments.length, eventsArr = new Array(_len), _key = 0; _key < _len; _key++) {
+          eventsArr[_key] = arguments[_key];
         }
 
-        yield _classPrivateFieldLooseBase(_this, _processEventArray)[_processEventArray](eventsArr);
+        _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](eventsArr);
+
         return 0;
-      })();
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].error('Account ID is not set');
+      }
     }
 
     _processOldValues() {
-      if (_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]) {
-        _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]);
+      if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
+        _classPrivateFieldLooseBase(this, _processEventArray)[_processEventArray](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
       }
 
-      _classPrivateFieldLooseBase(this, _oldValues)[_oldValues] = null;
+      _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = null;
     }
 
     getDetails(evtName) {
-      if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive$2)[_isPersonalisationActive$2]()) {
+      if (!_classPrivateFieldLooseBase(this, _isPersonalisationActive)[_isPersonalisationActive]()) {
         return;
       }
 
@@ -3048,7 +3332,7 @@ var clevertapShopify = (function () {
           var eventName = eventsArr.shift();
 
           if (!isString(eventName)) {
-            _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].error(EVENT_ERROR);
+            _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].error(EVENT_ERROR);
 
             continue;
           }
@@ -3056,11 +3340,11 @@ var clevertapShopify = (function () {
           if (eventName.length > 1024) {
             eventName = eventName.substring(0, 1024);
 
-            _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].reportError(510, eventName + '... length exceeded 1024 chars. Trimmed.');
+            _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].reportError(510, eventName + '... length exceeded 1024 chars. Trimmed.');
           }
 
           if (SYSTEM_EVENTS.includes(eventName)) {
-            _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].reportError(513, eventName + ' is a restricted system event. It cannot be used as an event name.');
+            _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].reportError(513, eventName + ' is a restricted system event. It cannot be used as an event name.');
 
             continue;
           }
@@ -3078,16 +3362,16 @@ var clevertapShopify = (function () {
             } else {
               // check Charged Event vs. other events.
               if (eventName === 'Charged') {
-                var isValid = yield isChargedEventStructureValid(eventObj, _classPrivateFieldLooseBase(this, _logger$4)[_logger$4]);
+                var isValid = yield isChargedEventStructureValid(eventObj, _classPrivateFieldLooseBase(this, _logger$2)[_logger$2]);
 
                 if (!isValid) {
-                  _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].reportError(511, 'Charged event structure invalid. Not sent.');
+                  _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].reportError(511, 'Charged event structure invalid. Not sent.');
 
                   continue;
                 }
               } else {
                 if (!isEventStructureFlat(eventObj)) {
-                  _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].reportError(512, eventName + ' event structure invalid. Not sent.');
+                  _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].reportError(512, eventName + ' event structure invalid. Not sent.');
 
                   continue;
                 }
@@ -3097,7 +3381,7 @@ var clevertapShopify = (function () {
             }
           }
 
-          yield _classPrivateFieldLooseBase(this, _request$1)[_request$1].processEvent(data);
+          yield _classPrivateFieldLooseBase(this, _request$2)[_request$2].processEvent(data);
         }
       }
     });
@@ -3109,17 +3393,17 @@ var clevertapShopify = (function () {
     return _processEventArray2;
   }();
 
-  var _request$2 = _classPrivateFieldLooseKey("request");
+  var _request$1 = _classPrivateFieldLooseKey("request");
 
-  var _logger$5 = _classPrivateFieldLooseKey("logger");
+  var _logger$1 = _classPrivateFieldLooseKey("logger");
 
   var _account$1 = _classPrivateFieldLooseKey("account");
 
-  var _session$2 = _classPrivateFieldLooseKey("session");
+  var _session$1 = _classPrivateFieldLooseKey("session");
 
-  var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
+  var _oldValues = _classPrivateFieldLooseKey("oldValues");
 
-  var _device$2 = _classPrivateFieldLooseKey("device");
+  var _device$1 = _classPrivateFieldLooseKey("device");
 
   var _processOUL = _classPrivateFieldLooseKey("processOUL");
 
@@ -3151,11 +3435,11 @@ var clevertapShopify = (function () {
       Object.defineProperty(this, _processOUL, {
         value: _processOUL2
       });
-      Object.defineProperty(this, _request$2, {
+      Object.defineProperty(this, _request$1, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _logger$5, {
+      Object.defineProperty(this, _logger$1, {
         writable: true,
         value: void 0
       });
@@ -3163,24 +3447,24 @@ var clevertapShopify = (function () {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _session$2, {
+      Object.defineProperty(this, _session$1, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _oldValues$1, {
+      Object.defineProperty(this, _oldValues, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device$2, {
+      Object.defineProperty(this, _device$1, {
         writable: true,
         value: void 0
       });
-      _classPrivateFieldLooseBase(this, _request$2)[_request$2] = request;
+      _classPrivateFieldLooseBase(this, _request$1)[_request$1] = request;
       _classPrivateFieldLooseBase(this, _account$1)[_account$1] = account;
-      _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5] = logger;
-      _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = values;
-      _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
+      _classPrivateFieldLooseBase(this, _session$1)[_session$1] = session;
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1] = logger;
+      _classPrivateFieldLooseBase(this, _oldValues)[_oldValues] = values;
+      _classPrivateFieldLooseBase(this, _device$1)[_device$1] = device;
     } // On User Login
 
 
@@ -3188,7 +3472,7 @@ var clevertapShopify = (function () {
       var _this = this;
 
       return _asyncToGenerator(function* () {
-        _classPrivateFieldLooseBase(_this, _logger$5)[_logger$5].debug('clear called. Reset flag has been set.');
+        _classPrivateFieldLooseBase(_this, _logger$1)[_logger$1].debug('clear called. Reset flag has been set.');
 
         yield _classPrivateFieldLooseBase(_this, _deleteUser)[_deleteUser]();
         yield StorageManager.setMetaProp(CLEAR, true);
@@ -3210,11 +3494,11 @@ var clevertapShopify = (function () {
     }
 
     _processOldValues() {
-      if (_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]) {
-        _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](_classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1]);
+      if (_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]) {
+        _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](_classPrivateFieldLooseBase(this, _oldValues)[_oldValues]);
       }
 
-      _classPrivateFieldLooseBase(this, _oldValues$1)[_oldValues$1] = null;
+      _classPrivateFieldLooseBase(this, _oldValues)[_oldValues] = null;
     }
 
   }
@@ -3286,20 +3570,20 @@ var clevertapShopify = (function () {
               var gFromCache = yield $ct.LRU_CACHE.get(kId);
               yield $ct.LRU_CACHE.set(kId, gFromCache);
               yield StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
-              _classPrivateFieldLooseBase(_this3, _device$2)[_device$2].gcookie = gFromCache;
+              _classPrivateFieldLooseBase(_this3, _device$1)[_device$1].gcookie = gFromCache;
               var lastK = $ct.LRU_CACHE.getSecondLastKey();
 
               if ((yield StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED)) && lastK !== -1) {
                 // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
                 var lastGUID = $ct.LRU_CACHE.cache[lastK];
-                yield _classPrivateFieldLooseBase(_this3, _request$2)[_request$2].unregisterTokenForGuid(lastGUID);
+                yield _classPrivateFieldLooseBase(_this3, _request$1)[_request$1].unregisterTokenForGuid(lastGUID);
               }
             } else {
               if (!anonymousUser) {
                 yield _this3.clear();
               } else {
                 if (g != null) {
-                  _classPrivateFieldLooseBase(_this3, _device$2)[_device$2].gcookie = g;
+                  _classPrivateFieldLooseBase(_this3, _device$1)[_device$1].gcookie = g;
                   yield StorageManager.saveToLSorCookie(GCOOKIE_NAME, g);
                   sendOULFlag = false;
                 }
@@ -3331,7 +3615,7 @@ var clevertapShopify = (function () {
               profileObj = outerObj.Site;
 
               if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
-                logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
+                logger: _classPrivateFieldLooseBase(this, _logger$1)[_logger$1]
               })) {
                 return;
               }
@@ -3347,7 +3631,7 @@ var clevertapShopify = (function () {
 
               if (isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
                 profileObj = processGPlusUserObj(GPlusProfileObj, {
-                  logger: _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]
+                  logger: _classPrivateFieldLooseBase(this, _logger$1)[_logger$1]
                 });
               }
             }
@@ -3387,8 +3671,8 @@ var clevertapShopify = (function () {
               }
 
               yield addToLocalProfileMap(profileObj, true);
-              data = yield _classPrivateFieldLooseBase(this, _request$2)[_request$2].addSystemDataToObject(data, undefined);
-              yield _classPrivateFieldLooseBase(this, _request$2)[_request$2].addFlags(data); // Adding 'isOUL' flag in true for OUL cases which.
+              data = yield _classPrivateFieldLooseBase(this, _request$1)[_request$1].addSystemDataToObject(data, undefined);
+              yield _classPrivateFieldLooseBase(this, _request$1)[_request$1].addFlags(data); // Adding 'isOUL' flag in true for OUL cases which.
               // This flag tells LC to create a new arp object.
               // Also we will receive the same flag in response arp which tells to delete existing arp object.
 
@@ -3396,7 +3680,7 @@ var clevertapShopify = (function () {
                 data[IS_OUL] = true;
               }
 
-              var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$5)[_logger$5]);
+              var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$1)[_logger$1]);
 
               var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$1)[_account$1].dataPostURL;
 
@@ -3405,7 +3689,7 @@ var clevertapShopify = (function () {
               // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
               // stored in the cache and replace it with the response arp.
 
-              yield _classPrivateFieldLooseBase(this, _request$2)[_request$2].saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag);
+              yield _classPrivateFieldLooseBase(this, _request$1)[_request$1].saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag);
             }
           }
         }
@@ -3437,9 +3721,9 @@ var clevertapShopify = (function () {
       }
 
       yield StorageManager.deleteData('cookie', CAMP_COOKIE_NAME, getHostName());
-      yield StorageManager.deleteData('cookie', _classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
+      yield StorageManager.deleteData('cookie', _classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
       yield StorageManager.deleteData('cookie', ARP_COOKIE, $ct.broadDomain);
-      yield _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
+      yield _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
     });
 
     function _handleCookieFromCache2() {
@@ -3453,7 +3737,7 @@ var clevertapShopify = (function () {
     var _deleteUser3 = _asyncToGenerator(function* () {
       $ct.blockRequest = true;
 
-      _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug('Block request is true');
+      _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug('Block request is true');
 
       $ct.globalCache = {
         gcookie: null,
@@ -3476,10 +3760,10 @@ var clevertapShopify = (function () {
       yield StorageManager.retrieveData('cookie', GCOOKIE_NAME, $ct.broadDomain);
       yield StorageManager.retrieveData('cookie', CAMP_COOKIE_NAME, getHostName());
       yield StorageManager.retrieveData('cookie', KCOOKIE_NAME, getHostName());
-      yield StorageManager.retrieveData('cookie', _classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
+      yield StorageManager.retrieveData('cookie', _classPrivateFieldLooseBase(this, _session$1)[_session$1].cookieName, $ct.broadDomain);
       yield StorageManager.retrieveData('cookie', ARP_COOKIE, $ct.broadDomain);
-      _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = null;
-      yield _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
+      _classPrivateFieldLooseBase(this, _device$1)[_device$1].gcookie = null;
+      yield _classPrivateFieldLooseBase(this, _session$1)[_session$1].setSessionCookieObject('');
     });
 
     function _deleteUser2() {
@@ -3501,10 +3785,10 @@ var clevertapShopify = (function () {
           try {
             yield _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
           } catch (e) {
-            _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].debug(e);
+            _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].debug(e);
           }
         } else {
-          _classPrivateFieldLooseBase(this, _logger$5)[_logger$5].error('Profile object is in incorrect format');
+          _classPrivateFieldLooseBase(this, _logger$1)[_logger$1].error('Profile object is in incorrect format');
         }
       }
     });
@@ -3520,8 +3804,11 @@ var clevertapShopify = (function () {
     DISABLE: 0,
     ERROR: 1,
     INFO: 2,
-    DEBUG: 3
+    DEBUG: 3,
+    DEBUG_PE: 4
   };
+
+  var _logLevel = _classPrivateFieldLooseKey("logLevel");
 
   var _log = _classPrivateFieldLooseKey("log");
 
@@ -3536,10 +3823,29 @@ var clevertapShopify = (function () {
       Object.defineProperty(this, _log, {
         value: _log2
       });
-      this.logLevel = void 0;
+      Object.defineProperty(this, _logLevel, {
+        writable: true,
+        value: void 0
+      });
       this.wzrkError = {};
-      this.logLevel = logLevel != null ? logLevel : logLevels.INFO;
+
+      // Singleton pattern - return existing instance if it exists
+      if (Logger.instance) {
+        return Logger.instance;
+      }
+
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
       this.wzrkError = {};
+      Logger.instance = this;
+    } // Static method for explicit singleton access
+
+
+    static getInstance(logLevel) {
+      if (!Logger.instance) {
+        Logger.instance = new Logger(logLevel);
+      }
+
+      return Logger.instance;
     }
 
     get logLevelValue() {
@@ -3573,6 +3879,12 @@ var clevertapShopify = (function () {
 
       if (this.logLevelValue >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
         _classPrivateFieldLooseBase(this, _log)[_log]('debug', message, type);
+      }
+    }
+
+    debugPE(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
       }
     }
 
@@ -3612,15 +3924,15 @@ var clevertapShopify = (function () {
    * @class ClevertapShopify
    */
 
-  var _account$2 = _classPrivateFieldLooseKey("account");
+  var _account = _classPrivateFieldLooseKey("account");
 
-  var _logger$6 = _classPrivateFieldLooseKey("logger");
+  var _logger = _classPrivateFieldLooseKey("logger");
 
-  var _device$3 = _classPrivateFieldLooseKey("device");
+  var _device = _classPrivateFieldLooseKey("device");
 
-  var _session$3 = _classPrivateFieldLooseKey("session");
+  var _session = _classPrivateFieldLooseKey("session");
 
-  var _request$3 = _classPrivateFieldLooseKey("request");
+  var _request = _classPrivateFieldLooseKey("request");
 
   class ClevertapShopify {
     /**
@@ -3649,63 +3961,63 @@ var clevertapShopify = (function () {
         region,
         targetDomain
       } = _ref;
-      Object.defineProperty(this, _account$2, {
+      Object.defineProperty(this, _account, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _logger$6, {
+      Object.defineProperty(this, _logger, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device$3, {
+      Object.defineProperty(this, _device, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _session$3, {
+      Object.defineProperty(this, _session, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _request$3, {
+      Object.defineProperty(this, _request, {
         writable: true,
         value: void 0
       });
       mode.browser = browser;
       mode.mode = 'SHOPIFY';
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = new Logger(logLevels.INFO);
-      _classPrivateFieldLooseBase(this, _account$2)[_account$2] = new Account({
+      _classPrivateFieldLooseBase(this, _logger)[_logger] = new Logger(logLevels.INFO);
+      _classPrivateFieldLooseBase(this, _account)[_account] = new Account({
         id: accountId
       }, region, targetDomain);
-      _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
+      _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger]
       });
-      _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
+      _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         isPersonalisationActive: () => false
       });
-      _classPrivateFieldLooseBase(this, _request$3)[_request$3] = new RequestManager({
-        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
-        account: _classPrivateFieldLooseBase(this, _account$2)[_account$2],
-        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
-        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
+      _classPrivateFieldLooseBase(this, _request)[_request] = new RequestManager({
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        account: _classPrivateFieldLooseBase(this, _account)[_account],
+        device: _classPrivateFieldLooseBase(this, _device)[_device],
+        session: _classPrivateFieldLooseBase(this, _session)[_session],
         isPersonalisationActive: () => false
       });
       this.event = new EventHandler({
-        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
-        request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        request: _classPrivateFieldLooseBase(this, _request)[_request],
         isPersonalisationActive: () => false
       });
       this.onUserLogin = new UserLoginHandler({
-        request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
-        account: _classPrivateFieldLooseBase(this, _account$2)[_account$2],
-        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
-        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
-        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3]
+        request: _classPrivateFieldLooseBase(this, _request)[_request],
+        account: _classPrivateFieldLooseBase(this, _account)[_account],
+        session: _classPrivateFieldLooseBase(this, _session)[_session],
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        device: _classPrivateFieldLooseBase(this, _device)[_device]
       });
       clevertapApi.setPrivateProperties({
-        logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6],
-        request: _classPrivateFieldLooseBase(this, _request$3)[_request$3],
-        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
-        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3]
+        logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
+        request: _classPrivateFieldLooseBase(this, _request)[_request],
+        session: _classPrivateFieldLooseBase(this, _session)[_session],
+        device: _classPrivateFieldLooseBase(this, _device)[_device]
       });
     }
 
@@ -3713,22 +4025,22 @@ var clevertapShopify = (function () {
       var _this = this;
 
       return _asyncToGenerator(function* () {
-        _classPrivateFieldLooseBase(_this, _logger$6)[_logger$6].debug('init called');
+        _classPrivateFieldLooseBase(_this, _logger)[_logger].debug('init called');
 
-        _classPrivateFieldLooseBase(_this, _device$3)[_device$3].gcookie = yield _classPrivateFieldLooseBase(_this, _device$3)[_device$3].getGuid(); // @todo implement AsyncStorageManager
+        _classPrivateFieldLooseBase(_this, _device)[_device].gcookie = yield _classPrivateFieldLooseBase(_this, _device)[_device].getGuid(); // @todo implement AsyncStorageManager
 
         yield StorageManager.removeCookieAsync('WZRK_P', getHostName());
 
-        if (!_classPrivateFieldLooseBase(_this, _account$2)[_account$2].id) {
+        if (!_classPrivateFieldLooseBase(_this, _account)[_account].id) {
           return false;
         }
 
-        _classPrivateFieldLooseBase(_this, _session$3)[_session$3].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(_this, _account$2)[_account$2].id; // get log level from localStorage
+        _classPrivateFieldLooseBase(_this, _session)[_session].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(_this, _account)[_account].id; // get log level from localStorage
 
         var logLevel = yield StorageManager.retrieveData('localStorage', SHOPIFY_DEBUG);
 
         if (logLevel) {
-          _classPrivateFieldLooseBase(_this, _logger$6)[_logger$6].logLevelValue = logLevel;
+          _classPrivateFieldLooseBase(_this, _logger)[_logger].logLevelValue = logLevel;
         } // @todo make a decision whether we want to directly send privacy as true
 
 
@@ -3743,7 +4055,7 @@ var clevertapShopify = (function () {
 
 
     logShopifyEvents(event, type) {
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debugShopify(event, type);
+      _classPrivateFieldLooseBase(this, _logger)[_logger].debugShopify(event, type);
     }
 
     pageChanged() {
@@ -3752,15 +4064,15 @@ var clevertapShopify = (function () {
       return _asyncToGenerator(function* () {
         var currentLocation = mode.browser.document.location.href; // -- update page count
 
-        var obj = yield _classPrivateFieldLooseBase(_this2, _session$3)[_session$3].getSessionCookieObject();
+        var obj = yield _classPrivateFieldLooseBase(_this2, _session)[_session].getSessionCookieObject();
         var pgCount = typeof obj.p === 'undefined' ? 0 : obj.p;
         obj.p = ++pgCount;
-        yield _classPrivateFieldLooseBase(_this2, _session$3)[_session$3].setSessionCookieObject(obj);
+        yield _classPrivateFieldLooseBase(_this2, _session)[_session].setSessionCookieObject(obj);
         var data = {};
-        data = yield _classPrivateFieldLooseBase(_this2, _request$3)[_request$3].addSystemDataToObject(data, undefined);
+        data = yield _classPrivateFieldLooseBase(_this2, _request)[_request].addSystemDataToObject(data, undefined);
         data.cpg = currentLocation;
 
-        var pageLoadUrl = _classPrivateFieldLooseBase(_this2, _account$2)[_account$2].dataPostURL;
+        var pageLoadUrl = _classPrivateFieldLooseBase(_this2, _account)[_account].dataPostURL;
 
         var {
           protocol
@@ -3770,9 +4082,9 @@ var clevertapShopify = (function () {
           protocol
         };
         pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page');
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this2, _logger$6)[_logger$6]));
-        yield _classPrivateFieldLooseBase(_this2, _request$3)[_request$3].addFlags(data);
-        yield _classPrivateFieldLooseBase(_this2, _request$3)[_request$3].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this2, _logger)[_logger]));
+        yield _classPrivateFieldLooseBase(_this2, _request)[_request].addFlags(data);
+        yield _classPrivateFieldLooseBase(_this2, _request)[_request].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       })();
     }
 
@@ -3780,4 +4092,4 @@ var clevertapShopify = (function () {
 
   return ClevertapShopify;
 
-}());
+})();
