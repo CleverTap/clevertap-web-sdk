@@ -1,3 +1,5 @@
+import ShopifyStorageManager from './ShopifyStorageManager'
+import ModeManager from '../modules/mode'
 import {
   GCOOKIE_NAME,
   META_COOKIE,
@@ -6,18 +8,15 @@ import {
   BLOCK_REQUEST_COOKIE,
   ISOLATE_COOKIE
 } from './constants'
-import encryption from '../modules/security/Encryption'
+import { getHostName } from './url'
+// import encryption from '../modules/security/Encryption'
 
-export class StorageManager {
+export class StorageManager extends ShopifyStorageManager {
   static save (key, value) {
     if (!key || !value) {
       return false
     }
     if (this._isLocalStorageSupported()) {
-      if (encryption.shouldEncrypt(key)) {
-        localStorage.setItem(key, encryption.encrypt(value))
-        return true
-      }
       localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
       return true
     }
@@ -33,9 +32,6 @@ export class StorageManager {
     }
     if (data != null) {
       try {
-        if (encryption.shouldDecrypt(key)) {
-          data = encryption.decrypt(data)
-        }
         data = JSON.parse(data)
       } catch (e) {}
     }
@@ -98,36 +94,37 @@ export class StorageManager {
   }
 
   static _isLocalStorageSupported () {
+    if (ModeManager.mode === 'SHOPIFY') return true
     return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function'
   }
 
-  static saveToLSorCookie (property, value) {
+  static async saveToLSorCookie (property, value) {
     if (value == null) {
       return
     }
     try {
       if (this._isLocalStorageSupported()) {
-        this.save(property, encodeURIComponent(JSON.stringify(value)))
+        await this.addData('localStorage', property, encodeURIComponent(JSON.stringify(value)))
       } else {
         if (property === GCOOKIE_NAME) {
-          this.createCookie(property, encodeURIComponent(value), 0, window.location.hostname)
+          await this.addData('cookie', property, encodeURIComponent(value), 0, getHostName())
         } else {
-          this.createCookie(property, encodeURIComponent(JSON.stringify(value)), 0, window.location.hostname)
+          await this.addData('cookie', property, encodeURIComponent(JSON.stringify(value)), 0, getHostName())
         }
       }
       $ct.globalCache[property] = value
     } catch (e) {}
   }
 
-  static readFromLSorCookie (property) {
+  static async readFromLSorCookie (property) {
     let data
     if ($ct.globalCache.hasOwnProperty(property)) {
       return $ct.globalCache[property]
     }
     if (this._isLocalStorageSupported()) {
-      data = this.read(property)
+      data = await this.retrieveData('localStorage', property)
     } else {
-      data = this.readCookie(property)
+      data = await this.retrieveData('cookie', property)
     }
 
     if (data !== null && data !== undefined && !(typeof data.trim === 'function' && data.trim() === '')) {
@@ -142,22 +139,22 @@ export class StorageManager {
     }
   }
 
-  static createBroadCookie (name, value, seconds, domain) {
+  static async createBroadCookie (name, value, seconds, domain) {
     /* -------------------------------------------------------------
      * Sub-domain isolation: when the global flag is set, skip the
      * broad-domain logic and write a cookie scoped to the current
      * host only.  Also remove any legacy broad-domain copy so that
      * the host-level cookie has precedence.
      * ----------------------------------------------------------- */
-    const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE)
+    const isolate = !!await this.retrieveData('localStorage', ISOLATE_COOKIE)
     if (isolate) {
       // remove any legacy broad-domain cookie
       if ($ct.broadDomain) {
-        this.removeCookie(name, $ct.broadDomain)
+        await this.deleteData('cookie', name, $ct.broadDomain)
       }
 
       // write host-scoped cookie and stop
-      this.createCookie(name, value, seconds, domain)
+      await this.addData('cookie', name, value, seconds, domain)
       return
     }
     // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
@@ -166,6 +163,8 @@ export class StorageManager {
     // to find out which "broadest" domain the cookie was set on. Then delete the test cookie, and use that domain
     // for updating the actual cookie.
 
+    // This if condition is redundant. Domain will never be not defined.
+    // even if it is undefined we directly pass it in the else.
     if (domain) {
       let broadDomain = $ct.broadDomain
       if (broadDomain == null) { // if we don't know the broadDomain yet, then find out
@@ -179,19 +178,20 @@ export class StorageManager {
           }
 
           // only needed if the cookie already exists and needs to be updated. See note above.
-          if (this.readCookie(name)) {
+          if (await this.retrieveData('cookie', name)) {
             // no guarantee that browser will delete cookie, hence create short lived cookies
             var testCookieName = 'test_' + name + idx
-            this.createCookie(testCookieName, value, 10, testBroadDomain) // self-destruct after 10 seconds
-            if (!this.readCookie(testCookieName)) { // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
+            await this.addData('cookie', testCookieName, value, 10, testBroadDomain) // self-destruct after 10 seconds
+            const testCookie = await this.retrieveData('cookie', testCookieName)
+            if (!testCookie) { // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
               continue
             } else { // else if cookie set, then delete the test and the original cookie
-              this.removeCookie(testCookieName, testBroadDomain)
+              await this.deleteData('cookie', testCookieName, testBroadDomain)
             }
           }
 
-          this.createCookie(name, value, seconds, testBroadDomain)
-          const tempCookie = this.readCookie(name)
+          await this.addData('cookie', name, value, seconds, testBroadDomain)
+          const tempCookie = await this.retrieveData('cookie', name)
           // eslint-disable-next-line eqeqeq
           if (tempCookie == value) {
             broadDomain = testBroadDomain
@@ -200,23 +200,23 @@ export class StorageManager {
           }
         }
       } else {
-        this.createCookie(name, value, seconds, broadDomain)
+        await this.addData('cookie', name, value, seconds, broadDomain)
       }
     } else {
-      this.createCookie(name, value, seconds, domain)
+      await this.addData('cookie', name, value, seconds, domain)
     }
   }
 
-  static getMetaProp (property) {
-    const metaObj = this.readFromLSorCookie(META_COOKIE)
+  static async getMetaProp (property) {
+    const metaObj = await this.readFromLSorCookie(META_COOKIE)
     if (metaObj != null) {
       return metaObj[property]
     }
   }
 
-  static setMetaProp (property, value) {
+  static async setMetaProp (property, value) {
     if (this._isLocalStorageSupported()) {
-      let wzrkMetaObj = this.readFromLSorCookie(META_COOKIE)
+      let wzrkMetaObj = await this.readFromLSorCookie(META_COOKIE)
       if (wzrkMetaObj == null) {
         wzrkMetaObj = {}
       }
@@ -225,32 +225,32 @@ export class StorageManager {
       } else {
         wzrkMetaObj[property] = value
       }
-      this.saveToLSorCookie(META_COOKIE, wzrkMetaObj)
+      await this.saveToLSorCookie(META_COOKIE, wzrkMetaObj)
     }
   }
 
-  static getAndClearMetaProp (property) {
-    const value = this.getMetaProp(property)
-    this.setMetaProp(property, undefined)
+  static async getAndClearMetaProp (property) {
+    const value = await this.getMetaProp(property)
+    await this.setMetaProp(property, undefined)
     return value
   }
 
-  static setInstantDeleteFlagInK () {
-    let k = this.readFromLSorCookie(KCOOKIE_NAME)
+  static async setInstantDeleteFlagInK () {
+    let k = await this.readFromLSorCookie(KCOOKIE_NAME)
     if (k == null) {
       k = {}
     }
     k.flag = true
-    this.saveToLSorCookie(KCOOKIE_NAME, k)
+    await this.saveToLSorCookie(KCOOKIE_NAME, k)
   }
 
-  static backupEvent (data, reqNo, logger) {
-    let backupArr = this.readFromLSorCookie(LCOOKIE_NAME)
+  static async backupEvent (data, reqNo, logger) {
+    let backupArr = await this.readFromLSorCookie(LCOOKIE_NAME)
     if (typeof backupArr === 'undefined') {
       backupArr = {}
     }
     backupArr[reqNo] = { q: data }
-    this.saveToLSorCookie(LCOOKIE_NAME, backupArr)
+    await this.saveToLSorCookie(LCOOKIE_NAME, backupArr)
     logger.debug(`stored in ${LCOOKIE_NAME} reqNo : ${reqNo} -> ${data}`)
   }
 
@@ -269,12 +269,102 @@ export class StorageManager {
     return oulRequests.includes(reqNo)
   }
 
-  static removeBackup (respNo, logger) {
-    const backupMap = this.readFromLSorCookie(LCOOKIE_NAME)
+  static async removeBackup (respNo, logger) {
+    const backupMap = await this.readFromLSorCookie(LCOOKIE_NAME)
     if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
       logger.debug(`del event: ${respNo} data-> ${backupMap[respNo].q}`)
       delete backupMap[respNo]
-      this.saveToLSorCookie(LCOOKIE_NAME, backupMap)
+      await this.saveToLSorCookie(LCOOKIE_NAME, backupMap)
+    }
+  }
+
+  /**
+   * A helper method to get data from either cookies or local storage.
+   * This also checks the mode of the SDK and decides which methods to call
+   * @param {('cookie' | 'localStorage')} type
+   * @param {string} name
+   * @returns {Promise<any>} cookieOrLocalStorageValue
+   */
+  static async retrieveData (type, name) {
+    let cookieOrLocalStorageValue
+    switch (type) {
+      case 'cookie': {
+        if (ModeManager.mode === 'WEB') {
+          cookieOrLocalStorageValue = this.readCookie(name)
+        } else {
+          cookieOrLocalStorageValue = await this.readCookieAsync(name)
+        }
+        break
+      }
+      case 'localStorage': {
+        if (ModeManager.mode === 'WEB') {
+          cookieOrLocalStorageValue = this.read(name)
+        } else {
+          cookieOrLocalStorageValue = await this.readAsync(name)
+        }
+        break
+      }
+    }
+
+    return cookieOrLocalStorageValue
+  }
+
+  /**
+   * A helper method to add data to either cookies or local storage.
+   * This also checks the mode of the SDK and decides which methods to call
+   * @param {('cookie' | 'localStorage')} type
+   * @param {string} name
+   * @param {string} value
+   * @param {string} seconds
+   * @param {string} domain
+   * @returns {Promise<any>} saved
+   */
+  static async addData (type, name, value, seconds, domain) {
+    switch (type) {
+      case 'cookie': {
+        if (ModeManager.mode === 'WEB') {
+          this.createCookie(name, value, seconds, domain)
+        } else {
+          await this.createCookieAsync(name, value, seconds, domain)
+        }
+        break
+      }
+      case 'localStorage': {
+        if (ModeManager.mode === 'WEB') {
+          this.save(name, value)
+        } else {
+          await this.saveAsync(name, value)
+        }
+        break
+      }
+    }
+  }
+
+  /**
+   * A helper method to get data from either cookies or local storage.
+   * This also checks the mode of the SDK and decides which methods to call
+   * @param {('cookie' | 'localStorage')} type
+   * @param {string} name
+   * @returns {Promise<any>} cookieOrLocalStorageValue
+   */
+  static async deleteData (type, name, domain) {
+    switch (type) {
+      case 'cookie': {
+        if (ModeManager.mode === 'WEB') {
+          this.removeCookie(name)
+        } else {
+          await this.removeCookieAsync(name, domain)
+        }
+        break
+      }
+      case 'localStorage': {
+        if (ModeManager.mode === 'WEB') {
+          this.remove(name)
+        } else {
+          await this.removeAsync(name)
+        }
+        break
+      }
     }
   }
 }

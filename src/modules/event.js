@@ -34,7 +34,7 @@ export default class EventHandler extends Array {
     this.#oldValues = null
   }
 
-  #processEventArray (eventsArr) {
+  async #processEventArray (eventsArr) {
     if (Array.isArray(eventsArr)) {
       while (eventsArr.length > 0) {
         var eventName = eventsArr.shift()
@@ -65,7 +65,8 @@ export default class EventHandler extends Array {
           } else {
             // check Charged Event vs. other events.
             if (eventName === 'Charged') {
-              if (!isChargedEventStructureValid(eventObj, this.#logger)) {
+              const isValid = await isChargedEventStructureValid(eventObj, this.#logger)
+              if (!isValid) {
                 this.#logger.reportError(511, 'Charged event structure invalid. Not sent.')
                 continue
               }
@@ -79,7 +80,7 @@ export default class EventHandler extends Array {
           }
         }
 
-        this.#request.processEvent(data)
+        await this.#request.processEvent(data)
       }
     }
   }

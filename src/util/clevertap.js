@@ -473,10 +473,10 @@ export const processGPlusUserObj = (user, { logger }) => {
   return profileData
 }
 
-export const addToLocalProfileMap = (profileObj, override) => {
+export const addToLocalProfileMap = async (profileObj, override) => {
   if (StorageManager._isLocalStorageSupported()) {
     if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
+      $ct.globalProfileMap = await StorageManager.readFromLSorCookie(PR_COOKIE)
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = {}
       }
@@ -504,7 +504,7 @@ export const addToLocalProfileMap = (profileObj, override) => {
     if ($ct.globalProfileMap._custom != null) {
       delete $ct.globalProfileMap._custom
     }
-    StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+    await StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
   }
 }
 
@@ -542,7 +542,7 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
   }
 }
 
-export const arp = (jsonMap) => {
+export const arp = async (jsonMap) => {
   // For unregister calls dont set arp in LS
   if (jsonMap.skipResARP != null && jsonMap.skipResARP) {
     console.debug('Update ARP Request rejected', jsonMap)
@@ -554,7 +554,7 @@ export const arp = (jsonMap) => {
   if (StorageManager._isLocalStorageSupported()) {
     // Update arp only if it is null or an oul request
     try {
-      let arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE)
+      let arpFromStorage = await StorageManager.readFromLSorCookie(ARP_COOKIE)
       if (arpFromStorage == null || isOULARP) {
         arpFromStorage = {}
         for (const key in jsonMap) {
@@ -566,7 +566,7 @@ export const arp = (jsonMap) => {
             }
           }
         }
-        StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage)
+        await StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage)
       }
     } catch (e) {
       console.error('Unable to parse ARP JSON: ' + e)
