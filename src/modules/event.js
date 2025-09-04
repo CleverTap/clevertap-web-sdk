@@ -1,4 +1,5 @@
 import { isString, isObject, sanitize } from '../util/datatypes'
+import mode from './mode'
 import { EVENT_ERROR } from '../util/messages'
 import { ACCOUNT_ID, EV_COOKIE, SYSTEM_EVENTS, unsupportedKeyCharRegex } from '../util/constants'
 import { isChargedEventStructureValid, isEventStructureFlat } from '../util/validator'
@@ -71,7 +72,8 @@ export default class EventHandler extends Array {
                 continue
               }
             } else {
-              if (!isEventStructureFlat(eventObj)) {
+              // For WEB mode we enforce flat structure; Shopify allows nested objects
+              if (mode.mode !== 'SHOPIFY' && !isEventStructureFlat(eventObj)) {
                 this.#logger.reportError(512, eventName + ' event structure invalid. Not sent.')
                 continue
               }

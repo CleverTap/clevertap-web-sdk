@@ -19,7 +19,7 @@ export default class RequestDispatcher {
   minDelayFrequency = 0
 
   // ANCHOR - Requests get fired from here
-  static async #fireRequest (url, tries, skipARP, sendOULFlag, evtName) {
+  static async #fireRequest (url, tries, skipARP, sendOULFlag, evtName, body) {
     if (this.#dropRequestDueToOptOut()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
@@ -99,7 +99,8 @@ export default class RequestDispatcher {
         s.async = true
         document.getElementsByTagName('head')[0].appendChild(s)
       } else {
-        fetch(url, { headers: { accept: 'application/json' } }).then(res => res.json()).then(async () => {
+        const fetchOptions = body ? { method: 'POST', headers: { accept: 'application/json', 'Content-Type': 'text/plain' }, body } : { headers: { accept: 'application/json' } }
+        fetch(url, fetchOptions).then(res => res.json()).then(async (response) => {
           if (response.arp) {
             await arp(response.arp)
           }
@@ -124,8 +125,8 @@ export default class RequestDispatcher {
    * @param {*} skipARP
    * @param {boolean} sendOULFlag
    */
-  static async fireRequest (url, skipARP, sendOULFlag, evtName) {
-    await this.#fireRequest(url, 1, skipARP, sendOULFlag, evtName)
+  static async fireRequest (url, skipARP, sendOULFlag, evtName, body) {
+    await this.#fireRequest(url, 1, skipARP, sendOULFlag, evtName, body)
   }
 
   static #dropRequestDueToOptOut () {

@@ -1,4 +1,5 @@
 import { SCOOKIE_PREFIX, CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY } from '../util/constants'
+import mode from './mode'
 import { isObjectEmpty, isValueValid, removeUnsupportedChars } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
@@ -173,7 +174,7 @@ export default class RequestManager {
    * @param {boolean} override whether the request can go through or not
    * @param {Boolean} sendOULFlag - true in case of a On User Login request
    */
-  async saveAndFireRequest (url, override, sendOULFlag, evtName) {
+  async saveAndFireRequest (url, override, sendOULFlag, evtName, body) {
     const now = getNow()
 
     // Get the next available request number that doesn't conflict with existing backups
@@ -201,7 +202,7 @@ export default class RequestManager {
         seqNo = 0
       }
       globalWindow.oulReqN = $ct.globalCache.REQ_N
-      await RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName)
+      await RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName, body)
     } else {
       this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${globalWindow.isOULInProgress}`)
     }
@@ -248,16 +249,29 @@ export default class RequestManager {
   }
 
   async processEvent (data) {
+    const isShopify = mode.mode === 'SHOPIFY'
+    // Capture core event before system enrichment
+    const coreEvent = { type: data.type, evtName: data.evtName }
+    if (data.hasOwnProperty('evtData')) {
+      coreEvent.evtData = data.evtData
+    }
     await this.#addToLocalEventMap(data.evtName)
     data = this.addSystemDataToObject(data, undefined)
     this.addFlags(data)
     data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
-    const compressedData = compressData(JSON.stringify(data), this.#logger)
+
+    const compressedSystemData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedSystemData)
 
-    await this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
+    let body
+    if (isShopify) {
+      body = JSON.stringify(coreEvent)
+      pageLoadUrl = addToURL(pageLoadUrl, 'body', '1')
+    }
+
+    await this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName, body)
   }
 
   registerToken (payload) {
@@ -274,16 +288,28 @@ export default class RequestManager {
   }
 
   processEvent (data) {
+    const isShopify = mode.mode === 'SHOPIFY'
+    const coreEvent = { type: data.type, evtName: data.evtName }
+    if (data.hasOwnProperty('evtData')) {
+      coreEvent.evtData = data.evtData
+    }
     this.#addToLocalEventMap(data.evtName)
     data = this.addSystemDataToObject(data, undefined)
     this.addFlags(data)
     data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
-    const compressedData = compressData(JSON.stringify(data), this.#logger)
+
+    const compressedSystemData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedSystemData)
 
-    this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
+    let body
+    if (isShopify) {
+      body = JSON.stringify(coreEvent)
+      pageLoadUrl = addToURL(pageLoadUrl, 'body', '1')
+    }
+
+    this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName, body)
   }
 
   async #addToLocalEventMap (evtName) {

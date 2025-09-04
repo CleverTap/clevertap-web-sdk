@@ -2472,11 +2472,11 @@ var clevertapShopify = (function () {
      * @param {*} skipARP
      * @param {boolean} sendOULFlag
      */
-    static fireRequest(url, skipARP, sendOULFlag, evtName) {
+    static fireRequest(url, skipARP, sendOULFlag, evtName, body) {
       var _this = this;
 
       return _asyncToGenerator(function* () {
-        yield _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
+        yield _classPrivateFieldLooseBase(_this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName, body);
       })();
     }
 
@@ -2565,7 +2565,7 @@ var clevertapShopify = (function () {
   };
 
   var _fireRequest2 = /*#__PURE__*/function () {
-    var _fireRequest3 = _asyncToGenerator(function* (url, tries, skipARP, sendOULFlag, evtName) {
+    var _fireRequest3 = _asyncToGenerator(function* (url, tries, skipARP, sendOULFlag, evtName, body) {
       var _this2 = this;
 
       if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
@@ -2657,30 +2657,44 @@ var clevertapShopify = (function () {
           s.async = true;
           document.getElementsByTagName('head')[0].appendChild(s);
         } else {
-          fetch(url, {
+          var fetchOptions = body ? {
+            method: 'POST',
+            headers: {
+              accept: 'application/json',
+              'Content-Type': 'text/plain'
+            },
+            body
+          } : {
             headers: {
               accept: 'application/json'
             }
-          }).then(res => res.json()).then( /*#__PURE__*/_asyncToGenerator(function* () {
-            if (response.arp) {
-              yield arp(response.arp);
-            }
+          };
+          fetch(url, fetchOptions).then(res => res.json()).then( /*#__PURE__*/function () {
+            var _ref2 = _asyncToGenerator(function* (response) {
+              if (response.arp) {
+                yield arp(response.arp);
+              }
 
-            if (response.meta) {
-              yield clevertapApi.s(response.meta.g, // cookie
-              response.meta.sid, // session id
-              response.meta.rf, // resume
-              response.meta.rn // response number for backup manager
-              );
-            }
-          }));
+              if (response.meta) {
+                yield clevertapApi.s(response.meta.g, // cookie
+                response.meta.sid, // session id
+                response.meta.rf, // resume
+                response.meta.rn // response number for backup manager
+                );
+              }
+            });
+
+            return function (_x10) {
+              return _ref2.apply(this, arguments);
+            };
+          }());
         }
 
         this.logger.debug('req snt -> url: ' + url);
       }
     });
 
-    function _fireRequest2(_x4, _x5, _x6, _x7, _x8) {
+    function _fireRequest2(_x4, _x5, _x6, _x7, _x8, _x9) {
       return _fireRequest3.apply(this, arguments);
     }
 
@@ -2926,7 +2940,7 @@ var clevertapShopify = (function () {
      * @param {boolean} override whether the request can go through or not
      * @param {Boolean} sendOULFlag - true in case of a On User Login request
      */
-    saveAndFireRequest(url, override, sendOULFlag, evtName) {
+    saveAndFireRequest(url, override, sendOULFlag, evtName, body) {
       var _this4 = this;
 
       return _asyncToGenerator(function* () {
@@ -2950,7 +2964,7 @@ var clevertapShopify = (function () {
           }
 
           globalWindow.oulReqN = $ct.globalCache.REQ_N;
-          yield RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName);
+          yield RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName, body);
         } else {
           _classPrivateFieldLooseBase(_this4, _logger$3)[_logger$3].debug("Not fired due to override - ".concat($ct.blockRequest, " or clearCookie - ").concat(_classPrivateFieldLooseBase(_this4, _clearCookie)[_clearCookie], " or OUL request in progress - ").concat(globalWindow.isOULInProgress));
         }
@@ -3014,19 +3028,37 @@ var clevertapShopify = (function () {
       var _this7 = this;
 
       return _asyncToGenerator(function* () {
+        var isShopify = mode.mode === 'SHOPIFY'; // Capture core event before system enrichment
+
+        var coreEvent = {
+          type: data.type,
+          evtName: data.evtName
+        };
+
+        if (data.hasOwnProperty('evtData')) {
+          coreEvent.evtData = data.evtData;
+        }
+
         yield _classPrivateFieldLooseBase(_this7, _addToLocalEventMap)[_addToLocalEventMap](data.evtName);
         data = _this7.addSystemDataToObject(data, undefined);
 
         _this7.addFlags(data);
 
         data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
-        var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this7, _logger$3)[_logger$3]);
+        var compressedSystemData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this7, _logger$3)[_logger$3]);
 
         var pageLoadUrl = _classPrivateFieldLooseBase(_this7, _account$2)[_account$2].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-        yield _this7.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName);
+        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedSystemData);
+        var body;
+
+        if (isShopify) {
+          body = JSON.stringify(coreEvent);
+          pageLoadUrl = addToURL(pageLoadUrl, 'body', '1');
+        }
+
+        yield _this7.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName, body);
       })();
     }
 
@@ -3046,18 +3078,35 @@ var clevertapShopify = (function () {
     }
 
     processEvent(data) {
+      var isShopify = mode.mode === 'SHOPIFY';
+      var coreEvent = {
+        type: data.type,
+        evtName: data.evtName
+      };
+
+      if (data.hasOwnProperty('evtData')) {
+        coreEvent.evtData = data.evtData;
+      }
+
       _classPrivateFieldLooseBase(this, _addToLocalEventMap)[_addToLocalEventMap](data.evtName);
 
       data = this.addSystemDataToObject(data, undefined);
       this.addFlags(data);
       data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
-      var compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
+      var compressedSystemData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
 
       var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
 
       pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-      this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName);
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedSystemData);
+      var body;
+
+      if (isShopify) {
+        body = JSON.stringify(coreEvent);
+        pageLoadUrl = addToURL(pageLoadUrl, 'body', '1');
+      }
+
+      this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName, body);
     }
 
     post(url, body) {
@@ -3370,7 +3419,8 @@ var clevertapShopify = (function () {
                   continue;
                 }
               } else {
-                if (!isEventStructureFlat(eventObj)) {
+                // For WEB mode we enforce flat structure; Shopify allows nested objects
+                if (mode.mode !== 'SHOPIFY' && !isEventStructureFlat(eventObj)) {
                   _classPrivateFieldLooseBase(this, _logger$2)[_logger$2].reportError(512, eventName + ' event structure invalid. Not sent.');
 
                   continue;
