@@ -180,8 +180,10 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
     sessionStorage.setItem('visualEditorData', JSON.stringify(targetingMsgJson))
   }
   const insertedElements = []
+  const reorderingOptions = [] // Collect reordering operations to execute at the end
   const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details
   let notificationViewed = false
+  let pendingElements = 0 // Track elements being processed by tryFindingElement
   const payload = {
     msgId: targetingMsgJson.wzrk_id,
     pivotId: targetingMsgJson.wzrk_pivot
@@ -199,6 +201,11 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
   }
 
   const processElement = (element, selector) => {
+    pendingElements-- // Decrement when processing element
+    if (selector?.reorderingOptions?.positionsChanged) {
+      // Collect drag operation to execute later (after all elements are processed)
+      reorderingOptions.push({ element, selector })
+    }
     if (selector.elementCSS) {
       updateElementCSS(selector)
     }
@@ -244,15 +251,18 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
         raiseViewed()
         processElement(retryElement, selector)
         clearInterval(intervalId)
+        checkAndApplyReorder() // Check if we can apply reordering now
       } else if (++count >= 20) {
         logger.debug(`No element present on DOM with selector '${selector}'.`)
         clearInterval(intervalId)
+        checkAndApplyReorder() // Check if we can apply reordering now
       }
     }, 500)
     $ct.intervalArray.push(intervalId)
   }
 
   details.forEach(d => {
+    pendingElements = d.selectorData.length
     d.selectorData.forEach(s => {
       if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) &&
           s.values.initialHtml) {
@@ -296,9 +306,12 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
         raiseViewed()
         processElement(insertedElement, selector)
         clearInterval(intervalId)
+
+        checkAndApplyReorder() // Check if we can apply reordering now
       } else if (++count >= 20) {
         logger.debug(`No element present on DOM with selector '${sibling}'.`)
         clearInterval(intervalId)
+        checkAndApplyReorder() // Check if we can apply reordering now
       }
     }, 500)
     $ct.intervalArray.push(intervalId)
@@ -312,6 +325,50 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
     })
     sortedArr.forEach(addNewEl)
   }
+
+  // Check if all elements are processed and apply reordering if ready
+  const checkAndApplyReorder = () => {
+    if (pendingElements === 0 && reorderingOptions.length > 0) {
+      applyReorder(reorderingOptions)
+    }
+  }
+
+  // Execute all reordering operations after all elements have been processed
+  const applyReorder = (reorderingOptions) => {
+    reorderingOptions.forEach(({ element, selector }) => {
+    // ensure DOM matches layout (safety sync)
+    // newOrder contains ALL child elements in their desired order
+    // First, collect all elements before any DOM manipulation
+    // This prevents nth-child selectors from becoming invalid during reordering
+      const orderedChildren = []
+      selector.reorderingOptions.newOrder.forEach(cssSelector => {
+        if (cssSelector.includes('-afterend-') || cssSelector.includes('-beforebegin-')) {
+          cssSelector = `[ct-selector="${cssSelector}"]`
+        }
+        const child = document.querySelector(cssSelector)
+        if (child && element.contains(child)) {
+          orderedChildren.push(child)
+        }
+      })
+
+      // Now reorder using insertBefore with index-based positioning
+      orderedChildren.forEach((child, targetIndex) => {
+        const currentIndex = Array.from(element.children).indexOf(child)
+        if (currentIndex !== targetIndex) {
+          // Insert child at the correct position
+          const referenceChild = element.children[targetIndex]
+          if (referenceChild) {
+            element.insertBefore(child, referenceChild)
+          } else {
+            element.appendChild(child)
+          }
+        }
+      })
+    })
+  }
+
+  // Apply reordering immediately if no elements are pending
+  checkAndApplyReorder()
 }
 
 function findSiblingSelector (input) {
