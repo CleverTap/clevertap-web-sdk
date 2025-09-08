@@ -14105,7 +14105,6 @@
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(selector, "'."));
           clearInterval(intervalId);
-          checkAndApplyReorder(); // Check if we can apply reordering now
         }
       }, 500);
       $ct.intervalArray.push(intervalId);
@@ -14168,7 +14167,6 @@
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(sibling, "'."));
           clearInterval(intervalId);
-          checkAndApplyReorder(); // Check if we can apply reordering now
         }
       }, 500);
       $ct.intervalArray.push(intervalId);

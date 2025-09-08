@@ -255,7 +255,6 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
       } else if (++count >= 20) {
         logger.debug(`No element present on DOM with selector '${selector}'.`)
         clearInterval(intervalId)
-        checkAndApplyReorder() // Check if we can apply reordering now
       }
     }, 500)
     $ct.intervalArray.push(intervalId)
@@ -311,7 +310,6 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
       } else if (++count >= 20) {
         logger.debug(`No element present on DOM with selector '${sibling}'.`)
         clearInterval(intervalId)
-        checkAndApplyReorder() // Check if we can apply reordering now
       }
     }, 500)
     $ct.intervalArray.push(intervalId)
