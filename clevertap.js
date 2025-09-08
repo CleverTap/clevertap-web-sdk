@@ -7942,7 +7942,7 @@
             }
 
             if (chargedObj[key].length > 50) {
-              logger.reportError(522, 'Charged Items exceed 50 limit. Actual count: ' + chargedObj[key].length);
+              logger.error('Charged Items exceed 50 limit. Actual count: ' + chargedObj[key].length);
             }
 
             for (var itemKey in chargedObj[key]) {
@@ -7986,7 +7986,7 @@
 
 
     return false;
-  };
+  }; // Validation results structure
 
   var _logger$8 = _classPrivateFieldLooseKey("logger");
 
