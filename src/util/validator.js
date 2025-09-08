@@ -32,7 +32,7 @@ export const isChargedEventStructureValid = (chargedObj, logger) => {
           }
 
           if (chargedObj[key].length > 50) {
-            logger.reportError(522, 'Charged Items exceed 50 limit. Actual count: ' + chargedObj[key].length)
+            logger.error('Charged Items exceed 50 limit. Actual count: ' + chargedObj[key].length)
           }
 
           for (var itemKey in chargedObj[key]) {
@@ -200,7 +200,7 @@ export const isEventStructureValid = (eventObj, logger, maxDepth = 3) => {
         if (Array.isArray(obj[key])) {
           // Check array length limit
           if (obj[key].length > 100) {
-            logger.reportError(523, `Array '${key}' exceeds 100 elements limit. Found: ${obj[key].length}`)
+            logger.error(`Array '${key}' exceeds 100 elements limit. Found: ${obj[key].length}`)
             return false
           }
 
@@ -209,7 +209,7 @@ export const isEventStructureValid = (eventObj, logger, maxDepth = 3) => {
             if (isObject(item)) {
               const itemObjectArrayCount = countObjectArrayKeys(item)
               if (itemObjectArrayCount > 5) {
-                logger.reportError(524, `Maximum 5 object/array keys allowed at nested level. Found: ${itemObjectArrayCount} in array '${key}'`)
+                logger.error(`Maximum 5 object/array keys allowed at nested level. Found: ${itemObjectArrayCount} in array '${key}'`)
                 return false
               }
               if (!validateObjectArrayCount(item, currentDepth + 1)) {
@@ -220,7 +220,7 @@ export const isEventStructureValid = (eventObj, logger, maxDepth = 3) => {
         } else if (isObject(obj[key])) {
           const nestedObjectArrayCount = countObjectArrayKeys(obj[key])
           if (nestedObjectArrayCount > 5) {
-            logger.reportError(524, `Maximum 5 object/array keys allowed at nested level. Found: ${nestedObjectArrayCount} in object '${key}'`)
+            logger.error(`Maximum 5 object/array keys allowed at nested level. Found: ${nestedObjectArrayCount} in object '${key}'`)
             return false
           }
           if (!validateObjectArrayCount(obj[key], currentDepth + 1)) {
