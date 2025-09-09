@@ -7942,7 +7942,7 @@
             }
 
             if (chargedObj[key].length > 50) {
-              logger.error('Charged Items exceed 50 limit. Actual count: ' + chargedObj[key].length);
+              logger.reportError(522, 'Charged Items exceed 50 limit. Actual count: ' + chargedObj[key].length);
             }
 
             for (var itemKey in chargedObj[key]) {
