@@ -7988,6 +7988,227 @@
     return false;
   }; // Validation results structure
 
+  const createValidationResult = function (isValid) {
+    let errorMessage = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+    let processedObj = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+    return {
+      isValid,
+      errorMessage,
+      processedObj
+    };
+  }; // Helper function to check if object/array is null or empty
+
+
+  const isNullOrEmpty = obj => {
+    if (obj === null || obj === undefined) return true;
+    if (Array.isArray(obj)) return obj.length === 0;
+    if (isObject(obj)) return Object.keys(obj).length === 0;
+    return false;
+  }; // Helper function to clean null/empty objects and arrays
+
+
+  const cleanNullEmptyValues = function (obj) {
+    let currentDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    let maxDepth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 3;
+    if (currentDepth > maxDepth) return obj;
+
+    if (Array.isArray(obj)) {
+      const cleanedArray = obj.filter(item => !isNullOrEmpty(item)).map(item => {
+        if (isObject(item) || Array.isArray(item)) {
+          return cleanNullEmptyValues(item, currentDepth + 1, maxDepth);
+        }
+
+        return item;
+      }).filter(item => !isNullOrEmpty(item)); // Filter again after cleaning
+
+      return cleanedArray.length > 0 ? cleanedArray : undefined;
+    }
+
+    if (isObject(obj)) {
+      const cleanedObj = {};
+
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          let value = obj[key];
+
+          if (isDateObject(value)) {
+            value = convertToWZRKDate(value);
+          } else if (isObject(value) || Array.isArray(value)) {
+            value = cleanNullEmptyValues(value, currentDepth + 1, maxDepth);
+          }
+
+          if (!isNullOrEmpty(value)) {
+            cleanedObj[key] = value;
+          }
+        }
+      }
+
+      return Object.keys(cleanedObj).length > 0 ? cleanedObj : undefined;
+    }
+
+    return obj;
+  }; // Validate 3-level nested event structure
+
+
+  const isObjStructureValid = function (eventObj, logger) {
+    let maxDepth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 3;
+
+    if (!isObject(eventObj)) {
+      return createValidationResult(false, 'Event data must be an object');
+    } // Clean null/empty values first
+
+
+    const cleanedObj = cleanNullEmptyValues(eventObj, 0, maxDepth);
+
+    if (isNullOrEmpty(cleanedObj)) {
+      return createValidationResult(false, 'Event object is empty after cleaning null/empty values');
+    } // Validate nesting depth
+
+
+    const validateDepth = function (obj) {
+      let currentDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+      if (currentDepth > maxDepth) {
+        return false;
+      }
+
+      if (isObject(obj)) {
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key)) {
+            if (Array.isArray(obj[key])) {
+              for (const item of obj[key]) {
+                if (isObject(item) && !validateDepth(item, currentDepth + 1)) {
+                  return false;
+                }
+              }
+            } else if (isObject(obj[key])) {
+              if (!validateDepth(obj[key], currentDepth + 1)) {
+                return false;
+              }
+            }
+          }
+        }
+      }
+
+      return true;
+    };
+
+    if (!validateDepth(cleanedObj)) {
+      return createValidationResult(false, "Maximum nesting depth of ".concat(maxDepth, " levels exceeded"));
+    } // Helper function to count object/array keys at a specific level
+
+
+    const countObjectArrayKeys = obj => {
+      if (!isObject(obj)) return 0;
+      let count = 0;
+
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          if (isObject(obj[key]) || Array.isArray(obj[key])) {
+            count++;
+          }
+        }
+      }
+
+      return count;
+    }; // Count object/array keys at root level (0th level)
+
+
+    const rootObjectArrayCount = countObjectArrayKeys(cleanedObj);
+
+    if (rootObjectArrayCount > 5) {
+      return createValidationResult(false, "Maximum 5 object/array keys allowed at root level. Found: ".concat(rootObjectArrayCount));
+    } // Validate object/array count at each nested level
+
+
+    const validateObjectArrayCount = function (obj) {
+      let currentDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      if (!isObject(obj) || currentDepth > maxDepth) return true;
+
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          if (Array.isArray(obj[key])) {
+            // Check array length limit
+            if (obj[key].length > 100) {
+              logger.error("Array '".concat(key, "' exceeds 100 elements limit. Found: ").concat(obj[key].length));
+              return false;
+            } // Validate each array element
+
+
+            for (const item of obj[key]) {
+              if (isObject(item)) {
+                const itemObjectArrayCount = countObjectArrayKeys(item);
+
+                if (itemObjectArrayCount > 5) {
+                  logger.error("Maximum 5 object/array keys allowed at nested level. Found: ".concat(itemObjectArrayCount, " in array '").concat(key, "'"));
+                  return false;
+                }
+
+                if (!validateObjectArrayCount(item, currentDepth + 1)) {
+                  return false;
+                }
+              }
+            }
+          } else if (isObject(obj[key])) {
+            const nestedObjectArrayCount = countObjectArrayKeys(obj[key]);
+
+            if (nestedObjectArrayCount > 5) {
+              logger.error("Maximum 5 object/array keys allowed at nested level. Found: ".concat(nestedObjectArrayCount, " in object '").concat(key, "'"));
+              return false;
+            }
+
+            if (!validateObjectArrayCount(obj[key], currentDepth + 1)) {
+              return false;
+            }
+          }
+        }
+      }
+
+      return true;
+    }; // Helper function to count total attribute keys recursively
+
+
+    const countTotalKeys = function (obj) {
+      let currentDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      let maxDepth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 3;
+      if (!isObject(obj) || currentDepth > maxDepth) return 0;
+      let count = 0;
+
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          count++; // Count this key
+
+          if (Array.isArray(obj[key])) {
+            // Count keys in array elements
+            for (const item of obj[key]) {
+              if (isObject(item)) {
+                count += countTotalKeys(item, currentDepth + 1, maxDepth);
+              }
+            }
+          } else if (isObject(obj[key])) {
+            // Count keys in nested object
+            count += countTotalKeys(obj[key], currentDepth + 1, maxDepth);
+          }
+        }
+      }
+
+      return count;
+    };
+
+    if (!validateObjectArrayCount(cleanedObj)) {
+      return createValidationResult(false, 'Nested object/array count validation failed');
+    } // Count total attribute keys
+
+
+    const totalKeyCount = countTotalKeys(cleanedObj);
+
+    if (totalKeyCount > 100) {
+      return createValidationResult(false, "Maximum 100 attribute keys allowed. Found: ".concat(totalKeyCount));
+    }
+
+    return createValidationResult(true, null, cleanedObj);
+  };
+
   var _logger$8 = _classPrivateFieldLooseKey("logger");
 
   var _oldValues$4 = _classPrivateFieldLooseKey("oldValues");
@@ -8121,10 +8342,17 @@
                 continue;
               }
             } else {
-              if (!isEventStructureFlat(eventObj)) {
-                _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(512, eventName + ' event structure invalid. Not sent.');
+              const validationResult = isObjStructureValid(eventObj, _classPrivateFieldLooseBase(this, _logger$8)[_logger$8], 3);
+
+              if (!validationResult.isValid) {
+                _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(512, "".concat(eventName, " event: ").concat(validationResult.errorMessage, ". Not sent."));
 
                 continue;
+              } // Use cleaned object if provided
+
+
+              if (validationResult.processedObj) {
+                Object.assign(eventObj, validationResult.processedObj);
               }
             }
 
@@ -10318,7 +10546,23 @@
             // organic data from the site
             profileObj = outerObj.Site;
 
-            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
+            if (isObjectEmpty(profileObj)) {
+              return;
+            }
+
+            const validationResult = isObjStructureValid(profileObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7], 3);
+
+            if (!validationResult.isValid) {
+              _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Profile structure invalid: ".concat(validationResult.errorMessage));
+
+              return;
+            }
+
+            if (validationResult.processedObj) {
+              profileObj = validationResult.processedObj;
+            }
+
+            if (!isProfileValid(profileObj, {
               logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]
             })) {
               return;

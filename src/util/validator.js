@@ -129,7 +129,7 @@ const cleanNullEmptyValues = (obj, currentDepth = 0, maxDepth = 3) => {
 }
 
 // Validate 3-level nested event structure
-export const isEventStructureValid = (eventObj, logger, maxDepth = 3) => {
+export const isObjStructureValid = (eventObj, logger, maxDepth = 3) => {
   if (!isObject(eventObj)) {
     return createValidationResult(false, 'Event data must be an object')
   }
