@@ -12110,7 +12110,8 @@
     } else {
       if (isSafari()) {
         // This is for migration case for safari from apns to vapid, show popup even when timer is not expired.
-        if (vapidSupportedAndMigrated || fcmPublicKey === null) {
+        // If PushManager is not available then return
+        if (vapidSupportedAndMigrated || fcmPublicKey === null || !('PushManager' in window)) {
           return;
         }
 
@@ -14092,7 +14093,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.2.1';
+            const sdkVersion = '2.2.2';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -16571,7 +16572,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.2.1',
+        lib: 'web-sdk-v2.2.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18493,7 +18494,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.2.1';
+      return 'web-sdk-v2.2.2';
     }
 
     defineVariable(name, defaultValue) {
