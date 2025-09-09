@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [2.2.2] 9th Sept 2025
-- Fixed hndling of safari web push notifications in iPhone.
+- Fixed handling of safari web push notifications in iPhone.
 
 ## [2.2.1] 1st Sept 2025
 - Added handling for close icon in web popup image only template.
