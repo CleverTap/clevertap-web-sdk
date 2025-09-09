@@ -22,6 +22,7 @@ import {
   $ct
 } from '../util/storage'
 import { compressData } from '../util/encoder'
+import { isObjStructureValid } from '../util/validator'
 export default class ProfileHandler extends Array {
   #logger
   #request
@@ -80,9 +81,18 @@ export default class ProfileHandler extends Array {
           let profileObj
           if (outerObj.Site != null) { // organic data from the site
             profileObj = outerObj.Site
-            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
-              logger: this.#logger
-            })) {
+            if (isObjectEmpty(profileObj)) {
+              return
+            }
+            const validationResult = isObjStructureValid(profileObj, this.#logger, 3)
+            if (!validationResult.isValid) {
+              this.#logger.error(`Profile structure invalid: ${validationResult.errorMessage}`)
+              return
+            }
+            if (validationResult.processedObj) {
+              profileObj = validationResult.processedObj
+            }
+            if (!isProfileValid(profileObj, { logger: this.#logger })) {
               return
             }
           } else if (outerObj.Facebook != null) { // fb connect data
