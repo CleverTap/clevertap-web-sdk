@@ -14011,8 +14011,12 @@
     }
 
     const insertedElements = [];
+    const reorderingOptions = []; // Collect reordering operations to execute at the end
+
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let notificationViewed = false;
+    let pendingElements = 0; // Track elements being processed by tryFindingElement
+
     const payload = {
       msgId: targetingMsgJson.wzrk_id,
       pivotId: targetingMsgJson.wzrk_pivot
@@ -14030,7 +14034,17 @@
     };
 
     const processElement = (element, selector) => {
-      var _selector$isTrackingC;
+      var _selector$reorderingO, _selector$isTrackingC;
+
+      pendingElements--; // Decrement when processing element
+
+      if (selector === null || selector === void 0 ? void 0 : (_selector$reorderingO = selector.reorderingOptions) === null || _selector$reorderingO === void 0 ? void 0 : _selector$reorderingO.positionsChanged) {
+        // Collect drag operation to execute later (after all elements are processed)
+        reorderingOptions.push({
+          element,
+          selector
+        });
+      }
 
       if (selector.elementCSS) {
         updateElementCSS(selector);
@@ -14088,6 +14102,7 @@
           raiseViewed();
           processElement(retryElement, selector);
           clearInterval(intervalId);
+          checkAndApplyReorder(); // Check if we can apply reordering now
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(selector, "'."));
           clearInterval(intervalId);
@@ -14097,6 +14112,7 @@
     };
 
     details.forEach(d => {
+      pendingElements = d.selectorData.length;
       d.selectorData.forEach(s => {
         if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
           insertedElements.push(s);
@@ -14148,6 +14164,7 @@
           raiseViewed();
           processElement(insertedElement, selector);
           clearInterval(intervalId);
+          checkAndApplyReorder(); // Check if we can apply reordering now
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(sibling, "'."));
           clearInterval(intervalId);
@@ -14163,7 +14180,58 @@
         return numA - numB;
       });
       sortedArr.forEach(addNewEl);
-    }
+    } // Check if all elements are processed and apply reordering if ready
+
+
+    const checkAndApplyReorder = () => {
+      if (pendingElements === 0 && reorderingOptions.length > 0) {
+        applyReorder(reorderingOptions);
+      }
+    }; // Execute all reordering operations after all elements have been processed
+
+
+    const applyReorder = reorderingOptions => {
+      reorderingOptions.forEach((_ref) => {
+        let {
+          element,
+          selector
+        } = _ref;
+        // ensure DOM matches layout (safety sync)
+        // newOrder contains ALL child elements in their desired order
+        // First, collect all elements before any DOM manipulation
+        // This prevents nth-child selectors from becoming invalid during reordering
+        const orderedChildren = [];
+        selector.reorderingOptions.newOrder.forEach(cssSelector => {
+          if (cssSelector.includes('-afterend-') || cssSelector.includes('-beforebegin-')) {
+            cssSelector = "[ct-selector=\"".concat(cssSelector, "\"]");
+          }
+
+          const child = document.querySelector(cssSelector);
+
+          if (child && element.contains(child)) {
+            orderedChildren.push(child);
+          }
+        }); // Now reorder using insertBefore with index-based positioning
+
+        orderedChildren.forEach((child, targetIndex) => {
+          const currentIndex = Array.from(element.children).indexOf(child);
+
+          if (currentIndex !== targetIndex) {
+            // Insert child at the correct position
+            const referenceChild = element.children[targetIndex];
+
+            if (referenceChild) {
+              element.insertBefore(child, referenceChild);
+            } else {
+              element.appendChild(child);
+            }
+          }
+        });
+      });
+    }; // Apply reordering immediately if no elements are pending
+
+
+    checkAndApplyReorder();
   };
 
   function findSiblingSelector(input) {
