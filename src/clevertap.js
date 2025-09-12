@@ -35,7 +35,6 @@ import {
   APPLICATION_SERVER_KEY_RECEIVED,
   VARIABLES,
   GCOOKIE_NAME,
-  QUALIFIED_CAMPAIGNS,
   BLOCK_REQUEST_COOKIE,
   ISOLATE_COOKIE
 } from './util/constants'
@@ -1070,14 +1069,5 @@ export default class CleverTap {
 
   addOneTimeVariablesChangedCallback (callback) {
     this.#variableStore.addOneTimeVariablesChangedCallback(callback)
-  }
-
-  /*
-     This function is used for debugging and getting the details of all the campaigns
-     that were qualified and rendered for the current user
-  */
-  getAllQualifiedCampaignDetails () {
-    const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
-    return existingCampaign
   }
 }
