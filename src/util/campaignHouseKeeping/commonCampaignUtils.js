@@ -50,8 +50,7 @@ import {
   mergeEventMap,
   setupClickEvent,
   staleDataUpdate,
-  webNativeDisplayCampaignUtils,
-  addCampaignToLocalStorage
+  webNativeDisplayCampaignUtils
 } from '../campaignRender/utilities.js'
 import { CampaignContext } from './campaignContext.js'
 import _tr from '../tr.js'
@@ -1262,7 +1261,6 @@ export const commonCampaignUtils = {
     if (msg.inbox_notifs) {
       const msgArr = []
       for (let index = 0; index < msg.inbox_notifs.length; index++) {
-        addCampaignToLocalStorage(msg.inbox_notifs[index], CampaignContext.region, CampaignContext.msg?.arp?.id)
         if (this.doCampHouseKeeping(msg.inbox_notifs[index], Logger.getInstance()) !== false) {
           msgArr.push(msg.inbox_notifs[index])
         }
@@ -1283,7 +1281,6 @@ export const commonCampaignUtils = {
     }
 
     for (let index = 0; index < sortedCampaigns.length; index++) {
-      addCampaignToLocalStorage(sortedCampaigns[index], CampaignContext.region, CampaignContext.msg?.arp?.id)
       const targetNotif = sortedCampaigns[index]
 
       if (
