@@ -10,8 +10,7 @@ import {
   WZRK_ID,
   NOTIFICATION_VIEWED,
   WEB_NATIVE_TEMPLATES,
-  WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES,
-  QUALIFIED_CAMPAIGNS
+  WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES
 } from '../constants'
 import { StorageManager, $ct } from '../storage'
 import RequestDispatcher from '../requestDispatcher'
@@ -696,32 +695,4 @@ export function addScriptTo (script, target = 'body') {
   })
   targetEl.appendChild(newScript)
   script.remove()
-}
-
-export function addCampaignToLocalStorage (campaign, region = 'eu1', accountId) {
-  /* No Need to store campaigns in local storage in preview mode */
-  if (campaign?.display?.preview === true) {
-    return
-  }
-
-  const campaignId = campaign.wzrk_id.split('_')[0]
-  const dashboardUrl = `https://${region}.dashboard.clevertap.com/${accountId}/campaigns/campaign/${campaignId}/report/stats`
-
-  const enrichedCampaign = {
-    ...campaign,
-    url: dashboardUrl
-  }
-
-  const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)
-  const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : []
-
-  const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id)
-
-  if (!isDuplicate) {
-    const updatedCampaigns = [...existingCampaigns, enrichedCampaign]
-    StorageManager.saveToLSorCookie(
-      QUALIFIED_CAMPAIGNS,
-      encodeURIComponent(JSON.stringify(updatedCampaigns))
-    )
-  }
 }

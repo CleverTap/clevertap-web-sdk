@@ -219,7 +219,6 @@
   const POPUP_LOADING = 'WZRK_POPUP_LOADING';
   const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview';
   const WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
-  const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
   const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'; // Flag key for optional sub-domain profile isolation
 
@@ -9350,31 +9349,6 @@
     targetEl.appendChild(newScript);
     script.remove();
   }
-  function addCampaignToLocalStorage(campaign) {
-    var _campaign$display3;
-
-    let region = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'eu1';
-    let accountId = arguments.length > 2 ? arguments[2] : undefined;
-
-    /* No Need to store campaigns in local storage in preview mode */
-    if ((campaign === null || campaign === void 0 ? void 0 : (_campaign$display3 = campaign.display) === null || _campaign$display3 === void 0 ? void 0 : _campaign$display3.preview) === true) {
-      return;
-    }
-
-    const campaignId = campaign.wzrk_id.split('_')[0];
-    const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
-    const enrichedCampaign = { ...campaign,
-      url: dashboardUrl
-    };
-    const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
-    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
-    const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
-
-    if (!isDuplicate) {
-      const updatedCampaigns = [...existingCampaigns, enrichedCampaign];
-      StorageManager.saveToLSorCookie(QUALIFIED_CAMPAIGNS, encodeURIComponent(JSON.stringify(updatedCampaigns)));
-    }
-  }
 
   // CleverTap specific utilities
   const getCampaignObject = () => {
@@ -13849,7 +13823,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.2.2';
+            const sdkVersion = '2.2.3';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -15786,10 +15760,6 @@
         const msgArr = [];
 
         for (let index = 0; index < msg.inbox_notifs.length; index++) {
-          var _CampaignContext$msg, _CampaignContext$msg$;
-
-          addCampaignToLocalStorage(msg.inbox_notifs[index], CampaignContext.region, (_CampaignContext$msg = CampaignContext.msg) === null || _CampaignContext$msg === void 0 ? void 0 : (_CampaignContext$msg$ = _CampaignContext$msg.arp) === null || _CampaignContext$msg$ === void 0 ? void 0 : _CampaignContext$msg$.id);
-
           if (this.doCampHouseKeeping(msg.inbox_notifs[index], Logger.getInstance()) !== false) {
             msgArr.push(msg.inbox_notifs[index]);
           }
@@ -15808,9 +15778,6 @@
       };
 
       for (let index = 0; index < sortedCampaigns.length; index++) {
-        var _CampaignContext$msg2, _CampaignContext$msg3;
-
-        addCampaignToLocalStorage(sortedCampaigns[index], CampaignContext.region, (_CampaignContext$msg2 = CampaignContext.msg) === null || _CampaignContext$msg2 === void 0 ? void 0 : (_CampaignContext$msg3 = _CampaignContext$msg2.arp) === null || _CampaignContext$msg3 === void 0 ? void 0 : _CampaignContext$msg3.id);
         const targetNotif = sortedCampaigns[index];
 
         if (targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION || targetNotif.display.wtarget_type === CAMPAIGN_TYPES.FOOTER_NOTIFICATION_2) {
@@ -16328,7 +16295,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.2.2',
+        lib: 'web-sdk-v2.2.3',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18250,7 +18217,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.2.2';
+      return 'web-sdk-v2.2.3';
     }
 
     defineVariable(name, defaultValue) {
@@ -18298,16 +18265,6 @@
 
     addOneTimeVariablesChangedCallback(callback) {
       _classPrivateFieldLooseBase(this, _variableStore)[_variableStore].addOneTimeVariablesChangedCallback(callback);
-    }
-    /*
-       This function is used for debugging and getting the details of all the campaigns
-       that were qualified and rendered for the current user
-    */
-
-
-    getAllQualifiedCampaignDetails() {
-      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
-      return existingCampaign;
     }
 
   }
