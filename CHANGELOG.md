@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.2.3] 9th Sept 2025
+## [2.2.3] 12th Sept 2025
 - Removed Campaigns details from LC
 
 ## [2.2.2] 9th Sept 2025
