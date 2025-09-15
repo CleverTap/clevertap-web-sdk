@@ -7510,7 +7510,8 @@
     variableStore: {},
     pushConfig: null,
     delayEvents: false,
-    intervalArray: [] // domain: window.location.hostname, url -> getHostName()
+    intervalArray: [],
+    enableTVNavigation: false // domain: window.location.hostname, url -> getHostName()
     // gcookie: -> device
 
   };
@@ -8730,6 +8731,14 @@
   const appendScriptForCustomEvent = (targetingMsgJson, html) => {
     const script = "<script>\n      const ct__camapignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => {\n          return v && v.trim().substring(0, 20);\n      }\n      const ct__parentOrigin =  window.parent.origin;\n      document.body.addEventListener('click', (event) => {\n        const elem = event.target.closest?.('a[wzrk_c2a], button[wzrk_c2a]');\n        if (elem) {\n            const {innerText, id, name, value, href} = elem;\n            const clickAttr = elem.getAttribute('onclick') || elem.getAttribute('click');\n            const onclickURL = clickAttr?.match(/(window.open)[(](\"|')(.*)(\"|',)/)?.[3] || clickAttr?.match(/(location.href *= *)(\"|')(.*)(\"|')/)?.[3];\n            const props = {innerText, id, name, value};\n            let msgCTkv = Object.keys(props).reduce((acc, c) => {\n                const formattedVal = ct__formatVal(props[c]);\n                formattedVal && (acc['wzrk_click_' + c] = formattedVal);\n                return acc;\n            }, {});\n            if(onclickURL) { msgCTkv['wzrk_click_' + 'url'] = onclickURL; }\n            if(href) { msgCTkv['wzrk_click_' + 'c2a'] = href; }\n            const notifData = { msgId: ct__camapignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' };\n            window.parent.clevertap.renderNotificationClicked(notifData);\n        }\n      });\n      </script>\n    ");
     return html.replace(/(<\s*\/\s*body)/, "".concat(script, "\n$1"));
+  };
+  const appendTVNavigationScript = (targetingMsgJson, html) => {
+    console.log('$ct.enableTVNavigation in Web Popup Script', $ct.enableTVNavigation);
+    const script = "<script>\n      const ct__campaignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => v && v.trim().substring(0, 20);\n      \n      let focusableElements = [];\n      let currentFocusIndex = 0;\n      \n      function init() {\n          focusableElements = Array.from(document.querySelectorAll('button, a[href], a[wzrk_c2a], button[wzrk_c2a], input:not([type=\"hidden\"]), .wzrkClose')).filter(el => window.getComputedStyle(el).display !== 'none');\n          if (focusableElements.length > 0) { focusElement(0); }\n      }\n      \n      function focusElement(index) {\n          focusableElements.forEach(el => el.classList.remove('ct-tv-focused'));\n          currentFocusIndex = index;\n          if (focusableElements[currentFocusIndex]) { focusableElements[currentFocusIndex].classList.add('ct-tv-focused'); focusableElements[currentFocusIndex].focus(); }\n      }\n      \n      function navigate(direction) {\n          if (focusableElements.length === 0) return;\n          let newIndex = direction === 'next' ? Math.min(focusableElements.length - 1, currentFocusIndex + 1) : Math.max(0, currentFocusIndex - 1);\n          if (newIndex !== currentFocusIndex) focusElement(newIndex);\n      }\n      \n      function activate() {\n          const element = focusableElements[currentFocusIndex];\n          if (element) {\n              if (element.hasAttribute('wzrk_c2a')) {\n                  const {innerText, id, name, value, href} = element;\n                  let msgCTkv = Object.keys({innerText, id, name, value}).reduce((acc, c) => { const formattedVal = ct__formatVal(element[c]); formattedVal && (acc['wzrk_click_' + c] = formattedVal); return acc; }, {});\n                  if(href) msgCTkv['wzrk_click_c2a'] = href;\n                  window.parent.clevertap.renderNotificationClicked({ msgId: ct__campaignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' });\n              }\n              element.click();\n          }\n      }\n      \n      document.addEventListener('keydown', function(event) { \n          event.preventDefault(); \n          switch (event.keyCode) { \n              case 37: case 38: navigate('prev'); break; \n              case 39: case 40: navigate('next'); break; \n              case 13: activate(); break; \n              case 10009: case 10182: const closeBtn = document.querySelector('.wzrkClose'); if (closeBtn) closeBtn.click(); break; \n          } \n      }, { passive: false });\n      \n      const style = document.createElement('style'); \n      style.textContent = '.ct-tv-focused { outline: 3px solid #00ff00 !important; background-color: #0078d4 !important; color: white !important; transform: scale(1.05) !important; }'; \n      document.head.appendChild(style);\n      \n      document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();\n      </script>"); // Since there's no </body> tag, append the script at the end of the HTML
+
+    const modifiedHtml = html + script;
+    console.log('Script appended, new HTML length:', modifiedHtml.length);
+    return modifiedHtml;
   };
   const staleDataUpdate = (staledata, campType) => {
     const campObj = getCampaignObject();
@@ -15307,6 +15316,10 @@
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
+      if ($ct.enableTVNavigation) {
+        html = appendTVNavigationScript(targetingMsgJson, html);
+      }
+
       iframe.srcdoc = html; // Adjusts iframe height based on content
 
       const adjustIFrameHeight = () => {
@@ -17145,6 +17158,333 @@
     _classPrivateFieldLooseBase(this, _oneTimeVariablesChangedCallbacks)[_oneTimeVariablesChangedCallbacks].length = 0;
   };
 
+  // tvNavigation.js - Universal TV Navigation Module for all TV platforms
+
+  class TVNavigation {
+    constructor(logger) {
+      this.logger = logger;
+      this.isEnabled = false;
+      this.currentMenu = null;
+      this.focusableElements = [];
+      this.currentFocusIndex = 0; // Universal TV key mappings (standard across all platforms)
+
+      this.keyMappings = {
+        up: 38,
+        down: 40,
+        left: 37,
+        right: 39,
+        enter: 13,
+        back: 10009,
+        // Tizen back key
+        exit: 10182,
+        // Tizen exit key
+        webosBack: 461,
+        // webOS back key
+        webosExit: 27 // webOS exit key (ESC)
+
+      }; // Detect TV platform
+
+      this.platform = this.detectTVPlatform();
+      this.logger.debug('TV Platform detected:', this.platform);
+    } // Detect which TV platform we're running on
+
+
+    detectTVPlatform() {
+      if (typeof window.tizen !== 'undefined') {
+        return 'tizen';
+      }
+
+      if (typeof window.webOS !== 'undefined') {
+        return 'webos';
+      }
+
+      if (typeof window.Samsung !== 'undefined') {
+        return 'samsung';
+      }
+
+      if (typeof window.androidTV !== 'undefined') {
+        return 'androidtv';
+      }
+
+      if (navigator.userAgent.includes('SMART-TV') || navigator.userAgent.includes('SmartTV')) {
+        return 'smarttv';
+      }
+
+      return 'browser';
+    } // Initialize TV navigation system
+
+
+    init() {
+      if (!$ct.enableTVNavigation) {
+        this.logger.debug('TV Navigation disabled');
+        return;
+      }
+
+      this.isEnabled = true;
+      this.setupPlatformSpecificKeys();
+      this.setupKeyHandler();
+      this.findFocusableElements();
+      this.addFocusStyles(); // Focus first element if available
+
+      if (this.focusableElements.length > 0) {
+        this.focusElement(0);
+      }
+
+      this.logger.debug("CleverTap TV Navigation initialized for ".concat(this.platform, " with ").concat(this.focusableElements.length, " elements"));
+    } // Setup platform-specific key registrations
+
+
+    setupPlatformSpecificKeys() {
+      try {
+        switch (this.platform) {
+          case 'tizen':
+            // Register Tizen TV keys
+            if (window.tizen && window.tizen.tvinputdevice) {
+              window.tizen.tvinputdevice.registerKey('ColorF0Red');
+              window.tizen.tvinputdevice.registerKey('ColorF1Green');
+              window.tizen.tvinputdevice.registerKey('ColorF2Yellow');
+              window.tizen.tvinputdevice.registerKey('ColorF3Blue');
+              this.logger.debug('Tizen TV keys registered');
+            }
+
+            break;
+
+          case 'webos':
+            // webOS key setup if needed
+            this.logger.debug('webOS TV keys ready');
+            break;
+
+          case 'samsung':
+            // Samsung Smart TV key setup
+            this.logger.debug('Samsung TV keys ready');
+            break;
+
+          default:
+            this.logger.debug('Generic TV key setup');
+        }
+      } catch (error) {
+        this.logger.debug('Could not register platform-specific keys:', error.message);
+      }
+    } // Find all focusable elements on the page
+
+
+    findFocusableElements() {
+      this.focusableElements = Array.from(document.querySelectorAll('button, [role="button"], input[type="button"], input[type="submit"], ' + 'a[href], select, textarea, input:not([type="hidden"]):not([disabled]), ' + '[tabindex]:not([tabindex="-1"]), [data-list-item]')).filter(element => {
+        const style = window.getComputedStyle(element);
+        return style.display !== 'none' && style.visibility !== 'hidden' && element.offsetParent !== null;
+      });
+    } // Setup global key handler
+
+
+    setupKeyHandler() {
+      document.addEventListener('keydown', event => {
+        if (!this.isEnabled) return;
+        this.handleKeyPress(event);
+      }, {
+        capture: true,
+        passive: false
+      });
+    } // Handle key press events - Universal TV platform support
+
+
+    handleKeyPress(event) {
+      if (this.focusableElements.length === 0) {
+        this.findFocusableElements();
+        return;
+      } // Define which keys to handle based on platform
+
+
+      const navigationKeys = [this.keyMappings.up, this.keyMappings.down, this.keyMappings.left, this.keyMappings.right, this.keyMappings.enter];
+      const backKeys = [this.keyMappings.back, // Tizen back
+      this.keyMappings.exit, // Tizen exit
+      this.keyMappings.webosBack, // webOS back
+      this.keyMappings.webosExit // webOS exit/ESC
+      ]; // Prevent default behavior for TV keys
+
+      if (navigationKeys.includes(event.keyCode) || backKeys.includes(event.keyCode)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      switch (event.keyCode) {
+        case this.keyMappings.up:
+        case this.keyMappings.left:
+          this.navigate('prev');
+          break;
+
+        case this.keyMappings.down:
+        case this.keyMappings.right:
+          this.navigate('next');
+          break;
+
+        case this.keyMappings.enter:
+          this.activate();
+          break;
+
+        case this.keyMappings.back:
+        case this.keyMappings.exit:
+        case this.keyMappings.webosBack:
+        case this.keyMappings.webosExit:
+          this.handleExit();
+          break;
+
+        default:
+          // Log unhandled keys for debugging
+          this.logger.debug('Unhandled key code:', event.keyCode);
+      }
+    } // Navigate between elements
+
+
+    navigate(direction) {
+      if (this.focusableElements.length === 0) return;
+      let newIndex = this.currentFocusIndex;
+
+      if (direction === 'prev') {
+        newIndex = Math.max(0, this.currentFocusIndex - 1);
+      } else if (direction === 'next') {
+        newIndex = Math.min(this.focusableElements.length - 1, this.currentFocusIndex + 1);
+      }
+
+      if (newIndex !== this.currentFocusIndex) {
+        this.focusElement(newIndex);
+      }
+    } // Focus specific element
+
+
+    focusElement(index) {
+      if (index < 0 || index >= this.focusableElements.length) return; // Remove focus from current element
+
+      if (this.focusableElements[this.currentFocusIndex]) {
+        this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused');
+        this.focusableElements[this.currentFocusIndex].blur();
+      } // Focus new element
+
+
+      this.currentFocusIndex = index;
+      const element = this.focusableElements[this.currentFocusIndex];
+
+      if (element) {
+        element.classList.add('ct-tv-focused');
+        element.focus();
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+        this.logger.debug('TV Navigation focused:', element.tagName, element.textContent || element.id);
+      }
+    } // Activate current element
+
+
+    activate() {
+      const element = this.focusableElements[this.currentFocusIndex];
+
+      if (element) {
+        if (element.tagName === 'BUTTON' || element.tagName === 'A') {
+          element.click();
+        } else if (element.tagName === 'INPUT') {
+          if (element.type === 'button' || element.type === 'submit') {
+            element.click();
+          } else {
+            element.focus();
+            this.logger.debug('TV Navigation: Text input focused, virtual keyboard should appear');
+          }
+        }
+      }
+    } // Handle exit functionality - Universal TV platform support
+
+
+    handleExit() {
+      this.logger.debug('TV Navigation: Exit requested');
+
+      try {
+        // Tizen TV
+        if (typeof window.tizen !== 'undefined' && window.tizen.application) {
+          window.tizen.application.getCurrentApplication().exit();
+          return;
+        } // LG webOS
+
+
+        if (typeof window.webOS !== 'undefined' && window.webOS.platformBack) {
+          window.webOS.platformBack();
+          return;
+        } // Samsung Legacy
+
+
+        if (typeof window.Samsung !== 'undefined' && window.Samsung.Application) {
+          window.Samsung.Application.exit();
+          return;
+        } // Android TV
+
+
+        if (typeof window.androidTV !== 'undefined' && window.androidTV.exit) {
+          window.androidTV.exit();
+          return;
+        } // Generic/Browser fallback
+
+
+        this.logger.debug('No TV platform API available - using browser fallback');
+
+        if (typeof window.close === 'function') {
+          window.close();
+        } else {
+          this.logger.debug('Cannot exit - no exit method available');
+        }
+      } catch (error) {
+        this.logger.error('Exit error:', error);
+      }
+    } // Add TV focus styles
+
+
+    addFocusStyles() {
+      if (document.getElementById('ct-tv-styles')) return;
+      const style = document.createElement('style');
+      style.id = 'ct-tv-styles';
+      style.textContent = "\n      .ct-tv-focused {\n        outline: 3px solid #00ff00 !important;\n        outline-offset: 2px !important;\n        background-color: #0078d4 !important;\n        color: white !important;\n        transform: scale(1.05) !important;\n        transition: all 0.2s ease !important;\n        box-shadow: 0 0 15px rgba(0, 255, 0, 0.8) !important;\n        z-index: 9999 !important;\n        position: relative !important;\n      }\n      \n      .ct-tv-focused:focus {\n        outline: 3px solid #00ff00 !important;\n      }\n    ";
+      document.head.appendChild(style);
+    } // Refresh focusable elements (call when DOM changes)
+
+
+    refresh() {
+      this.findFocusableElements(); // Ensure current focus is still valid
+
+      if (this.currentFocusIndex >= this.focusableElements.length) {
+        this.currentFocusIndex = Math.max(0, this.focusableElements.length - 1);
+      }
+
+      if (this.focusableElements.length > 0) {
+        this.focusElement(this.currentFocusIndex);
+      }
+    } // Enable TV navigation
+
+
+    enable() {
+      this.isEnabled = true;
+      this.logger.debug('TV Navigation enabled');
+    } // Disable TV navigation
+
+
+    disable() {
+      this.isEnabled = false; // Remove focus styling
+
+      if (this.focusableElements[this.currentFocusIndex]) {
+        this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused');
+      }
+
+      this.logger.debug('TV Navigation disabled');
+    } // Get current state
+
+
+    getState() {
+      return {
+        isEnabled: this.isEnabled,
+        currentFocusIndex: this.currentFocusIndex,
+        totalElements: this.focusableElements.length,
+        platform: this.platform
+      };
+    }
+
+  }
+
   var _logger = _classPrivateFieldLooseKey("logger");
 
   var _api = _classPrivateFieldLooseKey("api");
@@ -17170,6 +17510,8 @@
   var _dismissSpamControl = _classPrivateFieldLooseKey("dismissSpamControl");
 
   var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
+
+  var _tvNavigation = _classPrivateFieldLooseKey("tvNavigation");
 
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
@@ -17298,6 +17640,10 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _tvNavigation, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
@@ -17332,6 +17678,8 @@
         session: _classPrivateFieldLooseBase(this, _session)[_session],
         isPersonalisationActive: this._isPersonalisationActive
       });
+      this.configFromObject = clevertap.config || {};
+      _classPrivateFieldLooseBase(this, _tvNavigation)[_tvNavigation] = new TVNavigation(_classPrivateFieldLooseBase(this, _logger)[_logger]);
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
@@ -17957,7 +18305,7 @@
         // Needed to maintain backward compatability with legacy implementations.
         // Npm imports/require will need to call init explictly with accountId
         StorageManager.saveToLSorCookie(ACCOUNT_ID, (_clevertap$account7 = clevertap.account) === null || _clevertap$account7 === void 0 ? void 0 : _clevertap$account7[0].id);
-        this.init();
+        this.init(null, null, null, null, this.configFromObject);
       }
     }
 
@@ -17985,17 +18333,25 @@
     }
 
     init(accountId, region, targetDomain, token) {
-      let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
+      let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
+      const finalConfig = {
+        // Default values
         antiFlicker: {},
         customId: null,
-        isolateSubdomain: false
+        isolateSubdomain: false,
+        isTV: false,
+        enableCThandler: false,
+        // Override with constructor config (script-based)
+        ...this.configFromObject,
+        // Override with init config (npm-based) - takes highest priority
+        ...config
       };
 
-      if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
+      if ((finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.antiFlicker) && Object.keys(finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.antiFlicker).length > 0) {
         addAntiFlicker(config.antiFlicker);
       }
 
-      if (config === null || config === void 0 ? void 0 : config.isolateSubdomain) {
+      if (finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.isolateSubdomain) {
         StorageManager.saveToLSorCookie(ISOLATE_COOKIE, true);
       }
 
@@ -18006,6 +18362,18 @@
 
       if (accountId) {
         encryption.key = accountId;
+      }
+
+      if ((finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.isTV) && (finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.enableCThandler)) {
+        // CleverTap handles navigation
+        $ct.enableTVNavigation = true;
+        console.log('CleverTap TV Navigation Mode: CleverTap will handle all navigation'); // Initialize CleverTap TV navigation system
+
+        _classPrivateFieldLooseBase(this, _tvNavigation)[_tvNavigation].init();
+      } else if (finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.isTV) {
+        // Customer handles navigation (default)
+        $ct.enableTVNavigation = false;
+        console.log('CleverTap TV Navigation Mode: Customer handles navigation');
       }
 
       StorageManager.removeCookie('WZRK_P', window.location.hostname);
@@ -18040,7 +18408,7 @@
         _classPrivateFieldLooseBase(this, _account)[_account].token = token;
       }
 
-      if (config === null || config === void 0 ? void 0 : config.customId) {
+      if (finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.customId) {
         this.createCustomIdIfValid(config.customId);
       } // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
       // This ensures user identity is established before other events

@@ -51,7 +51,8 @@ import {
   setupClickEvent,
   staleDataUpdate,
   webNativeDisplayCampaignUtils,
-  addCampaignToLocalStorage
+  addCampaignToLocalStorage,
+  appendTVNavigationScript
 } from '../campaignRender/utilities.js'
 import { CampaignContext } from './campaignContext.js'
 import _tr from '../tr.js'
@@ -685,6 +686,9 @@ export const commonCampaignUtils = {
     if (displayObj['custom-editor']) {
       // Adds custom event scripts if needed
       html = appendScriptForCustomEvent(targetingMsgJson, html)
+    }
+    if ($ct.enableTVNavigation) {
+      html = appendTVNavigationScript(targetingMsgJson, html)
     }
     iframe.srcdoc = html
 

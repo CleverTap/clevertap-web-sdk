@@ -58,6 +58,71 @@ export const appendScriptForCustomEvent = (targetingMsgJson, html) => {
   return html.replace(/(<\s*\/\s*body)/, `${script}\n$1`)
 }
 
+export const appendTVNavigationScript = (targetingMsgJson, html) => {
+  console.log('$ct.enableTVNavigation in Web Popup Script', $ct.enableTVNavigation)
+
+  const script = `<script>
+      const ct__campaignId = '${targetingMsgJson.wzrk_id}';
+      const ct__formatVal = (v) => v && v.trim().substring(0, 20);
+      
+      let focusableElements = [];
+      let currentFocusIndex = 0;
+      
+      function init() {
+          focusableElements = Array.from(document.querySelectorAll('button, a[href], a[wzrk_c2a], button[wzrk_c2a], input:not([type="hidden"]), .wzrkClose')).filter(el => window.getComputedStyle(el).display !== 'none');
+          if (focusableElements.length > 0) { focusElement(0); }
+      }
+      
+      function focusElement(index) {
+          focusableElements.forEach(el => el.classList.remove('ct-tv-focused'));
+          currentFocusIndex = index;
+          if (focusableElements[currentFocusIndex]) { focusableElements[currentFocusIndex].classList.add('ct-tv-focused'); focusableElements[currentFocusIndex].focus(); }
+      }
+      
+      function navigate(direction) {
+          if (focusableElements.length === 0) return;
+          let newIndex = direction === 'next' ? Math.min(focusableElements.length - 1, currentFocusIndex + 1) : Math.max(0, currentFocusIndex - 1);
+          if (newIndex !== currentFocusIndex) focusElement(newIndex);
+      }
+      
+      function activate() {
+          const element = focusableElements[currentFocusIndex];
+          if (element) {
+              if (element.hasAttribute('wzrk_c2a')) {
+                  const {innerText, id, name, value, href} = element;
+                  let msgCTkv = Object.keys({innerText, id, name, value}).reduce((acc, c) => { const formattedVal = ct__formatVal(element[c]); formattedVal && (acc['wzrk_click_' + c] = formattedVal); return acc; }, {});
+                  if(href) msgCTkv['wzrk_click_c2a'] = href;
+                  window.parent.clevertap.renderNotificationClicked({ msgId: ct__campaignId, msgCTkv, pivotId: '${targetingMsgJson.wzrk_pivot}' });
+              }
+              element.click();
+          }
+      }
+      
+      document.addEventListener('keydown', function(event) { 
+          event.preventDefault(); 
+          switch (event.keyCode) { 
+              case 37: case 38: navigate('prev'); break; 
+              case 39: case 40: navigate('next'); break; 
+              case 13: activate(); break; 
+              case 10009: case 10182: const closeBtn = document.querySelector('.wzrkClose'); if (closeBtn) closeBtn.click(); break; 
+          } 
+      }, { passive: false });
+      
+      const style = document.createElement('style'); 
+      style.textContent = '.ct-tv-focused { outline: 3px solid #00ff00 !important; background-color: #0078d4 !important; color: white !important; transform: scale(1.05) !important; }'; 
+      document.head.appendChild(style);
+      
+      document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
+      </script>`
+
+  // Since there's no </body> tag, append the script at the end of the HTML
+  const modifiedHtml = html + script
+
+  console.log('Script appended, new HTML length:', modifiedHtml.length)
+
+  return modifiedHtml
+}
+
 export const staleDataUpdate = (staledata, campType) => {
   const campObj = getCampaignObject()
   const globalObj = campObj[campType].global

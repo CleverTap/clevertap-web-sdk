@@ -55,6 +55,7 @@ import encryption from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
 import { checkWebPopupPreview } from './util/campaignRender/webPopup'
 import { reconstructNestedObject, validateCustomCleverTapID } from './util/helpers'
+import TVNavigation from './modules/tvNavigation'
 
 export default class CleverTap {
   #logger
@@ -71,6 +72,7 @@ export default class CleverTap {
   #dismissSpamControl
   enablePersonalization
   #pageChangeTimeoutId
+  #tvNavigation
 
   get spa () {
     return this.#isSpa
@@ -128,6 +130,9 @@ export default class CleverTap {
       session: this.#session,
       isPersonalisationActive: this._isPersonalisationActive
     })
+    this.configFromObject = clevertap.config || {}
+
+    this.#tvNavigation = new TVNavigation(this.#logger)
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
       logger: this.#logger,
@@ -655,7 +660,7 @@ export default class CleverTap {
       // Needed to maintain backward compatability with legacy implementations.
       // Npm imports/require will need to call init explictly with accountId
       StorageManager.saveToLSorCookie(ACCOUNT_ID, clevertap.account?.[0].id)
-      this.init()
+      this.init(null, null, null, null, this.configFromObject)
     }
   }
 
@@ -680,12 +685,26 @@ export default class CleverTap {
     }
   }
 
-  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false }) {
-    if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
+  init (accountId, region, targetDomain, token, config = {}) {
+    const finalConfig = {
+    // Default values
+      antiFlicker: {},
+      customId: null,
+      isolateSubdomain: false,
+      isTV: false,
+      enableCThandler: false,
+
+      // Override with constructor config (script-based)
+      ...this.configFromObject,
+
+      // Override with init config (npm-based) - takes highest priority
+      ...config
+    }
+    if (finalConfig?.antiFlicker && Object.keys(finalConfig?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
     }
 
-    if (config?.isolateSubdomain) {
+    if (finalConfig?.isolateSubdomain) {
       StorageManager.saveToLSorCookie(ISOLATE_COOKIE, true)
     }
 
@@ -696,6 +715,19 @@ export default class CleverTap {
 
     if (accountId) {
       encryption.key = accountId
+    }
+
+    if (finalConfig?.isTV && finalConfig?.enableCThandler) {
+      // CleverTap handles navigation
+      $ct.enableTVNavigation = true
+      console.log('CleverTap TV Navigation Mode: CleverTap will handle all navigation')
+
+      // Initialize CleverTap TV navigation system
+      this.#tvNavigation.init()
+    } else if (finalConfig?.isTV) {
+      // Customer handles navigation (default)
+      $ct.enableTVNavigation = false
+      console.log('CleverTap TV Navigation Mode: Customer handles navigation')
     }
 
     StorageManager.removeCookie('WZRK_P', window.location.hostname)
@@ -721,7 +753,7 @@ export default class CleverTap {
     if (token) {
       this.#account.token = token
     }
-    if (config?.customId) {
+    if (finalConfig?.customId) {
       this.createCustomIdIfValid(config.customId)
     }
     // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
