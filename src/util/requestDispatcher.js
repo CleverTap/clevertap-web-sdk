@@ -47,9 +47,9 @@ export default class RequestDispatcher {
       }
     } else {
       if (!isValueValid(this.device.gcookie) &&
-      ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
-      tries < MAX_TRIES) {
-      // if ongoing First Request is in progress, initiate retry
+        ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
+        tries < MAX_TRIES) {
+        // if ongoing First Request is in progress, initiate retry
         setTimeout(async () => {
           this.logger.debug(`retrying fire request for url: ${url}, tries: ${tries}`)
           await this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
@@ -61,7 +61,7 @@ export default class RequestDispatcher {
       // when sendOULFlag is set to true
       if (!sendOULFlag) {
         if (isValueValid(this.device.gcookie)) {
-        // add gcookie to url
+          // add gcookie to url
           url = addToURL(url, 'gc', this.device.gcookie)
         }
         url = await this.#addARPToRequest(url, skipARP)
@@ -70,7 +70,9 @@ export default class RequestDispatcher {
       }
 
       url = addToURL(url, 'tries', tries) // Add tries to URL
-      url = addToURL(url, 'origin', window?.location?.origin ?? window?.location?.href) // Add origin to URL
+      if (typeof window !== 'undefined') {
+        url = addToURL(url, 'origin', window?.location?.origin ?? window?.location?.href) // Add origin to URL
+      }
 
       url = await this.#addUseIPToRequest(url)
       url = addToURL(url, 'r', new Date().getTime()) // add epoch to beat caching of the URL
@@ -79,9 +81,9 @@ export default class RequestDispatcher {
       }
 
       if (ModeManager.mode === 'WEB') {
-      // TODO: Figure out a better way to handle plugin check
+        // TODO: Figure out a better way to handle plugin check
         if (window.clevertap?.hasOwnProperty('plugin') || window.wizrocket?.hasOwnProperty('plugin')) {
-        // used to add plugin name in request parameter
+          // used to add plugin name in request parameter
           const plugin = window.clevertap.plugin || window.wizrocket.plugin
           url = addToURL(url, 'ct_pl', plugin)
         }

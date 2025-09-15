@@ -249,67 +249,26 @@ export default class RequestManager {
   }
 
   async processEvent (data) {
-    const isShopify = mode.mode === 'SHOPIFY'
-    // Capture core event before system enrichment
-    const coreEvent = { type: data.type, evtName: data.evtName }
+    let coreEvent = { ...data }
     if (data.hasOwnProperty('evtData')) {
-      coreEvent.evtData = data.evtData
+      coreEvent.evtData = { data: JSON.parse(JSON.stringify(data.evtData)) }
+      delete data.evtData
     }
-    await this.#addToLocalEventMap(data.evtName)
-    data = this.addSystemDataToObject(data, undefined)
-    this.addFlags(data)
-    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
-
-    const compressedSystemData = compressData(JSON.stringify(data), this.#logger)
+    await this.#addToLocalEventMap(coreEvent.evtName)
+    coreEvent = await this.addSystemDataToObject(coreEvent, undefined)
+    this.addFlags(coreEvent)
+    if (mode.mode === 'WEB') {
+      data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    }
+    const eventWithoutData = { ...coreEvent }
+    delete eventWithoutData.evtData
+    const compressedSystemData = compressData(JSON.stringify(eventWithoutData), this.#logger)
+    const compressedCoreEvent = compressData(JSON.stringify(coreEvent), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedSystemData)
 
-    let body
-    if (isShopify) {
-      body = JSON.stringify(coreEvent)
-      pageLoadUrl = addToURL(pageLoadUrl, 'body', '1')
-    }
-
-    await this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName, body)
-  }
-
-  registerToken (payload) {
-    if (!payload) return
-    // add gcookie etc to the payload
-    payload = this.addSystemDataToObject(payload, true)
-    payload = JSON.stringify(payload)
-    let pageLoadUrl = this.#account.dataPostURL
-    pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
-    RequestDispatcher.fireRequest(pageLoadUrl)
-    // set in localstorage
-    StorageManager.save(WEBPUSH_LS_KEY, 'ok')
-  }
-
-  processEvent (data) {
-    const isShopify = mode.mode === 'SHOPIFY'
-    const coreEvent = { type: data.type, evtName: data.evtName }
-    if (data.hasOwnProperty('evtData')) {
-      coreEvent.evtData = data.evtData
-    }
-    this.#addToLocalEventMap(data.evtName)
-    data = this.addSystemDataToObject(data, undefined)
-    this.addFlags(data)
-    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
-
-    const compressedSystemData = compressData(JSON.stringify(data), this.#logger)
-    let pageLoadUrl = this.#account.dataPostURL
-    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedSystemData)
-
-    let body
-    if (isShopify) {
-      body = JSON.stringify(coreEvent)
-      pageLoadUrl = addToURL(pageLoadUrl, 'body', '1')
-    }
-
-    this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName, body)
+    await this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName, compressedCoreEvent)
   }
 
   async #addToLocalEventMap (evtName) {

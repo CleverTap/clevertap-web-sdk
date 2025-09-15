@@ -149,7 +149,7 @@ class ClevertapShopify {
     }
 
     // @todo make a decision whether we want to directly send privacy as true
-    await this.pageChanged()
+    // await this.pageChanged()
   }
 
   /**

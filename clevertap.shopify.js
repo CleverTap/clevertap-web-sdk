@@ -2596,8 +2596,6 @@ var clevertapShopify = (function () {
           }, this.getDelayFrequency());
         }
       } else {
-        var _window$location$orig, _window, _window$location, _window2, _window2$location;
-
         if (!isValueValid(this.device.gcookie) && $ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1 && tries < MAX_TRIES) {
           // if ongoing First Request is in progress, initiate retry
           setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
@@ -2623,7 +2621,11 @@ var clevertapShopify = (function () {
 
         url = addToURL(url, 'tries', tries); // Add tries to URL
 
-        url = addToURL(url, 'origin', (_window$location$orig = (_window = window) === null || _window === void 0 ? void 0 : (_window$location = _window.location) === null || _window$location === void 0 ? void 0 : _window$location.origin) !== null && _window$location$orig !== void 0 ? _window$location$orig : (_window2 = window) === null || _window2 === void 0 ? void 0 : (_window2$location = _window2.location) === null || _window2$location === void 0 ? void 0 : _window2$location.href); // Add origin to URL
+        if (typeof window !== 'undefined') {
+          var _window$location$orig, _window, _window$location, _window2, _window2$location;
+
+          url = addToURL(url, 'origin', (_window$location$orig = (_window = window) === null || _window === void 0 ? void 0 : (_window$location = _window.location) === null || _window$location === void 0 ? void 0 : _window$location.origin) !== null && _window$location$orig !== void 0 ? _window$location$orig : (_window2 = window) === null || _window2 === void 0 ? void 0 : (_window2$location = _window2.location) === null || _window2$location === void 0 ? void 0 : _window2$location.href); // Add origin to URL
+        }
 
         url = yield _classPrivateFieldLooseBase(this, _addUseIPToRequest)[_addUseIPToRequest](url);
         url = addToURL(url, 'r', new Date().getTime()); // add epoch to beat caching of the URL
@@ -3028,85 +3030,36 @@ var clevertapShopify = (function () {
       var _this7 = this;
 
       return _asyncToGenerator(function* () {
-        var isShopify = mode.mode === 'SHOPIFY'; // Capture core event before system enrichment
-
-        var coreEvent = {
-          type: data.type,
-          evtName: data.evtName
-        };
+        var coreEvent = _objectSpread2({}, data);
 
         if (data.hasOwnProperty('evtData')) {
-          coreEvent.evtData = data.evtData;
+          coreEvent.evtData = {
+            data: JSON.parse(JSON.stringify(data.evtData))
+          };
+          delete data.evtData;
         }
 
-        yield _classPrivateFieldLooseBase(_this7, _addToLocalEventMap)[_addToLocalEventMap](data.evtName);
-        data = _this7.addSystemDataToObject(data, undefined);
+        yield _classPrivateFieldLooseBase(_this7, _addToLocalEventMap)[_addToLocalEventMap](coreEvent.evtName);
+        coreEvent = yield _this7.addSystemDataToObject(coreEvent, undefined);
 
-        _this7.addFlags(data);
+        _this7.addFlags(coreEvent);
 
-        data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
-        var compressedSystemData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(_this7, _logger$3)[_logger$3]);
+        if (mode.mode === 'WEB') {
+          data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
+        }
+
+        var eventWithoutData = _objectSpread2({}, coreEvent);
+
+        delete eventWithoutData.evtData;
+        var compressedSystemData = compressData(JSON.stringify(eventWithoutData), _classPrivateFieldLooseBase(_this7, _logger$3)[_logger$3]);
+        var compressedCoreEvent = compressData(JSON.stringify(coreEvent), _classPrivateFieldLooseBase(_this7, _logger$3)[_logger$3]);
 
         var pageLoadUrl = _classPrivateFieldLooseBase(_this7, _account$2)[_account$2].dataPostURL;
 
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedSystemData);
-        var body;
-
-        if (isShopify) {
-          body = JSON.stringify(coreEvent);
-          pageLoadUrl = addToURL(pageLoadUrl, 'body', '1');
-        }
-
-        yield _this7.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName, body);
+        yield _this7.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName, compressedCoreEvent);
       })();
-    }
-
-    registerToken(payload) {
-      if (!payload) return; // add gcookie etc to the payload
-
-      payload = this.addSystemDataToObject(payload, true);
-      payload = JSON.stringify(payload);
-
-      var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
-
-      pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data');
-      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]));
-      RequestDispatcher.fireRequest(pageLoadUrl); // set in localstorage
-
-      StorageManager.save(WEBPUSH_LS_KEY, 'ok');
-    }
-
-    processEvent(data) {
-      var isShopify = mode.mode === 'SHOPIFY';
-      var coreEvent = {
-        type: data.type,
-        evtName: data.evtName
-      };
-
-      if (data.hasOwnProperty('evtData')) {
-        coreEvent.evtData = data.evtData;
-      }
-
-      _classPrivateFieldLooseBase(this, _addToLocalEventMap)[_addToLocalEventMap](data.evtName);
-
-      data = this.addSystemDataToObject(data, undefined);
-      this.addFlags(data);
-      data[CAMP_COOKIE_NAME] = getCampaignObjForLc();
-      var compressedSystemData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$3)[_logger$3]);
-
-      var pageLoadUrl = _classPrivateFieldLooseBase(this, _account$2)[_account$2].dataPostURL;
-
-      pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedSystemData);
-      var body;
-
-      if (isShopify) {
-        body = JSON.stringify(coreEvent);
-        pageLoadUrl = addToURL(pageLoadUrl, 'body', '1');
-      }
-
-      this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName, body);
     }
 
     post(url, body) {
@@ -4092,9 +4045,8 @@ var clevertapShopify = (function () {
         if (logLevel) {
           _classPrivateFieldLooseBase(_this, _logger)[_logger].logLevelValue = logLevel;
         } // @todo make a decision whether we want to directly send privacy as true
+        // await this.pageChanged()
 
-
-        yield _this.pageChanged();
       })();
     }
     /**
