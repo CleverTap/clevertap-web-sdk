@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] 10th Sept 2025
+- Introduced list reordering in Web Native Display - Visual Editor.
+
 ## [2.2.2] 9th Sept 2025
 - Fixed handling of safari web push notifications in iPhone.
 
