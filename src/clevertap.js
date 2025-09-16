@@ -37,7 +37,8 @@ import {
   GCOOKIE_NAME,
   QUALIFIED_CAMPAIGNS,
   BLOCK_REQUEST_COOKIE,
-  ISOLATE_COOKIE
+  ISOLATE_COOKIE,
+  ENABLE_TV_CONTROLS
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -111,7 +112,6 @@ export default class CleverTap {
     // Custom Guid will be set here
 
     const result = validateCustomCleverTapID(clevertap?.config?.customId)
-
     if (!result.isValid && clevertap?.config?.customId) {
       this.#logger.error(result.error)
     }
@@ -130,8 +130,6 @@ export default class CleverTap {
       session: this.#session,
       isPersonalisationActive: this._isPersonalisationActive
     })
-    this.configFromObject = clevertap.config || {}
-
     this.#tvNavigation = new TVNavigation(this.#logger)
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
@@ -184,6 +182,11 @@ export default class CleverTap {
     this.spa = clevertap.spa
     this.dismissSpamControl = clevertap.dismissSpamControl ?? true
 
+    if (clevertap.config?.isTV && clevertap.config?.enableCThandler) {
+      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
+    } else {
+      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false)
+    }
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
     })
@@ -660,7 +663,7 @@ export default class CleverTap {
       // Needed to maintain backward compatability with legacy implementations.
       // Npm imports/require will need to call init explictly with accountId
       StorageManager.saveToLSorCookie(ACCOUNT_ID, clevertap.account?.[0].id)
-      this.init(null, null, null, null, this.configFromObject)
+      this.init()
     }
   }
 
@@ -685,26 +688,18 @@ export default class CleverTap {
     }
   }
 
-  init (accountId, region, targetDomain, token, config = {}) {
-    const finalConfig = {
-    // Default values
-      antiFlicker: {},
-      customId: null,
-      isolateSubdomain: false,
-      isTV: false,
-      enableCThandler: false,
-
-      // Override with constructor config (script-based)
-      ...this.configFromObject,
-
-      // Override with init config (npm-based) - takes highest priority
-      ...config
-    }
-    if (finalConfig?.antiFlicker && Object.keys(finalConfig?.antiFlicker).length > 0) {
+  init (accountId, region, targetDomain, token, config = {
+    antiFlicker: {},
+    customId: null,
+    isolateSubdomain: false,
+    isTV: false,
+    enableCThandler: false
+  }) {
+    if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
     }
 
-    if (finalConfig?.isolateSubdomain) {
+    if (config?.isolateSubdomain) {
       StorageManager.saveToLSorCookie(ISOLATE_COOKIE, true)
     }
 
@@ -717,16 +712,17 @@ export default class CleverTap {
       encryption.key = accountId
     }
 
-    if (finalConfig?.isTV && finalConfig?.enableCThandler) {
+    const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS) ?? false
+    if ((config?.isTV && config?.enableCThandler) || enableTVControls) {
       // CleverTap handles navigation
-      $ct.enableTVNavigation = true
+      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
       console.log('CleverTap TV Navigation Mode: CleverTap will handle all navigation')
 
       // Initialize CleverTap TV navigation system
       this.#tvNavigation.init()
-    } else if (finalConfig?.isTV) {
+    } else if (config?.isTV) {
       // Customer handles navigation (default)
-      $ct.enableTVNavigation = false
+      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false)
       console.log('CleverTap TV Navigation Mode: Customer handles navigation')
     }
 
@@ -753,7 +749,8 @@ export default class CleverTap {
     if (token) {
       this.#account.token = token
     }
-    if (finalConfig?.customId) {
+    console.log('congid config?.customId ', config?.customId)
+    if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
     }
     // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set

@@ -72,6 +72,7 @@ export const WEB_POPUP_PREVIEW = 'ctWebPopupPreview'
 export const QUALIFIED_CAMPAIGNS = 'WZRK_QC'
 export const CUSTOM_CT_ID_PREFIX = '_w_'
 export const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'
+export const ENABLE_TV_CONTROLS = 'WZRK_TV_CONTROLS'
 
 // Flag key for optional sub-domain profile isolation
 export const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'

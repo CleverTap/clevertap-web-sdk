@@ -1,8 +1,13 @@
-// tvNavigation.js - Universal TV Navigation Module for all TV platforms
-import { $ct } from '../util/storage'
+// tvNavigation.js - Universal TV Navigation Singleton for all TV platforms
+import { ENABLE_TV_CONTROLS } from '../util/constants'
+import { StorageManager } from '../util/storage'
 
 class TVNavigation {
   constructor (logger) {
+    if (TVNavigation.instance) {
+      return TVNavigation.instance
+    }
+
     this.logger = logger
     this.isEnabled = false
     this.currentMenu = null
@@ -25,6 +30,22 @@ class TVNavigation {
     // Detect TV platform
     this.platform = this.detectTVPlatform()
     this.logger.debug('TV Platform detected:', this.platform)
+
+    // Store singleton instance
+    TVNavigation.instance = this
+  }
+
+  // Static method to get singleton instance
+  static getInstance (logger) {
+    if (!TVNavigation.instance) {
+      TVNavigation.instance = new TVNavigation(logger)
+    }
+    return TVNavigation.instance
+  }
+
+  // Update logger if needed (useful when getting existing instance)
+  setLogger (logger) {
+    this.logger = logger
   }
 
   // Detect which TV platform we're running on
@@ -49,8 +70,15 @@ class TVNavigation {
 
   // Initialize TV navigation system
   init () {
-    if (!$ct.enableTVNavigation) {
+    const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS) ?? false
+    if (!enableTVControls) {
       this.logger.debug('TV Navigation disabled')
+      return
+    }
+
+    // Prevent double initialization
+    if (this.isEnabled) {
+      this.logger.debug('TV Navigation already initialized')
       return
     }
 
@@ -117,11 +145,18 @@ class TVNavigation {
 
   // Setup global key handler
   setupKeyHandler () {
-    document.addEventListener('keydown', (event) => {
-      if (!this.isEnabled) return
+    // Remove existing handler if any to prevent duplicates
+    if (this.keyHandler) {
+      document.removeEventListener('keydown', this.keyHandler, { capture: true })
+    }
 
+    // Create bound handler
+    this.keyHandler = (event) => {
+      if (!this.isEnabled) return
       this.handleKeyPress(event)
-    }, { capture: true, passive: false })
+    }
+
+    document.addEventListener('keydown', this.keyHandler, { capture: true, passive: false })
   }
 
   // Handle key press events - Universal TV platform support
@@ -333,6 +368,16 @@ class TVNavigation {
     this.logger.debug('TV Navigation disabled')
   }
 
+  // Clean up - remove event listeners
+  destroy () {
+    if (this.keyHandler) {
+      document.removeEventListener('keydown', this.keyHandler, { capture: true })
+      this.keyHandler = null
+    }
+    this.isEnabled = false
+    TVNavigation.instance = null
+  }
+
   // Get current state
   getState () {
     return {
@@ -343,5 +388,8 @@ class TVNavigation {
     }
   }
 }
+
+// Static property to hold singleton instance
+TVNavigation.instance = null
 
 export default TVNavigation

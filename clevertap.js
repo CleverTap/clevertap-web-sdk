@@ -221,7 +221,8 @@
   const WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
-  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'; // Flag key for optional sub-domain profile isolation
+  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK';
+  const ENABLE_TV_CONTROLS = 'WZRK_TV_CONTROLS'; // Flag key for optional sub-domain profile isolation
 
   const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD';
   const WEB_NATIVE_TEMPLATES = {
@@ -15316,7 +15317,9 @@
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
-      if ($ct.enableTVNavigation) {
+      const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS);
+
+      if (enableTVControls) {
         html = appendTVNavigationScript(targetingMsgJson, html);
       }
 
@@ -17158,10 +17161,14 @@
     _classPrivateFieldLooseBase(this, _oneTimeVariablesChangedCallbacks)[_oneTimeVariablesChangedCallbacks].length = 0;
   };
 
-  // tvNavigation.js - Universal TV Navigation Module for all TV platforms
+  // tvNavigation.js - Universal TV Navigation Singleton for all TV platforms
 
   class TVNavigation {
     constructor(logger) {
+      if (TVNavigation.instance) {
+        return TVNavigation.instance;
+      }
+
       this.logger = logger;
       this.isEnabled = false;
       this.currentMenu = null;
@@ -17185,7 +17192,23 @@
       }; // Detect TV platform
 
       this.platform = this.detectTVPlatform();
-      this.logger.debug('TV Platform detected:', this.platform);
+      this.logger.debug('TV Platform detected:', this.platform); // Store singleton instance
+
+      TVNavigation.instance = this;
+    } // Static method to get singleton instance
+
+
+    static getInstance(logger) {
+      if (!TVNavigation.instance) {
+        TVNavigation.instance = new TVNavigation(logger);
+      }
+
+      return TVNavigation.instance;
+    } // Update logger if needed (useful when getting existing instance)
+
+
+    setLogger(logger) {
+      this.logger = logger;
     } // Detect which TV platform we're running on
 
 
@@ -17215,8 +17238,18 @@
 
 
     init() {
-      if (!$ct.enableTVNavigation) {
+      var _StorageManager$readF;
+
+      const enableTVControls = (_StorageManager$readF = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : false;
+
+      if (!enableTVControls) {
         this.logger.debug('TV Navigation disabled');
+        return;
+      } // Prevent double initialization
+
+
+      if (this.isEnabled) {
+        this.logger.debug('TV Navigation already initialized');
         return;
       }
 
@@ -17277,10 +17310,20 @@
 
 
     setupKeyHandler() {
-      document.addEventListener('keydown', event => {
+      // Remove existing handler if any to prevent duplicates
+      if (this.keyHandler) {
+        document.removeEventListener('keydown', this.keyHandler, {
+          capture: true
+        });
+      } // Create bound handler
+
+
+      this.keyHandler = event => {
         if (!this.isEnabled) return;
         this.handleKeyPress(event);
-      }, {
+      };
+
+      document.addEventListener('keydown', this.keyHandler, {
         capture: true,
         passive: false
       });
@@ -17471,6 +17514,19 @@
       }
 
       this.logger.debug('TV Navigation disabled');
+    } // Clean up - remove event listeners
+
+
+    destroy() {
+      if (this.keyHandler) {
+        document.removeEventListener('keydown', this.keyHandler, {
+          capture: true
+        });
+        this.keyHandler = null;
+      }
+
+      this.isEnabled = false;
+      TVNavigation.instance = null;
     } // Get current state
 
 
@@ -17483,7 +17539,10 @@
       };
     }
 
-  }
+  } // Static property to hold singleton instance
+
+
+  TVNavigation.instance = null;
 
   var _logger = _classPrivateFieldLooseKey("logger");
 
@@ -17560,7 +17619,7 @@
     }
 
     constructor() {
-      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$account6;
+      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$config3, _clevertap$config4, _clevertap$account6;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
@@ -17678,7 +17737,6 @@
         session: _classPrivateFieldLooseBase(this, _session)[_session],
         isPersonalisationActive: this._isPersonalisationActive
       });
-      this.configFromObject = clevertap.config || {};
       _classPrivateFieldLooseBase(this, _tvNavigation)[_tvNavigation] = new TVNavigation(_classPrivateFieldLooseBase(this, _logger)[_logger]);
       this.enablePersonalization = clevertap.enablePersonalization || false;
       this.event = new EventHandler({
@@ -17723,6 +17781,13 @@
       });
       this.spa = clevertap.spa;
       this.dismissSpamControl = (_clevertap$dismissSpa2 = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa2 !== void 0 ? _clevertap$dismissSpa2 : true;
+
+      if (((_clevertap$config3 = clevertap.config) === null || _clevertap$config3 === void 0 ? void 0 : _clevertap$config3.isTV) && ((_clevertap$config4 = clevertap.config) === null || _clevertap$config4 === void 0 ? void 0 : _clevertap$config4.enableCThandler)) {
+        StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true);
+      } else {
+        StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false);
+      }
+
       this.user = new User({
         isPersonalisationActive: this._isPersonalisationActive
       });
@@ -18305,7 +18370,7 @@
         // Needed to maintain backward compatability with legacy implementations.
         // Npm imports/require will need to call init explictly with accountId
         StorageManager.saveToLSorCookie(ACCOUNT_ID, (_clevertap$account7 = clevertap.account) === null || _clevertap$account7 === void 0 ? void 0 : _clevertap$account7[0].id);
-        this.init(null, null, null, null, this.configFromObject);
+        this.init();
       }
     }
 
@@ -18333,25 +18398,21 @@
     }
 
     init(accountId, region, targetDomain, token) {
-      let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
-      const finalConfig = {
-        // Default values
+      var _StorageManager$readF;
+
+      let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
         antiFlicker: {},
         customId: null,
         isolateSubdomain: false,
         isTV: false,
-        enableCThandler: false,
-        // Override with constructor config (script-based)
-        ...this.configFromObject,
-        // Override with init config (npm-based) - takes highest priority
-        ...config
+        enableCThandler: false
       };
 
-      if ((finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.antiFlicker) && Object.keys(finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.antiFlicker).length > 0) {
+      if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
         addAntiFlicker(config.antiFlicker);
       }
 
-      if (finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.isolateSubdomain) {
+      if (config === null || config === void 0 ? void 0 : config.isolateSubdomain) {
         StorageManager.saveToLSorCookie(ISOLATE_COOKIE, true);
       }
 
@@ -18364,15 +18425,17 @@
         encryption.key = accountId;
       }
 
-      if ((finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.isTV) && (finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.enableCThandler)) {
+      const enableTVControls = (_StorageManager$readF = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : false;
+
+      if ((config === null || config === void 0 ? void 0 : config.isTV) && (config === null || config === void 0 ? void 0 : config.enableCThandler) || enableTVControls) {
         // CleverTap handles navigation
-        $ct.enableTVNavigation = true;
+        StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true);
         console.log('CleverTap TV Navigation Mode: CleverTap will handle all navigation'); // Initialize CleverTap TV navigation system
 
         _classPrivateFieldLooseBase(this, _tvNavigation)[_tvNavigation].init();
-      } else if (finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.isTV) {
+      } else if (config === null || config === void 0 ? void 0 : config.isTV) {
         // Customer handles navigation (default)
-        $ct.enableTVNavigation = false;
+        StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false);
         console.log('CleverTap TV Navigation Mode: Customer handles navigation');
       }
 
@@ -18408,7 +18471,9 @@
         _classPrivateFieldLooseBase(this, _account)[_account].token = token;
       }
 
-      if (finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.customId) {
+      console.log('congid config?.customId ', config === null || config === void 0 ? void 0 : config.customId);
+
+      if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
       } // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
       // This ensures user identity is established before other events

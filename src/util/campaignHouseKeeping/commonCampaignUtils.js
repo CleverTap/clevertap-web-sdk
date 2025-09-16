@@ -17,7 +17,8 @@ import {
   WZRK_ID,
   WEB_NATIVE_TEMPLATES,
   CAMPAIGN_TYPES,
-  WEB_POPUP_TEMPLATES
+  WEB_POPUP_TEMPLATES,
+  ENABLE_TV_CONTROLS
 } from '../constants.js'
 
 import { getNow, getToday } from '../datetime.js'
@@ -687,7 +688,8 @@ export const commonCampaignUtils = {
       // Adds custom event scripts if needed
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    if ($ct.enableTVNavigation) {
+    const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS)
+    if (enableTVControls) {
       html = appendTVNavigationScript(targetingMsgJson, html)
     }
     iframe.srcdoc = html
