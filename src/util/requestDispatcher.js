@@ -50,7 +50,7 @@ export default class RequestDispatcher {
       }
 
       // Encrypt only the 'd' parameter value
-      return encryptForBackend(dParam)
+      return encryptForBackend(dParam, { id: this.account.id })
         .then((encryptedData) => {
           // Replace the 'd' parameter with encrypted data
           searchParams.set('d', encryptedData)
@@ -102,9 +102,9 @@ export default class RequestDispatcher {
       }
     } else {
       if (!isValueValid(this.device.gcookie) &&
-      ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
-      tries < MAX_TRIES) {
-      // if ongoing First Request is in progress, initiate retry
+        ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
+        tries < MAX_TRIES) {
+        // if ongoing First Request is in progress, initiate retry
         setTimeout(() => {
           this.logger.debug(`retrying fire request for url: ${url}, tries: ${tries}`)
           this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)

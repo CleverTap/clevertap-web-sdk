@@ -5,6 +5,18 @@ const toB64 = (u8) => btoa(String.fromCharCode(...u8))
 const fromB64 = (b64) => Uint8Array.from(atob(b64), c => c.charCodeAt(0))
 const rnd = (n) => crypto.getRandomValues(new Uint8Array(n))
 
+let key = null
+
+// function uint8ArrayToBase64 (uint8Array) {
+//   // For binary data, we need to handle it differently to avoid corruption
+//   let binary = ''
+//   const len = uint8Array.byteLength
+//   for (let i = 0; i < len; i++) {
+//     binary += String.fromCharCode(uint8Array[i])
+//   }
+//   return btoa(binary)
+// }
+
 /**
  * Encrypts payload for backend transmission using AES-GCM-256.
  *
@@ -14,23 +26,40 @@ const rnd = (n) => crypto.getRandomValues(new Uint8Array(n))
  * @returns {Promise<string>} - Base64 compressed encrypted envelope
  */
 export function encryptForBackend (payload, { id = 'ZWW-WWW-WWRZ' } = {}) {
-  const key = rnd(32) // 256-bit key
-  const iv = rnd(12) // 96-bit IV
+  // Generate a random 256-bit key (32 bytes) to match backend AES-256
+  key = rnd(32)
+  // Generate a random 96-bit IV (12 bytes) for GCM
+  const iv = rnd(12)
 
+  // Algorithm specification with tag length matching backend (128 bits)
   const alg = { name: 'AES-GCM', iv, tagLength: 128 }
+
+  // Convert payload to bytes
   const plainBuf = utf8.encode(typeof payload === 'string' ? payload : JSON.stringify(payload))
 
-  return crypto.subtle.importKey('raw', key, alg, false, ['encrypt'])
-    .then((keyObj) => crypto.subtle.encrypt(alg, keyObj, plainBuf))
+  // Import the raw key as a CryptoKey
+  return crypto.subtle.importKey(
+    'raw',
+    key,
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt']
+  )
+    .then((cryptoKey) => {
+      // Encrypt the data
+      return crypto.subtle.encrypt(alg, cryptoKey, plainBuf)
+    })
     .then((cipherBuf) => {
       const cipher = new Uint8Array(cipherBuf)
+
       const envelope = {
-        itp: toB64(cipher), // payload
-        itk: toB64(key), // key
-        itv: toB64(iv), // iv
+        itp: toB64(cipher), // payload - base64 encoded ciphertext (includes auth tag)
+        itk: toB64(key), // key - base64 encoded raw AES key
+        itv: toB64(iv), // iv - base64 encoded IV
         id,
         encrypted: true
       }
+
       return compressData(JSON.stringify(envelope))
     })
     .catch((error) => {
@@ -50,20 +79,27 @@ export function decryptFromBackend (envelopeB64) {
     // Decompress the base64 envelope using LZS decompression
     const envelopeJson = decompressFromBase64(envelopeB64)
     const envelope = JSON.parse(envelopeJson)
-    const { itp, itk, itv } = envelope
+    const { itp, itv } = envelope
 
-    if (!itp || !itk || !itv) {
+    if (!itp || !itv) {
       return Promise.reject(new Error('Decryption failed: Invalid envelope format'))
     }
 
-    const payload = fromB64(itp)
-    const key = fromB64(itk)
+    const ciphertext = fromB64(itp)
     const iv = fromB64(itv)
 
+    // Algorithm specification matching backend (tagLength 128 bits)
     const alg = { name: 'AES-GCM', iv, tagLength: 128 }
 
-    return crypto.subtle.importKey('raw', key, alg, false, ['decrypt'])
-      .then((keyObj) => crypto.subtle.decrypt(alg, keyObj, payload))
+    // Import the key and decrypt
+    return crypto.subtle.importKey(
+      'raw',
+      key,
+      { name: 'AES-GCM' },
+      false,
+      ['decrypt']
+    )
+      .then((cryptoKey) => crypto.subtle.decrypt(alg, cryptoKey, ciphertext))
       .then((plainBuf) => new TextDecoder().decode(plainBuf))
       .catch((error) => {
         throw new Error(`Decryption failed: ${error.message}`)
