@@ -4,7 +4,7 @@ import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
 import { StorageManager, $ct } from './storage'
 import { addToURL } from './url'
-import { encryptForBackend, decryptFromBackend } from './security/encryptionInTransit'
+import encryptionInTransitInstance from './security/encryptionInTransit'
 
 export default class RequestDispatcher {
   static logger
@@ -50,7 +50,7 @@ export default class RequestDispatcher {
       }
 
       // Encrypt only the 'd' parameter value
-      return encryptForBackend(dParam, { id: this.account.id })
+      return encryptionInTransitInstance.encryptForBackend(dParam, { id: this.account.id })
         .then((encryptedData) => {
           // Replace the 'd' parameter with encrypted data
           searchParams.set('d', encryptedData)
@@ -237,7 +237,7 @@ export default class RequestDispatcher {
         // Phase 2: Attempt to decrypt the response if it might be encrypted
         const tryDecryption = () => {
           if (rawResponse && rawResponse.length > 0) {
-            return decryptFromBackend(rawResponse)
+            return encryptionInTransitInstance.decryptFromBackend(rawResponse)
               .then((decryptedResponse) => {
                 this.logger.debug('Successfully decrypted response')
                 return decryptedResponse
