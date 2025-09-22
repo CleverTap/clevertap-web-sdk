@@ -8735,7 +8735,7 @@
   };
   const appendTVNavigationScript = (targetingMsgJson, html) => {
     console.log('$ct.enableTVNavigation in Web Popup Script', $ct.enableTVNavigation);
-    const script = "<script>\n      const ct__campaignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal = (v) => v && v.trim().substring(0, 20);\n      \n      let focusableElements = [];\n      let currentFocusIndex = 0;\n      \n      function init() {\n          focusableElements = Array.from(document.querySelectorAll('button, a[href], a[wzrk_c2a], button[wzrk_c2a], input:not([type=\"hidden\"]), .wzrkClose')).filter(el => window.getComputedStyle(el).display !== 'none');\n          if (focusableElements.length > 0) { focusElement(0); }\n      }\n      \n      function focusElement(index) {\n          focusableElements.forEach(el => el.classList.remove('ct-tv-focused'));\n          currentFocusIndex = index;\n          if (focusableElements[currentFocusIndex]) { focusableElements[currentFocusIndex].classList.add('ct-tv-focused'); focusableElements[currentFocusIndex].focus(); }\n      }\n      \n      function navigate(direction) {\n          if (focusableElements.length === 0) return;\n          let newIndex = direction === 'next' ? Math.min(focusableElements.length - 1, currentFocusIndex + 1) : Math.max(0, currentFocusIndex - 1);\n          if (newIndex !== currentFocusIndex) focusElement(newIndex);\n      }\n      \n      function activate() {\n          const element = focusableElements[currentFocusIndex];\n          if (element) {\n              if (element.hasAttribute('wzrk_c2a')) {\n                  const {innerText, id, name, value, href} = element;\n                  let msgCTkv = Object.keys({innerText, id, name, value}).reduce((acc, c) => { const formattedVal = ct__formatVal(element[c]); formattedVal && (acc['wzrk_click_' + c] = formattedVal); return acc; }, {});\n                  if(href) msgCTkv['wzrk_click_c2a'] = href;\n                  window.parent.clevertap.renderNotificationClicked({ msgId: ct__campaignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' });\n              }\n              element.click();\n          }\n      }\n      \n      document.addEventListener('keydown', function(event) { \n          event.preventDefault(); \n          switch (event.keyCode) { \n              case 37: case 38: navigate('prev'); break; \n              case 39: case 40: navigate('next'); break; \n              case 13: activate(); break; \n              case 10009: case 10182: const closeBtn = document.querySelector('.wzrkClose'); if (closeBtn) closeBtn.click(); break; \n          } \n      }, { passive: false });\n      \n      const style = document.createElement('style'); \n      style.textContent = '.ct-tv-focused { outline: 3px solid #00ff00 !important; background-color: #0078d4 !important; color: white !important; transform: scale(1.05) !important; }'; \n      document.head.appendChild(style);\n      \n      document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();\n      </script>"); // Since there's no </body> tag, append the script at the end of the HTML
+    const script = "<script>\n      const ct__campaignId = '".concat(targetingMsgJson.wzrk_id, "';\n      const ct__formatVal_tv = (v) => v && v.trim().substring(0, 20);\n      \n      let focusableElements = [];\n      let currentFocusIndex = 0;\n      \n      function init() {\n          focusableElements = Array.from(document.querySelectorAll(\n              'button, a[href], a[wzrk_c2a], button[wzrk_c2a], input:not([type=\"hidden\"]), ' +\n              '.wzrkClose, .CT_InterstitialClose, .CT_InterstitialCTA, .jsCT_CTA'\n          )).filter(el => window.getComputedStyle(el).display !== 'none');\n          \n          console.log('Found focusable elements:', focusableElements.length);\n          // Ensure iframe has focus\n          console.log('Setting focus to iframe window');\n          window.focus();\n          if (focusableElements.length > 0) { focusElement(0); }\n      }\n      \n      function focusElement(index) {\n          focusableElements.forEach(el => el.classList.remove('ct-tv-focused'));\n          currentFocusIndex = index;\n          if (focusableElements[currentFocusIndex]) { focusableElements[currentFocusIndex].classList.add('ct-tv-focused'); focusableElements[currentFocusIndex].focus(); }\n      }\n      \n      function navigate(direction) {\n          if (focusableElements.length === 0) return;\n          let newIndex = direction === 'next' ? Math.min(focusableElements.length - 1, currentFocusIndex + 1) : Math.max(0, currentFocusIndex - 1);\n          if (newIndex !== currentFocusIndex) focusElement(newIndex);\n      }\n      \n      function activate() {\n          const element = focusableElements[currentFocusIndex];\n          if (element) {\n              if (element.hasAttribute('wzrk_c2a')) {\n                  const {innerText, id, name, value, href} = element;\n                  let msgCTkv = Object.keys({innerText, id, name, value}).reduce((acc, c) => { const formattedVal = ct__formatVal_tv(element[c]); formattedVal && (acc['wzrk_click_' + c] = formattedVal); return acc; }, {});\n                  if(href) msgCTkv['wzrk_click_c2a'] = href;\n                  window.parent.clevertap.renderNotificationClicked({ msgId: ct__campaignId, msgCTkv, pivotId: '").concat(targetingMsgJson.wzrk_pivot, "' });\n              }\n              console.log('Clicking element:', element);\n              element.click();\n              console.log('Element clicked');\n          }\n      }\n      \n      document.addEventListener('keydown', function(event) { \n        console.log('Popup received keydown:', event.keyCode);\n        event.preventDefault(); \n        switch (event.keyCode) { \n          case 37: case 38: \n            console.log('Navigate prev');\n            navigate('prev'); \n            break; \n          case 39: case 40: \n            console.log('Navigate next');\n            navigate('next'); \n            break; \n          case 13: \n            console.log('Enter pressed - calling activate()');\n            activate(); \n            break; \n          case 10009: case 10182: \n            console.log('Back/Exit pressed');\n            const closeBtn = document.querySelector('.wzrkClose, .CT_InterstitialClose'); \n            if (closeBtn) closeBtn.click(); \n            break; \n        } \n      }, { passive: false });\n      \n      const style = document.createElement('style'); \n      style.textContent = '.ct-tv-focused { outline: 3px solid #00ff00 !important; color: white !important; transform: scale(1.05) !important; }'; \n      document.head.appendChild(style);\n      \n      document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();\n      </script>"); // Since there's no </body> tag, append the script at the end of the HTML
 
     const modifiedHtml = html + script;
     console.log('Script appended, new HTML length:', modifiedHtml.length);
@@ -12494,6 +12494,10 @@
       });
     }
 
+    getShadowRoot() {
+      return this.shadow;
+    }
+
     get target() {
       return this._target || '';
     }
@@ -15740,6 +15744,12 @@
         html = appendScriptForCustomEvent(targetingMsgJson, html);
       }
 
+      const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS);
+
+      if (enableTVControls) {
+        html = appendTVNavigationScript(targetingMsgJson, html);
+      }
+
       iframe.srcdoc = html;
 
       iframe.onload = () => {
@@ -17173,7 +17183,8 @@
       this.isEnabled = false;
       this.currentMenu = null;
       this.focusableElements = [];
-      this.currentFocusIndex = 0; // Universal TV key mappings (standard across all platforms)
+      this.currentFocusIndex = 0;
+      this.shadowNavigation = null; // Universal TV key mappings (standard across all platforms)
 
       this.keyMappings = {
         up: 38,
@@ -17331,6 +17342,213 @@
 
 
     handleKeyPress(event) {
+      // Check for regular iframe popup
+      const activePopup = document.querySelector('iframe[id^="wiz-iframe"]') || document.querySelector('iframe[id="wiz-iframe-intent"]'); // Check for shadow DOM popup
+
+      const shadowPopupElement = document.querySelector('ct-web-popup-imageonly') || document.querySelector('#wzrkImageOnlyDiv ct-web-popup-imageonly') || document.querySelector('#wzrkImageOnlyDiv[style*="visible"]');
+
+      if (activePopup) {
+        // Handle iframe popup
+        this.forwardToIframe(event, activePopup);
+        return;
+      }
+
+      if (shadowPopupElement) {
+        // Check if the popup is actually visible
+        const parentDiv = document.getElementById('wzrkImageOnlyDiv');
+        const isVisible = parentDiv && (!parentDiv.style.display || parentDiv.style.display !== 'none');
+
+        if (isVisible) {
+          this.handleShadowDOMNavigation(event, shadowPopupElement);
+          return;
+        }
+      } // Handle main page navigation
+
+
+      this.handleMainPageNavigation(event);
+    } // Forward key events to iframe
+
+
+    forwardToIframe(event, activePopup) {
+      // Remove any main page focus
+      if (this.focusableElements[this.currentFocusIndex]) {
+        this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused');
+      }
+
+      console.log('Forwarding key event to popup iframe:', event.keyCode); // Forward the key event to the iframe
+
+      try {
+        const iframeWindow = activePopup.contentWindow;
+        const forwardedEvent = new KeyboardEvent('keydown', {
+          keyCode: event.keyCode,
+          which: event.keyCode,
+          bubbles: true,
+          cancelable: true
+        });
+        iframeWindow.document.dispatchEvent(forwardedEvent);
+      } catch (error) {
+        console.log('Could not forward event to iframe:', error);
+      } // Prevent main page from handling the key
+
+
+      event.preventDefault();
+      event.stopPropagation();
+    } // Handle shadow DOM navigation
+
+
+    handleShadowDOMNavigation(event, shadowPopupElement) {
+      // Remove any main page focus
+      if (this.focusableElements[this.currentFocusIndex]) {
+        this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused');
+      } // Initialize shadow DOM navigation if not done
+
+
+      if (!this.shadowNavigation) {
+        this.initShadowNavigation(shadowPopupElement);
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      switch (event.keyCode) {
+        case this.keyMappings.up:
+        case this.keyMappings.left:
+          this.navigateShadow('prev');
+          break;
+
+        case this.keyMappings.down:
+        case this.keyMappings.right:
+          this.navigateShadow('next');
+          break;
+
+        case this.keyMappings.enter:
+          this.activateShadow();
+          break;
+
+        case this.keyMappings.back:
+        case this.keyMappings.exit:
+        case this.keyMappings.webosBack:
+        case this.keyMappings.webosExit:
+          this.closeShadowPopup();
+          break;
+      }
+    } // Initialize shadow DOM navigation
+
+
+    initShadowNavigation(shadowPopupElement) {
+      try {
+        // Try multiple ways to access shadow root
+        let shadowRoot = null;
+
+        if (shadowPopupElement.getShadowRoot) {
+          console.log('Using getShadowRoot method');
+          shadowRoot = shadowPopupElement.getShadowRoot();
+        } else if (shadowPopupElement.shadowRoot) {
+          console.log('Using shadowRoot property');
+          shadowRoot = shadowPopupElement.shadowRoot;
+        } else if (shadowPopupElement.shadow) {
+          console.log('Using shadow property');
+          shadowRoot = shadowPopupElement.shadow;
+        }
+
+        if (!shadowRoot) {
+          // Alternative: look for the element with shadow root
+          const ctElement = document.querySelector('ct-web-popup-imageonly');
+          console.log('Alternative ct-element:', ctElement);
+
+          if (ctElement && ctElement.shadowRoot) {
+            shadowRoot = ctElement.shadowRoot;
+            console.log('Found shadow root via alternative method');
+          }
+        }
+
+        if (!shadowRoot) {
+          console.log('Still no shadow root found');
+          return;
+        }
+
+        this.shadowNavigation = {
+          focusableElements: [],
+          currentFocusIndex: 0,
+          shadowRoot: shadowRoot
+        }; // Find focusable elements in shadow DOM
+
+        this.shadowNavigation.focusableElements = Array.from(shadowRoot.querySelectorAll('button, [role="button"], .close, img[src], [tabindex]:not([tabindex="-1"])')).filter(el => {
+          const style = window.getComputedStyle(el);
+          return style.display !== 'none' && style.visibility !== 'hidden';
+        }); // Add TV focus styles to shadow DOM
+
+        const style = document.createElement('style');
+        style.textContent = "\n        .ct-tv-focused {\n          outline: 3px solid #00ff00 !important;\n          outline-offset: 2px !important;\n          transition: all 0.2s ease !important;\n        }\n      ";
+        shadowRoot.appendChild(style); // Focus first element
+
+        if (this.shadowNavigation.focusableElements.length > 0) {
+          this.focusShadowElement(0);
+        }
+      } catch (error) {
+        console.log('Could not initialize shadow DOM navigation:', error);
+      }
+    } // Navigate within shadow DOM
+
+
+    navigateShadow(direction) {
+      if (!this.shadowNavigation || this.shadowNavigation.focusableElements.length === 0) return;
+      let newIndex = this.shadowNavigation.currentFocusIndex;
+
+      if (direction === 'prev') {
+        newIndex = Math.max(0, this.shadowNavigation.currentFocusIndex - 1);
+      } else if (direction === 'next') {
+        newIndex = Math.min(this.shadowNavigation.focusableElements.length - 1, this.shadowNavigation.currentFocusIndex + 1);
+      }
+
+      if (newIndex !== this.shadowNavigation.currentFocusIndex) {
+        this.focusShadowElement(newIndex);
+      }
+    } // Focus element in shadow DOM
+
+
+    focusShadowElement(index) {
+      if (!this.shadowNavigation) return; // Remove focus from current element
+
+      if (this.shadowNavigation.focusableElements[this.shadowNavigation.currentFocusIndex]) {
+        this.shadowNavigation.focusableElements[this.shadowNavigation.currentFocusIndex].classList.remove('ct-tv-focused');
+      } // Focus new element
+
+
+      this.shadowNavigation.currentFocusIndex = index;
+      const element = this.shadowNavigation.focusableElements[this.shadowNavigation.currentFocusIndex];
+
+      if (element) {
+        element.classList.add('ct-tv-focused');
+        this.logger.debug('Shadow DOM focused:', element.tagName, element.className);
+      }
+    } // Activate element in shadow DOM
+
+
+    activateShadow() {
+      if (!this.shadowNavigation) return;
+      const element = this.shadowNavigation.focusableElements[this.shadowNavigation.currentFocusIndex];
+
+      if (element) {
+        element.click();
+      }
+    } // Close shadow DOM popup
+
+
+    closeShadowPopup() {
+      if (!this.shadowNavigation) return;
+      const closeBtn = this.shadowNavigation.shadowRoot.querySelector('.close');
+
+      if (closeBtn) {
+        closeBtn.click();
+      } // Clean up shadow navigation
+
+
+      this.shadowNavigation = null;
+    } // Handle main page navigation
+
+
+    handleMainPageNavigation(event) {
       if (this.focusableElements.length === 0) {
         this.findFocusableElements();
         return;
@@ -17482,7 +17700,7 @@
       if (document.getElementById('ct-tv-styles')) return;
       const style = document.createElement('style');
       style.id = 'ct-tv-styles';
-      style.textContent = "\n      .ct-tv-focused {\n        outline: 3px solid #00ff00 !important;\n        outline-offset: 2px !important;\n        background-color: #0078d4 !important;\n        color: white !important;\n        transform: scale(1.05) !important;\n        transition: all 0.2s ease !important;\n        box-shadow: 0 0 15px rgba(0, 255, 0, 0.8) !important;\n        z-index: 9999 !important;\n        position: relative !important;\n      }\n      \n      .ct-tv-focused:focus {\n        outline: 3px solid #00ff00 !important;\n      }\n    ";
+      style.textContent = "\n      .ct-tv-focused {\n        outline: 3px solid #00ff00 !important;\n        outline-offset: 2px !important;\n        color: white !important;\n        transform: scale(1.05) !important;\n        transition: all 0.2s ease !important;\n        box-shadow: 0 0 15px rgba(0, 255, 0, 0.8) !important;\n        z-index: 9999 !important;\n        position: relative !important;\n      }\n      \n      .ct-tv-focused:focus {\n        outline: 3px solid #00ff00 !important;\n      }\n    ";
       document.head.appendChild(style);
     } // Refresh focusable elements (call when DOM changes)
 
@@ -17526,6 +17744,7 @@
       }
 
       this.isEnabled = false;
+      this.shadowNavigation = null;
       TVNavigation.instance = null;
     } // Get current state
 
@@ -17535,7 +17754,11 @@
         isEnabled: this.isEnabled,
         currentFocusIndex: this.currentFocusIndex,
         totalElements: this.focusableElements.length,
-        platform: this.platform
+        platform: this.platform,
+        shadowNavigation: this.shadowNavigation ? {
+          currentFocusIndex: this.shadowNavigation.currentFocusIndex,
+          totalElements: this.shadowNavigation.focusableElements.length
+        } : null
       };
     }
 
@@ -18470,8 +18693,6 @@
       if (token) {
         _classPrivateFieldLooseBase(this, _account)[_account].token = token;
       }
-
-      console.log('congid config?.customId ', config === null || config === void 0 ? void 0 : config.customId);
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);

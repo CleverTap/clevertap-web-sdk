@@ -1204,6 +1204,10 @@ export const commonCampaignUtils = {
     if (targetingMsgJson.display['custom-editor']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
+    const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS)
+    if (enableTVControls) {
+      html = appendTVNavigationScript(targetingMsgJson, html)
+    }
     iframe.srcdoc = html
 
     iframe.onload = () => {

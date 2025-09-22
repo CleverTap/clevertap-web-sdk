@@ -749,7 +749,6 @@ export default class CleverTap {
     if (token) {
       this.#account.token = token
     }
-    console.log('congid config?.customId ', config?.customId)
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
     }

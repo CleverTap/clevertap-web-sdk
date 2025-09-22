@@ -63,13 +63,21 @@ export const appendTVNavigationScript = (targetingMsgJson, html) => {
 
   const script = `<script>
       const ct__campaignId = '${targetingMsgJson.wzrk_id}';
-      const ct__formatVal = (v) => v && v.trim().substring(0, 20);
+      const ct__formatVal_tv = (v) => v && v.trim().substring(0, 20);
       
       let focusableElements = [];
       let currentFocusIndex = 0;
       
       function init() {
-          focusableElements = Array.from(document.querySelectorAll('button, a[href], a[wzrk_c2a], button[wzrk_c2a], input:not([type="hidden"]), .wzrkClose')).filter(el => window.getComputedStyle(el).display !== 'none');
+          focusableElements = Array.from(document.querySelectorAll(
+              'button, a[href], a[wzrk_c2a], button[wzrk_c2a], input:not([type="hidden"]), ' +
+              '.wzrkClose, .CT_InterstitialClose, .CT_InterstitialCTA, .jsCT_CTA'
+          )).filter(el => window.getComputedStyle(el).display !== 'none');
+          
+          console.log('Found focusable elements:', focusableElements.length);
+          // Ensure iframe has focus
+          console.log('Setting focus to iframe window');
+          window.focus();
           if (focusableElements.length > 0) { focusElement(0); }
       }
       
@@ -90,26 +98,42 @@ export const appendTVNavigationScript = (targetingMsgJson, html) => {
           if (element) {
               if (element.hasAttribute('wzrk_c2a')) {
                   const {innerText, id, name, value, href} = element;
-                  let msgCTkv = Object.keys({innerText, id, name, value}).reduce((acc, c) => { const formattedVal = ct__formatVal(element[c]); formattedVal && (acc['wzrk_click_' + c] = formattedVal); return acc; }, {});
+                  let msgCTkv = Object.keys({innerText, id, name, value}).reduce((acc, c) => { const formattedVal = ct__formatVal_tv(element[c]); formattedVal && (acc['wzrk_click_' + c] = formattedVal); return acc; }, {});
                   if(href) msgCTkv['wzrk_click_c2a'] = href;
                   window.parent.clevertap.renderNotificationClicked({ msgId: ct__campaignId, msgCTkv, pivotId: '${targetingMsgJson.wzrk_pivot}' });
               }
+              console.log('Clicking element:', element);
               element.click();
+              console.log('Element clicked');
           }
       }
       
       document.addEventListener('keydown', function(event) { 
-          event.preventDefault(); 
-          switch (event.keyCode) { 
-              case 37: case 38: navigate('prev'); break; 
-              case 39: case 40: navigate('next'); break; 
-              case 13: activate(); break; 
-              case 10009: case 10182: const closeBtn = document.querySelector('.wzrkClose'); if (closeBtn) closeBtn.click(); break; 
-          } 
+        console.log('Popup received keydown:', event.keyCode);
+        event.preventDefault(); 
+        switch (event.keyCode) { 
+          case 37: case 38: 
+            console.log('Navigate prev');
+            navigate('prev'); 
+            break; 
+          case 39: case 40: 
+            console.log('Navigate next');
+            navigate('next'); 
+            break; 
+          case 13: 
+            console.log('Enter pressed - calling activate()');
+            activate(); 
+            break; 
+          case 10009: case 10182: 
+            console.log('Back/Exit pressed');
+            const closeBtn = document.querySelector('.wzrkClose, .CT_InterstitialClose'); 
+            if (closeBtn) closeBtn.click(); 
+            break; 
+        } 
       }, { passive: false });
       
       const style = document.createElement('style'); 
-      style.textContent = '.ct-tv-focused { outline: 3px solid #00ff00 !important; background-color: #0078d4 !important; color: white !important; transform: scale(1.05) !important; }'; 
+      style.textContent = '.ct-tv-focused { outline: 3px solid #00ff00 !important; color: white !important; transform: scale(1.05) !important; }'; 
       document.head.appendChild(style);
       
       document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();

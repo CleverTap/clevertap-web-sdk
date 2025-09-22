@@ -13,6 +13,7 @@ class TVNavigation {
     this.currentMenu = null
     this.focusableElements = []
     this.currentFocusIndex = 0
+    this.shadowNavigation = null
 
     // Universal TV key mappings (standard across all platforms)
     this.keyMappings = {
@@ -161,6 +162,228 @@ class TVNavigation {
 
   // Handle key press events - Universal TV platform support
   handleKeyPress (event) {
+    // Check for regular iframe popup
+    const activePopup = document.querySelector('iframe[id^="wiz-iframe"]') ||
+                       document.querySelector('iframe[id="wiz-iframe-intent"]')
+
+    // Check for shadow DOM popup
+    const shadowPopupElement = document.querySelector('ct-web-popup-imageonly') ||
+                           document.querySelector('#wzrkImageOnlyDiv ct-web-popup-imageonly') ||
+                           document.querySelector('#wzrkImageOnlyDiv[style*="visible"]')
+
+    if (activePopup) {
+      // Handle iframe popup
+      this.forwardToIframe(event, activePopup)
+      return
+    }
+
+    if (shadowPopupElement) {
+      // Check if the popup is actually visible
+      const parentDiv = document.getElementById('wzrkImageOnlyDiv')
+      const isVisible = parentDiv && (!parentDiv.style.display || parentDiv.style.display !== 'none')
+
+      if (isVisible) {
+        this.handleShadowDOMNavigation(event, shadowPopupElement)
+        return
+      }
+    }
+
+    // Handle main page navigation
+    this.handleMainPageNavigation(event)
+  }
+
+  // Forward key events to iframe
+  forwardToIframe (event, activePopup) {
+    // Remove any main page focus
+    if (this.focusableElements[this.currentFocusIndex]) {
+      this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused')
+    }
+
+    console.log('Forwarding key event to popup iframe:', event.keyCode)
+
+    // Forward the key event to the iframe
+    try {
+      const iframeWindow = activePopup.contentWindow
+      const forwardedEvent = new KeyboardEvent('keydown', {
+        keyCode: event.keyCode,
+        which: event.keyCode,
+        bubbles: true,
+        cancelable: true
+      })
+      iframeWindow.document.dispatchEvent(forwardedEvent)
+    } catch (error) {
+      console.log('Could not forward event to iframe:', error)
+    }
+
+    // Prevent main page from handling the key
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  // Handle shadow DOM navigation
+  handleShadowDOMNavigation (event, shadowPopupElement) {
+    // Remove any main page focus
+    if (this.focusableElements[this.currentFocusIndex]) {
+      this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused')
+    }
+
+    // Initialize shadow DOM navigation if not done
+    if (!this.shadowNavigation) {
+      this.initShadowNavigation(shadowPopupElement)
+    }
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    switch (event.keyCode) {
+      case this.keyMappings.up:
+      case this.keyMappings.left:
+        this.navigateShadow('prev')
+        break
+      case this.keyMappings.down:
+      case this.keyMappings.right:
+        this.navigateShadow('next')
+        break
+      case this.keyMappings.enter:
+        this.activateShadow()
+        break
+      case this.keyMappings.back:
+      case this.keyMappings.exit:
+      case this.keyMappings.webosBack:
+      case this.keyMappings.webosExit:
+        this.closeShadowPopup()
+        break
+    }
+  }
+
+  // Initialize shadow DOM navigation
+  initShadowNavigation (shadowPopupElement) {
+    try {
+      // Try multiple ways to access shadow root
+      let shadowRoot = null
+
+      if (shadowPopupElement.getShadowRoot) {
+        console.log('Using getShadowRoot method')
+        shadowRoot = shadowPopupElement.getShadowRoot()
+      } else if (shadowPopupElement.shadowRoot) {
+        console.log('Using shadowRoot property')
+        shadowRoot = shadowPopupElement.shadowRoot
+      } else if (shadowPopupElement.shadow) {
+        console.log('Using shadow property')
+        shadowRoot = shadowPopupElement.shadow
+      }
+
+      if (!shadowRoot) {
+        // Alternative: look for the element with shadow root
+        const ctElement = document.querySelector('ct-web-popup-imageonly')
+        console.log('Alternative ct-element:', ctElement)
+
+        if (ctElement && ctElement.shadowRoot) {
+          shadowRoot = ctElement.shadowRoot
+          console.log('Found shadow root via alternative method')
+        }
+      }
+
+      if (!shadowRoot) {
+        console.log('Still no shadow root found')
+        return
+      }
+
+      this.shadowNavigation = {
+        focusableElements: [],
+        currentFocusIndex: 0,
+        shadowRoot: shadowRoot
+      }
+
+      // Find focusable elements in shadow DOM
+      this.shadowNavigation.focusableElements = Array.from(
+        shadowRoot.querySelectorAll('button, [role="button"], .close, img[src], [tabindex]:not([tabindex="-1"])')
+      ).filter(el => {
+        const style = window.getComputedStyle(el)
+        return style.display !== 'none' && style.visibility !== 'hidden'
+      })
+
+      // Add TV focus styles to shadow DOM
+      const style = document.createElement('style')
+      style.textContent = `
+        .ct-tv-focused {
+          outline: 3px solid #00ff00 !important;
+          outline-offset: 2px !important;
+          transition: all 0.2s ease !important;
+        }
+      `
+      shadowRoot.appendChild(style)
+
+      // Focus first element
+      if (this.shadowNavigation.focusableElements.length > 0) {
+        this.focusShadowElement(0)
+      }
+    } catch (error) {
+      console.log('Could not initialize shadow DOM navigation:', error)
+    }
+  }
+
+  // Navigate within shadow DOM
+  navigateShadow (direction) {
+    if (!this.shadowNavigation || this.shadowNavigation.focusableElements.length === 0) return
+
+    let newIndex = this.shadowNavigation.currentFocusIndex
+
+    if (direction === 'prev') {
+      newIndex = Math.max(0, this.shadowNavigation.currentFocusIndex - 1)
+    } else if (direction === 'next') {
+      newIndex = Math.min(this.shadowNavigation.focusableElements.length - 1, this.shadowNavigation.currentFocusIndex + 1)
+    }
+
+    if (newIndex !== this.shadowNavigation.currentFocusIndex) {
+      this.focusShadowElement(newIndex)
+    }
+  }
+
+  // Focus element in shadow DOM
+  focusShadowElement (index) {
+    if (!this.shadowNavigation) return
+
+    // Remove focus from current element
+    if (this.shadowNavigation.focusableElements[this.shadowNavigation.currentFocusIndex]) {
+      this.shadowNavigation.focusableElements[this.shadowNavigation.currentFocusIndex].classList.remove('ct-tv-focused')
+    }
+
+    // Focus new element
+    this.shadowNavigation.currentFocusIndex = index
+    const element = this.shadowNavigation.focusableElements[this.shadowNavigation.currentFocusIndex]
+
+    if (element) {
+      element.classList.add('ct-tv-focused')
+      this.logger.debug('Shadow DOM focused:', element.tagName, element.className)
+    }
+  }
+
+  // Activate element in shadow DOM
+  activateShadow () {
+    if (!this.shadowNavigation) return
+
+    const element = this.shadowNavigation.focusableElements[this.shadowNavigation.currentFocusIndex]
+    if (element) {
+      element.click()
+    }
+  }
+
+  // Close shadow DOM popup
+  closeShadowPopup () {
+    if (!this.shadowNavigation) return
+
+    const closeBtn = this.shadowNavigation.shadowRoot.querySelector('.close')
+    if (closeBtn) {
+      closeBtn.click()
+    }
+
+    // Clean up shadow navigation
+    this.shadowNavigation = null
+  }
+
+  // Handle main page navigation
+  handleMainPageNavigation (event) {
     if (this.focusableElements.length === 0) {
       this.findFocusableElements()
       return
@@ -322,7 +545,6 @@ class TVNavigation {
       .ct-tv-focused {
         outline: 3px solid #00ff00 !important;
         outline-offset: 2px !important;
-        background-color: #0078d4 !important;
         color: white !important;
         transform: scale(1.05) !important;
         transition: all 0.2s ease !important;
@@ -375,6 +597,7 @@ class TVNavigation {
       this.keyHandler = null
     }
     this.isEnabled = false
+    this.shadowNavigation = null
     TVNavigation.instance = null
   }
 
@@ -384,7 +607,11 @@ class TVNavigation {
       isEnabled: this.isEnabled,
       currentFocusIndex: this.currentFocusIndex,
       totalElements: this.focusableElements.length,
-      platform: this.platform
+      platform: this.platform,
+      shadowNavigation: this.shadowNavigation ? {
+        currentFocusIndex: this.shadowNavigation.currentFocusIndex,
+        totalElements: this.shadowNavigation.focusableElements.length
+      } : null
     }
   }
 }
