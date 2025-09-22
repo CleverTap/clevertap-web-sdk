@@ -30,7 +30,7 @@ export default class RequestDispatcher {
    * @param {string} url - The URL containing query parameters
    * @returns {Promise<{url: string, body?: string, method: string}>} - Modified URL with encrypted 'd' parameter
    */
-  static #prepareEncryptedRequest (url) {
+  static #prepareEncryptedRequest(url) {
     if (!this.enableEncryptionInTransit) {
       return Promise.resolve({ url, method: 'GET' })
     }
@@ -60,6 +60,7 @@ export default class RequestDispatcher {
 
           return {
             url: newUrl,
+            originalUrl: url,
             method: 'GET'
           }
         })
@@ -74,7 +75,7 @@ export default class RequestDispatcher {
   }
 
   // ANCHOR - Requests get fired from here
-  static #fireRequest (url, tries, skipARP, sendOULFlag, evtName) {
+  static #fireRequest(url, tries, skipARP, sendOULFlag, evtName) {
     if (this.#dropRequestDueToOptOut()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
@@ -161,7 +162,7 @@ export default class RequestDispatcher {
           document.getElementsByTagName('head')[0].appendChild(s)
           this.logger.debug('req snt -> url: ' + requestConfig.url)
         } else {
-          this.handleFetchResponse(requestConfig.url)
+          this.handleFetchResponse(requestConfig.url, requestConfig.originalUrl)
         }
       })
       .catch((error) => {
@@ -175,11 +176,11 @@ export default class RequestDispatcher {
    * @param {*} skipARP
    * @param {boolean} sendOULFlag
    */
-  static fireRequest (url, skipARP, sendOULFlag, evtName) {
+  static fireRequest(url, skipARP, sendOULFlag, evtName) {
     this.#fireRequest(url, 1, skipARP, sendOULFlag, evtName)
   }
 
-  static #dropRequestDueToOptOut () {
+  static #dropRequestDueToOptOut() {
     if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
       $ct.isOptInRequest = false
       return false
@@ -187,7 +188,7 @@ export default class RequestDispatcher {
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH
   }
 
-  static #addUseIPToRequest (pageLoadUrl) {
+  static #addUseIPToRequest(pageLoadUrl) {
     var useIP = StorageManager.getMetaProp(USEIP_KEY)
     if (typeof useIP !== 'boolean') {
       useIP = false
@@ -195,7 +196,7 @@ export default class RequestDispatcher {
     return addToURL(pageLoadUrl, USEIP_KEY, useIP ? 'true' : 'false')
   };
 
-  static #addARPToRequest (url, skipResARP) {
+  static #addARPToRequest(url, skipResARP) {
     if (skipResARP === true) {
       const _arp = {}
       _arp.skipResARP = true
@@ -207,36 +208,51 @@ export default class RequestDispatcher {
     return url
   }
 
-  static handleFetchResponse (url, body = null, method = 'GET') {
+  static handleFetchResponse(encryptedUrl, originalUrl, retryCount = 0) {
     const fetchOptions = {
       method: 'GET',
       headers: { Accept: 'application/json' }
     }
 
-    fetch(url, fetchOptions)
+    fetch(encryptedUrl, fetchOptions)
       .then((response) => {
         if (!response.ok) {
-          // Check for server-side EIT disabled scenario
-          if (response.status === 400) {
-            return response.text().then((errorText) => {
-              if (errorText.includes('EIT_DISABLED')) {
-                console.error('Encryption in Transit is disabled on server side – disable flag or contact support', {
-                  status: response.status,
-                  statusText: response.statusText,
-                  error: errorText
-                })
-              }
-              throw new Error(`Network response was not ok: ${response.statusText}`)
-            })
+          // Handle 419: Encryption not enabled for account
+          if (response.status === 419) {
+            this.logger.error('Encryption not enabled for account')
+            // Retry with the original unencrypted URL
+            if (originalUrl && originalUrl !== encryptedUrl) {
+              this.logger.debug('Retrying request without encryption')
+              return this.handleFetchResponse(originalUrl, originalUrl)
+            }
+            throw new Error(`Encryption not enabled for account: ${response.statusText}`)
           }
+
+          // Handle 420: Failed to decrypt payload
+          if (response.status === 420) {
+            if (retryCount < 3) {
+              this.logger.debug(`Retrying request due to 420 error, attempt ${retryCount + 1} of 3`)
+              // Retry the same encrypted request
+              return this.handleFetchResponse(encryptedUrl, originalUrl, retryCount + 1)
+            } else {
+              this.logger.error('Failed to decrypt payload after 3 retries')
+              throw new Error('Failed to decrypt payload')
+            }
+          }
+
           throw new Error(`Network response was not ok: ${response.statusText}`)
         }
         return response.text()
       })
       .then((rawResponse) => {
+        // Skip processing if this is a retry response that will be handled recursively
+        if (rawResponse instanceof Promise) {
+          return rawResponse
+        }
+
         // Phase 2: Attempt to decrypt the response if it might be encrypted
         const tryDecryption = () => {
-          if (rawResponse && rawResponse.length > 0) {
+          if (rawResponse && rawResponse.length > 0 && this.enableEncryptionInTransit) {
             return encryptionInTransitInstance.decryptFromBackend(rawResponse)
               .then((decryptedResponse) => {
                 this.logger.debug('Successfully decrypted response')
@@ -254,6 +270,11 @@ export default class RequestDispatcher {
         return tryDecryption()
       })
       .then((processedResponse) => {
+        // Skip processing if this is a recursive promise
+        if (processedResponse instanceof Promise) {
+          return processedResponse
+        }
+
         // Parse the final response as JSON
         let jsonResponse
         try {
@@ -283,7 +304,7 @@ export default class RequestDispatcher {
         if (wpe) {
           window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key)
         }
-        this.logger.debug('req snt -> url: ' + url)
+        this.logger.debug('req snt -> url: ' + encryptedUrl)
       })
       .catch((error) => {
         if (error.message && error.message.includes('EIT decryption failed')) {
@@ -295,7 +316,7 @@ export default class RequestDispatcher {
       })
   }
 
-  getDelayFrequency () {
+  getDelayFrequency() {
     this.logger.debug('Network retry #' + this.networkRetryCount)
 
     // Retry with delay as 1s for first 10 retries
