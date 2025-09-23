@@ -61,6 +61,11 @@ export default class Account {
   }
 
   get finalTargetDomain () {
+    // Skip region prefix for localhost
+    if (this.targetDomain.includes('localhost')) {
+      return this.targetDomain
+    }
+
     if (this.region) {
       return `${this.region}.${this.targetDomain}`
     } else {
