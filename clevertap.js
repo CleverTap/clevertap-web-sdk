@@ -18,8 +18,8 @@
     return receiver;
   }
 
-  const TARGET_DOMAIN = 'clevertap-prod.com';
-  const TARGET_PROTOCOL = 'https:';
+  const TARGET_DOMAIN = 'localhost:8080';
+  const TARGET_PROTOCOL = 'http:';
   const DEFAULT_REGION = 'eu1';
 
   var _accountId = _classPrivateFieldLooseKey("accountId");
@@ -116,6 +116,11 @@
     }
 
     get finalTargetDomain() {
+      // Skip region prefix for localhost
+      if (this.targetDomain.includes('localhost')) {
+        return this.targetDomain;
+      }
+
       if (this.region) {
         return "".concat(this.region, ".").concat(this.targetDomain);
       } else {
