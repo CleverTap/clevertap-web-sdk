@@ -59,8 +59,6 @@ export const appendScriptForCustomEvent = (targetingMsgJson, html) => {
 }
 
 export const appendTVNavigationScript = (targetingMsgJson, html) => {
-  console.log('$ct.enableTVNavigation in Web Popup Script', $ct.enableTVNavigation)
-
   const script = `<script>
       const ct__campaignId = '${targetingMsgJson.wzrk_id}';
       const ct__formatVal_tv = (v) => v && v.trim().substring(0, 20);
@@ -76,7 +74,6 @@ export const appendTVNavigationScript = (targetingMsgJson, html) => {
           
           console.log('Found focusable elements:', focusableElements.length);
           // Ensure iframe has focus
-          console.log('Setting focus to iframe window');
           window.focus();
           if (focusableElements.length > 0) { focusElement(0); }
       }
@@ -104,7 +101,6 @@ export const appendTVNavigationScript = (targetingMsgJson, html) => {
               }
               console.log('Clicking element:', element);
               element.click();
-              console.log('Element clicked');
           }
       }
       
@@ -141,9 +137,6 @@ export const appendTVNavigationScript = (targetingMsgJson, html) => {
 
   // Since there's no </body> tag, append the script at the end of the HTML
   const modifiedHtml = html + script
-
-  console.log('Script appended, new HTML length:', modifiedHtml.length)
-
   return modifiedHtml
 }
 

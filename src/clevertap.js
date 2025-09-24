@@ -716,14 +716,14 @@ export default class CleverTap {
     if ((config?.isTV && config?.enableCThandler) || enableTVControls) {
       // CleverTap handles navigation
       StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
-      console.log('CleverTap TV Navigation Mode: CleverTap will handle all navigation')
+      this.#logger.debug('CleverTap TV Navigation Mode: CleverTap will handle all navigation')
 
       // Initialize CleverTap TV navigation system
       this.#tvNavigation.init()
     } else if (config?.isTV) {
       // Customer handles navigation (default)
       StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false)
-      console.log('CleverTap TV Navigation Mode: Customer handles navigation')
+      this.#logger.debug('CleverTap TV Navigation Mode: Customer handles navigation')
     }
 
     StorageManager.removeCookie('WZRK_P', window.location.hostname)
