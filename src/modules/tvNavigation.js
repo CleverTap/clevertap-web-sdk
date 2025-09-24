@@ -199,7 +199,7 @@ class TVNavigation {
       this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused')
     }
 
-    console.log('Forwarding key event to popup iframe:', event.keyCode)
+    this.logger.debug('Forwarding key event to popup iframe:', event.keyCode)
 
     // Forward the key event to the iframe
     try {
@@ -212,7 +212,7 @@ class TVNavigation {
       })
       iframeWindow.document.dispatchEvent(forwardedEvent)
     } catch (error) {
-      console.log('Could not forward event to iframe:', error)
+      this.logger.error('Could not forward event to iframe:', error)
     }
 
     // Prevent main page from handling the key
@@ -263,29 +263,29 @@ class TVNavigation {
       let shadowRoot = null
 
       if (shadowPopupElement.getShadowRoot) {
-        console.log('Using getShadowRoot method')
+        this.logger.debug('Using getShadowRoot method')
         shadowRoot = shadowPopupElement.getShadowRoot()
       } else if (shadowPopupElement.shadowRoot) {
-        console.log('Using shadowRoot property')
+        this.logger.debug('Using shadowRoot property')
         shadowRoot = shadowPopupElement.shadowRoot
       } else if (shadowPopupElement.shadow) {
-        console.log('Using shadow property')
+        this.logger.debug('Using shadow property')
         shadowRoot = shadowPopupElement.shadow
       }
 
       if (!shadowRoot) {
         // Alternative: look for the element with shadow root
         const ctElement = document.querySelector('ct-web-popup-imageonly')
-        console.log('Alternative ct-element:', ctElement)
+        this.logger.debug('Alternative ct-element:', ctElement)
 
         if (ctElement && ctElement.shadowRoot) {
           shadowRoot = ctElement.shadowRoot
-          console.log('Found shadow root via alternative method')
+          this.logger.debug('Found shadow root via alternative method')
         }
       }
 
       if (!shadowRoot) {
-        console.log('Still no shadow root found')
+        this.logger.debug('Still no shadow root found')
         return
       }
 
@@ -319,7 +319,7 @@ class TVNavigation {
         this.focusShadowElement(0)
       }
     } catch (error) {
-      console.log('Could not initialize shadow DOM navigation:', error)
+      this.logger.error('Could not initialize shadow DOM navigation:', error)
     }
   }
 
