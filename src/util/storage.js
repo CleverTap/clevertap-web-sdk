@@ -318,7 +318,8 @@ export const $ct = {
   variableStore: {},
   pushConfig: null,
   delayEvents: false,
-  intervalArray: []
+  intervalArray: [],
+  enableTVNavigation: false
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }
