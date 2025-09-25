@@ -546,7 +546,6 @@ class TVNavigation {
         outline: 3px solid #00ff00 !important;
         outline-offset: 2px !important;
         color: white !important;
-        transform: scale(1.05) !important;
         transition: all 0.2s ease !important;
         box-shadow: 0 0 15px rgba(0, 255, 0, 0.8) !important;
         z-index: 9999 !important;

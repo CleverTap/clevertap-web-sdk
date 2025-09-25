@@ -17373,7 +17373,7 @@
         this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused');
       }
 
-      console.log('Forwarding key event to popup iframe:', event.keyCode); // Forward the key event to the iframe
+      this.logger.debug('Forwarding key event to popup iframe:', event.keyCode); // Forward the key event to the iframe
 
       try {
         const iframeWindow = activePopup.contentWindow;
@@ -17385,7 +17385,7 @@
         });
         iframeWindow.document.dispatchEvent(forwardedEvent);
       } catch (error) {
-        console.log('Could not forward event to iframe:', error);
+        this.logger.error('Could not forward event to iframe:', error);
       } // Prevent main page from handling the key
 
 
@@ -17439,29 +17439,29 @@
         let shadowRoot = null;
 
         if (shadowPopupElement.getShadowRoot) {
-          console.log('Using getShadowRoot method');
+          this.logger.debug('Using getShadowRoot method');
           shadowRoot = shadowPopupElement.getShadowRoot();
         } else if (shadowPopupElement.shadowRoot) {
-          console.log('Using shadowRoot property');
+          this.logger.debug('Using shadowRoot property');
           shadowRoot = shadowPopupElement.shadowRoot;
         } else if (shadowPopupElement.shadow) {
-          console.log('Using shadow property');
+          this.logger.debug('Using shadow property');
           shadowRoot = shadowPopupElement.shadow;
         }
 
         if (!shadowRoot) {
           // Alternative: look for the element with shadow root
           const ctElement = document.querySelector('ct-web-popup-imageonly');
-          console.log('Alternative ct-element:', ctElement);
+          this.logger.debug('Alternative ct-element:', ctElement);
 
           if (ctElement && ctElement.shadowRoot) {
             shadowRoot = ctElement.shadowRoot;
-            console.log('Found shadow root via alternative method');
+            this.logger.debug('Found shadow root via alternative method');
           }
         }
 
         if (!shadowRoot) {
-          console.log('Still no shadow root found');
+          this.logger.debug('Still no shadow root found');
           return;
         }
 
@@ -17484,7 +17484,7 @@
           this.focusShadowElement(0);
         }
       } catch (error) {
-        console.log('Could not initialize shadow DOM navigation:', error);
+        this.logger.error('Could not initialize shadow DOM navigation:', error);
       }
     } // Navigate within shadow DOM
 
@@ -17698,7 +17698,7 @@
       if (document.getElementById('ct-tv-styles')) return;
       const style = document.createElement('style');
       style.id = 'ct-tv-styles';
-      style.textContent = "\n      .ct-tv-focused {\n        outline: 3px solid #00ff00 !important;\n        outline-offset: 2px !important;\n        color: white !important;\n        transform: scale(1.05) !important;\n        transition: all 0.2s ease !important;\n        box-shadow: 0 0 15px rgba(0, 255, 0, 0.8) !important;\n        z-index: 9999 !important;\n        position: relative !important;\n      }\n      \n      .ct-tv-focused:focus {\n        outline: 3px solid #00ff00 !important;\n      }\n    ";
+      style.textContent = "\n      .ct-tv-focused {\n        outline: 3px solid #00ff00 !important;\n        outline-offset: 2px !important;\n        color: white !important;\n        transition: all 0.2s ease !important;\n        box-shadow: 0 0 15px rgba(0, 255, 0, 0.8) !important;\n        z-index: 9999 !important;\n        position: relative !important;\n      }\n      \n      .ct-tv-focused:focus {\n        outline: 3px solid #00ff00 !important;\n      }\n    ";
       document.head.appendChild(style);
     } // Refresh focusable elements (call when DOM changes)
 
