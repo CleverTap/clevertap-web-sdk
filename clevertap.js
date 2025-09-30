@@ -17908,7 +17908,7 @@
     }
 
     constructor() {
-      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$config3, _clevertap$config4, _clevertap$account6;
+      var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$config3, _clevertap$account6;
 
       let clevertap = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
       Object.defineProperty(this, _sendLocationData, {
@@ -18071,7 +18071,7 @@
       this.spa = clevertap.spa;
       this.dismissSpamControl = (_clevertap$dismissSpa2 = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa2 !== void 0 ? _clevertap$dismissSpa2 : true;
 
-      if (((_clevertap$config3 = clevertap.config) === null || _clevertap$config3 === void 0 ? void 0 : _clevertap$config3.isTV) && ((_clevertap$config4 = clevertap.config) === null || _clevertap$config4 === void 0 ? void 0 : _clevertap$config4.enableCThandler)) {
+      if ((_clevertap$config3 = clevertap.config) === null || _clevertap$config3 === void 0 ? void 0 : _clevertap$config3.enableTVControls) {
         StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true);
       } else {
         StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false);
@@ -18693,8 +18693,7 @@
         antiFlicker: {},
         customId: null,
         isolateSubdomain: false,
-        isTV: false,
-        enableCThandler: false
+        enableTVControls: false
       };
 
       if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
@@ -18714,9 +18713,9 @@
         encryption.key = accountId;
       }
 
-      const enableTVControls = (_StorageManager$readF = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : false;
+      const enableControls = (_StorageManager$readF = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : false;
 
-      if ((config === null || config === void 0 ? void 0 : config.isTV) && (config === null || config === void 0 ? void 0 : config.enableCThandler) || enableTVControls) {
+      if ((config === null || config === void 0 ? void 0 : config.enableTVControls) || enableControls) {
         // CleverTap handles navigation
         StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true);
 
@@ -18724,11 +18723,6 @@
 
 
         _classPrivateFieldLooseBase(this, _tvNavigation)[_tvNavigation].init();
-      } else if (config === null || config === void 0 ? void 0 : config.isTV) {
-        // Customer handles navigation (default)
-        StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false);
-
-        _classPrivateFieldLooseBase(this, _logger)[_logger].debug('CleverTap TV Navigation Mode: Customer handles navigation');
       }
 
       StorageManager.removeCookie('WZRK_P', window.location.hostname);

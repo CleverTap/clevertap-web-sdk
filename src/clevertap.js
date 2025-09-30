@@ -182,7 +182,7 @@ export default class CleverTap {
     this.spa = clevertap.spa
     this.dismissSpamControl = clevertap.dismissSpamControl ?? true
 
-    if (clevertap.config?.isTV && clevertap.config?.enableCThandler) {
+    if (clevertap.config?.enableTVControls) {
       StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
     } else {
       StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false)
@@ -692,8 +692,7 @@ export default class CleverTap {
     antiFlicker: {},
     customId: null,
     isolateSubdomain: false,
-    isTV: false,
-    enableCThandler: false
+    enableTVControls: false
   }) {
     if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
@@ -712,18 +711,13 @@ export default class CleverTap {
       encryption.key = accountId
     }
 
-    const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS) ?? false
-    if ((config?.isTV && config?.enableCThandler) || enableTVControls) {
+    const enableControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS) ?? false
+    if ((config?.enableTVControls) || enableControls) {
       // CleverTap handles navigation
       StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
       this.#logger.debug('CleverTap TV Navigation Mode: CleverTap will handle all navigation')
-
       // Initialize CleverTap TV navigation system
       this.#tvNavigation.init()
-    } else if (config?.isTV) {
-      // Customer handles navigation (default)
-      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false)
-      this.#logger.debug('CleverTap TV Navigation Mode: Customer handles navigation')
     }
 
     StorageManager.removeCookie('WZRK_P', window.location.hostname)
