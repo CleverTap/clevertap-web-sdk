@@ -35,6 +35,7 @@ import {
   processGPlusUserObj,
   addToLocalProfileMap
 } from '../util/clevertap'
+import { validateCustomCleverTapID } from '../util/helpers'
 
 export default class UserLoginHandler extends Array {
   #request
@@ -64,8 +65,9 @@ export default class UserLoginHandler extends Array {
   // On User Login
   #processOUL (profileArr) {
     let sendOULFlag = true
+    let hasCustomCTID = false
     StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
-    const addToK = (ids) => {
+    const addToK = (ids, customCTIDFlag = false) => {
       let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME)
       const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME)
       let kId
@@ -127,7 +129,7 @@ export default class UserLoginHandler extends Array {
             this.#request.unregisterTokenForGuid(lastGUID)
           }
         } else {
-          if (!anonymousUser) {
+          if (!anonymousUser && !customCTIDFlag) {
             this.clear()
           } else {
             if ((g) != null) {
@@ -177,6 +179,25 @@ export default class UserLoginHandler extends Array {
               profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
             }
 
+            // Handle CustomCTID field for setting custom CleverTap ID
+            if (profileObj.CustomCTID) {
+              const result = validateCustomCleverTapID(profileObj.CustomCTID)
+              if (result.isValid) {
+                hasCustomCTID = true
+                // Set the custom ID as gcookie
+                this.#device.gcookie = result.sanitizedId
+                StorageManager.saveToLSorCookie(GCOOKIE_NAME, result.sanitizedId)
+                this.#logger.debug('CustomCTID set for OUL flow:: ' + result.sanitizedId)
+
+                // Remove CustomCTID from profile data before sending to server
+                delete profileObj.CustomCTID
+              } else {
+                this.#logger.error('Invalid CustomCTID: ' + result.error)
+                // Remove invalid CustomCTID from profile data
+                delete profileObj.CustomCTID
+              }
+            }
+
             data.profile = profileObj
             const ids = []
             if (StorageManager._isLocalStorageSupported()) {
@@ -193,7 +214,7 @@ export default class UserLoginHandler extends Array {
                 ids.push('FB:' + profileObj.FBID)
               }
               if (ids.length > 0) {
-                addToK(ids)
+                addToK(ids, hasCustomCTID)
               }
             }
             addToLocalProfileMap(profileObj, true)
