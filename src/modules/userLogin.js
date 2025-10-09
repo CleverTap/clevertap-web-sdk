@@ -181,9 +181,9 @@ export default class UserLoginHandler extends Array {
 
             // Handle CustomCTID field for setting custom CleverTap ID
             if (profileObj.CustomCTID) {
-              hasCustomCTID = true
               const result = validateCustomCleverTapID(profileObj.CustomCTID)
               if (result.isValid) {
+                hasCustomCTID = true
                 // Set the custom ID as gcookie
                 this.#device.gcookie = result.sanitizedId
                 StorageManager.saveToLSorCookie(GCOOKIE_NAME, result.sanitizedId)

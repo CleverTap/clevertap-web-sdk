@@ -10761,11 +10761,11 @@
 
 
             if (profileObj.CustomCTID) {
-              hasCustomCTID = true;
               const result = validateCustomCleverTapID(profileObj.CustomCTID);
 
               if (result.isValid) {
-                // Set the custom ID as gcookie
+                hasCustomCTID = true; // Set the custom ID as gcookie
+
                 _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = result.sanitizedId;
                 StorageManager.saveToLSorCookie(GCOOKIE_NAME, result.sanitizedId);
 
