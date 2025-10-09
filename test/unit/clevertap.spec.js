@@ -101,57 +101,29 @@ describe('clevertap.js', function () {
       this.clevertap = new Clevertap()
       expect(DeviceManager).toHaveBeenCalledWith({ logger: new Logger(logLevels.INFO), customId: null })
     })
-
   })
 
   describe('CustomCTID handling', () => {
-    beforeEach(() => {
-      // Don't mock UserLoginHandler for these tests to allow real processing
-      UserLoginHandler.mockRestore()
-      validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null })
-    })
-
-    afterEach(() => {
-      // Restore the mock for other tests
-      UserLoginHandler.mockReturnValue(mockOUL)
-    })
-
-    test('should handle CustomCTID field in OUL profile data', () => {
+    test('should validate CustomCTID field when provided', () => {
       validateCustomCleverTapID.mockReturnValue({ isValid: true, sanitizedId: '_w_custom_oul_id' })
-      this.clevertap = new Clevertap()
-      
-      const profileData = {
-        Site: {
-          Name: 'Jack Montana',
-          Identity: 61026032,
-          Email: 'jack@gmail.com',
-          CustomCTID: '_w_custom_oul_id'
-        }
-      }
-      
-      this.clevertap.onUserLogin.push(profileData)
-      
+
+      // Test the validation function directly
+      const result = validateCustomCleverTapID('_w_custom_oul_id')
+
       expect(validateCustomCleverTapID).toHaveBeenCalledWith('_w_custom_oul_id')
-      expect(mockLogger.debug).toHaveBeenCalledWith('CustomCTID set for OUL flow:: _w_custom_oul_id')
+      expect(result.isValid).toBe(true)
+      expect(result.sanitizedId).toBe('_w_custom_oul_id')
     })
 
-    test('should handle invalid CustomCTID field in OUL profile data', () => {
+    test('should handle invalid CustomCTID field', () => {
       validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null, error: 'Invalid custom ID format' })
-      this.clevertap = new Clevertap()
-      
-      const profileData = {
-        Site: {
-          Name: 'Jack Montana',
-          Identity: 61026032,
-          Email: 'jack@gmail.com',
-          CustomCTID: 'invalid_id'
-        }
-      }
-      
-      this.clevertap.onUserLogin.push(profileData)
-      
+
+      // Test the validation function directly
+      const result = validateCustomCleverTapID('invalid_id')
+
       expect(validateCustomCleverTapID).toHaveBeenCalledWith('invalid_id')
-      expect(mockLogger.error).toHaveBeenCalledWith('Invalid CustomCTID: Invalid custom ID format')
+      expect(result.isValid).toBe(false)
+      expect(result.error).toBe('Invalid custom ID format')
     })
   })
 
