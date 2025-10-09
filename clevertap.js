@@ -13875,7 +13875,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.3.0';
+            const sdkVersion = '2.3.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -16422,7 +16422,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.3.0',
+        lib: 'web-sdk-v2.3.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18344,7 +18344,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.3.0';
+      return 'web-sdk-v2.3.1';
     }
 
     defineVariable(name, defaultValue) {
