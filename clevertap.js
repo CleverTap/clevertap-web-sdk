@@ -10369,377 +10369,6 @@
     }
   };
 
-  var _request$4 = _classPrivateFieldLooseKey("request");
-
-  var _logger$6 = _classPrivateFieldLooseKey("logger");
-
-  var _account$5 = _classPrivateFieldLooseKey("account");
-
-  var _session$2 = _classPrivateFieldLooseKey("session");
-
-  var _oldValues$2 = _classPrivateFieldLooseKey("oldValues");
-
-  var _device$2 = _classPrivateFieldLooseKey("device");
-
-  var _processOUL = _classPrivateFieldLooseKey("processOUL");
-
-  var _handleCookieFromCache = _classPrivateFieldLooseKey("handleCookieFromCache");
-
-  var _deleteUser = _classPrivateFieldLooseKey("deleteUser");
-
-  var _processLoginArray = _classPrivateFieldLooseKey("processLoginArray");
-
-  class UserLoginHandler extends Array {
-    constructor(_ref, values) {
-      let {
-        request,
-        account,
-        session,
-        logger,
-        device
-      } = _ref;
-      super();
-      Object.defineProperty(this, _processLoginArray, {
-        value: _processLoginArray2
-      });
-      Object.defineProperty(this, _deleteUser, {
-        value: _deleteUser2
-      });
-      Object.defineProperty(this, _handleCookieFromCache, {
-        value: _handleCookieFromCache2
-      });
-      Object.defineProperty(this, _processOUL, {
-        value: _processOUL2
-      });
-      Object.defineProperty(this, _request$4, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _logger$6, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _account$5, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _session$2, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _oldValues$2, {
-        writable: true,
-        value: void 0
-      });
-      Object.defineProperty(this, _device$2, {
-        writable: true,
-        value: void 0
-      });
-      _classPrivateFieldLooseBase(this, _request$4)[_request$4] = request;
-      _classPrivateFieldLooseBase(this, _account$5)[_account$5] = account;
-      _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
-      _classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2] = values;
-      _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
-    } // On User Login
-
-
-    clear() {
-      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('clear called. Reset flag has been set.');
-
-      _classPrivateFieldLooseBase(this, _deleteUser)[_deleteUser]();
-
-      StorageManager.setMetaProp(CLEAR, true);
-    }
-
-    push() {
-      for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
-        profilesArr[_key] = arguments[_key];
-      }
-
-      _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](profilesArr);
-
-      return 0;
-    }
-
-    _processOldValues() {
-      if (_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]) {
-        _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]);
-      }
-
-      _classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2] = null;
-    }
-
-  }
-
-  var _processOUL2 = function _processOUL2(profileArr) {
-    let sendOULFlag = true;
-    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
-
-    const addToK = ids => {
-      let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
-      const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME);
-      let kId;
-
-      if (k == null) {
-        k = {};
-        kId = ids;
-      } else {
-        /* check if already exists */
-        kId = k.id;
-        let anonymousUser = false;
-        let foundInCache = false;
-
-        if (kId == null) {
-          kId = ids[0];
-          anonymousUser = true;
-        }
-
-        if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
-          $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
-        }
-
-        if (anonymousUser) {
-          if (g != null) {
-            // if have gcookie
-            $ct.LRU_CACHE.set(kId, g);
-            $ct.blockRequest = false;
-          }
-        } else {
-          // check if the id is present in the cache
-          // set foundInCache to true
-          for (const idx in ids) {
-            if (ids.hasOwnProperty(idx)) {
-              const id = ids[idx];
-
-              if ($ct.LRU_CACHE.cache[id]) {
-                kId = id;
-                foundInCache = true;
-                break;
-              }
-            }
-          }
-        }
-
-        if (foundInCache) {
-          if (kId !== $ct.LRU_CACHE.getLastKey()) {
-            // New User found
-            // remove the entire cache
-            _classPrivateFieldLooseBase(this, _handleCookieFromCache)[_handleCookieFromCache]();
-          } else {
-            sendOULFlag = false;
-            StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
-          }
-
-          const gFromCache = $ct.LRU_CACHE.get(kId);
-          $ct.LRU_CACHE.set(kId, gFromCache);
-          StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
-          _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = gFromCache;
-          const lastK = $ct.LRU_CACHE.getSecondLastKey();
-
-          if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
-            // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
-            const lastGUID = $ct.LRU_CACHE.cache[lastK];
-
-            _classPrivateFieldLooseBase(this, _request$4)[_request$4].unregisterTokenForGuid(lastGUID);
-          }
-        } else {
-          if (!anonymousUser) {
-            this.clear();
-          } else {
-            if (g != null) {
-              _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = g;
-              StorageManager.saveToLSorCookie(GCOOKIE_NAME, g);
-              sendOULFlag = false;
-            }
-          }
-
-          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
-          kId = ids[0];
-        }
-      }
-
-      k.id = kId;
-      StorageManager.saveToLSorCookie(KCOOKIE_NAME, k);
-    };
-
-    if (Array.isArray(profileArr) && profileArr.length > 0) {
-      for (const index in profileArr) {
-        if (profileArr.hasOwnProperty(index)) {
-          const outerObj = profileArr[index];
-          let data = {};
-          let profileObj;
-
-          if (outerObj.Site != null) {
-            // organic data from the site
-            profileObj = outerObj.Site;
-
-            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
-              logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
-            })) {
-              return;
-            }
-          } else if (outerObj.Facebook != null) {
-            // fb connect data
-            const FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
-
-            if (!isObjectEmpty(FbProfileObj) && !FbProfileObj.error) {
-              profileObj = processFBUserObj(FbProfileObj);
-            }
-          } else if (outerObj['Google Plus'] != null) {
-            const GPlusProfileObj = outerObj['Google Plus'];
-
-            if (isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
-              profileObj = processGPlusUserObj(GPlusProfileObj, {
-                logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
-              });
-            }
-          }
-
-          if (profileObj != null && !isObjectEmpty(profileObj)) {
-            // profile got set from above
-            data.type = 'profile';
-
-            if (profileObj.tz == null) {
-              // try to auto capture user timezone if not present
-              profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
-            }
-
-            data.profile = profileObj;
-            const ids = [];
-
-            if (StorageManager._isLocalStorageSupported()) {
-              if (profileObj.Identity) {
-                ids.push(profileObj.Identity);
-              }
-
-              if (profileObj.Email) {
-                ids.push(profileObj.Email);
-              }
-
-              if (profileObj.GPID) {
-                ids.push('GP:' + profileObj.GPID);
-              }
-
-              if (profileObj.FBID) {
-                ids.push('FB:' + profileObj.FBID);
-              }
-
-              if (ids.length > 0) {
-                addToK(ids);
-              }
-            }
-
-            addToLocalProfileMap(profileObj, true);
-            data = _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
-
-            _classPrivateFieldLooseBase(this, _request$4)[_request$4].addFlags(data); // Adding 'isOUL' flag in true for OUL cases which.
-            // This flag tells LC to create a new arp object.
-            // Also we will receive the same flag in response arp which tells to delete existing arp object.
-
-
-            if (sendOULFlag) {
-              data[IS_OUL] = true;
-            }
-
-            const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
-
-            let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
-
-            pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData); // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
-            // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
-            // stored in the cache and replace it with the response arp.
-
-            _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag);
-          }
-        }
-      }
-    }
-  };
-
-  var _handleCookieFromCache2 = function _handleCookieFromCache2() {
-    $ct.blockRequest = false;
-    console.debug('Block request is false');
-
-    if (StorageManager._isLocalStorageSupported()) {
-      delete localStorage[PR_COOKIE];
-      delete localStorage[EV_COOKIE];
-      delete localStorage[META_COOKIE];
-      delete localStorage[ARP_COOKIE];
-      delete localStorage[CAMP_COOKIE_NAME];
-      delete localStorage[CHARGEDID_COOKIE_NAME];
-    }
-
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
-    StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
-    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
-
-    _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
-  };
-
-  var _deleteUser2 = function _deleteUser2() {
-    $ct.blockRequest = true;
-
-    _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Block request is true');
-
-    $ct.globalCache = {
-      gcookie: null,
-      REQ_N: 0,
-      RESP_N: 0
-    };
-
-    if (StorageManager._isLocalStorageSupported()) {
-      delete localStorage[GCOOKIE_NAME];
-      delete localStorage[KCOOKIE_NAME];
-      delete localStorage[PR_COOKIE];
-      delete localStorage[EV_COOKIE];
-      delete localStorage[META_COOKIE];
-      delete localStorage[ARP_COOKIE];
-      delete localStorage[CAMP_COOKIE_NAME];
-      delete localStorage[CHARGEDID_COOKIE_NAME];
-    }
-
-    StorageManager.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
-    StorageManager.removeCookie(KCOOKIE_NAME, getHostName());
-    StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
-    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
-    _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = null;
-
-    _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
-  };
-
-  var _processLoginArray2 = function _processLoginArray2(loginArr) {
-    if (Array.isArray(loginArr) && loginArr.length > 0) {
-      const profileObj = loginArr.pop();
-      const processProfile = profileObj != null && isObject(profileObj) && (profileObj.Site != null && Object.keys(profileObj.Site).length > 0 || profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0 || profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0);
-
-      if (processProfile) {
-        StorageManager.setInstantDeleteFlagInK();
-
-        try {
-          _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
-        } catch (e) {
-          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug(e);
-        }
-      } else {
-        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error('Profile object is in incorrect format');
-      }
-    }
-  };
-
-  const getBoxPromptStyles = style => {
-    const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
-    const cardPadding = 16 * 2; // Left and right padding
-
-    const cardContentWidth = 360 - cardPadding - totalBorderWidth;
-    return "\n    #pnWrapper {\n      width: 360px;\n      font-family: proxima-nova, Arial, sans-serif;\n    }\n    \n    #pnWrapper * {\n       margin: 0px;\n       padding: 0px;\n       text-align: left;\n    }\n    ".concat(style.overlay.enabled ? "#pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n") : '', "\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n      text-align: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
-  };
-  const getBellIconStyles = style => {
-    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
-  };
-
   const isChrome = () => {
     const ua = navigator.userAgent;
     return ua.includes('Chrome') || ua.includes('CriOS');
@@ -10889,6 +10518,403 @@
 
     return "".concat(CUSTOM_CT_ID_PREFIX).concat(id.toLowerCase());
   }
+
+  var _request$4 = _classPrivateFieldLooseKey("request");
+
+  var _logger$6 = _classPrivateFieldLooseKey("logger");
+
+  var _account$5 = _classPrivateFieldLooseKey("account");
+
+  var _session$2 = _classPrivateFieldLooseKey("session");
+
+  var _oldValues$2 = _classPrivateFieldLooseKey("oldValues");
+
+  var _device$2 = _classPrivateFieldLooseKey("device");
+
+  var _processOUL = _classPrivateFieldLooseKey("processOUL");
+
+  var _handleCookieFromCache = _classPrivateFieldLooseKey("handleCookieFromCache");
+
+  var _deleteUser = _classPrivateFieldLooseKey("deleteUser");
+
+  var _processLoginArray = _classPrivateFieldLooseKey("processLoginArray");
+
+  class UserLoginHandler extends Array {
+    constructor(_ref, values) {
+      let {
+        request,
+        account,
+        session,
+        logger,
+        device
+      } = _ref;
+      super();
+      Object.defineProperty(this, _processLoginArray, {
+        value: _processLoginArray2
+      });
+      Object.defineProperty(this, _deleteUser, {
+        value: _deleteUser2
+      });
+      Object.defineProperty(this, _handleCookieFromCache, {
+        value: _handleCookieFromCache2
+      });
+      Object.defineProperty(this, _processOUL, {
+        value: _processOUL2
+      });
+      Object.defineProperty(this, _request$4, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _logger$6, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _account$5, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _session$2, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _oldValues$2, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _device$2, {
+        writable: true,
+        value: void 0
+      });
+      _classPrivateFieldLooseBase(this, _request$4)[_request$4] = request;
+      _classPrivateFieldLooseBase(this, _account$5)[_account$5] = account;
+      _classPrivateFieldLooseBase(this, _session$2)[_session$2] = session;
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6] = logger;
+      _classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2] = values;
+      _classPrivateFieldLooseBase(this, _device$2)[_device$2] = device;
+    } // On User Login
+
+
+    clear() {
+      _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('clear called. Reset flag has been set.');
+
+      _classPrivateFieldLooseBase(this, _deleteUser)[_deleteUser]();
+
+      StorageManager.setMetaProp(CLEAR, true);
+    }
+
+    push() {
+      for (var _len = arguments.length, profilesArr = new Array(_len), _key = 0; _key < _len; _key++) {
+        profilesArr[_key] = arguments[_key];
+      }
+
+      _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](profilesArr);
+
+      return 0;
+    }
+
+    _processOldValues() {
+      if (_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]) {
+        _classPrivateFieldLooseBase(this, _processLoginArray)[_processLoginArray](_classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2]);
+      }
+
+      _classPrivateFieldLooseBase(this, _oldValues$2)[_oldValues$2] = null;
+    }
+
+  }
+
+  var _processOUL2 = function _processOUL2(profileArr) {
+    var _this = this;
+
+    let sendOULFlag = true;
+    let hasCustomId = false;
+    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
+
+    const addToK = function (ids) {
+      let customIdFlag = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
+      const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME);
+      let kId;
+
+      if (k == null) {
+        k = {};
+        kId = ids;
+      } else {
+        /* check if already exists */
+        kId = k.id;
+        let anonymousUser = false;
+        let foundInCache = false;
+
+        if (kId == null) {
+          kId = ids[0];
+          anonymousUser = true;
+        }
+
+        if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
+          $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE);
+        }
+
+        if (anonymousUser) {
+          if (g != null) {
+            // if have gcookie
+            $ct.LRU_CACHE.set(kId, g);
+            $ct.blockRequest = false;
+          }
+        } else {
+          // check if the id is present in the cache
+          // set foundInCache to true
+          for (const idx in ids) {
+            if (ids.hasOwnProperty(idx)) {
+              const id = ids[idx];
+
+              if ($ct.LRU_CACHE.cache[id]) {
+                kId = id;
+                foundInCache = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (foundInCache) {
+          if (kId !== $ct.LRU_CACHE.getLastKey()) {
+            // New User found
+            // remove the entire cache
+            _classPrivateFieldLooseBase(_this, _handleCookieFromCache)[_handleCookieFromCache]();
+          } else {
+            sendOULFlag = false;
+            StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
+          }
+
+          const gFromCache = $ct.LRU_CACHE.get(kId);
+          $ct.LRU_CACHE.set(kId, gFromCache);
+          StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
+          _classPrivateFieldLooseBase(_this, _device$2)[_device$2].gcookie = gFromCache;
+          const lastK = $ct.LRU_CACHE.getSecondLastKey();
+
+          if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+            // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
+            const lastGUID = $ct.LRU_CACHE.cache[lastK];
+
+            _classPrivateFieldLooseBase(_this, _request$4)[_request$4].unregisterTokenForGuid(lastGUID);
+          }
+        } else {
+          if (!anonymousUser && !customIdFlag) {
+            _this.clear();
+          } else {
+            if (g != null) {
+              _classPrivateFieldLooseBase(_this, _device$2)[_device$2].gcookie = g;
+              StorageManager.saveToLSorCookie(GCOOKIE_NAME, g);
+              sendOULFlag = false;
+            }
+          }
+
+          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false);
+          kId = ids[0];
+        }
+      }
+
+      k.id = kId;
+      StorageManager.saveToLSorCookie(KCOOKIE_NAME, k);
+    };
+
+    if (Array.isArray(profileArr) && profileArr.length > 0) {
+      for (const index in profileArr) {
+        if (profileArr.hasOwnProperty(index)) {
+          const outerObj = profileArr[index];
+          let data = {};
+          let profileObj;
+
+          if (outerObj.Site != null) {
+            // organic data from the site
+            profileObj = outerObj.Site;
+
+            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
+              logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
+            })) {
+              return;
+            }
+          } else if (outerObj.Facebook != null) {
+            // fb connect data
+            const FbProfileObj = outerObj.Facebook; // make sure that the object contains any data at all
+
+            if (!isObjectEmpty(FbProfileObj) && !FbProfileObj.error) {
+              profileObj = processFBUserObj(FbProfileObj);
+            }
+          } else if (outerObj['Google Plus'] != null) {
+            const GPlusProfileObj = outerObj['Google Plus'];
+
+            if (isObjectEmpty(GPlusProfileObj) && !GPlusProfileObj.error) {
+              profileObj = processGPlusUserObj(GPlusProfileObj, {
+                logger: _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]
+              });
+            }
+          }
+
+          if (profileObj != null && !isObjectEmpty(profileObj)) {
+            // profile got set from above
+            data.type = 'profile';
+
+            if (profileObj.tz == null) {
+              // try to auto capture user timezone if not present
+              profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+            } // Handle customId field for setting custom CleverTap ID
+
+
+            if (profileObj.customId) {
+              const result = validateCustomCleverTapID(profileObj.customId);
+
+              if (result.isValid) {
+                hasCustomId = true; // Set the custom ID as gcookie
+
+                _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = result.sanitizedId;
+                StorageManager.saveToLSorCookie(GCOOKIE_NAME, result.sanitizedId);
+
+                _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('customId set for OUL flow:: ' + result.sanitizedId); // Remove customId from profile data before sending to server
+
+
+                delete profileObj.customId;
+              } else {
+                _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error('Invalid customId: ' + result.error); // Remove invalid customId from profile data
+
+
+                delete profileObj.customId;
+              }
+            }
+
+            data.profile = profileObj;
+            const ids = [];
+
+            if (StorageManager._isLocalStorageSupported()) {
+              if (profileObj.Identity) {
+                ids.push(profileObj.Identity);
+              }
+
+              if (profileObj.Email) {
+                ids.push(profileObj.Email);
+              }
+
+              if (profileObj.GPID) {
+                ids.push('GP:' + profileObj.GPID);
+              }
+
+              if (profileObj.FBID) {
+                ids.push('FB:' + profileObj.FBID);
+              }
+
+              if (ids.length > 0) {
+                addToK(ids, hasCustomId);
+              }
+            }
+
+            addToLocalProfileMap(profileObj, true);
+            data = _classPrivateFieldLooseBase(this, _request$4)[_request$4].addSystemDataToObject(data, undefined);
+
+            _classPrivateFieldLooseBase(this, _request$4)[_request$4].addFlags(data); // Adding 'isOUL' flag in true for OUL cases which.
+            // This flag tells LC to create a new arp object.
+            // Also we will receive the same flag in response arp which tells to delete existing arp object.
+
+
+            if (sendOULFlag) {
+              data[IS_OUL] = true;
+            }
+
+            const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$6)[_logger$6]);
+
+            let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$5)[_account$5].dataPostURL;
+
+            pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+            pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData); // Whenever sendOULFlag is true then dont send arp and gcookie (guid in memory in the request)
+            // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
+            // stored in the cache and replace it with the response arp.
+
+            _classPrivateFieldLooseBase(this, _request$4)[_request$4].saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag);
+          }
+        }
+      }
+    }
+  };
+
+  var _handleCookieFromCache2 = function _handleCookieFromCache2() {
+    $ct.blockRequest = false;
+    console.debug('Block request is false');
+
+    if (StorageManager._isLocalStorageSupported()) {
+      delete localStorage[PR_COOKIE];
+      delete localStorage[EV_COOKIE];
+      delete localStorage[META_COOKIE];
+      delete localStorage[ARP_COOKIE];
+      delete localStorage[CAMP_COOKIE_NAME];
+      delete localStorage[CHARGEDID_COOKIE_NAME];
+    }
+
+    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
+    StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
+    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
+
+    _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
+  };
+
+  var _deleteUser2 = function _deleteUser2() {
+    $ct.blockRequest = true;
+
+    _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('Block request is true');
+
+    $ct.globalCache = {
+      gcookie: null,
+      REQ_N: 0,
+      RESP_N: 0
+    };
+
+    if (StorageManager._isLocalStorageSupported()) {
+      delete localStorage[GCOOKIE_NAME];
+      delete localStorage[KCOOKIE_NAME];
+      delete localStorage[PR_COOKIE];
+      delete localStorage[EV_COOKIE];
+      delete localStorage[META_COOKIE];
+      delete localStorage[ARP_COOKIE];
+      delete localStorage[CAMP_COOKIE_NAME];
+      delete localStorage[CHARGEDID_COOKIE_NAME];
+    }
+
+    StorageManager.removeCookie(GCOOKIE_NAME, $ct.broadDomain);
+    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName());
+    StorageManager.removeCookie(KCOOKIE_NAME, getHostName());
+    StorageManager.removeCookie(_classPrivateFieldLooseBase(this, _session$2)[_session$2].cookieName, $ct.broadDomain);
+    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain);
+    _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = null;
+
+    _classPrivateFieldLooseBase(this, _session$2)[_session$2].setSessionCookieObject('');
+  };
+
+  var _processLoginArray2 = function _processLoginArray2(loginArr) {
+    if (Array.isArray(loginArr) && loginArr.length > 0) {
+      const profileObj = loginArr.pop();
+      const processProfile = profileObj != null && isObject(profileObj) && (profileObj.Site != null && Object.keys(profileObj.Site).length > 0 || profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0 || profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0);
+
+      if (processProfile) {
+        StorageManager.setInstantDeleteFlagInK();
+
+        try {
+          _classPrivateFieldLooseBase(this, _processOUL)[_processOUL]([profileObj]);
+        } catch (e) {
+          _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug(e);
+        }
+      } else {
+        _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error('Profile object is in incorrect format');
+      }
+    }
+  };
+
+  const getBoxPromptStyles = style => {
+    const totalBorderWidth = style.card.borderEnabled ? style.card.border.borderWidth * 2 : 0;
+    const cardPadding = 16 * 2; // Left and right padding
+
+    const cardContentWidth = 360 - cardPadding - totalBorderWidth;
+    return "\n    #pnWrapper {\n      width: 360px;\n      font-family: proxima-nova, Arial, sans-serif;\n    }\n    \n    #pnWrapper * {\n       margin: 0px;\n       padding: 0px;\n       text-align: left;\n    }\n    ".concat(style.overlay.enabled ? "#pnOverlay {\n      background-color: ".concat(style.overlay.color || 'rgba(0, 0, 0, .15)', ";\n      position: fixed;\n      left: 0;\n      right: 0;\n      top: 0;\n      bottom: 0;\n      z-index: 10000\n    }\n") : '', "\n    #pnCard {\n      background-color: ").concat(style.card.color, ";\n      border-radius: ").concat(style.card.borderRadius, "px;\n      padding: 16px;\n      width: ").concat(cardContentWidth, "px;\n      position: fixed;\n      z-index: 999999;\n      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n      ").concat(style.card.borderEnabled ? "\n        border-width: ".concat(style.card.border.borderWidth, "px;\n        border-color: ").concat(style.card.border.borderColor, ";\n        border-style: solid;\n      ") : '', "\n      height: fit-content;\n    }\n\n    #iconTitleDescWrapper {\n      display: flex;\n      align-items: center;\n      margin-bottom: 16px;\n      gap: 12px;\n    }\n\n    #iconContainer {\n      min-width: 64px;\n      max-width: 64px;\n      aspect-ratio: 1;\n      object-fit: cover;\n    }\n\n    #titleDescWrapper {\n      flex-grow: 1;\n      overflow: hidden;\n      overflow-wrap: break-word;\n    }\n\n    #title {\n      font-size: 16px;\n      font-weight: 700;\n      color: ").concat(style.text.titleColor, ";\n      margin-bottom: 4px;\n      line-height: 24px;\n    }\n\n    #description {\n      font-size: 14px;\n      font-weight: 500;\n      color: ").concat(style.text.descriptionColor, ";\n      line-height: 20px;\n    }\n\n    #buttonsContainer {\n      display: flex;\n      justify-content: space-between;\n      min-height: 32px;\n      gap: 8px;\n      align-items: center;\n    }\n\n    #primaryButton, #secondaryButton {\n      padding: 6px 24px;\n      flex: 1;\n      cursor: pointer;\n      font-weight: bold;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      height: max-content;\n      font-size: 14px;\n      font-weight: 500;\n      line-height: 20px;\n      text-align: center;\n    }\n\n    #primaryButton {\n      background-color: ").concat(style.buttons.primaryButton.buttonColor, ";\n      color: ").concat(style.buttons.primaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.primaryButton.borderRadius, "px;\n      ").concat(style.buttons.primaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.primaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.primaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #secondaryButton {\n      background-color: ").concat(style.buttons.secondaryButton.buttonColor, ";\n      color: ").concat(style.buttons.secondaryButton.textColor, ";\n      border-radius: ").concat(style.buttons.secondaryButton.borderRadius, "px;\n      ").concat(style.buttons.secondaryButton.borderEnabled ? "\n          border-width: ".concat(style.buttons.secondaryButton.border.borderWidth, "px;\n          border-color: ").concat(style.buttons.secondaryButton.border.borderColor, ";\n          border-style: solid;\n        ") : 'border: none;', "\n    }\n\n    #primaryButton:hover, #secondaryButton:hover {\n      opacity: 0.9;\n    }\n  ");
+  };
+  const getBellIconStyles = style => {
+    return "\n    #bell_wrapper {\n      position: fixed;\n      cursor: pointer;\n      background-color: ".concat(style.card.backgroundColor, ";\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      width: 48px;\n      height: 48px;\n      border-radius: 50%;\n      display: flex;\n      flex-direction: column;\n      gap: 8px;\n      z-index: 999999;\n    }\n\n    #bell_icon {\n      display: block;\n      width: 48px;\n      height: 48px;\n    }\n\n    #bell_wrapper:hover {\n      transform: scale(1.05);\n      transition: transform 0.2s ease-in-out;\n    }\n\n    #bell_tooltip {\n      display: none;\n      background-color: #2b2e3e;\n      color: #fff;\n      border-radius: 4px;\n      padding: 4px;\n      white-space: nowrap;\n      pointer-events: none;\n      font-size: 14px;\n      line-height: 1.4;\n    }\n\n    #gif_modal {\n      display: none;\n      background-color: #ffffff;\n      padding: 4px;\n      width: 400px;\n      height: 256px;\n      border-radius: 4px;\n      position: relative;\n      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n      cursor: default;\n    }\n\n    #gif_image {\n      object-fit: contain;\n      width: 100%;\n      height: 100%;\n    }\n\n    #close_modal {\n      position: absolute;\n      width: 24px;\n      height: 24px;\n      top: 8px;\n      right: 8px;\n      background: rgba(238, 238, 238, 0.8);\n      text-align: center;\n      line-height: 20px;\n      border-radius: 4px;\n      color: #000000;\n      font-size: 22px;\n      cursor: pointer;\n    }\n  ");
+  };
 
   var _oldValues$1 = _classPrivateFieldLooseKey("oldValues");
 
@@ -13849,7 +13875,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.3.0';
+            const sdkVersion = '2.3.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -16396,7 +16422,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.3.0',
+        lib: 'web-sdk-v2.3.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18318,7 +18344,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.3.0';
+      return 'web-sdk-v2.3.1';
     }
 
     defineVariable(name, defaultValue) {
