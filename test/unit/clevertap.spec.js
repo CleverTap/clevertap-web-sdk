@@ -103,8 +103,8 @@ describe('clevertap.js', function () {
     })
   })
 
-  describe('CustomCTID handling', () => {
-    test('should validate CustomCTID field when provided', () => {
+  describe('customId handling', () => {
+    test('should validate customId field when provided', () => {
       validateCustomCleverTapID.mockReturnValue({ isValid: true, sanitizedId: '_w_custom_oul_id' })
 
       // Test the validation function directly
@@ -115,7 +115,7 @@ describe('clevertap.js', function () {
       expect(result.sanitizedId).toBe('_w_custom_oul_id')
     })
 
-    test('should handle invalid CustomCTID field', () => {
+    test('should handle invalid customId field', () => {
       validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null, error: 'Invalid custom ID format' })
 
       // Test the validation function directly

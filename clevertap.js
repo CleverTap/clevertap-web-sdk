@@ -10626,11 +10626,11 @@
     var _this = this;
 
     let sendOULFlag = true;
-    let hasCustomCTID = false;
+    let hasCustomId = false;
     StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
 
     const addToK = function (ids) {
-      let customCTIDFlag = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      let customIdFlag = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME);
       const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME);
       let kId;
@@ -10698,7 +10698,7 @@
             _classPrivateFieldLooseBase(_this, _request$4)[_request$4].unregisterTokenForGuid(lastGUID);
           }
         } else {
-          if (!anonymousUser && !customCTIDFlag) {
+          if (!anonymousUser && !customIdFlag) {
             _this.clear();
           } else {
             if (g != null) {
@@ -10757,27 +10757,27 @@
             if (profileObj.tz == null) {
               // try to auto capture user timezone if not present
               profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
-            } // Handle CustomCTID field for setting custom CleverTap ID
+            } // Handle customId field for setting custom CleverTap ID
 
 
-            if (profileObj.CustomCTID) {
-              const result = validateCustomCleverTapID(profileObj.CustomCTID);
+            if (profileObj.customId) {
+              const result = validateCustomCleverTapID(profileObj.customId);
 
               if (result.isValid) {
-                hasCustomCTID = true; // Set the custom ID as gcookie
+                hasCustomId = true; // Set the custom ID as gcookie
 
                 _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = result.sanitizedId;
                 StorageManager.saveToLSorCookie(GCOOKIE_NAME, result.sanitizedId);
 
-                _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('CustomCTID set for OUL flow:: ' + result.sanitizedId); // Remove CustomCTID from profile data before sending to server
+                _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('customId set for OUL flow:: ' + result.sanitizedId); // Remove customId from profile data before sending to server
 
 
-                delete profileObj.CustomCTID;
+                delete profileObj.customId;
               } else {
-                _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error('Invalid CustomCTID: ' + result.error); // Remove invalid CustomCTID from profile data
+                _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error('Invalid customId: ' + result.error); // Remove invalid customId from profile data
 
 
-                delete profileObj.CustomCTID;
+                delete profileObj.customId;
               }
             }
 
@@ -10802,7 +10802,7 @@
               }
 
               if (ids.length > 0) {
-                addToK(ids, hasCustomCTID);
+                addToK(ids, hasCustomId);
               }
             }
 
