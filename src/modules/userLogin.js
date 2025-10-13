@@ -120,7 +120,10 @@ export default class UserLoginHandler extends Array {
           const gFromCache = $ct.LRU_CACHE.get(kId)
           $ct.LRU_CACHE.set(kId, gFromCache)
           StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache)
-          this.#device.gcookie = gFromCache
+          // Only override gcookie if we don't have a customId
+          if (!customIdFlag) {
+            this.#device.gcookie = gFromCache
+          }
 
           const lastK = $ct.LRU_CACHE.getSecondLastKey()
           if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
@@ -132,7 +135,7 @@ export default class UserLoginHandler extends Array {
           if (!anonymousUser && !customIdFlag) {
             this.clear()
           } else {
-            if ((g) != null) {
+            if ((g) != null && !customIdFlag) {
               this.#device.gcookie = g
               StorageManager.saveToLSorCookie(GCOOKIE_NAME, g)
               sendOULFlag = false

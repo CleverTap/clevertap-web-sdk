@@ -10687,8 +10687,12 @@
 
           const gFromCache = $ct.LRU_CACHE.get(kId);
           $ct.LRU_CACHE.set(kId, gFromCache);
-          StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache);
-          _classPrivateFieldLooseBase(_this, _device$2)[_device$2].gcookie = gFromCache;
+          StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache); // Only override gcookie if we don't have a customId
+
+          if (!customIdFlag) {
+            _classPrivateFieldLooseBase(_this, _device$2)[_device$2].gcookie = gFromCache;
+          }
+
           const lastK = $ct.LRU_CACHE.getSecondLastKey();
 
           if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
@@ -10701,7 +10705,7 @@
           if (!anonymousUser && !customIdFlag) {
             _this.clear();
           } else {
-            if (g != null) {
+            if (g != null && !customIdFlag) {
               _classPrivateFieldLooseBase(_this, _device$2)[_device$2].gcookie = g;
               StorageManager.saveToLSorCookie(GCOOKIE_NAME, g);
               sendOULFlag = false;
