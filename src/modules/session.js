@@ -33,23 +33,27 @@ export default class SessionManager {
     let obj = {}
 
     if (scookieStr != null) {
-      // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
-      scookieStr = scookieStr.replace(singleQuoteRegex, '"')
+      try {
+        // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
+        scookieStr = scookieStr.replace(singleQuoteRegex, '"')
 
-      obj = JSON.parse(scookieStr)
-      if (!isObject(obj)) {
-        obj = {}
-      } else {
-        if (typeof obj.t !== 'undefined') { // check time elapsed since last request
-          const lastTime = obj.t
-          const now = getNow()
-          if ((now - lastTime) > (SCOOKIE_EXP_TIME_IN_SECS + 60)) {
-            // adding 60 seconds to compensate for in-journey requests
-            // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
-            // hence we shouldn't use it.
-            obj = {}
+        obj = JSON.parse(scookieStr)
+        if (!isObject(obj)) {
+          obj = {}
+        } else {
+          if (typeof obj.t !== 'undefined') { // check time elapsed since last request
+            const lastTime = obj.t
+            const now = getNow()
+            if ((now - lastTime) > (SCOOKIE_EXP_TIME_IN_SECS + 60)) {
+              // adding 60 seconds to compensate for in-journey requests
+              // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
+              // hence we shouldn't use it.
+              obj = {}
+            }
           }
         }
+      } catch (e) {
+        obj = {}
       }
     }
     this.scookieObj = obj

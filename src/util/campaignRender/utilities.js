@@ -713,7 +713,12 @@ export function addCampaignToLocalStorage (campaign, region = 'eu1', accountId) 
   }
 
   const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)
-  const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : []
+  let existingCampaigns = []
+  try {
+    existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : []
+  } catch (e) {
+    existingCampaigns = []
+  }
 
   const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id)
 
