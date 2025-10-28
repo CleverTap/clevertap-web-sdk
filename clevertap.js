@@ -7252,7 +7252,11 @@
 
 
         if (c.indexOf(nameEQ) == 0) {
-          return decodeURIComponent(c.substring(nameEQ.length, c.length));
+          try {
+            return decodeURIComponent(c.substring(nameEQ.length, c.length));
+          } catch (e) {
+            return null;
+          }
         }
       }
 
@@ -7302,7 +7306,11 @@
         try {
           value = JSON.parse(decodeURIComponent(data));
         } catch (err) {
-          value = decodeURIComponent(data);
+          try {
+            value = decodeURIComponent(data);
+          } catch (e) {
+            return null;
+          }
         }
 
         $ct.globalCache[property] = value;
@@ -9367,7 +9375,14 @@
       url: dashboardUrl
     };
     const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
-    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    let existingCampaigns = [];
+
+    try {
+      existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    } catch (e) {
+      existingCampaigns = [];
+    }
+
     const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
 
     if (!isDuplicate) {
@@ -9384,8 +9399,12 @@
       let campObj = StorageManager.read(CAMP_COOKIE_NAME);
 
       if (campObj != null) {
-        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
-        finalcampObj = campObj;
+        try {
+          campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
+          finalcampObj = campObj;
+        } catch (e) {
+          finalcampObj = {};
+        }
       } else {
         finalcampObj = {};
       }
@@ -9546,7 +9565,14 @@
   };
   const getCampaignObjForLc = () => {
     // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    let guid;
+
+    try {
+      guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    } catch (e) {
+      return {};
+    }
+
     let campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
@@ -9555,8 +9581,17 @@
       let resultObj = {};
       campObj = getCampaignObject();
       const storageValue = StorageManager.read(CAMP_COOKIE_G);
-      const decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
-      const parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      let decodedValue = null;
+      let parsedValue = null;
+
+      try {
+        decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
+        parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      } catch (e) {
+        decodedValue = null;
+        parsedValue = null;
+      }
+
       const resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
       const webPopupDeliveryPreferenceDeatils = {
         wsc: (_campObj$wsc = (_campObj = campObj) === null || _campObj === void 0 ? void 0 : _campObj.wsc) !== null && _campObj$wsc !== void 0 ? _campObj$wsc : 0,
@@ -13521,27 +13556,35 @@
   };
 
   const getInboxMessages = () => {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    try {
+      const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
 
-    if (!isValueValid(guid)) {
+      if (!isValueValid(guid)) {
+        return {};
+      }
+
+      const messages = getAndMigrateInboxMessages(guid);
+      return messages.hasOwnProperty(guid) ? messages[guid] : {};
+    } catch (e) {
       return {};
     }
-
-    const messages = getAndMigrateInboxMessages(guid);
-    return messages.hasOwnProperty(guid) ? messages[guid] : {};
   };
   const saveInboxMessages = messages => {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    try {
+      const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
 
-    if (!isValueValid(guid)) {
-      return;
+      if (!isValueValid(guid)) {
+        return;
+      }
+
+      const storedInboxObj = getAndMigrateInboxMessages(guid);
+      const newObj = { ...storedInboxObj,
+        [guid]: messages
+      };
+      StorageManager.saveToLSorCookie(WEBINBOX, newObj);
+    } catch (e) {
+      Logger.getInstance().error('Error saving inbox messages:', e.message);
     }
-
-    const storedInboxObj = getAndMigrateInboxMessages(guid);
-    const newObj = { ...storedInboxObj,
-      [guid]: messages
-    };
-    StorageManager.saveToLSorCookie(WEBINBOX, newObj);
   };
   const initializeWebInbox = logger => {
     return new Promise((resolve, reject) => {
@@ -13849,7 +13892,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.3.0';
+            const sdkVersion = '2.3.1-test';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -16162,25 +16205,29 @@
       let obj = {};
 
       if (scookieStr != null) {
-        // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
-        scookieStr = scookieStr.replace(singleQuoteRegex, '"');
-        obj = JSON.parse(scookieStr);
+        try {
+          // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
+          scookieStr = scookieStr.replace(singleQuoteRegex, '"');
+          obj = JSON.parse(scookieStr);
 
-        if (!isObject(obj)) {
-          obj = {};
-        } else {
-          if (typeof obj.t !== 'undefined') {
-            // check time elapsed since last request
-            const lastTime = obj.t;
-            const now = getNow();
+          if (!isObject(obj)) {
+            obj = {};
+          } else {
+            if (typeof obj.t !== 'undefined') {
+              // check time elapsed since last request
+              const lastTime = obj.t;
+              const now = getNow();
 
-            if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
-              // adding 60 seconds to compensate for in-journey requests
-              // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
-              // hence we shouldn't use it.
-              obj = {};
+              if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
+                // adding 60 seconds to compensate for in-journey requests
+                // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
+                // hence we shouldn't use it.
+                obj = {};
+              }
             }
           }
+        } catch (e) {
+          obj = {};
         }
       }
 
@@ -16396,7 +16443,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.3.0',
+        lib: 'web-sdk-v2.3.1-test',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18318,7 +18365,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.3.0';
+      return 'web-sdk-v2.3.1-test';
     }
 
     defineVariable(name, defaultValue) {
@@ -18374,8 +18421,12 @@
 
 
     getAllQualifiedCampaignDetails() {
-      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
-      return existingCampaign;
+      try {
+        const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
+        return existingCampaign;
+      } catch (e) {
+        return null;
+      }
     }
 
   }

@@ -91,7 +91,11 @@ export class StorageManager {
       }
       // eslint-disable-next-line eqeqeq
       if (c.indexOf(nameEQ) == 0) {
-        return decodeURIComponent(c.substring(nameEQ.length, c.length))
+        try {
+          return decodeURIComponent(c.substring(nameEQ.length, c.length))
+        } catch (e) {
+          return null
+        }
       }
     }
     return null
@@ -135,7 +139,11 @@ export class StorageManager {
       try {
         value = JSON.parse(decodeURIComponent(data))
       } catch (err) {
-        value = decodeURIComponent(data)
+        try {
+          value = decodeURIComponent(data)
+        } catch (e) {
+          return null
+        }
       }
       $ct.globalCache[property] = value
       return value
