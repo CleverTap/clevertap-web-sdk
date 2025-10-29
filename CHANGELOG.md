@@ -1,8 +1,17 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.3.0] 2nd Sept 2025
+## [2.4.0] 2nd Sept 2025
 - Added Fetch API support for network requests
+
+## [2.3.0] 10th Sept 2025
+- Introduced list reordering in Web Native Display - Visual Editor.
+
+## [2.2.2] 9th Sept 2025
+- Fixed handling of safari web push notifications in iPhone.
+
+## [2.2.1] 1st Sept 2025
+- Added handling for close icon in web popup image only template.
 
 ## [2.2.0] 26th August 2025
 - Added Isolate Sub-Domain flag in init fn.
