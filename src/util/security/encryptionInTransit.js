@@ -1,4 +1,4 @@
-import { compressData, decompressFromBase64 } from '../encoder'
+import { compressData } from '../encoder'
 import { StorageManager } from '../storage'
 import { ENCRYPTION_KEY_NAME } from '../constants'
 
@@ -104,15 +104,14 @@ class EncryptionInTransit {
    * Decrypts response from backend using AES-GCM-256.
    * This is a stub implementation for Phase 2.
    *
-   * @param {string} envelopeB64 - Base64 compressed encrypted envelope
+   * @param {string} envelope - encrypted envelope
    * @returns {Promise<string>} - Decrypted plaintext
    */
-  decryptFromBackend (envelopeB64) {
+  async decryptFromBackend (envelope) {
     try {
       // Decompress the base64 envelope using LZS decompression
-      const envelopeJson = decompressFromBase64(envelopeB64)
-      const envelope = JSON.parse(envelopeJson)
-      const { itp, itv } = envelope
+      const parsedEnvelope = JSON.parse(envelope)
+      const { itp, itv } = parsedEnvelope
 
       if (!itp || !itv) {
         return Promise.reject(new Error('Decryption failed: Invalid envelope format'))
@@ -145,6 +144,7 @@ class EncryptionInTransit {
 
 // Create and export singleton instance
 const encryptionInTransitInstance = new EncryptionInTransit()
+window.encryptionInTransitInstance = encryptionInTransitInstance
 
 // Export the singleton instance
 export default encryptionInTransitInstance
