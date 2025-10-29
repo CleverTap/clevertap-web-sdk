@@ -30,7 +30,7 @@ export default class RequestDispatcher {
    * @param {string} url - The URL containing query parameters
    * @returns {Promise<{url: string, body?: string, method: string}>} - Modified URL with encrypted 'd' parameter
    */
-  static #prepareEncryptedRequest(url) {
+  static #prepareEncryptedRequest (url) {
     if (!this.enableEncryptionInTransit) {
       return Promise.resolve({ url, method: 'GET' })
     }
@@ -75,7 +75,7 @@ export default class RequestDispatcher {
   }
 
   // ANCHOR - Requests get fired from here
-  static #fireRequest(url, tries, skipARP, sendOULFlag, evtName) {
+  static #fireRequest (url, tries, skipARP, sendOULFlag, evtName) {
     if (this.#dropRequestDueToOptOut()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
@@ -176,11 +176,11 @@ export default class RequestDispatcher {
    * @param {*} skipARP
    * @param {boolean} sendOULFlag
    */
-  static fireRequest(url, skipARP, sendOULFlag, evtName) {
+  static fireRequest (url, skipARP, sendOULFlag, evtName) {
     this.#fireRequest(url, 1, skipARP, sendOULFlag, evtName)
   }
 
-  static #dropRequestDueToOptOut() {
+  static #dropRequestDueToOptOut () {
     if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
       $ct.isOptInRequest = false
       return false
@@ -188,7 +188,7 @@ export default class RequestDispatcher {
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH
   }
 
-  static #addUseIPToRequest(pageLoadUrl) {
+  static #addUseIPToRequest (pageLoadUrl) {
     var useIP = StorageManager.getMetaProp(USEIP_KEY)
     if (typeof useIP !== 'boolean') {
       useIP = false
@@ -196,7 +196,7 @@ export default class RequestDispatcher {
     return addToURL(pageLoadUrl, USEIP_KEY, useIP ? 'true' : 'false')
   };
 
-  static #addARPToRequest(url, skipResARP) {
+  static #addARPToRequest (url, skipResARP) {
     if (skipResARP === true) {
       const _arp = {}
       _arp.skipResARP = true
@@ -208,10 +208,13 @@ export default class RequestDispatcher {
     return url
   }
 
-  static handleFetchResponse(encryptedUrl, originalUrl, retryCount = 0) {
+  static handleFetchResponse (encryptedUrl, originalUrl, retryCount = 0) {
     const fetchOptions = {
       method: 'GET',
-      headers: { Accept: 'application/json' }
+      headers: {
+        Accept: 'application/json',
+        'X-CleverTap-Encryption-Enabled': true
+      }
     }
 
     fetch(encryptedUrl, fetchOptions)
@@ -316,7 +319,7 @@ export default class RequestDispatcher {
       })
   }
 
-  getDelayFrequency() {
+  getDelayFrequency () {
     this.logger.debug('Network retry #' + this.networkRetryCount)
 
     // Retry with delay as 1s for first 10 retries

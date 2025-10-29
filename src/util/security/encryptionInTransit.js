@@ -7,7 +7,7 @@ import { ENCRYPTION_KEY_NAME } from '../constants'
  * Implemented as a singleton pattern.
  */
 class EncryptionInTransit {
-  constructor() {
+  constructor () {
     this.encryptionKey = StorageManager.read(ENCRYPTION_KEY_NAME) ?? null
     this.utf8 = new TextEncoder()
   }
@@ -16,7 +16,7 @@ class EncryptionInTransit {
    * Converts Uint8Array to Base64 string
    * @private
    */
-  toB64(u8) {
+  toB64 (u8) {
     return btoa(String.fromCharCode(...u8))
   }
 
@@ -24,7 +24,7 @@ class EncryptionInTransit {
    * Converts Base64 string to Uint8Array
    * @private
    */
-  fromB64(b64) {
+  fromB64 (b64) {
     return Uint8Array.from(atob(b64), c => c.charCodeAt(0))
   }
 
@@ -32,7 +32,7 @@ class EncryptionInTransit {
    * Generates random bytes
    * @private
    */
-  rnd(n) {
+  rnd (n) {
     return crypto.getRandomValues(new Uint8Array(n))
   }
 
@@ -40,7 +40,7 @@ class EncryptionInTransit {
    * Generates a new symmetric key for encryption
    * @returns {Uint8Array} - 256-bit (32 bytes) symmetric key
    */
-  generateSymmetricKey() {
+  generateSymmetricKey () {
     // Generate a random 256-bit key (32 bytes) to match backend AES-256
     this.encryptionKey = this.rnd(32)
     StorageManager.write(ENCRYPTION_KEY_NAME, this.encryptionKey)
@@ -55,7 +55,7 @@ class EncryptionInTransit {
    * @param {string} options.id - Optional identifier (defaults to 'ZWW-WWW-WWRZ')
    * @returns {Promise<string>} - Base64 compressed encrypted envelope
    */
-  encryptForBackend(payload, { id = 'ZWW-WWW-WWRZ' } = {}) {
+  encryptForBackend (payload, { id = 'ZWW-WWW-WWRZ' } = {}) {
     // Generate a new symmetric key for this encryption
     if (!this.encryptionKey) {
       this.generateSymmetricKey()
@@ -107,7 +107,7 @@ class EncryptionInTransit {
    * @param {string} envelopeB64 - Base64 compressed encrypted envelope
    * @returns {Promise<string>} - Decrypted plaintext
    */
-  decryptFromBackend(envelopeB64) {
+  decryptFromBackend (envelopeB64) {
     try {
       // Decompress the base64 envelope using LZS decompression
       const envelopeJson = decompressFromBase64(envelopeB64)
