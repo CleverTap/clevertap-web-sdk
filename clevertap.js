@@ -1,8 +1,9 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.clevertap = factory());
-})(this, (function () { 'use strict';
+    typeof define === 'function' && define.amd ? define(factory) :
+      (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.clevertap = factory());
+})(this, (function () {
+  'use strict';
 
   var id = 0;
 
@@ -370,13 +371,13 @@
 
   var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
-  var cryptoJs$1 = {exports: {}};
+  var cryptoJs$1 = { exports: {} };
 
   function commonjsRequire(path) {
-  	throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
+    throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
   }
 
-  var core$1 = {exports: {}};
+  var core$1 = { exports: {} };
 
   var core = core$1.exports;
   var hasRequiredCore;
@@ -429,7 +430,7 @@
           if (!crypto && typeof commonjsRequire === 'function') {
             try {
               crypto = require('crypto');
-            } catch (err) {}
+            } catch (err) { }
           }
           /*
            * Cryptographically secure pseudorandom number generator
@@ -444,14 +445,14 @@
               if (typeof crypto.getRandomValues === 'function') {
                 try {
                   return crypto.getRandomValues(new Uint32Array(1))[0];
-                } catch (err) {}
+                } catch (err) { }
               } // Use randomBytes method (NodeJS)
 
 
               if (typeof crypto.randomBytes === 'function') {
                 try {
                   return crypto.randomBytes(4).readInt32LE();
-                } catch (err) {}
+                } catch (err) { }
               }
             }
 
@@ -463,7 +464,7 @@
 
 
           var create = Object.create || function () {
-            function F() {}
+            function F() { }
 
             return function (obj) {
               var subtype;
@@ -560,7 +561,7 @@
                *         }
                *     });
                */
-              init: function () {},
+              init: function () { },
 
               /**
                * Copies properties into this object.
@@ -1166,7 +1167,7 @@
     return core$1.exports;
   }
 
-  var x64Core$1 = {exports: {}};
+  var x64Core$1 = { exports: {} };
 
   var x64Core = x64Core$1.exports;
   var hasRequiredX64Core;
@@ -1467,7 +1468,7 @@
     return x64Core$1.exports;
   }
 
-  var libTypedarrays$1 = {exports: {}};
+  var libTypedarrays$1 = { exports: {} };
 
   var libTypedarrays = libTypedarrays$1.exports;
   var hasRequiredLibTypedarrays;
@@ -1537,7 +1538,7 @@
     return libTypedarrays$1.exports;
   }
 
-  var encUtf16$1 = {exports: {}};
+  var encUtf16$1 = { exports: {} };
 
   var encUtf16 = encUtf16$1.exports;
   var hasRequiredEncUtf16;
@@ -1691,7 +1692,7 @@
     return encUtf16$1.exports;
   }
 
-  var encBase64$1 = {exports: {}};
+  var encBase64$1 = { exports: {} };
 
   var encBase64 = encBase64$1.exports;
   var hasRequiredEncBase64;
@@ -1834,7 +1835,7 @@
     return encBase64$1.exports;
   }
 
-  var encBase64url$1 = {exports: {}};
+  var encBase64url$1 = { exports: {} };
 
   var encBase64url = encBase64url$1.exports;
   var hasRequiredEncBase64url;
@@ -1990,7 +1991,7 @@
     return encBase64url$1.exports;
   }
 
-  var md5$1 = {exports: {}};
+  var md5$1 = { exports: {} };
 
   var md5 = md5$1.exports;
   var hasRequiredMd5;
@@ -2231,7 +2232,7 @@
     return md5$1.exports;
   }
 
-  var sha1$1 = {exports: {}};
+  var sha1$1 = { exports: {} };
 
   var sha1 = sha1$1.exports;
   var hasRequiredSha1;
@@ -2292,10 +2293,9 @@
                 } else if (i < 60) {
                   t += (b & c | b & d | c & d) - 0x70e44324;
                 } else
-                  /* if (i < 80) */
-                  {
-                    t += (b ^ c ^ d) - 0x359d3e2a;
-                  }
+                  /* if (i < 80) */ {
+                  t += (b ^ c ^ d) - 0x359d3e2a;
+                }
 
                 e = d;
                 d = c;
@@ -2375,7 +2375,7 @@
     return sha1$1.exports;
   }
 
-  var sha256$1 = {exports: {}};
+  var sha256$1 = { exports: {} };
 
   var sha256 = sha256$1.exports;
   var hasRequiredSha256;
@@ -2561,7 +2561,7 @@
     return sha256$1.exports;
   }
 
-  var sha224$1 = {exports: {}};
+  var sha224$1 = { exports: {} };
 
   var sha224 = sha224$1.exports;
   var hasRequiredSha224;
@@ -2641,7 +2641,7 @@
     return sha224$1.exports;
   }
 
-  var sha512$1 = {exports: {}};
+  var sha512$1 = { exports: {} };
 
   var sha512 = sha512$1.exports;
   var hasRequiredSha512;
@@ -2903,7 +2903,7 @@
     return sha512$1.exports;
   }
 
-  var sha384$1 = {exports: {}};
+  var sha384$1 = { exports: {} };
 
   var sha384 = sha384$1.exports;
   var hasRequiredSha384;
@@ -2984,7 +2984,7 @@
     return sha384$1.exports;
   }
 
-  var sha3$1 = {exports: {}};
+  var sha3$1 = { exports: {} };
 
   var sha3 = sha3$1.exports;
   var hasRequiredSha3;
@@ -3018,7 +3018,7 @@
           (function () {
             // Compute rho offset constants
             var x = 1,
-                y = 0;
+              y = 0;
 
             for (var t = 0; t < 24; t++) {
               RHO_OFFSETS[x + 5 * y] = (t + 1) * (t + 2) / 2 % 64;
@@ -3049,10 +3049,9 @@
                   if (bitPosition < 32) {
                     roundConstantLsw ^= 1 << bitPosition;
                   } else
-                    /* if (bitPosition >= 32) */
-                    {
-                      roundConstantMsw ^= 1 << bitPosition - 32;
-                    }
+                    /* if (bitPosition >= 32) */ {
+                    roundConstantMsw ^= 1 << bitPosition - 32;
+                  }
                 } // Compute next LFSR
 
 
@@ -3126,7 +3125,7 @@
                 for (var x = 0; x < 5; x++) {
                   // Mix column lanes
                   var tMsw = 0,
-                      tLsw = 0;
+                    tLsw = 0;
 
                   for (var y = 0; y < 5; y++) {
                     var lane = state[x + 5 * y];
@@ -3171,11 +3170,10 @@
                     tMsw = laneMsw << rhoOffset | laneLsw >>> 32 - rhoOffset;
                     tLsw = laneLsw << rhoOffset | laneMsw >>> 32 - rhoOffset;
                   } else
-                    /* if (rhoOffset >= 32) */
-                    {
-                      tMsw = laneLsw << rhoOffset - 32 | laneMsw >>> 64 - rhoOffset;
-                      tLsw = laneMsw << rhoOffset - 32 | laneLsw >>> 64 - rhoOffset;
-                    } // Transpose lanes
+                    /* if (rhoOffset >= 32) */ {
+                    tMsw = laneLsw << rhoOffset - 32 | laneMsw >>> 64 - rhoOffset;
+                    tLsw = laneMsw << rhoOffset - 32 | laneLsw >>> 64 - rhoOffset;
+                  } // Transpose lanes
 
 
                   var TPiLane = T[PI_INDEXES[laneIndex]];
@@ -3300,7 +3298,7 @@
     return sha3$1.exports;
   }
 
-  var ripemd160$1 = {exports: {}};
+  var ripemd160$1 = { exports: {} };
 
   var ripemd160 = ripemd160$1.exports;
   var hasRequiredRipemd160;
@@ -3319,10 +3317,10 @@
       })(ripemd160, function (CryptoJS) {
         /** @preserve
         (c) 2012 by Cédric Mesnil. All rights reserved.
-        	Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-        	    - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+          Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+              - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
             - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-        	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+          THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         */
         (function (Math) {
           // Shortcuts
@@ -3537,7 +3535,7 @@
     return ripemd160$1.exports;
   }
 
-  var hmac$1 = {exports: {}};
+  var hmac$1 = { exports: {} };
 
   var hmac = hmac$1.exports;
   var hasRequiredHmac;
@@ -3677,7 +3675,7 @@
     return hmac$1.exports;
   }
 
-  var pbkdf2$1 = {exports: {}};
+  var pbkdf2$1 = { exports: {} };
 
   var pbkdf2 = pbkdf2$1.exports;
   var hasRequiredPbkdf2;
@@ -3820,7 +3818,7 @@
     return pbkdf2$1.exports;
   }
 
-  var evpkdf$1 = {exports: {}};
+  var evpkdf$1 = { exports: {} };
 
   var evpkdf = evpkdf$1.exports;
   var hasRequiredEvpkdf;
@@ -3954,7 +3952,7 @@
     return evpkdf$1.exports;
   }
 
-  var cipherCore$1 = {exports: {}};
+  var cipherCore$1 = { exports: {} };
 
   var cipherCore = cipherCore$1.exports;
   var hasRequiredCipherCore;
@@ -4404,12 +4402,11 @@
               if (this._xformMode == this._ENC_XFORM_MODE) {
                 modeCreator = mode.createEncryptor;
               } else
-                /* if (this._xformMode == this._DEC_XFORM_MODE) */
-                {
-                  modeCreator = mode.createDecryptor; // Keep at least one block in the buffer for unpadding
+                /* if (this._xformMode == this._DEC_XFORM_MODE) */ {
+                modeCreator = mode.createDecryptor; // Keep at least one block in the buffer for unpadding
 
-                  this._minBufferSize = 1;
-                }
+                this._minBufferSize = 1;
+              }
 
               if (this._mode && this._mode.__creator == modeCreator) {
                 this._mode.init(this, iv && iv.words);
@@ -4432,13 +4429,12 @@
 
                 finalProcessedBlocks = this._process(!!'flush');
               } else
-                /* if (this._xformMode == this._DEC_XFORM_MODE) */
-                {
-                  // Process final blocks
-                  finalProcessedBlocks = this._process(!!'flush'); // Unpad data
+                /* if (this._xformMode == this._DEC_XFORM_MODE) */ {
+                // Process final blocks
+                finalProcessedBlocks = this._process(!!'flush'); // Unpad data
 
-                  padding.unpad(finalProcessedBlocks);
-                }
+                padding.unpad(finalProcessedBlocks);
+              }
 
               return finalProcessedBlocks;
             },
@@ -4816,7 +4812,7 @@
     return cipherCore$1.exports;
   }
 
-  var modeCfb$1 = {exports: {}};
+  var modeCfb$1 = { exports: {} };
 
   var modeCfb = modeCfb$1.exports;
   var hasRequiredModeCfb;
@@ -4891,7 +4887,7 @@
     return modeCfb$1.exports;
   }
 
-  var modeCtr$1 = {exports: {}};
+  var modeCtr$1 = { exports: {} };
 
   var modeCtr = modeCtr$1.exports;
   var hasRequiredModeCtr;
@@ -4948,7 +4944,7 @@
     return modeCtr$1.exports;
   }
 
-  var modeCtrGladman$1 = {exports: {}};
+  var modeCtrGladman$1 = { exports: {} };
 
   var modeCtrGladman = modeCtrGladman$1.exports;
   var hasRequiredModeCtrGladman;
@@ -4981,21 +4977,21 @@
               var b3 = word & 0xff;
 
               if (b1 === 0xff) // overflow b1
-                {
-                  b1 = 0;
+              {
+                b1 = 0;
 
-                  if (b2 === 0xff) {
-                    b2 = 0;
+                if (b2 === 0xff) {
+                  b2 = 0;
 
-                    if (b3 === 0xff) {
-                      b3 = 0;
-                    } else {
-                      ++b3;
-                    }
+                  if (b3 === 0xff) {
+                    b3 = 0;
                   } else {
-                    ++b2;
+                    ++b3;
                   }
                 } else {
+                  ++b2;
+                }
+              } else {
                 ++b1;
               }
 
@@ -5053,7 +5049,7 @@
     return modeCtrGladman$1.exports;
   }
 
-  var modeOfb$1 = {exports: {}};
+  var modeOfb$1 = { exports: {} };
 
   var modeOfb = modeOfb$1.exports;
   var hasRequiredModeOfb;
@@ -5107,7 +5103,7 @@
     return modeOfb$1.exports;
   }
 
-  var modeEcb$1 = {exports: {}};
+  var modeEcb$1 = { exports: {} };
 
   var modeEcb = modeEcb$1.exports;
   var hasRequiredModeEcb;
@@ -5149,7 +5145,7 @@
     return modeEcb$1.exports;
   }
 
-  var padAnsix923$1 = {exports: {}};
+  var padAnsix923$1 = { exports: {} };
 
   var padAnsix923 = padAnsix923$1.exports;
   var hasRequiredPadAnsix923;
@@ -5197,7 +5193,7 @@
     return padAnsix923$1.exports;
   }
 
-  var padIso10126$1 = {exports: {}};
+  var padIso10126$1 = { exports: {} };
 
   var padIso10126 = padIso10126$1.exports;
   var hasRequiredPadIso10126;
@@ -5240,7 +5236,7 @@
     return padIso10126$1.exports;
   }
 
-  var padIso97971$1 = {exports: {}};
+  var padIso97971$1 = { exports: {} };
 
   var padIso97971 = padIso97971$1.exports;
   var hasRequiredPadIso97971;
@@ -5281,7 +5277,7 @@
     return padIso97971$1.exports;
   }
 
-  var padZeropadding$1 = {exports: {}};
+  var padZeropadding$1 = { exports: {} };
 
   var padZeropadding = padZeropadding$1.exports;
   var hasRequiredPadZeropadding;
@@ -5330,7 +5326,7 @@
     return padZeropadding$1.exports;
   }
 
-  var padNopadding$1 = {exports: {}};
+  var padNopadding$1 = { exports: {} };
 
   var padNopadding = padNopadding$1.exports;
   var hasRequiredPadNopadding;
@@ -5351,8 +5347,8 @@
          * A noop padding strategy.
          */
         CryptoJS.pad.NoPadding = {
-          pad: function () {},
-          unpad: function () {}
+          pad: function () { },
+          unpad: function () { }
         };
         return CryptoJS.pad.NoPadding;
       });
@@ -5361,7 +5357,7 @@
     return padNopadding$1.exports;
   }
 
-  var formatHex$1 = {exports: {}};
+  var formatHex$1 = { exports: {} };
 
   var formatHex = formatHex$1.exports;
   var hasRequiredFormatHex;
@@ -5433,7 +5429,7 @@
     return formatHex$1.exports;
   }
 
-  var aes$1 = {exports: {}};
+  var aes$1 = { exports: {} };
 
   var aes = aes$1.exports;
   var hasRequiredAes;
@@ -5654,7 +5650,7 @@
     return aes$1.exports;
   }
 
-  var tripledes$1 = {exports: {}};
+  var tripledes$1 = { exports: {} };
 
   var tripledes = tripledes$1.exports;
   var hasRequiredTripledes;
@@ -6394,7 +6390,7 @@
     return tripledes$1.exports;
   }
 
-  var rc4$1 = {exports: {}};
+  var rc4$1 = { exports: {} };
 
   var rc4 = rc4$1.exports;
   var hasRequiredRc4;
@@ -6530,7 +6526,7 @@
     return rc4$1.exports;
   }
 
-  var rabbit$1 = {exports: {}};
+  var rabbit$1 = { exports: {} };
 
   var rabbit = rabbit$1.exports;
   var hasRequiredRabbit;
@@ -6697,7 +6693,7 @@
     return rabbit$1.exports;
   }
 
-  var rabbitLegacy$1 = {exports: {}};
+  var rabbitLegacy$1 = { exports: {} };
 
   var rabbitLegacy = rabbitLegacy$1.exports;
   var hasRequiredRabbitLegacy;
@@ -6863,7 +6859,7 @@
     return rabbitLegacy$1.exports;
   }
 
-  var blowfish$1 = {exports: {}};
+  var blowfish$1 = { exports: {} };
 
   var blowfish = blowfish$1.exports;
   var hasRequiredBlowfish;
@@ -7195,7 +7191,7 @@
           }
 
           data = JSON.parse(data);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       return data;
@@ -7281,7 +7277,7 @@
         }
 
         $ct.globalCache[property] = value;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     static readFromLSorCookie(property) {
@@ -8158,21 +8154,21 @@
   const compress = uncompressed => {
     if (uncompressed == null) return '';
     let i,
-        value,
-        context_dictionary = {},
-        context_dictionaryToCreate = {},
-        context_c = '',
-        context_wc = '',
-        context_w = '',
-        context_enlargeIn = 2,
-        // Compensate for the first entry which should not count
-    context_dictSize = 3,
-        context_numBits = 2,
-        context_data_string = '',
-        context_data_val = 0,
-        context_data_position = 0,
-        ii,
-        f = String.fromCharCode;
+      value,
+      context_dictionary = {},
+      context_dictionaryToCreate = {},
+      context_c = '',
+      context_wc = '',
+      context_w = '',
+      context_enlargeIn = 2,
+      // Compensate for the first entry which should not count
+      context_dictSize = 3,
+      context_numBits = 2,
+      context_data_string = '',
+      context_data_val = 0,
+      context_data_position = 0,
+      ii,
+      f = String.fromCharCode;
 
     for (ii = 0; ii < uncompressed.length; ii += 1) {
       context_c = uncompressed.charAt(ii);
@@ -8448,7 +8444,7 @@
       if (i % 2 == 0) {
         chr1 = input.charCodeAt(i / 2) >> 8;
         chr2 = input.charCodeAt(i / 2) & 255;
-        if (i / 2 + 1 < input.length) chr3 = input.charCodeAt(i / 2 + 1) >> 8;else chr3 = NaN;
+        if (i / 2 + 1 < input.length) chr3 = input.charCodeAt(i / 2 + 1) >> 8; else chr3 = NaN;
       } else {
         chr1 = input.charCodeAt((i - 1) / 2) & 255;
 
@@ -9330,7 +9326,8 @@
     };
 
     if (targetingMsgJson.wzrk_pivot) {
-      data.evtData = { ...data.evtData,
+      data.evtData = {
+        ...data.evtData,
         wzrk_pivot: targetingMsgJson.wzrk_pivot
       };
     }
@@ -9662,7 +9659,8 @@
       }
 
       const updatedCamp = getCampaignObject();
-      saveCampaignObject({ ...updatedCamp,
+      saveCampaignObject({
+        ...updatedCamp,
         dnd: [...new Set([...(updatedCamp.dnd || []), ...dnd])],
         wp: {}
       });
@@ -9688,7 +9686,8 @@
       } // Safely update the object
 
 
-      campaignObj.wfc = { ...campaignObj.wfc,
+      campaignObj.wfc = {
+        ...campaignObj.wfc,
         [campaignId]: [...existingTimestamps, ...newTimestamps]
       };
       /* Or tc can also be used to assign once */
@@ -9754,7 +9753,8 @@
       const wp = (_getCampaignObject$wp = (_getCampaignObject2 = getCampaignObject()) === null || _getCampaignObject2 === void 0 ? void 0 : _getCampaignObject2.wp) !== null && _getCampaignObject$wp !== void 0 ? _getCampaignObject$wp : {};
       const wsc = (_getCampaignObject$ws = (_getCampaignObject3 = getCampaignObject()) === null || _getCampaignObject3 === void 0 ? void 0 : _getCampaignObject3.wsc) !== null && _getCampaignObject$ws !== void 0 ? _getCampaignObject$ws : 0;
       const wndsc = (_getCampaignObject$wn = (_getCampaignObject4 = getCampaignObject()) === null || _getCampaignObject4 === void 0 ? void 0 : _getCampaignObject4.wndsc) !== null && _getCampaignObject$wn !== void 0 ? _getCampaignObject$wn : 0;
-      campaignObj = { ...campaignObj,
+      campaignObj = {
+        ...campaignObj,
         woc,
         wndoc,
         wi,
@@ -9904,7 +9904,8 @@
 
     const campaignId = campaign.wzrk_id.split('_')[0];
     const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
-    const enrichedCampaign = { ...campaign,
+    const enrichedCampaign = {
+      ...campaign,
       url: dashboardUrl
     };
     const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
@@ -9937,7 +9938,8 @@
 
   const saveCampaignObject = campaignObj => {
     if (StorageManager._isLocalStorageSupported()) {
-      const newObj = { ...getCampaignObject(),
+      const newObj = {
+        ...getCampaignObject(),
         ...campaignObj
       };
       const campObj = JSON.stringify(newObj);
@@ -10061,11 +10063,13 @@
                 }
               }
 
-              finalCampObj = { ...finalCampObj,
+              finalCampObj = {
+                ...finalCampObj,
                 [key]: campKeyObj
               };
             });
-            finalCampObj = { ...finalCampObj,
+            finalCampObj = {
+              ...finalCampObj,
               wsc: campObj.wsc,
               wfc: campObj.wfc,
               woc: campObj.woc,
@@ -11608,7 +11612,7 @@
 
       if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
+      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi);
     }
 
   }
@@ -12750,7 +12754,7 @@
       try {
         const ts = new Date().getTime();
         console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
@@ -12887,8 +12891,8 @@
         existingWrapper.remove();
         return false; // Continue with creation
       } else {
-          return true; // Stop execution
-        }
+        return true; // Stop execution
+      }
     }
 
     return false; // No existing wrapper, continue
@@ -13878,7 +13882,8 @@
                 msgId: e.target.campaignId,
                 pivotId: e.target.pivotId
               });
-              this.updateMessageInLS(e.target.id, { ...e.target.message,
+              this.updateMessageInLS(e.target.id, {
+                ...e.target.message,
                 viewed: 1
               });
               setTimeout(() => {
@@ -14079,7 +14084,8 @@
     }
 
     const storedInboxObj = getAndMigrateInboxMessages(guid);
-    const newObj = { ...storedInboxObj,
+    const newObj = {
+      ...storedInboxObj,
       [guid]: messages
     };
     StorageManager.saveToLSorCookie(WEBINBOX, newObj);
@@ -14637,7 +14643,7 @@
 
         try {
           retryElement = document.querySelector(selector.selector);
-        } catch (_) {}
+        } catch (_) { }
 
         if (retryElement) {
           raiseViewed();
@@ -14662,7 +14668,7 @@
 
           try {
             element = document.querySelector(s.selector);
-          } catch (_) {}
+          } catch (_) { }
 
           if (element) {
             raiseViewed();
@@ -15622,11 +15628,11 @@
         if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
           // Web inbox campaigns
           campTypeObj = campObj.wi;
-        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) ; else {
+        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')); else {
           campTypeObj = {};
         }
 
-        if (campObj.hasOwnProperty('global')) ; // Sets default global session limits if not specified
+        if (campObj.hasOwnProperty('global')); // Sets default global session limits if not specified
 
 
         if (targetingMsgJson[DISPLAY].wmc == null) {
@@ -15900,7 +15906,7 @@
 
         const onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'" + divId + "');";
         const title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<table cellpadding='0' cellspacing='0' border='0'>" + // "<tr><td colspan='2'></td></tr>"+
-        '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
+          '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
         const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>';
         html = css + title + body;
       }
@@ -16098,7 +16104,8 @@
             };
 
             if (targetingMsgJson.wzrk_pivot) {
-              eventData.evtData = { ...eventData.evtData,
+              eventData.evtData = {
+                ...eventData.evtData,
                 wzrk_pivot: notificationData.pivotId
               };
             } // Adds WZRK prefix key-value pairs to event data
@@ -16106,7 +16113,8 @@
 
             if (notificationData.msgCTkv) {
               for (var wzrkPrefixObj of notificationData.msgCTkv) {
-                eventData.evtData = { ...eventData.evtData,
+                eventData.evtData = {
+                  ...eventData.evtData,
                   ...wzrkPrefixObj
                 };
               }
@@ -16502,7 +16510,7 @@
         msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
         initializeWebInbox(logger).then(() => {
           this.handleInboxNotifications(msg);
-        }).catch(e => {});
+        }).catch(e => { });
       } else {
         this.handleInboxNotifications(msg);
       }
@@ -16936,7 +16944,8 @@
 
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
-      dataObject.af = { ...dataObject.af,
+      dataObject.af = {
+        ...dataObject.af,
         lib: 'web-sdk-v2.3.0',
         protocol: proto,
         ...$ct.flutterVersion
@@ -17232,7 +17241,8 @@
 
   var _processPrivacyArray2 = function _processPrivacyArray2(privacyArr) {
     if (Array.isArray(privacyArr) && privacyArr.length > 0) {
-      const privacyObj = privacyArr.reduce((prev, curr) => ({ ...prev,
+      const privacyObj = privacyArr.reduce((prev, curr) => ({
+        ...prev,
         ...curr
       }), {});
       let data = {};
@@ -17944,7 +17954,7 @@
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
 
-      this.raiseNotificationClicked = () => {};
+      this.raiseNotificationClicked = () => { };
 
       _classPrivateFieldLooseBase(this, _logger)[_logger] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
@@ -18300,13 +18310,15 @@
         };
 
         if (eventDetail.pivotId) {
-          data.evtData = { ...data.evtData,
+          data.evtData = {
+            ...data.evtData,
             wzrk_pivot: eventDetail.pivotId
           };
         }
 
         if (eventDetail.wzrk_slideNo) {
-          data.evtData = { ...data.evtData,
+          data.evtData = {
+            ...data.evtData,
             wzrk_slideNo: eventDetail.wzrk_slideNo
           };
         } // Adding kv pair to event data
@@ -18315,7 +18327,8 @@
         if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
           for (const key in eventDetail.kv) {
             if (key.startsWith(WZRK_PREFIX)) {
-              data.evtData = { ...data.evtData,
+              data.evtData = {
+                ...data.evtData,
                 [key]: eventDetail.kv[key]
               };
             }
@@ -18326,7 +18339,8 @@
         if (eventDetail.msgCTkv && eventDetail.msgCTkv !== null && eventDetail.msgCTkv !== undefined) {
           for (const key in eventDetail.msgCTkv) {
             if (key.startsWith(WZRK_PREFIX)) {
-              data.evtData = { ...data.evtData,
+              data.evtData = {
+                ...data.evtData,
                 [key]: eventDetail.msgCTkv[key]
               };
             }
@@ -19091,7 +19105,8 @@
     }
 
     if ($ct.location) {
-      data.af = { ...data.af,
+      data.af = {
+        ...data.af,
         ...$ct.location
       };
     }
