@@ -1,8 +1,9 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.clevertap = factory());
-})(this, (function () { 'use strict';
+    typeof define === 'function' && define.amd ? define(factory) :
+      (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.clevertap = factory());
+})(this, (function () {
+  'use strict';
 
   var id = 0;
 
@@ -221,7 +222,8 @@
   const WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
-  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'; // Flag key for optional sub-domain profile isolation
+  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK';
+  const ENCRYPTION_KEY_NAME = 'WZRK_ENCRYPTION_KEY'; // Flag key for optional sub-domain profile isolation
 
   const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD';
   const WEB_NATIVE_TEMPLATES = {
@@ -369,13 +371,13 @@
 
   var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
-  var cryptoJs$1 = {exports: {}};
+  var cryptoJs$1 = { exports: {} };
 
   function commonjsRequire(path) {
-  	throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
+    throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
   }
 
-  var core$1 = {exports: {}};
+  var core$1 = { exports: {} };
 
   var core = core$1.exports;
   var hasRequiredCore;
@@ -428,7 +430,7 @@
           if (!crypto && typeof commonjsRequire === 'function') {
             try {
               crypto = require('crypto');
-            } catch (err) {}
+            } catch (err) { }
           }
           /*
            * Cryptographically secure pseudorandom number generator
@@ -443,14 +445,14 @@
               if (typeof crypto.getRandomValues === 'function') {
                 try {
                   return crypto.getRandomValues(new Uint32Array(1))[0];
-                } catch (err) {}
+                } catch (err) { }
               } // Use randomBytes method (NodeJS)
 
 
               if (typeof crypto.randomBytes === 'function') {
                 try {
                   return crypto.randomBytes(4).readInt32LE();
-                } catch (err) {}
+                } catch (err) { }
               }
             }
 
@@ -462,7 +464,7 @@
 
 
           var create = Object.create || function () {
-            function F() {}
+            function F() { }
 
             return function (obj) {
               var subtype;
@@ -559,7 +561,7 @@
                *         }
                *     });
                */
-              init: function () {},
+              init: function () { },
 
               /**
                * Copies properties into this object.
@@ -1165,7 +1167,7 @@
     return core$1.exports;
   }
 
-  var x64Core$1 = {exports: {}};
+  var x64Core$1 = { exports: {} };
 
   var x64Core = x64Core$1.exports;
   var hasRequiredX64Core;
@@ -1466,7 +1468,7 @@
     return x64Core$1.exports;
   }
 
-  var libTypedarrays$1 = {exports: {}};
+  var libTypedarrays$1 = { exports: {} };
 
   var libTypedarrays = libTypedarrays$1.exports;
   var hasRequiredLibTypedarrays;
@@ -1536,7 +1538,7 @@
     return libTypedarrays$1.exports;
   }
 
-  var encUtf16$1 = {exports: {}};
+  var encUtf16$1 = { exports: {} };
 
   var encUtf16 = encUtf16$1.exports;
   var hasRequiredEncUtf16;
@@ -1690,7 +1692,7 @@
     return encUtf16$1.exports;
   }
 
-  var encBase64$1 = {exports: {}};
+  var encBase64$1 = { exports: {} };
 
   var encBase64 = encBase64$1.exports;
   var hasRequiredEncBase64;
@@ -1833,7 +1835,7 @@
     return encBase64$1.exports;
   }
 
-  var encBase64url$1 = {exports: {}};
+  var encBase64url$1 = { exports: {} };
 
   var encBase64url = encBase64url$1.exports;
   var hasRequiredEncBase64url;
@@ -1989,7 +1991,7 @@
     return encBase64url$1.exports;
   }
 
-  var md5$1 = {exports: {}};
+  var md5$1 = { exports: {} };
 
   var md5 = md5$1.exports;
   var hasRequiredMd5;
@@ -2230,7 +2232,7 @@
     return md5$1.exports;
   }
 
-  var sha1$1 = {exports: {}};
+  var sha1$1 = { exports: {} };
 
   var sha1 = sha1$1.exports;
   var hasRequiredSha1;
@@ -2291,10 +2293,9 @@
                 } else if (i < 60) {
                   t += (b & c | b & d | c & d) - 0x70e44324;
                 } else
-                  /* if (i < 80) */
-                  {
-                    t += (b ^ c ^ d) - 0x359d3e2a;
-                  }
+                  /* if (i < 80) */ {
+                  t += (b ^ c ^ d) - 0x359d3e2a;
+                }
 
                 e = d;
                 d = c;
@@ -2374,7 +2375,7 @@
     return sha1$1.exports;
   }
 
-  var sha256$1 = {exports: {}};
+  var sha256$1 = { exports: {} };
 
   var sha256 = sha256$1.exports;
   var hasRequiredSha256;
@@ -2560,7 +2561,7 @@
     return sha256$1.exports;
   }
 
-  var sha224$1 = {exports: {}};
+  var sha224$1 = { exports: {} };
 
   var sha224 = sha224$1.exports;
   var hasRequiredSha224;
@@ -2640,7 +2641,7 @@
     return sha224$1.exports;
   }
 
-  var sha512$1 = {exports: {}};
+  var sha512$1 = { exports: {} };
 
   var sha512 = sha512$1.exports;
   var hasRequiredSha512;
@@ -2902,7 +2903,7 @@
     return sha512$1.exports;
   }
 
-  var sha384$1 = {exports: {}};
+  var sha384$1 = { exports: {} };
 
   var sha384 = sha384$1.exports;
   var hasRequiredSha384;
@@ -2983,7 +2984,7 @@
     return sha384$1.exports;
   }
 
-  var sha3$1 = {exports: {}};
+  var sha3$1 = { exports: {} };
 
   var sha3 = sha3$1.exports;
   var hasRequiredSha3;
@@ -3017,7 +3018,7 @@
           (function () {
             // Compute rho offset constants
             var x = 1,
-                y = 0;
+              y = 0;
 
             for (var t = 0; t < 24; t++) {
               RHO_OFFSETS[x + 5 * y] = (t + 1) * (t + 2) / 2 % 64;
@@ -3048,10 +3049,9 @@
                   if (bitPosition < 32) {
                     roundConstantLsw ^= 1 << bitPosition;
                   } else
-                    /* if (bitPosition >= 32) */
-                    {
-                      roundConstantMsw ^= 1 << bitPosition - 32;
-                    }
+                    /* if (bitPosition >= 32) */ {
+                    roundConstantMsw ^= 1 << bitPosition - 32;
+                  }
                 } // Compute next LFSR
 
 
@@ -3125,7 +3125,7 @@
                 for (var x = 0; x < 5; x++) {
                   // Mix column lanes
                   var tMsw = 0,
-                      tLsw = 0;
+                    tLsw = 0;
 
                   for (var y = 0; y < 5; y++) {
                     var lane = state[x + 5 * y];
@@ -3170,11 +3170,10 @@
                     tMsw = laneMsw << rhoOffset | laneLsw >>> 32 - rhoOffset;
                     tLsw = laneLsw << rhoOffset | laneMsw >>> 32 - rhoOffset;
                   } else
-                    /* if (rhoOffset >= 32) */
-                    {
-                      tMsw = laneLsw << rhoOffset - 32 | laneMsw >>> 64 - rhoOffset;
-                      tLsw = laneMsw << rhoOffset - 32 | laneLsw >>> 64 - rhoOffset;
-                    } // Transpose lanes
+                    /* if (rhoOffset >= 32) */ {
+                    tMsw = laneLsw << rhoOffset - 32 | laneMsw >>> 64 - rhoOffset;
+                    tLsw = laneMsw << rhoOffset - 32 | laneLsw >>> 64 - rhoOffset;
+                  } // Transpose lanes
 
 
                   var TPiLane = T[PI_INDEXES[laneIndex]];
@@ -3299,7 +3298,7 @@
     return sha3$1.exports;
   }
 
-  var ripemd160$1 = {exports: {}};
+  var ripemd160$1 = { exports: {} };
 
   var ripemd160 = ripemd160$1.exports;
   var hasRequiredRipemd160;
@@ -3318,10 +3317,10 @@
       })(ripemd160, function (CryptoJS) {
         /** @preserve
         (c) 2012 by Cédric Mesnil. All rights reserved.
-        	Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-        	    - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+          Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+              - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
             - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-        	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+          THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         */
         (function (Math) {
           // Shortcuts
@@ -3536,7 +3535,7 @@
     return ripemd160$1.exports;
   }
 
-  var hmac$1 = {exports: {}};
+  var hmac$1 = { exports: {} };
 
   var hmac = hmac$1.exports;
   var hasRequiredHmac;
@@ -3676,7 +3675,7 @@
     return hmac$1.exports;
   }
 
-  var pbkdf2$1 = {exports: {}};
+  var pbkdf2$1 = { exports: {} };
 
   var pbkdf2 = pbkdf2$1.exports;
   var hasRequiredPbkdf2;
@@ -3819,7 +3818,7 @@
     return pbkdf2$1.exports;
   }
 
-  var evpkdf$1 = {exports: {}};
+  var evpkdf$1 = { exports: {} };
 
   var evpkdf = evpkdf$1.exports;
   var hasRequiredEvpkdf;
@@ -3953,7 +3952,7 @@
     return evpkdf$1.exports;
   }
 
-  var cipherCore$1 = {exports: {}};
+  var cipherCore$1 = { exports: {} };
 
   var cipherCore = cipherCore$1.exports;
   var hasRequiredCipherCore;
@@ -4403,12 +4402,11 @@
               if (this._xformMode == this._ENC_XFORM_MODE) {
                 modeCreator = mode.createEncryptor;
               } else
-                /* if (this._xformMode == this._DEC_XFORM_MODE) */
-                {
-                  modeCreator = mode.createDecryptor; // Keep at least one block in the buffer for unpadding
+                /* if (this._xformMode == this._DEC_XFORM_MODE) */ {
+                modeCreator = mode.createDecryptor; // Keep at least one block in the buffer for unpadding
 
-                  this._minBufferSize = 1;
-                }
+                this._minBufferSize = 1;
+              }
 
               if (this._mode && this._mode.__creator == modeCreator) {
                 this._mode.init(this, iv && iv.words);
@@ -4431,13 +4429,12 @@
 
                 finalProcessedBlocks = this._process(!!'flush');
               } else
-                /* if (this._xformMode == this._DEC_XFORM_MODE) */
-                {
-                  // Process final blocks
-                  finalProcessedBlocks = this._process(!!'flush'); // Unpad data
+                /* if (this._xformMode == this._DEC_XFORM_MODE) */ {
+                // Process final blocks
+                finalProcessedBlocks = this._process(!!'flush'); // Unpad data
 
-                  padding.unpad(finalProcessedBlocks);
-                }
+                padding.unpad(finalProcessedBlocks);
+              }
 
               return finalProcessedBlocks;
             },
@@ -4815,7 +4812,7 @@
     return cipherCore$1.exports;
   }
 
-  var modeCfb$1 = {exports: {}};
+  var modeCfb$1 = { exports: {} };
 
   var modeCfb = modeCfb$1.exports;
   var hasRequiredModeCfb;
@@ -4890,7 +4887,7 @@
     return modeCfb$1.exports;
   }
 
-  var modeCtr$1 = {exports: {}};
+  var modeCtr$1 = { exports: {} };
 
   var modeCtr = modeCtr$1.exports;
   var hasRequiredModeCtr;
@@ -4947,7 +4944,7 @@
     return modeCtr$1.exports;
   }
 
-  var modeCtrGladman$1 = {exports: {}};
+  var modeCtrGladman$1 = { exports: {} };
 
   var modeCtrGladman = modeCtrGladman$1.exports;
   var hasRequiredModeCtrGladman;
@@ -4980,21 +4977,21 @@
               var b3 = word & 0xff;
 
               if (b1 === 0xff) // overflow b1
-                {
-                  b1 = 0;
+              {
+                b1 = 0;
 
-                  if (b2 === 0xff) {
-                    b2 = 0;
+                if (b2 === 0xff) {
+                  b2 = 0;
 
-                    if (b3 === 0xff) {
-                      b3 = 0;
-                    } else {
-                      ++b3;
-                    }
+                  if (b3 === 0xff) {
+                    b3 = 0;
                   } else {
-                    ++b2;
+                    ++b3;
                   }
                 } else {
+                  ++b2;
+                }
+              } else {
                 ++b1;
               }
 
@@ -5052,7 +5049,7 @@
     return modeCtrGladman$1.exports;
   }
 
-  var modeOfb$1 = {exports: {}};
+  var modeOfb$1 = { exports: {} };
 
   var modeOfb = modeOfb$1.exports;
   var hasRequiredModeOfb;
@@ -5106,7 +5103,7 @@
     return modeOfb$1.exports;
   }
 
-  var modeEcb$1 = {exports: {}};
+  var modeEcb$1 = { exports: {} };
 
   var modeEcb = modeEcb$1.exports;
   var hasRequiredModeEcb;
@@ -5148,7 +5145,7 @@
     return modeEcb$1.exports;
   }
 
-  var padAnsix923$1 = {exports: {}};
+  var padAnsix923$1 = { exports: {} };
 
   var padAnsix923 = padAnsix923$1.exports;
   var hasRequiredPadAnsix923;
@@ -5196,7 +5193,7 @@
     return padAnsix923$1.exports;
   }
 
-  var padIso10126$1 = {exports: {}};
+  var padIso10126$1 = { exports: {} };
 
   var padIso10126 = padIso10126$1.exports;
   var hasRequiredPadIso10126;
@@ -5239,7 +5236,7 @@
     return padIso10126$1.exports;
   }
 
-  var padIso97971$1 = {exports: {}};
+  var padIso97971$1 = { exports: {} };
 
   var padIso97971 = padIso97971$1.exports;
   var hasRequiredPadIso97971;
@@ -5280,7 +5277,7 @@
     return padIso97971$1.exports;
   }
 
-  var padZeropadding$1 = {exports: {}};
+  var padZeropadding$1 = { exports: {} };
 
   var padZeropadding = padZeropadding$1.exports;
   var hasRequiredPadZeropadding;
@@ -5329,7 +5326,7 @@
     return padZeropadding$1.exports;
   }
 
-  var padNopadding$1 = {exports: {}};
+  var padNopadding$1 = { exports: {} };
 
   var padNopadding = padNopadding$1.exports;
   var hasRequiredPadNopadding;
@@ -5350,8 +5347,8 @@
          * A noop padding strategy.
          */
         CryptoJS.pad.NoPadding = {
-          pad: function () {},
-          unpad: function () {}
+          pad: function () { },
+          unpad: function () { }
         };
         return CryptoJS.pad.NoPadding;
       });
@@ -5360,7 +5357,7 @@
     return padNopadding$1.exports;
   }
 
-  var formatHex$1 = {exports: {}};
+  var formatHex$1 = { exports: {} };
 
   var formatHex = formatHex$1.exports;
   var hasRequiredFormatHex;
@@ -5432,7 +5429,7 @@
     return formatHex$1.exports;
   }
 
-  var aes$1 = {exports: {}};
+  var aes$1 = { exports: {} };
 
   var aes = aes$1.exports;
   var hasRequiredAes;
@@ -5653,7 +5650,7 @@
     return aes$1.exports;
   }
 
-  var tripledes$1 = {exports: {}};
+  var tripledes$1 = { exports: {} };
 
   var tripledes = tripledes$1.exports;
   var hasRequiredTripledes;
@@ -6393,7 +6390,7 @@
     return tripledes$1.exports;
   }
 
-  var rc4$1 = {exports: {}};
+  var rc4$1 = { exports: {} };
 
   var rc4 = rc4$1.exports;
   var hasRequiredRc4;
@@ -6529,7 +6526,7 @@
     return rc4$1.exports;
   }
 
-  var rabbit$1 = {exports: {}};
+  var rabbit$1 = { exports: {} };
 
   var rabbit = rabbit$1.exports;
   var hasRequiredRabbit;
@@ -6696,7 +6693,7 @@
     return rabbit$1.exports;
   }
 
-  var rabbitLegacy$1 = {exports: {}};
+  var rabbitLegacy$1 = { exports: {} };
 
   var rabbitLegacy = rabbitLegacy$1.exports;
   var hasRequiredRabbitLegacy;
@@ -6862,7 +6859,7 @@
     return rabbitLegacy$1.exports;
   }
 
-  var blowfish$1 = {exports: {}};
+  var blowfish$1 = { exports: {} };
 
   var blowfish = blowfish$1.exports;
   var hasRequiredBlowfish;
@@ -7194,7 +7191,7 @@
           }
 
           data = JSON.parse(data);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       return data;
@@ -7280,7 +7277,7 @@
         }
 
         $ct.globalCache[property] = value;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     static readFromLSorCookie(property) {
@@ -8157,21 +8154,21 @@
   const compress = uncompressed => {
     if (uncompressed == null) return '';
     let i,
-        value,
-        context_dictionary = {},
-        context_dictionaryToCreate = {},
-        context_c = '',
-        context_wc = '',
-        context_w = '',
-        context_enlargeIn = 2,
-        // Compensate for the first entry which should not count
-    context_dictSize = 3,
-        context_numBits = 2,
-        context_data_string = '',
-        context_data_val = 0,
-        context_data_position = 0,
-        ii,
-        f = String.fromCharCode;
+      value,
+      context_dictionary = {},
+      context_dictionaryToCreate = {},
+      context_c = '',
+      context_wc = '',
+      context_w = '',
+      context_enlargeIn = 2,
+      // Compensate for the first entry which should not count
+      context_dictSize = 3,
+      context_numBits = 2,
+      context_data_string = '',
+      context_data_val = 0,
+      context_data_position = 0,
+      ii,
+      f = String.fromCharCode;
 
     for (ii = 0; ii < uncompressed.length; ii += 1) {
       context_c = uncompressed.charAt(ii);
@@ -8447,7 +8444,7 @@
       if (i % 2 == 0) {
         chr1 = input.charCodeAt(i / 2) >> 8;
         chr2 = input.charCodeAt(i / 2) & 255;
-        if (i / 2 + 1 < input.length) chr3 = input.charCodeAt(i / 2 + 1) >> 8;else chr3 = NaN;
+        if (i / 2 + 1 < input.length) chr3 = input.charCodeAt(i / 2 + 1) >> 8; else chr3 = NaN;
       } else {
         chr1 = input.charCodeAt((i - 1) / 2) & 255;
 
@@ -8473,6 +8470,221 @@
     }
 
     return output;
+  };
+  const decompressFromBase64 = input => {
+    if (input == null || input === '') return '';
+    var output = '';
+    var chr1, chr2, chr3;
+    var enc1, enc2, enc3, enc4;
+    var i = 0;
+    input = input.replace(/[^A-Za-z0-9\+\/\=]/g, '');
+
+    while (i < input.length) {
+      enc1 = _keyStr.indexOf(input.charAt(i++));
+      enc2 = _keyStr.indexOf(input.charAt(i++));
+      enc3 = _keyStr.indexOf(input.charAt(i++));
+      enc4 = _keyStr.indexOf(input.charAt(i++));
+      chr1 = enc1 << 2 | enc2 >> 4;
+      chr2 = (enc2 & 15) << 4 | enc3 >> 2;
+      chr3 = (enc3 & 3) << 6 | enc4;
+
+      if (output.length % 2 === 0) {
+        output += String.fromCharCode(chr1 << 8 | chr2);
+
+        if (enc3 != 64) {
+          output += String.fromCharCode(chr3 << 8 | (enc4 === 64 ? 0 : enc4));
+        }
+      } else {
+        output = output.substring(0, output.length - 1) + String.fromCharCode(output.charCodeAt(output.length - 1) & 255 | chr1 << 8);
+
+        if (enc3 != 64) {
+          output += String.fromCharCode(chr2 << 8 | chr3);
+        }
+      }
+    }
+
+    return decompress(output);
+  };
+  const decompress = compressed => {
+    if (compressed == null || compressed === '') return '';
+    var dictionary = {};
+    var dictSize = 4;
+    var numBits = 3;
+    var entry = '';
+    var result = '';
+    var w;
+    var c;
+    var enlargeIn = 4;
+    var data = {
+      val: compressed.charCodeAt(0),
+      position: 32768,
+      index: 1
+    };
+    var bits = 0;
+    var maxpower = 2;
+    var power = 1;
+
+    while (power != maxpower) {
+      var resb = data.val & data.position;
+      data.position >>= 1;
+
+      if (data.position === 0) {
+        data.position = 32768;
+        data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0;
+      }
+
+      bits |= (resb > 0 ? 1 : 0) * power;
+      power <<= 1;
+    }
+
+    switch (bits) {
+      case 0:
+        bits = 0;
+        maxpower = Math.pow(2, 8);
+        power = 1;
+
+        while (power != maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+
+          if (data.position === 0) {
+            data.position = 32768;
+            data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0;
+          }
+
+          bits |= (resb > 0 ? 1 : 0) * power;
+          power <<= 1;
+        }
+
+        c = String.fromCharCode(bits);
+        break;
+
+      case 1:
+        bits = 0;
+        maxpower = Math.pow(2, 16);
+        power = 1;
+
+        while (power != maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+
+          if (data.position === 0) {
+            data.position = 32768;
+            data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0;
+          }
+
+          bits |= (resb > 0 ? 1 : 0) * power;
+          power <<= 1;
+        }
+
+        c = String.fromCharCode(bits);
+        break;
+
+      case 2:
+        return '';
+    }
+
+    dictionary[3] = c;
+    w = result = c;
+
+    while (true) {
+      if (data.index > compressed.length) {
+        return '';
+      }
+
+      bits = 0;
+      maxpower = Math.pow(2, numBits);
+      power = 1;
+
+      while (power != maxpower) {
+        resb = data.val & data.position;
+        data.position >>= 1;
+
+        if (data.position === 0) {
+          data.position = 32768;
+          data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0;
+        }
+
+        bits |= (resb > 0 ? 1 : 0) * power;
+        power <<= 1;
+      }
+
+      switch (c = bits) {
+        case 0:
+          bits = 0;
+          maxpower = Math.pow(2, 8);
+          power = 1;
+
+          while (power != maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+
+            if (data.position === 0) {
+              data.position = 32768;
+              data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0;
+            }
+
+            bits |= (resb > 0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+
+          dictionary[dictSize++] = String.fromCharCode(bits);
+          c = dictSize - 1;
+          enlargeIn--;
+          break;
+
+        case 1:
+          bits = 0;
+          maxpower = Math.pow(2, 16);
+          power = 1;
+
+          while (power != maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+
+            if (data.position === 0) {
+              data.position = 32768;
+              data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0;
+            }
+
+            bits |= (resb > 0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+
+          dictionary[dictSize++] = String.fromCharCode(bits);
+          c = dictSize - 1;
+          enlargeIn--;
+          break;
+
+        case 2:
+          return result;
+      }
+
+      if (enlargeIn === 0) {
+        enlargeIn = Math.pow(2, numBits);
+        numBits++;
+      }
+
+      if (dictionary[c]) {
+        entry = dictionary[c];
+      } else {
+        if (c === dictSize) {
+          entry = w + w.charAt(0);
+        } else {
+          return null;
+        }
+      }
+
+      result += entry;
+      dictionary[dictSize++] = w + entry.charAt(0);
+      enlargeIn--;
+      w = entry;
+
+      if (enlargeIn === 0) {
+        enlargeIn = Math.pow(2, numBits);
+        numBits++;
+      }
+    }
   };
 
   const getURLParams = url => {
@@ -8520,6 +8732,159 @@
     return window.location.hostname;
   };
 
+  /**
+   * EncryptionInTransit class for handling AES-GCM-256 encryption/decryption.
+   * Implemented as a singleton pattern.
+   */
+
+  class EncryptionInTransit {
+    constructor() {
+      var _StorageManager$read;
+
+      this.encryptionKey = (_StorageManager$read = StorageManager.read(ENCRYPTION_KEY_NAME)) !== null && _StorageManager$read !== void 0 ? _StorageManager$read : null;
+      this.utf8 = new TextEncoder();
+    }
+    /**
+     * Converts Uint8Array to Base64 string
+     * @private
+     */
+
+
+    toB64(u8) {
+      return btoa(String.fromCharCode(...u8));
+    }
+    /**
+     * Converts Base64 string to Uint8Array
+     * @private
+     */
+
+
+    fromB64(b64) {
+      return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    }
+    /**
+     * Generates random bytes
+     * @private
+     */
+
+
+    rnd(n) {
+      return crypto.getRandomValues(new Uint8Array(n));
+    }
+    /**
+     * Generates a new symmetric key for encryption
+     * @returns {Uint8Array} - 256-bit (32 bytes) symmetric key
+     */
+
+
+    generateSymmetricKey() {
+      // Generate a random 256-bit key (32 bytes) to match backend AES-256
+      this.encryptionKey = this.rnd(32);
+      StorageManager.write(ENCRYPTION_KEY_NAME, this.encryptionKey);
+      return this.encryptionKey;
+    }
+    /**
+     * Encrypts payload for backend transmission using AES-GCM-256.
+     *
+     * @param {string|Object} payload - The payload to encrypt (string or object to stringify)
+     * @param {Object} options - Options object
+     * @param {string} options.id - Optional identifier (defaults to 'ZWW-WWW-WWRZ')
+     * @returns {Promise<string>} - Base64 compressed encrypted envelope
+     */
+
+
+    encryptForBackend(payload) {
+      let {
+        id = 'ZWW-WWW-WWRZ'
+      } = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+      // Generate a new symmetric key for this encryption
+      if (!this.encryptionKey) {
+        this.generateSymmetricKey();
+      } // Generate a random 96-bit IV (12 bytes) for GCM
+
+
+      const iv = this.rnd(12); // Algorithm specification with tag length matching backend (128 bits)
+
+      const alg = {
+        name: 'AES-GCM',
+        iv,
+        tagLength: 128
+      }; // Convert payload to bytes
+
+      const plainBuf = this.utf8.encode(typeof payload === 'string' ? payload : JSON.stringify(payload)); // Import the raw key as a CryptoKey
+
+      return crypto.subtle.importKey('raw', this.encryptionKey, {
+        name: 'AES-GCM'
+      }, false, ['encrypt']).then(cryptoKey => {
+        // Encrypt the data
+        return crypto.subtle.encrypt(alg, cryptoKey, plainBuf);
+      }).then(cipherBuf => {
+        const cipher = new Uint8Array(cipherBuf);
+        const envelope = {
+          itp: this.toB64(cipher),
+          // payload - base64 encoded ciphertext (includes auth tag)
+          itk: this.toB64(this.encryptionKey),
+          // key - base64 encoded raw AES key
+          itv: this.toB64(iv),
+          // iv - base64 encoded IV
+          id,
+          encrypted: true
+        };
+        return compressData(JSON.stringify(envelope));
+      }).catch(error => {
+        throw new Error("Encryption failed: ".concat(error.message));
+      });
+    }
+    /**
+     * Decrypts response from backend using AES-GCM-256.
+     * This is a stub implementation for Phase 2.
+     *
+     * @param {string} envelopeB64 - Base64 compressed encrypted envelope
+     * @returns {Promise<string>} - Decrypted plaintext
+     */
+
+
+    decryptFromBackend(envelopeB64) {
+      try {
+        // Decompress the base64 envelope using LZS decompression
+        const envelopeJson = decompressFromBase64(envelopeB64);
+        const envelope = JSON.parse(envelopeJson);
+        const {
+          itp,
+          itv
+        } = envelope;
+
+        if (!itp || !itv) {
+          return Promise.reject(new Error('Decryption failed: Invalid envelope format'));
+        }
+
+        const ciphertext = this.fromB64(itp);
+        const iv = this.fromB64(itv); // Algorithm specification matching backend (tagLength 128 bits)
+
+        const alg = {
+          name: 'AES-GCM',
+          iv,
+          tagLength: 128
+        }; // Import the key and decrypt
+
+        return crypto.subtle.importKey('raw', this.encryptionKey, {
+          name: 'AES-GCM'
+        }, false, ['decrypt']).then(cryptoKey => crypto.subtle.decrypt(alg, cryptoKey, ciphertext)).then(plainBuf => new TextDecoder().decode(plainBuf)).catch(error => {
+          throw new Error("Decryption failed: ".concat(error.message));
+        });
+      } catch (error) {
+        return Promise.reject(new Error("Decryption failed: ".concat(error.message)));
+      }
+    }
+
+  } // Create and export singleton instance
+
+
+  const encryptionInTransitInstance = new EncryptionInTransit(); // Export the singleton instance
+
+  var _prepareEncryptedRequest = _classPrivateFieldLooseKey("prepareEncryptedRequest");
+
   var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
 
   var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
@@ -8542,6 +8907,109 @@
      */
     static fireRequest(url, skipARP, sendOULFlag, evtName) {
       _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
+    }
+
+    static handleFetchResponse(url) {
+      const fetchOptions = {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json'
+        }
+      };
+      fetch(url, fetchOptions).then(response => {
+        if (!response.ok) {
+          // Check for server-side EIT disabled scenario
+          if (response.status === 400) {
+            return response.text().then(errorText => {
+              if (errorText.includes('EIT_DISABLED')) {
+                console.error('Encryption in Transit is disabled on server side – disable flag or contact support', {
+                  status: response.status,
+                  statusText: response.statusText,
+                  error: errorText
+                });
+              }
+
+              throw new Error("Network response was not ok: ".concat(response.statusText));
+            });
+          }
+
+          throw new Error("Network response was not ok: ".concat(response.statusText));
+        }
+
+        return response.text();
+      }).then(rawResponse => {
+        // Phase 2: Attempt to decrypt the response if it might be encrypted
+        const tryDecryption = () => {
+          if (rawResponse && rawResponse.length > 0) {
+            return encryptionInTransitInstance.decryptFromBackend(rawResponse).then(decryptedResponse => {
+              this.logger.debug('Successfully decrypted response');
+              return decryptedResponse;
+            }).catch(decryptError => {
+              // If decryption fails, assume the response was not encrypted
+              this.logger.debug('Response decryption failed, assuming unencrypted:', decryptError.message);
+              return rawResponse;
+            });
+          }
+
+          return Promise.resolve(rawResponse);
+        };
+
+        return tryDecryption();
+      }).then(processedResponse => {
+        // Parse the final response as JSON
+        let jsonResponse;
+
+        try {
+          jsonResponse = JSON.parse(processedResponse);
+        } catch (parseError) {
+          this.logger.error('Failed to parse response as JSON:', parseError);
+          throw new Error('Invalid JSON response');
+        }
+
+        const {
+          tr,
+          meta,
+          wpe
+        } = jsonResponse;
+
+        if (tr) {
+          window.$WZRK_WR.tr(tr);
+        }
+
+        if (meta) {
+          const {
+            g,
+            sid,
+            rf,
+            rn,
+            optOut
+          } = meta;
+
+          if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
+            const parsedRn = parseInt(rn); // Include optOut as 5th parameter if present
+
+            if (optOut !== undefined) {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn, optOut);
+            } else {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn);
+            }
+          }
+        }
+
+        if (wpe) {
+          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key);
+        }
+
+        this.logger.debug('req snt -> url: ' + url);
+      }).catch(error => {
+        if (error.message && error.message.includes('EIT decryption failed')) {
+          this.logger.error('EIT decryption failed', error); // Safely ignore the response payload and proceed without applying server changes
+
+          return;
+        }
+
+        this.logger.error('Fetch error:', error);
+      });
     }
 
     getDelayFrequency() {
@@ -8681,28 +9149,97 @@
 
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:');
-    } // TODO: Try using Function constructor instead of appending script.
+    } // Prepare request with optional encryption
 
 
-    var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
+    _classPrivateFieldLooseBase(this, _prepareEncryptedRequest)[_prepareEncryptedRequest](url).then(requestConfig => {
+      // TODO: Try using Function constructor instead of appending script.
+      var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
 
-    while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
-      ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
+      while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+        ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
+      } // Use the static flag instead of the global $ct map
+      // When encryption is enabled, always use Fetch API
+
+
+      if (!this.enableFetchApi && !this.enableEncryptionInTransit) {
+        const s = document.createElement('script');
+        s.setAttribute('type', 'text/javascript');
+        s.setAttribute('src', requestConfig.url);
+        s.setAttribute('class', 'ct-jp-cb');
+        s.setAttribute('rel', 'nofollow');
+        s.async = true;
+        document.getElementsByTagName('head')[0].appendChild(s);
+        this.logger.debug('req snt -> url: ' + requestConfig.url);
+      } else {
+        this.handleFetchResponse(requestConfig.url);
+      }
+    }).catch(error => {
+      this.logger.error('Request preparation failed:', error);
+    });
+  };
+
+  var _prepareEncryptedRequest2 = function _prepareEncryptedRequest2(url) {
+    if (!this.enableEncryptionInTransit) {
+      return Promise.resolve({
+        url,
+        method: 'GET'
+      });
+    } // Force Fetch API when encryption is enabled
+
+
+    this.enableFetchApi = true;
+
+    try {
+      // Extract query string from URL
+      const urlObj = new URL(url);
+      const searchParams = new URLSearchParams(urlObj.search); // Check if 'd' parameter exists
+
+      const dParam = searchParams.get('d');
+
+      if (!dParam) {
+        return Promise.resolve({
+          url,
+          method: 'GET'
+        });
+      } // Encrypt only the 'd' parameter value
+
+
+      return encryptionInTransitInstance.encryptForBackend(dParam, {
+        id: this.account.id
+      }).then(encryptedData => {
+        // Replace the 'd' parameter with encrypted data
+        searchParams.set('d', encryptedData); // Reconstruct the URL with encrypted 'd' parameter
+
+        const newUrl = "".concat(urlObj.protocol, "//").concat(urlObj.host).concat(urlObj.pathname, "?").concat(searchParams.toString());
+        return {
+          url: newUrl,
+          method: 'GET'
+        };
+      }).catch(error => {
+        this.logger.error('Encryption failed, falling back to unencrypted request:', error);
+        return {
+          url,
+          method: 'GET'
+        };
+      });
+    } catch (error) {
+      this.logger.error('URL parsing failed, falling back to unencrypted request:', error);
+      return Promise.resolve({
+        url,
+        method: 'GET'
+      });
     }
-
-    const s = document.createElement('script');
-    s.setAttribute('type', 'text/javascript');
-    s.setAttribute('src', url);
-    s.setAttribute('class', 'ct-jp-cb');
-    s.setAttribute('rel', 'nofollow');
-    s.async = true;
-    document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url);
   };
 
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
   RequestDispatcher.account = void 0;
+  RequestDispatcher.enableFetchApi = false;
+  RequestDispatcher.enableEncryptionInTransit = false;
+  Object.defineProperty(RequestDispatcher, _prepareEncryptedRequest, {
+    value: _prepareEncryptedRequest2
+  });
   Object.defineProperty(RequestDispatcher, _fireRequest, {
     value: _fireRequest2
   });
@@ -8789,7 +9326,8 @@
     };
 
     if (targetingMsgJson.wzrk_pivot) {
-      data.evtData = { ...data.evtData,
+      data.evtData = {
+        ...data.evtData,
         wzrk_pivot: targetingMsgJson.wzrk_pivot
       };
     }
@@ -9121,7 +9659,8 @@
       }
 
       const updatedCamp = getCampaignObject();
-      saveCampaignObject({ ...updatedCamp,
+      saveCampaignObject({
+        ...updatedCamp,
         dnd: [...new Set([...(updatedCamp.dnd || []), ...dnd])],
         wp: {}
       });
@@ -9147,7 +9686,8 @@
       } // Safely update the object
 
 
-      campaignObj.wfc = { ...campaignObj.wfc,
+      campaignObj.wfc = {
+        ...campaignObj.wfc,
         [campaignId]: [...existingTimestamps, ...newTimestamps]
       };
       /* Or tc can also be used to assign once */
@@ -9213,7 +9753,8 @@
       const wp = (_getCampaignObject$wp = (_getCampaignObject2 = getCampaignObject()) === null || _getCampaignObject2 === void 0 ? void 0 : _getCampaignObject2.wp) !== null && _getCampaignObject$wp !== void 0 ? _getCampaignObject$wp : {};
       const wsc = (_getCampaignObject$ws = (_getCampaignObject3 = getCampaignObject()) === null || _getCampaignObject3 === void 0 ? void 0 : _getCampaignObject3.wsc) !== null && _getCampaignObject$ws !== void 0 ? _getCampaignObject$ws : 0;
       const wndsc = (_getCampaignObject$wn = (_getCampaignObject4 = getCampaignObject()) === null || _getCampaignObject4 === void 0 ? void 0 : _getCampaignObject4.wndsc) !== null && _getCampaignObject$wn !== void 0 ? _getCampaignObject$wn : 0;
-      campaignObj = { ...campaignObj,
+      campaignObj = {
+        ...campaignObj,
         woc,
         wndoc,
         wi,
@@ -9363,7 +9904,8 @@
 
     const campaignId = campaign.wzrk_id.split('_')[0];
     const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
-    const enrichedCampaign = { ...campaign,
+    const enrichedCampaign = {
+      ...campaign,
       url: dashboardUrl
     };
     const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
@@ -9396,7 +9938,8 @@
 
   const saveCampaignObject = campaignObj => {
     if (StorageManager._isLocalStorageSupported()) {
-      const newObj = { ...getCampaignObject(),
+      const newObj = {
+        ...getCampaignObject(),
         ...campaignObj
       };
       const campObj = JSON.stringify(newObj);
@@ -9520,11 +10063,13 @@
                 }
               }
 
-              finalCampObj = { ...finalCampObj,
+              finalCampObj = {
+                ...finalCampObj,
                 [key]: campKeyObj
               };
             });
-            finalCampObj = { ...finalCampObj,
+            finalCampObj = {
+              ...finalCampObj,
               wsc: campObj.wsc,
               wfc: campObj.wfc,
               woc: campObj.woc,
@@ -11067,7 +11612,7 @@
 
       if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
+      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi);
     }
 
   }
@@ -12209,7 +12754,7 @@
       try {
         const ts = new Date().getTime();
         console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
@@ -12346,8 +12891,8 @@
         existingWrapper.remove();
         return false; // Continue with creation
       } else {
-          return true; // Stop execution
-        }
+        return true; // Stop execution
+      }
     }
 
     return false; // No existing wrapper, continue
@@ -13337,7 +13882,8 @@
                 msgId: e.target.campaignId,
                 pivotId: e.target.pivotId
               });
-              this.updateMessageInLS(e.target.id, { ...e.target.message,
+              this.updateMessageInLS(e.target.id, {
+                ...e.target.message,
                 viewed: 1
               });
               setTimeout(() => {
@@ -13538,7 +14084,8 @@
     }
 
     const storedInboxObj = getAndMigrateInboxMessages(guid);
-    const newObj = { ...storedInboxObj,
+    const newObj = {
+      ...storedInboxObj,
       [guid]: messages
     };
     StorageManager.saveToLSorCookie(WEBINBOX, newObj);
@@ -14096,7 +14643,7 @@
 
         try {
           retryElement = document.querySelector(selector.selector);
-        } catch (_) {}
+        } catch (_) { }
 
         if (retryElement) {
           raiseViewed();
@@ -14121,7 +14668,7 @@
 
           try {
             element = document.querySelector(s.selector);
-          } catch (_) {}
+          } catch (_) { }
 
           if (element) {
             raiseViewed();
@@ -15081,11 +15628,11 @@
         if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
           // Web inbox campaigns
           campTypeObj = campObj.wi;
-        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) ; else {
+        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')); else {
           campTypeObj = {};
         }
 
-        if (campObj.hasOwnProperty('global')) ; // Sets default global session limits if not specified
+        if (campObj.hasOwnProperty('global')); // Sets default global session limits if not specified
 
 
         if (targetingMsgJson[DISPLAY].wmc == null) {
@@ -15359,7 +15906,7 @@
 
         const onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'" + divId + "');";
         const title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<table cellpadding='0' cellspacing='0' border='0'>" + // "<tr><td colspan='2'></td></tr>"+
-        '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
+          '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
         const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>';
         html = css + title + body;
       }
@@ -15557,7 +16104,8 @@
             };
 
             if (targetingMsgJson.wzrk_pivot) {
-              eventData.evtData = { ...eventData.evtData,
+              eventData.evtData = {
+                ...eventData.evtData,
                 wzrk_pivot: notificationData.pivotId
               };
             } // Adds WZRK prefix key-value pairs to event data
@@ -15565,7 +16113,8 @@
 
             if (notificationData.msgCTkv) {
               for (var wzrkPrefixObj of notificationData.msgCTkv) {
-                eventData.evtData = { ...eventData.evtData,
+                eventData.evtData = {
+                  ...eventData.evtData,
                   ...wzrkPrefixObj
                 };
               }
@@ -15961,7 +16510,7 @@
         msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
         initializeWebInbox(logger).then(() => {
           this.handleInboxNotifications(msg);
-        }).catch(e => {});
+        }).catch(e => { });
       } else {
         this.handleInboxNotifications(msg);
       }
@@ -16395,7 +16944,8 @@
 
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
-      dataObject.af = { ...dataObject.af,
+      dataObject.af = {
+        ...dataObject.af,
         lib: 'web-sdk-v2.3.0',
         protocol: proto,
         ...$ct.flutterVersion
@@ -16691,7 +17241,8 @@
 
   var _processPrivacyArray2 = function _processPrivacyArray2(privacyArr) {
     if (Array.isArray(privacyArr) && privacyArr.length > 0) {
-      const privacyObj = privacyArr.reduce((prev, curr) => ({ ...prev,
+      const privacyObj = privacyArr.reduce((prev, curr) => ({
+        ...prev,
         ...curr
       }), {});
       let data = {};
@@ -17239,6 +17790,10 @@
 
   var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
 
+  var _enableFetchApi = _classPrivateFieldLooseKey("enableFetchApi");
+
+  var _enableEncryptionInTransit = _classPrivateFieldLooseKey("enableEncryptionInTransit");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _debounce = _classPrivateFieldLooseKey("debounce");
@@ -17283,6 +17838,26 @@
       const dismissSpamControl = value === true;
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
       $ct.dismissSpamControl = dismissSpamControl;
+    }
+
+    get enableFetchApi() {
+      return _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
+    }
+
+    set enableFetchApi(value) {
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value; // propagate the setting to RequestDispatcher so util layer can honour it
+
+      RequestDispatcher.enableFetchApi = value;
+    }
+
+    get enableEncryptionInTransit() {
+      return _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit];
+    }
+
+    set enableEncryptionInTransit(value) {
+      _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = value; // propagate the setting to RequestDispatcher so util layer can honour it
+
+      RequestDispatcher.enableEncryptionInTransit = value;
     }
 
     constructor() {
@@ -17366,12 +17941,20 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _enableFetchApi, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _enableEncryptionInTransit, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
 
-      this.raiseNotificationClicked = () => {};
+      this.raiseNotificationClicked = () => { };
 
       _classPrivateFieldLooseBase(this, _logger)[_logger] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
@@ -17389,6 +17972,10 @@
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = (_clevertap$dismissSpa = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa !== void 0 ? _clevertap$dismissSpa : true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = clevertap.enableFetchApi || false;
+      RequestDispatcher.enableFetchApi = _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
+      _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = clevertap.enableEncryptionInTransit || false;
+      RequestDispatcher.enableEncryptionInTransit = _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit];
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         isPersonalisationActive: this._isPersonalisationActive
@@ -17723,13 +18310,15 @@
         };
 
         if (eventDetail.pivotId) {
-          data.evtData = { ...data.evtData,
+          data.evtData = {
+            ...data.evtData,
             wzrk_pivot: eventDetail.pivotId
           };
         }
 
         if (eventDetail.wzrk_slideNo) {
-          data.evtData = { ...data.evtData,
+          data.evtData = {
+            ...data.evtData,
             wzrk_slideNo: eventDetail.wzrk_slideNo
           };
         } // Adding kv pair to event data
@@ -17738,7 +18327,8 @@
         if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
           for (const key in eventDetail.kv) {
             if (key.startsWith(WZRK_PREFIX)) {
-              data.evtData = { ...data.evtData,
+              data.evtData = {
+                ...data.evtData,
                 [key]: eventDetail.kv[key]
               };
             }
@@ -17749,7 +18339,8 @@
         if (eventDetail.msgCTkv && eventDetail.msgCTkv !== null && eventDetail.msgCTkv !== undefined) {
           for (const key in eventDetail.msgCTkv) {
             if (key.startsWith(WZRK_PREFIX)) {
-              data.evtData = { ...data.evtData,
+              data.evtData = {
+                ...data.evtData,
                 [key]: eventDetail.msgCTkv[key]
               };
             }
@@ -18110,6 +18701,16 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
+      }
+
+      if (config.enableFetchApi) {
+        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
+        RequestDispatcher.enableFetchApi = config.enableFetchApi;
+      }
+
+      if (config.enableEncryptionInTransit) {
+        _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = config.enableEncryptionInTransit;
+        RequestDispatcher.enableEncryptionInTransit = config.enableEncryptionInTransit;
       } // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
       // This ensures user identity is established before other events
 
@@ -18504,7 +19105,8 @@
     }
 
     if ($ct.location) {
-      data.af = { ...data.af,
+      data.af = {
+        ...data.af,
         ...$ct.location
       };
     }
