@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.4.0] 2nd Sept 2025
+- Added Fetch API support for network requests
+
 ## [2.3.0] 10th Sept 2025
 - Introduced list reordering in Web Native Display - Visual Editor.
 

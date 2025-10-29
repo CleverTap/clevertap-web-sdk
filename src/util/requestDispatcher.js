@@ -4,13 +4,75 @@ import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
 import { StorageManager, $ct } from './storage'
 import { addToURL } from './url'
+import encryptionInTransitInstance from './security/encryptionInTransit'
 
 export default class RequestDispatcher {
   static logger
   static device
   static account
+  /**
+   * Controls whether Fetch API should be used instead of the JSONP <script> fallback.
+   * This is configured at runtime by the CleverTap SDK during initialisation.
+   * Do NOT access this flag via the global $ct map anymore.
+   */
+  static enableFetchApi = false
+  /**
+   * Controls whether outbound payloads should be encrypted using AES-GCM-256.
+   * This is configured at runtime by the CleverTap SDK during initialisation.
+   * When enabled, all requests will be sent using Fetch API with encrypted payload envelope.
+   */
+  static enableEncryptionInTransit = false
   networkRetryCount = 0
   minDelayFrequency = 0
+
+  /**
+   * Encrypts the 'd' parameter value if encryption is enabled
+   * @param {string} url - The URL containing query parameters
+   * @returns {Promise<{url: string, body?: string, method: string}>} - Modified URL with encrypted 'd' parameter
+   */
+  static #prepareEncryptedRequest (url) {
+    if (!this.enableEncryptionInTransit) {
+      return Promise.resolve({ url, method: 'GET' })
+    }
+
+    // Force Fetch API when encryption is enabled
+    this.enableFetchApi = true
+
+    try {
+      // Extract query string from URL
+      const urlObj = new URL(url)
+      const searchParams = new URLSearchParams(urlObj.search)
+
+      // Check if 'd' parameter exists
+      const dParam = searchParams.get('d')
+      if (!dParam) {
+        return Promise.resolve({ url, method: 'GET' })
+      }
+
+      // Encrypt only the 'd' parameter value
+      return encryptionInTransitInstance.encryptForBackend(dParam, { id: this.account.id })
+        .then((encryptedData) => {
+          // Replace the 'd' parameter with encrypted data
+          searchParams.set('d', encryptedData)
+
+          // Reconstruct the URL with encrypted 'd' parameter
+          const newUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}?${searchParams.toString()}`
+
+          return {
+            url: newUrl,
+            originalUrl: url,
+            method: 'GET'
+          }
+        })
+        .catch((error) => {
+          this.logger.error('Encryption failed, falling back to unencrypted request:', error)
+          return { url, method: 'GET' }
+        })
+    } catch (error) {
+      this.logger.error('URL parsing failed, falling back to unencrypted request:', error)
+      return Promise.resolve({ url, method: 'GET' })
+    }
+  }
 
   // ANCHOR - Requests get fired from here
   static #fireRequest (url, tries, skipARP, sendOULFlag, evtName) {
@@ -41,9 +103,9 @@ export default class RequestDispatcher {
       }
     } else {
       if (!isValueValid(this.device.gcookie) &&
-      ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
-      tries < MAX_TRIES) {
-      // if ongoing First Request is in progress, initiate retry
+        ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
+        tries < MAX_TRIES) {
+        // if ongoing First Request is in progress, initiate retry
         setTimeout(() => {
           this.logger.debug(`retrying fire request for url: ${url}, tries: ${tries}`)
           this.#fireRequest(url, tries + 1, skipARP, sendOULFlag)
@@ -78,19 +140,34 @@ export default class RequestDispatcher {
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:')
     }
-    // TODO: Try using Function constructor instead of appending script.
-    var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
-    while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
-      ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
-    }
-    const s = document.createElement('script')
-    s.setAttribute('type', 'text/javascript')
-    s.setAttribute('src', url)
-    s.setAttribute('class', 'ct-jp-cb')
-    s.setAttribute('rel', 'nofollow')
-    s.async = true
-    document.getElementsByTagName('head')[0].appendChild(s)
-    this.logger.debug('req snt -> url: ' + url)
+
+    // Prepare request with optional encryption
+    this.#prepareEncryptedRequest(url)
+      .then((requestConfig) => {
+        // TODO: Try using Function constructor instead of appending script.
+        var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
+        while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+          ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
+        }
+
+        // Use the static flag instead of the global $ct map
+        // When encryption is enabled, always use Fetch API
+        if (!this.enableFetchApi && !this.enableEncryptionInTransit) {
+          const s = document.createElement('script')
+          s.setAttribute('type', 'text/javascript')
+          s.setAttribute('src', requestConfig.url)
+          s.setAttribute('class', 'ct-jp-cb')
+          s.setAttribute('rel', 'nofollow')
+          s.async = true
+          document.getElementsByTagName('head')[0].appendChild(s)
+          this.logger.debug('req snt -> url: ' + requestConfig.url)
+        } else {
+          this.handleFetchResponse(requestConfig.url, requestConfig.originalUrl)
+        }
+      })
+      .catch((error) => {
+        this.logger.error('Request preparation failed:', error)
+      })
   }
 
   /**
@@ -129,6 +206,117 @@ export default class RequestDispatcher {
       return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE)), this.logger))
     }
     return url
+  }
+
+  static handleFetchResponse (encryptedUrl, originalUrl, retryCount = 0) {
+    const fetchOptions = {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'X-CleverTap-Encryption-Enabled': true
+      }
+    }
+
+    fetch(encryptedUrl, fetchOptions)
+      .then((response) => {
+        if (!response.ok) {
+          // Handle 419: Encryption not enabled for account
+          if (response.status === 419) {
+            this.logger.error('Encryption not enabled for account')
+            // Retry with the original unencrypted URL
+            if (originalUrl && originalUrl !== encryptedUrl) {
+              this.logger.debug('Retrying request without encryption')
+              return this.handleFetchResponse(originalUrl, originalUrl)
+            }
+            throw new Error(`Encryption not enabled for account: ${response.statusText}`)
+          }
+
+          // Handle 420: Failed to decrypt payload
+          if (response.status === 420) {
+            if (retryCount < 3) {
+              this.logger.debug(`Retrying request due to 420 error, attempt ${retryCount + 1} of 3`)
+              // Retry the same encrypted request
+              return this.handleFetchResponse(encryptedUrl, originalUrl, retryCount + 1)
+            } else {
+              this.logger.error('Failed to decrypt payload after 3 retries')
+              throw new Error('Failed to decrypt payload')
+            }
+          }
+
+          throw new Error(`Network response was not ok: ${response.statusText}`)
+        }
+        return response.text()
+      })
+      .then((rawResponse) => {
+        // Skip processing if this is a retry response that will be handled recursively
+        if (rawResponse instanceof Promise) {
+          return rawResponse
+        }
+
+        // Phase 2: Attempt to decrypt the response if it might be encrypted
+        const tryDecryption = () => {
+          if (rawResponse && rawResponse.length > 0 && this.enableEncryptionInTransit) {
+            return encryptionInTransitInstance.decryptFromBackend(rawResponse)
+              .then((decryptedResponse) => {
+                this.logger.debug('Successfully decrypted response')
+                return decryptedResponse
+              })
+              .catch((decryptError) => {
+                // If decryption fails, assume the response was not encrypted
+                this.logger.debug('Response decryption failed, assuming unencrypted:', decryptError.message)
+                return rawResponse
+              })
+          }
+          return Promise.resolve(rawResponse)
+        }
+
+        return tryDecryption()
+      })
+      .then((processedResponse) => {
+        // Skip processing if this is a recursive promise
+        if (processedResponse instanceof Promise) {
+          return processedResponse
+        }
+
+        // Parse the final response as JSON
+        let jsonResponse
+        try {
+          jsonResponse = JSON.parse(processedResponse)
+        } catch (parseError) {
+          this.logger.error('Failed to parse response as JSON:', parseError)
+          throw new Error('Invalid JSON response')
+        }
+
+        const { tr, meta, wpe } = jsonResponse
+        if (tr) {
+          window.$WZRK_WR.tr(tr)
+        }
+        if (meta) {
+          const { g, sid, rf, rn, optOut } = meta
+          if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
+            const parsedRn = parseInt(rn)
+
+            // Include optOut as 5th parameter if present
+            if (optOut !== undefined) {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn, optOut)
+            } else {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn)
+            }
+          }
+        }
+        if (wpe) {
+          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key)
+        }
+        this.logger.debug('req snt -> url: ' + encryptedUrl)
+      })
+      .catch((error) => {
+        if (error.message && error.message.includes('EIT decryption failed')) {
+          this.logger.error('EIT decryption failed', error)
+          // Safely ignore the response payload and proceed without applying server changes
+          return
+        }
+        this.logger.error('Fetch error:', error)
+      })
   }
 
   getDelayFrequency () {
