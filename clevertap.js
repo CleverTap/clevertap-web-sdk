@@ -222,7 +222,6 @@
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
   const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK';
-  const ENCRYPTION_KEY_NAME = 'WZRK_ENCRYPTION_KEY'; // Flag key for optional sub-domain profile isolation
 
   const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD';
   const WEB_NATIVE_TEMPLATES = {
@@ -8528,9 +8527,7 @@
 
   class EncryptionInTransit {
     constructor() {
-      var _StorageManager$read;
-
-      this.encryptionKey = (_StorageManager$read = StorageManager.read(ENCRYPTION_KEY_NAME)) !== null && _StorageManager$read !== void 0 ? _StorageManager$read : null;
+      this.encryptionKey = null;
       this.utf8 = new TextEncoder();
     }
     /**
@@ -8569,7 +8566,6 @@
     generateSymmetricKey() {
       // Generate a random 256-bit key (32 bytes) to match backend AES-256
       this.encryptionKey = this.rnd(32);
-      StorageManager.write(ENCRYPTION_KEY_NAME, this.encryptionKey);
       return this.encryptionKey;
     }
     /**
@@ -8636,7 +8632,7 @@
 
     async decryptFromBackend(envelope) {
       try {
-        // Decompress the base64 envelope using LZS decompression
+        // Parse the envelope from backend
         const parsedEnvelope = JSON.parse(envelope);
         const {
           itp,
@@ -8645,10 +8641,18 @@
 
         if (!itp || !itv) {
           return Promise.reject(new Error('Decryption failed: Invalid envelope format'));
+        } // Check if encryption key exists
+
+
+        if (!this.encryptionKey) {
+          return Promise.reject(new Error('Decryption failed: No encryption key available'));
         }
 
         const ciphertext = this.fromB64(itp);
-        const iv = this.fromB64(itv); // Algorithm specification matching backend (tagLength 128 bits)
+        const iv = this.fromB64(itv);
+        console.log('ciphertext', ciphertext);
+        console.log('iv', iv);
+        console.log('encryptionKey', this.encryptionKey); // Algorithm specification matching backend (tagLength 128 bits)
 
         const alg = {
           name: 'AES-GCM',
@@ -8658,7 +8662,14 @@
 
         return crypto.subtle.importKey('raw', this.encryptionKey, {
           name: 'AES-GCM'
-        }, false, ['decrypt']).then(cryptoKey => crypto.subtle.decrypt(alg, cryptoKey, ciphertext)).then(plainBuf => new TextDecoder().decode(plainBuf)).catch(error => {
+        }, false, ['decrypt']).then(cryptoKey => {
+          console.log('cryptoKey', cryptoKey);
+          return crypto.subtle.decrypt(alg, cryptoKey, ciphertext);
+        }).then(plainBuf => {
+          console.log('plainBuf', plainBuf);
+          return new TextDecoder().decode(plainBuf);
+        }).catch(error => {
+          console.log('error', error);
           throw new Error("Decryption failed: ".concat(error.message));
         });
       } catch (error) {
@@ -8704,7 +8715,7 @@
         method: 'GET',
         headers: {
           Accept: 'application/json',
-          'X-CleverTap-Encryption-Enabled': true
+          'X-CleverTap-Encryption-Enabled': 'true'
         }
       };
       fetch(encryptedUrl, fetchOptions).then(response => {

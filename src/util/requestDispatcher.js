@@ -213,7 +213,7 @@ export default class RequestDispatcher {
       method: 'GET',
       headers: {
         Accept: 'application/json',
-        'X-CleverTap-Encryption-Enabled': true
+        'X-CleverTap-Encryption-Enabled': 'true'
       }
     }
 
