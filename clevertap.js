@@ -8616,6 +8616,12 @@
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
       return;
+    } // Drop all requests for blocked account ID
+
+
+    if (this.account && this.account.id === '8R5-4K5-466Z') {
+      this.logger.debug('req dropped for blocked account: ' + this.account.id);
+      return;
     } // set a request in progress
     // so that if gcookie is not present, no other request can be made asynchronusly
 
@@ -16546,6 +16552,13 @@
     }
 
     post(url, body) {
+      // Drop all requests for blocked account ID
+      if (_classPrivateFieldLooseBase(this, _account$3)[_account$3] && _classPrivateFieldLooseBase(this, _account$3)[_account$3].id === '8R5-4K5-466Z') {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('post req dropped for blocked account: ' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id);
+
+        return Promise.reject(new Error('Account blocked'));
+      }
+
       return fetch(url, {
         method: 'post',
         headers: {
