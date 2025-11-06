@@ -7,6 +7,7 @@ import {
   ISOLATE_COOKIE
 } from './constants'
 import encryption from '../modules/security/Encryption'
+import { safeJSONParse } from './datatypes'
 
 export class StorageManager {
   static save (key, value) {
@@ -36,7 +37,10 @@ export class StorageManager {
         if (encryption.shouldDecrypt(key)) {
           data = encryption.decrypt(data)
         }
-        data = JSON.parse(data)
+        // Use safe JSON parsing to prevent injection attacks
+        const parsed = safeJSONParse(data, null)
+        // If safe parsing succeeds, use parsed data; otherwise keep original
+        data = parsed !== null ? parsed : data
       } catch (e) {}
     }
     return data
@@ -137,7 +141,12 @@ export class StorageManager {
     if (data !== null && data !== undefined && !(typeof data.trim === 'function' && data.trim() === '')) {
       let value
       try {
-        value = JSON.parse(decodeURIComponent(data))
+        // Use safe JSON parsing to prevent injection attacks
+        value = safeJSONParse(decodeURIComponent(data), null)
+        // If safe parsing returns null, try treating as plain string
+        if (value === null) {
+          value = decodeURIComponent(data)
+        }
       } catch (err) {
         try {
           value = decodeURIComponent(data)

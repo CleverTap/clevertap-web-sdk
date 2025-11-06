@@ -1,5 +1,5 @@
 import { singleQuoteRegex, SCOOKIE_EXP_TIME_IN_SECS } from '../util/constants'
-import { isObject } from '../util/datatypes'
+import { isObject, safeJSONParse } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { StorageManager } from '../util/storage'
 import { getHostName } from '../util/url'
@@ -37,7 +37,8 @@ export default class SessionManager {
         // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
         scookieStr = scookieStr.replace(singleQuoteRegex, '"')
 
-        obj = JSON.parse(scookieStr)
+        // Use safe JSON parsing to prevent injection attacks
+        obj = safeJSONParse(scookieStr, {})
         if (!isObject(obj)) {
           obj = {}
         } else {

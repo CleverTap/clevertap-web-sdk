@@ -339,6 +339,83 @@
   const sanitize = (input, regex) => {
     return input.replace(regex, '');
   };
+  /**
+   * Safely parses JSON from potentially untrusted sources (like cookies)
+   * Validates input before parsing to prevent JSON injection attacks
+   * @param {string} jsonString - The JSON string to parse
+   * @param {*} defaultValue - Value to return if parsing fails (default: null)
+   * @returns {*} Parsed JSON object or defaultValue on error
+   */
+
+  const safeJSONParse = function (jsonString) {
+    let defaultValue = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+    // Return default if input is not valid
+    if (!jsonString || typeof jsonString !== 'string' || jsonString.trim() === '') {
+      return defaultValue;
+    } // Remove any leading/trailing whitespace
+
+
+    jsonString = jsonString.trim(); // Basic validation: JSON must start with { or [ or be a quoted string/number/boolean/null
+
+    const firstChar = jsonString.charAt(0);
+    const validStartChars = ['{', '[', '"', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const validKeywords = ['true', 'false', 'null'];
+
+    if (!validStartChars.includes(firstChar) && !validKeywords.some(kw => jsonString.startsWith(kw))) {
+      return defaultValue;
+    } // Validate balanced braces/brackets
+
+
+    let braceCount = 0;
+    let bracketCount = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let i = 0; i < jsonString.length; i++) {
+      const char = jsonString[i];
+
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
+
+      if (char === '"' && !escaped) {
+        inString = !inString;
+        continue;
+      }
+
+      if (!inString) {
+        if (char === '{') braceCount++;
+        if (char === '}') braceCount--;
+        if (char === '[') bracketCount++;
+        if (char === ']') bracketCount--; // Prevent negative counts (malformed JSON)
+
+        if (braceCount < 0 || bracketCount < 0) {
+          return defaultValue;
+        }
+      }
+    } // Ensure all braces and brackets are balanced
+
+
+    if (braceCount !== 0 || bracketCount !== 0 || inString) {
+      return defaultValue;
+    } // Attempt to parse
+
+
+    try {
+      const parsed = JSON.parse(jsonString);
+      return parsed;
+    } catch (e) {
+      // JSON parsing failed, return default value
+      return defaultValue;
+    }
+  };
 
   const getToday = () => {
     const today = new Date();
@@ -7191,9 +7268,12 @@
         try {
           if (encryption.shouldDecrypt(key)) {
             data = encryption.decrypt(data);
-          }
+          } // Use safe JSON parsing to prevent injection attacks
 
-          data = JSON.parse(data);
+
+          const parsed = safeJSONParse(data, null); // If safe parsing succeeds, use parsed data; otherwise keep original
+
+          data = parsed !== null ? parsed : data;
         } catch (e) {}
       }
 
@@ -7304,7 +7384,12 @@
         let value;
 
         try {
-          value = JSON.parse(decodeURIComponent(data));
+          // Use safe JSON parsing to prevent injection attacks
+          value = safeJSONParse(decodeURIComponent(data), null); // If safe parsing returns null, try treating as plain string
+
+          if (value === null) {
+            value = decodeURIComponent(data);
+          }
         } catch (err) {
           try {
             value = decodeURIComponent(data);
@@ -7866,11 +7951,12 @@
 
         if (isValueValid(value)) {
           try {
-            guid = JSON.parse(decodeURIComponent(value));
+            // Use safe JSON parsing to prevent injection attacks
+            guid = safeJSONParse(decodeURIComponent(value), null);
           } catch (e) {
             _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].debug('Cannot parse Gcookie from localstorage - must be encoded ' + value); // assumming guids are of size 32. supporting both formats.
             // guid can have encodedURIComponent or be without it.
-            // 1.56e4078ed15749928c042479ec2b4d47 - breaks on JSON.parse(decodeURIComponent())
+            // 1.56e4078ed15749928c042479ec2b4d47 - breaks on safeJSONParse(decodeURIComponent())
             // 2.%2256e4078ed15749928c042479ec2b4d47%22
 
 
@@ -8749,8 +8835,9 @@
           delete globalObj[staledata[idx]];
 
           if (StorageManager.read(CAMP_COOKIE_G)) {
-            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+            // Use safe JSON parsing to prevent injection attacks
+            const guidCampObj = safeJSONParse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)), {});
+            const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
             if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
               delete guidCampObj[guid][campType][staledata[idx]];
@@ -9211,7 +9298,8 @@
       var _getCampaignObject$wi, _getCampaignObject, _getCampaignObject$wp, _getCampaignObject2, _getCampaignObject$ws, _getCampaignObject3, _getCampaignObject$wn, _getCampaignObject4;
 
       // If the guid is present in CAMP_G retain it instead of using the CAMP
-      const globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+      // Use safe JSON parsing to prevent injection attacks
+      const globalCamp = safeJSONParse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)), {});
       const currentIdCamp = globalCamp === null || globalCamp === void 0 ? void 0 : globalCamp[device === null || device === void 0 ? void 0 : device.gcookie];
       let campaignObj = currentIdCamp || getCampaignObject();
       const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc);
@@ -9378,7 +9466,8 @@
     let existingCampaigns = [];
 
     try {
-      existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+      // Use safe JSON parsing to prevent injection attacks
+      existingCampaigns = storedData ? safeJSONParse(decodeURIComponent(storedData), []) : [];
     } catch (e) {
       existingCampaigns = [];
     }
@@ -9400,7 +9489,8 @@
 
       if (campObj != null) {
         try {
-          campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
+          // Use safe JSON parsing to prevent injection attacks
+          campObj = safeJSONParse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'), {});
           finalcampObj = campObj;
         } catch (e) {
           finalcampObj = {};
@@ -9496,8 +9586,9 @@
 
       if (isValueValid(guid)) {
         try {
-          guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
-          const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
+          // Use safe JSON parsing to prevent injection attacks
+          guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
+          const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? safeJSONParse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)), {}) : {};
 
           if (guid && StorageManager._isLocalStorageSupported()) {
             var finalCampObj = {};
@@ -9568,7 +9659,8 @@
     let guid;
 
     try {
-      guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+      // Use safe JSON parsing to prevent injection attacks
+      guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
     } catch (e) {
       return {};
     }
@@ -9585,8 +9677,9 @@
       let parsedValue = null;
 
       try {
-        decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
-        parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+        decodedValue = storageValue ? decodeURIComponent(storageValue) : null; // Use safe JSON parsing to prevent injection attacks
+
+        parsedValue = decodedValue ? safeJSONParse(decodedValue, null) : null;
       } catch (e) {
         decodedValue = null;
         parsedValue = null;
@@ -13557,7 +13650,8 @@
 
   const getInboxMessages = () => {
     try {
-      const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+      // Use safe JSON parsing to prevent injection attacks
+      const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
       if (!isValueValid(guid)) {
         return {};
@@ -13571,7 +13665,8 @@
   };
   const saveInboxMessages = messages => {
     try {
-      const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+      // Use safe JSON parsing to prevent injection attacks
+      const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
       if (!isValueValid(guid)) {
         return;
@@ -16207,8 +16302,9 @@
       if (scookieStr != null) {
         try {
           // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
-          scookieStr = scookieStr.replace(singleQuoteRegex, '"');
-          obj = JSON.parse(scookieStr);
+          scookieStr = scookieStr.replace(singleQuoteRegex, '"'); // Use safe JSON parsing to prevent injection attacks
+
+          obj = safeJSONParse(scookieStr, {});
 
           if (!isObject(obj)) {
             obj = {};
@@ -16399,7 +16495,8 @@
             _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event : ").concat(backupEvent.q));
 
             if (typeof backupEvent.q !== 'undefined') {
-              const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
+              // Use safe JSON parsing to prevent injection attacks
+              const session = safeJSONParse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id), null);
 
               if (session === null || session === void 0 ? void 0 : session.s) {
                 backupEvent.q = backupEvent.q + '&s=' + session.s;
@@ -18422,7 +18519,8 @@
 
     getAllQualifiedCampaignDetails() {
       try {
-        const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
+        // Use safe JSON parsing to prevent injection attacks
+        const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && safeJSONParse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)), null);
         return existingCampaign;
       } catch (e) {
         return null;

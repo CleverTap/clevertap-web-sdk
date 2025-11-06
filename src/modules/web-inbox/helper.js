@@ -2,7 +2,7 @@ import { StorageManager, $ct } from '../../util/storage'
 import { Inbox } from './WebInbox'
 import { Message } from './Message'
 import { WEBINBOX_CONFIG, GCOOKIE_NAME, WEBINBOX } from '../../util/constants'
-import { isValueValid } from '../../util/datatypes'
+import { isValueValid, safeJSONParse } from '../../util/datatypes'
 import { Logger } from '../logger'
 
 export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
@@ -54,7 +54,8 @@ const getAndMigrateInboxMessages = (guid) => {
 
 export const getInboxMessages = () => {
   try {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+    // Use safe JSON parsing to prevent injection attacks
+    const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
     if (!isValueValid(guid)) { return {} }
     const messages = getAndMigrateInboxMessages(guid)
 
@@ -66,7 +67,8 @@ export const getInboxMessages = () => {
 
 export const saveInboxMessages = (messages) => {
   try {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+    // Use safe JSON parsing to prevent injection attacks
+    const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
     if (!isValueValid(guid)) { return }
     const storedInboxObj = getAndMigrateInboxMessages(guid)
 

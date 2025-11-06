@@ -39,7 +39,8 @@ import {
   isObjectEmpty,
   isString,
   isNumber,
-  isValueValid
+  isValueValid,
+  safeJSONParse
 } from './datatypes'
 
 import { deliveryPreferenceUtils } from '../../src/util/campaignRender/utilities'
@@ -54,7 +55,8 @@ export const getCampaignObject = () => {
     let campObj = StorageManager.read(CAMP_COOKIE_NAME)
     if (campObj != null) {
       try {
-        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'))
+        // Use safe JSON parsing to prevent injection attacks
+        campObj = safeJSONParse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'), {})
         finalcampObj = campObj
       } catch (e) {
         finalcampObj = {}
@@ -157,8 +159,9 @@ export const setCampaignObjectForGuid = () => {
     let guid = StorageManager.read(GCOOKIE_NAME)
     if (isValueValid(guid)) {
       try {
-        guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-        const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {}
+        // Use safe JSON parsing to prevent injection attacks
+        guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
+        const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? safeJSONParse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)), {}) : {}
         if (guid && StorageManager._isLocalStorageSupported()) {
           var finalCampObj = {}
           var campObj = getCampaignObject()
@@ -223,7 +226,8 @@ export const getCampaignObjForLc = () => {
   // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
   let guid
   try {
-    guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+    // Use safe JSON parsing to prevent injection attacks
+    guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
   } catch (e) {
     return {}
   }
@@ -237,7 +241,8 @@ export const getCampaignObjForLc = () => {
     let parsedValue = null
     try {
       decodedValue = storageValue ? decodeURIComponent(storageValue) : null
-      parsedValue = decodedValue ? JSON.parse(decodedValue) : null
+      // Use safe JSON parsing to prevent injection attacks
+      parsedValue = decodedValue ? safeJSONParse(decodedValue, null) : null
     } catch (e) {
       decodedValue = null
       parsedValue = null

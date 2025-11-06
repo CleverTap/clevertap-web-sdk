@@ -84,3 +84,80 @@ export const removeUnsupportedChars = (o, logger) => {
 export const sanitize = (input, regex) => {
   return input.replace(regex, '')
 }
+
+/**
+ * Safely parses JSON from potentially untrusted sources (like cookies)
+ * Validates input before parsing to prevent JSON injection attacks
+ * @param {string} jsonString - The JSON string to parse
+ * @param {*} defaultValue - Value to return if parsing fails (default: null)
+ * @returns {*} Parsed JSON object or defaultValue on error
+ */
+export const safeJSONParse = (jsonString, defaultValue = null) => {
+  // Return default if input is not valid
+  if (!jsonString || typeof jsonString !== 'string' || jsonString.trim() === '') {
+    return defaultValue
+  }
+
+  // Remove any leading/trailing whitespace
+  jsonString = jsonString.trim()
+
+  // Basic validation: JSON must start with { or [ or be a quoted string/number/boolean/null
+  const firstChar = jsonString.charAt(0)
+  const validStartChars = ['{', '[', '"', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+  const validKeywords = ['true', 'false', 'null']
+
+  if (!validStartChars.includes(firstChar) && !validKeywords.some(kw => jsonString.startsWith(kw))) {
+    return defaultValue
+  }
+
+  // Validate balanced braces/brackets
+  let braceCount = 0
+  let bracketCount = 0
+  let inString = false
+  let escaped = false
+
+  for (let i = 0; i < jsonString.length; i++) {
+    const char = jsonString[i]
+
+    if (escaped) {
+      escaped = false
+      continue
+    }
+
+    if (char === '\\') {
+      escaped = true
+      continue
+    }
+
+    if (char === '"' && !escaped) {
+      inString = !inString
+      continue
+    }
+
+    if (!inString) {
+      if (char === '{') braceCount++
+      if (char === '}') braceCount--
+      if (char === '[') bracketCount++
+      if (char === ']') bracketCount--
+
+      // Prevent negative counts (malformed JSON)
+      if (braceCount < 0 || bracketCount < 0) {
+        return defaultValue
+      }
+    }
+  }
+
+  // Ensure all braces and brackets are balanced
+  if (braceCount !== 0 || bracketCount !== 0 || inString) {
+    return defaultValue
+  }
+
+  // Attempt to parse
+  try {
+    const parsed = JSON.parse(jsonString)
+    return parsed
+  } catch (e) {
+    // JSON parsing failed, return default value
+    return defaultValue
+  }
+}
