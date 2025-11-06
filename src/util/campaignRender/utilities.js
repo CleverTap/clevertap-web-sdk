@@ -16,6 +16,7 @@ import {
 import { StorageManager, $ct } from '../storage'
 import RequestDispatcher from '../requestDispatcher'
 import { compressToBase64 } from '../encoder'
+import { safeJSONParse } from '../datatypes'
 
 export const invokeExternalJs = (jsFunc, targetingMsgJson) => {
   const func = window.parent[jsFunc]
@@ -66,11 +67,14 @@ export const staleDataUpdate = (staledata, campType) => {
       if (staledata.hasOwnProperty(idx)) {
         delete globalObj[staledata[idx]]
         if (StorageManager.read(CAMP_COOKIE_G)) {
-          const guidCampObj = JSON.parse(
-            decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))
+          // Use safe JSON parsing to prevent injection attacks
+          const guidCampObj = safeJSONParse(
+            decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)),
+            {}
           )
-          const guid = JSON.parse(
-            decodeURIComponent(StorageManager.read(GCOOKIE_NAME))
+          const guid = safeJSONParse(
+            decodeURIComponent(StorageManager.read(GCOOKIE_NAME)),
+            null
           )
           if (
             guidCampObj[guid] &&
@@ -541,8 +545,10 @@ export const deliveryPreferenceUtils = {
 
   updateOccurenceForPopupAndNativeDisplay (msg, device, logger) {
     // If the guid is present in CAMP_G retain it instead of using the CAMP
-    const globalCamp = JSON.parse(
-      decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))
+    // Use safe JSON parsing to prevent injection attacks
+    const globalCamp = safeJSONParse(
+      decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)),
+      {}
     )
     const currentIdCamp = globalCamp?.[device?.gcookie]
     let campaignObj =
@@ -713,7 +719,13 @@ export function addCampaignToLocalStorage (campaign, region = 'eu1', accountId) 
   }
 
   const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)
-  const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : []
+  let existingCampaigns = []
+  try {
+    // Use safe JSON parsing to prevent injection attacks
+    existingCampaigns = storedData ? safeJSONParse(decodeURIComponent(storedData), []) : []
+  } catch (e) {
+    existingCampaigns = []
+  }
 
   const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id)
 

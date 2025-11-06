@@ -7,6 +7,7 @@ import {
   ISOLATE_COOKIE
 } from './constants'
 import encryption from '../modules/security/Encryption'
+import { safeJSONParse } from './datatypes'
 
 export class StorageManager {
   static save (key, value) {
@@ -36,7 +37,10 @@ export class StorageManager {
         if (encryption.shouldDecrypt(key)) {
           data = encryption.decrypt(data)
         }
-        data = JSON.parse(data)
+        // Use safe JSON parsing to prevent injection attacks
+        const parsed = safeJSONParse(data, null)
+        // If safe parsing succeeds, use parsed data; otherwise keep original
+        data = parsed !== null ? parsed : data
       } catch (e) {}
     }
     return data
@@ -91,7 +95,11 @@ export class StorageManager {
       }
       // eslint-disable-next-line eqeqeq
       if (c.indexOf(nameEQ) == 0) {
-        return decodeURIComponent(c.substring(nameEQ.length, c.length))
+        try {
+          return decodeURIComponent(c.substring(nameEQ.length, c.length))
+        } catch (e) {
+          return null
+        }
       }
     }
     return null
@@ -133,9 +141,18 @@ export class StorageManager {
     if (data !== null && data !== undefined && !(typeof data.trim === 'function' && data.trim() === '')) {
       let value
       try {
-        value = JSON.parse(decodeURIComponent(data))
+        // Use safe JSON parsing to prevent injection attacks
+        value = safeJSONParse(decodeURIComponent(data), null)
+        // If safe parsing returns null, try treating as plain string
+        if (value === null) {
+          value = decodeURIComponent(data)
+        }
       } catch (err) {
-        value = decodeURIComponent(data)
+        try {
+          value = decodeURIComponent(data)
+        } catch (e) {
+          return null
+        }
       }
       $ct.globalCache[property] = value
       return value
