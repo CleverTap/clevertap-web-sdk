@@ -339,6 +339,78 @@
   const sanitize = (input, regex) => {
     return input.replace(regex, '');
   };
+  /**
+   * Safely parses JSON from potentially untrusted sources (like cookies or localStorage)
+   *
+   * Protects against DOM-based JSON injection by pre-filtering malicious patterns
+   * identified in security scans (Burp Suite) before passing to JSON.parse().
+   *
+   * ## Security Protection
+   *
+   * - Validates input type and emptiness
+   * - Rejects patterns containing injection signatures (%, <, >, `)
+   * - Catches malformed JSON with try-catch
+   * - Returns safe defaults instead of throwing exceptions
+   *
+   * ## Blocked Patterns (from security reports)
+   *
+   * - URL-encoded characters (%) - Found in: ydiiw8uab9%27%22...
+   * - HTML/script tags (<, >) - XSS injection attempts
+   * - Template literals/backticks (`) - Code injection attempts
+   *
+   * @param {string} jsonString - The JSON string to parse (from cookies, localStorage, etc.)
+   * @param {*} [defaultValue=null] - Safe value to return if parsing fails or input is malicious
+   * @returns {*} Parsed JSON value, or defaultValue if invalid/malicious
+   *
+   * @example
+   * // Valid JSON - parses successfully
+   * safeJSONParse('{"session":"abc123"}', {})
+   * // → {session: "abc123"}
+   *
+   * @example
+   * // Burp Suite injection payload - rejected in pre-filter
+   * safeJSONParse('ydiiw8uab9%27%22`""/ydiiw8uab9/><ydiiw8uab9/\>fv11wdwggu&', {})
+   * // → {} (malicious pattern detected, JSON.parse NOT called)
+   *
+   * @example
+   * // Malformed JSON - caught by try-catch
+   * safeJSONParse('{"unclosed":', {})
+   * // → {} (JSON.parse error caught)
+   */
+
+  const safeJSONParse = function (jsonString) {
+    let defaultValue = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+    // Validate input is a non-empty string
+    if (!jsonString || typeof jsonString !== 'string' || jsonString.trim() === '') {
+      return defaultValue;
+    }
+
+    const trimmed = jsonString.trim(); // PRE-FILTER: Block malicious patterns from security reports
+    // These patterns are NOT valid JSON and indicate injection attempts
+
+    const maliciousPatterns = [/%/, // URL encoding (e.g., %27, %22, %3C) - Burp payloads contain %27, %22
+    /</, // HTML/script tag start - XSS/injection attempts
+    />/, // HTML/script tag end - XSS/injection attempts
+    /`/ // Template literal/backtick injection
+    // Note: Backslash (\) is valid in JSON for escape sequences, so we don't block it
+    // Invalid backslash usage will be caught by JSON.parse
+    ]; // Check for any malicious pattern - reject BEFORE calling JSON.parse
+
+    for (const pattern of maliciousPatterns) {
+      if (pattern.test(trimmed)) {
+        return defaultValue; // Malicious pattern detected
+      }
+    } // Input passed pre-filter - attempt to parse with error handling
+
+
+    try {
+      return JSON.parse(trimmed);
+    } catch (e) {
+      // JSON.parse failed (malformed JSON) - return safe default
+      return defaultValue;
+    }
+  };
 
   const getToday = () => {
     const today = new Date();
@@ -7252,7 +7324,11 @@
 
 
         if (c.indexOf(nameEQ) == 0) {
-          return decodeURIComponent(c.substring(nameEQ.length, c.length));
+          try {
+            return decodeURIComponent(c.substring(nameEQ.length, c.length));
+          } catch (e) {
+            return null;
+          }
         }
       }
 
@@ -7300,9 +7376,18 @@
         let value;
 
         try {
-          value = JSON.parse(decodeURIComponent(data));
+          // Use safe JSON parsing to prevent injection attacks
+          value = safeJSONParse(decodeURIComponent(data), null); // If safe parsing returns null, try treating as plain string
+
+          if (value === null) {
+            value = decodeURIComponent(data);
+          }
         } catch (err) {
-          value = decodeURIComponent(data);
+          try {
+            value = decodeURIComponent(data);
+          } catch (e) {
+            return null;
+          }
         }
 
         $ct.globalCache[property] = value;
@@ -9367,7 +9452,15 @@
       url: dashboardUrl
     };
     const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
-    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    let existingCampaigns = [];
+
+    try {
+      // Use safe JSON parsing to prevent injection attacks
+      existingCampaigns = storedData ? safeJSONParse(decodeURIComponent(storedData), []) : [];
+    } catch (e) {
+      existingCampaigns = [];
+    }
+
     const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
 
     if (!isDuplicate) {
@@ -9384,8 +9477,12 @@
       let campObj = StorageManager.read(CAMP_COOKIE_NAME);
 
       if (campObj != null) {
-        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
-        finalcampObj = campObj;
+        try {
+          campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
+          finalcampObj = campObj;
+        } catch (e) {
+          finalcampObj = {};
+        }
       } else {
         finalcampObj = {};
       }
@@ -9546,7 +9643,14 @@
   };
   const getCampaignObjForLc = () => {
     // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    let guid;
+
+    try {
+      guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    } catch (e) {
+      return {};
+    }
+
     let campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
@@ -9555,8 +9659,17 @@
       let resultObj = {};
       campObj = getCampaignObject();
       const storageValue = StorageManager.read(CAMP_COOKIE_G);
-      const decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
-      const parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      let decodedValue = null;
+      let parsedValue = null;
+
+      try {
+        decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
+        parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      } catch (e) {
+        decodedValue = null;
+        parsedValue = null;
+      }
+
       const resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
       const webPopupDeliveryPreferenceDeatils = {
         wsc: (_campObj$wsc = (_campObj = campObj) === null || _campObj === void 0 ? void 0 : _campObj.wsc) !== null && _campObj$wsc !== void 0 ? _campObj$wsc : 0,
@@ -13521,27 +13634,35 @@
   };
 
   const getInboxMessages = () => {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    try {
+      const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
 
-    if (!isValueValid(guid)) {
+      if (!isValueValid(guid)) {
+        return {};
+      }
+
+      const messages = getAndMigrateInboxMessages(guid);
+      return messages.hasOwnProperty(guid) ? messages[guid] : {};
+    } catch (e) {
       return {};
     }
-
-    const messages = getAndMigrateInboxMessages(guid);
-    return messages.hasOwnProperty(guid) ? messages[guid] : {};
   };
   const saveInboxMessages = messages => {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    try {
+      const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
 
-    if (!isValueValid(guid)) {
-      return;
+      if (!isValueValid(guid)) {
+        return;
+      }
+
+      const storedInboxObj = getAndMigrateInboxMessages(guid);
+      const newObj = { ...storedInboxObj,
+        [guid]: messages
+      };
+      StorageManager.saveToLSorCookie(WEBINBOX, newObj);
+    } catch (e) {
+      Logger.getInstance().error('Error saving inbox messages:', e.message);
     }
-
-    const storedInboxObj = getAndMigrateInboxMessages(guid);
-    const newObj = { ...storedInboxObj,
-      [guid]: messages
-    };
-    StorageManager.saveToLSorCookie(WEBINBOX, newObj);
   };
   const initializeWebInbox = logger => {
     return new Promise((resolve, reject) => {
@@ -13849,7 +13970,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.3.0';
+            const sdkVersion = '2.3.1-test';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -16162,25 +16283,30 @@
       let obj = {};
 
       if (scookieStr != null) {
-        // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
-        scookieStr = scookieStr.replace(singleQuoteRegex, '"');
-        obj = JSON.parse(scookieStr);
+        try {
+          // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
+          scookieStr = scookieStr.replace(singleQuoteRegex, '"'); // Use safe JSON parsing to prevent injection attacks
 
-        if (!isObject(obj)) {
-          obj = {};
-        } else {
-          if (typeof obj.t !== 'undefined') {
-            // check time elapsed since last request
-            const lastTime = obj.t;
-            const now = getNow();
+          obj = safeJSONParse(scookieStr, {});
 
-            if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
-              // adding 60 seconds to compensate for in-journey requests
-              // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
-              // hence we shouldn't use it.
-              obj = {};
+          if (!isObject(obj)) {
+            obj = {};
+          } else {
+            if (typeof obj.t !== 'undefined') {
+              // check time elapsed since last request
+              const lastTime = obj.t;
+              const now = getNow();
+
+              if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
+                // adding 60 seconds to compensate for in-journey requests
+                // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
+                // hence we shouldn't use it.
+                obj = {};
+              }
             }
           }
+        } catch (e) {
+          obj = {};
         }
       }
 
@@ -16352,7 +16478,8 @@
             _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event : ").concat(backupEvent.q));
 
             if (typeof backupEvent.q !== 'undefined') {
-              const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
+              // Use safe JSON parsing to prevent injection attacks
+              const session = safeJSONParse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id), null);
 
               if (session === null || session === void 0 ? void 0 : session.s) {
                 backupEvent.q = backupEvent.q + '&s=' + session.s;
@@ -16396,7 +16523,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.3.0',
+        lib: 'web-sdk-v2.3.1-test',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18318,7 +18445,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.3.0';
+      return 'web-sdk-v2.3.1-test';
     }
 
     defineVariable(name, defaultValue) {
@@ -18374,8 +18501,13 @@
 
 
     getAllQualifiedCampaignDetails() {
-      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
-      return existingCampaign;
+      try {
+        // Use safe JSON parsing to prevent injection attacks
+        const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && safeJSONParse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)), null);
+        return existingCampaign;
+      } catch (e) {
+        return null;
+      }
     }
 
   }

@@ -53,8 +53,12 @@ export const getCampaignObject = () => {
   if (StorageManager._isLocalStorageSupported()) {
     let campObj = StorageManager.read(CAMP_COOKIE_NAME)
     if (campObj != null) {
-      campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'))
-      finalcampObj = campObj
+      try {
+        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'))
+        finalcampObj = campObj
+      } catch (e) {
+        finalcampObj = {}
+      }
     } else {
       finalcampObj = {}
     }
@@ -217,15 +221,27 @@ export const setCampaignObjectForGuid = () => {
 }
 export const getCampaignObjForLc = () => {
   // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+  let guid
+  try {
+    guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+  } catch (e) {
+    return {}
+  }
 
   let campObj = {}
   if (StorageManager._isLocalStorageSupported()) {
     let resultObj = {}
     campObj = getCampaignObject()
     const storageValue = StorageManager.read(CAMP_COOKIE_G)
-    const decodedValue = storageValue ? decodeURIComponent(storageValue) : null
-    const parsedValue = decodedValue ? JSON.parse(decodedValue) : null
+    let decodedValue = null
+    let parsedValue = null
+    try {
+      decodedValue = storageValue ? decodeURIComponent(storageValue) : null
+      parsedValue = decodedValue ? JSON.parse(decodedValue) : null
+    } catch (e) {
+      decodedValue = null
+      parsedValue = null
+    }
 
     const resultObjWI = (!!guid &&
                         storageValue !== undefined && storageValue !== null &&
