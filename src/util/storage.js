@@ -37,10 +37,7 @@ export class StorageManager {
         if (encryption.shouldDecrypt(key)) {
           data = encryption.decrypt(data)
         }
-        // Use safe JSON parsing to prevent injection attacks
-        const parsed = safeJSONParse(data, null)
-        // If safe parsing succeeds, use parsed data; otherwise keep original
-        data = parsed !== null ? parsed : data
+        data = JSON.parse(data)
       } catch (e) {}
     }
     return data

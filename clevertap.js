@@ -340,79 +340,74 @@
     return input.replace(regex, '');
   };
   /**
-   * Safely parses JSON from potentially untrusted sources (like cookies)
-   * Validates input before parsing to prevent JSON injection attacks
-   * @param {string} jsonString - The JSON string to parse
-   * @param {*} defaultValue - Value to return if parsing fails (default: null)
-   * @returns {*} Parsed JSON object or defaultValue on error
+   * Safely parses JSON from potentially untrusted sources (like cookies or localStorage)
+   *
+   * Protects against DOM-based JSON injection by pre-filtering malicious patterns
+   * identified in security scans (Burp Suite) before passing to JSON.parse().
+   *
+   * ## Security Protection
+   *
+   * - Validates input type and emptiness
+   * - Rejects patterns containing injection signatures (%, <, >, `)
+   * - Catches malformed JSON with try-catch
+   * - Returns safe defaults instead of throwing exceptions
+   *
+   * ## Blocked Patterns (from security reports)
+   *
+   * - URL-encoded characters (%) - Found in: ydiiw8uab9%27%22...
+   * - HTML/script tags (<, >) - XSS injection attempts
+   * - Template literals/backticks (`) - Code injection attempts
+   *
+   * @param {string} jsonString - The JSON string to parse (from cookies, localStorage, etc.)
+   * @param {*} [defaultValue=null] - Safe value to return if parsing fails or input is malicious
+   * @returns {*} Parsed JSON value, or defaultValue if invalid/malicious
+   *
+   * @example
+   * // Valid JSON - parses successfully
+   * safeJSONParse('{"session":"abc123"}', {})
+   * // → {session: "abc123"}
+   *
+   * @example
+   * // Burp Suite injection payload - rejected in pre-filter
+   * safeJSONParse('ydiiw8uab9%27%22`""/ydiiw8uab9/><ydiiw8uab9/\>fv11wdwggu&', {})
+   * // → {} (malicious pattern detected, JSON.parse NOT called)
+   *
+   * @example
+   * // Malformed JSON - caught by try-catch
+   * safeJSONParse('{"unclosed":', {})
+   * // → {} (JSON.parse error caught)
    */
 
   const safeJSONParse = function (jsonString) {
     let defaultValue = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
-    // Return default if input is not valid
+    // Validate input is a non-empty string
     if (!jsonString || typeof jsonString !== 'string' || jsonString.trim() === '') {
       return defaultValue;
-    } // Remove any leading/trailing whitespace
+    }
 
+    const trimmed = jsonString.trim(); // PRE-FILTER: Block malicious patterns from security reports
+    // These patterns are NOT valid JSON and indicate injection attempts
 
-    jsonString = jsonString.trim(); // Basic validation: JSON must start with { or [ or be a quoted string/number/boolean/null
+    const maliciousPatterns = [/%/, // URL encoding (e.g., %27, %22, %3C) - Burp payloads contain %27, %22
+    /</, // HTML/script tag start - XSS/injection attempts
+    />/, // HTML/script tag end - XSS/injection attempts
+    /`/ // Template literal/backtick injection
+    // Note: Backslash (\) is valid in JSON for escape sequences, so we don't block it
+    // Invalid backslash usage will be caught by JSON.parse
+    ]; // Check for any malicious pattern - reject BEFORE calling JSON.parse
 
-    const firstChar = jsonString.charAt(0);
-    const validStartChars = ['{', '[', '"', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    const validKeywords = ['true', 'false', 'null'];
-
-    if (!validStartChars.includes(firstChar) && !validKeywords.some(kw => jsonString.startsWith(kw))) {
-      return defaultValue;
-    } // Validate balanced braces/brackets
-
-
-    let braceCount = 0;
-    let bracketCount = 0;
-    let inString = false;
-    let escaped = false;
-
-    for (let i = 0; i < jsonString.length; i++) {
-      const char = jsonString[i];
-
-      if (escaped) {
-        escaped = false;
-        continue;
+    for (const pattern of maliciousPatterns) {
+      if (pattern.test(trimmed)) {
+        return defaultValue; // Malicious pattern detected
       }
-
-      if (char === '\\') {
-        escaped = true;
-        continue;
-      }
-
-      if (char === '"' && !escaped) {
-        inString = !inString;
-        continue;
-      }
-
-      if (!inString) {
-        if (char === '{') braceCount++;
-        if (char === '}') braceCount--;
-        if (char === '[') bracketCount++;
-        if (char === ']') bracketCount--; // Prevent negative counts (malformed JSON)
-
-        if (braceCount < 0 || bracketCount < 0) {
-          return defaultValue;
-        }
-      }
-    } // Ensure all braces and brackets are balanced
-
-
-    if (braceCount !== 0 || bracketCount !== 0 || inString) {
-      return defaultValue;
-    } // Attempt to parse
+    } // Input passed pre-filter - attempt to parse with error handling
 
 
     try {
-      const parsed = JSON.parse(jsonString);
-      return parsed;
+      return JSON.parse(trimmed);
     } catch (e) {
-      // JSON parsing failed, return default value
+      // JSON.parse failed (malformed JSON) - return safe default
       return defaultValue;
     }
   };
@@ -7268,12 +7263,9 @@
         try {
           if (encryption.shouldDecrypt(key)) {
             data = encryption.decrypt(data);
-          } // Use safe JSON parsing to prevent injection attacks
+          }
 
-
-          const parsed = safeJSONParse(data, null); // If safe parsing succeeds, use parsed data; otherwise keep original
-
-          data = parsed !== null ? parsed : data;
+          data = JSON.parse(data);
         } catch (e) {}
       }
 
@@ -7951,12 +7943,11 @@
 
         if (isValueValid(value)) {
           try {
-            // Use safe JSON parsing to prevent injection attacks
-            guid = safeJSONParse(decodeURIComponent(value), null);
+            guid = JSON.parse(decodeURIComponent(value));
           } catch (e) {
             _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].debug('Cannot parse Gcookie from localstorage - must be encoded ' + value); // assumming guids are of size 32. supporting both formats.
             // guid can have encodedURIComponent or be without it.
-            // 1.56e4078ed15749928c042479ec2b4d47 - breaks on safeJSONParse(decodeURIComponent())
+            // 1.56e4078ed15749928c042479ec2b4d47 - breaks on JSON.parse(decodeURIComponent())
             // 2.%2256e4078ed15749928c042479ec2b4d47%22
 
 
@@ -8835,9 +8826,8 @@
           delete globalObj[staledata[idx]];
 
           if (StorageManager.read(CAMP_COOKIE_G)) {
-            // Use safe JSON parsing to prevent injection attacks
-            const guidCampObj = safeJSONParse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)), {});
-            const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
+            const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
+            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
 
             if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
               delete guidCampObj[guid][campType][staledata[idx]];
@@ -9298,8 +9288,7 @@
       var _getCampaignObject$wi, _getCampaignObject, _getCampaignObject$wp, _getCampaignObject2, _getCampaignObject$ws, _getCampaignObject3, _getCampaignObject$wn, _getCampaignObject4;
 
       // If the guid is present in CAMP_G retain it instead of using the CAMP
-      // Use safe JSON parsing to prevent injection attacks
-      const globalCamp = safeJSONParse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)), {});
+      const globalCamp = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
       const currentIdCamp = globalCamp === null || globalCamp === void 0 ? void 0 : globalCamp[device === null || device === void 0 ? void 0 : device.gcookie];
       let campaignObj = currentIdCamp || getCampaignObject();
       const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc);
@@ -9489,8 +9478,7 @@
 
       if (campObj != null) {
         try {
-          // Use safe JSON parsing to prevent injection attacks
-          campObj = safeJSONParse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'), {});
+          campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
           finalcampObj = campObj;
         } catch (e) {
           finalcampObj = {};
@@ -9586,9 +9574,8 @@
 
       if (isValueValid(guid)) {
         try {
-          // Use safe JSON parsing to prevent injection attacks
-          guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
-          const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? safeJSONParse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)), {}) : {};
+          guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+          const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
 
           if (guid && StorageManager._isLocalStorageSupported()) {
             var finalCampObj = {};
@@ -9659,8 +9646,7 @@
     let guid;
 
     try {
-      // Use safe JSON parsing to prevent injection attacks
-      guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
+      guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
     } catch (e) {
       return {};
     }
@@ -9677,9 +9663,8 @@
       let parsedValue = null;
 
       try {
-        decodedValue = storageValue ? decodeURIComponent(storageValue) : null; // Use safe JSON parsing to prevent injection attacks
-
-        parsedValue = decodedValue ? safeJSONParse(decodedValue, null) : null;
+        decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
+        parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
       } catch (e) {
         decodedValue = null;
         parsedValue = null;
@@ -13650,8 +13635,7 @@
 
   const getInboxMessages = () => {
     try {
-      // Use safe JSON parsing to prevent injection attacks
-      const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
+      const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
 
       if (!isValueValid(guid)) {
         return {};
@@ -13665,8 +13649,7 @@
   };
   const saveInboxMessages = messages => {
     try {
-      // Use safe JSON parsing to prevent injection attacks
-      const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
+      const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
 
       if (!isValueValid(guid)) {
         return;

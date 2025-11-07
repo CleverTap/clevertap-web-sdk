@@ -67,14 +67,11 @@ export const staleDataUpdate = (staledata, campType) => {
       if (staledata.hasOwnProperty(idx)) {
         delete globalObj[staledata[idx]]
         if (StorageManager.read(CAMP_COOKIE_G)) {
-          // Use safe JSON parsing to prevent injection attacks
-          const guidCampObj = safeJSONParse(
-            decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)),
-            {}
+          const guidCampObj = JSON.parse(
+            decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))
           )
-          const guid = safeJSONParse(
-            decodeURIComponent(StorageManager.read(GCOOKIE_NAME)),
-            null
+          const guid = JSON.parse(
+            decodeURIComponent(StorageManager.read(GCOOKIE_NAME))
           )
           if (
             guidCampObj[guid] &&
@@ -545,10 +542,8 @@ export const deliveryPreferenceUtils = {
 
   updateOccurenceForPopupAndNativeDisplay (msg, device, logger) {
     // If the guid is present in CAMP_G retain it instead of using the CAMP
-    // Use safe JSON parsing to prevent injection attacks
-    const globalCamp = safeJSONParse(
-      decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)),
-      {}
+    const globalCamp = JSON.parse(
+      decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))
     )
     const currentIdCamp = globalCamp?.[device?.gcookie]
     let campaignObj =
