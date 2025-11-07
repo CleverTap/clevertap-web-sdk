@@ -9,6 +9,7 @@ import User from './modules/user'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
+import { safeJSONParse } from './util/datatypes'
 import {
   CAMP_COOKIE_NAME,
   SCOOKIE_PREFIX,
@@ -1077,7 +1078,11 @@ export default class CleverTap {
      that were qualified and rendered for the current user
   */
   getAllQualifiedCampaignDetails () {
-    const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
-    return existingCampaign
+    try {
+      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
+      return existingCampaign
+    } catch (e) {
+      return null
+    }
   }
 }
