@@ -16,7 +16,6 @@ import {
 import { StorageManager, $ct } from '../storage'
 import RequestDispatcher from '../requestDispatcher'
 import { compressToBase64 } from '../encoder'
-import { safeJSONParse } from '../datatypes'
 
 export const invokeExternalJs = (jsFunc, targetingMsgJson) => {
   const func = window.parent[jsFunc]
@@ -717,7 +716,7 @@ export function addCampaignToLocalStorage (campaign, region = 'eu1', accountId) 
   let existingCampaigns = []
   try {
     // Use safe JSON parsing to prevent injection attacks
-    existingCampaigns = storedData ? safeJSONParse(decodeURIComponent(storedData), []) : []
+    existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : []
   } catch (e) {
     existingCampaigns = []
   }

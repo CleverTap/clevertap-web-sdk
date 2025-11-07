@@ -1079,8 +1079,7 @@ export default class CleverTap {
   */
   getAllQualifiedCampaignDetails () {
     try {
-      // Use safe JSON parsing to prevent injection attacks
-      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && safeJSONParse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)), null)
+      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
       return existingCampaign
     } catch (e) {
       return null
