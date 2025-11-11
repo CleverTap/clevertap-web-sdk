@@ -926,6 +926,7 @@ export default class CleverTap {
         }
       })
     }
+    $ct.intervalArray = []
     const storedData = sessionStorage.getItem('visualEditorData')
     const targetJson = storedData ? JSON.parse(storedData) : null
     if (targetJson) {
