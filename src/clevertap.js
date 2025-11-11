@@ -919,7 +919,11 @@ export default class CleverTap {
   _handleVisualEditorPreview () {
     if ($ct.intervalArray.length) {
       $ct.intervalArray.forEach(interval => {
-        clearInterval(interval)
+        if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+          clearInterval(parseInt(interval.split('-')[1], 10))
+        } else {
+          clearInterval(interval)
+        }
       })
     }
     const storedData = sessionStorage.getItem('visualEditorData')
