@@ -9,7 +9,6 @@ import User from './modules/user'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
-import { safeJSONParse } from './util/datatypes'
 import {
   CAMP_COOKIE_NAME,
   SCOOKIE_PREFIX,
