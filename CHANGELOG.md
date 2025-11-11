@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.3.1-test] 28th Oct 2025
+- Improved Runtime Exceptions Security Issues
+
 ## [2.3.0] 10th Sept 2025
 - Introduced list reordering in Web Native Display - Visual Editor.
 
