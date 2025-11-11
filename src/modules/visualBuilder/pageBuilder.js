@@ -284,6 +284,11 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
   const addNewEl = (selector) => {
     const { pos, sibling } = findSiblingSelector(selector.selector)
     let count = 0
+    $ct.intervalArray.forEach(interval => {
+      if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+        clearInterval(parseInt(interval.split('-')[1], 10))
+      }
+    })
     const intervalId = setInterval(() => {
       let element = null
       try {
@@ -312,7 +317,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
         clearInterval(intervalId)
       }
     }, 500)
-    $ct.intervalArray.push(intervalId)
+    $ct.intervalArray.push(`addNewEl-${intervalId}`)
   }
 
   if (insertedElements.length > 0) {
