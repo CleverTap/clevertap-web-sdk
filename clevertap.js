@@ -13849,7 +13849,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.3.0';
+            const sdkVersion = '2.3.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -14139,6 +14139,11 @@
         sibling
       } = findSiblingSelector(selector.selector);
       let count = 0;
+      $ct.intervalArray.forEach(interval => {
+        if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+          clearInterval(parseInt(interval.split('-')[1], 10));
+        }
+      });
       const intervalId = setInterval(() => {
         let element = null;
 
@@ -14170,7 +14175,7 @@
           clearInterval(intervalId);
         }
       }, 500);
-      $ct.intervalArray.push(intervalId);
+      $ct.intervalArray.push("addNewEl-".concat(intervalId));
     };
 
     if (insertedElements.length > 0) {
@@ -16396,7 +16401,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.3.0',
+        lib: 'web-sdk-v2.3.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18260,7 +18265,11 @@
     _handleVisualEditorPreview() {
       if ($ct.intervalArray.length) {
         $ct.intervalArray.forEach(interval => {
-          clearInterval(interval);
+          if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+            clearInterval(parseInt(interval.split('-')[1], 10));
+          } else {
+            clearInterval(interval);
+          }
         });
       }
 
@@ -18318,7 +18327,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.3.0';
+      return 'web-sdk-v2.3.1';
     }
 
     defineVariable(name, defaultValue) {
