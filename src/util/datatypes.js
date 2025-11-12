@@ -91,38 +91,7 @@ export const sanitize = (input, regex) => {
  * Protects against DOM-based JSON injection by pre-filtering malicious patterns
  * identified in security scans (Burp Suite) before passing to JSON.parse().
  *
- * ## Security Protection
- *
- * - Validates input type and emptiness
- * - Rejects patterns containing injection signatures (%, <, >, `)
- * - Catches malformed JSON with try-catch
- * - Returns safe defaults instead of throwing exceptions
- *
- * ## Blocked Patterns (from security reports)
- *
- * - URL-encoded characters (%) - Found in: ydiiw8uab9%27%22...
- * - HTML/script tags (<, >) - XSS injection attempts
- * - Template literals/backticks (`) - Code injection attempts
- *
- * @param {string} jsonString - The JSON string to parse (from cookies, localStorage, etc.)
- * @param {*} [defaultValue=null] - Safe value to return if parsing fails or input is malicious
- * @returns {*} Parsed JSON value, or defaultValue if invalid/malicious
- *
- * @example
- * // Valid JSON - parses successfully
- * safeJSONParse('{"session":"abc123"}', {})
- * // → {session: "abc123"}
- *
- * @example
- * // Burp Suite injection payload - rejected in pre-filter
- * safeJSONParse('ydiiw8uab9%27%22`""/ydiiw8uab9/><ydiiw8uab9/\>fv11wdwggu&', {})
- * // → {} (malicious pattern detected, JSON.parse NOT called)
- *
- * @example
- * // Malformed JSON - caught by try-catch
- * safeJSONParse('{"unclosed":', {})
- * // → {} (JSON.parse error caught)
- */
+*/
 export const safeJSONParse = (jsonString, defaultValue = null) => {
   // Validate input is a non-empty string
   if (!jsonString || typeof jsonString !== 'string' || jsonString.trim() === '') {
