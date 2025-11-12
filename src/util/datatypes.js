@@ -100,8 +100,6 @@ export const safeJSONParse = (jsonString, defaultValue = null) => {
 
   const trimmed = jsonString.trim()
 
-  // PRE-FILTER: Block malicious patterns from security reports
-  // These patterns are NOT valid JSON and indicate injection attempts
   const maliciousPatterns = [
     // Block specific dangerous URL-encoded characters (not all % signs)
     /%27/i, // URL-encoded single quote (') - used in SQL/JS injection
@@ -112,11 +110,7 @@ export const safeJSONParse = (jsonString, defaultValue = null) => {
     /</, // HTML/script tag start - XSS/injection attempts
     />/, // HTML/script tag end - XSS/injection attempts
     /`/ // Template literal/backtick injection
-    // Note: We don't block all % because URLs legitimately use %2F, %3D, %20, etc.
-    // Note: Backslash (\) is valid in JSON for escape sequences, so we don't block it
-    // Invalid backslash usage will be caught by JSON.parse
   ]
-
   // Check for any malicious pattern - reject BEFORE calling JSON.parse
   for (const pattern of maliciousPatterns) {
     if (pattern.test(trimmed)) {

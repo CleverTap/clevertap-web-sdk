@@ -140,16 +140,8 @@ export class StorageManager {
       try {
         // Use safe JSON parsing to prevent injection attacks
         value = safeJSONParse(decodeURIComponent(data), null)
-        // If safe parsing returns null, try treating as plain string
-        if (value === null) {
-          value = decodeURIComponent(data)
-        }
       } catch (err) {
-        try {
-          value = decodeURIComponent(data)
-        } catch (e) {
-          return null
-        }
+        value = decodeURIComponent(data)
       }
       $ct.globalCache[property] = value
       return value
