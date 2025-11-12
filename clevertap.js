@@ -345,38 +345,7 @@
    * Protects against DOM-based JSON injection by pre-filtering malicious patterns
    * identified in security scans (Burp Suite) before passing to JSON.parse().
    *
-   * ## Security Protection
-   *
-   * - Validates input type and emptiness
-   * - Rejects patterns containing injection signatures (%, <, >, `)
-   * - Catches malformed JSON with try-catch
-   * - Returns safe defaults instead of throwing exceptions
-   *
-   * ## Blocked Patterns (from security reports)
-   *
-   * - URL-encoded characters (%) - Found in: ydiiw8uab9%27%22...
-   * - HTML/script tags (<, >) - XSS injection attempts
-   * - Template literals/backticks (`) - Code injection attempts
-   *
-   * @param {string} jsonString - The JSON string to parse (from cookies, localStorage, etc.)
-   * @param {*} [defaultValue=null] - Safe value to return if parsing fails or input is malicious
-   * @returns {*} Parsed JSON value, or defaultValue if invalid/malicious
-   *
-   * @example
-   * // Valid JSON - parses successfully
-   * safeJSONParse('{"session":"abc123"}', {})
-   * // → {session: "abc123"}
-   *
-   * @example
-   * // Burp Suite injection payload - rejected in pre-filter
-   * safeJSONParse('ydiiw8uab9%27%22`""/ydiiw8uab9/><ydiiw8uab9/\>fv11wdwggu&', {})
-   * // → {} (malicious pattern detected, JSON.parse NOT called)
-   *
-   * @example
-   * // Malformed JSON - caught by try-catch
-   * safeJSONParse('{"unclosed":', {})
-   * // → {} (JSON.parse error caught)
-   */
+  */
 
   const safeJSONParse = function (jsonString) {
     let defaultValue = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
@@ -386,9 +355,7 @@
       return defaultValue;
     }
 
-    const trimmed = jsonString.trim(); // PRE-FILTER: Block malicious patterns from security reports
-    // These patterns are NOT valid JSON and indicate injection attempts
-
+    const trimmed = jsonString.trim();
     const maliciousPatterns = [// Block specific dangerous URL-encoded characters (not all % signs)
     /%27/i, // URL-encoded single quote (') - used in SQL/JS injection
     /%22/i, // URL-encoded double quote (") - used in string breaking
@@ -398,9 +365,6 @@
     /</, // HTML/script tag start - XSS/injection attempts
     />/, // HTML/script tag end - XSS/injection attempts
     /`/ // Template literal/backtick injection
-    // Note: We don't block all % because URLs legitimately use %2F, %3D, %20, etc.
-    // Note: Backslash (\) is valid in JSON for escape sequences, so we don't block it
-    // Invalid backslash usage will be caught by JSON.parse
     ]; // Check for any malicious pattern - reject BEFORE calling JSON.parse
 
     for (const pattern of maliciousPatterns) {
@@ -7383,17 +7347,9 @@
 
         try {
           // Use safe JSON parsing to prevent injection attacks
-          value = safeJSONParse(decodeURIComponent(data), null); // If safe parsing returns null, try treating as plain string
-
-          if (value === null) {
-            value = decodeURIComponent(data);
-          }
+          value = safeJSONParse(decodeURIComponent(data), null);
         } catch (err) {
-          try {
-            value = decodeURIComponent(data);
-          } catch (e) {
-            return null;
-          }
+          value = decodeURIComponent(data);
         }
 
         $ct.globalCache[property] = value;
