@@ -389,10 +389,16 @@
     const trimmed = jsonString.trim(); // PRE-FILTER: Block malicious patterns from security reports
     // These patterns are NOT valid JSON and indicate injection attempts
 
-    const maliciousPatterns = [/%/, // URL encoding (e.g., %27, %22, %3C) - Burp payloads contain %27, %22
+    const maliciousPatterns = [// Block specific dangerous URL-encoded characters (not all % signs)
+    /%27/i, // URL-encoded single quote (') - used in SQL/JS injection
+    /%22/i, // URL-encoded double quote (") - used in string breaking
+    /%3C/i, // URL-encoded < - XSS/HTML injection attempts
+    /%3E/i, // URL-encoded > - XSS/HTML injection attempts
+    /%60/i, // URL-encoded backtick (`) - template literal injection
     /</, // HTML/script tag start - XSS/injection attempts
     />/, // HTML/script tag end - XSS/injection attempts
     /`/ // Template literal/backtick injection
+    // Note: We don't block all % because URLs legitimately use %2F, %3D, %20, etc.
     // Note: Backslash (\) is valid in JSON for escape sequences, so we don't block it
     // Invalid backslash usage will be caught by JSON.parse
     ]; // Check for any malicious pattern - reject BEFORE calling JSON.parse
