@@ -84,11 +84,73 @@ describe('safeJSONParse - Security Tests', () => {
       expect(result).toBeNull()
     })
 
-    test('should reject code injection attempts', () => {
+    test('should reject code injection with HTML tags', () => {
       const malicious = '{"name":"test","exploit":"<script>alert(1)</script>"}'
       const result = safeJSONParse(malicious, null)
-      // This is valid JSON, so it should parse, but the content is sanitized elsewhere
-      expect(result).toBeDefined()
+      expect(result).toBeNull() // Blocked due to < and > characters
+    })
+
+    test('should reject payload with URL-encoded quotes (%27)', () => {
+      const malicious = 'test%27injection'
+      const result = safeJSONParse(malicious, null)
+      expect(result).toBeNull()
+    })
+
+    test('should reject payload with URL-encoded double quotes (%22)', () => {
+      const malicious = 'test%22injection'
+      const result = safeJSONParse(malicious, null)
+      expect(result).toBeNull()
+    })
+
+    test('should reject payload with URL-encoded less-than (%3C)', () => {
+      const malicious = 'test%3Cscript%3E'
+      const result = safeJSONParse(malicious, null)
+      expect(result).toBeNull()
+    })
+
+    test('should reject payload with URL-encoded greater-than (%3E)', () => {
+      const malicious = 'test%3Cscript%3E'
+      const result = safeJSONParse(malicious, null)
+      expect(result).toBeNull()
+    })
+
+    test('should reject payload with URL-encoded backtick (%60)', () => {
+      const malicious = 'test%60template%60'
+      const result = safeJSONParse(malicious, null)
+      expect(result).toBeNull()
+    })
+
+    test('should reject payload with backtick characters', () => {
+      // eslint-disable-next-line no-template-curly-in-string
+      const malicious = '`${constructor.constructor("alert(1)")()}`'
+      const result = safeJSONParse(malicious, null)
+      expect(result).toBeNull()
+    })
+
+    test('should reject XSS with img tag', () => {
+      const malicious = '<img src=x onerror=alert(1)>'
+      const result = safeJSONParse(malicious, null)
+      expect(result).toBeNull()
+    })
+
+    test('should handle case-insensitive URL-encoded patterns', () => {
+      // Test both %27 and %2F to ensure case insensitivity
+      const maliciousUpper = 'test%2Finjection'
+      const maliciousLower = 'test%2finjection'
+
+      const resultUpper = safeJSONParse(maliciousUpper, null)
+      const resultLower = safeJSONParse(maliciousLower, null)
+
+      // %2F (slash) is safe - should parse if valid JSON
+      // These are not valid JSON so both return null
+      expect(resultUpper).toBeNull()
+      expect(resultLower).toBeNull()
+    })
+
+    test('should reject mixed injection patterns', () => {
+      const malicious = '{"test":"<script>alert(%27XSS%22)</script>`template`"}'
+      const result = safeJSONParse(malicious, null)
+      expect(result).toBeNull() // Multiple dangerous patterns present
     })
 
     test('should reject proto pollution attempts', () => {
@@ -98,6 +160,72 @@ describe('safeJSONParse - Security Tests', () => {
       expect(result).toBeDefined()
       // Verify prototype pollution didn't occur
       expect({}.admin).toBeUndefined()
+    })
+  })
+
+  describe('Safe URL encoding (should pass)', () => {
+    test('should allow %20 (space encoding)', () => {
+      const input = '{"text":"hello%20world"}'
+      const result = safeJSONParse(input)
+      expect(result).toEqual({ text: 'hello%20world' })
+    })
+
+    test('should allow %2F (slash encoding)', () => {
+      const input = '{"path":"folder%2Fsubfolder%2Ffile"}'
+      const result = safeJSONParse(input)
+      expect(result).toEqual({ path: 'folder%2Fsubfolder%2Ffile' })
+    })
+
+    test('should allow %3D (equals encoding)', () => {
+      const input = '{"query":"key%3Dvalue"}'
+      const result = safeJSONParse(input)
+      expect(result).toEqual({ query: 'key%3Dvalue' })
+    })
+
+    test('should allow %26 (ampersand encoding)', () => {
+      const input = '{"query":"param1%26param2"}'
+      const result = safeJSONParse(input)
+      expect(result).toEqual({ query: 'param1%26param2' })
+    })
+
+    test('should allow %2B (plus encoding)', () => {
+      const input = '{"math":"1%2B2"}'
+      const result = safeJSONParse(input)
+      expect(result).toEqual({ math: '1%2B2' })
+    })
+
+    test('should allow %40 (at sign encoding)', () => {
+      const input = '{"email":"user%40example.com"}'
+      const result = safeJSONParse(input)
+      expect(result).toEqual({ email: 'user%40example.com' })
+    })
+
+    test('should allow %23 (hash encoding)', () => {
+      const input = '{"anchor":"section%231"}'
+      const result = safeJSONParse(input)
+      expect(result).toEqual({ anchor: 'section%231' })
+    })
+
+    test('should allow complex URL with multiple safe encodings', () => {
+      const input = '{"url":"https://api.example.com/search?q=hello%20world&category=tech%20%26%20science&page=1"}'
+      const result = safeJSONParse(input)
+      expect(result).toHaveProperty('url')
+      expect(result.url).toContain('hello%20world')
+      expect(result.url).toContain('tech%20%26%20science')
+    })
+
+    test('should allow base64-like encoded data in URLs', () => {
+      const input = '{"data":"d=N4IgLgngDgpiBcIoCcD2AzAlgGzgGiTS1wVAGMwB9VKMVAVzAXQENsBnGAXwMw"}'
+      const result = safeJSONParse(input)
+      expect(result).toHaveProperty('data')
+      expect(result.data).toContain('N4IgLgngDgpiBcIoCcD2Az')
+    })
+
+    test('should allow typical API URL with query parameters', () => {
+      const input = '{"endpoint":"https://api.service.com/v1/events?type=page&timestamp=1234567890&user_id=abc123"}'
+      const result = safeJSONParse(input)
+      expect(result).toHaveProperty('endpoint')
+      expect(result.endpoint).toContain('api.service.com')
     })
   })
 
@@ -143,6 +271,35 @@ describe('safeJSONParse - Security Tests', () => {
             city: 'NYC'
           }
         }
+      })
+    })
+
+    test('should handle JSON with URLs containing safe URL-encoded parameters', () => {
+      // Legitimate backup event with URL parameters (regression test for ONC-51)
+      const input = '{"1":{"q":"https://eu1.clevertap-prod.com/a?t=96&type=push&d=N4IgLgngDgpiBcIoCcD2AzAlgGzgGiTS1wVAGMwB9VKMVAVzAXQENsBnGAXwMwBMEIACoBRAMpCAtAEYATAGZJAFgCsANgBaIAlADmCaQRbpSIbJgBGggO4wLk9nwDWkgG6yAdPI%2FTJYGOxMOmh0ZKjYggAWYGBQIFxcQAAA&optOut=false&rn=1&i=1762925728&sn=0"}}'
+      const result = safeJSONParse(input)
+      expect(result).not.toBeNull()
+      expect(result).toHaveProperty('1')
+      expect(result['1']).toHaveProperty('q')
+      expect(result['1'].q).toContain('clevertap-prod.com')
+    })
+
+    test('should handle JSON with multiple URL parameters', () => {
+      const input = '{"url":"https://api.example.com/v1/users?id=123&name=John%20Doe&category=admin"}'
+      const result = safeJSONParse(input)
+      expect(result).toEqual({
+        url: 'https://api.example.com/v1/users?id=123&name=John%20Doe&category=admin'
+      })
+    })
+
+    test('should handle JSON with safe percent-encoded characters', () => {
+      // %2F (slash), %3D (equals), %20 (space) are legitimate URL encoding
+      const input = '{"path":"folder%2Fsubfolder%2Ffile.txt","query":"key%3Dvalue","text":"hello%20world"}'
+      const result = safeJSONParse(input)
+      expect(result).toEqual({
+        path: 'folder%2Fsubfolder%2Ffile.txt',
+        query: 'key%3Dvalue',
+        text: 'hello%20world'
       })
     })
 
