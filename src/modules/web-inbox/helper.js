@@ -3,6 +3,7 @@ import { Inbox } from './WebInbox'
 import { Message } from './Message'
 import { WEBINBOX_CONFIG, GCOOKIE_NAME, WEBINBOX } from '../../util/constants'
 import { isValueValid } from '../../util/datatypes'
+import { Logger } from '../logger'
 
 export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
   const _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
@@ -52,20 +53,28 @@ const getAndMigrateInboxMessages = (guid) => {
 }
 
 export const getInboxMessages = () => {
-  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-  if (!isValueValid(guid)) { return {} }
-  const messages = getAndMigrateInboxMessages(guid)
+  try {
+    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+    if (!isValueValid(guid)) { return {} }
+    const messages = getAndMigrateInboxMessages(guid)
 
-  return messages.hasOwnProperty(guid) ? messages[guid] : {}
+    return messages.hasOwnProperty(guid) ? messages[guid] : {}
+  } catch (e) {
+    return {}
+  }
 }
 
 export const saveInboxMessages = (messages) => {
-  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-  if (!isValueValid(guid)) { return }
-  const storedInboxObj = getAndMigrateInboxMessages(guid)
+  try {
+    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+    if (!isValueValid(guid)) { return }
+    const storedInboxObj = getAndMigrateInboxMessages(guid)
 
-  const newObj = { ...storedInboxObj, [guid]: messages }
-  StorageManager.saveToLSorCookie(WEBINBOX, newObj)
+    const newObj = { ...storedInboxObj, [guid]: messages }
+    StorageManager.saveToLSorCookie(WEBINBOX, newObj)
+  } catch (e) {
+    Logger.getInstance().error('Error saving inbox messages:', e.message)
+  }
 }
 
 export const initializeWebInbox = (logger) => {
