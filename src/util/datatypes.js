@@ -84,3 +84,82 @@ export const removeUnsupportedChars = (o, logger) => {
 export const sanitize = (input, regex) => {
   return input.replace(regex, '')
 }
+
+/**
+ * Safely parses JSON from potentially untrusted sources (like cookies or localStorage)
+ *
+ * Protects against DOM-based JSON injection by pre-filtering malicious patterns
+ * identified in security scans (Burp Suite) before passing to JSON.parse().
+ *
+ * ## Security Protection
+ *
+ * - Validates input type and emptiness
+ * - Rejects patterns containing injection signatures (%, <, >, `)
+ * - Catches malformed JSON with try-catch
+ * - Returns safe defaults instead of throwing exceptions
+ *
+ * ## Blocked Patterns (from security reports)
+ *
+ * - URL-encoded characters (%) - Found in: ydiiw8uab9%27%22...
+ * - HTML/script tags (<, >) - XSS injection attempts
+ * - Template literals/backticks (`) - Code injection attempts
+ *
+ * @param {string} jsonString - The JSON string to parse (from cookies, localStorage, etc.)
+ * @param {*} [defaultValue=null] - Safe value to return if parsing fails or input is malicious
+ * @returns {*} Parsed JSON value, or defaultValue if invalid/malicious
+ *
+ * @example
+ * // Valid JSON - parses successfully
+ * safeJSONParse('{"session":"abc123"}', {})
+ * // → {session: "abc123"}
+ *
+ * @example
+ * // Burp Suite injection payload - rejected in pre-filter
+ * safeJSONParse('ydiiw8uab9%27%22`""/ydiiw8uab9/><ydiiw8uab9/\>fv11wdwggu&', {})
+ * // → {} (malicious pattern detected, JSON.parse NOT called)
+ *
+ * @example
+ * // Malformed JSON - caught by try-catch
+ * safeJSONParse('{"unclosed":', {})
+ * // → {} (JSON.parse error caught)
+ */
+export const safeJSONParse = (jsonString, defaultValue = null) => {
+  // Validate input is a non-empty string
+  if (!jsonString || typeof jsonString !== 'string' || jsonString.trim() === '') {
+    return defaultValue
+  }
+
+  const trimmed = jsonString.trim()
+
+  // PRE-FILTER: Block malicious patterns from security reports
+  // These patterns are NOT valid JSON and indicate injection attempts
+  const maliciousPatterns = [
+    // Block specific dangerous URL-encoded characters (not all % signs)
+    /%27/i, // URL-encoded single quote (') - used in SQL/JS injection
+    /%22/i, // URL-encoded double quote (") - used in string breaking
+    /%3C/i, // URL-encoded < - XSS/HTML injection attempts
+    /%3E/i, // URL-encoded > - XSS/HTML injection attempts
+    /%60/i, // URL-encoded backtick (`) - template literal injection
+    /</, // HTML/script tag start - XSS/injection attempts
+    />/, // HTML/script tag end - XSS/injection attempts
+    /`/ // Template literal/backtick injection
+    // Note: We don't block all % because URLs legitimately use %2F, %3D, %20, etc.
+    // Note: Backslash (\) is valid in JSON for escape sequences, so we don't block it
+    // Invalid backslash usage will be caught by JSON.parse
+  ]
+
+  // Check for any malicious pattern - reject BEFORE calling JSON.parse
+  for (const pattern of maliciousPatterns) {
+    if (pattern.test(trimmed)) {
+      return defaultValue // Malicious pattern detected
+    }
+  }
+
+  // Input passed pre-filter - attempt to parse with error handling
+  try {
+    return JSON.parse(trimmed)
+  } catch (e) {
+    // JSON.parse failed (malformed JSON) - return safe default
+    return defaultValue
+  }
+}
