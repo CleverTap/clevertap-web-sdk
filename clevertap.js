@@ -7346,8 +7346,7 @@
         let value;
 
         try {
-          // Use safe JSON parsing to prevent injection attacks
-          value = safeJSONParse(decodeURIComponent(data), null);
+          value = JSON.parse(decodeURIComponent(data));
         } catch (err) {
           value = decodeURIComponent(data);
         }
