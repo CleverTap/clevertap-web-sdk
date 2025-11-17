@@ -39,7 +39,8 @@ import {
   isObjectEmpty,
   isString,
   isNumber,
-  isValueValid
+  isValueValid,
+  safeJSONParse
 } from './datatypes'
 
 import { deliveryPreferenceUtils } from '../../src/util/campaignRender/utilities'
@@ -157,7 +158,7 @@ export const setCampaignObjectForGuid = () => {
     let guid = StorageManager.read(GCOOKIE_NAME)
     if (isValueValid(guid)) {
       try {
-        guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+        guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
         const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {}
         if (guid && StorageManager._isLocalStorageSupported()) {
           var finalCampObj = {}
@@ -223,7 +224,7 @@ export const getCampaignObjForLc = () => {
   // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
   let guid
   try {
-    guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+    guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
   } catch (e) {
     return {}
   }

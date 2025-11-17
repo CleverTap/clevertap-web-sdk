@@ -16,6 +16,7 @@ import {
 import { StorageManager, $ct } from '../storage'
 import RequestDispatcher from '../requestDispatcher'
 import { compressToBase64 } from '../encoder'
+import { safeJSONParse } from '../datatypes'
 
 export const invokeExternalJs = (jsFunc, targetingMsgJson) => {
   const func = window.parent[jsFunc]
@@ -69,8 +70,8 @@ export const staleDataUpdate = (staledata, campType) => {
           const guidCampObj = JSON.parse(
             decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))
           )
-          const guid = JSON.parse(
-            decodeURIComponent(StorageManager.read(GCOOKIE_NAME))
+          const guid = safeJSONParse(
+            decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null
           )
           if (
             guidCampObj[guid] &&

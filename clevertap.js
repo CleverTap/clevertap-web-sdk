@@ -7905,7 +7905,7 @@
 
         if (isValueValid(value)) {
           try {
-            guid = JSON.parse(decodeURIComponent(value));
+            guid = safeJSONParse(decodeURIComponent(value), null);
           } catch (e) {
             _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].debug('Cannot parse Gcookie from localstorage - must be encoded ' + value); // assumming guids are of size 32. supporting both formats.
             // guid can have encodedURIComponent or be without it.
@@ -8789,7 +8789,7 @@
 
           if (StorageManager.read(CAMP_COOKIE_G)) {
             const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+            const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
             if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
               delete guidCampObj[guid][campType][staledata[idx]];
@@ -9536,7 +9536,7 @@
 
       if (isValueValid(guid)) {
         try {
-          guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+          guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
           const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
 
           if (guid && StorageManager._isLocalStorageSupported()) {
@@ -9608,7 +9608,7 @@
     let guid;
 
     try {
-      guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+      guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
     } catch (e) {
       return {};
     }
@@ -13597,7 +13597,7 @@
 
   const getInboxMessages = () => {
     try {
-      const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+      const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
       if (!isValueValid(guid)) {
         return {};
@@ -13611,7 +13611,7 @@
   };
   const saveInboxMessages = messages => {
     try {
-      const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+      const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
       if (!isValueValid(guid)) {
         return;
