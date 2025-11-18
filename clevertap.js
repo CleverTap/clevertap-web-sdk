@@ -14221,6 +14221,11 @@
         sibling
       } = findSiblingSelector(selector.selector);
       let count = 0;
+      $ct.intervalArray.forEach(interval => {
+        if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+          clearInterval(parseInt(interval.split('-')[1], 10));
+        }
+      });
       const intervalId = setInterval(() => {
         let element = null;
 
@@ -14252,7 +14257,7 @@
           clearInterval(intervalId);
         }
       }, 500);
-      $ct.intervalArray.push(intervalId);
+      $ct.intervalArray.push("addNewEl-".concat(intervalId));
     };
 
     if (insertedElements.length > 0) {
@@ -18348,10 +18353,15 @@
     _handleVisualEditorPreview() {
       if ($ct.intervalArray.length) {
         $ct.intervalArray.forEach(interval => {
-          clearInterval(interval);
+          if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+            clearInterval(parseInt(interval.split('-')[1], 10));
+          } else {
+            clearInterval(interval);
+          }
         });
       }
 
+      $ct.intervalArray = [];
       const storedData = sessionStorage.getItem('visualEditorData');
       const targetJson = storedData ? JSON.parse(storedData) : null;
 
