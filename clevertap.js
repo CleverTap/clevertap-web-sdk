@@ -13849,7 +13849,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.3.1';
+            const sdkVersion = '2.3.3';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -16128,6 +16128,8 @@
 
   var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
+  var _resetSessionCampaignCounters = _classPrivateFieldLooseKey("resetSessionCampaignCounters");
+
   class SessionManager {
     // SCOOKIE_NAME
     constructor(_ref) {
@@ -16135,6 +16137,9 @@
         logger,
         isPersonalisationActive
       } = _ref;
+      Object.defineProperty(this, _resetSessionCampaignCounters, {
+        value: _resetSessionCampaignCounters2
+      });
       Object.defineProperty(this, _logger$4, {
         writable: true,
         value: void 0
@@ -16218,7 +16223,9 @@
             sessionCount = 0;
           }
 
-          StorageManager.setMetaProp('sc', sessionCount + 1);
+          StorageManager.setMetaProp('sc', sessionCount + 1); // Reset session-based campaign counters on new session
+
+          _classPrivateFieldLooseBase(this, _resetSessionCampaignCounters)[_resetSessionCampaignCounters]();
         }
 
         this.sessionId = session;
@@ -16257,6 +16264,34 @@
     }
 
   }
+
+  var _resetSessionCampaignCounters2 = function _resetSessionCampaignCounters2() {
+    try {
+      if (StorageManager._isLocalStorageSupported()) {
+        const campaignObj = getCampaignObject();
+
+        if (campaignObj) {
+          // Reset Web Popup Show Count
+          if (typeof campaignObj.wsc !== 'undefined') {
+            campaignObj.wsc = 0;
+
+            _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wsc (Web Popup Show Count) to 0 for new session');
+          } // Reset Web Native Display Show Count
+
+
+          if (typeof campaignObj.wndsc !== 'undefined') {
+            campaignObj.wndsc = 0;
+
+            _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wndsc (Web Native Display Show Count) to 0 for new session');
+          }
+
+          saveCampaignObject(campaignObj);
+        }
+      }
+    } catch (error) {
+      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].error('Failed to reset session campaign counters: ' + error.message);
+    }
+  };
 
   let seqNo = 0;
   let requestTime = 0;
@@ -16401,7 +16436,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.3.1',
+        lib: 'web-sdk-v2.3.3',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18328,7 +18363,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.3.1';
+      return 'web-sdk-v2.3.3';
     }
 
     defineVariable(name, defaultValue) {
