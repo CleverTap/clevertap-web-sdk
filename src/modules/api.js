@@ -19,6 +19,14 @@ export default class CleverTapAPI {
     this.#domainSpecification = domainSpecification
   }
 
+  get domainSpecification () {
+    return this.#domainSpecification
+  }
+
+  set domainSpecification (domainSpecification) {
+    this.#domainSpecification = domainSpecification
+  }
+
   /**
    *
    * @param {string} global gcookie

@@ -31,6 +31,14 @@ export default class SessionManager {
     this.#sessionId = sessionId
   }
 
+  get domainSpecification () {
+    return this.#domainSpecification
+  }
+
+  set domainSpecification (domainSpecification) {
+    this.#domainSpecification = domainSpecification
+  }
+
   getSessionCookieObject () {
     let scookieStr = StorageManager.readCookie(this.cookieName)
     let obj = {}

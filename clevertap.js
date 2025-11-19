@@ -7739,6 +7739,14 @@
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = session;
       _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3] = domainSpecification;
     }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3] = domainSpecification;
+    }
     /**
      *
      * @param {string} global gcookie
@@ -7891,6 +7899,14 @@
       });
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
       this.gcookie = this.getGuid() || customId;
+      _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2] = domainSpecification;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2];
+    }
+
+    set domainSpecification(domainSpecification) {
       _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2] = domainSpecification;
     }
 
@@ -16218,6 +16234,14 @@
       _classPrivateFieldLooseBase(this, _sessionId)[_sessionId] = sessionId;
     }
 
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$1)[_domainSpecification$1];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$1)[_domainSpecification$1] = domainSpecification;
+    }
+
     getSessionCookieObject() {
       let scookieStr = StorageManager.readCookie(this.cookieName);
       let obj = {};
@@ -18133,9 +18157,9 @@
 
       if ((config === null || config === void 0 ? void 0 : config.domainSpecification) && Object.keys(config === null || config === void 0 ? void 0 : config.domainSpecification).length > 0) {
         _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = config.domainSpecification;
-        _classPrivateFieldLooseBase(this, _session)[_session].domainSpecification = _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification];
-        _classPrivateFieldLooseBase(this, _device)[_device].domainSpecification = _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification];
-        _classPrivateFieldLooseBase(this, _api)[_api].domainSpecification = _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification];
+        _classPrivateFieldLooseBase(this, _session)[_session].domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _device)[_device].domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _api)[_api].domainSpecification = config.domainSpecification;
       }
 
       if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {

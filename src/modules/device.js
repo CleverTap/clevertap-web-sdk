@@ -13,6 +13,14 @@ export default class DeviceManager {
     this.#domainSpecification = domainSpecification
   }
 
+  get domainSpecification () {
+    return this.#domainSpecification
+  }
+
+  set domainSpecification (domainSpecification) {
+    this.#domainSpecification = domainSpecification
+  }
+
   getGuid () {
     let guid = null
     if (isValueValid(this.gcookie)) {

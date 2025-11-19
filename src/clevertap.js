@@ -691,9 +691,9 @@ export default class CleverTap {
   init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false, domainSpecification: {} }) {
     if (config?.domainSpecification && Object.keys(config?.domainSpecification).length > 0) {
       this.#domainSpecification = config.domainSpecification
-      this.#session.domainSpecification = this.#domainSpecification
-      this.#device.domainSpecification = this.#domainSpecification
-      this.#api.domainSpecification = this.#domainSpecification
+      this.#session.domainSpecification = config.domainSpecification
+      this.#device.domainSpecification = config.domainSpecification
+      this.#api.domainSpecification = config.domainSpecification
     }
     if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
