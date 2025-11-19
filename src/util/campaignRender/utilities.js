@@ -716,7 +716,6 @@ export function addCampaignToLocalStorage (campaign, region = 'eu1', accountId) 
   const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)
   let existingCampaigns = []
   try {
-    // Use safe JSON parsing to prevent injection attacks
     existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : []
   } catch (e) {
     existingCampaigns = []
