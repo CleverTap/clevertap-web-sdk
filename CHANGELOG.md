@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.3.2] 28th Oct 2025
+## [2.3.2] 19th Nov 2025
 - Improved Runtime Exceptions Security Issues
 
 ## [2.3.1] 13th Nov 2025
