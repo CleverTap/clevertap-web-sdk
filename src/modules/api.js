@@ -9,12 +9,14 @@ export default class CleverTapAPI {
   #request
   #device
   #session
+  #domainSpecification
 
-  constructor ({ logger, request, device, session }) {
+  constructor ({ logger, request, device, session, domainSpecification }) {
     this.#logger = logger
     this.#request = request
     this.#device = device
     this.#session = session
+    this.#domainSpecification = domainSpecification
   }
 
   /**
@@ -104,7 +106,7 @@ export default class CleverTapAPI {
           this.#request.unregisterTokenForGuid(lastGUID)
         }
       }
-      StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname)
+      StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname, this.#domainSpecification)
       StorageManager.saveToLSorCookie(GCOOKIE_NAME, global)
     }
 

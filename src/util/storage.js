@@ -142,7 +142,30 @@ export class StorageManager {
     }
   }
 
-  static createBroadCookie (name, value, seconds, domain) {
+  static createBroadCookie (name, value, seconds, domain, domainSpecification = {}) {
+    if (Object.keys(domainSpecification).length > 0) {
+      const hostnameParts = window.location.hostname.split('.')
+      const level = domainSpecification.levelOfIsolation
+      let calculatedDomain = ''
+      if (level <= hostnameParts.length) {
+        const domainParts = hostnameParts.slice(-level)
+        calculatedDomain = '.' + domainParts.join('.')
+      } else {
+        // If level is greater than available parts, use the full hostname
+        calculatedDomain = '.' + window.location.hostname
+      }
+      let cookieValue = value
+      if (name === GCOOKIE_NAME && this.readCookie(name)) {
+        cookieValue = this.readCookie(name)
+        if ($ct.broadDomain) {
+          this.removeCookie(name, $ct.broadDomain)
+          this.removeCookie(name, calculatedDomain)
+          this.removeCookie(name, window.location.hostname)
+        }
+      }
+      this.createCookie(name, cookieValue, seconds, calculatedDomain)
+      return
+    }
     /* -------------------------------------------------------------
      * Sub-domain isolation: when the global flag is set, skip the
      * broad-domain logic and write a cookie scoped to the current
