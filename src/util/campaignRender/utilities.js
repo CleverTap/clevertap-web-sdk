@@ -16,6 +16,7 @@ import {
 import { StorageManager, $ct } from '../storage'
 import RequestDispatcher from '../requestDispatcher'
 import { compressToBase64 } from '../encoder'
+import { safeJSONParse } from '../datatypes'
 
 export const invokeExternalJs = (jsFunc, targetingMsgJson) => {
   const func = window.parent[jsFunc]
@@ -69,8 +70,8 @@ export const staleDataUpdate = (staledata, campType) => {
           const guidCampObj = JSON.parse(
             decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))
           )
-          const guid = JSON.parse(
-            decodeURIComponent(StorageManager.read(GCOOKIE_NAME))
+          const guid = safeJSONParse(
+            decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null
           )
           if (
             guidCampObj[guid] &&
@@ -713,7 +714,13 @@ export function addCampaignToLocalStorage (campaign, region = 'eu1', accountId) 
   }
 
   const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)
-  const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : []
+  let existingCampaigns = []
+  try {
+    // Use safe JSON parsing to prevent injection attacks
+    existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : []
+  } catch (e) {
+    existingCampaigns = []
+  }
 
   const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id)
 
