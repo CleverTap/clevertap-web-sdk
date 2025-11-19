@@ -9416,7 +9416,6 @@
     let existingCampaigns = [];
 
     try {
-      // Use safe JSON parsing to prevent injection attacks
       existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
     } catch (e) {
       existingCampaigns = [];
@@ -9604,14 +9603,7 @@
   };
   const getCampaignObjForLc = () => {
     // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-    let guid;
-
-    try {
-      guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
-    } catch (e) {
-      return {};
-    }
-
+    let guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
     let campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {

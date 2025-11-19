@@ -222,12 +222,7 @@ export const setCampaignObjectForGuid = () => {
 }
 export const getCampaignObjForLc = () => {
   // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-  let guid
-  try {
-    guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
-  } catch (e) {
-    return {}
-  }
+  const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
 
   let campObj = {}
   if (StorageManager._isLocalStorageSupported()) {
