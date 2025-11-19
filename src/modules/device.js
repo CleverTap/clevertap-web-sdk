@@ -1,4 +1,4 @@
-import { isValueValid } from '../util/datatypes'
+import { isValueValid, safeJSONParse } from '../util/datatypes'
 import { StorageManager } from '../util/storage'
 import { GCOOKIE_NAME, COOKIE_EXPIRY } from '../util/constants'
 
@@ -20,7 +20,7 @@ export default class DeviceManager {
       const value = StorageManager.read(GCOOKIE_NAME)
       if (isValueValid(value)) {
         try {
-          guid = JSON.parse(decodeURIComponent(value))
+          guid = safeJSONParse(decodeURIComponent(value), null)
         } catch (e) {
           this.#logger.debug('Cannot parse Gcookie from localstorage - must be encoded ' + value)
           // assumming guids are of size 32. supporting both formats.
