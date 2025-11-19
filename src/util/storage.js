@@ -91,7 +91,11 @@ export class StorageManager {
       }
       // eslint-disable-next-line eqeqeq
       if (c.indexOf(nameEQ) == 0) {
-        return decodeURIComponent(c.substring(nameEQ.length, c.length))
+        try {
+          return decodeURIComponent(c.substring(nameEQ.length, c.length))
+        } catch (e) {
+          return null
+        }
       }
     }
     return null
