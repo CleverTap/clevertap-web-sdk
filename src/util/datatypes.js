@@ -86,7 +86,7 @@ export const sanitize = (input, regex) => {
 }
 
 /**
- * Safely parses JSON from potentially untrusted sources (like cookies or localStorage)
+ * Safely parses JSON from potentially untrusted sources (like cookies)
  *
  * Protects against DOM-based JSON injection by pre-filtering malicious patterns
  * identified in security scans (Burp Suite) before passing to JSON.parse().
