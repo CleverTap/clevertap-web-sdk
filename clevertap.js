@@ -340,7 +340,7 @@
     return input.replace(regex, '');
   };
   /**
-   * Safely parses JSON from potentially untrusted sources (like cookies or localStorage)
+   * Safely parses JSON from potentially untrusted sources (like cookies)
    *
    * Protects against DOM-based JSON injection by pre-filtering malicious patterns
    * identified in security scans (Burp Suite) before passing to JSON.parse().
@@ -9603,7 +9603,7 @@
   };
   const getCampaignObjForLc = () => {
     // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-    let guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
+    const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
     let campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
