@@ -7376,12 +7376,9 @@
 
         if (name === GCOOKIE_NAME && this.readCookie(name)) {
           cookieValue = this.readCookie(name);
-
-          if ($ct.broadDomain) {
-            this.removeCookie(name, $ct.broadDomain);
-            this.removeCookie(name, calculatedDomain);
-            this.removeCookie(name, window.location.hostname);
-          }
+          this.removeCookie(name, $ct.broadDomain);
+          this.removeCookie(name, calculatedDomain);
+          this.removeCookie(name, window.location.hostname);
         }
 
         this.createCookie(name, cookieValue, seconds, calculatedDomain);
