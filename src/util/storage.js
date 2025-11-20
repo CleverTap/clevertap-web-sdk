@@ -146,10 +146,10 @@ export class StorageManager {
     }
   }
 
-  static createBroadCookie (name, value, seconds, domain, domainSpecification = {}) {
-    if (Object.keys(domainSpecification).length > 0) {
+  static createBroadCookie (name, value, seconds, domain, domainSpecification = null) {
+    if (domainSpecification) {
       const hostnameParts = window.location.hostname.split('.')
-      const level = domainSpecification.levelOfIsolation
+      const level = domainSpecification
       let calculatedDomain = ''
       if (level <= hostnameParts.length) {
         const domainParts = hostnameParts.slice(-level)

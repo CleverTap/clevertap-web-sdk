@@ -7357,11 +7357,11 @@
     }
 
     static createBroadCookie(name, value, seconds, domain) {
-      let domainSpecification = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
+      let domainSpecification = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
 
-      if (Object.keys(domainSpecification).length > 0) {
+      if (domainSpecification) {
         const hostnameParts = window.location.hostname.split('.');
-        const level = domainSpecification.levelOfIsolation;
+        const level = domainSpecification;
         let calculatedDomain = '';
 
         if (level <= hostnameParts.length) {
@@ -17449,6 +17449,14 @@
       $ct.dismissSpamControl = dismissSpamControl;
     }
 
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification];
+    }
+
+    set domainSpecification(value) {
+      _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = value;
+    }
+
     constructor() {
       var _clevertap$account, _clevertap$account2, _clevertap$account3, _clevertap$account4, _clevertap$account5, _clevertap$config, _clevertap$config2, _clevertap$config3, _clevertap$dismissSpa, _clevertap$dismissSpa2, _clevertap$account6;
 
@@ -17544,7 +17552,7 @@
       _classPrivateFieldLooseBase(this, _logger)[_logger] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
       encryption.key = (_clevertap$account5 = clevertap.account) === null || _clevertap$account5 === void 0 ? void 0 : _clevertap$account5[0].id;
-      _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = ((_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.domainSpecification) || {}; // Custom Guid will be set here
+      _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = ((_clevertap$config = clevertap.config) === null || _clevertap$config === void 0 ? void 0 : _clevertap$config.domainSpecification) || _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] || {}; // Custom Guid will be set here
 
       const result = validateCustomCleverTapID(clevertap === null || clevertap === void 0 ? void 0 : (_clevertap$config2 = clevertap.config) === null || _clevertap$config2 === void 0 ? void 0 : _clevertap$config2.customId);
 

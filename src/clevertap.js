@@ -100,6 +100,14 @@ export default class CleverTap {
     $ct.dismissSpamControl = dismissSpamControl
   }
 
+  get domainSpecification () {
+    return this.#domainSpecification
+  }
+
+  set domainSpecification (value) {
+    this.#domainSpecification = value
+  }
+
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
@@ -107,7 +115,7 @@ export default class CleverTap {
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
     encryption.key = clevertap.account?.[0].id
-    this.#domainSpecification = clevertap.config?.domainSpecification || {}
+    this.#domainSpecification = clevertap.config?.domainSpecification || this.#domainSpecification || {}
     // Custom Guid will be set here
 
     const result = validateCustomCleverTapID(clevertap?.config?.customId)
