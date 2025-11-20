@@ -1,8 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.3.3] 18th Nov 2025
+## [2.3.3] 20th Nov 2025
 - WP & WND Session Count Reset on Session Change
+
+## [2.3.2] 19th Nov 2025
+- Improved Runtime Exceptions Security Issues
 
 ## [2.3.1] 13th Nov 2025
 - Fixed the issue where interval was not cleared in visual editor.
