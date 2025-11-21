@@ -5,10 +5,20 @@ import { GCOOKIE_NAME, COOKIE_EXPIRY } from '../util/constants'
 export default class DeviceManager {
   #logger
   gcookie
+  #domainSpecification
 
-  constructor ({ logger, customId }) {
+  constructor ({ logger, customId, domainSpecification }) {
     this.#logger = logger
     this.gcookie = this.getGuid() || customId
+    this.#domainSpecification = domainSpecification
+  }
+
+  get domainSpecification () {
+    return this.#domainSpecification
+  }
+
+  set domainSpecification (domainSpecification) {
+    this.#domainSpecification = domainSpecification
   }
 
   getGuid () {
@@ -37,7 +47,7 @@ export default class DeviceManager {
 
         // Persist to cookie storage if not present there.
         if (isValueValid(guid)) {
-          StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname)
+          StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname, this.#domainSpecification)
         }
       }
     }
