@@ -9,8 +9,8 @@ export default class DeviceManager {
 
   constructor ({ logger, customId, domainSpecification }) {
     this.#logger = logger
+    this.domainSpecification = domainSpecification
     this.gcookie = this.getGuid() || customId
-    this.#domainSpecification = domainSpecification
   }
 
   get domainSpecification () {
@@ -47,7 +47,7 @@ export default class DeviceManager {
 
         // Persist to cookie storage if not present there.
         if (isValueValid(guid)) {
-          StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname, this.#domainSpecification)
+          StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification)
         }
       }
     }

@@ -17,10 +17,10 @@ export default class SessionManager {
     isPersonalisationActive,
     domainSpecification
   }) {
+    this.domainSpecification = domainSpecification
     this.sessionId = StorageManager.getMetaProp('cs')
     this.#logger = logger
     this.#isPersonalisationActive = isPersonalisationActive
-    this.#domainSpecification = domainSpecification
   }
 
   get sessionId () {
@@ -74,7 +74,7 @@ export default class SessionManager {
 
   setSessionCookieObject (obj) {
     const objStr = JSON.stringify(obj)
-    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName(), this.#domainSpecification)
+    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName(), this.domainSpecification)
   }
 
   manageSession (session) {

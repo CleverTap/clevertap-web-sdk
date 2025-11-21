@@ -7776,11 +7776,11 @@
         writable: true,
         value: void 0
       });
+      this.domainSpecification = domainSpecification;
       _classPrivateFieldLooseBase(this, _logger$a)[_logger$a] = logger;
       _classPrivateFieldLooseBase(this, _request$7)[_request$7] = request;
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = device;
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = session;
-      _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3] = domainSpecification;
     }
 
     get domainSpecification() {
@@ -7886,7 +7886,7 @@
           }
         }
 
-        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname, _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3]);
+        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification);
         StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
       }
 
@@ -7941,8 +7941,8 @@
         value: void 0
       });
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
+      this.domainSpecification = domainSpecification;
       this.gcookie = this.getGuid() || customId;
-      _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2] = domainSpecification;
     }
 
     get domainSpecification() {
@@ -7983,7 +7983,7 @@
 
 
           if (isValueValid(guid)) {
-            StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname, _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2]);
+            StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification);
           }
         }
       }
@@ -16291,10 +16291,10 @@
         writable: true,
         value: void 0
       });
+      this.domainSpecification = domainSpecification;
       this.sessionId = StorageManager.getMetaProp('cs');
       _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
-      _classPrivateFieldLooseBase(this, _domainSpecification$1)[_domainSpecification$1] = domainSpecification;
     }
 
     get sessionId() {
@@ -16351,7 +16351,7 @@
 
     setSessionCookieObject(obj) {
       const objStr = JSON.stringify(obj);
-      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName(), _classPrivateFieldLooseBase(this, _domainSpecification$1)[_domainSpecification$1]);
+      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName(), this.domainSpecification);
     }
 
     manageSession(session) {
