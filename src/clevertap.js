@@ -127,14 +127,14 @@ export default class CleverTap {
     this.#device = new DeviceManager({
       logger: this.#logger,
       customId: result?.isValid ? result?.sanitizedId : null,
-      domainSpecification: this.#domainSpecification
+      domainSpecification: this.domainSpecification
     })
     this.#dismissSpamControl = clevertap.dismissSpamControl ?? true
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#session = new SessionManager({
       logger: this.#logger,
       isPersonalisationActive: this._isPersonalisationActive,
-      domainSpecification: this.#domainSpecification
+      domainSpecification: this.domainSpecification
     })
     this.#request = new ReqestManager({
       logger: this.#logger,
@@ -189,7 +189,7 @@ export default class CleverTap {
       request: this.#request,
       device: this.#device,
       session: this.#session,
-      domainSpecification: this.#domainSpecification
+      domainSpecification: this.domainSpecification
     })
 
     this.spa = clevertap.spa

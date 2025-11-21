@@ -17563,14 +17563,14 @@
       _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null,
-        domainSpecification: _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification]
+        domainSpecification: this.domainSpecification
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = (_clevertap$dismissSpa = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa !== void 0 ? _clevertap$dismissSpa : true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         isPersonalisationActive: this._isPersonalisationActive,
-        domainSpecification: _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification]
+        domainSpecification: this.domainSpecification
       });
       _classPrivateFieldLooseBase(this, _request)[_request] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
@@ -17619,7 +17619,7 @@
         request: _classPrivateFieldLooseBase(this, _request)[_request],
         device: _classPrivateFieldLooseBase(this, _device)[_device],
         session: _classPrivateFieldLooseBase(this, _session)[_session],
-        domainSpecification: _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification]
+        domainSpecification: this.domainSpecification
       });
       this.spa = clevertap.spa;
       this.dismissSpamControl = (_clevertap$dismissSpa2 = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa2 !== void 0 ? _clevertap$dismissSpa2 : true;
