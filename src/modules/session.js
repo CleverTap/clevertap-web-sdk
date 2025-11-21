@@ -10,11 +10,14 @@ export default class SessionManager {
   #isPersonalisationActive
   cookieName // SCOOKIE_NAME
   scookieObj
+  #domainSpecification
 
   constructor ({
     logger,
-    isPersonalisationActive
+    isPersonalisationActive,
+    domainSpecification
   }) {
+    this.domainSpecification = domainSpecification
     this.sessionId = StorageManager.getMetaProp('cs')
     this.#logger = logger
     this.#isPersonalisationActive = isPersonalisationActive
@@ -26,6 +29,14 @@ export default class SessionManager {
 
   set sessionId (sessionId) {
     this.#sessionId = sessionId
+  }
+
+  get domainSpecification () {
+    return this.#domainSpecification
+  }
+
+  set domainSpecification (domainSpecification) {
+    this.#domainSpecification = domainSpecification
   }
 
   getSessionCookieObject () {
@@ -63,7 +74,7 @@ export default class SessionManager {
 
   setSessionCookieObject (obj) {
     const objStr = JSON.stringify(obj)
-    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName())
+    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName(), this.domainSpecification)
   }
 
   manageSession (session) {
