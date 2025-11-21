@@ -17546,6 +17546,7 @@
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
+      this.domainSpecification = clevertap.domainSpecification || null;
 
       this.raiseNotificationClicked = () => {};
 
@@ -18240,7 +18241,7 @@
       };
 
       if ((config === null || config === void 0 ? void 0 : config.domainSpecification) && Object.keys(config === null || config === void 0 ? void 0 : config.domainSpecification).length > 0) {
-        _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = config.domainSpecification;
+        this.domainSpecification = config.domainSpecification;
         _classPrivateFieldLooseBase(this, _session)[_session].domainSpecification = config.domainSpecification;
         _classPrivateFieldLooseBase(this, _device)[_device].domainSpecification = config.domainSpecification;
         _classPrivateFieldLooseBase(this, _api)[_api].domainSpecification = config.domainSpecification;

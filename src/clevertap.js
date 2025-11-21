@@ -111,6 +111,7 @@ export default class CleverTap {
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
+    this.domainSpecification = clevertap.domainSpecification || null
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
@@ -697,7 +698,7 @@ export default class CleverTap {
 
   init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false, domainSpecification: {} }) {
     if (config?.domainSpecification && Object.keys(config?.domainSpecification).length > 0) {
-      this.#domainSpecification = config.domainSpecification
+      this.domainSpecification = config.domainSpecification
       this.#session.domainSpecification = config.domainSpecification
       this.#device.domainSpecification = config.domainSpecification
       this.#api.domainSpecification = config.domainSpecification
