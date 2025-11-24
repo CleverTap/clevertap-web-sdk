@@ -696,8 +696,8 @@ export default class CleverTap {
     }
   }
 
-  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false, domainSpecification: {} }) {
-    if (config?.domainSpecification && Object.keys(config?.domainSpecification).length > 0) {
+  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false, domainSpecification: null }) {
+    if (config?.domainSpecification) {
       this.domainSpecification = config.domainSpecification
       this.#session.domainSpecification = config.domainSpecification
       this.#device.domainSpecification = config.domainSpecification

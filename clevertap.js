@@ -18237,10 +18237,10 @@
         antiFlicker: {},
         customId: null,
         isolateSubdomain: false,
-        domainSpecification: {}
+        domainSpecification: null
       };
 
-      if ((config === null || config === void 0 ? void 0 : config.domainSpecification) && Object.keys(config === null || config === void 0 ? void 0 : config.domainSpecification).length > 0) {
+      if (config === null || config === void 0 ? void 0 : config.domainSpecification) {
         this.domainSpecification = config.domainSpecification;
         _classPrivateFieldLooseBase(this, _session)[_session].domainSpecification = config.domainSpecification;
         _classPrivateFieldLooseBase(this, _device)[_device].domainSpecification = config.domainSpecification;
