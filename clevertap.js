@@ -16346,26 +16346,24 @@
 
   var _resetSessionCampaignCounters2 = function _resetSessionCampaignCounters2() {
     try {
-      if (StorageManager._isLocalStorageSupported()) {
-        const campaignObj = getCampaignObject();
+      const campaignObj = getCampaignObject();
 
-        if (campaignObj) {
-          // Reset Web Popup Show Count
-          if (typeof campaignObj.wsc !== 'undefined') {
-            campaignObj.wsc = 0;
+      if (campaignObj) {
+        // Reset Web Popup Show Count
+        if (typeof campaignObj.wsc !== 'undefined') {
+          campaignObj.wsc = 0;
 
-            _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wsc (Web Popup Show Count) to 0 for new session');
-          } // Reset Web Native Display Show Count
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wsc (Web Popup Show Count) to 0 for new session');
+        } // Reset Web Native Display Show Count
 
 
-          if (typeof campaignObj.wndsc !== 'undefined') {
-            campaignObj.wndsc = 0;
+        if (typeof campaignObj.wndsc !== 'undefined') {
+          campaignObj.wndsc = 0;
 
-            _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wndsc (Web Native Display Show Count) to 0 for new session');
-          }
-
-          saveCampaignObject(campaignObj);
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wndsc (Web Native Display Show Count) to 0 for new session');
         }
+
+        saveCampaignObject(campaignObj);
       }
     } catch (error) {
       _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].error('Failed to reset session campaign counters: ' + error.message);

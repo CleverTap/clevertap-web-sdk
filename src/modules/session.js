@@ -96,23 +96,21 @@ export default class SessionManager {
 
   #resetSessionCampaignCounters () {
     try {
-      if (StorageManager._isLocalStorageSupported()) {
-        const campaignObj = getCampaignObject()
-        if (campaignObj) {
-          // Reset Web Popup Show Count
-          if (typeof campaignObj.wsc !== 'undefined') {
-            campaignObj.wsc = 0
-            this.#logger.debug('Reset wsc (Web Popup Show Count) to 0 for new session')
-          }
-
-          // Reset Web Native Display Show Count
-          if (typeof campaignObj.wndsc !== 'undefined') {
-            campaignObj.wndsc = 0
-            this.#logger.debug('Reset wndsc (Web Native Display Show Count) to 0 for new session')
-          }
-
-          saveCampaignObject(campaignObj)
+      const campaignObj = getCampaignObject()
+      if (campaignObj) {
+        // Reset Web Popup Show Count
+        if (typeof campaignObj.wsc !== 'undefined') {
+          campaignObj.wsc = 0
+          this.#logger.debug('Reset wsc (Web Popup Show Count) to 0 for new session')
         }
+
+        // Reset Web Native Display Show Count
+        if (typeof campaignObj.wndsc !== 'undefined') {
+          campaignObj.wndsc = 0
+          this.#logger.debug('Reset wndsc (Web Native Display Show Count) to 0 for new session')
+        }
+
+        saveCampaignObject(campaignObj)
       }
     } catch (error) {
       this.#logger.error('Failed to reset session campaign counters: ' + error.message)
