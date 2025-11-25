@@ -3,6 +3,7 @@ All notable changes to this project will be documented in this file.
 
 ## [2.3.3] 25th Nov 2025
 - WP & WND Session Count Reset on Session Change
+- Cookie management with domain specification support in StorageManager
 
 ## [2.3.2] 19th Nov 2025
 - Improved Runtime Exceptions Security Issues
