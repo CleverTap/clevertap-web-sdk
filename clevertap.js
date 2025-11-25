@@ -16263,7 +16263,7 @@
 
   var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
-  var _domainSpecification$1 = _classPrivateFieldLooseKey("domainSpecification");
+  var _resetSessionCampaignCounters = _classPrivateFieldLooseKey("resetSessionCampaignCounters");
 
   class SessionManager {
     // SCOOKIE_NAME
@@ -16273,6 +16273,9 @@
         isPersonalisationActive,
         domainSpecification
       } = _ref;
+      Object.defineProperty(this, _resetSessionCampaignCounters, {
+        value: _resetSessionCampaignCounters2
+      });
       Object.defineProperty(this, _logger$4, {
         writable: true,
         value: void 0
@@ -16374,7 +16377,9 @@
             sessionCount = 0;
           }
 
-          StorageManager.setMetaProp('sc', sessionCount + 1);
+          StorageManager.setMetaProp('sc', sessionCount + 1); // Reset session-based campaign counters on new session
+
+          _classPrivateFieldLooseBase(this, _resetSessionCampaignCounters)[_resetSessionCampaignCounters]();
         }
 
         this.sessionId = session;
@@ -16413,6 +16418,32 @@
     }
 
   }
+
+  var _resetSessionCampaignCounters2 = function _resetSessionCampaignCounters2() {
+    try {
+      const campaignObj = getCampaignObject();
+
+      if (campaignObj) {
+        // Reset Web Popup Show Count
+        if (typeof campaignObj.wsc !== 'undefined') {
+          campaignObj.wsc = 0;
+
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wsc (Web Popup Show Count) to 0 for new session');
+        } // Reset Web Native Display Show Count
+
+
+        if (typeof campaignObj.wndsc !== 'undefined') {
+          campaignObj.wndsc = 0;
+
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wndsc (Web Native Display Show Count) to 0 for new session');
+        }
+
+        saveCampaignObject(campaignObj);
+      }
+    } catch (error) {
+      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].error('Failed to reset session campaign counters: ' + error.message);
+    }
+  };
 
   let seqNo = 0;
   let requestTime = 0;
