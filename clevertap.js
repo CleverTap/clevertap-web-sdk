@@ -7375,10 +7375,12 @@
         let cookieValue = value;
 
         if (name === GCOOKIE_NAME && this.readCookie(name)) {
+          // remove duplicate cookies if they exist
+          // removing .bank.in because it is a protected domain
           cookieValue = this.readCookie(name);
           this.removeCookie(name, $ct.broadDomain);
           this.removeCookie(name, calculatedDomain);
-          this.removeCookie(name, window.location.hostname);
+          this.removeCookie(name, '.bank.in');
         }
 
         this.createCookie(name, cookieValue, seconds, calculatedDomain);
