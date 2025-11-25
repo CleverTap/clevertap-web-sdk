@@ -7357,12 +7357,41 @@
     }
 
     static createBroadCookie(name, value, seconds, domain) {
+      let domainSpecification = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
+
+      if (domainSpecification) {
+        const hostnameParts = window.location.hostname.split('.');
+        const level = domainSpecification;
+        let calculatedDomain = '';
+
+        if (level <= hostnameParts.length) {
+          const domainParts = hostnameParts.slice(-level);
+          calculatedDomain = '.' + domainParts.join('.');
+        } else {
+          // If level is greater than available parts, use the full hostname
+          calculatedDomain = '.' + window.location.hostname;
+        }
+
+        let cookieValue = value;
+
+        if (name === GCOOKIE_NAME && this.readCookie(name)) {
+          cookieValue = this.readCookie(name);
+          this.removeCookie(name, $ct.broadDomain);
+          this.removeCookie(name, calculatedDomain);
+          this.removeCookie(name, window.location.hostname);
+        }
+
+        this.createCookie(name, cookieValue, seconds, calculatedDomain);
+        return;
+      }
       /* -------------------------------------------------------------
        * Sub-domain isolation: when the global flag is set, skip the
        * broad-domain logic and write a cookie scoped to the current
        * host only.  Also remove any legacy broad-domain copy so that
        * the host-level cookie has precedence.
        * ----------------------------------------------------------- */
+
+
       const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE);
 
       if (isolate) {
@@ -7716,13 +7745,16 @@
 
   var _session$3 = _classPrivateFieldLooseKey("session");
 
+  var _domainSpecification$3 = _classPrivateFieldLooseKey("domainSpecification");
+
   class CleverTapAPI {
     constructor(_ref) {
       let {
         logger,
         request,
         device,
-        session
+        session,
+        domainSpecification
       } = _ref;
       Object.defineProperty(this, _logger$a, {
         writable: true,
@@ -7740,10 +7772,23 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _domainSpecification$3, {
+        writable: true,
+        value: void 0
+      });
+      this.domainSpecification = domainSpecification;
       _classPrivateFieldLooseBase(this, _logger$a)[_logger$a] = logger;
       _classPrivateFieldLooseBase(this, _request$7)[_request$7] = request;
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = device;
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = session;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3] = domainSpecification;
     }
     /**
      *
@@ -7841,7 +7886,7 @@
           }
         }
 
-        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
+        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification);
         StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
       }
 
@@ -7877,19 +7922,35 @@
 
   var _logger$9 = _classPrivateFieldLooseKey("logger");
 
+  var _domainSpecification$2 = _classPrivateFieldLooseKey("domainSpecification");
+
   class DeviceManager {
     constructor(_ref) {
       let {
         logger,
-        customId
+        customId,
+        domainSpecification
       } = _ref;
       Object.defineProperty(this, _logger$9, {
         writable: true,
         value: void 0
       });
       this.gcookie = void 0;
+      Object.defineProperty(this, _domainSpecification$2, {
+        writable: true,
+        value: void 0
+      });
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
+      this.domainSpecification = domainSpecification;
       this.gcookie = this.getGuid() || customId;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2] = domainSpecification;
     }
 
     getGuid() {
@@ -7922,7 +7983,7 @@
 
 
           if (isValueValid(guid)) {
-            StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname);
+            StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification);
           }
         }
       }
@@ -16202,6 +16263,8 @@
 
   var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
+  var _domainSpecification$1 = _classPrivateFieldLooseKey("domainSpecification");
+
   var _resetSessionCampaignCounters = _classPrivateFieldLooseKey("resetSessionCampaignCounters");
 
   class SessionManager {
@@ -16209,7 +16272,8 @@
     constructor(_ref) {
       let {
         logger,
-        isPersonalisationActive
+        isPersonalisationActive,
+        domainSpecification
       } = _ref;
       Object.defineProperty(this, _resetSessionCampaignCounters, {
         value: _resetSessionCampaignCounters2
@@ -16228,6 +16292,11 @@
       });
       this.cookieName = void 0;
       this.scookieObj = void 0;
+      Object.defineProperty(this, _domainSpecification$1, {
+        writable: true,
+        value: void 0
+      });
+      this.domainSpecification = domainSpecification;
       this.sessionId = StorageManager.getMetaProp('cs');
       _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
@@ -16239,6 +16308,14 @@
 
     set sessionId(sessionId) {
       _classPrivateFieldLooseBase(this, _sessionId)[_sessionId] = sessionId;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$1)[_domainSpecification$1];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$1)[_domainSpecification$1] = domainSpecification;
     }
 
     getSessionCookieObject() {
@@ -16279,7 +16356,7 @@
 
     setSessionCookieObject(obj) {
       const objStr = JSON.stringify(obj);
-      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
+      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName(), this.domainSpecification);
     }
 
     manageSession(session) {
@@ -17357,6 +17434,8 @@
 
   var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
 
+  var _domainSpecification = _classPrivateFieldLooseKey("domainSpecification");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _debounce = _classPrivateFieldLooseKey("debounce");
@@ -17401,6 +17480,18 @@
       const dismissSpamControl = value === true;
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
       $ct.dismissSpamControl = dismissSpamControl;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification];
+    }
+
+    set domainSpecification(value) {
+      if (value && isFinite(value)) {
+        _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = Number(value);
+      } else {
+        _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = 0;
+      }
     }
 
     constructor() {
@@ -17484,10 +17575,15 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _domainSpecification, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
+      this.domainSpecification = clevertap.domainSpecification || null;
 
       this.raiseNotificationClicked = () => {};
 
@@ -17503,13 +17599,15 @@
 
       _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
-        customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null
+        customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null,
+        domainSpecification: this.domainSpecification
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = (_clevertap$dismissSpa = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa !== void 0 ? _clevertap$dismissSpa : true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
-        isPersonalisationActive: this._isPersonalisationActive
+        isPersonalisationActive: this._isPersonalisationActive,
+        domainSpecification: this.domainSpecification
       });
       _classPrivateFieldLooseBase(this, _request)[_request] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
@@ -17557,7 +17655,8 @@
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         request: _classPrivateFieldLooseBase(this, _request)[_request],
         device: _classPrivateFieldLooseBase(this, _device)[_device],
-        session: _classPrivateFieldLooseBase(this, _session)[_session]
+        session: _classPrivateFieldLooseBase(this, _session)[_session],
+        domainSpecification: this.domainSpecification
       });
       this.spa = clevertap.spa;
       this.dismissSpamControl = (_clevertap$dismissSpa2 = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa2 !== void 0 ? _clevertap$dismissSpa2 : true;
@@ -18174,8 +18273,16 @@
       let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
         antiFlicker: {},
         customId: null,
-        isolateSubdomain: false
+        isolateSubdomain: false,
+        domainSpecification: null
       };
+
+      if (config === null || config === void 0 ? void 0 : config.domainSpecification) {
+        this.domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _session)[_session].domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _device)[_device].domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _api)[_api].domainSpecification = config.domainSpecification;
+      }
 
       if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
         addAntiFlicker(config.antiFlicker);
