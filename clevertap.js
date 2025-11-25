@@ -17454,7 +17454,11 @@
     }
 
     set domainSpecification(value) {
-      _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = value;
+      if (value && isFinite(value)) {
+        _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = Number(value);
+      } else {
+        _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = 0;
+      }
     }
 
     constructor() {

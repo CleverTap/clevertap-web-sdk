@@ -105,7 +105,11 @@ export default class CleverTap {
   }
 
   set domainSpecification (value) {
-    this.#domainSpecification = value
+    if (value && isFinite(value)) {
+      this.#domainSpecification = Number(value)
+    } else {
+      this.#domainSpecification = 0
+    }
   }
 
   constructor (clevertap = {}) {
