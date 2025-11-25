@@ -16263,6 +16263,8 @@
 
   var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
+  var _domainSpecification$1 = _classPrivateFieldLooseKey("domainSpecification");
+
   var _resetSessionCampaignCounters = _classPrivateFieldLooseKey("resetSessionCampaignCounters");
 
   class SessionManager {
