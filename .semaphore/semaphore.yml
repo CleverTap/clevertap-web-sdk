@@ -2,8 +2,8 @@ version: v1.0
 name: Build Pipeline
 agent:
   machine:
-    type: f1-standard-2
-    os_image: ubuntu2204
+    type: s1-agent-t2-micro
+    os_image: ''
 blocks:
   - name: Build Assets
     task:
