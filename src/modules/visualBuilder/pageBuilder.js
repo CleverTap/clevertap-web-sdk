@@ -299,6 +299,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
         element = document.querySelector(`[ct-selector="${sibling}"]`)
       }
       if (element) {
+        clearInterval(intervalId)
         const tempDiv = document.createElement('div')
         tempDiv.innerHTML = selector.values.initialHtml
         const newElement = tempDiv.firstElementChild
@@ -306,10 +307,8 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
         if (!element.getAttribute('ct-selector')) {
           element.setAttribute('ct-selector', sibling)
         }
-        const insertedElement = document.querySelector(`[ct-selector="${selector.selector}"]`)
         raiseViewed()
-        processElement(insertedElement, selector)
-        clearInterval(intervalId)
+        processElement(newElement, selector)
 
         checkAndApplyReorder() // Check if we can apply reordering now
       } else if (++count >= 20) {
