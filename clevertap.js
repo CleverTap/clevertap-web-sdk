@@ -13986,7 +13986,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.3.3';
+            const sdkVersion = '2.3.4';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -14293,6 +14293,7 @@
         }
 
         if (element) {
+          clearInterval(intervalId);
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = selector.values.initialHtml;
           const newElement = tempDiv.firstElementChild;
@@ -14302,10 +14303,8 @@
             element.setAttribute('ct-selector', sibling);
           }
 
-          const insertedElement = document.querySelector("[ct-selector=\"".concat(selector.selector, "\"]"));
           raiseViewed();
-          processElement(insertedElement, selector);
-          clearInterval(intervalId);
+          processElement(newElement, selector);
           checkAndApplyReorder(); // Check if we can apply reordering now
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(sibling, "'."));
@@ -16593,7 +16592,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.3.3',
+        lib: 'web-sdk-v2.3.4',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -18550,7 +18549,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.3.3';
+      return 'web-sdk-v2.3.4';
     }
 
     defineVariable(name, defaultValue) {
