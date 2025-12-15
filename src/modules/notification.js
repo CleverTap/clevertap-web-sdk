@@ -326,7 +326,8 @@ export default class NotificationHandler extends Array {
                   // You've successfully unsubscribed
                   this.#logger.info('Unsubscription successful')
                   window.clevertap.notifications.push({
-                    skipDialog: true
+                    skipDialog: true,
+                    subscriptionCallback: subscriptionCallback
                   })
                 }).catch((e) => {
                   // Unsubscription failed
