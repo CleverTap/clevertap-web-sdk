@@ -71,6 +71,7 @@ export default class CleverTap {
   #dismissSpamControl
   enablePersonalization
   #pageChangeTimeoutId
+  #domainSpecification
 
   get spa () {
     return this.#isSpa
@@ -99,9 +100,22 @@ export default class CleverTap {
     $ct.dismissSpamControl = dismissSpamControl
   }
 
+  get domainSpecification () {
+    return this.#domainSpecification
+  }
+
+  set domainSpecification (value) {
+    if (value && isFinite(value)) {
+      this.#domainSpecification = Number(value)
+    } else {
+      this.#domainSpecification = 0
+    }
+  }
+
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
+    this.domainSpecification = clevertap.domainSpecification || null
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
@@ -114,12 +128,17 @@ export default class CleverTap {
       this.#logger.error(result.error)
     }
 
-    this.#device = new DeviceManager({ logger: this.#logger, customId: result?.isValid ? result?.sanitizedId : null })
+    this.#device = new DeviceManager({
+      logger: this.#logger,
+      customId: result?.isValid ? result?.sanitizedId : null,
+      domainSpecification: this.domainSpecification
+    })
     this.#dismissSpamControl = clevertap.dismissSpamControl ?? true
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#session = new SessionManager({
       logger: this.#logger,
-      isPersonalisationActive: this._isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive,
+      domainSpecification: this.domainSpecification
     })
     this.#request = new ReqestManager({
       logger: this.#logger,
@@ -173,7 +192,8 @@ export default class CleverTap {
       logger: this.#logger,
       request: this.#request,
       device: this.#device,
-      session: this.#session
+      session: this.#session,
+      domainSpecification: this.domainSpecification
     })
 
     this.spa = clevertap.spa
@@ -680,7 +700,13 @@ export default class CleverTap {
     }
   }
 
-  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false }) {
+  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false, domainSpecification: null }) {
+    if (config?.domainSpecification) {
+      this.domainSpecification = config.domainSpecification
+      this.#session.domainSpecification = config.domainSpecification
+      this.#device.domainSpecification = config.domainSpecification
+      this.#api.domainSpecification = config.domainSpecification
+    }
     if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
     }
@@ -919,9 +945,14 @@ export default class CleverTap {
   _handleVisualEditorPreview () {
     if ($ct.intervalArray.length) {
       $ct.intervalArray.forEach(interval => {
-        clearInterval(interval)
+        if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+          clearInterval(parseInt(interval.split('-')[1], 10))
+        } else {
+          clearInterval(interval)
+        }
       })
     }
+    $ct.intervalArray = []
     const storedData = sessionStorage.getItem('visualEditorData')
     const targetJson = storedData ? JSON.parse(storedData) : null
     if (targetJson) {
@@ -1077,7 +1108,11 @@ export default class CleverTap {
      that were qualified and rendered for the current user
   */
   getAllQualifiedCampaignDetails () {
-    const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
-    return existingCampaign
+    try {
+      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
+      return existingCampaign
+    } catch (e) {
+      return null
+    }
   }
 }

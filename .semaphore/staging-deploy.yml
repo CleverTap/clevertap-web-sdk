@@ -2,8 +2,8 @@ version: v1.0
 name: Staging-Deploy
 agent:
   machine:
-    type: e1-standard-2
-    os_image: ubuntu2004
+    type: s1-agent-t2-micro
+    os_image: ''
 blocks:
   - name: Deploy Assets
     task:
@@ -18,10 +18,13 @@ blocks:
             - |
               set -euo pipefail
               mkdir utils
-              aws s3 cp s3://cfstack-init-sources3bucket-b5bxfzywj4ae/utils/generate_assumed_role_creds.py utils/generate_assumed_role_creds.py
+              aws s3 cp s3://semaphore-agent-customres-semaphoredependenciess3b-okhz8b8lstnx/utils/generate_assumed_role_creds.py utils/generate_assumed_role_creds.py
+              aws s3 cp s3://semaphore-agent-customres-semaphoredependenciess3b-okhz8b8lstnx/uv/uv-x86_64-unknown-linux-gnu.tar.gz - | tar -v -xz -C utils/
+              export PATH="$PATH:$(pwd)/utils/uv-x86_64-unknown-linux-gnu"
+              uv venv prod
+              source prod/bin/activate
+              uv pip install argparse PyJWT requests cryptography pytablewriter pyyaml boto3   
               eval $(python3 utils/generate_assumed_role_creds.py --role-arn ${PRODUCTION_ACCOUNT_IAM_ROLE_ARN} --session-name SemaphoreAgent)
-              env | grep AWS
-              aws sts get-caller-identity
               aws s3 cp ./clevertap.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
               aws s3 cp ./clevertap.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
               aws s3 cp ./clevertap.js.map s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
@@ -33,9 +36,10 @@ blocks:
               aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/sw_webpush.min.js
               aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/sw_webpush.js
               aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap.min.js
+              deactivate
       secrets:
         - name: ProductionAccountAwsCredentials 
       agent:
         machine:
-          type: s1-ultron-c5-large
+          type: s1-agent-c5-large
           os_image: ''

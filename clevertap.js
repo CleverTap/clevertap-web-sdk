@@ -339,6 +339,48 @@
   const sanitize = (input, regex) => {
     return input.replace(regex, '');
   };
+  /**
+   * Safely parses JSON from potentially untrusted sources (like cookies)
+   *
+   * Protects against DOM-based JSON injection by pre-filtering malicious patterns
+   * identified in security scans (Burp Suite) before passing to JSON.parse().
+   *
+  */
+
+  const safeJSONParse = function (jsonString) {
+    let defaultValue = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+    // Validate input is a non-empty string
+    if (!jsonString || typeof jsonString !== 'string' || jsonString.trim() === '') {
+      return defaultValue;
+    }
+
+    const trimmed = jsonString.trim();
+    const maliciousPatterns = [// Block specific dangerous URL-encoded characters (not all % signs)
+    /%27/i, // URL-encoded single quote (') - used in SQL/JS injection
+    /%22/i, // URL-encoded double quote (") - used in string breaking
+    /%3C/i, // URL-encoded < - XSS/HTML injection attempts
+    /%3E/i, // URL-encoded > - XSS/HTML injection attempts
+    /%60/i, // URL-encoded backtick (`) - template literal injection
+    /</, // HTML/script tag start - XSS/injection attempts
+    />/, // HTML/script tag end - XSS/injection attempts
+    /`/ // Template literal/backtick injection
+    ]; // Check for any malicious pattern - reject BEFORE calling JSON.parse
+
+    for (const pattern of maliciousPatterns) {
+      if (pattern.test(trimmed)) {
+        return defaultValue; // Malicious pattern detected
+      }
+    } // Input passed pre-filter - attempt to parse with error handling
+
+
+    try {
+      return JSON.parse(trimmed);
+    } catch (e) {
+      // JSON.parse failed (malformed JSON) - return safe default
+      return defaultValue;
+    }
+  };
 
   const getToday = () => {
     const today = new Date();
@@ -7252,7 +7294,11 @@
 
 
         if (c.indexOf(nameEQ) == 0) {
-          return decodeURIComponent(c.substring(nameEQ.length, c.length));
+          try {
+            return decodeURIComponent(c.substring(nameEQ.length, c.length));
+          } catch (e) {
+            return null;
+          }
         }
       }
 
@@ -7311,12 +7357,43 @@
     }
 
     static createBroadCookie(name, value, seconds, domain) {
+      let domainSpecification = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
+
+      if (domainSpecification) {
+        const hostnameParts = window.location.hostname.split('.');
+        const level = domainSpecification;
+        let calculatedDomain = '';
+
+        if (level <= hostnameParts.length) {
+          const domainParts = hostnameParts.slice(-level);
+          calculatedDomain = '.' + domainParts.join('.');
+        } else {
+          // If level is greater than available parts, use the full hostname
+          calculatedDomain = '.' + window.location.hostname;
+        }
+
+        let cookieValue = value;
+
+        if (name === GCOOKIE_NAME && this.readCookie(name)) {
+          // remove duplicate cookies if they exist
+          // removing .bank.in because it is a protected domain
+          cookieValue = this.readCookie(name);
+          this.removeCookie(name, $ct.broadDomain);
+          this.removeCookie(name, calculatedDomain);
+          this.removeCookie(name, '.bank.in');
+        }
+
+        this.createCookie(name, cookieValue, seconds, calculatedDomain);
+        return;
+      }
       /* -------------------------------------------------------------
        * Sub-domain isolation: when the global flag is set, skip the
        * broad-domain logic and write a cookie scoped to the current
        * host only.  Also remove any legacy broad-domain copy so that
        * the host-level cookie has precedence.
        * ----------------------------------------------------------- */
+
+
       const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE);
 
       if (isolate) {
@@ -7670,13 +7747,16 @@
 
   var _session$3 = _classPrivateFieldLooseKey("session");
 
+  var _domainSpecification$3 = _classPrivateFieldLooseKey("domainSpecification");
+
   class CleverTapAPI {
     constructor(_ref) {
       let {
         logger,
         request,
         device,
-        session
+        session,
+        domainSpecification
       } = _ref;
       Object.defineProperty(this, _logger$a, {
         writable: true,
@@ -7694,10 +7774,23 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _domainSpecification$3, {
+        writable: true,
+        value: void 0
+      });
+      this.domainSpecification = domainSpecification;
       _classPrivateFieldLooseBase(this, _logger$a)[_logger$a] = logger;
       _classPrivateFieldLooseBase(this, _request$7)[_request$7] = request;
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = device;
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = session;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3] = domainSpecification;
     }
     /**
      *
@@ -7795,7 +7888,7 @@
           }
         }
 
-        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
+        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification);
         StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
       }
 
@@ -7831,19 +7924,35 @@
 
   var _logger$9 = _classPrivateFieldLooseKey("logger");
 
+  var _domainSpecification$2 = _classPrivateFieldLooseKey("domainSpecification");
+
   class DeviceManager {
     constructor(_ref) {
       let {
         logger,
-        customId
+        customId,
+        domainSpecification
       } = _ref;
       Object.defineProperty(this, _logger$9, {
         writable: true,
         value: void 0
       });
       this.gcookie = void 0;
+      Object.defineProperty(this, _domainSpecification$2, {
+        writable: true,
+        value: void 0
+      });
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
+      this.domainSpecification = domainSpecification;
       this.gcookie = this.getGuid() || customId;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2] = domainSpecification;
     }
 
     getGuid() {
@@ -7858,7 +7967,7 @@
 
         if (isValueValid(value)) {
           try {
-            guid = JSON.parse(decodeURIComponent(value));
+            guid = safeJSONParse(decodeURIComponent(value), null);
           } catch (e) {
             _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].debug('Cannot parse Gcookie from localstorage - must be encoded ' + value); // assumming guids are of size 32. supporting both formats.
             // guid can have encodedURIComponent or be without it.
@@ -7876,7 +7985,7 @@
 
 
           if (isValueValid(guid)) {
-            StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname);
+            StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification);
           }
         }
       }
@@ -8970,7 +9079,7 @@
 
           if (StorageManager.read(CAMP_COOKIE_G)) {
             const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+            const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
             if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
               delete guidCampObj[guid][campType][staledata[idx]];
@@ -9595,7 +9704,14 @@
       url: dashboardUrl
     };
     const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
-    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    let existingCampaigns = [];
+
+    try {
+      existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    } catch (e) {
+      existingCampaigns = [];
+    }
+
     const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
 
     if (!isDuplicate) {
@@ -9612,8 +9728,12 @@
       let campObj = StorageManager.read(CAMP_COOKIE_NAME);
 
       if (campObj != null) {
-        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
-        finalcampObj = campObj;
+        try {
+          campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
+          finalcampObj = campObj;
+        } catch (e) {
+          finalcampObj = {};
+        }
       } else {
         finalcampObj = {};
       }
@@ -9705,7 +9825,7 @@
 
       if (isValueValid(guid)) {
         try {
-          guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+          guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
           const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
 
           if (guid && StorageManager._isLocalStorageSupported()) {
@@ -9774,7 +9894,7 @@
   };
   const getCampaignObjForLc = () => {
     // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
     let campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
@@ -9783,8 +9903,17 @@
       let resultObj = {};
       campObj = getCampaignObject();
       const storageValue = StorageManager.read(CAMP_COOKIE_G);
-      const decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
-      const parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      let decodedValue = null;
+      let parsedValue = null;
+
+      try {
+        decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
+        parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      } catch (e) {
+        decodedValue = null;
+        parsedValue = null;
+      }
+
       const resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
       const webPopupDeliveryPreferenceDeatils = {
         wsc: (_campObj$wsc = (_campObj = campObj) === null || _campObj === void 0 ? void 0 : _campObj.wsc) !== null && _campObj$wsc !== void 0 ? _campObj$wsc : 0,
@@ -13765,27 +13894,35 @@
   };
 
   const getInboxMessages = () => {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    try {
+      const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
-    if (!isValueValid(guid)) {
+      if (!isValueValid(guid)) {
+        return {};
+      }
+
+      const messages = getAndMigrateInboxMessages(guid);
+      return messages.hasOwnProperty(guid) ? messages[guid] : {};
+    } catch (e) {
       return {};
     }
-
-    const messages = getAndMigrateInboxMessages(guid);
-    return messages.hasOwnProperty(guid) ? messages[guid] : {};
   };
   const saveInboxMessages = messages => {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    try {
+      const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
-    if (!isValueValid(guid)) {
-      return;
+      if (!isValueValid(guid)) {
+        return;
+      }
+
+      const storedInboxObj = getAndMigrateInboxMessages(guid);
+      const newObj = { ...storedInboxObj,
+        [guid]: messages
+      };
+      StorageManager.saveToLSorCookie(WEBINBOX, newObj);
+    } catch (e) {
+      Logger.getInstance().error('Error saving inbox messages:', e.message);
     }
-
-    const storedInboxObj = getAndMigrateInboxMessages(guid);
-    const newObj = { ...storedInboxObj,
-      [guid]: messages
-    };
-    StorageManager.saveToLSorCookie(WEBINBOX, newObj);
   };
   const initializeWebInbox = logger => {
     return new Promise((resolve, reject) => {
@@ -14093,7 +14230,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.2.2';
+            const sdkVersion = '2.3.4';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -14255,8 +14392,12 @@
     }
 
     const insertedElements = [];
+    const reorderingOptions = []; // Collect reordering operations to execute at the end
+
     const details = isPreview ? targetingMsgJson.details : targetingMsgJson.display.details;
     let notificationViewed = false;
+    let pendingElements = 0; // Track elements being processed by tryFindingElement
+
     const payload = {
       msgId: targetingMsgJson.wzrk_id,
       pivotId: targetingMsgJson.wzrk_pivot
@@ -14274,7 +14415,17 @@
     };
 
     const processElement = (element, selector) => {
-      var _selector$isTrackingC;
+      var _selector$reorderingO, _selector$isTrackingC;
+
+      pendingElements--; // Decrement when processing element
+
+      if (selector === null || selector === void 0 ? void 0 : (_selector$reorderingO = selector.reorderingOptions) === null || _selector$reorderingO === void 0 ? void 0 : _selector$reorderingO.positionsChanged) {
+        // Collect drag operation to execute later (after all elements are processed)
+        reorderingOptions.push({
+          element,
+          selector
+        });
+      }
 
       if (selector.elementCSS) {
         updateElementCSS(selector);
@@ -14332,6 +14483,7 @@
           raiseViewed();
           processElement(retryElement, selector);
           clearInterval(intervalId);
+          checkAndApplyReorder(); // Check if we can apply reordering now
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(selector, "'."));
           clearInterval(intervalId);
@@ -14341,6 +14493,7 @@
     };
 
     details.forEach(d => {
+      pendingElements = d.selectorData.length;
       d.selectorData.forEach(s => {
         if ((s.selector.includes('-afterend-') || s.selector.includes('-beforebegin-')) && s.values.initialHtml) {
           insertedElements.push(s);
@@ -14367,6 +14520,11 @@
         sibling
       } = findSiblingSelector(selector.selector);
       let count = 0;
+      $ct.intervalArray.forEach(interval => {
+        if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+          clearInterval(parseInt(interval.split('-')[1], 10));
+        }
+      });
       const intervalId = setInterval(() => {
         let element = null;
 
@@ -14379,6 +14537,7 @@
         }
 
         if (element) {
+          clearInterval(intervalId);
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = selector.values.initialHtml;
           const newElement = tempDiv.firstElementChild;
@@ -14388,16 +14547,15 @@
             element.setAttribute('ct-selector', sibling);
           }
 
-          const insertedElement = document.querySelector("[ct-selector=\"".concat(selector.selector, "\"]"));
           raiseViewed();
-          processElement(insertedElement, selector);
-          clearInterval(intervalId);
+          processElement(newElement, selector);
+          checkAndApplyReorder(); // Check if we can apply reordering now
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(sibling, "'."));
           clearInterval(intervalId);
         }
       }, 500);
-      $ct.intervalArray.push(intervalId);
+      $ct.intervalArray.push("addNewEl-".concat(intervalId));
     };
 
     if (insertedElements.length > 0) {
@@ -14407,7 +14565,58 @@
         return numA - numB;
       });
       sortedArr.forEach(addNewEl);
-    }
+    } // Check if all elements are processed and apply reordering if ready
+
+
+    const checkAndApplyReorder = () => {
+      if (pendingElements === 0 && reorderingOptions.length > 0) {
+        applyReorder(reorderingOptions);
+      }
+    }; // Execute all reordering operations after all elements have been processed
+
+
+    const applyReorder = reorderingOptions => {
+      reorderingOptions.forEach((_ref) => {
+        let {
+          element,
+          selector
+        } = _ref;
+        // ensure DOM matches layout (safety sync)
+        // newOrder contains ALL child elements in their desired order
+        // First, collect all elements before any DOM manipulation
+        // This prevents nth-child selectors from becoming invalid during reordering
+        const orderedChildren = [];
+        selector.reorderingOptions.newOrder.forEach(cssSelector => {
+          if (cssSelector.includes('-afterend-') || cssSelector.includes('-beforebegin-')) {
+            cssSelector = "[ct-selector=\"".concat(cssSelector, "\"]");
+          }
+
+          const child = document.querySelector(cssSelector);
+
+          if (child && element.contains(child)) {
+            orderedChildren.push(child);
+          }
+        }); // Now reorder using insertBefore with index-based positioning
+
+        orderedChildren.forEach((child, targetIndex) => {
+          const currentIndex = Array.from(element.children).indexOf(child);
+
+          if (currentIndex !== targetIndex) {
+            // Insert child at the correct position
+            const referenceChild = element.children[targetIndex];
+
+            if (referenceChild) {
+              element.insertBefore(child, referenceChild);
+            } else {
+              element.appendChild(child);
+            }
+          }
+        });
+      });
+    }; // Apply reordering immediately if no elements are pending
+
+
+    checkAndApplyReorder();
   };
 
   function findSiblingSelector(input) {
@@ -16299,13 +16508,21 @@
 
   var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
+  var _domainSpecification$1 = _classPrivateFieldLooseKey("domainSpecification");
+
+  var _resetSessionCampaignCounters = _classPrivateFieldLooseKey("resetSessionCampaignCounters");
+
   class SessionManager {
     // SCOOKIE_NAME
     constructor(_ref) {
       let {
         logger,
-        isPersonalisationActive
+        isPersonalisationActive,
+        domainSpecification
       } = _ref;
+      Object.defineProperty(this, _resetSessionCampaignCounters, {
+        value: _resetSessionCampaignCounters2
+      });
       Object.defineProperty(this, _logger$4, {
         writable: true,
         value: void 0
@@ -16320,6 +16537,11 @@
       });
       this.cookieName = void 0;
       this.scookieObj = void 0;
+      Object.defineProperty(this, _domainSpecification$1, {
+        writable: true,
+        value: void 0
+      });
+      this.domainSpecification = domainSpecification;
       this.sessionId = StorageManager.getMetaProp('cs');
       _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
@@ -16333,30 +16555,43 @@
       _classPrivateFieldLooseBase(this, _sessionId)[_sessionId] = sessionId;
     }
 
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$1)[_domainSpecification$1];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$1)[_domainSpecification$1] = domainSpecification;
+    }
+
     getSessionCookieObject() {
       let scookieStr = StorageManager.readCookie(this.cookieName);
       let obj = {};
 
       if (scookieStr != null) {
-        // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
-        scookieStr = scookieStr.replace(singleQuoteRegex, '"');
-        obj = JSON.parse(scookieStr);
+        try {
+          // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
+          scookieStr = scookieStr.replace(singleQuoteRegex, '"'); // Use safe JSON parsing to prevent injection attacks
 
-        if (!isObject(obj)) {
-          obj = {};
-        } else {
-          if (typeof obj.t !== 'undefined') {
-            // check time elapsed since last request
-            const lastTime = obj.t;
-            const now = getNow();
+          obj = safeJSONParse(scookieStr, {});
 
-            if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
-              // adding 60 seconds to compensate for in-journey requests
-              // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
-              // hence we shouldn't use it.
-              obj = {};
+          if (!isObject(obj)) {
+            obj = {};
+          } else {
+            if (typeof obj.t !== 'undefined') {
+              // check time elapsed since last request
+              const lastTime = obj.t;
+              const now = getNow();
+
+              if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
+                // adding 60 seconds to compensate for in-journey requests
+                // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
+                // hence we shouldn't use it.
+                obj = {};
+              }
             }
           }
+        } catch (e) {
+          obj = {};
         }
       }
 
@@ -16366,7 +16601,7 @@
 
     setSessionCookieObject(obj) {
       const objStr = JSON.stringify(obj);
-      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
+      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName(), this.domainSpecification);
     }
 
     manageSession(session) {
@@ -16389,7 +16624,9 @@
             sessionCount = 0;
           }
 
-          StorageManager.setMetaProp('sc', sessionCount + 1);
+          StorageManager.setMetaProp('sc', sessionCount + 1); // Reset session-based campaign counters on new session
+
+          _classPrivateFieldLooseBase(this, _resetSessionCampaignCounters)[_resetSessionCampaignCounters]();
         }
 
         this.sessionId = session;
@@ -16428,6 +16665,32 @@
     }
 
   }
+
+  var _resetSessionCampaignCounters2 = function _resetSessionCampaignCounters2() {
+    try {
+      const campaignObj = getCampaignObject();
+
+      if (campaignObj) {
+        // Reset Web Popup Show Count
+        if (typeof campaignObj.wsc !== 'undefined') {
+          campaignObj.wsc = 0;
+
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wsc (Web Popup Show Count) to 0 for new session');
+        } // Reset Web Native Display Show Count
+
+
+        if (typeof campaignObj.wndsc !== 'undefined') {
+          campaignObj.wndsc = 0;
+
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wndsc (Web Native Display Show Count) to 0 for new session');
+        }
+
+        saveCampaignObject(campaignObj);
+      }
+    } catch (error) {
+      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].error('Failed to reset session campaign counters: ' + error.message);
+    }
+  };
 
   let seqNo = 0;
   let requestTime = 0;
@@ -16528,7 +16791,8 @@
             _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event : ").concat(backupEvent.q));
 
             if (typeof backupEvent.q !== 'undefined') {
-              const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
+              // Use safe JSON parsing to prevent injection attacks
+              const session = safeJSONParse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id), null);
 
               if (session === null || session === void 0 ? void 0 : session.s) {
                 backupEvent.q = backupEvent.q + '&s=' + session.s;
@@ -16572,7 +16836,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.2.2',
+        lib: 'web-sdk-v2.3.4',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17415,6 +17679,8 @@
 
   var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
 
+  var _domainSpecification = _classPrivateFieldLooseKey("domainSpecification");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _debounce = _classPrivateFieldLooseKey("debounce");
@@ -17459,6 +17725,18 @@
       const dismissSpamControl = value === true;
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
       $ct.dismissSpamControl = dismissSpamControl;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification];
+    }
+
+    set domainSpecification(value) {
+      if (value && isFinite(value)) {
+        _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = Number(value);
+      } else {
+        _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = 0;
+      }
     }
 
     constructor() {
@@ -17542,10 +17820,15 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _domainSpecification, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
+      this.domainSpecification = clevertap.domainSpecification || null;
 
       this.raiseNotificationClicked = () => {};
 
@@ -17561,13 +17844,15 @@
 
       _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
-        customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null
+        customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null,
+        domainSpecification: this.domainSpecification
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = (_clevertap$dismissSpa = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa !== void 0 ? _clevertap$dismissSpa : true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
-        isPersonalisationActive: this._isPersonalisationActive
+        isPersonalisationActive: this._isPersonalisationActive,
+        domainSpecification: this.domainSpecification
       });
       _classPrivateFieldLooseBase(this, _request)[_request] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
@@ -17615,7 +17900,8 @@
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         request: _classPrivateFieldLooseBase(this, _request)[_request],
         device: _classPrivateFieldLooseBase(this, _device)[_device],
-        session: _classPrivateFieldLooseBase(this, _session)[_session]
+        session: _classPrivateFieldLooseBase(this, _session)[_session],
+        domainSpecification: this.domainSpecification
       });
       this.spa = clevertap.spa;
       this.dismissSpamControl = (_clevertap$dismissSpa2 = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa2 !== void 0 ? _clevertap$dismissSpa2 : true;
@@ -18232,8 +18518,16 @@
       let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
         antiFlicker: {},
         customId: null,
-        isolateSubdomain: false
+        isolateSubdomain: false,
+        domainSpecification: null
       };
+
+      if (config === null || config === void 0 ? void 0 : config.domainSpecification) {
+        this.domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _session)[_session].domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _device)[_device].domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _api)[_api].domainSpecification = config.domainSpecification;
+      }
 
       if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
         addAntiFlicker(config.antiFlicker);
@@ -18436,10 +18730,15 @@
     _handleVisualEditorPreview() {
       if ($ct.intervalArray.length) {
         $ct.intervalArray.forEach(interval => {
-          clearInterval(interval);
+          if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+            clearInterval(parseInt(interval.split('-')[1], 10));
+          } else {
+            clearInterval(interval);
+          }
         });
       }
 
+      $ct.intervalArray = [];
       const storedData = sessionStorage.getItem('visualEditorData');
       const targetJson = storedData ? JSON.parse(storedData) : null;
 
@@ -18494,7 +18793,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.2.2';
+      return 'web-sdk-v2.3.4';
     }
 
     defineVariable(name, defaultValue) {
@@ -18550,8 +18849,12 @@
 
 
     getAllQualifiedCampaignDetails() {
-      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
-      return existingCampaign;
+      try {
+        const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
+        return existingCampaign;
+      } catch (e) {
+        return null;
+      }
     }
 
   }
