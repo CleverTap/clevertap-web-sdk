@@ -265,7 +265,44 @@
     OPEN_WEB_URL: 'open-web-url',
     SOFT_PROMPT: 'soft-prompt',
     RUN_JS: 'js'
-  };
+  }; // Nested object errors
+
+  const NESTED_OBJECT_ERRORS = {
+    DEPTH_LIMIT_EXCEEDED: {
+      code: 541,
+      message: 'Event data exceeded maximum nesting depth. Depth: %s, Limit: %s'
+    },
+    ARRAY_KEY_COUNT_LIMIT_EXCEEDED: {
+      code: 542,
+      message: 'Event data exceeded maximum array key count. Count: %s, Limit: %s'
+    },
+    OBJECT_KEY_COUNT_LIMIT_EXCEEDED: {
+      code: 543,
+      message: 'Event data exceeded maximum object key count. Count: %s, Limit: %s'
+    },
+    ARRAY_LENGTH_LIMIT_EXCEEDED: {
+      code: 543,
+      message: 'Event data exceeded maximum array length. Length: %s, Limit: %s'
+    },
+    KV_PAIR_COUNT_LIMIT_EXCEEDED: {
+      code: 544,
+      message: 'Event data exceeded maximum key-value pair count. Count: %s, Limit: %s'
+    },
+    NULL_VALUE_REMOVED: {
+      code: 545,
+      message: "Null value for key '%s' was removed"
+    },
+    EMPTY_VALUE_REMOVED: {
+      code: 545,
+      message: "Empty value for key '%s' was removed"
+    },
+    RESTRICTED_EVENT_NAME: {
+      code: 513,
+      message: '%s is a restricted event name. Last event aborted.'
+    }
+  }; // Restricted profile keys that cannot be at root level (0th level)
+
+  const PROFILE_RESTRICTED_ROOT_KEYS = ['Name', 'Email', 'Education', 'Married', 'DOB', 'Gender', 'Phone', 'Age', 'FBID', 'GPID', 'Birthday', 'Identity'];
 
   const isString = input => {
     return typeof input === 'string' || input instanceof String;
@@ -8021,6 +8058,16 @@
   const ENUM_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " setEnum(value). value should be a string or a number");
   const PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
 
+  const {
+    DEPTH_LIMIT_EXCEEDED,
+    ARRAY_KEY_COUNT_LIMIT_EXCEEDED,
+    OBJECT_KEY_COUNT_LIMIT_EXCEEDED,
+    ARRAY_LENGTH_LIMIT_EXCEEDED,
+    KV_PAIR_COUNT_LIMIT_EXCEEDED,
+    NULL_VALUE_REMOVED,
+    EMPTY_VALUE_REMOVED
+  } = NESTED_OBJECT_ERRORS;
+
   let _globalChargedId;
 
   const isEventStructureFlat = eventObj => {
@@ -8114,22 +8161,51 @@
     if (isObject(obj)) return Object.keys(obj).length === 0;
     return false;
   }; // Helper function to clean null/empty objects and arrays
+  // Expected behavior:
+  // - Removes null, undefined values
+  // - Removes empty objects {} and empty arrays []
+  // - If part of an array, drops that element entirely
+  // - Recursively cleans nested structures
 
 
   const cleanNullEmptyValues = function (obj) {
-    let currentDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-    let maxDepth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 3;
+    let logger = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+    let currentDepth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    let maxDepth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 3;
+    let keyPath = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : '';
     if (currentDepth > maxDepth) return obj;
 
     if (Array.isArray(obj)) {
-      const cleanedArray = obj.filter(item => !isNullOrEmpty(item)).map(item => {
-        if (isObject(item) || Array.isArray(item)) {
-          return cleanNullEmptyValues(item, currentDepth + 1, maxDepth);
+      const cleanedArray = [];
+      obj.forEach((item, index) => {
+        if (isNullOrEmpty(item)) {
+          if (logger) {
+            const currentKeyPath = keyPath ? "".concat(keyPath, "[").concat(index, "]") : "[".concat(index, "]");
+
+            if (item === null || item === undefined) {
+              logger.reportError(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+            } else {
+              logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+            }
+          }
+
+          return;
         }
 
-        return item;
-      }).filter(item => !isNullOrEmpty(item)); // Filter again after cleaning
+        let cleanedItem = item;
 
+        if (isObject(item) || Array.isArray(item)) {
+          const currentKeyPath = keyPath ? "".concat(keyPath, "[").concat(index, "]") : "[".concat(index, "]");
+          cleanedItem = cleanNullEmptyValues(item, logger, currentDepth + 1, maxDepth, currentKeyPath);
+        }
+
+        if (!isNullOrEmpty(cleanedItem)) {
+          cleanedArray.push(cleanedItem);
+        } else if (logger) {
+          const currentKeyPath = keyPath ? "".concat(keyPath, "[").concat(index, "]") : "[".concat(index, "]");
+          logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+        }
+      });
       return cleanedArray.length > 0 ? cleanedArray : undefined;
     }
 
@@ -8139,15 +8215,22 @@
       for (const key in obj) {
         if (obj.hasOwnProperty(key)) {
           let value = obj[key];
+          const currentKeyPath = keyPath ? "".concat(keyPath, ".").concat(key) : key;
 
           if (isDateObject(value)) {
             value = convertToWZRKDate(value);
           } else if (isObject(value) || Array.isArray(value)) {
-            value = cleanNullEmptyValues(value, currentDepth + 1, maxDepth);
+            value = cleanNullEmptyValues(value, logger, currentDepth + 1, maxDepth, currentKeyPath);
           }
 
           if (!isNullOrEmpty(value)) {
             cleanedObj[key] = value;
+          } else if (logger) {
+            if (value === null || value === undefined) {
+              logger.reportError(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+            } else {
+              logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+            }
           }
         }
       }
@@ -8167,17 +8250,20 @@
     } // Clean null/empty values first
 
 
-    const cleanedObj = cleanNullEmptyValues(eventObj, 0, maxDepth);
+    const cleanedObj = cleanNullEmptyValues(eventObj, logger, 0, maxDepth);
 
     if (isNullOrEmpty(cleanedObj)) {
       return createValidationResult(false, 'Event object is empty after cleaning null/empty values');
     } // Validate nesting depth
 
 
+    let maxDepthFound = 0;
+
     const validateDepth = function (obj) {
       let currentDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
 
       if (currentDepth > maxDepth) {
+        maxDepthFound = currentDepth;
         return false;
       }
 
@@ -8203,7 +8289,9 @@
     };
 
     if (!validateDepth(cleanedObj)) {
-      return createValidationResult(false, "Maximum nesting depth of ".concat(maxDepth, " levels exceeded"));
+      const depthMessage = DEPTH_LIMIT_EXCEEDED.message.replace('%s', maxDepthFound).replace('%s', maxDepth);
+      logger.reportError(DEPTH_LIMIT_EXCEEDED.code, depthMessage);
+      return createValidationResult(false, "Maximum nesting depth of ".concat(maxDepth, " levels exceeded"), cleanedObj);
     } // Helper function to count object/array keys at a specific level
 
 
@@ -8226,7 +8314,9 @@
     const rootObjectArrayCount = countObjectArrayKeys(cleanedObj);
 
     if (rootObjectArrayCount > 5) {
-      return createValidationResult(false, "Maximum 5 object/array keys allowed at root level. Found: ".concat(rootObjectArrayCount));
+      const objectKeyMessage = OBJECT_KEY_COUNT_LIMIT_EXCEEDED.message.replace('%s', rootObjectArrayCount).replace('%s', 5);
+      logger.reportError(OBJECT_KEY_COUNT_LIMIT_EXCEEDED.code, objectKeyMessage);
+      return createValidationResult(false, "Maximum 5 object/array keys allowed at root level. Found: ".concat(rootObjectArrayCount), cleanedObj);
     } // Validate object/array count at each nested level
 
 
@@ -8239,7 +8329,8 @@
           if (Array.isArray(obj[key])) {
             // Check array length limit
             if (obj[key].length > 100) {
-              logger.error("Array '".concat(key, "' exceeds 100 elements limit. Found: ").concat(obj[key].length));
+              const arrayLengthMessage = ARRAY_LENGTH_LIMIT_EXCEEDED.message.replace('%s', obj[key].length).replace('%s', 100);
+              logger.reportError(ARRAY_LENGTH_LIMIT_EXCEEDED.code, arrayLengthMessage);
               return false;
             } // Validate each array element
 
@@ -8249,7 +8340,8 @@
                 const itemObjectArrayCount = countObjectArrayKeys(item);
 
                 if (itemObjectArrayCount > 5) {
-                  logger.error("Maximum 5 object/array keys allowed at nested level. Found: ".concat(itemObjectArrayCount, " in array '").concat(key, "'"));
+                  const arrayKeyMessage = ARRAY_KEY_COUNT_LIMIT_EXCEEDED.message.replace('%s', itemObjectArrayCount).replace('%s', 5);
+                  logger.reportError(ARRAY_KEY_COUNT_LIMIT_EXCEEDED.code, arrayKeyMessage);
                   return false;
                 }
 
@@ -8262,7 +8354,8 @@
             const nestedObjectArrayCount = countObjectArrayKeys(obj[key]);
 
             if (nestedObjectArrayCount > 5) {
-              logger.error("Maximum 5 object/array keys allowed at nested level. Found: ".concat(nestedObjectArrayCount, " in object '").concat(key, "'"));
+              const nestedObjectKeyMessage = OBJECT_KEY_COUNT_LIMIT_EXCEEDED.message.replace('%s', nestedObjectArrayCount).replace('%s', 5);
+              logger.reportError(OBJECT_KEY_COUNT_LIMIT_EXCEEDED.code, nestedObjectKeyMessage);
               return false;
             }
 
@@ -8305,14 +8398,16 @@
     };
 
     if (!validateObjectArrayCount(cleanedObj)) {
-      return createValidationResult(false, 'Nested object/array count validation failed');
+      return createValidationResult(false, 'Nested object/array count validation failed', cleanedObj);
     } // Count total attribute keys
 
 
     const totalKeyCount = countTotalKeys(cleanedObj);
 
     if (totalKeyCount > 100) {
-      return createValidationResult(false, "Maximum 100 attribute keys allowed. Found: ".concat(totalKeyCount));
+      const kvPairMessage = KV_PAIR_COUNT_LIMIT_EXCEEDED.message.replace('%s', totalKeyCount).replace('%s', 100);
+      logger.reportError(KV_PAIR_COUNT_LIMIT_EXCEEDED.code, kvPairMessage);
+      return createValidationResult(false, "Maximum 100 attribute keys allowed. Found: ".concat(totalKeyCount), cleanedObj);
     }
 
     return createValidationResult(true, null, cleanedObj);
@@ -8451,21 +8546,16 @@
                 continue;
               }
             } else {
-              const validationResult = isObjStructureValid(eventObj, _classPrivateFieldLooseBase(this, _logger$8)[_logger$8], 3);
-
-              if (!validationResult.isValid) {
-                _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(512, "".concat(eventName, " event: ").concat(validationResult.errorMessage, ". Not sent."));
-
-                continue;
-              } // Use cleaned object if provided
-
+              const validationResult = isObjStructureValid(eventObj, _classPrivateFieldLooseBase(this, _logger$8)[_logger$8], 3); // Validation errors are already logged via logger.reportError in validator
+              // Use cleaned object if provided (even if validation failed)
+              // This removes null/empty values that were logged
 
               if (validationResult.processedObj) {
-                Object.assign(eventObj, validationResult.processedObj);
+                data.evtData = validationResult.processedObj;
+              } else {
+                data.evtData = eventObj;
               }
             }
-
-            data.evtData = eventObj;
           }
         }
 
@@ -10218,6 +10308,289 @@
       StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
     }
   };
+  /**
+   * Parses a nested key path into segments
+   * Handles paths like "Policy[0].price", "Policy[0].Insured[0].policyValue", "InsuranceDetails.Policy[1].Premium"
+   * @param {string} path - The nested key path
+   * @returns {Array} Array of path segments with type 'key' or 'array'
+   */
+
+  const parseNestedPath = path => {
+    const segments = [];
+    let current = '';
+    let i = 0;
+
+    while (i < path.length) {
+      if (path[i] === '[') {
+        if (current) {
+          segments.push({
+            type: 'key',
+            value: current
+          });
+          current = '';
+        }
+
+        i++;
+        let index = '';
+
+        while (i < path.length && path[i] !== ']') {
+          index += path[i];
+          i++;
+        }
+
+        if (i < path.length && path[i] === ']') {
+          segments.push({
+            type: 'array',
+            index: parseInt(index, 10)
+          });
+          i++;
+        }
+      } else if (path[i] === '.') {
+        if (current) {
+          segments.push({
+            type: 'key',
+            value: current
+          });
+          current = '';
+        }
+
+        i++;
+      } else {
+        current += path[i];
+        i++;
+      }
+    }
+
+    if (current) {
+      segments.push({
+        type: 'key',
+        value: current
+      });
+    }
+
+    return segments;
+  };
+  /**
+   * Gets a value from a nested path in an object
+   * @param {Object} obj - The object to navigate
+   * @param {Array} segments - Parsed path segments
+   * @returns {any} The value at the path, or undefined if path doesn't exist
+   */
+
+  const getNestedValue = (obj, segments) => {
+    let current = obj;
+
+    for (const segment of segments) {
+      if (current == null) {
+        return undefined;
+      }
+
+      if (segment.type === 'key') {
+        current = current[segment.value];
+      } else if (segment.type === 'array') {
+        if (!Array.isArray(current)) {
+          return undefined;
+        }
+
+        current = current[segment.index];
+      }
+    }
+
+    return current;
+  };
+  /**
+   * Sets a value at a nested path in an object, creating intermediate objects/arrays as needed
+   * @param {Object} obj - The object to modify
+   * @param {Array} segments - Parsed path segments
+   * @param {any} value - The value to set
+   * @returns {boolean} True if successful, false otherwise
+   */
+
+  const setNestedValue = (obj, segments, value) => {
+    let current = obj;
+    const lastIndex = segments.length - 1;
+
+    for (let i = 0; i < lastIndex; i++) {
+      const segment = segments[i];
+      const nextSegment = segments[i + 1];
+
+      if (segment.type === 'key') {
+        if (current[segment.value] == null) {
+          current[segment.value] = (nextSegment === null || nextSegment === void 0 ? void 0 : nextSegment.type) === 'array' ? [] : {};
+        }
+
+        current = current[segment.value];
+      } else if (segment.type === 'array') {
+        if (!Array.isArray(current)) {
+          return false;
+        }
+
+        if (current[segment.index] == null) {
+          current[segment.index] = (nextSegment === null || nextSegment === void 0 ? void 0 : nextSegment.type) === 'array' ? [] : {};
+        }
+
+        current = current[segment.index];
+      }
+    }
+
+    const lastSegment = segments[lastIndex];
+
+    if (lastSegment.type === 'key') {
+      current[lastSegment.value] = value;
+    } else if (lastSegment.type === 'array') {
+      if (!Array.isArray(current)) {
+        return false;
+      }
+
+      current[lastSegment.index] = value;
+    }
+
+    return true;
+  };
+  /**
+   * Builds a nested object structure from path segments for sending to backend
+   * Creates structure like { Policy: [{ price: { $incr: 10 } }] }
+   * @param {Array} segments - Parsed path segments
+   * @param {string} command - The command (COMMAND_INCREMENT or COMMAND_DECREMENT)
+   * @param {number} value - The increment/decrement value
+   * @returns {Object} The nested object structure
+   */
+
+  const buildNestedCommandObject = (segments, command, value) => {
+    if (segments.length === 0) {
+      return {};
+    }
+
+    const buildStructure = segIndex => {
+      if (segIndex >= segments.length) {
+        return null;
+      }
+
+      const segment = segments[segIndex];
+      const isLast = segIndex === segments.length - 1;
+
+      if (segment.type === 'key') {
+        const next = isLast ? {
+          [command]: value
+        } : buildStructure(segIndex + 1);
+        return {
+          [segment.value]: next
+        };
+      } else if (segment.type === 'array') {
+        const arr = [];
+        arr[segment.index] = isLast ? {
+          [command]: value
+        } : buildStructure(segIndex + 1);
+        return arr;
+      }
+
+      return null;
+    };
+
+    return buildStructure(0);
+  };
+  /**
+   * Removes a value at a nested path in an object
+   * @param {Object} obj - The object to modify
+   * @param {Array} segments - Parsed path segments
+   * @returns {boolean} True if successful, false otherwise
+   */
+
+  const removeNestedValue = (obj, segments) => {
+    if (segments.length === 0) {
+      return false;
+    }
+
+    let current = obj;
+    const lastIndex = segments.length - 1; // Navigate to the parent of the target
+
+    for (let i = 0; i < lastIndex; i++) {
+      const segment = segments[i];
+
+      if (segment.type === 'key') {
+        if (current[segment.value] == null) {
+          return false;
+        }
+
+        current = current[segment.value];
+      } else if (segment.type === 'array') {
+        if (!Array.isArray(current)) {
+          return false;
+        }
+
+        if (current[segment.index] == null) {
+          return false;
+        }
+
+        current = current[segment.index];
+      }
+    } // Remove the target value
+
+
+    const lastSegment = segments[lastIndex];
+
+    if (lastSegment.type === 'key') {
+      if (current.hasOwnProperty(lastSegment.value)) {
+        delete current[lastSegment.value];
+        return true;
+      }
+    } else if (lastSegment.type === 'array') {
+      if (!Array.isArray(current)) {
+        return false;
+      }
+
+      if (current[lastSegment.index] != null) {
+        // For arrays, we can either delete the element or set it to undefined
+        // Using splice to remove the element completely
+        current.splice(lastSegment.index, 1);
+        return true;
+      }
+    }
+
+    return false;
+  };
+  /**
+   * Builds a nested object structure for delete command
+   * Creates structure like { Policy: [{ price: { $delete: true } }] }
+   * @param {Array} segments - Parsed path segments
+   * @param {string} command - The command (COMMAND_DELETE)
+   * @param {any} value - The value to set (usually true for delete)
+   * @returns {Object} The nested object structure
+   */
+
+  const buildNestedDeleteObject = (segments, command, value) => {
+    if (segments.length === 0) {
+      return {};
+    }
+
+    const buildStructure = segIndex => {
+      if (segIndex >= segments.length) {
+        return null;
+      }
+
+      const segment = segments[segIndex];
+      const isLast = segIndex === segments.length - 1;
+
+      if (segment.type === 'key') {
+        const next = isLast ? {
+          [command]: value
+        } : buildStructure(segIndex + 1);
+        return {
+          [segment.value]: next
+        };
+      } else if (segment.type === 'array') {
+        const arr = [];
+        arr[segment.index] = isLast ? {
+          [command]: value
+        } : buildStructure(segIndex + 1);
+        return arr;
+      }
+
+      return null;
+    };
+
+    return buildStructure(0);
+  };
   const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     if (campaignId != null && campaignId !== '-1') {
       if (StorageManager._isLocalStorageSupported()) {
@@ -10352,6 +10725,10 @@
 
   var _processProfileArray = _classPrivateFieldLooseKey("processProfileArray");
 
+  var _filterRestrictedKeys = _classPrivateFieldLooseKey("filterRestrictedKeys");
+
+  var _validateAndSendProfile = _classPrivateFieldLooseKey("validateAndSendProfile");
+
   class ProfileHandler extends Array {
     constructor(_ref, values) {
       let {
@@ -10361,6 +10738,12 @@
         isPersonalisationActive
       } = _ref;
       super();
+      Object.defineProperty(this, _validateAndSendProfile, {
+        value: _validateAndSendProfile2
+      });
+      Object.defineProperty(this, _filterRestrictedKeys, {
+        value: _filterRestrictedKeys2
+      });
       Object.defineProperty(this, _processProfileArray, {
         value: _processProfileArray2
       });
@@ -10429,60 +10812,73 @@
 
     /**
      *
-     * @param {any} key
+     * @param {any} key - Can be a simple key or nested path like "Policy[0].price"
      * @param {number} value
      * @param {string} command
      * increases or decreases value of the number type properties in profile object
      */
     _handleIncrementDecrementValue(key, value, command) {
-      var _$ct$globalProfileMap;
-
-      // Check if the value is greater than 0
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
       }
 
-      if ($ct.globalProfileMap == null && !((_$ct$globalProfileMap = $ct.globalProfileMap) === null || _$ct$globalProfileMap === void 0 ? void 0 : _$ct$globalProfileMap.hasOwnProperty(key))) {
-        // Check if the profile map already has the propery defined
-        console.error('Kindly create profile with required proprty to increment/decrement.');
-      } else if (!value || typeof value !== 'number' || value <= 0) {
+      if ($ct.globalProfileMap == null) {
+        console.error('Profile map is not initialized. Please create a profile first.');
+        return;
+      }
+
+      if (!value || typeof value !== 'number' || value <= 0) {
         console.error('Value should be a number greater than 0');
-      } else {
-        // Update the profile property in local storage
-        if (command === COMMAND_INCREMENT) {
-          $ct.globalProfileMap[key] = $ct.globalProfileMap[key] + value;
-        } else {
-          $ct.globalProfileMap[key] = $ct.globalProfileMap[key] - value;
+        return;
+      }
+
+      const isNestedPath = key.includes('.') || key.includes('[');
+      let profileObj = {};
+
+      if (isNestedPath) {
+        const segments = parseNestedPath(key);
+
+        if (segments.length === 0) {
+          console.error('Invalid nested path format.');
+          return;
         }
 
-        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Send the updated value to LC
+        const currentValue = getNestedValue($ct.globalProfileMap, segments);
 
-        let data = {};
-        const profileObj = {};
-        data.type = 'profile';
+        if (currentValue === undefined) {
+          console.error("Path '".concat(key, "' does not exist in profile. Please create the profile structure first."));
+          return;
+        }
+
+        if (typeof currentValue !== 'number') {
+          console.error("Value at path '".concat(key, "' is not a number. Cannot increment/decrement."));
+          return;
+        }
+
+        const newValue = command === COMMAND_INCREMENT ? currentValue + value : currentValue - value;
+
+        if (!setNestedValue($ct.globalProfileMap, segments, newValue)) {
+          console.error("Failed to update value at path '".concat(key, "'."));
+          return;
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        profileObj = buildNestedCommandObject(segments, command, value);
+      } else {
+        if (!$ct.globalProfileMap.hasOwnProperty(key)) {
+          console.error('Kindly create profile with required property to increment/decrement.');
+          return;
+        }
+
+        const currentValue = $ct.globalProfileMap[key] || 0;
+        $ct.globalProfileMap[key] = command === COMMAND_INCREMENT ? currentValue + value : currentValue - value;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
         profileObj[key] = {
           [command]: value
         };
-
-        if (profileObj.tz == null) {
-          // try to auto capture user timezone if not present
-          profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
-        }
-
-        data.profile = profileObj;
-        data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, true);
-
-        _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data);
-
-        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
-
-        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
-
-        pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-
-        _classPrivateFieldLooseBase(this, _request$5)[_request$5].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
       }
+
+      _classPrivateFieldLooseBase(this, _validateAndSendProfile)[_validateAndSendProfile](profileObj);
     }
     /**
      *
@@ -10609,44 +11005,102 @@
     }
     /**
      *
-     * @param {any} propKey
+     * @param {any} propKey - Can be a simple key or nested path like "Policy[0].price"
      * @param {string} command
      * deletes a key value pair from the profile object
      */
 
 
     _handleMultiValueDelete(propKey, command) {
-      var _$ct$globalProfileMap2;
-
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
       }
 
-      if (!($ct === null || $ct === void 0 ? void 0 : (_$ct$globalProfileMap2 = $ct.globalProfileMap) === null || _$ct$globalProfileMap2 === void 0 ? void 0 : _$ct$globalProfileMap2.hasOwnProperty(propKey))) {
-        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
-      } else {
-        delete $ct.globalProfileMap[propKey];
+      if ($ct.globalProfileMap == null) {
+        $ct.globalProfileMap = {};
       }
 
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(propKey, null, command);
+      const isNestedPath = propKey.includes('.') || propKey.includes('[');
+
+      if (isNestedPath) {
+        const segments = parseNestedPath(propKey);
+
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
+
+          return;
+        } // Check if the path exists
+
+
+        const currentValue = getNestedValue($ct.globalProfileMap, segments);
+
+        if (currentValue === undefined) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Path '".concat(propKey, "' does not exist in profile."));
+
+          return;
+        } // Remove the nested value
+
+
+        if (!removeNestedValue($ct.globalProfileMap, segments)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Failed to remove value at path '".concat(propKey, "'."));
+
+          return;
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, null, command, true);
+      } else {
+        // Handle simple key (existing logic)
+        if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
+        } else {
+          delete $ct.globalProfileMap[propKey];
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, null, command, false);
+      }
     }
 
     sendMultiValueData(propKey, propVal, command) {
+      let isNested = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
       // Send the updated value to LC
       let data = {};
-      const profileObj = {};
-      data.type = 'profile'; // this removes the property at backend
+      let profileObj = {};
+      data.type = 'profile';
 
-      profileObj[propKey] = {
-        [command]: command === COMMAND_DELETE ? true : propVal
-      };
+      if (isNested && command === COMMAND_DELETE) {
+        // Build nested delete object
+        const segments = parseNestedPath(propKey);
+        profileObj = buildNestedDeleteObject(segments, command, true);
+      } else {
+        // Simple key handling
+        profileObj[propKey] = {
+          [command]: command === COMMAND_DELETE ? true : propVal
+        };
+      }
 
       if (profileObj.tz == null) {
         profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+      } // Validate and clean the profile object before sending
+
+
+      const validationResult = isObjStructureValid(profileObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7], 3);
+
+      if (validationResult.processedObj) {
+        const cleanedProfileObj = validationResult.processedObj;
+
+        const finalProfileObj = _classPrivateFieldLooseBase(this, _filterRestrictedKeys)[_filterRestrictedKeys](cleanedProfileObj);
+
+        if (isObjectEmpty(finalProfileObj)) {
+          return;
+        }
+
+        data.profile = finalProfileObj;
+      } else {
+        data.profile = profileObj;
       }
 
-      data.profile = profileObj;
       data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, true);
 
       _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data);
@@ -10679,17 +11133,16 @@
               return;
             }
 
-            const validationResult = isObjStructureValid(profileObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7], 3);
-
-            if (!validationResult.isValid) {
-              _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Profile structure invalid: ".concat(validationResult.errorMessage));
-
-              return;
-            }
+            const validationResult = isObjStructureValid(profileObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7], 3); // Validation errors are already logged via logger.reportError in validator
+            // Use cleaned object if provided (even if validation failed)
+            // This removes null/empty values that were logged
 
             if (validationResult.processedObj) {
               profileObj = validationResult.processedObj;
-            }
+            } // Profile-specific validation: Drop restricted keys at root level
+
+
+            profileObj = _classPrivateFieldLooseBase(this, _filterRestrictedKeys)[_filterRestrictedKeys](profileObj);
 
             if (!isProfileValid(profileObj, {
               logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]
@@ -10739,6 +11192,56 @@
           }
         }
       }
+    }
+  };
+
+  var _filterRestrictedKeys2 = function _filterRestrictedKeys2(profileObj) {
+    const finalProfileObj = {};
+
+    for (const key in profileObj) {
+      if (profileObj.hasOwnProperty(key)) {
+        if (PROFILE_RESTRICTED_ROOT_KEYS.includes(key)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].reportError(NESTED_OBJECT_ERRORS.RESTRICTED_EVENT_NAME.code, NESTED_OBJECT_ERRORS.RESTRICTED_EVENT_NAME.message.replace('%s', key));
+        } else {
+          finalProfileObj[key] = profileObj[key];
+        }
+      }
+    }
+
+    return finalProfileObj;
+  };
+
+  var _validateAndSendProfile2 = function _validateAndSendProfile2(profileObj) {
+    if (profileObj.tz == null) {
+      profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+    }
+
+    const validationResult = isObjStructureValid(profileObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7], 3);
+
+    if (validationResult.processedObj) {
+      const cleanedProfileObj = validationResult.processedObj;
+
+      const finalProfileObj = _classPrivateFieldLooseBase(this, _filterRestrictedKeys)[_filterRestrictedKeys](cleanedProfileObj);
+
+      if (isObjectEmpty(finalProfileObj)) {
+        return;
+      }
+
+      let data = {};
+      data.type = 'profile';
+      data.profile = finalProfileObj;
+      data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, true);
+
+      _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data);
+
+      const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
+
+      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
+
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+
+      _classPrivateFieldLooseBase(this, _request$5)[_request$5].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
     }
   };
 
@@ -11440,7 +11943,7 @@
 
       if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
+      }
     }
 
   }

@@ -1,7 +1,18 @@
 import { isObject, isDateObject, isString, isNumber } from './datatypes'
 import { convertToWZRKDate } from './datetime'
-import { CHARGED_ID, CHARGEDID_COOKIE_NAME } from './constants'
+import { CHARGED_ID, CHARGEDID_COOKIE_NAME, NESTED_OBJECT_ERRORS } from './constants'
 import { StorageManager } from './storage'
+
+// Destructure error constants for cleaner code
+const {
+  DEPTH_LIMIT_EXCEEDED,
+  ARRAY_KEY_COUNT_LIMIT_EXCEEDED,
+  OBJECT_KEY_COUNT_LIMIT_EXCEEDED,
+  ARRAY_LENGTH_LIMIT_EXCEEDED,
+  KV_PAIR_COUNT_LIMIT_EXCEEDED,
+  NULL_VALUE_REMOVED,
+  EMPTY_VALUE_REMOVED
+} = NESTED_OBJECT_ERRORS
 
 let _globalChargedId
 
@@ -88,19 +99,42 @@ const isNullOrEmpty = (obj) => {
 }
 
 // Helper function to clean null/empty objects and arrays
-const cleanNullEmptyValues = (obj, currentDepth = 0, maxDepth = 3) => {
+// Expected behavior:
+// - Removes null, undefined values
+// - Removes empty objects {} and empty arrays []
+// - If part of an array, drops that element entirely
+// - Recursively cleans nested structures
+const cleanNullEmptyValues = (obj, logger = null, currentDepth = 0, maxDepth = 3, keyPath = '') => {
   if (currentDepth > maxDepth) return obj
 
   if (Array.isArray(obj)) {
-    const cleanedArray = obj
-      .filter(item => !isNullOrEmpty(item))
-      .map(item => {
-        if (isObject(item) || Array.isArray(item)) {
-          return cleanNullEmptyValues(item, currentDepth + 1, maxDepth)
+    const cleanedArray = []
+    obj.forEach((item, index) => {
+      if (isNullOrEmpty(item)) {
+        if (logger) {
+          const currentKeyPath = keyPath ? `${keyPath}[${index}]` : `[${index}]`
+          if (item === null || item === undefined) {
+            logger.reportError(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath))
+          } else {
+            logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath))
+          }
         }
-        return item
-      })
-      .filter(item => !isNullOrEmpty(item)) // Filter again after cleaning
+        return
+      }
+
+      let cleanedItem = item
+      if (isObject(item) || Array.isArray(item)) {
+        const currentKeyPath = keyPath ? `${keyPath}[${index}]` : `[${index}]`
+        cleanedItem = cleanNullEmptyValues(item, logger, currentDepth + 1, maxDepth, currentKeyPath)
+      }
+
+      if (!isNullOrEmpty(cleanedItem)) {
+        cleanedArray.push(cleanedItem)
+      } else if (logger) {
+        const currentKeyPath = keyPath ? `${keyPath}[${index}]` : `[${index}]`
+        logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath))
+      }
+    })
 
     return cleanedArray.length > 0 ? cleanedArray : undefined
   }
@@ -110,15 +144,22 @@ const cleanNullEmptyValues = (obj, currentDepth = 0, maxDepth = 3) => {
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
         let value = obj[key]
+        const currentKeyPath = keyPath ? `${keyPath}.${key}` : key
 
         if (isDateObject(value)) {
           value = convertToWZRKDate(value)
         } else if (isObject(value) || Array.isArray(value)) {
-          value = cleanNullEmptyValues(value, currentDepth + 1, maxDepth)
+          value = cleanNullEmptyValues(value, logger, currentDepth + 1, maxDepth, currentKeyPath)
         }
 
         if (!isNullOrEmpty(value)) {
           cleanedObj[key] = value
+        } else if (logger) {
+          if (value === null || value === undefined) {
+            logger.reportError(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath))
+          } else {
+            logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath))
+          }
         }
       }
     }
@@ -135,15 +176,17 @@ export const isObjStructureValid = (eventObj, logger, maxDepth = 3) => {
   }
 
   // Clean null/empty values first
-  const cleanedObj = cleanNullEmptyValues(eventObj, 0, maxDepth)
+  const cleanedObj = cleanNullEmptyValues(eventObj, logger, 0, maxDepth)
 
   if (isNullOrEmpty(cleanedObj)) {
     return createValidationResult(false, 'Event object is empty after cleaning null/empty values')
   }
 
   // Validate nesting depth
+  let maxDepthFound = 0
   const validateDepth = (obj, currentDepth = 0) => {
     if (currentDepth > maxDepth) {
+      maxDepthFound = currentDepth
       return false
     }
 
@@ -168,7 +211,11 @@ export const isObjStructureValid = (eventObj, logger, maxDepth = 3) => {
   }
 
   if (!validateDepth(cleanedObj)) {
-    return createValidationResult(false, `Maximum nesting depth of ${maxDepth} levels exceeded`)
+    const depthMessage = DEPTH_LIMIT_EXCEEDED.message
+      .replace('%s', maxDepthFound)
+      .replace('%s', maxDepth)
+    logger.reportError(DEPTH_LIMIT_EXCEEDED.code, depthMessage)
+    return createValidationResult(false, `Maximum nesting depth of ${maxDepth} levels exceeded`, cleanedObj)
   }
 
   // Helper function to count object/array keys at a specific level
@@ -188,7 +235,11 @@ export const isObjStructureValid = (eventObj, logger, maxDepth = 3) => {
   // Count object/array keys at root level (0th level)
   const rootObjectArrayCount = countObjectArrayKeys(cleanedObj)
   if (rootObjectArrayCount > 5) {
-    return createValidationResult(false, `Maximum 5 object/array keys allowed at root level. Found: ${rootObjectArrayCount}`)
+    const objectKeyMessage = OBJECT_KEY_COUNT_LIMIT_EXCEEDED.message
+      .replace('%s', rootObjectArrayCount)
+      .replace('%s', 5)
+    logger.reportError(OBJECT_KEY_COUNT_LIMIT_EXCEEDED.code, objectKeyMessage)
+    return createValidationResult(false, `Maximum 5 object/array keys allowed at root level. Found: ${rootObjectArrayCount}`, cleanedObj)
   }
 
   // Validate object/array count at each nested level
@@ -200,7 +251,10 @@ export const isObjStructureValid = (eventObj, logger, maxDepth = 3) => {
         if (Array.isArray(obj[key])) {
           // Check array length limit
           if (obj[key].length > 100) {
-            logger.error(`Array '${key}' exceeds 100 elements limit. Found: ${obj[key].length}`)
+            const arrayLengthMessage = ARRAY_LENGTH_LIMIT_EXCEEDED.message
+              .replace('%s', obj[key].length)
+              .replace('%s', 100)
+            logger.reportError(ARRAY_LENGTH_LIMIT_EXCEEDED.code, arrayLengthMessage)
             return false
           }
 
@@ -209,7 +263,10 @@ export const isObjStructureValid = (eventObj, logger, maxDepth = 3) => {
             if (isObject(item)) {
               const itemObjectArrayCount = countObjectArrayKeys(item)
               if (itemObjectArrayCount > 5) {
-                logger.error(`Maximum 5 object/array keys allowed at nested level. Found: ${itemObjectArrayCount} in array '${key}'`)
+                const arrayKeyMessage = ARRAY_KEY_COUNT_LIMIT_EXCEEDED.message
+                  .replace('%s', itemObjectArrayCount)
+                  .replace('%s', 5)
+                logger.reportError(ARRAY_KEY_COUNT_LIMIT_EXCEEDED.code, arrayKeyMessage)
                 return false
               }
               if (!validateObjectArrayCount(item, currentDepth + 1)) {
@@ -220,7 +277,10 @@ export const isObjStructureValid = (eventObj, logger, maxDepth = 3) => {
         } else if (isObject(obj[key])) {
           const nestedObjectArrayCount = countObjectArrayKeys(obj[key])
           if (nestedObjectArrayCount > 5) {
-            logger.error(`Maximum 5 object/array keys allowed at nested level. Found: ${nestedObjectArrayCount} in object '${key}'`)
+            const nestedObjectKeyMessage = OBJECT_KEY_COUNT_LIMIT_EXCEEDED.message
+              .replace('%s', nestedObjectArrayCount)
+              .replace('%s', 5)
+            logger.reportError(OBJECT_KEY_COUNT_LIMIT_EXCEEDED.code, nestedObjectKeyMessage)
             return false
           }
           if (!validateObjectArrayCount(obj[key], currentDepth + 1)) {
@@ -258,13 +318,17 @@ export const isObjStructureValid = (eventObj, logger, maxDepth = 3) => {
   }
 
   if (!validateObjectArrayCount(cleanedObj)) {
-    return createValidationResult(false, 'Nested object/array count validation failed')
+    return createValidationResult(false, 'Nested object/array count validation failed', cleanedObj)
   }
 
   // Count total attribute keys
   const totalKeyCount = countTotalKeys(cleanedObj)
   if (totalKeyCount > 100) {
-    return createValidationResult(false, `Maximum 100 attribute keys allowed. Found: ${totalKeyCount}`)
+    const kvPairMessage = KV_PAIR_COUNT_LIMIT_EXCEEDED.message
+      .replace('%s', totalKeyCount)
+      .replace('%s', 100)
+    logger.reportError(KV_PAIR_COUNT_LIMIT_EXCEEDED.code, kvPairMessage)
+    return createValidationResult(false, `Maximum 100 attribute keys allowed. Found: ${totalKeyCount}`, cleanedObj)
   }
 
   return createValidationResult(true, null, cleanedObj)
