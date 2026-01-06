@@ -74,12 +74,13 @@ export default class CleverTap {
   #pageChangeTimeoutId
   #enableFetchApi
   #enableEncryptionInTransit
+  #domainSpecification
 
-  get spa () {
+  get spa() {
     return this.#isSpa
   }
 
-  set spa (value) {
+  set spa(value) {
     const isSpa = value === true
     if (this.#isSpa !== isSpa && this.#onloadcalled === 1) {
       // if clevertap.spa is changed after init has been called then update the click listeners
@@ -92,39 +93,52 @@ export default class CleverTap {
     this.#isSpa = isSpa
   }
 
-  get dismissSpamControl () {
+  get dismissSpamControl() {
     return this.#dismissSpamControl
   }
 
-  set dismissSpamControl (value) {
+  set dismissSpamControl(value) {
     const dismissSpamControl = value === true
     this.#dismissSpamControl = dismissSpamControl
     $ct.dismissSpamControl = dismissSpamControl
   }
 
-  get enableFetchApi () {
+  get enableFetchApi() {
     return this.#enableFetchApi
   }
 
-  set enableFetchApi (value) {
+  set enableFetchApi(value) {
     this.#enableFetchApi = value
     // propagate the setting to RequestDispatcher so util layer can honour it
     RequestDispatcher.enableFetchApi = value
   }
 
-  get enableEncryptionInTransit () {
+  get enableEncryptionInTransit() {
     return this.#enableEncryptionInTransit
   }
 
-  set enableEncryptionInTransit (value) {
+  set enableEncryptionInTransit(value) {
     this.#enableEncryptionInTransit = value
     // propagate the setting to RequestDispatcher so util layer can honour it
     RequestDispatcher.enableEncryptionInTransit = value
   }
 
-  constructor (clevertap = {}) {
+  get domainSpecification() {
+    return this.#domainSpecification
+  }
+
+  set domainSpecification(value) {
+    if (value && isFinite(value)) {
+      this.#domainSpecification = Number(value)
+    } else {
+      this.#domainSpecification = 0
+    }
+  }
+
+  constructor(clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
+    this.domainSpecification = clevertap.domainSpecification || null
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
@@ -137,7 +151,11 @@ export default class CleverTap {
       this.#logger.error(result.error)
     }
 
-    this.#device = new DeviceManager({ logger: this.#logger, customId: result?.isValid ? result?.sanitizedId : null })
+    this.#device = new DeviceManager({
+      logger: this.#logger,
+      customId: result?.isValid ? result?.sanitizedId : null,
+      domainSpecification: this.domainSpecification
+    })
     this.#dismissSpamControl = clevertap.dismissSpamControl ?? true
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#enableFetchApi = clevertap.enableFetchApi || false
@@ -146,7 +164,8 @@ export default class CleverTap {
     RequestDispatcher.enableEncryptionInTransit = this.#enableEncryptionInTransit
     this.#session = new SessionManager({
       logger: this.#logger,
-      isPersonalisationActive: this._isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive,
+      domainSpecification: this.domainSpecification
     })
     this.#request = new ReqestManager({
       logger: this.#logger,
@@ -200,7 +219,8 @@ export default class CleverTap {
       logger: this.#logger,
       request: this.#request,
       device: this.#device,
-      session: this.#session
+      session: this.#session,
+      domainSpecification: this.domainSpecification
     })
 
     this.spa = clevertap.spa
@@ -577,14 +597,14 @@ export default class CleverTap {
       }
     }
 
-    function showPosition (position) {
+    function showPosition(position) {
       var lat = position.coords.latitude
       var lng = position.coords.longitude
       $ct.location = { Latitude: lat, Longitude: lng }
       this.#sendLocationData({ Latitude: lat, Longitude: lng })
     }
 
-    function showError (error) {
+    function showError(error) {
       switch (error.code) {
         case error.PERMISSION_DENIED:
           console.log('User denied the request for Geolocation.')
@@ -686,7 +706,7 @@ export default class CleverTap {
     }
   }
 
-  createCustomIdIfValid (customId) {
+  createCustomIdIfValid(customId) {
     const result = validateCustomCleverTapID(customId)
 
     if (!result.isValid) {
@@ -707,7 +727,13 @@ export default class CleverTap {
     }
   }
 
-  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false }) {
+  init(accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false, domainSpecification: null }) {
+    if (config?.domainSpecification) {
+      this.domainSpecification = config.domainSpecification
+      this.#session.domainSpecification = config.domainSpecification
+      this.#device.domainSpecification = config.domainSpecification
+      this.#api.domainSpecification = config.domainSpecification
+    }
     if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
     }
@@ -804,7 +830,7 @@ export default class CleverTap {
 
   // process the option array provided to the clevertap object
   // after its been initialized
-  #processOldValues () {
+  #processOldValues() {
     this.onUserLogin._processOldValues()
     this.privacy._processOldValues()
     this.event._processOldValues()
@@ -812,7 +838,7 @@ export default class CleverTap {
     this.notifications._processOldValues()
   }
 
-  #debounce (func, delay = 50) {
+  #debounce(func, delay = 50) {
     let timeout
     return function () {
       clearTimeout(timeout)
@@ -820,7 +846,7 @@ export default class CleverTap {
     }
   }
 
-  #checkPageChanged () {
+  #checkPageChanged() {
     const debouncedPageChanged = this.#debounce(() => {
       if (this.#previousUrl !== location.href) {
         this.pageChanged()
@@ -829,7 +855,7 @@ export default class CleverTap {
     debouncedPageChanged()
   }
 
-  #updateUnviewedBadgePosition () {
+  #updateUnviewedBadgePosition() {
     try {
       if (this.#pageChangeTimeoutId) {
         clearTimeout(this.#pageChangeTimeoutId)
@@ -870,7 +896,7 @@ export default class CleverTap {
     }
   }
 
-  pageChanged () {
+  pageChanged() {
     const currLocation = window.location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
     // -- update page count
@@ -954,12 +980,17 @@ export default class CleverTap {
     this._handleVisualEditorPreview()
   }
 
-  _handleVisualEditorPreview () {
+  _handleVisualEditorPreview() {
     if ($ct.intervalArray.length) {
       $ct.intervalArray.forEach(interval => {
-        clearInterval(interval)
+        if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+          clearInterval(parseInt(interval.split('-')[1], 10))
+        } else {
+          clearInterval(interval)
+        }
       })
     }
+    $ct.intervalArray = []
     const storedData = sessionStorage.getItem('visualEditorData')
     const targetJson = storedData ? JSON.parse(storedData) : null
     if (targetJson) {
@@ -967,7 +998,7 @@ export default class CleverTap {
     }
   }
 
-  #pingRequest () {
+  #pingRequest() {
     let pageLoadUrl = this.#account.dataPostURL
     let data = {}
     data = this.#request.addSystemDataToObject(data, undefined)
@@ -977,15 +1008,15 @@ export default class CleverTap {
     this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
   }
 
-  #isPingContinuous () {
+  #isPingContinuous() {
     return (typeof window.wzrk_d !== 'undefined' && window.wzrk_d.ping === 'continuous')
   }
 
-  _isPersonalisationActive () {
+  _isPersonalisationActive() {
     return StorageManager._isLocalStorageSupported() && this.enablePersonalization
   }
 
-  #overrideDSyncFlag (data) {
+  #overrideDSyncFlag(data) {
     if (this._isPersonalisationActive()) {
       data.dsync = true
     }
@@ -995,7 +1026,7 @@ export default class CleverTap {
   popupCurrentWzrkId = '';
 
   // eslint-disable-next-line accessor-pairs
-  set popupCallback (callback) {
+  set popupCallback(callback) {
     this.popupCallbacks[this.popupCurrentWzrkId] = callback
   }
 
@@ -1003,7 +1034,7 @@ export default class CleverTap {
    *
    * @param {object} payload
    */
-  #sendLocationData (payload) {
+  #sendLocationData(payload) {
     // Send the updated value to LC
     let data = {}
     data.af = {}
@@ -1039,7 +1070,7 @@ export default class CleverTap {
    * @param {boolean} arg
    */
 
-  setOffline (arg) {
+  setOffline(arg) {
     if (typeof arg !== 'boolean') {
       console.error('setOffline should be called with a value of type boolean')
       return
@@ -1052,7 +1083,7 @@ export default class CleverTap {
     $ct.offline = arg
   }
 
-  delayEvents (arg) {
+  delayEvents(arg) {
     if (typeof arg !== 'boolean') {
       console.error('delayEvents should be called with a value of type boolean')
       return
@@ -1060,19 +1091,19 @@ export default class CleverTap {
     $ct.delayEvents = arg
   }
 
-  getSDKVersion () {
+  getSDKVersion() {
     return 'web-sdk-v$$PACKAGE_VERSION$$'
   }
 
-  defineVariable (name, defaultValue) {
+  defineVariable(name, defaultValue) {
     return Variable.define(name, defaultValue, this.#variableStore, this.#logger)
   }
 
-  defineFileVariable (name) {
+  defineFileVariable(name) {
     return Variable.defineFileVar(name, this.#variableStore, this.#logger)
   }
 
-  syncVariables (onSyncSuccess, onSyncFailure) {
+  syncVariables(onSyncSuccess, onSyncFailure) {
     if (this.#logger.logLevel === 4) {
       return this.#variableStore.syncVariables(onSyncSuccess, onSyncFailure)
     } else {
@@ -1082,17 +1113,17 @@ export default class CleverTap {
     }
   }
 
-  fetchVariables (onFetchCallback) {
+  fetchVariables(onFetchCallback) {
     this.#variableStore.fetchVariables(onFetchCallback)
   }
 
-  getVariables () {
+  getVariables() {
     return reconstructNestedObject(
       StorageManager.readFromLSorCookie(VARIABLES)
     )
   }
 
-  getVariableValue (variableName) {
+  getVariableValue(variableName) {
     const variables = StorageManager.readFromLSorCookie(VARIABLES)
     const reconstructedVariables = reconstructNestedObject(variables)
     if (variables.hasOwnProperty(variableName)) {
@@ -1102,11 +1133,11 @@ export default class CleverTap {
     }
   }
 
-  addVariablesChangedCallback (callback) {
+  addVariablesChangedCallback(callback) {
     this.#variableStore.addVariablesChangedCallback(callback)
   }
 
-  addOneTimeVariablesChangedCallback (callback) {
+  addOneTimeVariablesChangedCallback(callback) {
     this.#variableStore.addOneTimeVariablesChangedCallback(callback)
   }
 
@@ -1114,8 +1145,12 @@ export default class CleverTap {
      This function is used for debugging and getting the details of all the campaigns
      that were qualified and rendered for the current user
   */
-  getAllQualifiedCampaignDetails () {
-    const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
-    return existingCampaign
+  getAllQualifiedCampaignDetails() {
+    try {
+      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
+      return existingCampaign
+    } catch (e) {
+      return null
+    }
   }
 }

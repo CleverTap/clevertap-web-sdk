@@ -1,8 +1,9 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.clevertap = factory());
-})(this, (function () { 'use strict';
+    typeof define === 'function' && define.amd ? define(factory) :
+      (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.clevertap = factory());
+})(this, (function () {
+  'use strict';
 
   var id = 0;
 
@@ -339,6 +340,48 @@
   const sanitize = (input, regex) => {
     return input.replace(regex, '');
   };
+  /**
+   * Safely parses JSON from potentially untrusted sources (like cookies)
+   *
+   * Protects against DOM-based JSON injection by pre-filtering malicious patterns
+   * identified in security scans (Burp Suite) before passing to JSON.parse().
+   *
+  */
+
+  const safeJSONParse = function (jsonString) {
+    let defaultValue = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+    // Validate input is a non-empty string
+    if (!jsonString || typeof jsonString !== 'string' || jsonString.trim() === '') {
+      return defaultValue;
+    }
+
+    const trimmed = jsonString.trim();
+    const maliciousPatterns = [// Block specific dangerous URL-encoded characters (not all % signs)
+      /%27/i, // URL-encoded single quote (') - used in SQL/JS injection
+      /%22/i, // URL-encoded double quote (") - used in string breaking
+      /%3C/i, // URL-encoded < - XSS/HTML injection attempts
+      /%3E/i, // URL-encoded > - XSS/HTML injection attempts
+      /%60/i, // URL-encoded backtick (`) - template literal injection
+      /</, // HTML/script tag start - XSS/injection attempts
+      />/, // HTML/script tag end - XSS/injection attempts
+      /`/ // Template literal/backtick injection
+    ]; // Check for any malicious pattern - reject BEFORE calling JSON.parse
+
+    for (const pattern of maliciousPatterns) {
+      if (pattern.test(trimmed)) {
+        return defaultValue; // Malicious pattern detected
+      }
+    } // Input passed pre-filter - attempt to parse with error handling
+
+
+    try {
+      return JSON.parse(trimmed);
+    } catch (e) {
+      // JSON.parse failed (malformed JSON) - return safe default
+      return defaultValue;
+    }
+  };
 
   const getToday = () => {
     const today = new Date();
@@ -369,13 +412,13 @@
 
   var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
-  var cryptoJs$1 = {exports: {}};
+  var cryptoJs$1 = { exports: {} };
 
   function commonjsRequire(path) {
-  	throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
+    throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
   }
 
-  var core$1 = {exports: {}};
+  var core$1 = { exports: {} };
 
   var core = core$1.exports;
   var hasRequiredCore;
@@ -428,7 +471,7 @@
           if (!crypto && typeof commonjsRequire === 'function') {
             try {
               crypto = require('crypto');
-            } catch (err) {}
+            } catch (err) { }
           }
           /*
            * Cryptographically secure pseudorandom number generator
@@ -443,14 +486,14 @@
               if (typeof crypto.getRandomValues === 'function') {
                 try {
                   return crypto.getRandomValues(new Uint32Array(1))[0];
-                } catch (err) {}
+                } catch (err) { }
               } // Use randomBytes method (NodeJS)
 
 
               if (typeof crypto.randomBytes === 'function') {
                 try {
                   return crypto.randomBytes(4).readInt32LE();
-                } catch (err) {}
+                } catch (err) { }
               }
             }
 
@@ -462,7 +505,7 @@
 
 
           var create = Object.create || function () {
-            function F() {}
+            function F() { }
 
             return function (obj) {
               var subtype;
@@ -559,7 +602,7 @@
                *         }
                *     });
                */
-              init: function () {},
+              init: function () { },
 
               /**
                * Copies properties into this object.
@@ -1165,7 +1208,7 @@
     return core$1.exports;
   }
 
-  var x64Core$1 = {exports: {}};
+  var x64Core$1 = { exports: {} };
 
   var x64Core = x64Core$1.exports;
   var hasRequiredX64Core;
@@ -1466,7 +1509,7 @@
     return x64Core$1.exports;
   }
 
-  var libTypedarrays$1 = {exports: {}};
+  var libTypedarrays$1 = { exports: {} };
 
   var libTypedarrays = libTypedarrays$1.exports;
   var hasRequiredLibTypedarrays;
@@ -1536,7 +1579,7 @@
     return libTypedarrays$1.exports;
   }
 
-  var encUtf16$1 = {exports: {}};
+  var encUtf16$1 = { exports: {} };
 
   var encUtf16 = encUtf16$1.exports;
   var hasRequiredEncUtf16;
@@ -1690,7 +1733,7 @@
     return encUtf16$1.exports;
   }
 
-  var encBase64$1 = {exports: {}};
+  var encBase64$1 = { exports: {} };
 
   var encBase64 = encBase64$1.exports;
   var hasRequiredEncBase64;
@@ -1833,7 +1876,7 @@
     return encBase64$1.exports;
   }
 
-  var encBase64url$1 = {exports: {}};
+  var encBase64url$1 = { exports: {} };
 
   var encBase64url = encBase64url$1.exports;
   var hasRequiredEncBase64url;
@@ -1989,7 +2032,7 @@
     return encBase64url$1.exports;
   }
 
-  var md5$1 = {exports: {}};
+  var md5$1 = { exports: {} };
 
   var md5 = md5$1.exports;
   var hasRequiredMd5;
@@ -2230,7 +2273,7 @@
     return md5$1.exports;
   }
 
-  var sha1$1 = {exports: {}};
+  var sha1$1 = { exports: {} };
 
   var sha1 = sha1$1.exports;
   var hasRequiredSha1;
@@ -2291,10 +2334,9 @@
                 } else if (i < 60) {
                   t += (b & c | b & d | c & d) - 0x70e44324;
                 } else
-                  /* if (i < 80) */
-                  {
-                    t += (b ^ c ^ d) - 0x359d3e2a;
-                  }
+                  /* if (i < 80) */ {
+                  t += (b ^ c ^ d) - 0x359d3e2a;
+                }
 
                 e = d;
                 d = c;
@@ -2374,7 +2416,7 @@
     return sha1$1.exports;
   }
 
-  var sha256$1 = {exports: {}};
+  var sha256$1 = { exports: {} };
 
   var sha256 = sha256$1.exports;
   var hasRequiredSha256;
@@ -2560,7 +2602,7 @@
     return sha256$1.exports;
   }
 
-  var sha224$1 = {exports: {}};
+  var sha224$1 = { exports: {} };
 
   var sha224 = sha224$1.exports;
   var hasRequiredSha224;
@@ -2640,7 +2682,7 @@
     return sha224$1.exports;
   }
 
-  var sha512$1 = {exports: {}};
+  var sha512$1 = { exports: {} };
 
   var sha512 = sha512$1.exports;
   var hasRequiredSha512;
@@ -2902,7 +2944,7 @@
     return sha512$1.exports;
   }
 
-  var sha384$1 = {exports: {}};
+  var sha384$1 = { exports: {} };
 
   var sha384 = sha384$1.exports;
   var hasRequiredSha384;
@@ -2983,7 +3025,7 @@
     return sha384$1.exports;
   }
 
-  var sha3$1 = {exports: {}};
+  var sha3$1 = { exports: {} };
 
   var sha3 = sha3$1.exports;
   var hasRequiredSha3;
@@ -3017,7 +3059,7 @@
           (function () {
             // Compute rho offset constants
             var x = 1,
-                y = 0;
+              y = 0;
 
             for (var t = 0; t < 24; t++) {
               RHO_OFFSETS[x + 5 * y] = (t + 1) * (t + 2) / 2 % 64;
@@ -3048,10 +3090,9 @@
                   if (bitPosition < 32) {
                     roundConstantLsw ^= 1 << bitPosition;
                   } else
-                    /* if (bitPosition >= 32) */
-                    {
-                      roundConstantMsw ^= 1 << bitPosition - 32;
-                    }
+                    /* if (bitPosition >= 32) */ {
+                    roundConstantMsw ^= 1 << bitPosition - 32;
+                  }
                 } // Compute next LFSR
 
 
@@ -3125,7 +3166,7 @@
                 for (var x = 0; x < 5; x++) {
                   // Mix column lanes
                   var tMsw = 0,
-                      tLsw = 0;
+                    tLsw = 0;
 
                   for (var y = 0; y < 5; y++) {
                     var lane = state[x + 5 * y];
@@ -3170,11 +3211,10 @@
                     tMsw = laneMsw << rhoOffset | laneLsw >>> 32 - rhoOffset;
                     tLsw = laneLsw << rhoOffset | laneMsw >>> 32 - rhoOffset;
                   } else
-                    /* if (rhoOffset >= 32) */
-                    {
-                      tMsw = laneLsw << rhoOffset - 32 | laneMsw >>> 64 - rhoOffset;
-                      tLsw = laneMsw << rhoOffset - 32 | laneLsw >>> 64 - rhoOffset;
-                    } // Transpose lanes
+                    /* if (rhoOffset >= 32) */ {
+                    tMsw = laneLsw << rhoOffset - 32 | laneMsw >>> 64 - rhoOffset;
+                    tLsw = laneMsw << rhoOffset - 32 | laneLsw >>> 64 - rhoOffset;
+                  } // Transpose lanes
 
 
                   var TPiLane = T[PI_INDEXES[laneIndex]];
@@ -3299,7 +3339,7 @@
     return sha3$1.exports;
   }
 
-  var ripemd160$1 = {exports: {}};
+  var ripemd160$1 = { exports: {} };
 
   var ripemd160 = ripemd160$1.exports;
   var hasRequiredRipemd160;
@@ -3318,10 +3358,10 @@
       })(ripemd160, function (CryptoJS) {
         /** @preserve
         (c) 2012 by Cédric Mesnil. All rights reserved.
-        	Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-        	    - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+          Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+              - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
             - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-        	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+          THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         */
         (function (Math) {
           // Shortcuts
@@ -3536,7 +3576,7 @@
     return ripemd160$1.exports;
   }
 
-  var hmac$1 = {exports: {}};
+  var hmac$1 = { exports: {} };
 
   var hmac = hmac$1.exports;
   var hasRequiredHmac;
@@ -3676,7 +3716,7 @@
     return hmac$1.exports;
   }
 
-  var pbkdf2$1 = {exports: {}};
+  var pbkdf2$1 = { exports: {} };
 
   var pbkdf2 = pbkdf2$1.exports;
   var hasRequiredPbkdf2;
@@ -3819,7 +3859,7 @@
     return pbkdf2$1.exports;
   }
 
-  var evpkdf$1 = {exports: {}};
+  var evpkdf$1 = { exports: {} };
 
   var evpkdf = evpkdf$1.exports;
   var hasRequiredEvpkdf;
@@ -3953,7 +3993,7 @@
     return evpkdf$1.exports;
   }
 
-  var cipherCore$1 = {exports: {}};
+  var cipherCore$1 = { exports: {} };
 
   var cipherCore = cipherCore$1.exports;
   var hasRequiredCipherCore;
@@ -4403,12 +4443,11 @@
               if (this._xformMode == this._ENC_XFORM_MODE) {
                 modeCreator = mode.createEncryptor;
               } else
-                /* if (this._xformMode == this._DEC_XFORM_MODE) */
-                {
-                  modeCreator = mode.createDecryptor; // Keep at least one block in the buffer for unpadding
+                /* if (this._xformMode == this._DEC_XFORM_MODE) */ {
+                modeCreator = mode.createDecryptor; // Keep at least one block in the buffer for unpadding
 
-                  this._minBufferSize = 1;
-                }
+                this._minBufferSize = 1;
+              }
 
               if (this._mode && this._mode.__creator == modeCreator) {
                 this._mode.init(this, iv && iv.words);
@@ -4431,13 +4470,12 @@
 
                 finalProcessedBlocks = this._process(!!'flush');
               } else
-                /* if (this._xformMode == this._DEC_XFORM_MODE) */
-                {
-                  // Process final blocks
-                  finalProcessedBlocks = this._process(!!'flush'); // Unpad data
+                /* if (this._xformMode == this._DEC_XFORM_MODE) */ {
+                // Process final blocks
+                finalProcessedBlocks = this._process(!!'flush'); // Unpad data
 
-                  padding.unpad(finalProcessedBlocks);
-                }
+                padding.unpad(finalProcessedBlocks);
+              }
 
               return finalProcessedBlocks;
             },
@@ -4815,7 +4853,7 @@
     return cipherCore$1.exports;
   }
 
-  var modeCfb$1 = {exports: {}};
+  var modeCfb$1 = { exports: {} };
 
   var modeCfb = modeCfb$1.exports;
   var hasRequiredModeCfb;
@@ -4890,7 +4928,7 @@
     return modeCfb$1.exports;
   }
 
-  var modeCtr$1 = {exports: {}};
+  var modeCtr$1 = { exports: {} };
 
   var modeCtr = modeCtr$1.exports;
   var hasRequiredModeCtr;
@@ -4947,7 +4985,7 @@
     return modeCtr$1.exports;
   }
 
-  var modeCtrGladman$1 = {exports: {}};
+  var modeCtrGladman$1 = { exports: {} };
 
   var modeCtrGladman = modeCtrGladman$1.exports;
   var hasRequiredModeCtrGladman;
@@ -4980,21 +5018,21 @@
               var b3 = word & 0xff;
 
               if (b1 === 0xff) // overflow b1
-                {
-                  b1 = 0;
+              {
+                b1 = 0;
 
-                  if (b2 === 0xff) {
-                    b2 = 0;
+                if (b2 === 0xff) {
+                  b2 = 0;
 
-                    if (b3 === 0xff) {
-                      b3 = 0;
-                    } else {
-                      ++b3;
-                    }
+                  if (b3 === 0xff) {
+                    b3 = 0;
                   } else {
-                    ++b2;
+                    ++b3;
                   }
                 } else {
+                  ++b2;
+                }
+              } else {
                 ++b1;
               }
 
@@ -5052,7 +5090,7 @@
     return modeCtrGladman$1.exports;
   }
 
-  var modeOfb$1 = {exports: {}};
+  var modeOfb$1 = { exports: {} };
 
   var modeOfb = modeOfb$1.exports;
   var hasRequiredModeOfb;
@@ -5106,7 +5144,7 @@
     return modeOfb$1.exports;
   }
 
-  var modeEcb$1 = {exports: {}};
+  var modeEcb$1 = { exports: {} };
 
   var modeEcb = modeEcb$1.exports;
   var hasRequiredModeEcb;
@@ -5148,7 +5186,7 @@
     return modeEcb$1.exports;
   }
 
-  var padAnsix923$1 = {exports: {}};
+  var padAnsix923$1 = { exports: {} };
 
   var padAnsix923 = padAnsix923$1.exports;
   var hasRequiredPadAnsix923;
@@ -5196,7 +5234,7 @@
     return padAnsix923$1.exports;
   }
 
-  var padIso10126$1 = {exports: {}};
+  var padIso10126$1 = { exports: {} };
 
   var padIso10126 = padIso10126$1.exports;
   var hasRequiredPadIso10126;
@@ -5239,7 +5277,7 @@
     return padIso10126$1.exports;
   }
 
-  var padIso97971$1 = {exports: {}};
+  var padIso97971$1 = { exports: {} };
 
   var padIso97971 = padIso97971$1.exports;
   var hasRequiredPadIso97971;
@@ -5280,7 +5318,7 @@
     return padIso97971$1.exports;
   }
 
-  var padZeropadding$1 = {exports: {}};
+  var padZeropadding$1 = { exports: {} };
 
   var padZeropadding = padZeropadding$1.exports;
   var hasRequiredPadZeropadding;
@@ -5329,7 +5367,7 @@
     return padZeropadding$1.exports;
   }
 
-  var padNopadding$1 = {exports: {}};
+  var padNopadding$1 = { exports: {} };
 
   var padNopadding = padNopadding$1.exports;
   var hasRequiredPadNopadding;
@@ -5350,8 +5388,8 @@
          * A noop padding strategy.
          */
         CryptoJS.pad.NoPadding = {
-          pad: function () {},
-          unpad: function () {}
+          pad: function () { },
+          unpad: function () { }
         };
         return CryptoJS.pad.NoPadding;
       });
@@ -5360,7 +5398,7 @@
     return padNopadding$1.exports;
   }
 
-  var formatHex$1 = {exports: {}};
+  var formatHex$1 = { exports: {} };
 
   var formatHex = formatHex$1.exports;
   var hasRequiredFormatHex;
@@ -5432,7 +5470,7 @@
     return formatHex$1.exports;
   }
 
-  var aes$1 = {exports: {}};
+  var aes$1 = { exports: {} };
 
   var aes = aes$1.exports;
   var hasRequiredAes;
@@ -5653,7 +5691,7 @@
     return aes$1.exports;
   }
 
-  var tripledes$1 = {exports: {}};
+  var tripledes$1 = { exports: {} };
 
   var tripledes = tripledes$1.exports;
   var hasRequiredTripledes;
@@ -6393,7 +6431,7 @@
     return tripledes$1.exports;
   }
 
-  var rc4$1 = {exports: {}};
+  var rc4$1 = { exports: {} };
 
   var rc4 = rc4$1.exports;
   var hasRequiredRc4;
@@ -6529,7 +6567,7 @@
     return rc4$1.exports;
   }
 
-  var rabbit$1 = {exports: {}};
+  var rabbit$1 = { exports: {} };
 
   var rabbit = rabbit$1.exports;
   var hasRequiredRabbit;
@@ -6696,7 +6734,7 @@
     return rabbit$1.exports;
   }
 
-  var rabbitLegacy$1 = {exports: {}};
+  var rabbitLegacy$1 = { exports: {} };
 
   var rabbitLegacy = rabbitLegacy$1.exports;
   var hasRequiredRabbitLegacy;
@@ -6862,7 +6900,7 @@
     return rabbitLegacy$1.exports;
   }
 
-  var blowfish$1 = {exports: {}};
+  var blowfish$1 = { exports: {} };
 
   var blowfish = blowfish$1.exports;
   var hasRequiredBlowfish;
@@ -7194,7 +7232,7 @@
           }
 
           data = JSON.parse(data);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       return data;
@@ -7252,7 +7290,11 @@
 
 
         if (c.indexOf(nameEQ) == 0) {
-          return decodeURIComponent(c.substring(nameEQ.length, c.length));
+          try {
+            return decodeURIComponent(c.substring(nameEQ.length, c.length));
+          } catch (e) {
+            return null;
+          }
         }
       }
 
@@ -7280,7 +7322,7 @@
         }
 
         $ct.globalCache[property] = value;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     static readFromLSorCookie(property) {
@@ -7311,12 +7353,43 @@
     }
 
     static createBroadCookie(name, value, seconds, domain) {
+      let domainSpecification = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
+
+      if (domainSpecification) {
+        const hostnameParts = window.location.hostname.split('.');
+        const level = domainSpecification;
+        let calculatedDomain = '';
+
+        if (level <= hostnameParts.length) {
+          const domainParts = hostnameParts.slice(-level);
+          calculatedDomain = '.' + domainParts.join('.');
+        } else {
+          // If level is greater than available parts, use the full hostname
+          calculatedDomain = '.' + window.location.hostname;
+        }
+
+        let cookieValue = value;
+
+        if (name === GCOOKIE_NAME && this.readCookie(name)) {
+          // remove duplicate cookies if they exist
+          // removing .bank.in because it is a protected domain
+          cookieValue = this.readCookie(name);
+          this.removeCookie(name, $ct.broadDomain);
+          this.removeCookie(name, calculatedDomain);
+          this.removeCookie(name, '.bank.in');
+        }
+
+        this.createCookie(name, cookieValue, seconds, calculatedDomain);
+        return;
+      }
       /* -------------------------------------------------------------
        * Sub-domain isolation: when the global flag is set, skip the
        * broad-domain logic and write a cookie scoped to the current
        * host only.  Also remove any legacy broad-domain copy so that
        * the host-level cookie has precedence.
        * ----------------------------------------------------------- */
+
+
       const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE);
 
       if (isolate) {
@@ -7670,13 +7743,16 @@
 
   var _session$3 = _classPrivateFieldLooseKey("session");
 
+  var _domainSpecification$3 = _classPrivateFieldLooseKey("domainSpecification");
+
   class CleverTapAPI {
     constructor(_ref) {
       let {
         logger,
         request,
         device,
-        session
+        session,
+        domainSpecification
       } = _ref;
       Object.defineProperty(this, _logger$a, {
         writable: true,
@@ -7694,10 +7770,23 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _domainSpecification$3, {
+        writable: true,
+        value: void 0
+      });
+      this.domainSpecification = domainSpecification;
       _classPrivateFieldLooseBase(this, _logger$a)[_logger$a] = logger;
       _classPrivateFieldLooseBase(this, _request$7)[_request$7] = request;
       _classPrivateFieldLooseBase(this, _device$3)[_device$3] = device;
       _classPrivateFieldLooseBase(this, _session$3)[_session$3] = session;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$3)[_domainSpecification$3] = domainSpecification;
     }
     /**
      *
@@ -7795,7 +7884,7 @@
           }
         }
 
-        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname);
+        StorageManager.createBroadCookie(GCOOKIE_NAME, global, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification);
         StorageManager.saveToLSorCookie(GCOOKIE_NAME, global);
       }
 
@@ -7831,19 +7920,35 @@
 
   var _logger$9 = _classPrivateFieldLooseKey("logger");
 
+  var _domainSpecification$2 = _classPrivateFieldLooseKey("domainSpecification");
+
   class DeviceManager {
     constructor(_ref) {
       let {
         logger,
-        customId
+        customId,
+        domainSpecification
       } = _ref;
       Object.defineProperty(this, _logger$9, {
         writable: true,
         value: void 0
       });
       this.gcookie = void 0;
+      Object.defineProperty(this, _domainSpecification$2, {
+        writable: true,
+        value: void 0
+      });
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = logger;
+      this.domainSpecification = domainSpecification;
       this.gcookie = this.getGuid() || customId;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$2)[_domainSpecification$2] = domainSpecification;
     }
 
     getGuid() {
@@ -7858,7 +7963,7 @@
 
         if (isValueValid(value)) {
           try {
-            guid = JSON.parse(decodeURIComponent(value));
+            guid = safeJSONParse(decodeURIComponent(value), null);
           } catch (e) {
             _classPrivateFieldLooseBase(this, _logger$9)[_logger$9].debug('Cannot parse Gcookie from localstorage - must be encoded ' + value); // assumming guids are of size 32. supporting both formats.
             // guid can have encodedURIComponent or be without it.
@@ -7876,7 +7981,7 @@
 
 
           if (isValueValid(guid)) {
-            StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname);
+            StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification);
           }
         }
       }
@@ -8157,21 +8262,21 @@
   const compress = uncompressed => {
     if (uncompressed == null) return '';
     let i,
-        value,
-        context_dictionary = {},
-        context_dictionaryToCreate = {},
-        context_c = '',
-        context_wc = '',
-        context_w = '',
-        context_enlargeIn = 2,
-        // Compensate for the first entry which should not count
-    context_dictSize = 3,
-        context_numBits = 2,
-        context_data_string = '',
-        context_data_val = 0,
-        context_data_position = 0,
-        ii,
-        f = String.fromCharCode;
+      value,
+      context_dictionary = {},
+      context_dictionaryToCreate = {},
+      context_c = '',
+      context_wc = '',
+      context_w = '',
+      context_enlargeIn = 2,
+      // Compensate for the first entry which should not count
+      context_dictSize = 3,
+      context_numBits = 2,
+      context_data_string = '',
+      context_data_val = 0,
+      context_data_position = 0,
+      ii,
+      f = String.fromCharCode;
 
     for (ii = 0; ii < uncompressed.length; ii += 1) {
       context_c = uncompressed.charAt(ii);
@@ -8447,7 +8552,7 @@
       if (i % 2 == 0) {
         chr1 = input.charCodeAt(i / 2) >> 8;
         chr2 = input.charCodeAt(i / 2) & 255;
-        if (i / 2 + 1 < input.length) chr3 = input.charCodeAt(i / 2 + 1) >> 8;else chr3 = NaN;
+        if (i / 2 + 1 < input.length) chr3 = input.charCodeAt(i / 2 + 1) >> 8; else chr3 = NaN;
       } else {
         chr1 = input.charCodeAt((i - 1) / 2) & 255;
 
@@ -9101,7 +9206,7 @@
 
           if (StorageManager.read(CAMP_COOKIE_G)) {
             const guidCampObj = JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G)));
-            const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+            const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
             if (guidCampObj[guid] && guidCampObj[guid][campType] && guidCampObj[guid][campType][staledata[idx]]) {
               delete guidCampObj[guid][campType][staledata[idx]];
@@ -9148,7 +9253,8 @@
     };
 
     if (targetingMsgJson.wzrk_pivot) {
-      data.evtData = { ...data.evtData,
+      data.evtData = {
+        ...data.evtData,
         wzrk_pivot: targetingMsgJson.wzrk_pivot
       };
     }
@@ -9480,7 +9586,8 @@
       }
 
       const updatedCamp = getCampaignObject();
-      saveCampaignObject({ ...updatedCamp,
+      saveCampaignObject({
+        ...updatedCamp,
         dnd: [...new Set([...(updatedCamp.dnd || []), ...dnd])],
         wp: {}
       });
@@ -9506,7 +9613,8 @@
       } // Safely update the object
 
 
-      campaignObj.wfc = { ...campaignObj.wfc,
+      campaignObj.wfc = {
+        ...campaignObj.wfc,
         [campaignId]: [...existingTimestamps, ...newTimestamps]
       };
       /* Or tc can also be used to assign once */
@@ -9572,7 +9680,8 @@
       const wp = (_getCampaignObject$wp = (_getCampaignObject2 = getCampaignObject()) === null || _getCampaignObject2 === void 0 ? void 0 : _getCampaignObject2.wp) !== null && _getCampaignObject$wp !== void 0 ? _getCampaignObject$wp : {};
       const wsc = (_getCampaignObject$ws = (_getCampaignObject3 = getCampaignObject()) === null || _getCampaignObject3 === void 0 ? void 0 : _getCampaignObject3.wsc) !== null && _getCampaignObject$ws !== void 0 ? _getCampaignObject$ws : 0;
       const wndsc = (_getCampaignObject$wn = (_getCampaignObject4 = getCampaignObject()) === null || _getCampaignObject4 === void 0 ? void 0 : _getCampaignObject4.wndsc) !== null && _getCampaignObject$wn !== void 0 ? _getCampaignObject$wn : 0;
-      campaignObj = { ...campaignObj,
+      campaignObj = {
+        ...campaignObj,
         woc,
         wndoc,
         wi,
@@ -9722,11 +9831,19 @@
 
     const campaignId = campaign.wzrk_id.split('_')[0];
     const dashboardUrl = "https://".concat(region, ".dashboard.clevertap.com/").concat(accountId, "/campaigns/campaign/").concat(campaignId, "/report/stats");
-    const enrichedCampaign = { ...campaign,
+    const enrichedCampaign = {
+      ...campaign,
       url: dashboardUrl
     };
     const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS);
-    const existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    let existingCampaigns = [];
+
+    try {
+      existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : [];
+    } catch (e) {
+      existingCampaigns = [];
+    }
+
     const isDuplicate = existingCampaigns.some(c => c.wzrk_id === campaign.wzrk_id);
 
     if (!isDuplicate) {
@@ -9743,8 +9860,12 @@
       let campObj = StorageManager.read(CAMP_COOKIE_NAME);
 
       if (campObj != null) {
-        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
-        finalcampObj = campObj;
+        try {
+          campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'));
+          finalcampObj = campObj;
+        } catch (e) {
+          finalcampObj = {};
+        }
       } else {
         finalcampObj = {};
       }
@@ -9755,7 +9876,8 @@
 
   const saveCampaignObject = campaignObj => {
     if (StorageManager._isLocalStorageSupported()) {
-      const newObj = { ...getCampaignObject(),
+      const newObj = {
+        ...getCampaignObject(),
         ...campaignObj
       };
       const campObj = JSON.stringify(newObj);
@@ -9836,7 +9958,7 @@
 
       if (isValueValid(guid)) {
         try {
-          guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+          guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
           const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {};
 
           if (guid && StorageManager._isLocalStorageSupported()) {
@@ -9879,11 +10001,13 @@
                 }
               }
 
-              finalCampObj = { ...finalCampObj,
+              finalCampObj = {
+                ...finalCampObj,
                 [key]: campKeyObj
               };
             });
-            finalCampObj = { ...finalCampObj,
+            finalCampObj = {
+              ...finalCampObj,
               wsc: campObj.wsc,
               wfc: campObj.wfc,
               woc: campObj.woc,
@@ -9905,7 +10029,7 @@
   };
   const getCampaignObjForLc = () => {
     // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
     let campObj = {};
 
     if (StorageManager._isLocalStorageSupported()) {
@@ -9914,8 +10038,17 @@
       let resultObj = {};
       campObj = getCampaignObject();
       const storageValue = StorageManager.read(CAMP_COOKIE_G);
-      const decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
-      const parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      let decodedValue = null;
+      let parsedValue = null;
+
+      try {
+        decodedValue = storageValue ? decodeURIComponent(storageValue) : null;
+        parsedValue = decodedValue ? JSON.parse(decodedValue) : null;
+      } catch (e) {
+        decodedValue = null;
+        parsedValue = null;
+      }
+
       const resultObjWI = !!guid && storageValue !== undefined && storageValue !== null && parsedValue && parsedValue[guid] && parsedValue[guid].wi ? Object.values(parsedValue[guid].wi) : [];
       const webPopupDeliveryPreferenceDeatils = {
         wsc: (_campObj$wsc = (_campObj = campObj) === null || _campObj === void 0 ? void 0 : _campObj.wsc) !== null && _campObj$wsc !== void 0 ? _campObj$wsc : 0,
@@ -11426,7 +11559,7 @@
 
       if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
+      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi);
     }
 
   }
@@ -12568,7 +12701,7 @@
       try {
         const ts = new Date().getTime();
         console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
@@ -12705,8 +12838,8 @@
         existingWrapper.remove();
         return false; // Continue with creation
       } else {
-          return true; // Stop execution
-        }
+        return true; // Stop execution
+      }
     }
 
     return false; // No existing wrapper, continue
@@ -13696,7 +13829,8 @@
                 msgId: e.target.campaignId,
                 pivotId: e.target.pivotId
               });
-              this.updateMessageInLS(e.target.id, { ...e.target.message,
+              this.updateMessageInLS(e.target.id, {
+                ...e.target.message,
                 viewed: 1
               });
               setTimeout(() => {
@@ -13880,27 +14014,36 @@
   };
 
   const getInboxMessages = () => {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    try {
+      const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
-    if (!isValueValid(guid)) {
+      if (!isValueValid(guid)) {
+        return {};
+      }
+
+      const messages = getAndMigrateInboxMessages(guid);
+      return messages.hasOwnProperty(guid) ? messages[guid] : {};
+    } catch (e) {
       return {};
     }
-
-    const messages = getAndMigrateInboxMessages(guid);
-    return messages.hasOwnProperty(guid) ? messages[guid] : {};
   };
   const saveInboxMessages = messages => {
-    const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)));
+    try {
+      const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null);
 
-    if (!isValueValid(guid)) {
-      return;
+      if (!isValueValid(guid)) {
+        return;
+      }
+
+      const storedInboxObj = getAndMigrateInboxMessages(guid);
+      const newObj = {
+        ...storedInboxObj,
+        [guid]: messages
+      };
+      StorageManager.saveToLSorCookie(WEBINBOX, newObj);
+    } catch (e) {
+      Logger.getInstance().error('Error saving inbox messages:', e.message);
     }
-
-    const storedInboxObj = getAndMigrateInboxMessages(guid);
-    const newObj = { ...storedInboxObj,
-      [guid]: messages
-    };
-    StorageManager.saveToLSorCookie(WEBINBOX, newObj);
   };
   const initializeWebInbox = logger => {
     return new Promise((resolve, reject) => {
@@ -14208,7 +14351,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.3.0';
+            const sdkVersion = '2.3.4';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -14455,7 +14598,7 @@
 
         try {
           retryElement = document.querySelector(selector.selector);
-        } catch (_) {}
+        } catch (_) { }
 
         if (retryElement) {
           raiseViewed();
@@ -14480,7 +14623,7 @@
 
           try {
             element = document.querySelector(s.selector);
-          } catch (_) {}
+          } catch (_) { }
 
           if (element) {
             raiseViewed();
@@ -14498,6 +14641,11 @@
         sibling
       } = findSiblingSelector(selector.selector);
       let count = 0;
+      $ct.intervalArray.forEach(interval => {
+        if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+          clearInterval(parseInt(interval.split('-')[1], 10));
+        }
+      });
       const intervalId = setInterval(() => {
         let element = null;
 
@@ -14510,6 +14658,7 @@
         }
 
         if (element) {
+          clearInterval(intervalId);
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = selector.values.initialHtml;
           const newElement = tempDiv.firstElementChild;
@@ -14519,17 +14668,15 @@
             element.setAttribute('ct-selector', sibling);
           }
 
-          const insertedElement = document.querySelector("[ct-selector=\"".concat(selector.selector, "\"]"));
           raiseViewed();
-          processElement(insertedElement, selector);
-          clearInterval(intervalId);
+          processElement(newElement, selector);
           checkAndApplyReorder(); // Check if we can apply reordering now
         } else if (++count >= 20) {
           logger.debug("No element present on DOM with selector '".concat(sibling, "'."));
           clearInterval(intervalId);
         }
       }, 500);
-      $ct.intervalArray.push(intervalId);
+      $ct.intervalArray.push("addNewEl-".concat(intervalId));
     };
 
     if (insertedElements.length > 0) {
@@ -15440,11 +15587,11 @@
         if (targetingMsgJson.display.wtarget_type === 3 && campObj.hasOwnProperty('wi')) {
           // Web inbox campaigns
           campTypeObj = campObj.wi;
-        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')) ; else {
+        } else if ((targetingMsgJson.display.wtarget_type === 0 || targetingMsgJson.display.wtarget_type === 1) && campObj.hasOwnProperty('wp')); else {
           campTypeObj = {};
         }
 
-        if (campObj.hasOwnProperty('global')) ; // Sets default global session limits if not specified
+        if (campObj.hasOwnProperty('global')); // Sets default global session limits if not specified
 
 
         if (targetingMsgJson[DISPLAY].wmc == null) {
@@ -15718,7 +15865,7 @@
 
         const onClickStr = 'parent.$WZRK_WR.closeIframe(' + campaignId + ",'" + divId + "');";
         const title = "<div class='wzrkPPwarp' style='color:" + textColor + ';background-color:' + bgColor + ";'>" + "<a href='javascript:void(0);' onclick=" + onClickStr + " class='wzrkClose' style='background-color:" + btnBg + ';color:' + btColor + "'>&times;</a>" + "<div id='contentDiv' class='wzrk'>" + "<table cellpadding='0' cellspacing='0' border='0'>" + // "<tr><td colspan='2'></td></tr>"+
-        '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
+          '<tr>' + imageTd + "<td style='vertical-align:top;'>" + "<div class='wzrkPPtitle' style='color:" + textColor + "'>" + titleText + '</div>';
         const body = "<div class='wzrkPPdscr' style='color:" + textColor + "'>" + descriptionText + '<div></td></tr></table></div>';
         html = css + title + body;
       }
@@ -15916,7 +16063,8 @@
             };
 
             if (targetingMsgJson.wzrk_pivot) {
-              eventData.evtData = { ...eventData.evtData,
+              eventData.evtData = {
+                ...eventData.evtData,
                 wzrk_pivot: notificationData.pivotId
               };
             } // Adds WZRK prefix key-value pairs to event data
@@ -15924,7 +16072,8 @@
 
             if (notificationData.msgCTkv) {
               for (var wzrkPrefixObj of notificationData.msgCTkv) {
-                eventData.evtData = { ...eventData.evtData,
+                eventData.evtData = {
+                  ...eventData.evtData,
                   ...wzrkPrefixObj
                 };
               }
@@ -16320,7 +16469,7 @@
         msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting);
         initializeWebInbox(logger).then(() => {
           this.handleInboxNotifications(msg);
-        }).catch(e => {});
+        }).catch(e => { });
       } else {
         this.handleInboxNotifications(msg);
       }
@@ -16482,13 +16631,21 @@
 
   var _isPersonalisationActive$1 = _classPrivateFieldLooseKey("isPersonalisationActive");
 
+  var _domainSpecification$1 = _classPrivateFieldLooseKey("domainSpecification");
+
+  var _resetSessionCampaignCounters = _classPrivateFieldLooseKey("resetSessionCampaignCounters");
+
   class SessionManager {
     // SCOOKIE_NAME
     constructor(_ref) {
       let {
         logger,
-        isPersonalisationActive
+        isPersonalisationActive,
+        domainSpecification
       } = _ref;
+      Object.defineProperty(this, _resetSessionCampaignCounters, {
+        value: _resetSessionCampaignCounters2
+      });
       Object.defineProperty(this, _logger$4, {
         writable: true,
         value: void 0
@@ -16503,6 +16660,11 @@
       });
       this.cookieName = void 0;
       this.scookieObj = void 0;
+      Object.defineProperty(this, _domainSpecification$1, {
+        writable: true,
+        value: void 0
+      });
+      this.domainSpecification = domainSpecification;
       this.sessionId = StorageManager.getMetaProp('cs');
       _classPrivateFieldLooseBase(this, _logger$4)[_logger$4] = logger;
       _classPrivateFieldLooseBase(this, _isPersonalisationActive$1)[_isPersonalisationActive$1] = isPersonalisationActive;
@@ -16516,30 +16678,43 @@
       _classPrivateFieldLooseBase(this, _sessionId)[_sessionId] = sessionId;
     }
 
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification$1)[_domainSpecification$1];
+    }
+
+    set domainSpecification(domainSpecification) {
+      _classPrivateFieldLooseBase(this, _domainSpecification$1)[_domainSpecification$1] = domainSpecification;
+    }
+
     getSessionCookieObject() {
       let scookieStr = StorageManager.readCookie(this.cookieName);
       let obj = {};
 
       if (scookieStr != null) {
-        // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
-        scookieStr = scookieStr.replace(singleQuoteRegex, '"');
-        obj = JSON.parse(scookieStr);
+        try {
+          // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
+          scookieStr = scookieStr.replace(singleQuoteRegex, '"'); // Use safe JSON parsing to prevent injection attacks
 
-        if (!isObject(obj)) {
-          obj = {};
-        } else {
-          if (typeof obj.t !== 'undefined') {
-            // check time elapsed since last request
-            const lastTime = obj.t;
-            const now = getNow();
+          obj = safeJSONParse(scookieStr, {});
 
-            if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
-              // adding 60 seconds to compensate for in-journey requests
-              // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
-              // hence we shouldn't use it.
-              obj = {};
+          if (!isObject(obj)) {
+            obj = {};
+          } else {
+            if (typeof obj.t !== 'undefined') {
+              // check time elapsed since last request
+              const lastTime = obj.t;
+              const now = getNow();
+
+              if (now - lastTime > SCOOKIE_EXP_TIME_IN_SECS + 60) {
+                // adding 60 seconds to compensate for in-journey requests
+                // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
+                // hence we shouldn't use it.
+                obj = {};
+              }
             }
           }
+        } catch (e) {
+          obj = {};
         }
       }
 
@@ -16549,7 +16724,7 @@
 
     setSessionCookieObject(obj) {
       const objStr = JSON.stringify(obj);
-      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName());
+      StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName(), this.domainSpecification);
     }
 
     manageSession(session) {
@@ -16572,7 +16747,9 @@
             sessionCount = 0;
           }
 
-          StorageManager.setMetaProp('sc', sessionCount + 1);
+          StorageManager.setMetaProp('sc', sessionCount + 1); // Reset session-based campaign counters on new session
+
+          _classPrivateFieldLooseBase(this, _resetSessionCampaignCounters)[_resetSessionCampaignCounters]();
         }
 
         this.sessionId = session;
@@ -16611,6 +16788,32 @@
     }
 
   }
+
+  var _resetSessionCampaignCounters2 = function _resetSessionCampaignCounters2() {
+    try {
+      const campaignObj = getCampaignObject();
+
+      if (campaignObj) {
+        // Reset Web Popup Show Count
+        if (typeof campaignObj.wsc !== 'undefined') {
+          campaignObj.wsc = 0;
+
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wsc (Web Popup Show Count) to 0 for new session');
+        } // Reset Web Native Display Show Count
+
+
+        if (typeof campaignObj.wndsc !== 'undefined') {
+          campaignObj.wndsc = 0;
+
+          _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].debug('Reset wndsc (Web Native Display Show Count) to 0 for new session');
+        }
+
+        saveCampaignObject(campaignObj);
+      }
+    } catch (error) {
+      _classPrivateFieldLooseBase(this, _logger$4)[_logger$4].error('Failed to reset session campaign counters: ' + error.message);
+    }
+  };
 
   let seqNo = 0;
   let requestTime = 0;
@@ -16711,7 +16914,8 @@
             _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug("Processing ".concat(isOULRequest ? 'OUL' : 'regular', " backup event : ").concat(backupEvent.q));
 
             if (typeof backupEvent.q !== 'undefined') {
-              const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id));
+              // Use safe JSON parsing to prevent injection attacks
+              const session = safeJSONParse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$3)[_account$3].id), null);
 
               if (session === null || session === void 0 ? void 0 : session.s) {
                 backupEvent.q = backupEvent.q + '&s=' + session.s;
@@ -16754,8 +16958,9 @@
 
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
-      dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.3.0',
+      dataObject.af = {
+        ...dataObject.af,
+        lib: 'web-sdk-v2.3.4',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17050,7 +17255,8 @@
 
   var _processPrivacyArray2 = function _processPrivacyArray2(privacyArr) {
     if (Array.isArray(privacyArr) && privacyArr.length > 0) {
-      const privacyObj = privacyArr.reduce((prev, curr) => ({ ...prev,
+      const privacyObj = privacyArr.reduce((prev, curr) => ({
+        ...prev,
         ...curr
       }), {});
       let data = {};
@@ -17602,6 +17808,8 @@
 
   var _enableEncryptionInTransit = _classPrivateFieldLooseKey("enableEncryptionInTransit");
 
+  var _domainSpecification = _classPrivateFieldLooseKey("domainSpecification");
+
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
   var _debounce = _classPrivateFieldLooseKey("debounce");
@@ -17666,6 +17874,18 @@
       _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = value; // propagate the setting to RequestDispatcher so util layer can honour it
 
       RequestDispatcher.enableEncryptionInTransit = value;
+    }
+
+    get domainSpecification() {
+      return _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification];
+    }
+
+    set domainSpecification(value) {
+      if (value && isFinite(value)) {
+        _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = Number(value);
+      } else {
+        _classPrivateFieldLooseBase(this, _domainSpecification)[_domainSpecification] = 0;
+      }
     }
 
     constructor() {
@@ -17757,12 +17977,17 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _domainSpecification, {
+        writable: true,
+        value: void 0
+      });
       this.popupCallbacks = {};
       this.popupCurrentWzrkId = '';
       _classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] = 0;
       this._isPersonalisationActive = this._isPersonalisationActive.bind(this);
+      this.domainSpecification = clevertap.domainSpecification || null;
 
-      this.raiseNotificationClicked = () => {};
+      this.raiseNotificationClicked = () => { };
 
       _classPrivateFieldLooseBase(this, _logger)[_logger] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account)[_account] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region || ((_clevertap$account2 = clevertap.account) === null || _clevertap$account2 === void 0 ? void 0 : _clevertap$account2[1]), clevertap.targetDomain || ((_clevertap$account3 = clevertap.account) === null || _clevertap$account3 === void 0 ? void 0 : _clevertap$account3[2]), clevertap.token || ((_clevertap$account4 = clevertap.account) === null || _clevertap$account4 === void 0 ? void 0 : _clevertap$account4[3]));
@@ -17776,7 +18001,8 @@
 
       _classPrivateFieldLooseBase(this, _device)[_device] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
-        customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null
+        customId: (result === null || result === void 0 ? void 0 : result.isValid) ? result === null || result === void 0 ? void 0 : result.sanitizedId : null,
+        domainSpecification: this.domainSpecification
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = (_clevertap$dismissSpa = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa !== void 0 ? _clevertap$dismissSpa : true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
@@ -17786,7 +18012,8 @@
       RequestDispatcher.enableEncryptionInTransit = _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit];
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
-        isPersonalisationActive: this._isPersonalisationActive
+        isPersonalisationActive: this._isPersonalisationActive,
+        domainSpecification: this.domainSpecification
       });
       _classPrivateFieldLooseBase(this, _request)[_request] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
@@ -17834,7 +18061,8 @@
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         request: _classPrivateFieldLooseBase(this, _request)[_request],
         device: _classPrivateFieldLooseBase(this, _device)[_device],
-        session: _classPrivateFieldLooseBase(this, _session)[_session]
+        session: _classPrivateFieldLooseBase(this, _session)[_session],
+        domainSpecification: this.domainSpecification
       });
       this.spa = clevertap.spa;
       this.dismissSpamControl = (_clevertap$dismissSpa2 = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa2 !== void 0 ? _clevertap$dismissSpa2 : true;
@@ -18118,13 +18346,15 @@
         };
 
         if (eventDetail.pivotId) {
-          data.evtData = { ...data.evtData,
+          data.evtData = {
+            ...data.evtData,
             wzrk_pivot: eventDetail.pivotId
           };
         }
 
         if (eventDetail.wzrk_slideNo) {
-          data.evtData = { ...data.evtData,
+          data.evtData = {
+            ...data.evtData,
             wzrk_slideNo: eventDetail.wzrk_slideNo
           };
         } // Adding kv pair to event data
@@ -18133,7 +18363,8 @@
         if (eventDetail.kv && eventDetail.kv !== null && eventDetail.kv !== undefined) {
           for (const key in eventDetail.kv) {
             if (key.startsWith(WZRK_PREFIX)) {
-              data.evtData = { ...data.evtData,
+              data.evtData = {
+                ...data.evtData,
                 [key]: eventDetail.kv[key]
               };
             }
@@ -18144,7 +18375,8 @@
         if (eventDetail.msgCTkv && eventDetail.msgCTkv !== null && eventDetail.msgCTkv !== undefined) {
           for (const key in eventDetail.msgCTkv) {
             if (key.startsWith(WZRK_PREFIX)) {
-              data.evtData = { ...data.evtData,
+              data.evtData = {
+                ...data.evtData,
                 [key]: eventDetail.msgCTkv[key]
               };
             }
@@ -18451,8 +18683,16 @@
       let config = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {
         antiFlicker: {},
         customId: null,
-        isolateSubdomain: false
+        isolateSubdomain: false,
+        domainSpecification: null
       };
+
+      if (config === null || config === void 0 ? void 0 : config.domainSpecification) {
+        this.domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _session)[_session].domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _device)[_device].domainSpecification = config.domainSpecification;
+        _classPrivateFieldLooseBase(this, _api)[_api].domainSpecification = config.domainSpecification;
+      }
 
       if ((config === null || config === void 0 ? void 0 : config.antiFlicker) && Object.keys(config === null || config === void 0 ? void 0 : config.antiFlicker).length > 0) {
         addAntiFlicker(config.antiFlicker);
@@ -18665,10 +18905,15 @@
     _handleVisualEditorPreview() {
       if ($ct.intervalArray.length) {
         $ct.intervalArray.forEach(interval => {
-          clearInterval(interval);
+          if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+            clearInterval(parseInt(interval.split('-')[1], 10));
+          } else {
+            clearInterval(interval);
+          }
         });
       }
 
+      $ct.intervalArray = [];
       const storedData = sessionStorage.getItem('visualEditorData');
       const targetJson = storedData ? JSON.parse(storedData) : null;
 
@@ -18723,7 +18968,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.3.0';
+      return 'web-sdk-v2.3.4';
     }
 
     defineVariable(name, defaultValue) {
@@ -18779,8 +19024,12 @@
 
 
     getAllQualifiedCampaignDetails() {
-      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
-      return existingCampaign;
+      try {
+        const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)));
+        return existingCampaign;
+      } catch (e) {
+        return null;
+      }
     }
 
   }
@@ -18909,7 +19158,8 @@
     }
 
     if ($ct.location) {
-      data.af = { ...data.af,
+      data.af = {
+        ...data.af,
         ...$ct.location
       };
     }

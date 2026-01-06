@@ -144,13 +144,13 @@ describe('clevertap.js', function () {
     test('should init with Custom CT ID when provided', () => {
       validateCustomCleverTapID.mockReturnValue({ isValid: true, sanitizedId: '_w_custom_ct_id' })
       this.clevertap = new Clevertap()
-      expect(DeviceManager).toHaveBeenCalledWith({ logger: new Logger(logLevels.INFO), customId: '_w_custom_ct_id' })
+      expect(DeviceManager).toHaveBeenCalledWith({ logger: new Logger(logLevels.INFO), customId: '_w_custom_ct_id', domainSpecification: 0 })
     })
 
     test('should init with Regular ID when Custom ID is invalid or Not provided', () => {
       validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null })
       this.clevertap = new Clevertap()
-      expect(DeviceManager).toHaveBeenCalledWith({ logger: new Logger(logLevels.INFO), customId: null })
+      expect(DeviceManager).toHaveBeenCalledWith({ logger: new Logger(logLevels.INFO), customId: null, domainSpecification: 0 })
     })
   })
 

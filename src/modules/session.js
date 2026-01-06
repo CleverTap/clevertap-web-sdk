@@ -1,8 +1,9 @@
 import { singleQuoteRegex, SCOOKIE_EXP_TIME_IN_SECS } from '../util/constants'
-import { isObject } from '../util/datatypes'
+import { isObject, safeJSONParse } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { StorageManager } from '../util/storage'
 import { getHostName } from '../util/url'
+import { getCampaignObject, saveCampaignObject } from '../util/clevertap'
 
 export default class SessionManager {
   #logger
@@ -10,11 +11,14 @@ export default class SessionManager {
   #isPersonalisationActive
   cookieName // SCOOKIE_NAME
   scookieObj
+  #domainSpecification
 
   constructor ({
     logger,
-    isPersonalisationActive
+    isPersonalisationActive,
+    domainSpecification
   }) {
+    this.domainSpecification = domainSpecification
     this.sessionId = StorageManager.getMetaProp('cs')
     this.#logger = logger
     this.#isPersonalisationActive = isPersonalisationActive
@@ -28,28 +32,41 @@ export default class SessionManager {
     this.#sessionId = sessionId
   }
 
+  get domainSpecification () {
+    return this.#domainSpecification
+  }
+
+  set domainSpecification (domainSpecification) {
+    this.#domainSpecification = domainSpecification
+  }
+
   getSessionCookieObject () {
     let scookieStr = StorageManager.readCookie(this.cookieName)
     let obj = {}
 
     if (scookieStr != null) {
-      // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
-      scookieStr = scookieStr.replace(singleQuoteRegex, '"')
+      try {
+        // converting back single quotes to double for JSON parsing - http://www.iandevlin.com/blog/2012/04/html5/cookies-json-localstorage-and-opera
+        scookieStr = scookieStr.replace(singleQuoteRegex, '"')
 
-      obj = JSON.parse(scookieStr)
-      if (!isObject(obj)) {
-        obj = {}
-      } else {
-        if (typeof obj.t !== 'undefined') { // check time elapsed since last request
-          const lastTime = obj.t
-          const now = getNow()
-          if ((now - lastTime) > (SCOOKIE_EXP_TIME_IN_SECS + 60)) {
-            // adding 60 seconds to compensate for in-journey requests
-            // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
-            // hence we shouldn't use it.
-            obj = {}
+        // Use safe JSON parsing to prevent injection attacks
+        obj = safeJSONParse(scookieStr, {})
+        if (!isObject(obj)) {
+          obj = {}
+        } else {
+          if (typeof obj.t !== 'undefined') { // check time elapsed since last request
+            const lastTime = obj.t
+            const now = getNow()
+            if ((now - lastTime) > (SCOOKIE_EXP_TIME_IN_SECS + 60)) {
+              // adding 60 seconds to compensate for in-journey requests
+              // ideally the cookie should've died after SCOOKIE_EXP_TIME_IN_SECS but it's still around as we can read
+              // hence we shouldn't use it.
+              obj = {}
+            }
           }
         }
+      } catch (e) {
+        obj = {}
       }
     }
     this.scookieObj = obj
@@ -58,7 +75,7 @@ export default class SessionManager {
 
   setSessionCookieObject (obj) {
     const objStr = JSON.stringify(obj)
-    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName())
+    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName(), this.domainSpecification)
   }
 
   manageSession (session) {
@@ -80,8 +97,34 @@ export default class SessionManager {
           sessionCount = 0
         }
         StorageManager.setMetaProp('sc', sessionCount + 1)
+
+        // Reset session-based campaign counters on new session
+        this.#resetSessionCampaignCounters()
       }
       this.sessionId = session
+    }
+  }
+
+  #resetSessionCampaignCounters () {
+    try {
+      const campaignObj = getCampaignObject()
+      if (campaignObj) {
+        // Reset Web Popup Show Count
+        if (typeof campaignObj.wsc !== 'undefined') {
+          campaignObj.wsc = 0
+          this.#logger.debug('Reset wsc (Web Popup Show Count) to 0 for new session')
+        }
+
+        // Reset Web Native Display Show Count
+        if (typeof campaignObj.wndsc !== 'undefined') {
+          campaignObj.wndsc = 0
+          this.#logger.debug('Reset wndsc (Web Native Display Show Count) to 0 for new session')
+        }
+
+        saveCampaignObject(campaignObj)
+      }
+    } catch (error) {
+      this.#logger.error('Failed to reset session campaign counters: ' + error.message)
     }
   }
 

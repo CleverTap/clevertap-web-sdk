@@ -91,7 +91,11 @@ export class StorageManager {
       }
       // eslint-disable-next-line eqeqeq
       if (c.indexOf(nameEQ) == 0) {
-        return decodeURIComponent(c.substring(nameEQ.length, c.length))
+        try {
+          return decodeURIComponent(c.substring(nameEQ.length, c.length))
+        } catch (e) {
+          return null
+        }
       }
     }
     return null
@@ -142,7 +146,30 @@ export class StorageManager {
     }
   }
 
-  static createBroadCookie (name, value, seconds, domain) {
+  static createBroadCookie (name, value, seconds, domain, domainSpecification = null) {
+    if (domainSpecification) {
+      const hostnameParts = window.location.hostname.split('.')
+      const level = domainSpecification
+      let calculatedDomain = ''
+      if (level <= hostnameParts.length) {
+        const domainParts = hostnameParts.slice(-level)
+        calculatedDomain = '.' + domainParts.join('.')
+      } else {
+        // If level is greater than available parts, use the full hostname
+        calculatedDomain = '.' + window.location.hostname
+      }
+      let cookieValue = value
+      if (name === GCOOKIE_NAME && this.readCookie(name)) {
+        // remove duplicate cookies if they exist
+        // removing .bank.in because it is a protected domain
+        cookieValue = this.readCookie(name)
+        this.removeCookie(name, $ct.broadDomain)
+        this.removeCookie(name, calculatedDomain)
+        this.removeCookie(name, '.bank.in')
+      }
+      this.createCookie(name, cookieValue, seconds, calculatedDomain)
+      return
+    }
     /* -------------------------------------------------------------
      * Sub-domain isolation: when the global flag is set, skip the
      * broad-domain logic and write a cookie scoped to the current
