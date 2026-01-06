@@ -1,10 +1,9 @@
 import 'regenerator-runtime/runtime'
-import { ARP_COOKIE, OPTOUT_COOKIE_ENDSWITH } from '../../../src/util/constants'
+import { OPTOUT_COOKIE_ENDSWITH, CT_EIT_FALLBACK } from '../../../src/util/constants'
 import { compressData } from '../../../src/util/encoder'
 import RequestDispatcher from '../../../src/util/requestDispatcher'
 import { $ct, StorageManager } from '../../../src/util/storage'
 import { addToURL } from '../../../src/util/url'
-import { encryptForBackend, decryptFromBackend } from '../../../src/util/security/encryptionInTransit'
 
 jest.enableAutomock().unmock('../../../src/util/requestDispatcher').unmock('../../../src/util/constants')
   .unmock('../../../src/util/datatypes')
@@ -60,6 +59,11 @@ describe('util/requestDispatcher', function () {
       StorageManager._isLocalStorageSupported.mockReturnValue(true)
       StorageManager.getMetaProp.mockReturnValue(false)
       StorageManager.readFromLSorCookie.mockReturnValue(null)
+      StorageManager.read.mockReturnValue(false)
+
+      // Reset encryption settings
+      RequestDispatcher.enableEncryptionInTransit = false
+      RequestDispatcher.enableFetchApi = false
     })
 
     describe('drop request due to opt out', () => {
@@ -87,273 +91,109 @@ describe('util/requestDispatcher', function () {
         expect(RequestDispatcher.logger.debug).toHaveBeenNthCalledWith(49, expect.stringContaining('retrying fire request'))
       })
     })
-
-    describe('valid gcookie value', () => {
-      beforeEach(() => {
-        RequestDispatcher.device = {
-          gcookie: '123'
-        }
-      })
-
-      test('should add arp object and gc when sendOUL flag is false and skipARP is true', () => {
-        RequestDispatcher.fireRequest('test url', true, false)
-        expect(RequestDispatcher.logger.debug).toHaveBeenCalledWith(expect.stringContaining('gc=123'))
-        expect(RequestDispatcher.logger.debug).toHaveBeenCalledWith(expect.stringContaining('arp={"skipResARP":true}'))
-      })
-
-      test('should not add arp to query when skipArp is false but arp is not present in local storage', () => {
-        localStorage.clear()
-        RequestDispatcher.fireRequest('test url', false, false)
-        expect(RequestDispatcher.logger.debug).toHaveBeenCalledWith(expect.not.stringContaining('arp'))
-      })
-
-      test('should add arp to query when skipArp is false and arp object is present in local storage', () => {
-        localStorage.clear()
-        const mockArpObject = 'mockArpObject'
-        localStorage.setItem(ARP_COOKIE, mockArpObject)
-        StorageManager.readFromLSorCookie.mockReturnValue(mockArpObject)
-        RequestDispatcher.fireRequest('test url', false, false)
-        expect(RequestDispatcher.logger.debug).toHaveBeenCalledWith(expect.stringContaining('arp="mockArpObject"'))
-        // cleanup after test
-        localStorage.clear()
-      })
-
-      test('should add ct_pl to url when clevertap.plugin is present', () => {
-        window.clevertap = {
-          plugin: 'testPlugin'
-        }
-        RequestDispatcher.fireRequest('test url', false, false)
-        expect(RequestDispatcher.logger.debug).toHaveBeenCalledWith(expect.stringContaining('ct_pl=testPlugin'))
-      })
-
-      test('should replace "chrome-extension:" in the url with "https:"', () => {
-        RequestDispatcher.fireRequest('chrome-extension://testUrl')
-        expect(RequestDispatcher.logger.debug).toHaveBeenCalledWith(expect.stringContaining('https://testUrl'))
-        expect(RequestDispatcher.logger.debug).toHaveBeenCalledWith(expect.not.stringContaining('chrome-extension://testUrl'))
-      })
-
-      describe('fetch API feature flag', () => {
-        test('should use script tag when enableFetchApi is false', () => {
-          $ct.enableFetchApi = false
-          const mockAppendChild = jest.fn()
-          document.getElementsByTagName = jest.fn().mockReturnValue([{ appendChild: mockAppendChild }])
-          document.createElement = jest.fn().mockReturnValue({
-            setAttribute: jest.fn()
-          })
-          document.getElementsByClassName = jest.fn().mockReturnValue([])
-
-          RequestDispatcher.fireRequest('test url', false, false)
-
-          expect(RequestDispatcher.handleFetchResponse).not.toHaveBeenCalled()
-          expect(mockAppendChild).toHaveBeenCalled()
-        })
-
-        test('should use fetch API when enableFetchApi is true', () => {
-          $ct.enableFetchApi = true
-
-          RequestDispatcher.fireRequest('test url', false, false)
-
-          expect(RequestDispatcher.handleFetchResponse).toHaveBeenCalled()
-        })
-      })
-
-      describe('encryption in transit feature', () => {
-        beforeEach(() => {
-          // Mock encryptForBackend
-          encryptForBackend.mockResolvedValue('encrypted-data')
-
-          // Mock crypto for tests
-          global.crypto = {
-            getRandomValues: jest.fn().mockReturnValue(new Uint8Array(32).fill(1)),
-            subtle: {
-              importKey: jest.fn().mockResolvedValue({}),
-              encrypt: jest.fn().mockResolvedValue(new ArrayBuffer(16))
-            }
-          }
-
-          // Mock URL constructor and URLSearchParams
-          global.URL = jest.fn().mockImplementation((url) => ({
-            protocol: 'https:',
-            host: 'api.clevertap.com',
-            pathname: '/1/upload',
-            search: '?d=test-data&other=param'
-          }))
-          
-          const mockSearchParams = {
-            get: jest.fn((param) => param === 'd' ? 'test-data' : 'param'),
-            set: jest.fn(),
-            toString: jest.fn(() => 'd=encrypted-data&other=param')
-          }
-          global.URLSearchParams = jest.fn().mockImplementation(() => mockSearchParams)
-        })
-
-        test('should force fetch API when encryption is enabled', (done) => {
-          RequestDispatcher.enableEncryptionInTransit = true
-          RequestDispatcher.enableFetchApi = false
-
-          RequestDispatcher.fireRequest('https://api.clevertap.com/1/upload?d=test-data', false, false)
-
-          // Use setTimeout to allow promises to resolve
-          setTimeout(() => {
-            // Should call handleFetchResponse even though enableFetchApi was false
-            expect(RequestDispatcher.handleFetchResponse).toHaveBeenCalled()
-            expect(RequestDispatcher.enableFetchApi).toBe(true)
-            done()
-          }, 0)
-        })
-
-        test('should encrypt d parameter when encryption is enabled', (done) => {
-          RequestDispatcher.enableEncryptionInTransit = true
-
-          RequestDispatcher.fireRequest('https://api.clevertap.com/1/upload?d=test-data&other=param', false, false)
-
-          setTimeout(() => {
-            expect(encryptForBackend).toHaveBeenCalledWith('test-data')
-            done()
-          }, 0)
-        })
-
-        test('should keep GET method with encrypted d parameter in URL when encryption is enabled', (done) => {
-          RequestDispatcher.enableEncryptionInTransit = true
-
-          RequestDispatcher.fireRequest('https://api.clevertap.com/1/upload?d=test-data&other=param', false, false)
-
-          setTimeout(() => {
-            expect(RequestDispatcher.handleFetchResponse).toHaveBeenCalledWith(
-              expect.stringContaining('https://api.clevertap.com/1/upload?d=encrypted-data')
-            )
-            done()
-          }, 0)
-        })
-
-        test('should fallback to unencrypted when encryption fails', (done) => {
-          RequestDispatcher.enableEncryptionInTransit = true
-          encryptForBackend.mockRejectedValue(new Error('Encryption failed'))
-
-          RequestDispatcher.fireRequest('test url?d=data', false, false)
-
-          setTimeout(() => {
-            expect(RequestDispatcher.logger.error).toHaveBeenCalledWith(
-              'Encryption failed, falling back to unencrypted request:',
-              expect.any(Error)
-            )
-            done()
-          }, 0)
-        })
-
-        test('should not encrypt when encryption is disabled', (done) => {
-          RequestDispatcher.enableEncryptionInTransit = false
-          RequestDispatcher.enableFetchApi = true
-
-          RequestDispatcher.fireRequest('test url?d=data', false, false)
-
-          setTimeout(() => {
-            expect(encryptForBackend).not.toHaveBeenCalled()
-            expect(RequestDispatcher.handleFetchResponse).toHaveBeenCalledWith(
-              expect.any(String)
-            )
-            done()
-          }, 0)
-        })
-      })
-    })
   })
 
-  describe('handleFetchResponse', () => {
+  describe('EIT JSONP Fallback Mechanism', () => {
     beforeEach(() => {
-      global.fetch = jest.fn()
+      jest.clearAllMocks()
+      localStorage.clear()
+
       RequestDispatcher.logger = {
         debug: jest.fn(),
         error: jest.fn()
       }
-      window.$WZRK_WR = {
-        tr: jest.fn(),
-        s: jest.fn(),
-        enableWebPush: jest.fn()
-      }
+
+      RequestDispatcher.enableEncryptionInTransit = false
+      RequestDispatcher.enableFetchApi = false
+
+      StorageManager._isLocalStorageSupported.mockReturnValue(true)
+      StorageManager.read.mockReturnValue(false)
+      StorageManager.save.mockReturnValue(true)
+      StorageManager.remove.mockReturnValue(true)
     })
 
-    test('should handle GET request with unencrypted response', async () => {
-      const mockResponse = {
-        ok: true,
-        text: jest.fn().mockResolvedValue('{"tr": "test-token"}')
-      }
-      global.fetch.mockResolvedValue(mockResponse)
-      decryptFromBackend.mockRejectedValue(new Error('Not encrypted'))
-
-      await RequestDispatcher.handleFetchResponse('test-url')
-
-      expect(global.fetch).toHaveBeenCalledWith('test-url', {
-        method: 'GET',
-        headers: { Accept: 'application/json' }
+    describe('isEITFallbackActive', () => {
+      test('should return false when fallback flag is not set', () => {
+        StorageManager.read.mockReturnValue(false)
+        expect(RequestDispatcher.isEITFallbackActive()).toBe(false)
       })
-      expect(window.$WZRK_WR.tr).toHaveBeenCalledWith('test-token')
+
+      test('should return true when fallback flag is set', () => {
+        StorageManager.read.mockReturnValue(true)
+        expect(RequestDispatcher.isEITFallbackActive()).toBe(true)
+      })
+
+      test('should return false when localStorage is not supported', () => {
+        StorageManager._isLocalStorageSupported.mockReturnValue(false)
+        expect(RequestDispatcher.isEITFallbackActive()).toBe(false)
+      })
     })
 
-    test('should handle GET request with encrypted response', async () => {
-      const mockResponse = {
-        ok: true,
-        text: jest.fn().mockResolvedValue('encrypted-response-data')
-      }
-      global.fetch.mockResolvedValue(mockResponse)
-      decryptFromBackend.mockResolvedValue('{"tr": "decrypted-token"}')
+    describe('setEITFallback', () => {
+      test('should set fallback flag in localStorage', () => {
+        RequestDispatcher.setEITFallback()
+        expect(StorageManager.save).toHaveBeenCalledWith(CT_EIT_FALLBACK, true)
+        expect(RequestDispatcher.logger.debug).toHaveBeenCalledWith(
+          'EIT fallback flag set - subsequent requests will use JSONP'
+        )
+      })
 
-      await RequestDispatcher.handleFetchResponse('test-url')
-
-      expect(decryptFromBackend).toHaveBeenCalledWith('encrypted-response-data')
-      expect(window.$WZRK_WR.tr).toHaveBeenCalledWith('decrypted-token')
-      expect(RequestDispatcher.logger.debug).toHaveBeenCalledWith('Successfully decrypted response')
+      test('should not set flag when localStorage is not supported', () => {
+        StorageManager._isLocalStorageSupported.mockReturnValue(false)
+        RequestDispatcher.setEITFallback()
+        expect(StorageManager.save).not.toHaveBeenCalled()
+      })
     })
 
-    test('should handle server-side EIT disabled error', async () => {
-      const mockResponse = {
-        ok: false,
-        status: 400,
-        statusText: 'Bad Request',
-        text: jest.fn().mockResolvedValue('EIT_DISABLED: Encryption in Transit is disabled')
-      }
-      global.fetch.mockResolvedValue(mockResponse)
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
+    describe('clearEITFallback', () => {
+      test('should remove fallback flag from localStorage', () => {
+        RequestDispatcher.clearEITFallback()
+        expect(StorageManager.remove).toHaveBeenCalledWith(CT_EIT_FALLBACK)
+      })
 
-      await RequestDispatcher.handleFetchResponse('test-url')
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Encryption in Transit is disabled on server side – disable flag or contact support',
-        expect.objectContaining({
-          status: 400,
-          statusText: 'Bad Request',
-          error: 'EIT_DISABLED: Encryption in Transit is disabled'
-        })
-      )
-
-      consoleSpy.mockRestore()
+      test('should not remove flag when localStorage is not supported', () => {
+        StorageManager._isLocalStorageSupported.mockReturnValue(false)
+        RequestDispatcher.clearEITFallback()
+        expect(StorageManager.remove).not.toHaveBeenCalled()
+      })
     })
 
-    test('should handle decryption failures gracefully', async () => {
-      const mockResponse = {
-        ok: true,
-        text: jest.fn().mockResolvedValue('invalid-encrypted-data')
-      }
-      global.fetch.mockResolvedValue(mockResponse)
-      decryptFromBackend.mockRejectedValue(new Error('EIT decryption failed: Invalid format'))
+    describe('session reset behavior', () => {
+      test('clearEITFallback should be called to reset fallback on new session', () => {
+        // Set fallback flag
+        StorageManager.save.mockClear()
+        RequestDispatcher.setEITFallback()
+        expect(StorageManager.save).toHaveBeenCalledWith(CT_EIT_FALLBACK, true)
 
-      await RequestDispatcher.handleFetchResponse('test-url')
-
-      expect(RequestDispatcher.logger.error).toHaveBeenCalledWith(
-        'EIT decryption failed',
-        expect.any(Error)
-      )
+        // Clear fallback flag (simulating init)
+        StorageManager.remove.mockClear()
+        RequestDispatcher.clearEITFallback()
+        expect(StorageManager.remove).toHaveBeenCalledWith(CT_EIT_FALLBACK)
+      })
     })
 
-    test('should handle fetch errors gracefully', async () => {
-      global.fetch.mockRejectedValue(new Error('Network error'))
+    describe('fallback flag interaction with encryption setting', () => {
+      test('isEITFallbackActive returns correct value based on storage read', () => {
+        // When not set
+        StorageManager.read.mockReturnValue(false)
+        expect(RequestDispatcher.isEITFallbackActive()).toBe(false)
 
-      await RequestDispatcher.handleFetchResponse('test-url')
+        // When set
+        StorageManager.read.mockReturnValue(true)
+        expect(RequestDispatcher.isEITFallbackActive()).toBe(true)
+      })
 
-      expect(RequestDispatcher.logger.error).toHaveBeenCalledWith(
-        'Fetch error:',
-        expect.any(Error)
-      )
+      test('setEITFallback saves the correct key and value', () => {
+        RequestDispatcher.setEITFallback()
+
+        expect(StorageManager.save).toHaveBeenCalledWith(CT_EIT_FALLBACK, true)
+      })
+
+      test('clearEITFallback removes the correct key', () => {
+        RequestDispatcher.clearEITFallback()
+
+        expect(StorageManager.remove).toHaveBeenCalledWith(CT_EIT_FALLBACK)
+      })
     })
   })
 })

@@ -1,5 +1,5 @@
 
-import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY, MAX_DELAY_FREQUENCY, PUSH_DELAY_MS, WZRK_FETCH } from './constants'
+import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY, MAX_DELAY_FREQUENCY, PUSH_DELAY_MS, WZRK_FETCH, CT_EIT_FALLBACK } from './constants'
 import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
 import { StorageManager, $ct } from './storage'
@@ -26,13 +26,73 @@ export default class RequestDispatcher {
   minDelayFrequency = 0
 
   /**
+   * Checks if the EIT fallback flag is set in local storage.
+   * When set, the SDK should bypass encryption and use JSONP for the session.
+   * @returns {boolean} - true if fallback is active
+   */
+  static isEITFallbackActive () {
+    if (!StorageManager._isLocalStorageSupported()) {
+      return false
+    }
+    return StorageManager.read(CT_EIT_FALLBACK) === true
+  }
+
+  /**
+   * Sets the EIT fallback flag in local storage.
+   * This will cause the SDK to bypass encryption and use JSONP for the session.
+   */
+  static setEITFallback () {
+    if (StorageManager._isLocalStorageSupported()) {
+      StorageManager.save(CT_EIT_FALLBACK, true)
+      this.logger.debug('EIT fallback flag set - subsequent requests will use JSONP')
+    }
+  }
+
+  /**
+   * Clears the EIT fallback flag from local storage.
+   * Called during clevertap.init() to reset for new session.
+   */
+  static clearEITFallback () {
+    if (StorageManager._isLocalStorageSupported()) {
+      StorageManager.remove(CT_EIT_FALLBACK)
+    }
+  }
+
+  /**
+   * Retries a request via JSONP (script tag injection).
+   * Used when EIT is rejected by the backend.
+   * @param {string} url - The URL to send via JSONP
+   */
+  static #retryViaJSONP (url) {
+    // Clean up any existing callback scripts
+    var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
+    while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+      ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
+    }
+
+    // Create and inject script tag for JSONP
+    const s = document.createElement('script')
+    s.setAttribute('type', 'text/javascript')
+    s.setAttribute('src', url)
+    s.setAttribute('class', 'ct-jp-cb')
+    s.setAttribute('rel', 'nofollow')
+    s.async = true
+    document.getElementsByTagName('head')[0].appendChild(s)
+    this.logger.debug('EIT fallback: req snt via JSONP -> url: ' + url)
+  }
+
+  /**
    * Encrypts the 'd' parameter value if encryption is enabled
    * @param {string} url - The URL containing query parameters
-   * @returns {Promise<{url: string, body?: string, method: string}>} - Modified URL with encrypted 'd' parameter
+   * @returns {Promise<{url: string, body?: string, method: string, useFallback?: boolean}>} - Modified URL with encrypted 'd' parameter
    */
   static #prepareEncryptedRequest (url) {
-    if (!this.enableEncryptionInTransit) {
-      return Promise.resolve({ url, method: 'GET' })
+    // Check if encryption is disabled or fallback is active
+    if (!this.enableEncryptionInTransit || this.isEITFallbackActive()) {
+      if (this.isEITFallbackActive() && this.enableEncryptionInTransit) {
+        this.logger.debug('EIT fallback active - bypassing encryption for this session')
+      }
+      return Promise.resolve({ url, method: 'GET', useFallback: this.isEITFallbackActive() })
     }
 
     // Force Fetch API when encryption is enabled
@@ -151,8 +211,10 @@ export default class RequestDispatcher {
         }
 
         // Use the static flag instead of the global $ct map
-        // When encryption is enabled, always use Fetch API
-        if (!this.enableFetchApi && !this.enableEncryptionInTransit) {
+        // When encryption is enabled (and not in fallback mode), always use Fetch API
+        // If fallback is active, use JSONP regardless of encryption setting
+        const shouldUseJSONP = (!this.enableFetchApi && !this.enableEncryptionInTransit) || requestConfig.useFallback
+        if (shouldUseJSONP) {
           const s = document.createElement('script')
           s.setAttribute('type', 'text/javascript')
           s.setAttribute('src', requestConfig.url)
@@ -222,11 +284,16 @@ export default class RequestDispatcher {
         if (!response.ok) {
           // Handle 419: Encryption not enabled for account
           if (response.status === 419) {
-            this.logger.error('Encryption not enabled for account')
-            // Retry with the original unencrypted URL
+            this.logger.error('Encryption in Transit is disabled on server side')
+
+            // Set the fallback flag for this session
+            this.setEITFallback()
+
+            // Retry with JSONP using the original unencrypted URL
             if (originalUrl && originalUrl !== encryptedUrl) {
-              this.logger.debug('Retrying request without encryption')
-              return this.handleFetchResponse(originalUrl, originalUrl)
+              this.logger.debug('Retrying request via JSONP without encryption')
+              this.#retryViaJSONP(originalUrl)
+              return null // Signal that we've handled this via JSONP
             }
             throw new Error(`Encryption not enabled for account: ${response.statusText}`)
           }
@@ -248,8 +315,8 @@ export default class RequestDispatcher {
         return response.text()
       })
       .then((rawResponse) => {
-        // Skip processing if this is a retry response that will be handled recursively
-        if (rawResponse instanceof Promise) {
+        // Skip processing if this is a JSONP fallback (null response) or a retry promise
+        if (rawResponse === null || rawResponse instanceof Promise) {
           return rawResponse
         }
 

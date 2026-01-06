@@ -1,5 +1,10 @@
-import { encryptForBackend, decryptFromBackend } from '../../../../src/util/security/encryptionInTransit'
+import 'regenerator-runtime/runtime'
+import encryptionInTransitInstance from '../../../../src/util/security/encryptionInTransit'
 import { decompressFromBase64 } from '../../../../src/util/encoder'
+
+// Extract methods from singleton for convenience
+const encryptForBackend = encryptionInTransitInstance.encryptForBackend.bind(encryptionInTransitInstance)
+const decryptFromBackend = encryptionInTransitInstance.decryptFromBackend.bind(encryptionInTransitInstance)
 
 describe('util/security/encryptionInTransit', () => {
   // Mock crypto.subtle for Node.js testing environment
