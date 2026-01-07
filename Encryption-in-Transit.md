@@ -105,7 +105,7 @@ With outbound encryption in place, the SDK must also handle **encrypted response
 |---|-----------|------------------------|
 | 0 | **Backend sends encrypted payload** while `enableEncryptionInTransit === true` | • Decrypt using `decryptFromBackend`.<br/>• Continue normal handling.<br/>• Outbound requests **remain encrypted** as per flag. |
 | 1 | **Backend sends encrypted payload** while `enableEncryptionInTransit === false` | • Attempt to decrypt using `decryptFromBackend` (best-effort).<br/>• Continue normal processing on success.<br/>• Outbound requests **remain unencrypted**. |
-| 2 | **SDK sends encrypted payload** but backend encryption **disabled / mis-configured** | • Backend returns an error code (e.g. `400 EIT_DISABLED`).<br/>• SDK logs **`console.error("Encryption in Transit is disabled on server side")`**.<br/>• SDK **retries the same request** using JSONP (plain-text, unencrypted).<br/>• SDK sets a **session-level fallback flag** in local storage.<br/>• All subsequent requests in this session use JSONP without encryption.<br/>• Flag resets on next `clevertap.init()` call. |
+| 2 | **SDK sends encrypted payload** but backend encryption **disabled / mis-configured** | • Backend returns an error code (`402 Payment Required` or `419`).<br/>• SDK logs **`console.error("Encryption in Transit is disabled on server side")`**.<br/>• SDK **retries the same request** using JSONP (plain-text, unencrypted).<br/>• SDK sets a **session-level fallback flag** in local storage.<br/>• All subsequent requests in this session use JSONP without encryption.<br/>• Flag resets on next `clevertap.init()` call. |
 | 3 | **Decryption failures** (corrupted data, wrong key/IV, malformed envelope) | • Catch and log via `Logger.error("EIT decryption failed", err)`.<br/>• Surface a `clevertap.onError` callback (TBD) so integrators can react.<br/>• Safely ignore the response payload and proceed without applying server changes. |
 
 ### 2. Decryption Utility
@@ -160,8 +160,8 @@ sequenceDiagram
   else Encryption enabled, no fallback
     RequestDispatcher->>RequestDispatcher: encryptForBackend()
     RequestDispatcher->>Backend: Fetch POST (cipher envelope)
-    alt Backend returns EIT_DISABLED error
-      Backend-->>RequestDispatcher: 400 EIT_DISABLED
+    alt Backend returns EIT disabled error (402 or 419)
+      Backend-->>RequestDispatcher: 402/419 EIT_DISABLED
       RequestDispatcher->>RequestDispatcher: Log error to console
       RequestDispatcher->>LocalStorage: Set session fallback flag
       RequestDispatcher->>Backend: Retry via JSONP (plain-text)
@@ -187,7 +187,7 @@ sequenceDiagram
 
 1. **User enables encryption** via `clevertap.enableEncryptionInTransit(true)`.
 2. **SDK encrypts payload** and sends via Fetch API.
-3. **Backend responds with error** (e.g. `400 EIT_DISABLED` or similar).
+3. **Backend responds with error** (`402 Payment Required` or `419`).
 4. **SDK logs error** – `console.error("Encryption in Transit is disabled on server side")`.
 5. **SDK retries immediately** – the same request is resent using **JSONP** with **no encryption**.
 6. **SDK sets fallback flag** in local storage (`CT_EIT_FALLBACK = true`).

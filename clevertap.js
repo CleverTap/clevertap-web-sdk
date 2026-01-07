@@ -8875,8 +8875,8 @@
       };
       fetch(encryptedUrl, fetchOptions).then(response => {
         if (!response.ok) {
-          // Handle 419: Encryption not enabled for account
-          if (response.status === 419) {
+          // Handle 402 (Payment Required) or 419: Encryption not enabled for account
+          if (response.status === 402 || response.status === 419) {
             this.logger.error('Encryption in Transit is disabled on server side'); // Set the fallback flag for this session
 
             this.setEITFallback(); // Retry with JSONP using the original unencrypted URL
