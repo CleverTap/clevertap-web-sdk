@@ -10882,7 +10882,7 @@
     }
     /**
      *
-     * @param {any} key
+     * @param {any} key - the property name. Can be a simple key or nested path like "Trip[0].Emergency Contacts[0].Tags"
      * @param {array} arrayVal
      * @param {string} command
      * overwrites/sets new value(s) against a key/property in profile object
@@ -10890,6 +10890,13 @@
 
 
     _handleMultiValueSet(key, arrayVal, command) {
+      if ($ct.globalProfileMap == null) {
+        var _StorageManager$readF;
+
+        $ct.globalProfileMap = (_StorageManager$readF = StorageManager.readFromLSorCookie(PR_COOKIE)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : {};
+      } // Build the normalized array
+
+
       const array = [];
 
       for (let i = 0; i < arrayVal.length; i++) {
@@ -10897,24 +10904,68 @@
           array.push(arrayVal[i]);
         } else if (typeof arrayVal[i] === 'string' && !array.includes(arrayVal[i].toLowerCase())) {
           array.push(arrayVal[i].toLowerCase());
-        } else {
-          console.error('array supports only string or number type values');
+        } else if (typeof arrayVal[i] !== 'number' && typeof arrayVal[i] !== 'string') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Array supports only string or number type values');
         }
       }
 
-      if ($ct.globalProfileMap == null) {
-        var _StorageManager$readF;
+      const isNestedPath = key.includes('.') || key.includes('[');
 
-        $ct.globalProfileMap = (_StorageManager$readF = StorageManager.readFromLSorCookie(PR_COOKIE)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : {};
+      if (isNestedPath) {
+        const segments = parseNestedPath(key);
+
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
+
+          return;
+        } // Get the last segment (the property we want to set)
+
+
+        const lastSegment = segments[segments.length - 1];
+
+        if (lastSegment.type !== 'key') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('The last segment of the path must be a property key, not an array index.');
+
+          return;
+        } // Get parent path segments (all except last)
+
+
+        const parentSegments = segments.slice(0, -1); // Navigate to the parent object
+
+        let parentObj;
+
+        if (parentSegments.length === 0) {
+          parentObj = $ct.globalProfileMap;
+        } else {
+          parentObj = getNestedValue($ct.globalProfileMap, parentSegments);
+
+          if (parentObj === undefined || parentObj === null) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not exist in profile. Please create the profile structure first.');
+
+            return;
+          }
+
+          if (typeof parentObj !== 'object' || Array.isArray(parentObj)) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not point to an object.');
+
+            return;
+          }
+        } // Set the array at the target key
+
+
+        parentObj[lastSegment.value] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(key, arrayVal, command, true);
+      } else {
+        // Simple key handling (existing logic)
+        $ct.globalProfileMap[key] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(key, arrayVal, command, false);
       }
-
-      $ct.globalProfileMap[key] = array;
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(key, arrayVal, command);
     }
     /**
      *
-     * @param {any} propKey - the property name to be added in the profile object
+     * @param {any} propKey - the property name to be added in the profile object. Can be a simple key or nested path like "Trip[0].Emergency Contacts[0].Greet"
      * @param {string, number, array} propVal - the property value to be added against the @propkey key
      * @param {string} command
      * Adds array or single value against a key/property in profile object
@@ -10926,40 +10977,108 @@
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
       }
 
-      const existingValue = $ct.globalProfileMap[propKey];
-      const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : [];
+      const isNestedPath = propKey.includes('.') || propKey.includes('['); // Helper to normalize and add values to array
 
-      const addValue = value => {
+      const addValue = (array, value) => {
         const normalizedValue = typeof value === 'number' ? value : value.toLowerCase();
 
         if (!array.includes(normalizedValue)) {
           array.push(normalizedValue);
         }
+      }; // Helper to process propVal and add to array
+
+
+      const processAndAddValues = array => {
+        if (Array.isArray(propVal)) {
+          propVal.forEach(value => {
+            if (typeof value === 'string' || typeof value === 'number') {
+              addValue(array, value);
+            } else {
+              _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Array supports only string or number type values');
+            }
+          });
+        } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+          addValue(array, propVal);
+        } else {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported value type');
+
+          return false;
+        }
+
+        return true;
       };
 
-      if (Array.isArray(propVal)) {
-        propVal.forEach(value => {
-          if (typeof value === 'string' || typeof value === 'number') {
-            addValue(value);
-          } else {
-            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Array supports only string or number type values');
+      if (isNestedPath) {
+        const segments = parseNestedPath(propKey);
+
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
+
+          return;
+        } // Get the last segment (the property we want to add to)
+
+
+        const lastSegment = segments[segments.length - 1];
+
+        if (lastSegment.type !== 'key') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('The last segment of the path must be a property key, not an array index.');
+
+          return;
+        } // Get parent path segments (all except last)
+
+
+        const parentSegments = segments.slice(0, -1); // Navigate to the parent object
+
+        let parentObj;
+
+        if (parentSegments.length === 0) {
+          parentObj = $ct.globalProfileMap;
+        } else {
+          parentObj = getNestedValue($ct.globalProfileMap, parentSegments);
+
+          if (parentObj === undefined || parentObj === null) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not exist in profile. Please create the profile structure first.');
+
+            return;
           }
-        });
-      } else if (typeof propVal === 'string' || typeof propVal === 'number') {
-        addValue(propVal);
+
+          if (typeof parentObj !== 'object' || Array.isArray(parentObj)) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not point to an object.');
+
+            return;
+          }
+        } // Get or create array at the target key
+
+
+        const targetKey = lastSegment.value;
+        const existingValue = parentObj[targetKey];
+        const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : []; // Add values to array
+
+        if (!processAndAddValues(array)) {
+          return;
+        } // Set the array back
+
+
+        parentObj[targetKey] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command, true);
       } else {
-        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported value type');
+        // Simple key handling (existing logic)
+        const existingValue = $ct.globalProfileMap[propKey];
+        const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : []; // Add values to array
 
-        return;
+        if (!processAndAddValues(array)) {
+          return;
+        }
+
+        $ct.globalProfileMap[propKey] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command, false);
       }
-
-      $ct.globalProfileMap[propKey] = array;
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(propKey, propVal, command);
     }
     /**
      *
-     * @param {any} propKey
+     * @param {any} propKey - the property name. Can be a simple key or nested path like "Trip[0].Emergency Contacts[0].Tags"
      * @param {string, number, array} propVal
      * @param {string} command
      * removes value(s) against a key/property in profile object
@@ -10971,37 +11090,125 @@
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
       }
 
-      if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
-        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
+      const isNestedPath = propKey.includes('.') || propKey.includes('[');
 
-        return;
-      }
+      if (isNestedPath) {
+        const segments = parseNestedPath(propKey);
 
-      const removeValue = value => {
-        const index = $ct.globalProfileMap[propKey].indexOf(value);
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
 
-        if (index !== -1) {
-          $ct.globalProfileMap[propKey].splice(index, 1);
+          return;
+        } // Get the last segment (the property we want to remove from)
+
+
+        const lastSegment = segments[segments.length - 1];
+
+        if (lastSegment.type !== 'key') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('The last segment of the path must be a property key, not an array index.');
+
+          return;
+        } // Get parent path segments (all except last)
+
+
+        const parentSegments = segments.slice(0, -1); // Navigate to the parent object
+
+        let parentObj;
+
+        if (parentSegments.length === 0) {
+          parentObj = $ct.globalProfileMap;
+        } else {
+          parentObj = getNestedValue($ct.globalProfileMap, parentSegments);
+
+          if (parentObj === undefined || parentObj === null) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not exist in profile.');
+
+            return;
+          }
+
+          if (typeof parentObj !== 'object' || Array.isArray(parentObj)) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not point to an object.');
+
+            return;
+          }
         }
-      };
 
-      if (Array.isArray(propVal)) {
-        propVal.forEach(removeValue);
-      } else if (typeof propVal === 'string' || typeof propVal === 'number') {
-        removeValue(propVal);
+        const targetKey = lastSegment.value;
+
+        if (!parentObj.hasOwnProperty(targetKey)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
+
+          return;
+        }
+
+        const targetArray = parentObj[targetKey];
+
+        if (!Array.isArray(targetArray)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " is not an array."));
+
+          return;
+        } // Helper to remove value from array
+
+
+        const removeValue = value => {
+          const index = targetArray.indexOf(value);
+
+          if (index !== -1) {
+            targetArray.splice(index, 1);
+          }
+        };
+
+        if (Array.isArray(propVal)) {
+          propVal.forEach(removeValue);
+        } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+          removeValue(propVal);
+        } else {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported propVal type');
+
+          return;
+        } // Remove the key if the array is empty
+
+
+        if (targetArray.length === 0) {
+          delete parentObj[targetKey];
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command, true);
       } else {
-        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported propVal type');
+        // Simple key handling (existing logic)
+        if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
 
-        return;
-      } // Remove the key if the array is empty
+          return;
+        }
+
+        const removeValue = value => {
+          const index = $ct.globalProfileMap[propKey].indexOf(value);
+
+          if (index !== -1) {
+            $ct.globalProfileMap[propKey].splice(index, 1);
+          }
+        };
+
+        if (Array.isArray(propVal)) {
+          propVal.forEach(removeValue);
+        } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+          removeValue(propVal);
+        } else {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported propVal type');
+
+          return;
+        } // Remove the key if the array is empty
 
 
-      if ($ct.globalProfileMap[propKey].length === 0) {
-        delete $ct.globalProfileMap[propKey];
+        if ($ct.globalProfileMap[propKey].length === 0) {
+          delete $ct.globalProfileMap[propKey];
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command, false);
       }
-
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(propKey, propVal, command);
     }
     /**
      *
@@ -11069,10 +11276,15 @@
       let profileObj = {};
       data.type = 'profile';
 
-      if (isNested && command === COMMAND_DELETE) {
-        // Build nested delete object
+      if (isNested) {
+        // Build nested command object for any command
         const segments = parseNestedPath(propKey);
-        profileObj = buildNestedDeleteObject(segments, command, true);
+
+        if (command === COMMAND_DELETE) {
+          profileObj = buildNestedDeleteObject(segments, command, true);
+        } else {
+          profileObj = buildNestedCommandObject(segments, command, propVal);
+        }
       } else {
         // Simple key handling
         profileObj[propKey] = {
