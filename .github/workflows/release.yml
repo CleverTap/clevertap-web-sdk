@@ -2,18 +2,21 @@ name: Release to npm and s3
 on:
   release:
     types: [published]
+permissions:
+  id-token: write
+  contents: read
 jobs:
   build:
     runs-on: macos-14-large
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use node.js version 20.9.0
-        uses: actions/setup-node@v2.1.2
+        uses: actions/setup-node@v4
         with:
           node-version: '20.9.0'
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
       - uses: actions/cache@v4
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
@@ -27,15 +30,13 @@ jobs:
         run: yarn run test:coverage
       - name: Build package
         run: yarn run build
-      - name: Use node.js version 20.9.0
-        uses: actions/setup-node@v2.1.2
+      - name: Setup node for npm publish
+        uses: actions/setup-node@v4
         with:
           node-version: '20.9.0'
           registry-url: 'https://registry.npmjs.org'
       - name: Publish package to npm
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN_NEW }}
+        run: npm publish --provenance
 #       - name: Configure AWS credentials
 #         uses: aws-actions/configure-aws-credentials@v1
 #         with:
