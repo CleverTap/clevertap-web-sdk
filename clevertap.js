@@ -10448,48 +10448,6 @@
     return true;
   };
   /**
-   * Builds a nested object structure from path segments for sending to backend
-   * Creates structure like { Policy: [{ price: { $incr: 10 } }] }
-   * @param {Array} segments - Parsed path segments
-   * @param {string} command - The command (COMMAND_INCREMENT or COMMAND_DECREMENT)
-   * @param {number} value - The increment/decrement value
-   * @returns {Object} The nested object structure
-   */
-
-  const buildNestedCommandObject = (segments, command, value) => {
-    if (segments.length === 0) {
-      return {};
-    }
-
-    const buildStructure = segIndex => {
-      if (segIndex >= segments.length) {
-        return null;
-      }
-
-      const segment = segments[segIndex];
-      const isLast = segIndex === segments.length - 1;
-
-      if (segment.type === 'key') {
-        const next = isLast ? {
-          [command]: value
-        } : buildStructure(segIndex + 1);
-        return {
-          [segment.value]: next
-        };
-      } else if (segment.type === 'array') {
-        const arr = [];
-        arr[segment.index] = isLast ? {
-          [command]: value
-        } : buildStructure(segIndex + 1);
-        return arr;
-      }
-
-      return null;
-    };
-
-    return buildStructure(0);
-  };
-  /**
    * Removes a value at a nested path in an object
    * @param {Object} obj - The object to modify
    * @param {Array} segments - Parsed path segments
@@ -10548,48 +10506,6 @@
     }
 
     return false;
-  };
-  /**
-   * Builds a nested object structure for delete command
-   * Creates structure like { Policy: [{ price: { $delete: true } }] }
-   * @param {Array} segments - Parsed path segments
-   * @param {string} command - The command (COMMAND_DELETE)
-   * @param {any} value - The value to set (usually true for delete)
-   * @returns {Object} The nested object structure
-   */
-
-  const buildNestedDeleteObject = (segments, command, value) => {
-    if (segments.length === 0) {
-      return {};
-    }
-
-    const buildStructure = segIndex => {
-      if (segIndex >= segments.length) {
-        return null;
-      }
-
-      const segment = segments[segIndex];
-      const isLast = segIndex === segments.length - 1;
-
-      if (segment.type === 'key') {
-        const next = isLast ? {
-          [command]: value
-        } : buildStructure(segIndex + 1);
-        return {
-          [segment.value]: next
-        };
-      } else if (segment.type === 'array') {
-        const arr = [];
-        arr[segment.index] = isLast ? {
-          [command]: value
-        } : buildStructure(segIndex + 1);
-        return arr;
-      }
-
-      return null;
-    };
-
-    return buildStructure(0);
   };
   const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     if (campaignId != null && campaignId !== '-1') {
@@ -10833,7 +10749,7 @@
       }
 
       const isNestedPath = key.includes('.') || key.includes('[');
-      let profileObj = {};
+      const profileObj = {};
 
       if (isNestedPath) {
         const segments = parseNestedPath(key);
@@ -10862,8 +10778,11 @@
           return;
         }
 
-        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-        profileObj = buildNestedCommandObject(segments, command, value);
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Use flat key notation (e.g., "Trip[0].Total Amount") instead of nested structure
+
+        profileObj[key] = {
+          [command]: value
+        };
       } else {
         if (!$ct.globalProfileMap.hasOwnProperty(key)) {
           console.error('Kindly create profile with required property to increment/decrement.');
@@ -11215,6 +11134,8 @@
      * @param {any} propKey - Can be a simple key or nested path like "Policy[0].price"
      * @param {string} command
      * deletes a key value pair from the profile object
+     * Only primitive values (string, number, boolean) can be deleted.
+     * Arrays and objects cannot be deleted - use specific methods for those.
      */
 
 
@@ -11225,7 +11146,12 @@
 
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = {};
-      }
+      } // Helper to check if value is primitive (not array or object)
+
+
+      const isPrimitive = value => {
+        return value === null || value === undefined || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+      };
 
       const isNestedPath = propKey.includes('.') || propKey.includes('[');
 
@@ -11245,6 +11171,13 @@
           _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Path '".concat(propKey, "' does not exist in profile."));
 
           return;
+        } // Check if value is primitive - only allow deletion of primitive values
+
+
+        if (!isPrimitive(currentValue)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Cannot delete '".concat(propKey, "': Value is an ").concat(Array.isArray(currentValue) ? 'array' : 'object', ". Only primitive values (string, number, boolean) can be deleted."));
+
+          return;
         } // Remove the nested value
 
 
@@ -11260,10 +11193,19 @@
         // Handle simple key (existing logic)
         if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
           _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
-        } else {
-          delete $ct.globalProfileMap[propKey];
+
+          return;
         }
 
+        const currentValue = $ct.globalProfileMap[propKey]; // Check if value is primitive - only allow deletion of primitive values
+
+        if (!isPrimitive(currentValue)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Cannot delete '".concat(propKey, "': Value is an ").concat(Array.isArray(currentValue) ? 'array' : 'object', ". Only primitive values (string, number, boolean) can be deleted."));
+
+          return;
+        }
+
+        delete $ct.globalProfileMap[propKey];
         StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
         this.sendMultiValueData(propKey, null, command, false);
       }
@@ -11273,17 +11215,20 @@
       let isNested = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
       // Send the updated value to LC
       let data = {};
-      let profileObj = {};
+      const profileObj = {};
       data.type = 'profile';
 
       if (isNested) {
-        // Build nested command object for any command
-        const segments = parseNestedPath(propKey);
-
+        // For nested paths, use the path as a flat key (e.g., "Platform.Web" or "Trip[0].Price")
+        // This sends: { "Platform.Web": { "$delete": true } } instead of nested structure
         if (command === COMMAND_DELETE) {
-          profileObj = buildNestedDeleteObject(segments, command, true);
+          profileObj[propKey] = {
+            [command]: true
+          };
         } else {
-          profileObj = buildNestedCommandObject(segments, command, propVal);
+          profileObj[propKey] = {
+            [command]: propVal
+          };
         }
       } else {
         // Simple key handling

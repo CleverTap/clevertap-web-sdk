@@ -9,9 +9,7 @@ import {
   parseNestedPath,
   getNestedValue,
   setNestedValue,
-  buildNestedCommandObject,
-  removeNestedValue,
-  buildNestedDeleteObject
+  removeNestedValue
 } from '../util/clevertap'
 import {
   ACCOUNT_ID,
@@ -221,7 +219,7 @@ export default class ProfileHandler extends Array {
     }
 
     const isNestedPath = key.includes('.') || key.includes('[')
-    let profileObj = {}
+    const profileObj = {}
 
     if (isNestedPath) {
       const segments = parseNestedPath(key)
@@ -251,7 +249,8 @@ export default class ProfileHandler extends Array {
       }
 
       StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
-      profileObj = buildNestedCommandObject(segments, command, value)
+      // Use flat key notation (e.g., "Trip[0].Total Amount") instead of nested structure
+      profileObj[key] = { [command]: value }
     } else {
       if (!$ct.globalProfileMap.hasOwnProperty(key)) {
         console.error('Kindly create profile with required property to increment/decrement.')
@@ -567,6 +566,8 @@ export default class ProfileHandler extends Array {
    * @param {any} propKey - Can be a simple key or nested path like "Policy[0].price"
    * @param {string} command
    * deletes a key value pair from the profile object
+   * Only primitive values (string, number, boolean) can be deleted.
+   * Arrays and objects cannot be deleted - use specific methods for those.
    */
   _handleMultiValueDelete (propKey, command) {
     if ($ct.globalProfileMap == null) {
@@ -574,6 +575,15 @@ export default class ProfileHandler extends Array {
     }
     if ($ct.globalProfileMap == null) {
       $ct.globalProfileMap = {}
+    }
+
+    // Helper to check if value is primitive (not array or object)
+    const isPrimitive = (value) => {
+      return value === null ||
+             value === undefined ||
+             typeof value === 'string' ||
+             typeof value === 'number' ||
+             typeof value === 'boolean'
     }
 
     const isNestedPath = propKey.includes('.') || propKey.includes('[')
@@ -592,6 +602,12 @@ export default class ProfileHandler extends Array {
         return
       }
 
+      // Check if value is primitive - only allow deletion of primitive values
+      if (!isPrimitive(currentValue)) {
+        this.#logger.error(`Cannot delete '${propKey}': Value is an ${Array.isArray(currentValue) ? 'array' : 'object'}. Only primitive values (string, number, boolean) can be deleted.`)
+        return
+      }
+
       // Remove the nested value
       if (!removeNestedValue($ct.globalProfileMap, segments)) {
         this.#logger.error(`Failed to remove value at path '${propKey}'.`)
@@ -604,9 +620,18 @@ export default class ProfileHandler extends Array {
       // Handle simple key (existing logic)
       if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
         this.#logger.error(`The property ${propKey} does not exist.`)
-      } else {
-        delete $ct.globalProfileMap[propKey]
+        return
       }
+
+      const currentValue = $ct.globalProfileMap[propKey]
+
+      // Check if value is primitive - only allow deletion of primitive values
+      if (!isPrimitive(currentValue)) {
+        this.#logger.error(`Cannot delete '${propKey}': Value is an ${Array.isArray(currentValue) ? 'array' : 'object'}. Only primitive values (string, number, boolean) can be deleted.`)
+        return
+      }
+
+      delete $ct.globalProfileMap[propKey]
       StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
       this.sendMultiValueData(propKey, null, command, false)
     }
@@ -615,16 +640,16 @@ export default class ProfileHandler extends Array {
   sendMultiValueData (propKey, propVal, command, isNested = false) {
     // Send the updated value to LC
     let data = {}
-    let profileObj = {}
+    const profileObj = {}
     data.type = 'profile'
 
     if (isNested) {
-      // Build nested command object for any command
-      const segments = parseNestedPath(propKey)
+      // For nested paths, use the path as a flat key (e.g., "Platform.Web" or "Trip[0].Price")
+      // This sends: { "Platform.Web": { "$delete": true } } instead of nested structure
       if (command === COMMAND_DELETE) {
-        profileObj = buildNestedDeleteObject(segments, command, true)
+        profileObj[propKey] = { [command]: true }
       } else {
-        profileObj = buildNestedCommandObject(segments, command, propVal)
+        profileObj[propKey] = { [command]: propVal }
       }
     } else {
       // Simple key handling
