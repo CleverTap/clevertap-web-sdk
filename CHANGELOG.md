@@ -1,6 +1,19 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.3.4] 12th Dec 2025
+- Fixed the issue where interval was not cleared in web native display.
+
+## [2.3.3] 25th Nov 2025
+- WP & WND Session Count Reset on Session Change
+- Cookie management with domain specification support in StorageManager
+
+## [2.3.2] 19th Nov 2025
+- Improved Runtime Exceptions Security Issues
+
+## [2.3.1] 13th Nov 2025
+- Fixed the issue where interval was not cleared in visual editor.
+
 ## [2.3.0] 10th Sept 2025
 - Introduced list reordering in Web Native Display - Visual Editor.
 
