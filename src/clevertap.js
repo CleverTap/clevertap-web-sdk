@@ -37,7 +37,8 @@ import {
   GCOOKIE_NAME,
   QUALIFIED_CAMPAIGNS,
   BLOCK_REQUEST_COOKIE,
-  ISOLATE_COOKIE
+  ISOLATE_COOKIE,
+  ENABLE_TV_CONTROLS
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -55,6 +56,7 @@ import encryption from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
 import { checkWebPopupPreview } from './util/campaignRender/webPopup'
 import { reconstructNestedObject, validateCustomCleverTapID } from './util/helpers'
+import TVNavigation from './modules/tvNavigation'
 
 export default class CleverTap {
   #logger
@@ -71,6 +73,7 @@ export default class CleverTap {
   #dismissSpamControl
   enablePersonalization
   #pageChangeTimeoutId
+  #tvNavigation
   #domainSpecification
 
   get spa () {
@@ -123,7 +126,6 @@ export default class CleverTap {
     // Custom Guid will be set here
 
     const result = validateCustomCleverTapID(clevertap?.config?.customId)
-
     if (!result.isValid && clevertap?.config?.customId) {
       this.#logger.error(result.error)
     }
@@ -147,6 +149,7 @@ export default class CleverTap {
       session: this.#session,
       isPersonalisationActive: this._isPersonalisationActive
     })
+    this.#tvNavigation = new TVNavigation(this.#logger)
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
       logger: this.#logger,
@@ -199,6 +202,11 @@ export default class CleverTap {
     this.spa = clevertap.spa
     this.dismissSpamControl = clevertap.dismissSpamControl ?? true
 
+    if (clevertap.config?.enableTVControls) {
+      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
+    } else {
+      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false)
+    }
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
     })
@@ -700,7 +708,13 @@ export default class CleverTap {
     }
   }
 
-  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false, domainSpecification: null }) {
+  init (accountId, region, targetDomain, token, config = {
+    antiFlicker: {},
+    customId: null,
+    isolateSubdomain: false,
+    enableTVControls: false,
+    domainSpecification: null
+  }) {
     if (config?.domainSpecification) {
       this.domainSpecification = config.domainSpecification
       this.#session.domainSpecification = config.domainSpecification
@@ -722,6 +736,15 @@ export default class CleverTap {
 
     if (accountId) {
       encryption.key = accountId
+    }
+
+    const enableControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS) ?? false
+    if ((config?.enableTVControls) || enableControls) {
+      // CleverTap handles navigation
+      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
+      this.#logger.debug('CleverTap TV Navigation Mode: CleverTap will handle all navigation')
+      // Initialize CleverTap TV navigation system
+      this.#tvNavigation.init()
     }
 
     StorageManager.removeCookie('WZRK_P', window.location.hostname)
