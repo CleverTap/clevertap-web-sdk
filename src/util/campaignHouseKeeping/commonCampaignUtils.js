@@ -1085,7 +1085,7 @@ export const commonCampaignUtils = {
       targetingMsgJson.display['custom-editor']
     ) {
       iframe.sandbox =
-        'allow-scripts allow-popups allow-popups-to-escape-sandbox'
+        'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin'
     }
     let html
     // Direct HTML content
