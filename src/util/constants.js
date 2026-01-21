@@ -191,7 +191,7 @@ export const NESTED_OBJECT_ERRORS = {
   },
   RESTRICTED_PROFILE_PROPERTY: {
     code: 513,
-    message: '%s is a restricted event name. Last event aborted.'
+    message: "'%s' is a restricted profile property. This property was skipped."
   }
 }
 

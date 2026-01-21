@@ -69,6 +69,7 @@ export default class EventHandler extends Array {
                 this.#logger.reportError(511, 'Charged event structure invalid. Not sent.')
                 continue
               }
+              data.evtData = eventObj
             } else {
               const validationResult = isObjStructureValid(eventObj, this.#logger, 3)
               // Validation errors are already logged via logger.reportError in validator

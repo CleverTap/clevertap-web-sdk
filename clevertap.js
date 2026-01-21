@@ -298,7 +298,7 @@
     },
     RESTRICTED_PROFILE_PROPERTY: {
       code: 513,
-      message: '%s is a restricted event name. Last event aborted.'
+      message: "'%s' is a restricted profile property. This property was skipped."
     }
   }; // Restricted profile keys that cannot be at root level (0th level)
 
@@ -8545,6 +8545,8 @@
 
                 continue;
               }
+
+              data.evtData = eventObj;
             } else {
               const validationResult = isObjStructureValid(eventObj, _classPrivateFieldLooseBase(this, _logger$8)[_logger$8], 3); // Validation errors are already logged via logger.reportError in validator
               // Use cleaned object if provided (even if validation failed)
