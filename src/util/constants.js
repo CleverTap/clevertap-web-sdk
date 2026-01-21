@@ -189,7 +189,7 @@ export const NESTED_OBJECT_ERRORS = {
     code: 545,
     message: "Empty value for key '%s' was removed"
   },
-  RESTRICTED_EVENT_NAME: {
+  RESTRICTED_PROFILE_PROPERTY: {
     code: 513,
     message: '%s is a restricted event name. Last event aborted.'
   }

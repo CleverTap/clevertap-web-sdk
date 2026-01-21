@@ -153,8 +153,8 @@ export default class ProfileHandler extends Array {
       if (profileObj.hasOwnProperty(key)) {
         if (PROFILE_RESTRICTED_ROOT_KEYS.includes(key)) {
           this.#logger.reportError(
-            NESTED_OBJECT_ERRORS.RESTRICTED_EVENT_NAME.code,
-            NESTED_OBJECT_ERRORS.RESTRICTED_EVENT_NAME.message.replace('%s', key)
+            NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.code,
+            NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.message.replace('%s', key)
           )
         } else {
           finalProfileObj[key] = profileObj[key]

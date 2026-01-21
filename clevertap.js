@@ -296,7 +296,7 @@
       code: 545,
       message: "Empty value for key '%s' was removed"
     },
-    RESTRICTED_EVENT_NAME: {
+    RESTRICTED_PROFILE_PROPERTY: {
       code: 513,
       message: '%s is a restricted event name. Last event aborted.'
     }
@@ -11358,7 +11358,7 @@
     for (const key in profileObj) {
       if (profileObj.hasOwnProperty(key)) {
         if (PROFILE_RESTRICTED_ROOT_KEYS.includes(key)) {
-          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].reportError(NESTED_OBJECT_ERRORS.RESTRICTED_EVENT_NAME.code, NESTED_OBJECT_ERRORS.RESTRICTED_EVENT_NAME.message.replace('%s', key));
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].reportError(NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.code, NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.message.replace('%s', key));
         } else {
           finalProfileObj[key] = profileObj[key];
         }
