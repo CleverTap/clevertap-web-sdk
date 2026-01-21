@@ -4,7 +4,8 @@ import {
   KCOOKIE_NAME,
   LCOOKIE_NAME,
   BLOCK_REQUEST_COOKIE,
-  ISOLATE_COOKIE
+  ISOLATE_COOKIE,
+  MUTE_EXPIRY_KEY
 } from './constants'
 import encryption from '../modules/security/Encryption'
 
@@ -304,6 +305,36 @@ export class StorageManager {
       this.saveToLSorCookie(LCOOKIE_NAME, backupMap)
     }
   }
+}
+
+/**
+ * Check if SDK is currently muted (for churned accounts)
+ * @returns {boolean} true if SDK is muted and should not send requests
+ */
+export const isMuted = () => {
+  const muteExpiry = StorageManager.readFromLSorCookie(MUTE_EXPIRY_KEY)
+  if (!muteExpiry || muteExpiry <= 0) {
+    return false
+  }
+  return Date.now() < muteExpiry
+}
+
+/**
+ * Get the mute expiry timestamp
+ * @returns {number|null} epoch timestamp in ms, or null if not muted
+ */
+export const getMuteExpiry = () => {
+  return StorageManager.readFromLSorCookie(MUTE_EXPIRY_KEY) || null
+}
+
+/**
+ * Clear mute state (called when account is reactivated)
+ */
+export const clearMuteExpiry = () => {
+  if (StorageManager._isLocalStorageSupported()) {
+    StorageManager.remove(MUTE_EXPIRY_KEY)
+  }
+  delete $ct.globalCache[MUTE_EXPIRY_KEY]
 }
 
 export const $ct = {
