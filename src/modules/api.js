@@ -1,8 +1,8 @@
-import { COOKIE_EXPIRY, FIRE_PUSH_UNREGISTERED, GCOOKIE_NAME, KCOOKIE_NAME, LRU_CACHE_SIZE, USEIP_KEY } from '../util/constants'
+import { COOKIE_EXPIRY, FIRE_PUSH_UNREGISTERED, GCOOKIE_NAME, KCOOKIE_NAME, LRU_CACHE_SIZE, USEIP_KEY, MUTE_EXPIRY_KEY } from '../util/constants'
 import { isValueValid } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import LRUCache from '../util/lruCache'
-import { StorageManager, $ct } from '../util/storage'
+import { StorageManager, $ct, clearMuteExpiry } from '../util/storage'
 
 export default class CleverTapAPI {
   #logger
@@ -38,6 +38,10 @@ export default class CleverTapAPI {
    */
 
   s (global, session, resume, respNumber, optOutResponse) {
+    // Clear any existing mute state - receiving a valid session response
+    // means the account is active/reactivated
+    clearMuteExpiry()
+
     let oulReq = false
     let newGuid = false
 
@@ -143,5 +147,18 @@ export default class CleverTapAPI {
     }
 
     $ct.globalCache.RESP_N = respNumber
+  }
+
+  /**
+   * Set SDK mute expiry timestamp (for churned accounts)
+   * Called by server when account is blocked/muted
+   * Server calls: $WZRK_WR.setMuteExpiry(1737100800000)
+   * @param {number} muteExpiryMs - Epoch timestamp in ms until which SDK should be muted
+   */
+  setMuteExpiry (muteExpiryMs) {
+    if (typeof muteExpiryMs === 'number' && muteExpiryMs > 0) {
+      StorageManager.saveToLSorCookie(MUTE_EXPIRY_KEY, muteExpiryMs)
+      this.#logger.info(`SDK muted until: ${new Date(muteExpiryMs).toISOString()}`)
+    }
   }
 }

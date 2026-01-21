@@ -76,6 +76,9 @@ export const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'
 // Flag key for optional sub-domain profile isolation
 export const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'
 
+// SDK Muting - Progressive muting for churned customers
+export const MUTE_EXPIRY_KEY = 'WZRK_MUTE_EXPIRY'
+
 export const WEB_NATIVE_TEMPLATES = {
   KV_PAIR: 1,
   BANNER: 2,
