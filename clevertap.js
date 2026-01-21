@@ -12999,7 +12999,7 @@
       selectedCategoryBorderColor,
       headerCategoryHeight
     } = _ref2;
-    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, ";\n          position: sticky;\n          top: 0;\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 12px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n          z-index: -1;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n          height: 100%;\n          overflow: scroll;\n        }\n\n        @media only screen and (min-width: 480px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
+    return "\n      <style id=\"webInboxStyles\">\n        #inbox {\n          width: 100%;\n          position: fixed;\n          background-color: #fff; \n          display: none; \n          box-shadow: 0px 2px 10px 0px #d7d7d791;\n          background-color: ".concat(panelBackgroundColor, "; \n          border: 1px solid ").concat(panelBorderColor, ";\n          top: 0;\n          left: 0;\n          height: 100%;\n          overflow: auto;\n          z-index: 1;\n          box-sizing: content-box;\n          border-radius: 4px;\n        }\n  \n        #emptyInboxMsg {\n          display: block;\n          padding: 10px;\n          text-align: center;\n          color: black;\n        }\n  \n        #header {\n          height: 36px; \n          width: 100%; \n          display: flex; \n          justify-content: center; \n          align-items: center; \n          background-color: ").concat(headerBackgroundColor, "; \n          background-color: var(--card-bg, ").concat(headerBackgroundColor, ");\n          color: ").concat(headerTitleColor, ";\n          position: sticky;\n          top: 0;\n        }\n  \n        #closeInbox {\n          font-size: 20px; \n          margin-right: 6px; \n          color: ").concat(closeIconColor, "; \n          cursor: pointer;\n          height: 24px;\n          width: 24px;\n          text-align: center;\n          line-height: 24px;\n          border-radius: 50%;\n        }\n  \n        #headerTitle {\n          font-size: 14px; \n          line-height: 20px; \n          flex-grow: 1; \n          font-weight: 700; \n          text-align: center;\n          flex-grow: 1;\n          text-align: center;\n        }\n  \n        #categoriesContainer {\n          padding: 16px 16px 0 16px; \n          height: 32px; \n          display: flex;\n          scroll-behavior: smooth;\n          position: relative;\n          z-index: -1;\n        }\n\n        #categoriesWrapper {\n          height: 32px; \n          overflow-x: scroll;\n          display: flex;\n          white-space: nowrap;\n          scrollbar-width: none;\n        }\n\n        #categoriesWrapper::-webkit-scrollbar {\n          display: none;\n        }\n  \n        #leftArrow, #rightArrow {\n          height: 32px;\n          align-items: center;\n          font-weight: 700;\n          position: absolute;\n          z-index: 2;\n          pointer-events: auto;\n          cursor: pointer;\n          display: none;\n        }\n\n        #leftArrow {\n          left: 0;\n          padding-left: 4px;\n          padding-right: 16px;\n          background: linear-gradient(90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        #rightArrow {\n          right: 0;\n          padding-right: 4px;\n          padding-left: 16px;\n          background: linear-gradient(-90deg, ").concat(panelBackgroundColor, " 0%, ").concat(panelBackgroundColor, "99 80%, ").concat(panelBackgroundColor, "0d 100%);\n        }\n\n        [id^=\"category-\"] {\n          display: flex; \n          flex: 1 1 0; \n          justify-content: center; \n          align-items: center; \n          font-size: 14px; \n          line-height: 20px; \n          background-color: ").concat(categoriesTabColor, "; \n          color: ").concat(categoriesTitleColor, "; \n          cursor: pointer;\n          padding: 6px 24px;\n          margin: 0 3px;\n          border-radius: 16px;\n          border: ").concat(categoriesBorderColor ? '1px solid ' + categoriesBorderColor : 'none', ";\n        }\n\n        [id^=\"category-\"][selected=\"true\"] {\n          background-color: ").concat(selectedCategoryTabColor, "; \n          color: ").concat(selectedCategoryTitleColor, "; \n          border: ").concat(selectedCategoryBorderColor ? '1px solid ' + selectedCategoryBorderColor : 'none', "\n        }\n  \n        #inboxCard {\n          padding: 0 16px 0 16px;\n          overflow-y: auto;\n          box-sizing: border-box;\n          margin-top: 16px;\n          height: 100%;\n          overflow: scroll;\n        }\n\n        @media only screen and (min-width: 480px) {\n          #inbox {\n            width: var(--inbox-width, 392px);\n            height: var(--inbox-height, 546px);\n            position: var(--inbox-position, fixed);\n            right: var(--inbox-right, unset);\n            bottom: var(--inbox-bottom, unset);\n            top: var(--inbox-top, unset);\n            left: var(--inbox-left, unset);\n          }\n  \n          #inboxCard {\n            height: calc(var(--inbox-height, 546px) - ").concat(headerCategoryHeight, "px); \n          }\n  \n        }\n      </style>\n      ");
   };
 
   class Inbox extends HTMLElement {
@@ -17435,6 +17435,8 @@
 
   // tvNavigation.js - Universal TV Navigation Singleton for all TV platforms
 
+  const TV_FOCUS_STYLE = '.ct-tv-focused { outline: 3px solid #00ff00 !important; outline-offset: -2px !important; }';
+
   class TVNavigation {
     constructor(logger) {
       if (TVNavigation.instance) {
@@ -17446,7 +17448,9 @@
       this.currentMenu = null;
       this.focusableElements = [];
       this.currentFocusIndex = 0;
-      this.shadowNavigation = null; // Universal TV key mappings (standard across all platforms)
+      this.shadowNavigation = null;
+      this.inboxNav = null; // Web Inbox navigation state
+      // Universal TV key mappings (standard across all platforms)
 
       this.keyMappings = {
         up: 38,
@@ -17511,32 +17515,27 @@
 
 
     init() {
-      var _StorageManager$readF;
-
-      const enableTVControls = (_StorageManager$readF = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : false;
-
-      if (!enableTVControls) {
-        this.logger.debug('TV Navigation disabled');
-        return;
-      } // Prevent double initialization
-
-
-      if (this.isEnabled) {
-        this.logger.debug('TV Navigation already initialized');
-        return;
-      }
-
+      if (this.isEnabled) return;
       this.isEnabled = true;
       this.setupPlatformSpecificKeys();
       this.setupKeyHandler();
-      this.findFocusableElements();
-      this.addFocusStyles(); // Focus first element if available
+      this.addFocusStyles();
 
-      if (this.focusableElements.length > 0) {
-        this.focusElement(0);
+      const initElements = () => {
+        this.findFocusableElements();
+
+        if (this.focusableElements.length > 0) {
+          this.focusElement(0);
+        }
+
+        this.logger.debug("TV Navigation initialized: ".concat(this.focusableElements.length, " elements"));
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initElements);
+      } else {
+        setTimeout(initElements, 100);
       }
-
-      this.logger.debug("CleverTap TV Navigation initialized for ".concat(this.platform, " with ").concat(this.focusableElements.length, " elements"));
     } // Setup platform-specific key registrations
 
 
@@ -17583,13 +17582,11 @@
 
 
     setupKeyHandler() {
-      // Remove existing handler if any to prevent duplicates
       if (this.keyHandler) {
         document.removeEventListener('keydown', this.keyHandler, {
           capture: true
         });
-      } // Create bound handler
-
+      }
 
       this.keyHandler = event => {
         if (!this.isEnabled) return;
@@ -17604,19 +17601,27 @@
 
 
     handleKeyPress(event) {
-      // Check for regular iframe popup
-      const activePopup = document.querySelector('iframe[id^="wiz-iframe"]') || document.querySelector('iframe[id="wiz-iframe-intent"]'); // Check for shadow DOM popup
+      // Priority 1: Web Inbox (if open)
+      try {
+        if ($ct && $ct.inbox && $ct.inbox.isInboxOpen) {
+          this.handleInboxNavigation(event);
+          return;
+        }
+      } catch (e) {// Inbox not available, continue with other handlers
+      } // Priority 2: iframe popup
+
+
+      const activePopup = document.querySelector('iframe[id^="wiz-iframe"]') || document.querySelector('iframe[id="wiz-iframe-intent"]');
+
+      if (activePopup) {
+        this.forwardToIframe(event, activePopup);
+        return;
+      } // Priority 3: Shadow DOM popup
+
 
       const shadowPopupElement = document.querySelector('ct-web-popup-imageonly') || document.querySelector('#wzrkImageOnlyDiv ct-web-popup-imageonly') || document.querySelector('#wzrkImageOnlyDiv[style*="visible"]');
 
-      if (activePopup) {
-        // Handle iframe popup
-        this.forwardToIframe(event, activePopup);
-        return;
-      }
-
       if (shadowPopupElement) {
-        // Check if the popup is actually visible
         const parentDiv = document.getElementById('wzrkImageOnlyDiv');
         const isVisible = parentDiv && (!parentDiv.style.display || parentDiv.style.display !== 'none');
 
@@ -17624,7 +17629,7 @@
           this.handleShadowDOMNavigation(event, shadowPopupElement);
           return;
         }
-      } // Handle main page navigation
+      } // Default: Main page navigation
 
 
       this.handleMainPageNavigation(event);
@@ -17740,9 +17745,7 @@
           return style.display !== 'none' && style.visibility !== 'hidden';
         }); // Add TV focus styles to shadow DOM
 
-        const style = document.createElement('style');
-        style.textContent = "\n        .ct-tv-focused {\n          outline: 3px solid #00ff00 !important;\n          outline-offset: 2px !important;\n          transition: all 0.2s ease !important;\n        }\n      ";
-        shadowRoot.appendChild(style); // Focus first element
+        this.injectFocusStyle(shadowRoot, 'ct-tv-shadow-styles'); // Focus first element
 
         if (this.shadowNavigation.focusableElements.length > 0) {
           this.focusShadowElement(0);
@@ -17807,7 +17810,270 @@
 
 
       this.shadowNavigation = null;
-    } // Handle main page navigation
+    } // ==================== Web Inbox Navigation ====================
+
+
+    handleInboxNavigation(event) {
+      // Clear main page focus
+      if (this.focusableElements[this.currentFocusIndex]) {
+        this.focusableElements[this.currentFocusIndex].classList.remove('ct-tv-focused');
+      } // Initialize if needed
+
+
+      if (!this.inboxNav) {
+        this.initInboxNavigation();
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      const {
+        up,
+        down,
+        left,
+        right,
+        enter,
+        back,
+        exit,
+        webosBack,
+        webosExit
+      } = this.keyMappings;
+
+      switch (event.keyCode) {
+        case up:
+          this.navigateInbox(-1, 'vertical');
+          break;
+
+        case down:
+          this.navigateInbox(1, 'vertical');
+          break;
+
+        case left:
+          this.navigateInbox(-1, 'horizontal');
+          break;
+
+        case right:
+          this.navigateInbox(1, 'horizontal');
+          break;
+
+        case enter:
+          this.activateInboxElement();
+          break;
+
+        case back:
+        case exit:
+        case webosBack:
+        case webosExit:
+          this.closeInbox();
+          break;
+      }
+    }
+
+    initInboxNavigation() {
+      const inbox = $ct.inbox;
+
+      if (!(inbox === null || inbox === void 0 ? void 0 : inbox.shadowRoot)) {
+        this.logger.debug('Web Inbox shadow root not found');
+        return;
+      }
+
+      this.inboxNav = {
+        shadowRoot: inbox.shadowRoot,
+        elements: [],
+        index: 0
+      };
+      this.refreshInboxElements();
+      this.injectInboxStyles();
+
+      if (this.inboxNav.elements.length > 0) {
+        this.focusInboxElement(0);
+      }
+
+      this.logger.debug("Web Inbox navigation initialized: ".concat(this.inboxNav.elements.length, " elements"));
+    }
+
+    refreshInboxElements() {
+      if (!this.inboxNav) return;
+      const sr = this.inboxNav.shadowRoot;
+      const elements = []; // 1. Close button
+
+      const closeBtn = sr.getElementById('closeInbox');
+
+      if (closeBtn) {
+        elements.push({
+          el: closeBtn,
+          type: 'close'
+        });
+      } // 2. Category tabs
+
+
+      const catWrapper = sr.getElementById('categoriesWrapper');
+
+      if (catWrapper) {
+        catWrapper.querySelectorAll('[id^="category-"]').forEach(cat => {
+          if (this.isVisible(cat)) {
+            elements.push({
+              el: cat,
+              type: 'category'
+            });
+          }
+        });
+      } // 3. Messages
+
+
+      const inboxCard = sr.getElementById('inboxCard');
+
+      if (inboxCard) {
+        inboxCard.querySelectorAll('ct-inbox-message').forEach(msg => {
+          if (this.isVisible(msg)) {
+            elements.push({
+              el: msg,
+              type: 'message'
+            });
+            this.injectMessageStyles(msg);
+          }
+        });
+      }
+
+      this.inboxNav.elements = elements;
+    }
+
+    navigateInbox(delta, axis) {
+      if (!this.inboxNav) return;
+      this.refreshInboxElements();
+      const {
+        elements,
+        index
+      } = this.inboxNav;
+      if (elements.length === 0) return;
+      const current = elements[index];
+      let newIndex = index;
+
+      if (axis === 'vertical') {
+        // Simple up/down movement
+        newIndex = Math.max(0, Math.min(elements.length - 1, index + delta));
+      } else {
+        // Horizontal: move within same type only (categories)
+        if ((current === null || current === void 0 ? void 0 : current.type) === 'category') {
+          for (let i = index + delta; i >= 0 && i < elements.length; i += delta) {
+            if (elements[i].type === 'category') {
+              newIndex = i;
+              break;
+            }
+          }
+        }
+      }
+
+      if (newIndex !== index) {
+        this.focusInboxElement(newIndex);
+      }
+    }
+
+    focusInboxElement(index) {
+      if (!this.inboxNav) return;
+      const {
+        elements
+      } = this.inboxNav;
+      if (index < 0 || index >= elements.length) return; // Remove previous focus
+
+      const prev = elements[this.inboxNav.index];
+
+      if (prev && prev.el) {
+        prev.el.classList.remove('ct-tv-focused');
+      } // Apply new focus
+
+
+      this.inboxNav.index = index;
+      const curr = elements[index];
+
+      if (curr === null || curr === void 0 ? void 0 : curr.el) {
+        curr.el.classList.add('ct-tv-focused');
+        curr.el.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        });
+        this.logger.debug("Inbox focus: ".concat(curr.type), curr.el.id || '');
+      }
+    }
+
+    activateInboxElement() {
+      if (!this.inboxNav) return;
+      const item = this.inboxNav.elements[this.inboxNav.index];
+      if (!(item === null || item === void 0 ? void 0 : item.el)) return;
+      this.logger.debug('Inbox activate:', item.type);
+      const inbox = $ct.inbox;
+
+      switch (item.type) {
+        case 'close':
+          this.closeInbox();
+          break;
+
+        case 'category':
+          if (inbox) {
+            inbox.prevCategoryRef = inbox.selectedCategoryRef;
+            inbox.selectedCategoryRef = item.el;
+            inbox.updateActiveCategory(item.el.innerText); // Refresh after category change
+
+            setTimeout(() => {
+              this.refreshInboxElements();
+              this.injectInboxStyles(); // Re-focus same category
+
+              const catIdx = this.inboxNav.elements.findIndex(e => e.el === item.el);
+              this.focusInboxElement(catIdx >= 0 ? catIdx : 0);
+            }, 100);
+          }
+
+          break;
+
+        case 'message':
+          if (item.el.raiseClickedEvent) {
+            item.el.raiseClickedEvent(item.el, false);
+          }
+
+          break;
+      }
+    }
+
+    closeInbox() {
+      this.logger.debug('Closing Web Inbox');
+
+      if ($ct && $ct.inbox && $ct.inbox.isInboxOpen) {
+        $ct.inbox.toggleInbox();
+      } // Cleanup
+
+
+      if (this.inboxNav) {
+        const currentEl = this.inboxNav.elements[this.inboxNav.index];
+
+        if (currentEl && currentEl.el) {
+          currentEl.el.classList.remove('ct-tv-focused');
+        }
+
+        this.inboxNav = null;
+      } // Restore main page focus
+
+
+      if (this.focusableElements.length > 0) {
+        this.focusElement(this.currentFocusIndex);
+      }
+    }
+
+    injectInboxStyles() {
+      var _this$inboxNav;
+
+      if (!((_this$inboxNav = this.inboxNav) === null || _this$inboxNav === void 0 ? void 0 : _this$inboxNav.shadowRoot)) return;
+      this.injectFocusStyle(this.inboxNav.shadowRoot, 'ct-tv-inbox-styles');
+    }
+
+    injectMessageStyles(msgEl) {
+      if (!(msgEl === null || msgEl === void 0 ? void 0 : msgEl.shadowRoot)) return;
+      this.injectFocusStyle(msgEl.shadowRoot, 'ct-tv-msg-styles');
+    }
+
+    isVisible(el) {
+      const style = window.getComputedStyle(el);
+      return style.display !== 'none' && style.visibility !== 'hidden';
+    } // ==================== End Web Inbox Navigation ====================
+    // Handle main page navigation
 
 
     handleMainPageNavigation(event) {
@@ -17955,15 +18221,22 @@
       } catch (error) {
         this.logger.error('Exit error:', error);
       }
-    } // Add TV focus styles
+    } // Add TV focus styles to main document
 
 
     addFocusStyles() {
-      if (document.getElementById('ct-tv-styles')) return;
+      this.injectFocusStyle(document.head, 'ct-tv-styles');
+    } // Helper to inject focus styles into a root element (document.head or shadowRoot)
+
+
+    injectFocusStyle(root, styleId) {
+      var _root$getElementById, _root$querySelector;
+
+      if (!root || ((_root$getElementById = root.getElementById) === null || _root$getElementById === void 0 ? void 0 : _root$getElementById.call(root, styleId)) || ((_root$querySelector = root.querySelector) === null || _root$querySelector === void 0 ? void 0 : _root$querySelector.call(root, "#".concat(styleId)))) return;
       const style = document.createElement('style');
-      style.id = 'ct-tv-styles';
-      style.textContent = "\n      .ct-tv-focused {\n        outline: 3px solid #00ff00 !important;\n        outline-offset: 2px !important;\n        color: white !important;\n        transition: all 0.2s ease !important;\n        box-shadow: 0 0 15px rgba(0, 255, 0, 0.8) !important;\n        z-index: 9999 !important;\n        position: relative !important;\n      }\n      \n      .ct-tv-focused:focus {\n        outline: 3px solid #00ff00 !important;\n      }\n    ";
-      document.head.appendChild(style);
+      style.id = styleId;
+      style.textContent = TV_FOCUS_STYLE;
+      root.appendChild(style);
     } // Refresh focusable elements (call when DOM changes)
 
 
@@ -18007,6 +18280,7 @@
 
       this.isEnabled = false;
       this.shadowNavigation = null;
+      this.inboxNav = null;
       TVNavigation.instance = null;
     } // Get current state
 
@@ -18020,6 +18294,10 @@
         shadowNavigation: this.shadowNavigation ? {
           currentFocusIndex: this.shadowNavigation.currentFocusIndex,
           totalElements: this.shadowNavigation.focusableElements.length
+        } : null,
+        inboxNavigation: this.inboxNav ? {
+          currentIndex: this.inboxNav.index,
+          totalElements: this.inboxNav.elements.length
         } : null
       };
     }
@@ -18055,11 +18333,9 @@
 
   var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
 
-<<<<<<< HEAD
   var _tvNavigation = _classPrivateFieldLooseKey("tvNavigation");
-=======
+
   var _domainSpecification = _classPrivateFieldLooseKey("domainSpecification");
->>>>>>> master
 
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
 
@@ -18200,11 +18476,11 @@
         writable: true,
         value: void 0
       });
-<<<<<<< HEAD
       Object.defineProperty(this, _tvNavigation, {
-=======
+        writable: true,
+        value: void 0
+      });
       Object.defineProperty(this, _domainSpecification, {
->>>>>>> master
         writable: true,
         value: void 0
       });
@@ -18913,11 +19189,8 @@
         antiFlicker: {},
         customId: null,
         isolateSubdomain: false,
-<<<<<<< HEAD
-        enableTVControls: false
-=======
+        enableTVControls: false,
         domainSpecification: null
->>>>>>> master
       };
 
       if (config === null || config === void 0 ? void 0 : config.domainSpecification) {
