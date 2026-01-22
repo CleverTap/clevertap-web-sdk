@@ -1,4 +1,5 @@
 import { compressData } from '../encoder'
+import { Logger } from '../../modules/logger'
 
 /**
  * EncryptionInTransit class for handling AES-GCM-256 encryption/decryption.
@@ -8,6 +9,7 @@ class EncryptionInTransit {
   constructor () {
     this.encryptionKey = null
     this.utf8 = new TextEncoder()
+    this.logger = Logger.getInstance()
   }
 
   /**
@@ -122,9 +124,7 @@ class EncryptionInTransit {
       const ciphertext = this.fromB64(itp)
       const iv = this.fromB64(itv)
 
-      console.log('ciphertext', ciphertext)
-      console.log('iv', iv)
-      console.log('encryptionKey', this.encryptionKey)
+      this.logger.debug(`EIT decryption - ciphertext length: ${ciphertext.length}, iv length: ${iv.length}`)
 
       // Algorithm specification matching backend (tagLength 128 bits)
       const alg = { name: 'AES-GCM', iv, tagLength: 128 }
@@ -138,15 +138,15 @@ class EncryptionInTransit {
         ['decrypt']
       )
         .then((cryptoKey) => {
-          console.log('cryptoKey', cryptoKey)
+          this.logger.debug('EIT decryption - crypto key imported successfully')
           return crypto.subtle.decrypt(alg, cryptoKey, ciphertext)
         })
         .then((plainBuf) => {
-          console.log('plainBuf', plainBuf)
+          this.logger.debug(`EIT decryption - decrypted payload size: ${plainBuf.byteLength} bytes`)
           return new TextDecoder().decode(plainBuf)
         })
         .catch((error) => {
-          console.log('error', error)
+          this.logger.error(`EIT decryption error: ${error.message}`)
           throw new Error(`Decryption failed: ${error.message}`)
         })
     } catch (error) {

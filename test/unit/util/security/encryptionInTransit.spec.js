@@ -1,6 +1,5 @@
 import 'regenerator-runtime/runtime'
 import encryptionInTransitInstance from '../../../../src/util/security/encryptionInTransit'
-import { decompressFromBase64 } from '../../../../src/util/encoder'
 
 // Extract methods from singleton for convenience
 const encryptForBackend = encryptionInTransitInstance.encryptForBackend.bind(encryptionInTransitInstance)
@@ -19,22 +18,16 @@ describe('util/security/encryptionInTransit', () => {
 
   beforeAll(() => {
     global.crypto = mockCrypto
-    global.TextEncoder = class {
-      encode (input) {
-        return new Uint8Array([...input].map(char => char.charCodeAt(0)))
-      }
-    }
-    global.TextDecoder = class {
-      decode (input) {
-        return String.fromCharCode(...input)
-      }
-    }
+    // Use Node.js native TextEncoder/TextDecoder (already set up in test/setup.js)
+    // Just ensure btoa/atob are available
     global.btoa = (str) => Buffer.from(str, 'binary').toString('base64')
     global.atob = (str) => Buffer.from(str, 'base64').toString('binary')
   })
 
   beforeEach(() => {
     jest.clearAllMocks()
+    // Reset the encryption key on the singleton
+    encryptionInTransitInstance.encryptionKey = null
   })
 
   describe('encryptForBackend', () => {
@@ -55,10 +48,11 @@ describe('util/security/encryptionInTransit', () => {
       return encryptForBackend(payload).then((result) => {
         expect(result).toBeDefined()
         expect(typeof result).toBe('string')
+        // importKey is called with just { name: 'AES-GCM' } not the full algorithm object
         expect(mockCrypto.subtle.importKey).toHaveBeenCalledWith(
           'raw',
           mockKey,
-          { name: 'AES-GCM', iv: mockIv, tagLength: 128 },
+          { name: 'AES-GCM' },
           false,
           ['encrypt']
         )
@@ -118,59 +112,78 @@ describe('util/security/encryptionInTransit', () => {
   })
 
   describe('decryptFromBackend', () => {
-    it('should decrypt a valid compressed envelope successfully', () => {
+    it('should decrypt a valid envelope successfully', () => {
       const mockKeyObj = { type: 'secret' }
       const mockDecryptedData = new Uint8Array([116, 101, 115, 116]) // 'test' in bytes
+
+      // Set up the encryption key on the singleton (simulating a previous encryption)
+      encryptionInTransitInstance.encryptionKey = new Uint8Array(32).fill(1)
 
       mockCrypto.subtle.importKey.mockResolvedValue(mockKeyObj)
       mockCrypto.subtle.decrypt.mockResolvedValue(mockDecryptedData.buffer)
 
-      // Mock decompressFromBase64 to return the envelope JSON
-      decompressFromBase64.mockReturnValue(JSON.stringify({
+      // Create a valid envelope (decryptFromBackend expects JSON, not compressed)
+      const envelope = JSON.stringify({
         itp: btoa(String.fromCharCode(3, 4, 5, 6)), // cipher
-        itk: btoa(String.fromCharCode(...Array(32).fill(1))), // key
         itv: btoa(String.fromCharCode(...Array(12).fill(2))) // iv
-      }))
+      })
 
-      return decryptFromBackend('compressed-base64-envelope').then((result) => {
+      return decryptFromBackend(envelope).then((result) => {
         expect(result).toBe('test')
-        expect(decompressFromBase64).toHaveBeenCalledWith('compressed-base64-envelope')
         expect(mockCrypto.subtle.importKey).toHaveBeenCalledWith(
           'raw',
           expect.any(Uint8Array),
-          { name: 'AES-GCM', iv: expect.any(Uint8Array), tagLength: 128 },
+          { name: 'AES-GCM' },
           false,
           ['decrypt']
         )
       })
     })
 
-    it('should throw error for invalid envelope format', () => {
-      decompressFromBase64.mockReturnValue(JSON.stringify({
-        itp: 'data'
-        // missing itk and itv
-      }))
+    it('should throw error for invalid envelope format (missing itp)', () => {
+      encryptionInTransitInstance.encryptionKey = new Uint8Array(32).fill(1)
 
-      return expect(decryptFromBackend('compressed-invalid-envelope')).rejects.toThrow('Decryption failed: Invalid envelope format')
-    })
-
-    it('should handle decompression errors', () => {
-      decompressFromBase64.mockImplementation(() => {
-        throw new Error('Decompression failed')
+      const envelope = JSON.stringify({
+        itv: btoa(String.fromCharCode(...Array(12).fill(2)))
+        // missing itp
       })
 
-      return expect(decryptFromBackend('invalid-compressed-data')).rejects.toThrow('Decryption failed: Decompression failed')
+      return expect(decryptFromBackend(envelope)).rejects.toThrow('Decryption failed: Invalid envelope format')
+    })
+
+    it('should throw error for invalid envelope format (missing itv)', () => {
+      encryptionInTransitInstance.encryptionKey = new Uint8Array(32).fill(1)
+
+      const envelope = JSON.stringify({
+        itp: btoa(String.fromCharCode(3, 4, 5, 6))
+        // missing itv
+      })
+
+      return expect(decryptFromBackend(envelope)).rejects.toThrow('Decryption failed: Invalid envelope format')
+    })
+
+    it('should throw error when no encryption key is available', () => {
+      // Don't set encryptionKey - it should be null
+      encryptionInTransitInstance.encryptionKey = null
+
+      const envelope = JSON.stringify({
+        itp: btoa(String.fromCharCode(3, 4, 5, 6)),
+        itv: btoa(String.fromCharCode(...Array(12).fill(2)))
+      })
+
+      return expect(decryptFromBackend(envelope)).rejects.toThrow('Decryption failed: No encryption key available')
     })
 
     it('should throw error when decryption fails', () => {
       const mockKeyObj = { type: 'secret' }
+
+      encryptionInTransitInstance.encryptionKey = new Uint8Array(32).fill(1)
 
       mockCrypto.subtle.importKey.mockResolvedValue(mockKeyObj)
       mockCrypto.subtle.decrypt.mockRejectedValue(new Error('Decrypt failed'))
 
       const envelope = JSON.stringify({
         itp: btoa(String.fromCharCode(3, 4, 5, 6)),
-        itk: btoa(String.fromCharCode(...Array(32).fill(1))),
         itv: btoa(String.fromCharCode(...Array(12).fill(2)))
       })
 
@@ -206,15 +219,14 @@ describe('util/security/encryptionInTransit', () => {
         mockCrypto.subtle.importKey.mockResolvedValue(mockKeyObj)
         mockCrypto.subtle.decrypt.mockResolvedValue(encodedData.buffer)
 
-        // For this test, we need to parse the encrypted envelope to pass valid data to decrypt
-        // This is a simplified test that verifies the structure
-        const envelope = {
+        // For this test, we create a valid envelope for decryption
+        // The singleton should still have the encryption key from the encrypt call
+        const envelope = JSON.stringify({
           itp: btoa(String.fromCharCode(...mockCipher)),
-          itk: btoa(String.fromCharCode(...mockKey)),
           itv: btoa(String.fromCharCode(...mockIv))
-        }
+        })
 
-        return decryptFromBackend(JSON.stringify(envelope)).then((decrypted) => {
+        return decryptFromBackend(envelope).then((decrypted) => {
           expect(decrypted).toBe(originalData)
         })
       })
@@ -239,6 +251,8 @@ describe('util/security/encryptionInTransit', () => {
       return encryptForBackend('identical payload').then((result1) => {
         // Reset mocks for second encryption
         jest.clearAllMocks()
+        // Reset encryption key to force new key generation
+        encryptionInTransitInstance.encryptionKey = null
 
         // Second encryption with different random values
         const mockKey2 = new Uint8Array(32).fill(5)

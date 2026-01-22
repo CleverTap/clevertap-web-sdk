@@ -8631,6 +8631,107 @@
     return window.location.hostname;
   };
 
+  const logLevels = {
+    DISABLE: 0,
+    ERROR: 1,
+    INFO: 2,
+    DEBUG: 3,
+    DEBUG_PE: 4
+  };
+
+  var _logLevel = _classPrivateFieldLooseKey("logLevel");
+
+  var _log = _classPrivateFieldLooseKey("log");
+
+  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
+
+  class Logger {
+    constructor(logLevel) {
+      Object.defineProperty(this, _isLegacyDebug, {
+        get: _get_isLegacyDebug,
+        set: void 0
+      });
+      Object.defineProperty(this, _log, {
+        value: _log2
+      });
+      Object.defineProperty(this, _logLevel, {
+        writable: true,
+        value: void 0
+      });
+      this.wzrkError = {};
+
+      // Singleton pattern - return existing instance if it exists
+      if (Logger.instance) {
+        return Logger.instance;
+      }
+
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
+      this.wzrkError = {};
+      Logger.instance = this;
+    } // Static method for explicit singleton access
+
+
+    static getInstance(logLevel) {
+      if (!Logger.instance) {
+        Logger.instance = new Logger(logLevel);
+      }
+
+      return Logger.instance;
+    }
+
+    get logLevel() {
+      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
+    }
+
+    set logLevel(logLevel) {
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
+    }
+
+    error(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
+      }
+    }
+
+    info(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
+      }
+    }
+
+    debug(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
+      }
+    }
+
+    debugPE(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
+      }
+    }
+
+    reportError(code, description) {
+      this.wzrkError.c = code;
+      this.wzrkError.d = description;
+      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
+    }
+
+  }
+
+  var _log2 = function _log2(level, message) {
+    if (window.console) {
+      try {
+        const ts = new Date().getTime();
+        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
+      } catch (e) {}
+    }
+  };
+
+  var _get_isLegacyDebug = function () {
+    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
+  };
+
   /**
    * EncryptionInTransit class for handling AES-GCM-256 encryption/decryption.
    * Implemented as a singleton pattern.
@@ -8640,6 +8741,7 @@
     constructor() {
       this.encryptionKey = null;
       this.utf8 = new TextEncoder();
+      this.logger = Logger.getInstance();
     }
     /**
      * Converts Uint8Array to Base64 string
@@ -8761,9 +8863,7 @@
 
         const ciphertext = this.fromB64(itp);
         const iv = this.fromB64(itv);
-        console.log('ciphertext', ciphertext);
-        console.log('iv', iv);
-        console.log('encryptionKey', this.encryptionKey); // Algorithm specification matching backend (tagLength 128 bits)
+        this.logger.debug("EIT decryption - ciphertext length: ".concat(ciphertext.length, ", iv length: ").concat(iv.length)); // Algorithm specification matching backend (tagLength 128 bits)
 
         const alg = {
           name: 'AES-GCM',
@@ -8774,13 +8874,13 @@
         return crypto.subtle.importKey('raw', this.encryptionKey, {
           name: 'AES-GCM'
         }, false, ['decrypt']).then(cryptoKey => {
-          console.log('cryptoKey', cryptoKey);
+          this.logger.debug('EIT decryption - crypto key imported successfully');
           return crypto.subtle.decrypt(alg, cryptoKey, ciphertext);
         }).then(plainBuf => {
-          console.log('plainBuf', plainBuf);
+          this.logger.debug("EIT decryption - decrypted payload size: ".concat(plainBuf.byteLength, " bytes"));
           return new TextDecoder().decode(plainBuf);
         }).catch(error => {
-          console.log('error', error);
+          this.logger.error("EIT decryption error: ".concat(error.message));
           throw new Error("Decryption failed: ".concat(error.message));
         });
       } catch (error) {
@@ -12684,107 +12784,6 @@
   const WVE_URL_ORIGIN = {
     CLEVERTAP: 'dashboard.clevertap.com',
     LOCAL: 'localhost'
-  };
-
-  const logLevels = {
-    DISABLE: 0,
-    ERROR: 1,
-    INFO: 2,
-    DEBUG: 3,
-    DEBUG_PE: 4
-  };
-
-  var _logLevel = _classPrivateFieldLooseKey("logLevel");
-
-  var _log = _classPrivateFieldLooseKey("log");
-
-  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
-
-  class Logger {
-    constructor(logLevel) {
-      Object.defineProperty(this, _isLegacyDebug, {
-        get: _get_isLegacyDebug,
-        set: void 0
-      });
-      Object.defineProperty(this, _log, {
-        value: _log2
-      });
-      Object.defineProperty(this, _logLevel, {
-        writable: true,
-        value: void 0
-      });
-      this.wzrkError = {};
-
-      // Singleton pattern - return existing instance if it exists
-      if (Logger.instance) {
-        return Logger.instance;
-      }
-
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
-      this.wzrkError = {};
-      Logger.instance = this;
-    } // Static method for explicit singleton access
-
-
-    static getInstance(logLevel) {
-      if (!Logger.instance) {
-        Logger.instance = new Logger(logLevel);
-      }
-
-      return Logger.instance;
-    }
-
-    get logLevel() {
-      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
-    }
-
-    set logLevel(logLevel) {
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
-    }
-
-    error(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
-      }
-    }
-
-    info(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
-      }
-    }
-
-    debug(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
-      }
-    }
-
-    debugPE(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
-      }
-    }
-
-    reportError(code, description) {
-      this.wzrkError.c = code;
-      this.wzrkError.d = description;
-      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
-    }
-
-  }
-
-  var _log2 = function _log2(level, message) {
-    if (window.console) {
-      try {
-        const ts = new Date().getTime();
-        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
-    }
-  };
-
-  var _get_isLegacyDebug = function () {
-    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
   };
 
   const renderPopUpImageOnly = (targetingMsgJson, _session) => {
