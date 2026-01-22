@@ -1,3 +1,4 @@
+import 'regenerator-runtime/runtime'
 import Clevertap from '../../src/clevertap'
 import Account from '../../src/modules/account'
 import DeviceManager from '../../src/modules/device'
@@ -7,10 +8,12 @@ import SessionManager from '../../src/modules/session'
 import { compressData } from '../../src/util/encoder'
 import { EMBED_ERROR } from '../../src/util/messages'
 import { getURLParams, getDomain, addToURL } from '../../src/util/url'
-import { StorageManager } from '../../src/util/storage'
+import { StorageManager, $ct } from '../../src/util/storage'
 import { CONTINUOUS_PING_FREQ_IN_MILLIS, FIRST_PING_FREQ_IN_MILLIS } from '../../src/util/constants'
 import UserLoginHandler from '../../src/modules/userLogin'
 import { validateCustomCleverTapID } from '../../src/util/helpers'
+import RequestDispatcher from '../../src/util/requestDispatcher'
+
 // mock everything except for the module that's being tested and constants
 jest.enableAutomock().unmock('../../src/clevertap').unmock('../../src/util/constants')
 
@@ -26,6 +29,9 @@ let mockLogger, mockDevice, mockSessionObject, mockRequestObject, mockOUL
 
 describe('clevertap.js', function () {
   beforeEach(() => {
+    // Clear all mocks first
+    jest.clearAllMocks()
+
     mockLogger = {
       debug: jest.fn(),
       error: jest.fn()
@@ -48,6 +54,24 @@ describe('clevertap.js', function () {
       clear: jest.fn(),
       _processOldValues: jest.fn()
     }
+
+    // Mock RequestDispatcher methods to prevent fetch API calls
+    RequestDispatcher.handleFetchResponse = jest.fn().mockResolvedValue()
+    RequestDispatcher.fireRequest = jest.fn()
+
+    // Mock $ct object with default values - use Object.assign to ensure all properties are set
+    Object.assign($ct, {
+      enableFetchApi: false,
+      blockRequest: false,
+      globalCache: {
+        REQ_N: 0,
+        RESP_N: 0
+      },
+      isOptInRequest: false,
+      globalProfileMap: null
+    })
+
+    // Mock all required functions
     Logger.mockReturnValue(mockLogger)
     DeviceManager.mockReturnValue(mockDevice)
     Account.mockImplementation((accountId, region, targetDomain) => {
@@ -61,8 +85,36 @@ describe('clevertap.js', function () {
     SessionManager.mockReturnValue(mockSessionObject)
     RequestManager.mockReturnValue(mockRequestObject)
     StorageManager._isLocalStorageSupported.mockReturnValue(true)
+    StorageManager.removeCookie = jest.fn()
+    StorageManager.setInstantDeleteFlagInK = jest.fn()
     UserLoginHandler.mockReturnValue(mockOUL)
     validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null })
+
+    // Mock URL and domain functions
+    getURLParams.mockReturnValue({})
+    getDomain.mockReturnValue('')
+    addToURL.mockImplementation((url, key, value) => `${url}?${key}=${value}`)
+    compressData.mockImplementation((data) => {
+      // Return a valid JSON string that can be parsed
+      if (typeof data === 'string') {
+        try {
+          // If it's already a valid JSON string, return it
+          JSON.parse(data)
+          return data
+        } catch (e) {
+          // If not valid JSON, wrap it
+          return JSON.stringify({ data })
+        }
+      }
+      return JSON.stringify(data || {})
+    })
+
+    // Mock timers
+    jest.useFakeTimers()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
   })
 
   describe('constructor', () => {
