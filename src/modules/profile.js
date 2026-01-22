@@ -88,6 +88,7 @@ export default class ProfileHandler extends Array {
           if (outerObj.Site != null) { // organic data from the site
             profileObj = outerObj.Site
             if (isObjectEmpty(profileObj)) {
+              this.#logger.error('Empty profile object provided. No data to send.')
               return
             }
             const validationResult = isObjStructureValid(profileObj, this.#logger, 3)
@@ -210,11 +211,11 @@ export default class ProfileHandler extends Array {
       $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
     }
     if ($ct.globalProfileMap == null) {
-      console.error('Profile map is not initialized. Please create a profile first.')
+      this.#logger.error('Profile map is not initialized. Please create a profile first.')
       return
     }
     if (!value || typeof value !== 'number' || value <= 0) {
-      console.error('Value should be a number greater than 0')
+      this.#logger.error('Value should be a number greater than 0')
       return
     }
 
@@ -224,18 +225,18 @@ export default class ProfileHandler extends Array {
     if (isNestedPath) {
       const segments = parseNestedPath(key)
       if (segments.length === 0) {
-        console.error('Invalid nested path format.')
+        this.#logger.error('Invalid nested path format.')
         return
       }
 
       const currentValue = getNestedValue($ct.globalProfileMap, segments)
       if (currentValue === undefined) {
-        console.error(`Path '${key}' does not exist in profile. Please create the profile structure first.`)
+        this.#logger.error(`Path '${key}' does not exist in profile. Please create the profile structure first.`)
         return
       }
 
       if (typeof currentValue !== 'number') {
-        console.error(`Value at path '${key}' is not a number. Cannot increment/decrement.`)
+        this.#logger.error(`Value at path '${key}' is not a number. Cannot increment/decrement.`)
         return
       }
 
@@ -244,7 +245,7 @@ export default class ProfileHandler extends Array {
         : currentValue - value
 
       if (!setNestedValue($ct.globalProfileMap, segments, newValue)) {
-        console.error(`Failed to update value at path '${key}'.`)
+        this.#logger.error(`Failed to update value at path '${key}'.`)
         return
       }
 
@@ -253,7 +254,7 @@ export default class ProfileHandler extends Array {
       profileObj[key] = { [command]: value }
     } else {
       if (!$ct.globalProfileMap.hasOwnProperty(key)) {
-        console.error('Kindly create profile with required property to increment/decrement.')
+        this.#logger.error('Kindly create profile with required property to increment/decrement.')
         return
       }
 

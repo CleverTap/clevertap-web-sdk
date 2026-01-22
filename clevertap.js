@@ -10741,12 +10741,14 @@
       }
 
       if ($ct.globalProfileMap == null) {
-        console.error('Profile map is not initialized. Please create a profile first.');
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Profile map is not initialized. Please create a profile first.');
+
         return;
       }
 
       if (!value || typeof value !== 'number' || value <= 0) {
-        console.error('Value should be a number greater than 0');
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Value should be a number greater than 0');
+
         return;
       }
 
@@ -10757,26 +10759,30 @@
         const segments = parseNestedPath(key);
 
         if (segments.length === 0) {
-          console.error('Invalid nested path format.');
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
+
           return;
         }
 
         const currentValue = getNestedValue($ct.globalProfileMap, segments);
 
         if (currentValue === undefined) {
-          console.error("Path '".concat(key, "' does not exist in profile. Please create the profile structure first."));
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Path '".concat(key, "' does not exist in profile. Please create the profile structure first."));
+
           return;
         }
 
         if (typeof currentValue !== 'number') {
-          console.error("Value at path '".concat(key, "' is not a number. Cannot increment/decrement."));
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Value at path '".concat(key, "' is not a number. Cannot increment/decrement."));
+
           return;
         }
 
         const newValue = command === COMMAND_INCREMENT ? currentValue + value : currentValue - value;
 
         if (!setNestedValue($ct.globalProfileMap, segments, newValue)) {
-          console.error("Failed to update value at path '".concat(key, "'."));
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Failed to update value at path '".concat(key, "'."));
+
           return;
         }
 
@@ -10787,7 +10793,8 @@
         };
       } else {
         if (!$ct.globalProfileMap.hasOwnProperty(key)) {
-          console.error('Kindly create profile with required property to increment/decrement.');
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Kindly create profile with required property to increment/decrement.');
+
           return;
         }
 
@@ -11289,6 +11296,8 @@
             profileObj = outerObj.Site;
 
             if (isObjectEmpty(profileObj)) {
+              _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Empty profile object provided. No data to send.');
+
               return;
             }
 
