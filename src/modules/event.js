@@ -1,7 +1,7 @@
 import { isString, isObject, sanitize } from '../util/datatypes'
 import { EVENT_ERROR } from '../util/messages'
 import { ACCOUNT_ID, EV_COOKIE, SYSTEM_EVENTS, unsupportedKeyCharRegex } from '../util/constants'
-import { isChargedEventStructureValid, isEventStructureFlat } from '../util/validator'
+import { isChargedEventStructureValid, isObjStructureValid } from '../util/validator'
 import { StorageManager, $ct } from '../util/storage'
 
 export default class EventHandler extends Array {
@@ -69,13 +69,18 @@ export default class EventHandler extends Array {
                 this.#logger.reportError(511, 'Charged event structure invalid. Not sent.')
                 continue
               }
+              data.evtData = eventObj
             } else {
-              if (!isEventStructureFlat(eventObj)) {
-                this.#logger.reportError(512, eventName + ' event structure invalid. Not sent.')
-                continue
+              const validationResult = isObjStructureValid(eventObj, this.#logger, 3)
+              // Validation errors are already logged via logger.reportError in validator
+              // Use cleaned object if provided (even if validation failed)
+              // This removes null/empty values that were logged
+              if (validationResult.processedObj) {
+                data.evtData = validationResult.processedObj
+              } else {
+                data.evtData = eventObj
               }
             }
-            data.evtData = eventObj
           }
         }
 
