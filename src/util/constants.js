@@ -191,7 +191,7 @@ export const NESTED_OBJECT_ERRORS = {
   },
   RESTRICTED_PROFILE_PROPERTY: {
     code: 513,
-    message: "'%s' is a restricted profile property. This property was skipped."
+    message: "'%s' is a restricted profile property and cannot have nested values (objects or arrays). This property was skipped."
   }
 }
 

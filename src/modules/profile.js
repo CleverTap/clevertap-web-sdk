@@ -91,12 +91,27 @@ export default class ProfileHandler extends Array {
               this.#logger.error('Empty profile object provided. No data to send.')
               return
             }
+
+            // Save Date objects for restricted keys before isObjStructureValid converts them
+            // This allows isProfileValid to handle DOB and other date fields correctly
+            const savedRestrictedDateValues = {}
+            for (const key of PROFILE_RESTRICTED_ROOT_KEYS) {
+              if (profileObj[key] instanceof Date) {
+                savedRestrictedDateValues[key] = profileObj[key]
+              }
+            }
+
             const validationResult = isObjStructureValid(profileObj, this.#logger, 3)
             // Validation errors are already logged via logger.reportError in validator
             // Use cleaned object if provided (even if validation failed)
             // This removes null/empty values that were logged
             if (validationResult.processedObj) {
               profileObj = validationResult.processedObj
+            }
+
+            // Restore Date objects for restricted keys so isProfileValid can handle them
+            for (const key in savedRestrictedDateValues) {
+              profileObj[key] = savedRestrictedDateValues[key]
             }
 
             // Profile-specific validation: Drop restricted keys at root level
@@ -143,22 +158,34 @@ export default class ProfileHandler extends Array {
   }
 
   /**
-   * Filters out restricted keys from profile object and logs errors
+   * Filters out restricted keys from profile object if they have nested values (objects or arrays)
+   * Restricted keys with primitive values (string, number, boolean, Date) are allowed
    * @param {Object} profileObj - The profile object to filter
-   * @returns {Object} Filtered profile object without restricted keys
+   * @returns {Object} Filtered profile object
    * @private
    */
   #filterRestrictedKeys (profileObj) {
     const finalProfileObj = {}
     for (const key in profileObj) {
       if (profileObj.hasOwnProperty(key)) {
+        const value = profileObj[key]
         if (PROFILE_RESTRICTED_ROOT_KEYS.includes(key)) {
-          this.#logger.reportError(
-            NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.code,
-            NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.message.replace('%s', key)
-          )
+          // Check if value is nested (object or array, but not Date)
+          const isNestedValue = value !== null &&
+            typeof value === 'object' &&
+            !(value instanceof Date)
+          if (isNestedValue) {
+            // Skip restricted keys with nested values and log error
+            this.#logger.reportError(
+              NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.code,
+              NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.message.replace('%s', key)
+            )
+          } else {
+            // Allow restricted keys with primitive values
+            finalProfileObj[key] = value
+          }
         } else {
-          finalProfileObj[key] = profileObj[key]
+          finalProfileObj[key] = value
         }
       }
     }

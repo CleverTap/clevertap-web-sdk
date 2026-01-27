@@ -298,7 +298,7 @@
     },
     RESTRICTED_PROFILE_PROPERTY: {
       code: 513,
-      message: "'%s' is a restricted profile property. This property was skipped."
+      message: "'%s' is a restricted profile property and cannot have nested values (objects or arrays). This property was skipped."
     }
   }; // Restricted profile keys that cannot be at root level (0th level)
 
@@ -11299,6 +11299,16 @@
               _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Empty profile object provided. No data to send.');
 
               return;
+            } // Save Date objects for restricted keys before isObjStructureValid converts them
+            // This allows isProfileValid to handle DOB and other date fields correctly
+
+
+            const savedRestrictedDateValues = {};
+
+            for (const key of PROFILE_RESTRICTED_ROOT_KEYS) {
+              if (profileObj[key] instanceof Date) {
+                savedRestrictedDateValues[key] = profileObj[key];
+              }
             }
 
             const validationResult = isObjStructureValid(profileObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7], 3); // Validation errors are already logged via logger.reportError in validator
@@ -11307,6 +11317,11 @@
 
             if (validationResult.processedObj) {
               profileObj = validationResult.processedObj;
+            } // Restore Date objects for restricted keys so isProfileValid can handle them
+
+
+            for (const key in savedRestrictedDateValues) {
+              profileObj[key] = savedRestrictedDateValues[key];
             } // Profile-specific validation: Drop restricted keys at root level
 
 
@@ -11368,10 +11383,21 @@
 
     for (const key in profileObj) {
       if (profileObj.hasOwnProperty(key)) {
+        const value = profileObj[key];
+
         if (PROFILE_RESTRICTED_ROOT_KEYS.includes(key)) {
-          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].reportError(NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.code, NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.message.replace('%s', key));
+          // Check if value is nested (object or array, but not Date)
+          const isNestedValue = value !== null && typeof value === 'object' && !(value instanceof Date);
+
+          if (isNestedValue) {
+            // Skip restricted keys with nested values and log error
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].reportError(NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.code, NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.message.replace('%s', key));
+          } else {
+            // Allow restricted keys with primitive values
+            finalProfileObj[key] = value;
+          }
         } else {
-          finalProfileObj[key] = profileObj[key];
+          finalProfileObj[key] = value;
         }
       }
     }
