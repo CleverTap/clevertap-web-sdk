@@ -158,3 +158,55 @@ export const ACTION_TYPES = {
   SOFT_PROMPT: 'soft-prompt',
   RUN_JS: 'js'
 }
+
+// Nested object errors
+export const NESTED_OBJECT_ERRORS = {
+  DEPTH_LIMIT_EXCEEDED: {
+    code: 541,
+    message: 'Event data exceeded maximum nesting depth. Depth: %s, Limit: %s'
+  },
+  ARRAY_KEY_COUNT_LIMIT_EXCEEDED: {
+    code: 542,
+    message: 'Event data exceeded maximum array key count. Count: %s, Limit: %s'
+  },
+  OBJECT_KEY_COUNT_LIMIT_EXCEEDED: {
+    code: 543,
+    message: 'Event data exceeded maximum object key count. Count: %s, Limit: %s'
+  },
+  ARRAY_LENGTH_LIMIT_EXCEEDED: {
+    code: 543,
+    message: 'Event data exceeded maximum array length. Length: %s, Limit: %s'
+  },
+  KV_PAIR_COUNT_LIMIT_EXCEEDED: {
+    code: 544,
+    message: 'Event data exceeded maximum key-value pair count. Count: %s, Limit: %s'
+  },
+  NULL_VALUE_REMOVED: {
+    code: 545,
+    message: "Null value for key '%s' was removed"
+  },
+  EMPTY_VALUE_REMOVED: {
+    code: 545,
+    message: "Empty value for key '%s' was removed"
+  },
+  RESTRICTED_PROFILE_PROPERTY: {
+    code: 513,
+    message: "'%s' is a restricted profile property and cannot have nested values (objects or arrays). This property was skipped."
+  }
+}
+
+// Restricted profile keys that cannot be at root level (0th level)
+export const PROFILE_RESTRICTED_ROOT_KEYS = [
+  'Name',
+  'Email',
+  'Education',
+  'Married',
+  'DOB',
+  'Gender',
+  'Phone',
+  'Age',
+  'FBID',
+  'GPID',
+  'Birthday',
+  'Identity'
+]
