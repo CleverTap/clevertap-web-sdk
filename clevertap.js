@@ -14927,7 +14927,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.4.0';
+            const sdkVersion = '2.4.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -16565,30 +16565,62 @@
         }
       } else {
         window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id; // Handles delivery triggers (inactivity, scroll, exit intent, delay)
+        // When multiple triggers are set, whichever fires first renders the campaign
+        // and all other triggers are cleaned up to prevent duplicate renders
 
         if (displayObj.deliveryTrigger) {
+          const triggerCleanups = [];
+          let delayTimeoutId = null;
+          let hasRendered = false; // Cleans up all triggers to prevent duplicate renders
+
+          const cleanupAllTriggers = () => {
+            triggerCleanups.forEach(cleanup => {
+              if (typeof cleanup === 'function') cleanup();
+            });
+
+            if (delayTimeoutId) {
+              clearTimeout(delayTimeoutId);
+              delayTimeoutId = null;
+            }
+          }; // Coordinated render function - renders once and cleans up all triggers
+
+
+          const renderOnceAndCleanup = () => {
+            if (hasRendered) return;
+            hasRendered = true;
+            cleanupAllTriggers();
+            this.renderFooterNotification(targetingMsgJson, exitintentObj);
+          };
+
           if (displayObj.deliveryTrigger.inactive) {
-            this.triggerByInactivity(targetingMsgJson);
+            triggerCleanups.push(this.triggerByInactivity(targetingMsgJson, renderOnceAndCleanup));
           }
 
           if (displayObj.deliveryTrigger.scroll) {
-            this.triggerByScroll(targetingMsgJson);
+            triggerCleanups.push(this.triggerByScroll(targetingMsgJson, renderOnceAndCleanup));
           }
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
-            /* Show it only once per callback */
 
-            const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj);
+            const handleMouseLeave = event => {
+              if (hasRendered) return;
+              const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
+
+              if (wasRendered) {
+                hasRendered = true;
+                cleanupAllTriggers();
+              }
+            };
+
             window.document.addEventListener('mouseleave', handleMouseLeave);
+            triggerCleanups.push(() => window.document.removeEventListener('mouseleave', handleMouseLeave));
           }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
 
           if (delay != null && delay > 0) {
-            setTimeout(() => {
-              this.renderFooterNotification(targetingMsgJson, exitintentObj);
-            }, delay * 1000);
+            delayTimeoutId = setTimeout(renderOnceAndCleanup, delay * 1000);
           }
         } else {
           this.renderFooterNotification(targetingMsgJson, exitintentObj);
@@ -16662,7 +16694,8 @@
     },
 
     // Triggers campaign based on user inactivity
-    triggerByInactivity(targetNotif) {
+    // onTrigger callback is called when inactivity threshold is met
+    triggerByInactivity(targetNotif, onTrigger) {
       const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // Convert to milliseconds
 
       let idleTimer;
@@ -16671,8 +16704,13 @@
       const resetIdleTimer = () => {
         clearTimeout(idleTimer);
         idleTimer = setTimeout(() => {
-          this.renderFooterNotification(targetNotif);
           removeEventListeners();
+
+          if (onTrigger) {
+            onTrigger();
+          } else {
+            this.renderFooterNotification(targetNotif);
+          }
         }, IDLE_TIME_THRESHOLD);
       };
 
@@ -16687,6 +16725,7 @@
       };
 
       const removeEventListeners = () => {
+        clearTimeout(idleTimer);
         events.forEach(eventType => window.removeEventListener(eventType, eventHandler));
       };
 
@@ -16697,7 +16736,8 @@
     },
 
     // Triggers campaign based on scroll percentage
-    triggerByScroll(targetNotif) {
+    // onTrigger callback is called when scroll threshold is met
+    triggerByScroll(targetNotif, onTrigger) {
       const calculateScrollPercentage = () => {
         const {
           scrollHeight,
@@ -16711,8 +16751,13 @@
         const scrollPercentage = calculateScrollPercentage();
 
         if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
-          this.renderFooterNotification(targetNotif);
           window.removeEventListener('scroll', throttledScrollListener);
+
+          if (onTrigger) {
+            onTrigger();
+          } else {
+            this.renderFooterNotification(targetNotif);
+          }
         }
       };
 
@@ -17533,7 +17578,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.4.0',
+        lib: 'web-sdk-v2.4.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -19490,7 +19535,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.4.0';
+      return 'web-sdk-v2.4.1';
     }
 
     defineVariable(name, defaultValue) {
