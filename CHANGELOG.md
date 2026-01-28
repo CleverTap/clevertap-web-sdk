@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [2.4.1] 30 Jan 2026
-- Fixed the ampaign delivery triggers logic
+- Fixed the campaign delivery triggers logic
 
 ## [2.4.0] 27 Jan 2026
 - Added Nested object support in profile and event properties.
