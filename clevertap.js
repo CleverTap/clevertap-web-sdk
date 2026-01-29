@@ -221,9 +221,11 @@
   const WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
-  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'; // Flag key for optional sub-domain profile isolation
+  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK';
 
-  const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD';
+  const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'; // Flag key for Encryption in Transit JSONP fallback (session-level)
+
+  const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -8949,6 +8951,273 @@
     return window.location.hostname;
   };
 
+  const logLevels = {
+    DISABLE: 0,
+    ERROR: 1,
+    INFO: 2,
+    DEBUG: 3,
+    DEBUG_PE: 4
+  };
+
+  var _logLevel = _classPrivateFieldLooseKey("logLevel");
+
+  var _log = _classPrivateFieldLooseKey("log");
+
+  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
+
+  class Logger {
+    constructor(logLevel) {
+      Object.defineProperty(this, _isLegacyDebug, {
+        get: _get_isLegacyDebug,
+        set: void 0
+      });
+      Object.defineProperty(this, _log, {
+        value: _log2
+      });
+      Object.defineProperty(this, _logLevel, {
+        writable: true,
+        value: void 0
+      });
+      this.wzrkError = {};
+
+      // Singleton pattern - return existing instance if it exists
+      if (Logger.instance) {
+        return Logger.instance;
+      }
+
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
+      this.wzrkError = {};
+      Logger.instance = this;
+    } // Static method for explicit singleton access
+
+
+    static getInstance(logLevel) {
+      if (!Logger.instance) {
+        Logger.instance = new Logger(logLevel);
+      }
+
+      return Logger.instance;
+    }
+
+    get logLevel() {
+      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
+    }
+
+    set logLevel(logLevel) {
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
+    }
+
+    error(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
+      }
+    }
+
+    info(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
+      }
+    }
+
+    debug(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
+      }
+    }
+
+    debugPE(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
+      }
+    }
+
+    reportError(code, description) {
+      this.wzrkError.c = code;
+      this.wzrkError.d = description;
+      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
+    }
+
+  }
+
+  var _log2 = function _log2(level, message) {
+    if (window.console) {
+      try {
+        const ts = new Date().getTime();
+        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
+      } catch (e) {}
+    }
+  };
+
+  var _get_isLegacyDebug = function () {
+    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
+  };
+
+  /**
+   * EncryptionInTransit class for handling AES-GCM-256 encryption/decryption.
+   * Implemented as a singleton pattern.
+   */
+
+  class EncryptionInTransit {
+    constructor() {
+      this.encryptionKey = null;
+      this.utf8 = new TextEncoder();
+      this.logger = Logger.getInstance();
+    }
+    /**
+     * Converts Uint8Array to Base64 string
+     * @private
+     */
+
+
+    toB64(u8) {
+      return btoa(String.fromCharCode(...u8));
+    }
+    /**
+     * Converts Base64 string to Uint8Array
+     * @private
+     */
+
+
+    fromB64(b64) {
+      return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    }
+    /**
+     * Generates random bytes
+     * @private
+     */
+
+
+    rnd(n) {
+      return crypto.getRandomValues(new Uint8Array(n));
+    }
+    /**
+     * Generates a new symmetric key for encryption
+     * @returns {Uint8Array} - 256-bit (32 bytes) symmetric key
+     */
+
+
+    generateSymmetricKey() {
+      // Generate a random 256-bit key (32 bytes) to match backend AES-256
+      this.encryptionKey = this.rnd(32);
+      return this.encryptionKey;
+    }
+    /**
+     * Encrypts payload for backend transmission using AES-GCM-256.
+     *
+     * @param {string|Object} payload - The payload to encrypt (string or object to stringify)
+     * @param {Object} options - Options object
+     * @param {string} options.id - Optional identifier (defaults to 'ZWW-WWW-WWRZ')
+     * @returns {Promise<string>} - Base64 compressed encrypted envelope
+     */
+
+
+    encryptForBackend(payload) {
+      let {
+        id = 'ZWW-WWW-WWRZ'
+      } = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+      // Generate a new symmetric key for this encryption
+      if (!this.encryptionKey) {
+        this.generateSymmetricKey();
+      } // Generate a random 96-bit IV (12 bytes) for GCM
+
+
+      const iv = this.rnd(12); // Algorithm specification with tag length matching backend (128 bits)
+
+      const alg = {
+        name: 'AES-GCM',
+        iv,
+        tagLength: 128
+      }; // Convert payload to bytes
+
+      const plainBuf = this.utf8.encode(typeof payload === 'string' ? payload : JSON.stringify(payload)); // Import the raw key as a CryptoKey
+
+      return crypto.subtle.importKey('raw', this.encryptionKey, {
+        name: 'AES-GCM'
+      }, false, ['encrypt']).then(cryptoKey => {
+        // Encrypt the data
+        return crypto.subtle.encrypt(alg, cryptoKey, plainBuf);
+      }).then(cipherBuf => {
+        const cipher = new Uint8Array(cipherBuf);
+        const envelope = {
+          itp: this.toB64(cipher),
+          // payload - base64 encoded ciphertext (includes auth tag)
+          itk: this.toB64(this.encryptionKey),
+          // key - base64 encoded raw AES key
+          itv: this.toB64(iv),
+          // iv - base64 encoded IV
+          id,
+          encrypted: true
+        };
+        return compressData(JSON.stringify(envelope));
+      }).catch(error => {
+        throw new Error("Encryption failed: ".concat(error.message));
+      });
+    }
+    /**
+     * Decrypts response from backend using AES-GCM-256.
+     * This is a stub implementation for Phase 2.
+     *
+     * @param {string} envelope - encrypted envelope
+     * @returns {Promise<string>} - Decrypted plaintext
+     */
+
+
+    async decryptFromBackend(envelope) {
+      try {
+        // Parse the envelope from backend
+        const parsedEnvelope = JSON.parse(envelope);
+        const {
+          itp,
+          itv
+        } = parsedEnvelope;
+
+        if (!itp || !itv) {
+          return Promise.reject(new Error('Decryption failed: Invalid envelope format'));
+        } // Check if encryption key exists
+
+
+        if (!this.encryptionKey) {
+          return Promise.reject(new Error('Decryption failed: No encryption key available'));
+        }
+
+        const ciphertext = this.fromB64(itp);
+        const iv = this.fromB64(itv);
+        this.logger.debug("EIT decryption - ciphertext length: ".concat(ciphertext.length, ", iv length: ").concat(iv.length)); // Algorithm specification matching backend (tagLength 128 bits)
+
+        const alg = {
+          name: 'AES-GCM',
+          iv,
+          tagLength: 128
+        }; // Import the key and decrypt
+
+        return crypto.subtle.importKey('raw', this.encryptionKey, {
+          name: 'AES-GCM'
+        }, false, ['decrypt']).then(cryptoKey => {
+          this.logger.debug('EIT decryption - crypto key imported successfully');
+          return crypto.subtle.decrypt(alg, cryptoKey, ciphertext);
+        }).then(plainBuf => {
+          this.logger.debug("EIT decryption - decrypted payload size: ".concat(plainBuf.byteLength, " bytes"));
+          return new TextDecoder().decode(plainBuf);
+        }).catch(error => {
+          this.logger.error("EIT decryption error: ".concat(error.message));
+          throw new Error("Decryption failed: ".concat(error.message));
+        });
+      } catch (error) {
+        return Promise.reject(new Error("Decryption failed: ".concat(error.message)));
+      }
+    }
+
+  } // Create and export singleton instance
+
+
+  const encryptionInTransitInstance = new EncryptionInTransit();
+  window.encryptionInTransitInstance = encryptionInTransitInstance; // Export the singleton instance
+
+  var _retryViaJSONP = _classPrivateFieldLooseKey("retryViaJSONP");
+
+  var _prepareEncryptedRequest = _classPrivateFieldLooseKey("prepareEncryptedRequest");
+
   var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
 
   var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
@@ -8964,6 +9233,48 @@
     }
 
     /**
+     * Checks if the EIT fallback flag is set in local storage.
+     * When set, the SDK should bypass encryption and use JSONP for the session.
+     * @returns {boolean} - true if fallback is active
+     */
+    static isEITFallbackActive() {
+      if (!StorageManager._isLocalStorageSupported()) {
+        return false;
+      }
+
+      return StorageManager.read(CT_EIT_FALLBACK) === true;
+    }
+    /**
+     * Sets the EIT fallback flag in local storage.
+     * This will cause the SDK to bypass encryption and use JSONP for the session.
+     */
+
+
+    static setEITFallback() {
+      if (StorageManager._isLocalStorageSupported()) {
+        StorageManager.save(CT_EIT_FALLBACK, true);
+        this.logger.debug('EIT fallback flag set - subsequent requests will use JSONP');
+      }
+    }
+    /**
+     * Clears the EIT fallback flag from local storage.
+     * Called during clevertap.init() to reset for new session.
+     */
+
+
+    static clearEITFallback() {
+      if (StorageManager._isLocalStorageSupported()) {
+        StorageManager.remove(CT_EIT_FALLBACK);
+      }
+    }
+    /**
+     * Retries a request via JSONP (script tag injection).
+     * Used when EIT is rejected by the backend.
+     * @param {string} url - The URL to send via JSONP
+     */
+
+
+    /**
      *
      * @param {string} url
      * @param {*} skipARP
@@ -8971,6 +9282,135 @@
      */
     static fireRequest(url, skipARP, sendOULFlag, evtName) {
       _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
+    }
+
+    static handleFetchResponse(encryptedUrl, originalUrl) {
+      let retryCount = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+      const fetchOptions = {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'X-CleverTap-Encryption-Enabled': 'true'
+        }
+      };
+      fetch(encryptedUrl, fetchOptions).then(response => {
+        if (!response.ok) {
+          // Handle 402 (Payment Required) or 419: Encryption not enabled for account
+          if (response.status === 402 || response.status === 419) {
+            this.logger.error('Encryption in Transit is disabled on server side'); // Set the fallback flag for this session
+
+            this.setEITFallback(); // Retry with JSONP using the original unencrypted URL
+
+            if (originalUrl && originalUrl !== encryptedUrl) {
+              this.logger.debug('Retrying request via JSONP without encryption');
+
+              _classPrivateFieldLooseBase(this, _retryViaJSONP)[_retryViaJSONP](originalUrl);
+
+              return null; // Signal that we've handled this via JSONP
+            }
+
+            throw new Error("Encryption not enabled for account: ".concat(response.statusText));
+          } // Handle 420: Failed to decrypt payload
+
+
+          if (response.status === 420) {
+            if (retryCount < 3) {
+              this.logger.debug("Retrying request due to 420 error, attempt ".concat(retryCount + 1, " of 3")); // Retry the same encrypted request
+
+              return this.handleFetchResponse(encryptedUrl, originalUrl, retryCount + 1);
+            } else {
+              this.logger.error('Failed to decrypt payload after 3 retries');
+              throw new Error('Failed to decrypt payload');
+            }
+          }
+
+          throw new Error("Network response was not ok: ".concat(response.statusText));
+        }
+
+        return response.text();
+      }).then(rawResponse => {
+        // Skip processing if this is a JSONP fallback (null response) or a retry promise
+        if (rawResponse === null || rawResponse instanceof Promise) {
+          return rawResponse;
+        } // Phase 2: Attempt to decrypt the response if it might be encrypted
+
+
+        const tryDecryption = () => {
+          if (rawResponse && rawResponse.length > 0 && this.enableEncryptionInTransit) {
+            return encryptionInTransitInstance.decryptFromBackend(rawResponse).then(decryptedResponse => {
+              this.logger.debug('Successfully decrypted response');
+              return decryptedResponse;
+            }).catch(decryptError => {
+              // If decryption fails, assume the response was not encrypted
+              this.logger.debug('Response decryption failed, assuming unencrypted:', decryptError.message);
+              return rawResponse;
+            });
+          }
+
+          return Promise.resolve(rawResponse);
+        };
+
+        return tryDecryption();
+      }).then(processedResponse => {
+        // Skip processing if this is a recursive promise
+        if (processedResponse instanceof Promise) {
+          return processedResponse;
+        } // Parse the final response as JSON
+
+
+        let jsonResponse;
+
+        try {
+          jsonResponse = JSON.parse(processedResponse);
+        } catch (parseError) {
+          this.logger.error('Failed to parse response as JSON:', parseError);
+          throw new Error('Invalid JSON response');
+        }
+
+        const {
+          tr,
+          meta,
+          wpe
+        } = jsonResponse;
+
+        if (tr) {
+          window.$WZRK_WR.tr(tr);
+        }
+
+        if (meta) {
+          const {
+            g,
+            sid,
+            rf,
+            rn,
+            optOut
+          } = meta;
+
+          if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
+            const parsedRn = parseInt(rn); // Include optOut as 5th parameter if present
+
+            if (optOut !== undefined) {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn, optOut);
+            } else {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn);
+            }
+          }
+        }
+
+        if (wpe) {
+          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key);
+        }
+
+        this.logger.debug('req snt -> url: ' + encryptedUrl);
+      }).catch(error => {
+        if (error.message && error.message.includes('EIT decryption failed')) {
+          this.logger.error('EIT decryption failed', error); // Safely ignore the response payload and proceed without applying server changes
+
+          return;
+        }
+
+        this.logger.error('Fetch error:', error);
+      });
     }
 
     getDelayFrequency() {
@@ -9110,14 +9550,107 @@
 
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:');
-    } // TODO: Try using Function constructor instead of appending script.
+    } // Prepare request with optional encryption
 
 
+    _classPrivateFieldLooseBase(this, _prepareEncryptedRequest)[_prepareEncryptedRequest](url).then(requestConfig => {
+      // TODO: Try using Function constructor instead of appending script.
+      var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
+
+      while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+        ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
+      } // Use the static flag instead of the global $ct map
+      // When encryption is enabled (and not in fallback mode), always use Fetch API
+      // If fallback is active, use JSONP regardless of encryption setting
+
+
+      const shouldUseJSONP = !this.enableFetchApi && !this.enableEncryptionInTransit || requestConfig.useFallback;
+
+      if (shouldUseJSONP) {
+        const s = document.createElement('script');
+        s.setAttribute('type', 'text/javascript');
+        s.setAttribute('src', requestConfig.url);
+        s.setAttribute('class', 'ct-jp-cb');
+        s.setAttribute('rel', 'nofollow');
+        s.async = true;
+        document.getElementsByTagName('head')[0].appendChild(s);
+        this.logger.debug('req snt -> url: ' + requestConfig.url);
+      } else {
+        this.handleFetchResponse(requestConfig.url, requestConfig.originalUrl);
+      }
+    }).catch(error => {
+      this.logger.error('Request preparation failed:', error);
+    });
+  };
+
+  var _prepareEncryptedRequest2 = function _prepareEncryptedRequest2(url) {
+    // Check if encryption is disabled or fallback is active
+    if (!this.enableEncryptionInTransit || this.isEITFallbackActive()) {
+      if (this.isEITFallbackActive() && this.enableEncryptionInTransit) {
+        this.logger.debug('EIT fallback active - bypassing encryption for this session');
+      }
+
+      return Promise.resolve({
+        url,
+        method: 'GET',
+        useFallback: this.isEITFallbackActive()
+      });
+    } // Force Fetch API when encryption is enabled
+
+
+    this.enableFetchApi = true;
+
+    try {
+      // Extract query string from URL
+      const urlObj = new URL(url);
+      const searchParams = new URLSearchParams(urlObj.search); // Check if 'd' parameter exists
+
+      const dParam = searchParams.get('d');
+
+      if (!dParam) {
+        return Promise.resolve({
+          url,
+          method: 'GET'
+        });
+      } // Encrypt only the 'd' parameter value
+
+
+      return encryptionInTransitInstance.encryptForBackend(dParam, {
+        id: this.account.id
+      }).then(encryptedData => {
+        // Replace the 'd' parameter with encrypted data
+        searchParams.set('d', encryptedData); // Reconstruct the URL with encrypted 'd' parameter
+
+        const newUrl = "".concat(urlObj.protocol, "//").concat(urlObj.host).concat(urlObj.pathname, "?").concat(searchParams.toString());
+        return {
+          url: newUrl,
+          originalUrl: url,
+          method: 'GET'
+        };
+      }).catch(error => {
+        this.logger.error('Encryption failed, falling back to unencrypted request:', error);
+        return {
+          url,
+          method: 'GET'
+        };
+      });
+    } catch (error) {
+      this.logger.error('URL parsing failed, falling back to unencrypted request:', error);
+      return Promise.resolve({
+        url,
+        method: 'GET'
+      });
+    }
+  };
+
+  var _retryViaJSONP2 = function _retryViaJSONP2(url) {
+    // Clean up any existing callback scripts
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
 
     while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
-    }
+    } // Create and inject script tag for JSONP
+
 
     const s = document.createElement('script');
     s.setAttribute('type', 'text/javascript');
@@ -9126,12 +9659,20 @@
     s.setAttribute('rel', 'nofollow');
     s.async = true;
     document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url);
+    this.logger.debug('EIT fallback: req snt via JSONP -> url: ' + url);
   };
 
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
   RequestDispatcher.account = void 0;
+  RequestDispatcher.enableFetchApi = false;
+  RequestDispatcher.enableEncryptionInTransit = false;
+  Object.defineProperty(RequestDispatcher, _retryViaJSONP, {
+    value: _retryViaJSONP2
+  });
+  Object.defineProperty(RequestDispatcher, _prepareEncryptedRequest, {
+    value: _prepareEncryptedRequest2
+  });
   Object.defineProperty(RequestDispatcher, _fireRequest, {
     value: _fireRequest2
   });
@@ -13184,107 +13725,6 @@
   const WVE_URL_ORIGIN = {
     CLEVERTAP: 'dashboard.clevertap.com',
     LOCAL: 'localhost'
-  };
-
-  const logLevels = {
-    DISABLE: 0,
-    ERROR: 1,
-    INFO: 2,
-    DEBUG: 3,
-    DEBUG_PE: 4
-  };
-
-  var _logLevel = _classPrivateFieldLooseKey("logLevel");
-
-  var _log = _classPrivateFieldLooseKey("log");
-
-  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
-
-  class Logger {
-    constructor(logLevel) {
-      Object.defineProperty(this, _isLegacyDebug, {
-        get: _get_isLegacyDebug,
-        set: void 0
-      });
-      Object.defineProperty(this, _log, {
-        value: _log2
-      });
-      Object.defineProperty(this, _logLevel, {
-        writable: true,
-        value: void 0
-      });
-      this.wzrkError = {};
-
-      // Singleton pattern - return existing instance if it exists
-      if (Logger.instance) {
-        return Logger.instance;
-      }
-
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
-      this.wzrkError = {};
-      Logger.instance = this;
-    } // Static method for explicit singleton access
-
-
-    static getInstance(logLevel) {
-      if (!Logger.instance) {
-        Logger.instance = new Logger(logLevel);
-      }
-
-      return Logger.instance;
-    }
-
-    get logLevel() {
-      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
-    }
-
-    set logLevel(logLevel) {
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
-    }
-
-    error(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
-      }
-    }
-
-    info(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
-      }
-    }
-
-    debug(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
-      }
-    }
-
-    debugPE(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
-      }
-    }
-
-    reportError(code, description) {
-      this.wzrkError.c = code;
-      this.wzrkError.d = description;
-      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
-    }
-
-  }
-
-  var _log2 = function _log2(level, message) {
-    if (window.console) {
-      try {
-        const ts = new Date().getTime();
-        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
-    }
-  };
-
-  var _get_isLegacyDebug = function () {
-    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
   };
 
   const renderPopUpImageOnly = (targetingMsgJson, _session) => {
@@ -18376,6 +18816,10 @@
 
   var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
 
+  var _enableFetchApi = _classPrivateFieldLooseKey("enableFetchApi");
+
+  var _enableEncryptionInTransit = _classPrivateFieldLooseKey("enableEncryptionInTransit");
+
   var _domainSpecification = _classPrivateFieldLooseKey("domainSpecification");
 
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
@@ -18422,6 +18866,26 @@
       const dismissSpamControl = value === true;
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
       $ct.dismissSpamControl = dismissSpamControl;
+    }
+
+    get enableFetchApi() {
+      return _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
+    }
+
+    set enableFetchApi(value) {
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value; // propagate the setting to RequestDispatcher so util layer can honour it
+
+      RequestDispatcher.enableFetchApi = value;
+    }
+
+    get enableEncryptionInTransit() {
+      return _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit];
+    }
+
+    set enableEncryptionInTransit(value) {
+      _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = value; // propagate the setting to RequestDispatcher so util layer can honour it
+
+      RequestDispatcher.enableEncryptionInTransit = value;
     }
 
     get domainSpecification() {
@@ -18517,6 +18981,14 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _enableFetchApi, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _enableEncryptionInTransit, {
+        writable: true,
+        value: void 0
+      });
       Object.defineProperty(this, _domainSpecification, {
         writable: true,
         value: void 0
@@ -18546,6 +19018,10 @@
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = (_clevertap$dismissSpa = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa !== void 0 ? _clevertap$dismissSpa : true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = clevertap.enableFetchApi || false;
+      RequestDispatcher.enableFetchApi = _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
+      _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = clevertap.enableEncryptionInTransit || false;
+      RequestDispatcher.enableEncryptionInTransit = _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit];
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         isPersonalisationActive: this._isPersonalisationActive,
@@ -19237,7 +19713,10 @@
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
         // already initailsed
         return;
-      }
+      } // Clear EIT fallback flag on new session (init)
+
+
+      RequestDispatcher.clearEITFallback();
 
       if (accountId) {
         encryption.key = accountId;
@@ -19277,6 +19756,16 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
+      }
+
+      if (config.enableFetchApi) {
+        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
+        RequestDispatcher.enableFetchApi = config.enableFetchApi;
+      }
+
+      if (config.enableEncryptionInTransit) {
+        _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = config.enableEncryptionInTransit;
+        RequestDispatcher.enableEncryptionInTransit = config.enableEncryptionInTransit;
       } // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
       // This ensures user identity is established before other events
 
