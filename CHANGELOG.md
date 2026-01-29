@@ -1,8 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.4.0] 7th Jan 2026
-- Added Fetch API support for network requests
+
+## [2.5.0] 29th Jan 2026
+- Fetch api and encryption support
+
+## [2.4.0] 27 Jan 2026
+- Added Nested object support in profile and event properties.
 
 ## [2.3.4] 12th Dec 2025
 - Fixed the issue where interval was not cleared in web native display.

@@ -510,7 +510,7 @@ export default class CleverTap {
       if (Array.isArray(value)) {
         this.profile._handleMultiValueSet(key, value, COMMAND_SET)
       } else {
-        console.error('setMultiValuesForKey should be called with a value of type array')
+        this.#logger.error('setMultiValuesForKey should be called with a value of type array')
       }
     }
 
@@ -518,7 +518,7 @@ export default class CleverTap {
       if (typeof value === 'string' || typeof value === 'number') {
         this.profile._handleMultiValueAdd(key, value, COMMAND_ADD)
       } else {
-        console.error('addMultiValueForKey should be called with a value of type string or number.')
+        this.#logger.error('addMultiValueForKey should be called with a value of type string or number.')
       }
     }
 
@@ -526,7 +526,7 @@ export default class CleverTap {
       if (Array.isArray(value)) {
         this.profile._handleMultiValueAdd(key, value, COMMAND_ADD)
       } else {
-        console.error('addMultiValuesForKey should be called with a value of type array.')
+        this.#logger.error('addMultiValuesForKey should be called with a value of type array.')
       }
     }
 
@@ -534,7 +534,7 @@ export default class CleverTap {
       if (typeof value === 'string' || typeof value === 'number') {
         this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE)
       } else {
-        console.error('removeMultiValueForKey should be called with a value of type string or number.')
+        this.#logger.error('removeMultiValueForKey should be called with a value of type string or number.')
       }
     }
 
@@ -542,7 +542,7 @@ export default class CleverTap {
       if (Array.isArray(value)) {
         this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE)
       } else {
-        console.error('removeMultiValuesForKey should be called with a value of type array.')
+        this.#logger.error('removeMultiValuesForKey should be called with a value of type array.')
       }
     }
 
