@@ -240,8 +240,8 @@ export const getCampaignObjForLc = () => {
     }
 
     const resultObjWI = (!!guid &&
-                        storageValue !== undefined && storageValue !== null &&
-                        parsedValue && parsedValue[guid] && parsedValue[guid].wi)
+      storageValue !== undefined && storageValue !== null &&
+      parsedValue && parsedValue[guid] && parsedValue[guid].wi)
       ? Object.values(parsedValue[guid].wi)
       : []
 
