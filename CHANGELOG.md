@@ -1,6 +1,8 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.5.1] 30 Jan 2026
+- Fixed the campaign delivery triggers logic
 
 ## [2.5.0] 29th Jan 2026
 - Fetch api and encryption support
