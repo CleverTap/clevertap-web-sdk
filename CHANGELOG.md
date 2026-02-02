@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.5.2] 2nd Feb 2026
+- Added srcset and sizes attribute support for image in visual editor.
+
 ## [2.5.1] 30 Jan 2026
 - Fixed the campaign delivery triggers logic
 
