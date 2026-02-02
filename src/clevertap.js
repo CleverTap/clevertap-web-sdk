@@ -41,7 +41,7 @@ import {
   ISOLATE_COOKIE
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
-import { StorageManager, $ct } from './util/storage'
+import { StorageManager, $ct, getMuteExpiry, isMuted } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
 import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe } from './util/clevertap'
 import { compressData } from './util/encoder'
@@ -694,6 +694,13 @@ export default class CleverTap {
       if (profile[categoryLongKey]) {
         $ct.updatedCategoryLong = profile[categoryLongKey]
       }
+    }
+    // SDK Muting - for churned accounts (progressive muting)
+    api.getMuteExpiry = () => {
+      return getMuteExpiry()
+    }
+    api.isMuted = () => {
+      return isMuted()
     }
     window.$CLTP_WR = window.$WZRK_WR = api
 

@@ -77,6 +77,8 @@ export const ENCRYPTION_KEY_NAME = 'WZRK_ENCRYPTION_KEY'
 // Flag key for optional sub-domain profile isolation
 export const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'
 
+// SDK Muting - Progressive muting for churned customers
+export const MUTE_EXPIRY_KEY = 'WZRK_MUTE_EXPIRY'
 // Flag key for Encryption in Transit JSONP fallback (session-level)
 export const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK'
 

@@ -223,7 +223,9 @@
   const CUSTOM_CT_ID_PREFIX = '_w_';
   const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK';
 
-  const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'; // Flag key for Encryption in Transit JSONP fallback (session-level)
+  const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'; // SDK Muting - Progressive muting for churned customers
+
+  const MUTE_EXPIRY_KEY = 'WZRK_MUTE_EXPIRY'; // Flag key for Encryption in Transit JSONP fallback (session-level)
 
   const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK';
   const WEB_NATIVE_TEMPLATES = {
@@ -7582,6 +7584,39 @@
     }
 
   }
+  /**
+   * Check if SDK is currently muted (for churned accounts)
+   * @returns {boolean} true if SDK is muted and should not send requests
+   */
+
+  const isMuted = () => {
+    const muteExpiry = StorageManager.readFromLSorCookie(MUTE_EXPIRY_KEY);
+
+    if (!muteExpiry || muteExpiry <= 0) {
+      return false;
+    }
+
+    return Date.now() < muteExpiry;
+  };
+  /**
+   * Get the mute expiry timestamp
+   * @returns {number|null} epoch timestamp in ms, or null if not muted
+   */
+
+  const getMuteExpiry = () => {
+    return StorageManager.readFromLSorCookie(MUTE_EXPIRY_KEY) || null;
+  };
+  /**
+   * Clear mute state (called when account is reactivated)
+   */
+
+  const clearMuteExpiry = () => {
+    if (StorageManager._isLocalStorageSupported()) {
+      StorageManager.remove(MUTE_EXPIRY_KEY);
+    }
+
+    delete $ct.globalCache[MUTE_EXPIRY_KEY];
+  };
   const $ct = {
     globalCache: {
       gcookie: null,
@@ -7843,6 +7878,9 @@
 
 
     s(global, session, resume, respNumber, optOutResponse) {
+      // Clear any existing mute state - receiving a valid session response
+      // means the account is active/reactivated
+      clearMuteExpiry();
       let oulReq = false;
       let newGuid = false; // for a scenario when OUL request is true from client side
       // but resume is returned as false from server end
@@ -7957,6 +7995,21 @@
       }
 
       $ct.globalCache.RESP_N = respNumber;
+    }
+    /**
+     * Set SDK mute expiry timestamp (for churned accounts)
+     * Called by server when account is blocked/muted
+     * Server calls: $WZRK_WR.setMuteExpiry(1737100800000)
+     * @param {number} muteExpiryMs - Epoch timestamp in ms until which SDK should be muted
+     */
+
+
+    setMuteExpiry(muteExpiryMs) {
+      if (typeof muteExpiryMs === 'number' && muteExpiryMs > 0) {
+        StorageManager.saveToLSorCookie(MUTE_EXPIRY_KEY, muteExpiryMs);
+
+        _classPrivateFieldLooseBase(this, _logger$a)[_logger$a].info("SDK muted until: ".concat(new Date(muteExpiryMs).toISOString()));
+      }
     }
 
   }
@@ -9481,6 +9534,13 @@
 
   var _fireRequest2 = function _fireRequest2(url, tries, skipARP, sendOULFlag, evtName) {
     var _window$location$orig, _window, _window$location, _window2, _window2$location, _window$clevertap, _window$wizrocket;
+
+    // Check if SDK is muted (for churned accounts) - drop request silently
+    if (isMuted()) {
+      const muteExpiry = getMuteExpiry();
+      this.logger.debug('Request dropped - SDK is muted until ' + new Date(muteExpiry).toISOString());
+      return;
+    }
 
     if (_classPrivateFieldLooseBase(this, _dropRequestDueToOptOut)[_dropRequestDueToOptOut]()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie);
@@ -18070,6 +18130,14 @@
 
 
     saveAndFireRequest(url, override, sendOULFlag, evtName) {
+      // Check if SDK is muted (for churned accounts) - drop request silently
+      // Unlike offline mode, muted requests are NOT saved to backup
+      if (isMuted()) {
+        _classPrivateFieldLooseBase(this, _logger$3)[_logger$3].debug('Request dropped - SDK is muted');
+
+        return;
+      }
+
       const now = getNow(); // Get the next available request number that doesn't conflict with existing backups
 
       const nextReqN = _classPrivateFieldLooseBase(this, _getNextAvailableReqN)[_getNextAvailableReqN]();
@@ -19694,6 +19762,15 @@
         if (profile[categoryLongKey]) {
           $ct.updatedCategoryLong = profile[categoryLongKey];
         }
+      }; // SDK Muting - for churned accounts (progressive muting)
+
+
+      api.getMuteExpiry = () => {
+        return getMuteExpiry();
+      };
+
+      api.isMuted = () => {
+        return isMuted();
       };
 
       window.$CLTP_WR = window.$WZRK_WR = api;
