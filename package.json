@@ -1,6 +1,6 @@
 {
   "name": "clevertap-web-sdk",
-  "version": "2.3.4",
+  "version": "2.5.1",
   "description": "",
   "main": "clevertap.js",
   "scripts": {
@@ -42,6 +42,7 @@
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
     "jest": "^26.4.2",
+    "regenerator-runtime": "^0.14.1",
     "rollup": "^2.26.5",
     "rollup-plugin-eslint": "^7.0.0",
     "rollup-plugin-sourcemaps": "^0.6.3",
