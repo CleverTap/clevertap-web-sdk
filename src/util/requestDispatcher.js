@@ -2,7 +2,7 @@
 import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY, MAX_DELAY_FREQUENCY, PUSH_DELAY_MS, WZRK_FETCH, CT_EIT_FALLBACK } from './constants'
 import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
-import { StorageManager, $ct } from './storage'
+import { StorageManager, $ct, isMuted, getMuteExpiry } from './storage'
 import { addToURL } from './url'
 import encryptionInTransitInstance from './security/encryptionInTransit'
 
@@ -136,6 +136,13 @@ export default class RequestDispatcher {
 
   // ANCHOR - Requests get fired from here
   static #fireRequest (url, tries, skipARP, sendOULFlag, evtName) {
+    // Check if SDK is muted (for churned accounts) - drop request silently
+    if (isMuted()) {
+      const muteExpiry = getMuteExpiry()
+      this.logger.debug('Request dropped - SDK is muted until ' + new Date(muteExpiry).toISOString())
+      return
+    }
+
     if (this.#dropRequestDueToOptOut()) {
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
