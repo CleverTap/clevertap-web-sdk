@@ -221,11 +221,13 @@
   const WEB_POPUP_PREVIEW = 'ctWebPopupPreview';
   const QUALIFIED_CAMPAIGNS = 'WZRK_QC';
   const CUSTOM_CT_ID_PREFIX = '_w_';
-  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'; // Flag key for optional sub-domain profile isolation
+  const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK';
 
   const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'; // SDK Muting - Progressive muting for churned customers
 
-  const MUTE_EXPIRY_KEY = 'WZRK_MUTE_EXPIRY';
+  const MUTE_EXPIRY_KEY = 'WZRK_MUTE_EXPIRY'; // Flag key for Encryption in Transit JSONP fallback (session-level)
+
+  const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -267,7 +269,44 @@
     OPEN_WEB_URL: 'open-web-url',
     SOFT_PROMPT: 'soft-prompt',
     RUN_JS: 'js'
-  };
+  }; // Nested object errors
+
+  const NESTED_OBJECT_ERRORS = {
+    DEPTH_LIMIT_EXCEEDED: {
+      code: 541,
+      message: 'Event data exceeded maximum nesting depth. Depth: %s, Limit: %s'
+    },
+    ARRAY_KEY_COUNT_LIMIT_EXCEEDED: {
+      code: 542,
+      message: 'Event data exceeded maximum array key count. Count: %s, Limit: %s'
+    },
+    OBJECT_KEY_COUNT_LIMIT_EXCEEDED: {
+      code: 543,
+      message: 'Event data exceeded maximum object key count. Count: %s, Limit: %s'
+    },
+    ARRAY_LENGTH_LIMIT_EXCEEDED: {
+      code: 543,
+      message: 'Event data exceeded maximum array length. Length: %s, Limit: %s'
+    },
+    KV_PAIR_COUNT_LIMIT_EXCEEDED: {
+      code: 544,
+      message: 'Event data exceeded maximum key-value pair count. Count: %s, Limit: %s'
+    },
+    NULL_VALUE_REMOVED: {
+      code: 545,
+      message: "Null value for key '%s' was removed"
+    },
+    EMPTY_VALUE_REMOVED: {
+      code: 545,
+      message: "Empty value for key '%s' was removed"
+    },
+    RESTRICTED_PROFILE_PROPERTY: {
+      code: 513,
+      message: "'%s' is a restricted profile property and cannot have nested values (objects or arrays). This property was skipped."
+    }
+  }; // Restricted profile keys that cannot be at root level (0th level)
+
+  const PROFILE_RESTRICTED_ROOT_KEYS = ['Name', 'Email', 'Education', 'Married', 'DOB', 'Gender', 'Phone', 'Age', 'FBID', 'GPID', 'Birthday', 'Identity'];
 
   const isString = input => {
     return typeof input === 'string' || input instanceof String;
@@ -8074,6 +8113,16 @@
   const ENUM_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " setEnum(value). value should be a string or a number");
   const PHONE_FORMAT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Phone number should be formatted as +[country code][number]");
 
+  const {
+    DEPTH_LIMIT_EXCEEDED,
+    ARRAY_KEY_COUNT_LIMIT_EXCEEDED,
+    OBJECT_KEY_COUNT_LIMIT_EXCEEDED,
+    ARRAY_LENGTH_LIMIT_EXCEEDED,
+    KV_PAIR_COUNT_LIMIT_EXCEEDED,
+    NULL_VALUE_REMOVED,
+    EMPTY_VALUE_REMOVED
+  } = NESTED_OBJECT_ERRORS;
+
   let _globalChargedId;
 
   const isEventStructureFlat = eventObj => {
@@ -8148,6 +8197,275 @@
 
 
     return false;
+  }; // Validation results structure
+
+  const createValidationResult = function (isValid) {
+    let errorMessage = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+    let processedObj = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+    return {
+      isValid,
+      errorMessage,
+      processedObj
+    };
+  }; // Helper function to check if object/array is null or empty
+
+
+  const isNullOrEmpty = obj => {
+    if (obj === null || obj === undefined) return true;
+    if (Array.isArray(obj)) return obj.length === 0;
+    if (isObject(obj)) return Object.keys(obj).length === 0;
+    return false;
+  }; // Helper function to clean null/empty objects and arrays
+  // Expected behavior:
+  // - Removes null, undefined values
+  // - Removes empty objects {} and empty arrays []
+  // - If part of an array, drops that element entirely
+  // - Recursively cleans nested structures
+
+
+  const cleanNullEmptyValues = function (obj) {
+    let logger = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+    let currentDepth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    let maxDepth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 3;
+    let keyPath = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : '';
+    if (currentDepth > maxDepth) return obj;
+
+    if (Array.isArray(obj)) {
+      const cleanedArray = [];
+      obj.forEach((item, index) => {
+        if (isNullOrEmpty(item)) {
+          if (logger) {
+            const currentKeyPath = keyPath ? "".concat(keyPath, "[").concat(index, "]") : "[".concat(index, "]");
+
+            if (item === null || item === undefined) {
+              logger.reportError(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+            } else {
+              logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+            }
+          }
+
+          return;
+        }
+
+        let cleanedItem = item;
+
+        if (isObject(item) || Array.isArray(item)) {
+          const currentKeyPath = keyPath ? "".concat(keyPath, "[").concat(index, "]") : "[".concat(index, "]");
+          cleanedItem = cleanNullEmptyValues(item, logger, currentDepth + 1, maxDepth, currentKeyPath);
+        }
+
+        if (!isNullOrEmpty(cleanedItem)) {
+          cleanedArray.push(cleanedItem);
+        } else if (logger) {
+          const currentKeyPath = keyPath ? "".concat(keyPath, "[").concat(index, "]") : "[".concat(index, "]");
+          logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+        }
+      });
+      return cleanedArray.length > 0 ? cleanedArray : undefined;
+    }
+
+    if (isObject(obj)) {
+      const cleanedObj = {};
+
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          let value = obj[key];
+          const currentKeyPath = keyPath ? "".concat(keyPath, ".").concat(key) : key;
+
+          if (isDateObject(value)) {
+            value = convertToWZRKDate(value);
+          } else if (isObject(value) || Array.isArray(value)) {
+            value = cleanNullEmptyValues(value, logger, currentDepth + 1, maxDepth, currentKeyPath);
+          }
+
+          if (!isNullOrEmpty(value)) {
+            cleanedObj[key] = value;
+          } else if (logger) {
+            if (value === null || value === undefined) {
+              logger.reportError(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+            } else {
+              logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+            }
+          }
+        }
+      }
+
+      return Object.keys(cleanedObj).length > 0 ? cleanedObj : undefined;
+    }
+
+    return obj;
+  }; // Validate 3-level nested event structure
+
+
+  const isObjStructureValid = function (eventObj, logger) {
+    let maxDepth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 3;
+
+    if (!isObject(eventObj)) {
+      return createValidationResult(false, 'Event data must be an object');
+    } // Clean null/empty values first
+
+
+    const cleanedObj = cleanNullEmptyValues(eventObj, logger, 0, maxDepth);
+
+    if (isNullOrEmpty(cleanedObj)) {
+      return createValidationResult(false, 'Event object is empty after cleaning null/empty values');
+    } // Validate nesting depth
+
+
+    let maxDepthFound = 0;
+
+    const validateDepth = function (obj) {
+      let currentDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+      if (currentDepth > maxDepth) {
+        maxDepthFound = currentDepth;
+        return false;
+      }
+
+      if (isObject(obj)) {
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key)) {
+            if (Array.isArray(obj[key])) {
+              for (const item of obj[key]) {
+                if (isObject(item) && !validateDepth(item, currentDepth + 1)) {
+                  return false;
+                }
+              }
+            } else if (isObject(obj[key])) {
+              if (!validateDepth(obj[key], currentDepth + 1)) {
+                return false;
+              }
+            }
+          }
+        }
+      }
+
+      return true;
+    };
+
+    if (!validateDepth(cleanedObj)) {
+      const depthMessage = DEPTH_LIMIT_EXCEEDED.message.replace('%s', maxDepthFound).replace('%s', maxDepth);
+      logger.reportError(DEPTH_LIMIT_EXCEEDED.code, depthMessage);
+      return createValidationResult(false, "Maximum nesting depth of ".concat(maxDepth, " levels exceeded"), cleanedObj);
+    } // Helper function to count object/array keys at a specific level
+
+
+    const countObjectArrayKeys = obj => {
+      if (!isObject(obj)) return 0;
+      let count = 0;
+
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          if (isObject(obj[key]) || Array.isArray(obj[key])) {
+            count++;
+          }
+        }
+      }
+
+      return count;
+    }; // Count object/array keys at root level (0th level)
+
+
+    const rootObjectArrayCount = countObjectArrayKeys(cleanedObj);
+
+    if (rootObjectArrayCount > 5) {
+      const objectKeyMessage = OBJECT_KEY_COUNT_LIMIT_EXCEEDED.message.replace('%s', rootObjectArrayCount).replace('%s', 5);
+      logger.reportError(OBJECT_KEY_COUNT_LIMIT_EXCEEDED.code, objectKeyMessage);
+      return createValidationResult(false, "Maximum 5 object/array keys allowed at root level. Found: ".concat(rootObjectArrayCount), cleanedObj);
+    } // Validate object/array count at each nested level
+
+
+    const validateObjectArrayCount = function (obj) {
+      let currentDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      if (!isObject(obj) || currentDepth > maxDepth) return true;
+
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          if (Array.isArray(obj[key])) {
+            // Check array length limit
+            if (obj[key].length > 100) {
+              const arrayLengthMessage = ARRAY_LENGTH_LIMIT_EXCEEDED.message.replace('%s', obj[key].length).replace('%s', 100);
+              logger.reportError(ARRAY_LENGTH_LIMIT_EXCEEDED.code, arrayLengthMessage);
+              return false;
+            } // Validate each array element
+
+
+            for (const item of obj[key]) {
+              if (isObject(item)) {
+                const itemObjectArrayCount = countObjectArrayKeys(item);
+
+                if (itemObjectArrayCount > 5) {
+                  const arrayKeyMessage = ARRAY_KEY_COUNT_LIMIT_EXCEEDED.message.replace('%s', itemObjectArrayCount).replace('%s', 5);
+                  logger.reportError(ARRAY_KEY_COUNT_LIMIT_EXCEEDED.code, arrayKeyMessage);
+                  return false;
+                }
+
+                if (!validateObjectArrayCount(item, currentDepth + 1)) {
+                  return false;
+                }
+              }
+            }
+          } else if (isObject(obj[key])) {
+            const nestedObjectArrayCount = countObjectArrayKeys(obj[key]);
+
+            if (nestedObjectArrayCount > 5) {
+              const nestedObjectKeyMessage = OBJECT_KEY_COUNT_LIMIT_EXCEEDED.message.replace('%s', nestedObjectArrayCount).replace('%s', 5);
+              logger.reportError(OBJECT_KEY_COUNT_LIMIT_EXCEEDED.code, nestedObjectKeyMessage);
+              return false;
+            }
+
+            if (!validateObjectArrayCount(obj[key], currentDepth + 1)) {
+              return false;
+            }
+          }
+        }
+      }
+
+      return true;
+    }; // Helper function to count total attribute keys recursively
+
+
+    const countTotalKeys = function (obj) {
+      let currentDepth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      let maxDepth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 3;
+      if (!isObject(obj) || currentDepth > maxDepth) return 0;
+      let count = 0;
+
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          count++; // Count this key
+
+          if (Array.isArray(obj[key])) {
+            // Count keys in array elements
+            for (const item of obj[key]) {
+              if (isObject(item)) {
+                count += countTotalKeys(item, currentDepth + 1, maxDepth);
+              }
+            }
+          } else if (isObject(obj[key])) {
+            // Count keys in nested object
+            count += countTotalKeys(obj[key], currentDepth + 1, maxDepth);
+          }
+        }
+      }
+
+      return count;
+    };
+
+    if (!validateObjectArrayCount(cleanedObj)) {
+      return createValidationResult(false, 'Nested object/array count validation failed', cleanedObj);
+    } // Count total attribute keys
+
+
+    const totalKeyCount = countTotalKeys(cleanedObj);
+
+    if (totalKeyCount > 100) {
+      const kvPairMessage = KV_PAIR_COUNT_LIMIT_EXCEEDED.message.replace('%s', totalKeyCount).replace('%s', 100);
+      logger.reportError(KV_PAIR_COUNT_LIMIT_EXCEEDED.code, kvPairMessage);
+      return createValidationResult(false, "Maximum 100 attribute keys allowed. Found: ".concat(totalKeyCount), cleanedObj);
+    }
+
+    return createValidationResult(true, null, cleanedObj);
   };
 
   var _logger$8 = _classPrivateFieldLooseKey("logger");
@@ -8282,15 +8600,19 @@
 
                 continue;
               }
-            } else {
-              if (!isEventStructureFlat(eventObj)) {
-                _classPrivateFieldLooseBase(this, _logger$8)[_logger$8].reportError(512, eventName + ' event structure invalid. Not sent.');
 
-                continue;
+              data.evtData = eventObj;
+            } else {
+              const validationResult = isObjStructureValid(eventObj, _classPrivateFieldLooseBase(this, _logger$8)[_logger$8], 3); // Validation errors are already logged via logger.reportError in validator
+              // Use cleaned object if provided (even if validation failed)
+              // This removes null/empty values that were logged
+
+              if (validationResult.processedObj) {
+                data.evtData = validationResult.processedObj;
+              } else {
+                data.evtData = eventObj;
               }
             }
-
-            data.evtData = eventObj;
           }
         }
 
@@ -8682,6 +9004,273 @@
     return window.location.hostname;
   };
 
+  const logLevels = {
+    DISABLE: 0,
+    ERROR: 1,
+    INFO: 2,
+    DEBUG: 3,
+    DEBUG_PE: 4
+  };
+
+  var _logLevel = _classPrivateFieldLooseKey("logLevel");
+
+  var _log = _classPrivateFieldLooseKey("log");
+
+  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
+
+  class Logger {
+    constructor(logLevel) {
+      Object.defineProperty(this, _isLegacyDebug, {
+        get: _get_isLegacyDebug,
+        set: void 0
+      });
+      Object.defineProperty(this, _log, {
+        value: _log2
+      });
+      Object.defineProperty(this, _logLevel, {
+        writable: true,
+        value: void 0
+      });
+      this.wzrkError = {};
+
+      // Singleton pattern - return existing instance if it exists
+      if (Logger.instance) {
+        return Logger.instance;
+      }
+
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
+      this.wzrkError = {};
+      Logger.instance = this;
+    } // Static method for explicit singleton access
+
+
+    static getInstance(logLevel) {
+      if (!Logger.instance) {
+        Logger.instance = new Logger(logLevel);
+      }
+
+      return Logger.instance;
+    }
+
+    get logLevel() {
+      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
+    }
+
+    set logLevel(logLevel) {
+      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
+    }
+
+    error(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
+      }
+    }
+
+    info(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
+      }
+    }
+
+    debug(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
+      }
+    }
+
+    debugPE(message) {
+      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
+        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
+      }
+    }
+
+    reportError(code, description) {
+      this.wzrkError.c = code;
+      this.wzrkError.d = description;
+      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
+    }
+
+  }
+
+  var _log2 = function _log2(level, message) {
+    if (window.console) {
+      try {
+        const ts = new Date().getTime();
+        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
+      } catch (e) {}
+    }
+  };
+
+  var _get_isLegacyDebug = function () {
+    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
+  };
+
+  /**
+   * EncryptionInTransit class for handling AES-GCM-256 encryption/decryption.
+   * Implemented as a singleton pattern.
+   */
+
+  class EncryptionInTransit {
+    constructor() {
+      this.encryptionKey = null;
+      this.utf8 = new TextEncoder();
+      this.logger = Logger.getInstance();
+    }
+    /**
+     * Converts Uint8Array to Base64 string
+     * @private
+     */
+
+
+    toB64(u8) {
+      return btoa(String.fromCharCode(...u8));
+    }
+    /**
+     * Converts Base64 string to Uint8Array
+     * @private
+     */
+
+
+    fromB64(b64) {
+      return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    }
+    /**
+     * Generates random bytes
+     * @private
+     */
+
+
+    rnd(n) {
+      return crypto.getRandomValues(new Uint8Array(n));
+    }
+    /**
+     * Generates a new symmetric key for encryption
+     * @returns {Uint8Array} - 256-bit (32 bytes) symmetric key
+     */
+
+
+    generateSymmetricKey() {
+      // Generate a random 256-bit key (32 bytes) to match backend AES-256
+      this.encryptionKey = this.rnd(32);
+      return this.encryptionKey;
+    }
+    /**
+     * Encrypts payload for backend transmission using AES-GCM-256.
+     *
+     * @param {string|Object} payload - The payload to encrypt (string or object to stringify)
+     * @param {Object} options - Options object
+     * @param {string} options.id - Optional identifier (defaults to 'ZWW-WWW-WWRZ')
+     * @returns {Promise<string>} - Base64 compressed encrypted envelope
+     */
+
+
+    encryptForBackend(payload) {
+      let {
+        id = 'ZWW-WWW-WWRZ'
+      } = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+      // Generate a new symmetric key for this encryption
+      if (!this.encryptionKey) {
+        this.generateSymmetricKey();
+      } // Generate a random 96-bit IV (12 bytes) for GCM
+
+
+      const iv = this.rnd(12); // Algorithm specification with tag length matching backend (128 bits)
+
+      const alg = {
+        name: 'AES-GCM',
+        iv,
+        tagLength: 128
+      }; // Convert payload to bytes
+
+      const plainBuf = this.utf8.encode(typeof payload === 'string' ? payload : JSON.stringify(payload)); // Import the raw key as a CryptoKey
+
+      return crypto.subtle.importKey('raw', this.encryptionKey, {
+        name: 'AES-GCM'
+      }, false, ['encrypt']).then(cryptoKey => {
+        // Encrypt the data
+        return crypto.subtle.encrypt(alg, cryptoKey, plainBuf);
+      }).then(cipherBuf => {
+        const cipher = new Uint8Array(cipherBuf);
+        const envelope = {
+          itp: this.toB64(cipher),
+          // payload - base64 encoded ciphertext (includes auth tag)
+          itk: this.toB64(this.encryptionKey),
+          // key - base64 encoded raw AES key
+          itv: this.toB64(iv),
+          // iv - base64 encoded IV
+          id,
+          encrypted: true
+        };
+        return compressData(JSON.stringify(envelope));
+      }).catch(error => {
+        throw new Error("Encryption failed: ".concat(error.message));
+      });
+    }
+    /**
+     * Decrypts response from backend using AES-GCM-256.
+     * This is a stub implementation for Phase 2.
+     *
+     * @param {string} envelope - encrypted envelope
+     * @returns {Promise<string>} - Decrypted plaintext
+     */
+
+
+    async decryptFromBackend(envelope) {
+      try {
+        // Parse the envelope from backend
+        const parsedEnvelope = JSON.parse(envelope);
+        const {
+          itp,
+          itv
+        } = parsedEnvelope;
+
+        if (!itp || !itv) {
+          return Promise.reject(new Error('Decryption failed: Invalid envelope format'));
+        } // Check if encryption key exists
+
+
+        if (!this.encryptionKey) {
+          return Promise.reject(new Error('Decryption failed: No encryption key available'));
+        }
+
+        const ciphertext = this.fromB64(itp);
+        const iv = this.fromB64(itv);
+        this.logger.debug("EIT decryption - ciphertext length: ".concat(ciphertext.length, ", iv length: ").concat(iv.length)); // Algorithm specification matching backend (tagLength 128 bits)
+
+        const alg = {
+          name: 'AES-GCM',
+          iv,
+          tagLength: 128
+        }; // Import the key and decrypt
+
+        return crypto.subtle.importKey('raw', this.encryptionKey, {
+          name: 'AES-GCM'
+        }, false, ['decrypt']).then(cryptoKey => {
+          this.logger.debug('EIT decryption - crypto key imported successfully');
+          return crypto.subtle.decrypt(alg, cryptoKey, ciphertext);
+        }).then(plainBuf => {
+          this.logger.debug("EIT decryption - decrypted payload size: ".concat(plainBuf.byteLength, " bytes"));
+          return new TextDecoder().decode(plainBuf);
+        }).catch(error => {
+          this.logger.error("EIT decryption error: ".concat(error.message));
+          throw new Error("Decryption failed: ".concat(error.message));
+        });
+      } catch (error) {
+        return Promise.reject(new Error("Decryption failed: ".concat(error.message)));
+      }
+    }
+
+  } // Create and export singleton instance
+
+
+  const encryptionInTransitInstance = new EncryptionInTransit();
+  window.encryptionInTransitInstance = encryptionInTransitInstance; // Export the singleton instance
+
+  var _retryViaJSONP = _classPrivateFieldLooseKey("retryViaJSONP");
+
+  var _prepareEncryptedRequest = _classPrivateFieldLooseKey("prepareEncryptedRequest");
+
   var _fireRequest = _classPrivateFieldLooseKey("fireRequest");
 
   var _dropRequestDueToOptOut = _classPrivateFieldLooseKey("dropRequestDueToOptOut");
@@ -8697,6 +9286,48 @@
     }
 
     /**
+     * Checks if the EIT fallback flag is set in local storage.
+     * When set, the SDK should bypass encryption and use JSONP for the session.
+     * @returns {boolean} - true if fallback is active
+     */
+    static isEITFallbackActive() {
+      if (!StorageManager._isLocalStorageSupported()) {
+        return false;
+      }
+
+      return StorageManager.read(CT_EIT_FALLBACK) === true;
+    }
+    /**
+     * Sets the EIT fallback flag in local storage.
+     * This will cause the SDK to bypass encryption and use JSONP for the session.
+     */
+
+
+    static setEITFallback() {
+      if (StorageManager._isLocalStorageSupported()) {
+        StorageManager.save(CT_EIT_FALLBACK, true);
+        this.logger.debug('EIT fallback flag set - subsequent requests will use JSONP');
+      }
+    }
+    /**
+     * Clears the EIT fallback flag from local storage.
+     * Called during clevertap.init() to reset for new session.
+     */
+
+
+    static clearEITFallback() {
+      if (StorageManager._isLocalStorageSupported()) {
+        StorageManager.remove(CT_EIT_FALLBACK);
+      }
+    }
+    /**
+     * Retries a request via JSONP (script tag injection).
+     * Used when EIT is rejected by the backend.
+     * @param {string} url - The URL to send via JSONP
+     */
+
+
+    /**
      *
      * @param {string} url
      * @param {*} skipARP
@@ -8704,6 +9335,135 @@
      */
     static fireRequest(url, skipARP, sendOULFlag, evtName) {
       _classPrivateFieldLooseBase(this, _fireRequest)[_fireRequest](url, 1, skipARP, sendOULFlag, evtName);
+    }
+
+    static handleFetchResponse(encryptedUrl, originalUrl) {
+      let retryCount = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+      const fetchOptions = {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'X-CleverTap-Encryption-Enabled': 'true'
+        }
+      };
+      fetch(encryptedUrl, fetchOptions).then(response => {
+        if (!response.ok) {
+          // Handle 402 (Payment Required) or 419: Encryption not enabled for account
+          if (response.status === 402 || response.status === 419) {
+            this.logger.error('Encryption in Transit is disabled on server side'); // Set the fallback flag for this session
+
+            this.setEITFallback(); // Retry with JSONP using the original unencrypted URL
+
+            if (originalUrl && originalUrl !== encryptedUrl) {
+              this.logger.debug('Retrying request via JSONP without encryption');
+
+              _classPrivateFieldLooseBase(this, _retryViaJSONP)[_retryViaJSONP](originalUrl);
+
+              return null; // Signal that we've handled this via JSONP
+            }
+
+            throw new Error("Encryption not enabled for account: ".concat(response.statusText));
+          } // Handle 420: Failed to decrypt payload
+
+
+          if (response.status === 420) {
+            if (retryCount < 3) {
+              this.logger.debug("Retrying request due to 420 error, attempt ".concat(retryCount + 1, " of 3")); // Retry the same encrypted request
+
+              return this.handleFetchResponse(encryptedUrl, originalUrl, retryCount + 1);
+            } else {
+              this.logger.error('Failed to decrypt payload after 3 retries');
+              throw new Error('Failed to decrypt payload');
+            }
+          }
+
+          throw new Error("Network response was not ok: ".concat(response.statusText));
+        }
+
+        return response.text();
+      }).then(rawResponse => {
+        // Skip processing if this is a JSONP fallback (null response) or a retry promise
+        if (rawResponse === null || rawResponse instanceof Promise) {
+          return rawResponse;
+        } // Phase 2: Attempt to decrypt the response if it might be encrypted
+
+
+        const tryDecryption = () => {
+          if (rawResponse && rawResponse.length > 0 && this.enableEncryptionInTransit) {
+            return encryptionInTransitInstance.decryptFromBackend(rawResponse).then(decryptedResponse => {
+              this.logger.debug('Successfully decrypted response');
+              return decryptedResponse;
+            }).catch(decryptError => {
+              // If decryption fails, assume the response was not encrypted
+              this.logger.debug('Response decryption failed, assuming unencrypted:', decryptError.message);
+              return rawResponse;
+            });
+          }
+
+          return Promise.resolve(rawResponse);
+        };
+
+        return tryDecryption();
+      }).then(processedResponse => {
+        // Skip processing if this is a recursive promise
+        if (processedResponse instanceof Promise) {
+          return processedResponse;
+        } // Parse the final response as JSON
+
+
+        let jsonResponse;
+
+        try {
+          jsonResponse = JSON.parse(processedResponse);
+        } catch (parseError) {
+          this.logger.error('Failed to parse response as JSON:', parseError);
+          throw new Error('Invalid JSON response');
+        }
+
+        const {
+          tr,
+          meta,
+          wpe
+        } = jsonResponse;
+
+        if (tr) {
+          window.$WZRK_WR.tr(tr);
+        }
+
+        if (meta) {
+          const {
+            g,
+            sid,
+            rf,
+            rn,
+            optOut
+          } = meta;
+
+          if (g && sid !== undefined && rf !== undefined && rn !== undefined) {
+            const parsedRn = parseInt(rn); // Include optOut as 5th parameter if present
+
+            if (optOut !== undefined) {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn, optOut);
+            } else {
+              window.$WZRK_WR.s(g, sid, rf, parsedRn);
+            }
+          }
+        }
+
+        if (wpe) {
+          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key);
+        }
+
+        this.logger.debug('req snt -> url: ' + encryptedUrl);
+      }).catch(error => {
+        if (error.message && error.message.includes('EIT decryption failed')) {
+          this.logger.error('EIT decryption failed', error); // Safely ignore the response payload and proceed without applying server changes
+
+          return;
+        }
+
+        this.logger.error('Fetch error:', error);
+      });
     }
 
     getDelayFrequency() {
@@ -8850,14 +9610,107 @@
 
     if (url.indexOf('chrome-extension:') !== -1) {
       url = url.replace('chrome-extension:', 'https:');
-    } // TODO: Try using Function constructor instead of appending script.
+    } // Prepare request with optional encryption
 
 
+    _classPrivateFieldLooseBase(this, _prepareEncryptedRequest)[_prepareEncryptedRequest](url).then(requestConfig => {
+      // TODO: Try using Function constructor instead of appending script.
+      var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
+
+      while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
+        ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
+      } // Use the static flag instead of the global $ct map
+      // When encryption is enabled (and not in fallback mode), always use Fetch API
+      // If fallback is active, use JSONP regardless of encryption setting
+
+
+      const shouldUseJSONP = !this.enableFetchApi && !this.enableEncryptionInTransit || requestConfig.useFallback;
+
+      if (shouldUseJSONP) {
+        const s = document.createElement('script');
+        s.setAttribute('type', 'text/javascript');
+        s.setAttribute('src', requestConfig.url);
+        s.setAttribute('class', 'ct-jp-cb');
+        s.setAttribute('rel', 'nofollow');
+        s.async = true;
+        document.getElementsByTagName('head')[0].appendChild(s);
+        this.logger.debug('req snt -> url: ' + requestConfig.url);
+      } else {
+        this.handleFetchResponse(requestConfig.url, requestConfig.originalUrl);
+      }
+    }).catch(error => {
+      this.logger.error('Request preparation failed:', error);
+    });
+  };
+
+  var _prepareEncryptedRequest2 = function _prepareEncryptedRequest2(url) {
+    // Check if encryption is disabled or fallback is active
+    if (!this.enableEncryptionInTransit || this.isEITFallbackActive()) {
+      if (this.isEITFallbackActive() && this.enableEncryptionInTransit) {
+        this.logger.debug('EIT fallback active - bypassing encryption for this session');
+      }
+
+      return Promise.resolve({
+        url,
+        method: 'GET',
+        useFallback: this.isEITFallbackActive()
+      });
+    } // Force Fetch API when encryption is enabled
+
+
+    this.enableFetchApi = true;
+
+    try {
+      // Extract query string from URL
+      const urlObj = new URL(url);
+      const searchParams = new URLSearchParams(urlObj.search); // Check if 'd' parameter exists
+
+      const dParam = searchParams.get('d');
+
+      if (!dParam) {
+        return Promise.resolve({
+          url,
+          method: 'GET'
+        });
+      } // Encrypt only the 'd' parameter value
+
+
+      return encryptionInTransitInstance.encryptForBackend(dParam, {
+        id: this.account.id
+      }).then(encryptedData => {
+        // Replace the 'd' parameter with encrypted data
+        searchParams.set('d', encryptedData); // Reconstruct the URL with encrypted 'd' parameter
+
+        const newUrl = "".concat(urlObj.protocol, "//").concat(urlObj.host).concat(urlObj.pathname, "?").concat(searchParams.toString());
+        return {
+          url: newUrl,
+          originalUrl: url,
+          method: 'GET'
+        };
+      }).catch(error => {
+        this.logger.error('Encryption failed, falling back to unencrypted request:', error);
+        return {
+          url,
+          method: 'GET'
+        };
+      });
+    } catch (error) {
+      this.logger.error('URL parsing failed, falling back to unencrypted request:', error);
+      return Promise.resolve({
+        url,
+        method: 'GET'
+      });
+    }
+  };
+
+  var _retryViaJSONP2 = function _retryViaJSONP2(url) {
+    // Clean up any existing callback scripts
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb');
 
     while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
       ctCbScripts[0].parentNode.removeChild(ctCbScripts[0]);
-    }
+    } // Create and inject script tag for JSONP
+
 
     const s = document.createElement('script');
     s.setAttribute('type', 'text/javascript');
@@ -8866,12 +9719,20 @@
     s.setAttribute('rel', 'nofollow');
     s.async = true;
     document.getElementsByTagName('head')[0].appendChild(s);
-    this.logger.debug('req snt -> url: ' + url);
+    this.logger.debug('EIT fallback: req snt via JSONP -> url: ' + url);
   };
 
   RequestDispatcher.logger = void 0;
   RequestDispatcher.device = void 0;
   RequestDispatcher.account = void 0;
+  RequestDispatcher.enableFetchApi = false;
+  RequestDispatcher.enableEncryptionInTransit = false;
+  Object.defineProperty(RequestDispatcher, _retryViaJSONP, {
+    value: _retryViaJSONP2
+  });
+  Object.defineProperty(RequestDispatcher, _prepareEncryptedRequest, {
+    value: _prepareEncryptedRequest2
+  });
   Object.defineProperty(RequestDispatcher, _fireRequest, {
     value: _fireRequest2
   });
@@ -10050,6 +10911,205 @@
       StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
     }
   };
+  /**
+   * Parses a nested key path into segments
+   * Handles paths like "Policy[0].price", "Policy[0].Insured[0].policyValue", "InsuranceDetails.Policy[1].Premium"
+   * @param {string} path - The nested key path
+   * @returns {Array} Array of path segments with type 'key' or 'array'
+   */
+
+  const parseNestedPath = path => {
+    const segments = [];
+    let current = '';
+    let i = 0;
+
+    while (i < path.length) {
+      if (path[i] === '[') {
+        if (current) {
+          segments.push({
+            type: 'key',
+            value: current
+          });
+          current = '';
+        }
+
+        i++;
+        let index = '';
+
+        while (i < path.length && path[i] !== ']') {
+          index += path[i];
+          i++;
+        }
+
+        if (i < path.length && path[i] === ']') {
+          segments.push({
+            type: 'array',
+            index: parseInt(index, 10)
+          });
+          i++;
+        }
+      } else if (path[i] === '.') {
+        if (current) {
+          segments.push({
+            type: 'key',
+            value: current
+          });
+          current = '';
+        }
+
+        i++;
+      } else {
+        current += path[i];
+        i++;
+      }
+    }
+
+    if (current) {
+      segments.push({
+        type: 'key',
+        value: current
+      });
+    }
+
+    return segments;
+  };
+  /**
+   * Gets a value from a nested path in an object
+   * @param {Object} obj - The object to navigate
+   * @param {Array} segments - Parsed path segments
+   * @returns {any} The value at the path, or undefined if path doesn't exist
+   */
+
+  const getNestedValue = (obj, segments) => {
+    let current = obj;
+
+    for (const segment of segments) {
+      if (current == null) {
+        return undefined;
+      }
+
+      if (segment.type === 'key') {
+        current = current[segment.value];
+      } else if (segment.type === 'array') {
+        if (!Array.isArray(current)) {
+          return undefined;
+        }
+
+        current = current[segment.index];
+      }
+    }
+
+    return current;
+  };
+  /**
+   * Sets a value at a nested path in an object, creating intermediate objects/arrays as needed
+   * @param {Object} obj - The object to modify
+   * @param {Array} segments - Parsed path segments
+   * @param {any} value - The value to set
+   * @returns {boolean} True if successful, false otherwise
+   */
+
+  const setNestedValue = (obj, segments, value) => {
+    let current = obj;
+    const lastIndex = segments.length - 1;
+
+    for (let i = 0; i < lastIndex; i++) {
+      const segment = segments[i];
+      const nextSegment = segments[i + 1];
+
+      if (segment.type === 'key') {
+        if (current[segment.value] == null) {
+          current[segment.value] = (nextSegment === null || nextSegment === void 0 ? void 0 : nextSegment.type) === 'array' ? [] : {};
+        }
+
+        current = current[segment.value];
+      } else if (segment.type === 'array') {
+        if (!Array.isArray(current)) {
+          return false;
+        }
+
+        if (current[segment.index] == null) {
+          current[segment.index] = (nextSegment === null || nextSegment === void 0 ? void 0 : nextSegment.type) === 'array' ? [] : {};
+        }
+
+        current = current[segment.index];
+      }
+    }
+
+    const lastSegment = segments[lastIndex];
+
+    if (lastSegment.type === 'key') {
+      current[lastSegment.value] = value;
+    } else if (lastSegment.type === 'array') {
+      if (!Array.isArray(current)) {
+        return false;
+      }
+
+      current[lastSegment.index] = value;
+    }
+
+    return true;
+  };
+  /**
+   * Removes a value at a nested path in an object
+   * @param {Object} obj - The object to modify
+   * @param {Array} segments - Parsed path segments
+   * @returns {boolean} True if successful, false otherwise
+   */
+
+  const removeNestedValue = (obj, segments) => {
+    if (segments.length === 0) {
+      return false;
+    }
+
+    let current = obj;
+    const lastIndex = segments.length - 1; // Navigate to the parent of the target
+
+    for (let i = 0; i < lastIndex; i++) {
+      const segment = segments[i];
+
+      if (segment.type === 'key') {
+        if (current[segment.value] == null) {
+          return false;
+        }
+
+        current = current[segment.value];
+      } else if (segment.type === 'array') {
+        if (!Array.isArray(current)) {
+          return false;
+        }
+
+        if (current[segment.index] == null) {
+          return false;
+        }
+
+        current = current[segment.index];
+      }
+    } // Remove the target value
+
+
+    const lastSegment = segments[lastIndex];
+
+    if (lastSegment.type === 'key') {
+      if (current.hasOwnProperty(lastSegment.value)) {
+        delete current[lastSegment.value];
+        return true;
+      }
+    } else if (lastSegment.type === 'array') {
+      if (!Array.isArray(current)) {
+        return false;
+      }
+
+      if (current[lastSegment.index] != null) {
+        // For arrays, we can either delete the element or set it to undefined
+        // Using splice to remove the element completely
+        current.splice(lastSegment.index, 1);
+        return true;
+      }
+    }
+
+    return false;
+  };
   const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     if (campaignId != null && campaignId !== '-1') {
       if (StorageManager._isLocalStorageSupported()) {
@@ -10184,6 +11244,10 @@
 
   var _processProfileArray = _classPrivateFieldLooseKey("processProfileArray");
 
+  var _filterRestrictedKeys = _classPrivateFieldLooseKey("filterRestrictedKeys");
+
+  var _validateAndSendProfile = _classPrivateFieldLooseKey("validateAndSendProfile");
+
   class ProfileHandler extends Array {
     constructor(_ref, values) {
       let {
@@ -10193,6 +11257,12 @@
         isPersonalisationActive
       } = _ref;
       super();
+      Object.defineProperty(this, _validateAndSendProfile, {
+        value: _validateAndSendProfile2
+      });
+      Object.defineProperty(this, _filterRestrictedKeys, {
+        value: _filterRestrictedKeys2
+      });
       Object.defineProperty(this, _processProfileArray, {
         value: _processProfileArray2
       });
@@ -10261,64 +11331,87 @@
 
     /**
      *
-     * @param {any} key
+     * @param {any} key - Can be a simple key or nested path like "Policy[0].price"
      * @param {number} value
      * @param {string} command
      * increases or decreases value of the number type properties in profile object
      */
     _handleIncrementDecrementValue(key, value, command) {
-      var _$ct$globalProfileMap;
-
-      // Check if the value is greater than 0
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
       }
 
-      if ($ct.globalProfileMap == null && !((_$ct$globalProfileMap = $ct.globalProfileMap) === null || _$ct$globalProfileMap === void 0 ? void 0 : _$ct$globalProfileMap.hasOwnProperty(key))) {
-        // Check if the profile map already has the propery defined
-        console.error('Kindly create profile with required proprty to increment/decrement.');
-      } else if (!value || typeof value !== 'number' || value <= 0) {
-        console.error('Value should be a number greater than 0');
-      } else {
-        // Update the profile property in local storage
-        if (command === COMMAND_INCREMENT) {
-          $ct.globalProfileMap[key] = $ct.globalProfileMap[key] + value;
-        } else {
-          $ct.globalProfileMap[key] = $ct.globalProfileMap[key] - value;
+      if ($ct.globalProfileMap == null) {
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Profile map is not initialized. Please create a profile first.');
+
+        return;
+      }
+
+      if (!value || typeof value !== 'number' || value <= 0) {
+        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Value should be a number greater than 0');
+
+        return;
+      }
+
+      const isNestedPath = key.includes('.') || key.includes('[');
+      const profileObj = {};
+
+      if (isNestedPath) {
+        const segments = parseNestedPath(key);
+
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
+
+          return;
         }
 
-        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Send the updated value to LC
+        const currentValue = getNestedValue($ct.globalProfileMap, segments);
 
-        let data = {};
-        const profileObj = {};
-        data.type = 'profile';
+        if (currentValue === undefined) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Path '".concat(key, "' does not exist in profile. Please create the profile structure first."));
+
+          return;
+        }
+
+        if (typeof currentValue !== 'number') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Value at path '".concat(key, "' is not a number. Cannot increment/decrement."));
+
+          return;
+        }
+
+        const newValue = command === COMMAND_INCREMENT ? currentValue + value : currentValue - value;
+
+        if (!setNestedValue($ct.globalProfileMap, segments, newValue)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Failed to update value at path '".concat(key, "'."));
+
+          return;
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap); // Use flat key notation (e.g., "Trip[0].Total Amount") instead of nested structure
+
         profileObj[key] = {
           [command]: value
         };
+      } else {
+        if (!$ct.globalProfileMap.hasOwnProperty(key)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Kindly create profile with required property to increment/decrement.');
 
-        if (profileObj.tz == null) {
-          // try to auto capture user timezone if not present
-          profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+          return;
         }
 
-        data.profile = profileObj;
-        data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, true);
-
-        _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data);
-
-        const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
-
-        let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
-
-        pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
-        pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
-
-        _classPrivateFieldLooseBase(this, _request$5)[_request$5].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
+        const currentValue = $ct.globalProfileMap[key] || 0;
+        $ct.globalProfileMap[key] = command === COMMAND_INCREMENT ? currentValue + value : currentValue - value;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        profileObj[key] = {
+          [command]: value
+        };
       }
+
+      _classPrivateFieldLooseBase(this, _validateAndSendProfile)[_validateAndSendProfile](profileObj);
     }
     /**
      *
-     * @param {any} key
+     * @param {any} key - the property name. Can be a simple key or nested path like "Trip[0].Emergency Contacts[0].Tags"
      * @param {array} arrayVal
      * @param {string} command
      * overwrites/sets new value(s) against a key/property in profile object
@@ -10326,6 +11419,13 @@
 
 
     _handleMultiValueSet(key, arrayVal, command) {
+      if ($ct.globalProfileMap == null) {
+        var _StorageManager$readF;
+
+        $ct.globalProfileMap = (_StorageManager$readF = StorageManager.readFromLSorCookie(PR_COOKIE)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : {};
+      } // Build the normalized array
+
+
       const array = [];
 
       for (let i = 0; i < arrayVal.length; i++) {
@@ -10333,24 +11433,68 @@
           array.push(arrayVal[i]);
         } else if (typeof arrayVal[i] === 'string' && !array.includes(arrayVal[i].toLowerCase())) {
           array.push(arrayVal[i].toLowerCase());
-        } else {
-          console.error('array supports only string or number type values');
+        } else if (typeof arrayVal[i] !== 'number' && typeof arrayVal[i] !== 'string') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Array supports only string or number type values');
         }
       }
 
-      if ($ct.globalProfileMap == null) {
-        var _StorageManager$readF;
+      const isNestedPath = key.includes('.') || key.includes('[');
 
-        $ct.globalProfileMap = (_StorageManager$readF = StorageManager.readFromLSorCookie(PR_COOKIE)) !== null && _StorageManager$readF !== void 0 ? _StorageManager$readF : {};
+      if (isNestedPath) {
+        const segments = parseNestedPath(key);
+
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
+
+          return;
+        } // Get the last segment (the property we want to set)
+
+
+        const lastSegment = segments[segments.length - 1];
+
+        if (lastSegment.type !== 'key') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('The last segment of the path must be a property key, not an array index.');
+
+          return;
+        } // Get parent path segments (all except last)
+
+
+        const parentSegments = segments.slice(0, -1); // Navigate to the parent object
+
+        let parentObj;
+
+        if (parentSegments.length === 0) {
+          parentObj = $ct.globalProfileMap;
+        } else {
+          parentObj = getNestedValue($ct.globalProfileMap, parentSegments);
+
+          if (parentObj === undefined || parentObj === null) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not exist in profile. Please create the profile structure first.');
+
+            return;
+          }
+
+          if (typeof parentObj !== 'object' || Array.isArray(parentObj)) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not point to an object.');
+
+            return;
+          }
+        } // Set the array at the target key
+
+
+        parentObj[lastSegment.value] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(key, arrayVal, command, true);
+      } else {
+        // Simple key handling (existing logic)
+        $ct.globalProfileMap[key] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(key, arrayVal, command, false);
       }
-
-      $ct.globalProfileMap[key] = array;
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(key, arrayVal, command);
     }
     /**
      *
-     * @param {any} propKey - the property name to be added in the profile object
+     * @param {any} propKey - the property name to be added in the profile object. Can be a simple key or nested path like "Trip[0].Emergency Contacts[0].Greet"
      * @param {string, number, array} propVal - the property value to be added against the @propkey key
      * @param {string} command
      * Adds array or single value against a key/property in profile object
@@ -10362,40 +11506,108 @@
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
       }
 
-      const existingValue = $ct.globalProfileMap[propKey];
-      const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : [];
+      const isNestedPath = propKey.includes('.') || propKey.includes('['); // Helper to normalize and add values to array
 
-      const addValue = value => {
+      const addValue = (array, value) => {
         const normalizedValue = typeof value === 'number' ? value : value.toLowerCase();
 
         if (!array.includes(normalizedValue)) {
           array.push(normalizedValue);
         }
+      }; // Helper to process propVal and add to array
+
+
+      const processAndAddValues = array => {
+        if (Array.isArray(propVal)) {
+          propVal.forEach(value => {
+            if (typeof value === 'string' || typeof value === 'number') {
+              addValue(array, value);
+            } else {
+              _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Array supports only string or number type values');
+            }
+          });
+        } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+          addValue(array, propVal);
+        } else {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported value type');
+
+          return false;
+        }
+
+        return true;
       };
 
-      if (Array.isArray(propVal)) {
-        propVal.forEach(value => {
-          if (typeof value === 'string' || typeof value === 'number') {
-            addValue(value);
-          } else {
-            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Array supports only string or number type values');
+      if (isNestedPath) {
+        const segments = parseNestedPath(propKey);
+
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
+
+          return;
+        } // Get the last segment (the property we want to add to)
+
+
+        const lastSegment = segments[segments.length - 1];
+
+        if (lastSegment.type !== 'key') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('The last segment of the path must be a property key, not an array index.');
+
+          return;
+        } // Get parent path segments (all except last)
+
+
+        const parentSegments = segments.slice(0, -1); // Navigate to the parent object
+
+        let parentObj;
+
+        if (parentSegments.length === 0) {
+          parentObj = $ct.globalProfileMap;
+        } else {
+          parentObj = getNestedValue($ct.globalProfileMap, parentSegments);
+
+          if (parentObj === undefined || parentObj === null) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not exist in profile. Please create the profile structure first.');
+
+            return;
           }
-        });
-      } else if (typeof propVal === 'string' || typeof propVal === 'number') {
-        addValue(propVal);
+
+          if (typeof parentObj !== 'object' || Array.isArray(parentObj)) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not point to an object.');
+
+            return;
+          }
+        } // Get or create array at the target key
+
+
+        const targetKey = lastSegment.value;
+        const existingValue = parentObj[targetKey];
+        const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : []; // Add values to array
+
+        if (!processAndAddValues(array)) {
+          return;
+        } // Set the array back
+
+
+        parentObj[targetKey] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command, true);
       } else {
-        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported value type');
+        // Simple key handling (existing logic)
+        const existingValue = $ct.globalProfileMap[propKey];
+        const array = Array.isArray(existingValue) ? existingValue : existingValue != null ? [existingValue] : []; // Add values to array
 
-        return;
+        if (!processAndAddValues(array)) {
+          return;
+        }
+
+        $ct.globalProfileMap[propKey] = array;
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command, false);
       }
-
-      $ct.globalProfileMap[propKey] = array;
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(propKey, propVal, command);
     }
     /**
      *
-     * @param {any} propKey
+     * @param {any} propKey - the property name. Can be a simple key or nested path like "Trip[0].Emergency Contacts[0].Tags"
      * @param {string, number, array} propVal
      * @param {string} command
      * removes value(s) against a key/property in profile object
@@ -10407,78 +11619,255 @@
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {};
       }
 
-      if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
-        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
+      const isNestedPath = propKey.includes('.') || propKey.includes('[');
 
-        return;
-      }
+      if (isNestedPath) {
+        const segments = parseNestedPath(propKey);
 
-      const removeValue = value => {
-        const index = $ct.globalProfileMap[propKey].indexOf(value);
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
 
-        if (index !== -1) {
-          $ct.globalProfileMap[propKey].splice(index, 1);
+          return;
+        } // Get the last segment (the property we want to remove from)
+
+
+        const lastSegment = segments[segments.length - 1];
+
+        if (lastSegment.type !== 'key') {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('The last segment of the path must be a property key, not an array index.');
+
+          return;
+        } // Get parent path segments (all except last)
+
+
+        const parentSegments = segments.slice(0, -1); // Navigate to the parent object
+
+        let parentObj;
+
+        if (parentSegments.length === 0) {
+          parentObj = $ct.globalProfileMap;
+        } else {
+          parentObj = getNestedValue($ct.globalProfileMap, parentSegments);
+
+          if (parentObj === undefined || parentObj === null) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not exist in profile.');
+
+            return;
+          }
+
+          if (typeof parentObj !== 'object' || Array.isArray(parentObj)) {
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Parent path does not point to an object.');
+
+            return;
+          }
         }
-      };
 
-      if (Array.isArray(propVal)) {
-        propVal.forEach(removeValue);
-      } else if (typeof propVal === 'string' || typeof propVal === 'number') {
-        removeValue(propVal);
+        const targetKey = lastSegment.value;
+
+        if (!parentObj.hasOwnProperty(targetKey)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
+
+          return;
+        }
+
+        const targetArray = parentObj[targetKey];
+
+        if (!Array.isArray(targetArray)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " is not an array."));
+
+          return;
+        } // Helper to remove value from array
+
+
+        const removeValue = value => {
+          const index = targetArray.indexOf(value);
+
+          if (index !== -1) {
+            targetArray.splice(index, 1);
+          }
+        };
+
+        if (Array.isArray(propVal)) {
+          propVal.forEach(removeValue);
+        } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+          removeValue(propVal);
+        } else {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported propVal type');
+
+          return;
+        } // Remove the key if the array is empty
+
+
+        if (targetArray.length === 0) {
+          delete parentObj[targetKey];
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command, true);
       } else {
-        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported propVal type');
+        // Simple key handling (existing logic)
+        if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
 
-        return;
-      } // Remove the key if the array is empty
+          return;
+        }
+
+        const removeValue = value => {
+          const index = $ct.globalProfileMap[propKey].indexOf(value);
+
+          if (index !== -1) {
+            $ct.globalProfileMap[propKey].splice(index, 1);
+          }
+        };
+
+        if (Array.isArray(propVal)) {
+          propVal.forEach(removeValue);
+        } else if (typeof propVal === 'string' || typeof propVal === 'number') {
+          removeValue(propVal);
+        } else {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Unsupported propVal type');
+
+          return;
+        } // Remove the key if the array is empty
 
 
-      if ($ct.globalProfileMap[propKey].length === 0) {
-        delete $ct.globalProfileMap[propKey];
+        if ($ct.globalProfileMap[propKey].length === 0) {
+          delete $ct.globalProfileMap[propKey];
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, propVal, command, false);
       }
-
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(propKey, propVal, command);
     }
     /**
      *
-     * @param {any} propKey
+     * @param {any} propKey - Can be a simple key or nested path like "Policy[0].price"
      * @param {string} command
      * deletes a key value pair from the profile object
+     * Only primitive values (string, number, boolean) can be deleted.
+     * Arrays and objects cannot be deleted - use specific methods for those.
      */
 
 
     _handleMultiValueDelete(propKey, command) {
-      var _$ct$globalProfileMap2;
-
       if ($ct.globalProfileMap == null) {
         $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE);
       }
 
-      if (!($ct === null || $ct === void 0 ? void 0 : (_$ct$globalProfileMap2 = $ct.globalProfileMap) === null || _$ct$globalProfileMap2 === void 0 ? void 0 : _$ct$globalProfileMap2.hasOwnProperty(propKey))) {
-        _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
-      } else {
-        delete $ct.globalProfileMap[propKey];
-      }
+      if ($ct.globalProfileMap == null) {
+        $ct.globalProfileMap = {};
+      } // Helper to check if value is primitive (not array or object)
 
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
-      this.sendMultiValueData(propKey, null, command);
+
+      const isPrimitive = value => {
+        return value === null || value === undefined || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+      };
+
+      const isNestedPath = propKey.includes('.') || propKey.includes('[');
+
+      if (isNestedPath) {
+        const segments = parseNestedPath(propKey);
+
+        if (segments.length === 0) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Invalid nested path format.');
+
+          return;
+        } // Check if the path exists
+
+
+        const currentValue = getNestedValue($ct.globalProfileMap, segments);
+
+        if (currentValue === undefined) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Path '".concat(propKey, "' does not exist in profile."));
+
+          return;
+        } // Check if value is primitive - only allow deletion of primitive values
+
+
+        if (!isPrimitive(currentValue)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Cannot delete '".concat(propKey, "': Value is an ").concat(Array.isArray(currentValue) ? 'array' : 'object', ". Only primitive values (string, number, boolean) can be deleted."));
+
+          return;
+        } // Remove the nested value
+
+
+        if (!removeNestedValue($ct.globalProfileMap, segments)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Failed to remove value at path '".concat(propKey, "'."));
+
+          return;
+        }
+
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, null, command, true);
+      } else {
+        // Handle simple key (existing logic)
+        if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("The property ".concat(propKey, " does not exist."));
+
+          return;
+        }
+
+        const currentValue = $ct.globalProfileMap[propKey]; // Check if value is primitive - only allow deletion of primitive values
+
+        if (!isPrimitive(currentValue)) {
+          _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error("Cannot delete '".concat(propKey, "': Value is an ").concat(Array.isArray(currentValue) ? 'array' : 'object', ". Only primitive values (string, number, boolean) can be deleted."));
+
+          return;
+        }
+
+        delete $ct.globalProfileMap[propKey];
+        StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap);
+        this.sendMultiValueData(propKey, null, command, false);
+      }
     }
 
     sendMultiValueData(propKey, propVal, command) {
+      let isNested = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
       // Send the updated value to LC
       let data = {};
       const profileObj = {};
-      data.type = 'profile'; // this removes the property at backend
+      data.type = 'profile';
 
-      profileObj[propKey] = {
-        [command]: command === COMMAND_DELETE ? true : propVal
-      };
+      if (isNested) {
+        // For nested paths, use the path as a flat key (e.g., "Platform.Web" or "Trip[0].Price")
+        // This sends: { "Platform.Web": { "$delete": true } } instead of nested structure
+        if (command === COMMAND_DELETE) {
+          profileObj[propKey] = {
+            [command]: true
+          };
+        } else {
+          profileObj[propKey] = {
+            [command]: propVal
+          };
+        }
+      } else {
+        // Simple key handling
+        profileObj[propKey] = {
+          [command]: command === COMMAND_DELETE ? true : propVal
+        };
+      }
 
       if (profileObj.tz == null) {
         profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+      } // Validate and clean the profile object before sending
+
+
+      const validationResult = isObjStructureValid(profileObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7], 3);
+
+      if (validationResult.processedObj) {
+        const cleanedProfileObj = validationResult.processedObj;
+
+        const finalProfileObj = _classPrivateFieldLooseBase(this, _filterRestrictedKeys)[_filterRestrictedKeys](cleanedProfileObj);
+
+        if (isObjectEmpty(finalProfileObj)) {
+          return;
+        }
+
+        data.profile = finalProfileObj;
+      } else {
+        data.profile = profileObj;
       }
 
-      data.profile = profileObj;
       data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, true);
 
       _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data);
@@ -10507,7 +11896,39 @@
             // organic data from the site
             profileObj = outerObj.Site;
 
-            if (isObjectEmpty(profileObj) || !isProfileValid(profileObj, {
+            if (isObjectEmpty(profileObj)) {
+              _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].error('Empty profile object provided. No data to send.');
+
+              return;
+            } // Save Date objects for restricted keys before isObjStructureValid converts them
+            // This allows isProfileValid to handle DOB and other date fields correctly
+
+
+            const savedRestrictedDateValues = {};
+
+            for (const key of PROFILE_RESTRICTED_ROOT_KEYS) {
+              if (profileObj[key] instanceof Date) {
+                savedRestrictedDateValues[key] = profileObj[key];
+              }
+            }
+
+            const validationResult = isObjStructureValid(profileObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7], 3); // Validation errors are already logged via logger.reportError in validator
+            // Use cleaned object if provided (even if validation failed)
+            // This removes null/empty values that were logged
+
+            if (validationResult.processedObj) {
+              profileObj = validationResult.processedObj;
+            } // Restore Date objects for restricted keys so isProfileValid can handle them
+
+
+            for (const key in savedRestrictedDateValues) {
+              profileObj[key] = savedRestrictedDateValues[key];
+            } // Profile-specific validation: Drop restricted keys at root level
+
+
+            profileObj = _classPrivateFieldLooseBase(this, _filterRestrictedKeys)[_filterRestrictedKeys](profileObj);
+
+            if (!isProfileValid(profileObj, {
               logger: _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]
             })) {
               return;
@@ -10555,6 +11976,67 @@
           }
         }
       }
+    }
+  };
+
+  var _filterRestrictedKeys2 = function _filterRestrictedKeys2(profileObj) {
+    const finalProfileObj = {};
+
+    for (const key in profileObj) {
+      if (profileObj.hasOwnProperty(key)) {
+        const value = profileObj[key];
+
+        if (PROFILE_RESTRICTED_ROOT_KEYS.includes(key)) {
+          // Check if value is nested (object or array, but not Date)
+          const isNestedValue = value !== null && typeof value === 'object' && !(value instanceof Date);
+
+          if (isNestedValue) {
+            // Skip restricted keys with nested values and log error
+            _classPrivateFieldLooseBase(this, _logger$7)[_logger$7].reportError(NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.code, NESTED_OBJECT_ERRORS.RESTRICTED_PROFILE_PROPERTY.message.replace('%s', key));
+          } else {
+            // Allow restricted keys with primitive values
+            finalProfileObj[key] = value;
+          }
+        } else {
+          finalProfileObj[key] = value;
+        }
+      }
+    }
+
+    return finalProfileObj;
+  };
+
+  var _validateAndSendProfile2 = function _validateAndSendProfile2(profileObj) {
+    if (profileObj.tz == null) {
+      profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
+    }
+
+    const validationResult = isObjStructureValid(profileObj, _classPrivateFieldLooseBase(this, _logger$7)[_logger$7], 3);
+
+    if (validationResult.processedObj) {
+      const cleanedProfileObj = validationResult.processedObj;
+
+      const finalProfileObj = _classPrivateFieldLooseBase(this, _filterRestrictedKeys)[_filterRestrictedKeys](cleanedProfileObj);
+
+      if (isObjectEmpty(finalProfileObj)) {
+        return;
+      }
+
+      let data = {};
+      data.type = 'profile';
+      data.profile = finalProfileObj;
+      data = _classPrivateFieldLooseBase(this, _request$5)[_request$5].addSystemDataToObject(data, true);
+
+      _classPrivateFieldLooseBase(this, _request$5)[_request$5].addFlags(data);
+
+      const compressedData = compressData(JSON.stringify(data), _classPrivateFieldLooseBase(this, _logger$7)[_logger$7]);
+
+      let pageLoadUrl = _classPrivateFieldLooseBase(this, _account$6)[_account$6].dataPostURL;
+
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH);
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData);
+
+      _classPrivateFieldLooseBase(this, _request$5)[_request$5].saveAndFireRequest(pageLoadUrl, $ct.blockRequest);
     }
   };
 
@@ -11256,7 +12738,7 @@
 
       if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
         _classPrivateFieldLooseBase(this, _handleNotificationRegistration)[_handleNotificationRegistration]($ct.notifApi.displayArgs);
-      } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) ;
+      }
     }
 
   }
@@ -12303,107 +13785,6 @@
   const WVE_URL_ORIGIN = {
     CLEVERTAP: 'dashboard.clevertap.com',
     LOCAL: 'localhost'
-  };
-
-  const logLevels = {
-    DISABLE: 0,
-    ERROR: 1,
-    INFO: 2,
-    DEBUG: 3,
-    DEBUG_PE: 4
-  };
-
-  var _logLevel = _classPrivateFieldLooseKey("logLevel");
-
-  var _log = _classPrivateFieldLooseKey("log");
-
-  var _isLegacyDebug = _classPrivateFieldLooseKey("isLegacyDebug");
-
-  class Logger {
-    constructor(logLevel) {
-      Object.defineProperty(this, _isLegacyDebug, {
-        get: _get_isLegacyDebug,
-        set: void 0
-      });
-      Object.defineProperty(this, _log, {
-        value: _log2
-      });
-      Object.defineProperty(this, _logLevel, {
-        writable: true,
-        value: void 0
-      });
-      this.wzrkError = {};
-
-      // Singleton pattern - return existing instance if it exists
-      if (Logger.instance) {
-        return Logger.instance;
-      }
-
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel == null ? logLevels.INFO : logLevel;
-      this.wzrkError = {};
-      Logger.instance = this;
-    } // Static method for explicit singleton access
-
-
-    static getInstance(logLevel) {
-      if (!Logger.instance) {
-        Logger.instance = new Logger(logLevel);
-      }
-
-      return Logger.instance;
-    }
-
-    get logLevel() {
-      return _classPrivateFieldLooseBase(this, _logLevel)[_logLevel];
-    }
-
-    set logLevel(logLevel) {
-      _classPrivateFieldLooseBase(this, _logLevel)[_logLevel] = logLevel;
-    }
-
-    error(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.ERROR) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('error', message);
-      }
-    }
-
-    info(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.INFO) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('log', message);
-      }
-    }
-
-    debug(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG || _classPrivateFieldLooseBase(this, _isLegacyDebug)[_isLegacyDebug]) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug', message);
-      }
-    }
-
-    debugPE(message) {
-      if (_classPrivateFieldLooseBase(this, _logLevel)[_logLevel] >= logLevels.DEBUG_PE) {
-        _classPrivateFieldLooseBase(this, _log)[_log]('debug_pe', message);
-      }
-    }
-
-    reportError(code, description) {
-      this.wzrkError.c = code;
-      this.wzrkError.d = description;
-      this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
-    }
-
-  }
-
-  var _log2 = function _log2(level, message) {
-    if (window.console) {
-      try {
-        const ts = new Date().getTime();
-        console[level]("CleverTap [".concat(ts, "]: ").concat(message));
-      } catch (e) {}
-    }
-  };
-
-  var _get_isLegacyDebug = function () {
-    return typeof sessionStorage !== 'undefined' && sessionStorage.WZRK_D === '';
   };
 
   const renderPopUpImageOnly = (targetingMsgJson, _session) => {
@@ -14046,7 +15427,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.3.4';
+            const sdkVersion = '2.5.1';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -15684,30 +17065,62 @@
         }
       } else {
         window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id; // Handles delivery triggers (inactivity, scroll, exit intent, delay)
+        // When multiple triggers are set, whichever fires first renders the campaign
+        // and all other triggers are cleaned up to prevent duplicate renders
 
         if (displayObj.deliveryTrigger) {
+          const triggerCleanups = [];
+          let delayTimeoutId = null;
+          let hasRendered = false; // Cleans up all triggers to prevent duplicate renders
+
+          const cleanupAllTriggers = () => {
+            triggerCleanups.forEach(cleanup => {
+              if (typeof cleanup === 'function') cleanup();
+            });
+
+            if (delayTimeoutId) {
+              clearTimeout(delayTimeoutId);
+              delayTimeoutId = null;
+            }
+          }; // Coordinated render function - renders once and cleans up all triggers
+
+
+          const renderOnceAndCleanup = () => {
+            if (hasRendered) return;
+            hasRendered = true;
+            cleanupAllTriggers();
+            this.renderFooterNotification(targetingMsgJson, exitintentObj);
+          };
+
           if (displayObj.deliveryTrigger.inactive) {
-            this.triggerByInactivity(targetingMsgJson);
+            triggerCleanups.push(this.triggerByInactivity(targetingMsgJson, renderOnceAndCleanup));
           }
 
           if (displayObj.deliveryTrigger.scroll) {
-            this.triggerByScroll(targetingMsgJson);
+            triggerCleanups.push(this.triggerByScroll(targetingMsgJson, renderOnceAndCleanup));
           }
 
           if (displayObj.deliveryTrigger.isExitIntent) {
             exitintentObj = targetingMsgJson;
-            /* Show it only once per callback */
 
-            const handleMouseLeave = this.createExitIntentMouseLeaveHandler(targetingMsgJson, exitintentObj);
+            const handleMouseLeave = event => {
+              if (hasRendered) return;
+              const wasRendered = this.showExitIntent(event, targetingMsgJson, null, exitintentObj);
+
+              if (wasRendered) {
+                hasRendered = true;
+                cleanupAllTriggers();
+              }
+            };
+
             window.document.addEventListener('mouseleave', handleMouseLeave);
+            triggerCleanups.push(() => window.document.removeEventListener('mouseleave', handleMouseLeave));
           }
 
           const delay = displayObj.delay || displayObj.deliveryTrigger.deliveryDelayed;
 
           if (delay != null && delay > 0) {
-            setTimeout(() => {
-              this.renderFooterNotification(targetingMsgJson, exitintentObj);
-            }, delay * 1000);
+            delayTimeoutId = setTimeout(renderOnceAndCleanup, delay * 1000);
           }
         } else {
           this.renderFooterNotification(targetingMsgJson, exitintentObj);
@@ -15781,7 +17194,8 @@
     },
 
     // Triggers campaign based on user inactivity
-    triggerByInactivity(targetNotif) {
+    // onTrigger callback is called when inactivity threshold is met
+    triggerByInactivity(targetNotif, onTrigger) {
       const IDLE_TIME_THRESHOLD = targetNotif.display.deliveryTrigger.inactive * 1000; // Convert to milliseconds
 
       let idleTimer;
@@ -15790,8 +17204,13 @@
       const resetIdleTimer = () => {
         clearTimeout(idleTimer);
         idleTimer = setTimeout(() => {
-          this.renderFooterNotification(targetNotif);
           removeEventListeners();
+
+          if (onTrigger) {
+            onTrigger();
+          } else {
+            this.renderFooterNotification(targetNotif);
+          }
         }, IDLE_TIME_THRESHOLD);
       };
 
@@ -15806,6 +17225,7 @@
       };
 
       const removeEventListeners = () => {
+        clearTimeout(idleTimer);
         events.forEach(eventType => window.removeEventListener(eventType, eventHandler));
       };
 
@@ -15816,7 +17236,8 @@
     },
 
     // Triggers campaign based on scroll percentage
-    triggerByScroll(targetNotif) {
+    // onTrigger callback is called when scroll threshold is met
+    triggerByScroll(targetNotif, onTrigger) {
       const calculateScrollPercentage = () => {
         const {
           scrollHeight,
@@ -15830,8 +17251,13 @@
         const scrollPercentage = calculateScrollPercentage();
 
         if (scrollPercentage >= targetNotif.display.deliveryTrigger.scroll) {
-          this.renderFooterNotification(targetNotif);
           window.removeEventListener('scroll', throttledScrollListener);
+
+          if (onTrigger) {
+            onTrigger();
+          } else {
+            this.renderFooterNotification(targetNotif);
+          }
         }
       };
 
@@ -16652,7 +18078,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.3.4',
+        lib: 'web-sdk-v2.5.1',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -17503,6 +18929,10 @@
 
   var _pageChangeTimeoutId = _classPrivateFieldLooseKey("pageChangeTimeoutId");
 
+  var _enableFetchApi = _classPrivateFieldLooseKey("enableFetchApi");
+
+  var _enableEncryptionInTransit = _classPrivateFieldLooseKey("enableEncryptionInTransit");
+
   var _domainSpecification = _classPrivateFieldLooseKey("domainSpecification");
 
   var _processOldValues = _classPrivateFieldLooseKey("processOldValues");
@@ -17549,6 +18979,26 @@
       const dismissSpamControl = value === true;
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = dismissSpamControl;
       $ct.dismissSpamControl = dismissSpamControl;
+    }
+
+    get enableFetchApi() {
+      return _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
+    }
+
+    set enableFetchApi(value) {
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = value; // propagate the setting to RequestDispatcher so util layer can honour it
+
+      RequestDispatcher.enableFetchApi = value;
+    }
+
+    get enableEncryptionInTransit() {
+      return _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit];
+    }
+
+    set enableEncryptionInTransit(value) {
+      _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = value; // propagate the setting to RequestDispatcher so util layer can honour it
+
+      RequestDispatcher.enableEncryptionInTransit = value;
     }
 
     get domainSpecification() {
@@ -17644,6 +19094,14 @@
         writable: true,
         value: void 0
       });
+      Object.defineProperty(this, _enableFetchApi, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(this, _enableEncryptionInTransit, {
+        writable: true,
+        value: void 0
+      });
       Object.defineProperty(this, _domainSpecification, {
         writable: true,
         value: void 0
@@ -17673,6 +19131,10 @@
       });
       _classPrivateFieldLooseBase(this, _dismissSpamControl)[_dismissSpamControl] = (_clevertap$dismissSpa = clevertap.dismissSpamControl) !== null && _clevertap$dismissSpa !== void 0 ? _clevertap$dismissSpa : true;
       this.shpfyProxyPath = clevertap.shpfyProxyPath || '';
+      _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = clevertap.enableFetchApi || false;
+      RequestDispatcher.enableFetchApi = _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi];
+      _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = clevertap.enableEncryptionInTransit || false;
+      RequestDispatcher.enableEncryptionInTransit = _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit];
       _classPrivateFieldLooseBase(this, _session)[_session] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger)[_logger],
         isPersonalisationActive: this._isPersonalisationActive,
@@ -18072,7 +19534,7 @@
         if (Array.isArray(value)) {
           this.profile._handleMultiValueSet(key, value, COMMAND_SET);
         } else {
-          console.error('setMultiValuesForKey should be called with a value of type array');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('setMultiValuesForKey should be called with a value of type array');
         }
       };
 
@@ -18080,7 +19542,7 @@
         if (typeof value === 'string' || typeof value === 'number') {
           this.profile._handleMultiValueAdd(key, value, COMMAND_ADD);
         } else {
-          console.error('addMultiValueForKey should be called with a value of type string or number.');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('addMultiValueForKey should be called with a value of type string or number.');
         }
       };
 
@@ -18088,7 +19550,7 @@
         if (Array.isArray(value)) {
           this.profile._handleMultiValueAdd(key, value, COMMAND_ADD);
         } else {
-          console.error('addMultiValuesForKey should be called with a value of type array.');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('addMultiValuesForKey should be called with a value of type array.');
         }
       };
 
@@ -18096,7 +19558,7 @@
         if (typeof value === 'string' || typeof value === 'number') {
           this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE);
         } else {
-          console.error('removeMultiValueForKey should be called with a value of type string or number.');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('removeMultiValueForKey should be called with a value of type string or number.');
         }
       };
 
@@ -18104,7 +19566,7 @@
         if (Array.isArray(value)) {
           this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE);
         } else {
-          console.error('removeMultiValuesForKey should be called with a value of type array.');
+          _classPrivateFieldLooseBase(this, _logger)[_logger].error('removeMultiValuesForKey should be called with a value of type array.');
         }
       };
 
@@ -18373,7 +19835,10 @@
       if (_classPrivateFieldLooseBase(this, _onloadcalled)[_onloadcalled] === 1) {
         // already initailsed
         return;
-      }
+      } // Clear EIT fallback flag on new session (init)
+
+
+      RequestDispatcher.clearEITFallback();
 
       if (accountId) {
         encryption.key = accountId;
@@ -18413,6 +19878,16 @@
 
       if (config === null || config === void 0 ? void 0 : config.customId) {
         this.createCustomIdIfValid(config.customId);
+      }
+
+      if (config.enableFetchApi) {
+        _classPrivateFieldLooseBase(this, _enableFetchApi)[_enableFetchApi] = config.enableFetchApi;
+        RequestDispatcher.enableFetchApi = config.enableFetchApi;
+      }
+
+      if (config.enableEncryptionInTransit) {
+        _classPrivateFieldLooseBase(this, _enableEncryptionInTransit)[_enableEncryptionInTransit] = config.enableEncryptionInTransit;
+        RequestDispatcher.enableEncryptionInTransit = config.enableEncryptionInTransit;
       } // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
       // This ensures user identity is established before other events
 
@@ -18626,7 +20101,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.3.4';
+      return 'web-sdk-v2.5.1';
     }
 
     defineVariable(name, defaultValue) {
