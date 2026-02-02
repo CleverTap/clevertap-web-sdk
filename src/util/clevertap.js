@@ -240,8 +240,8 @@ export const getCampaignObjForLc = () => {
     }
 
     const resultObjWI = (!!guid &&
-                        storageValue !== undefined && storageValue !== null &&
-                        parsedValue && parsedValue[guid] && parsedValue[guid].wi)
+      storageValue !== undefined && storageValue !== null &&
+      parsedValue && parsedValue[guid] && parsedValue[guid].wi)
       ? Object.values(parsedValue[guid].wi)
       : []
 
@@ -518,6 +518,247 @@ export const addToLocalProfileMap = (profileObj, override) => {
     }
     StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
   }
+}
+
+/**
+ * Parses a nested key path into segments
+ * Handles paths like "Policy[0].price", "Policy[0].Insured[0].policyValue", "InsuranceDetails.Policy[1].Premium"
+ * @param {string} path - The nested key path
+ * @returns {Array} Array of path segments with type 'key' or 'array'
+ */
+export const parseNestedPath = (path) => {
+  const segments = []
+  let current = ''
+  let i = 0
+
+  while (i < path.length) {
+    if (path[i] === '[') {
+      if (current) {
+        segments.push({ type: 'key', value: current })
+        current = ''
+      }
+      i++
+      let index = ''
+      while (i < path.length && path[i] !== ']') {
+        index += path[i]
+        i++
+      }
+      if (i < path.length && path[i] === ']') {
+        segments.push({ type: 'array', index: parseInt(index, 10) })
+        i++
+      }
+    } else if (path[i] === '.') {
+      if (current) {
+        segments.push({ type: 'key', value: current })
+        current = ''
+      }
+      i++
+    } else {
+      current += path[i]
+      i++
+    }
+  }
+
+  if (current) {
+    segments.push({ type: 'key', value: current })
+  }
+
+  return segments
+}
+
+/**
+ * Gets a value from a nested path in an object
+ * @param {Object} obj - The object to navigate
+ * @param {Array} segments - Parsed path segments
+ * @returns {any} The value at the path, or undefined if path doesn't exist
+ */
+export const getNestedValue = (obj, segments) => {
+  let current = obj
+  for (const segment of segments) {
+    if (current == null) {
+      return undefined
+    }
+    if (segment.type === 'key') {
+      current = current[segment.value]
+    } else if (segment.type === 'array') {
+      if (!Array.isArray(current)) {
+        return undefined
+      }
+      current = current[segment.index]
+    }
+  }
+  return current
+}
+
+/**
+ * Sets a value at a nested path in an object, creating intermediate objects/arrays as needed
+ * @param {Object} obj - The object to modify
+ * @param {Array} segments - Parsed path segments
+ * @param {any} value - The value to set
+ * @returns {boolean} True if successful, false otherwise
+ */
+export const setNestedValue = (obj, segments, value) => {
+  let current = obj
+  const lastIndex = segments.length - 1
+
+  for (let i = 0; i < lastIndex; i++) {
+    const segment = segments[i]
+    const nextSegment = segments[i + 1]
+
+    if (segment.type === 'key') {
+      if (current[segment.value] == null) {
+        current[segment.value] = nextSegment?.type === 'array' ? [] : {}
+      }
+      current = current[segment.value]
+    } else if (segment.type === 'array') {
+      if (!Array.isArray(current)) {
+        return false
+      }
+      if (current[segment.index] == null) {
+        current[segment.index] = nextSegment?.type === 'array' ? [] : {}
+      }
+      current = current[segment.index]
+    }
+  }
+
+  const lastSegment = segments[lastIndex]
+  if (lastSegment.type === 'key') {
+    current[lastSegment.value] = value
+  } else if (lastSegment.type === 'array') {
+    if (!Array.isArray(current)) {
+      return false
+    }
+    current[lastSegment.index] = value
+  }
+
+  return true
+}
+
+/**
+ * Builds a nested object structure from path segments for sending to backend
+ * Creates structure like { Policy: [{ price: { $incr: 10 } }] }
+ * @param {Array} segments - Parsed path segments
+ * @param {string} command - The command (COMMAND_INCREMENT or COMMAND_DECREMENT)
+ * @param {number} value - The increment/decrement value
+ * @returns {Object} The nested object structure
+ */
+export const buildNestedCommandObject = (segments, command, value) => {
+  if (segments.length === 0) {
+    return {}
+  }
+
+  const buildStructure = (segIndex) => {
+    if (segIndex >= segments.length) {
+      return null
+    }
+
+    const segment = segments[segIndex]
+    const isLast = segIndex === segments.length - 1
+
+    if (segment.type === 'key') {
+      const next = isLast ? { [command]: value } : buildStructure(segIndex + 1)
+      return { [segment.value]: next }
+    } else if (segment.type === 'array') {
+      const arr = []
+      arr[segment.index] = isLast ? { [command]: value } : buildStructure(segIndex + 1)
+      return arr
+    }
+
+    return null
+  }
+
+  return buildStructure(0)
+}
+
+/**
+ * Removes a value at a nested path in an object
+ * @param {Object} obj - The object to modify
+ * @param {Array} segments - Parsed path segments
+ * @returns {boolean} True if successful, false otherwise
+ */
+export const removeNestedValue = (obj, segments) => {
+  if (segments.length === 0) {
+    return false
+  }
+
+  let current = obj
+  const lastIndex = segments.length - 1
+
+  // Navigate to the parent of the target
+  for (let i = 0; i < lastIndex; i++) {
+    const segment = segments[i]
+    if (segment.type === 'key') {
+      if (current[segment.value] == null) {
+        return false
+      }
+      current = current[segment.value]
+    } else if (segment.type === 'array') {
+      if (!Array.isArray(current)) {
+        return false
+      }
+      if (current[segment.index] == null) {
+        return false
+      }
+      current = current[segment.index]
+    }
+  }
+
+  // Remove the target value
+  const lastSegment = segments[lastIndex]
+  if (lastSegment.type === 'key') {
+    if (current.hasOwnProperty(lastSegment.value)) {
+      delete current[lastSegment.value]
+      return true
+    }
+  } else if (lastSegment.type === 'array') {
+    if (!Array.isArray(current)) {
+      return false
+    }
+    if (current[lastSegment.index] != null) {
+      // For arrays, we can either delete the element or set it to undefined
+      // Using splice to remove the element completely
+      current.splice(lastSegment.index, 1)
+      return true
+    }
+  }
+
+  return false
+}
+
+/**
+ * Builds a nested object structure for delete command
+ * Creates structure like { Policy: [{ price: { $delete: true } }] }
+ * @param {Array} segments - Parsed path segments
+ * @param {string} command - The command (COMMAND_DELETE)
+ * @param {any} value - The value to set (usually true for delete)
+ * @returns {Object} The nested object structure
+ */
+export const buildNestedDeleteObject = (segments, command, value) => {
+  if (segments.length === 0) {
+    return {}
+  }
+
+  const buildStructure = (segIndex) => {
+    if (segIndex >= segments.length) {
+      return null
+    }
+
+    const segment = segments[segIndex]
+    const isLast = segIndex === segments.length - 1
+
+    if (segment.type === 'key') {
+      const next = isLast ? { [command]: value } : buildStructure(segIndex + 1)
+      return { [segment.value]: next }
+    } else if (segment.type === 'array') {
+      const arr = []
+      arr[segment.index] = isLast ? { [command]: value } : buildStructure(segIndex + 1)
+      return arr
+    }
+
+    return null
+  }
+
+  return buildStructure(0)
 }
 
 export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
