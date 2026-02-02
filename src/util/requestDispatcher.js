@@ -1,5 +1,5 @@
 
-import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY, MAX_DELAY_FREQUENCY, PUSH_DELAY_MS, WZRK_FETCH, CT_EIT_FALLBACK } from './constants'
+import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY, MAX_DELAY_FREQUENCY, PUSH_DELAY_MS, WZRK_FETCH, CT_EIT_FALLBACK, MUTE_EXPIRY_KEY } from './constants'
 import { isString, isValueValid } from './datatypes'
 import { compressData } from './encoder'
 import { StorageManager, $ct, isMuted, getMuteExpiry } from './storage'
@@ -288,6 +288,17 @@ export default class RequestDispatcher {
 
     fetch(encryptedUrl, fetchOptions)
       .then((response) => {
+        // Check for SDK mute headers (progressive muting for churned accounts)
+        // X-WZRK-MUTE-DURATION contains epoch timestamp in ms
+        const muteDurationHeader = response.headers.get('X-WZRK-MUTE-DURATION')
+        if (muteDurationHeader) {
+          const muteExpiryMs = parseInt(muteDurationHeader, 10)
+          if (!isNaN(muteExpiryMs) && muteExpiryMs > 0) {
+            StorageManager.saveToLSorCookie(MUTE_EXPIRY_KEY, muteExpiryMs)
+            this.logger.info(`SDK muted until: ${new Date(muteExpiryMs).toISOString()}`)
+          }
+        }
+
         if (!response.ok) {
           // Handle 402 (Payment Required) or 419: Encryption not enabled for account
           if (response.status === 402 || response.status === 419) {

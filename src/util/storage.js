@@ -327,16 +327,6 @@ export const getMuteExpiry = () => {
   return StorageManager.readFromLSorCookie(MUTE_EXPIRY_KEY) || null
 }
 
-/**
- * Clear mute state (called when account is reactivated)
- */
-export const clearMuteExpiry = () => {
-  if (StorageManager._isLocalStorageSupported()) {
-    StorageManager.remove(MUTE_EXPIRY_KEY)
-  }
-  delete $ct.globalCache[MUTE_EXPIRY_KEY]
-}
-
 export const $ct = {
   globalCache: {
     gcookie: null,
