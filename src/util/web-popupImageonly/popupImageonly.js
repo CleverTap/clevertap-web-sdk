@@ -11,6 +11,10 @@ export class CTWebPopupImageOnly extends HTMLElement {
     this.shadow = this.attachShadow({ mode: 'open' })
   }
 
+  getShadowRoot () {
+    return this.shadow
+  }
+
     _target = null
     _session = null
     shadow = null
