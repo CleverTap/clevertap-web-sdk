@@ -15275,7 +15275,16 @@
       // Update the element style
       if (formStyle.style !== undefined) {
         Object.keys(formStyle.style).forEach(property => {
-          element.style.setProperty(property, formStyle.style[property]);
+          // Normalize property name (convert camelCase to kebab-case if needed)
+          const normalizedProperty = property.replace(/([A-Z])/g, '-$1').toLowerCase();
+          const value = formStyle.style[property]; // Use !important for display and visibility properties to ensure hide/show logic works
+          // even when there are conflicting CSS rules with !important
+
+          if (normalizedProperty === 'display' || normalizedProperty === 'visibility') {
+            element.style.setProperty(normalizedProperty, value, 'important');
+          } else {
+            element.style.setProperty(normalizedProperty, value);
+          }
         });
       } // Update underline for element
 
@@ -15311,11 +15320,43 @@
 
           window.location.href = url;
         };
-      } // Set the image source
+      } // Handle both img and picture elements
 
 
-      if (formStyle.imgURL !== undefined && element.tagName.toLowerCase() === 'img') {
-        element.src = formStyle.imgURL;
+      const tagName = element.tagName.toLowerCase();
+
+      if (tagName === 'img' || tagName === 'picture') {
+        // For picture elements, get the nested img element; for img elements, use directly
+        const imgElement = tagName === 'picture' ? element.querySelector('img') : element;
+
+        if (imgElement) {
+          // Set the image source
+          if (formStyle.imgURL !== undefined) {
+            imgElement.src = formStyle.imgURL;
+          } // Set or remove srcset attribute
+
+
+          if (formStyle.imgSrcset !== undefined) {
+            if (formStyle.imgSrcset) {
+              // Non-empty string: set the srcset attribute
+              imgElement.setAttribute('srcset', formStyle.imgSrcset);
+            } else {
+              // Empty string: remove the srcset attribute
+              imgElement.removeAttribute('srcset');
+            }
+          } // Set or remove sizes attribute
+
+
+          if (formStyle.imgSizes !== undefined) {
+            if (formStyle.imgSizes) {
+              // Non-empty string: set the sizes attribute
+              imgElement.setAttribute('sizes', formStyle.imgSizes);
+            } else {
+              // Empty string: remove the sizes attribute
+              imgElement.removeAttribute('sizes');
+            }
+          }
+        }
       }
     }
   };
@@ -15367,7 +15408,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.5.1';
+            const sdkVersion = '2.5.2';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -18018,7 +18059,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.5.1',
+        lib: 'web-sdk-v2.5.2',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -20024,7 +20065,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.5.1';
+      return 'web-sdk-v2.5.2';
     }
 
     defineVariable(name, defaultValue) {
