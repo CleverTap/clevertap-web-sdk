@@ -2,7 +2,7 @@ version: v1.0
 name: Build Pipeline
 agent:
   machine:
-    type: s1-agent-t2-micro
+    type: s1-agent-t4g-micro
     os_image: ''
 blocks:
   - name: Build Assets
