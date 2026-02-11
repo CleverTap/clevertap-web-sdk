@@ -19305,7 +19305,11 @@
       this.inboxNav = {
         shadowRoot: inbox.shadowRoot,
         elements: [],
-        index: 0
+        index: 0,
+        ctaFocused: false,
+        // Track if CTA button is focused within a message
+        ctaIndex: 0 // Track which CTA button is focused (0 or 1 for messages with 2 CTAs)
+
       };
       this.refreshInboxElements();
       this.injectInboxStyles();
@@ -19368,11 +19372,76 @@
       this.refreshInboxElements();
       const {
         elements,
-        index
+        index,
+        ctaFocused,
+        ctaIndex
       } = this.inboxNav;
       if (elements.length === 0) return;
       const current = elements[index];
-      let newIndex = index;
+      let newIndex = index; // Handle CTA navigation within a message
+
+      if ((current === null || current === void 0 ? void 0 : current.type) === 'message') {
+        const ctaBtns = this.getMessageCTAs(current.el);
+        const hasMultipleCTAs = ctaBtns.length > 1;
+
+        if (ctaFocused && ctaBtns.length > 0) {
+          // Currently on CTA
+          if (axis === 'horizontal') {
+            if (delta > 0 && hasMultipleCTAs && ctaIndex < ctaBtns.length - 1) {
+              // Right: move to next CTA button
+              this.unfocusCTA(ctaBtns[ctaIndex]);
+              this.inboxNav.ctaIndex = ctaIndex + 1;
+              this.focusCTA(ctaBtns[this.inboxNav.ctaIndex]);
+              this.logger.debug("CTA focus moved to button ".concat(this.inboxNav.ctaIndex + 1));
+              return;
+            } else if (delta < 0 && ctaIndex > 0) {
+              // Left: move to previous CTA button
+              this.unfocusCTA(ctaBtns[ctaIndex]);
+              this.inboxNav.ctaIndex = ctaIndex - 1;
+              this.focusCTA(ctaBtns[this.inboxNav.ctaIndex]);
+              this.logger.debug("CTA focus moved to button ".concat(this.inboxNav.ctaIndex + 1));
+              return;
+            } else if (delta < 0 && ctaIndex === 0) {
+              // Left on first CTA: go back to message
+              this.focusInboxElement(index, false);
+              return;
+            }
+          } else if (axis === 'vertical') {
+            if (delta < 0) {
+              // Up: go back to message
+              this.focusInboxElement(index, false);
+              return;
+            } else if (delta > 0) {
+              // Down: move to next message/element
+              this.unfocusAllCTAs(current.el);
+              this.inboxNav.ctaFocused = false;
+              this.inboxNav.ctaIndex = 0;
+              newIndex = Math.min(elements.length - 1, index + 1);
+
+              if (newIndex !== index) {
+                this.focusInboxElement(newIndex, false);
+              }
+
+              return;
+            }
+          }
+        } else if (!ctaFocused && ctaBtns.length > 0) {
+          // Currently on message, check if we should go to CTA
+          if (axis === 'vertical' && delta > 0 || axis === 'horizontal' && delta > 0) {
+            // Down or Right: go to first CTA if it exists
+            this.inboxNav.ctaIndex = 0;
+            this.focusInboxElement(index, true);
+            return;
+          }
+        }
+      } // If CTA is focused and we're moving, first unfocus it
+
+
+      if (ctaFocused && (current === null || current === void 0 ? void 0 : current.type) === 'message') {
+        this.unfocusAllCTAs(current.el);
+        this.inboxNav.ctaFocused = false;
+        this.inboxNav.ctaIndex = 0;
+      }
 
       if (axis === 'vertical') {
         // Simple up/down movement
@@ -19390,28 +19459,91 @@
       }
 
       if (newIndex !== index) {
-        this.focusInboxElement(newIndex);
+        this.focusInboxElement(newIndex, false);
       }
+    } // Get all CTA buttons from a message element
+
+
+    getMessageCTAs(msgEl) {
+      if (!(msgEl === null || msgEl === void 0 ? void 0 : msgEl.shadowRoot)) return []; // Look for all CTA buttons in message shadow DOM
+
+      const ctaBtns = msgEl.shadowRoot.querySelectorAll('.ct-inbox-cta button') || msgEl.shadowRoot.querySelectorAll('button[class*="cta"]') || msgEl.shadowRoot.querySelectorAll('.jsCTAButton'); // If no specific CTA class found, get all buttons except close
+
+      if (!ctaBtns || ctaBtns.length === 0) {
+        return Array.from(msgEl.shadowRoot.querySelectorAll('button')).filter(btn => !btn.classList.contains('close') && btn.offsetParent !== null);
+      }
+
+      return Array.from(ctaBtns).filter(btn => btn.offsetParent !== null);
+    } // Get single CTA button (for backward compatibility)
+
+
+    getMessageCTA(msgEl) {
+      const ctas = this.getMessageCTAs(msgEl);
+      return ctas.length > 0 ? ctas[0] : null;
+    } // Focus CTA button
+
+
+    focusCTA(ctaBtn) {
+      if (!ctaBtn) return;
+      ctaBtn.classList.add('ct-tv-focused');
+      ctaBtn.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      });
+      this.logger.debug('Inbox CTA focused');
+    } // Unfocus CTA button
+
+
+    unfocusCTA(ctaBtn) {
+      if (!ctaBtn) return;
+      ctaBtn.classList.remove('ct-tv-focused');
+    } // Unfocus all CTA buttons in a message
+
+
+    unfocusAllCTAs(msgEl) {
+      const ctas = this.getMessageCTAs(msgEl);
+      ctas.forEach(cta => this.unfocusCTA(cta));
     }
 
     focusInboxElement(index) {
+      let focusCTA = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       if (!this.inboxNav) return;
       const {
         elements
       } = this.inboxNav;
-      if (index < 0 || index >= elements.length) return; // Remove previous focus
+      if (index < 0 || index >= elements.length) return; // Remove previous focus (including CTA if any)
 
       const prev = elements[this.inboxNav.index];
 
       if (prev && prev.el) {
-        prev.el.classList.remove('ct-tv-focused');
+        prev.el.classList.remove('ct-tv-focused'); // Also unfocus any previously focused CTAs
+
+        if (prev.type === 'message') {
+          this.unfocusAllCTAs(prev.el);
+        }
       } // Apply new focus
 
 
       this.inboxNav.index = index;
+      this.inboxNav.ctaFocused = false;
       const curr = elements[index];
 
       if (curr === null || curr === void 0 ? void 0 : curr.el) {
+        if (focusCTA && curr.type === 'message') {
+          // Focus the CTA button instead of the message
+          const ctaBtns = this.getMessageCTAs(curr.el);
+          const ctaIdx = this.inboxNav.ctaIndex || 0;
+
+          if (ctaBtns.length > 0 && ctaBtns[ctaIdx]) {
+            this.focusCTA(ctaBtns[ctaIdx]);
+            this.inboxNav.ctaFocused = true;
+            this.logger.debug("Inbox focus: CTA button ".concat(ctaIdx + 1, " of ").concat(ctaBtns.length));
+            return;
+          }
+        } // Normal element focus - reset CTA index when going back to message
+
+
+        this.inboxNav.ctaIndex = 0;
         curr.el.classList.add('ct-tv-focused');
         curr.el.scrollIntoView({
           behavior: 'smooth',
@@ -19425,7 +19557,7 @@
       if (!this.inboxNav) return;
       const item = this.inboxNav.elements[this.inboxNav.index];
       if (!(item === null || item === void 0 ? void 0 : item.el)) return;
-      this.logger.debug('Inbox activate:', item.type);
+      this.logger.debug('Inbox activate:', item.type, 'CTA focused:', this.inboxNav.ctaFocused);
       const inbox = $ct.inbox;
 
       switch (item.type) {
@@ -19451,6 +19583,19 @@
           break;
 
         case 'message':
+          // If CTA is focused, click the correct CTA button
+          if (this.inboxNav.ctaFocused) {
+            const ctaBtns = this.getMessageCTAs(item.el);
+            const ctaIdx = this.inboxNav.ctaIndex || 0;
+
+            if (ctaBtns.length > 0 && ctaBtns[ctaIdx]) {
+              this.logger.debug("Clicking CTA button ".concat(ctaIdx + 1));
+              ctaBtns[ctaIdx].click();
+              return;
+            }
+          } // Otherwise, raise the message clicked event
+
+
           if (item.el.raiseClickedEvent) {
             item.el.raiseClickedEvent(item.el, false);
           }
@@ -19471,7 +19616,11 @@
         const currentEl = this.inboxNav.elements[this.inboxNav.index];
 
         if (currentEl && currentEl.el) {
-          currentEl.el.classList.remove('ct-tv-focused');
+          currentEl.el.classList.remove('ct-tv-focused'); // Also clean up all CTA focus if any
+
+          if (currentEl.type === 'message') {
+            this.unfocusAllCTAs(currentEl.el);
+          }
         }
 
         this.inboxNav = null;
@@ -19723,7 +19872,9 @@
         } : null,
         inboxNavigation: this.inboxNav ? {
           currentIndex: this.inboxNav.index,
-          totalElements: this.inboxNav.elements.length
+          totalElements: this.inboxNav.elements.length,
+          ctaFocused: this.inboxNav.ctaFocused,
+          ctaIndex: this.inboxNav.ctaIndex
         } : null
       };
     }
