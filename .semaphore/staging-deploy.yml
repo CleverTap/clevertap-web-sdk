@@ -2,7 +2,7 @@ version: v1.0
 name: Staging-Deploy
 agent:
   machine:
-    type: s1-agent-t2-micro
+    type: s1-agent-t4g-micro
     os_image: ''
 blocks:
   - name: Deploy Assets
@@ -19,8 +19,8 @@ blocks:
               set -euo pipefail
               mkdir utils
               aws s3 cp s3://semaphore-agent-customres-semaphoredependenciess3b-okhz8b8lstnx/utils/generate_assumed_role_creds.py utils/generate_assumed_role_creds.py
-              aws s3 cp s3://semaphore-agent-customres-semaphoredependenciess3b-okhz8b8lstnx/uv/uv-x86_64-unknown-linux-gnu.tar.gz - | tar -v -xz -C utils/
-              export PATH="$PATH:$(pwd)/utils/uv-x86_64-unknown-linux-gnu"
+              aws s3 cp s3://semaphore-agent-customres-semaphoredependenciess3b-okhz8b8lstnx/uv/uv-aarch64-unknown-linux-gnu.tar.gz - | tar -v -xz -C utils/
+              export PATH="$PATH:$(pwd)/utils/uv-aarch64-unknown-linux-gnu"
               uv venv prod
               source prod/bin/activate
               uv pip install argparse PyJWT requests cryptography pytablewriter pyyaml boto3   
@@ -41,5 +41,5 @@ blocks:
         - name: ProductionAccountAwsCredentials 
       agent:
         machine:
-          type: s1-agent-c5-large
+          type: s1-agent-c6g-large
           os_image: ''
