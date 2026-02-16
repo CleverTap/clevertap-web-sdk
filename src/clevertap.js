@@ -38,7 +38,8 @@ import {
   GCOOKIE_NAME,
   QUALIFIED_CAMPAIGNS,
   BLOCK_REQUEST_COOKIE,
-  ISOLATE_COOKIE
+  ISOLATE_COOKIE,
+  WZRK_GEO
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -590,6 +591,12 @@ export default class CleverTap {
         this.#sendLocationData({ Latitude: lat, Longitude: lng })
       } else {
         if (navigator.geolocation) {
+          // If user already accepted/denied, skip the prompt
+          try {
+            if (localStorage.getItem(WZRK_GEO) !== null) {
+              return
+            }
+          } catch (e) {}
           navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError)
         } else {
           console.log('Geolocation is not supported by this browser.')
@@ -600,6 +607,7 @@ export default class CleverTap {
     function showPosition (position) {
       var lat = position.coords.latitude
       var lng = position.coords.longitude
+      try { localStorage.setItem(WZRK_GEO, 'true') } catch (e) {}
       $ct.location = { Latitude: lat, Longitude: lng }
       this.#sendLocationData({ Latitude: lat, Longitude: lng })
     }
@@ -608,6 +616,7 @@ export default class CleverTap {
       switch (error.code) {
         case error.PERMISSION_DENIED:
           console.log('User denied the request for Geolocation.')
+          try { localStorage.setItem(WZRK_GEO, 'false') } catch (e) {}
           break
         case error.POSITION_UNAVAILABLE:
           console.log('Location information is unavailable.')
