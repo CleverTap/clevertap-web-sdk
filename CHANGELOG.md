@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [2.5.3] 16th Feb 2026
-- Fixed repeated geolocation permission prompt on every page navigation in Safari. The SDK now caches the user's accept/deny response in localStorage with a 30-day TTL, preventing redundant prompts within that period.
+- Fixed repeated geolocation permission prompt on every page navigation in Safari. The SDK now caches the user's accept/deny response in localStorage, preventing redundant prompts.
 
 ## [2.5.2] 3rd Feb 2026 
 - Added srcset and sizes attribute support for image in visual editor.

@@ -225,10 +225,9 @@
 
   const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'; // Flag key for Encryption in Transit JSONP fallback (session-level)
 
-  const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK'; // Geolocation prompt cache key and TTL (30 days in milliseconds)
+  const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK'; // Geolocation prompt cache key
 
   const WZRK_GEO = 'WZRK_GEO';
-  const GEO_TTL_MS = 30 * 24 * 60 * 60 * 1000;
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -19601,10 +19600,12 @@
           });
         } else {
           if (navigator.geolocation) {
-            // If user already accepted/denied within TTL, skip the prompt
-            if (hasGeoResponseInTTL()) {
-              return;
-            }
+            // If user already accepted/denied, skip the prompt
+            try {
+              if (localStorage.getItem(WZRK_GEO) !== null) {
+                return;
+              }
+            } catch (e) {}
 
             navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError);
           } else {
@@ -19613,35 +19614,14 @@
         }
       };
 
-      function hasGeoResponseInTTL() {
-        try {
-          const raw = localStorage.getItem(WZRK_GEO);
-
-          if (raw) {
-            const elapsed = Date.now() - parseInt(raw, 10);
-
-            if (elapsed < GEO_TTL_MS) {
-              return true;
-            } // TTL expired — remove stale entry
-
-
-            localStorage.removeItem(WZRK_GEO);
-          }
-        } catch (e) {}
-
-        return false;
-      }
-
-      function setGeoResponse() {
-        try {
-          localStorage.setItem(WZRK_GEO, String(Date.now()));
-        } catch (e) {}
-      }
-
       function showPosition(position) {
         var lat = position.coords.latitude;
         var lng = position.coords.longitude;
-        setGeoResponse();
+
+        try {
+          localStorage.setItem(WZRK_GEO, 'true');
+        } catch (e) {}
+
         $ct.location = {
           Latitude: lat,
           Longitude: lng
@@ -19657,7 +19637,11 @@
         switch (error.code) {
           case error.PERMISSION_DENIED:
             console.log('User denied the request for Geolocation.');
-            setGeoResponse();
+
+            try {
+              localStorage.setItem(WZRK_GEO, 'false');
+            } catch (e) {}
+
             break;
 
           case error.POSITION_UNAVAILABLE:
