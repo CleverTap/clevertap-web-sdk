@@ -591,12 +591,17 @@ export default class CleverTap {
         this.#sendLocationData({ Latitude: lat, Longitude: lng })
       } else {
         if (navigator.geolocation) {
-          // If user already accepted/denied, skip the prompt
-          try {
-            if (localStorage.getItem(WZRK_GEO) !== null) {
-              return
-            }
-          } catch (e) {}
+          // Safari does not persistently remember geolocation denial and
+          // re-prompts on every page. Use localStorage to cache the response
+          // so the prompt is only shown once in Safari.
+          var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+          if (isSafari) {
+            try {
+              if (localStorage.getItem(WZRK_GEO) === 'false') {
+                return
+              }
+            } catch (e) {}
+          }
           navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError)
         } else {
           console.log('Geolocation is not supported by this browser.')
