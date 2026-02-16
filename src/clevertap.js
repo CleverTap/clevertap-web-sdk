@@ -591,13 +591,10 @@ export default class CleverTap {
         this.#sendLocationData({ Latitude: lat, Longitude: lng })
       } else {
         if (navigator.geolocation) {
-          // Safari does not persistently remember geolocation denial and
-          // re-prompts on every page. Use localStorage to cache the response
-          // so the prompt is only shown once in Safari.
-          var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
           if (isSafari) {
             try {
-              if (localStorage.getItem(WZRK_GEO) === 'false') {
+              if (localStorage.getItem(WZRK_GEO) !== null) {
                 return
               }
             } catch (e) {}
