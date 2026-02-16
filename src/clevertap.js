@@ -38,7 +38,9 @@ import {
   GCOOKIE_NAME,
   QUALIFIED_CAMPAIGNS,
   BLOCK_REQUEST_COOKIE,
-  ISOLATE_COOKIE
+  ISOLATE_COOKIE,
+  WZRK_GEO,
+  GEO_TTL_MS
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -590,6 +592,10 @@ export default class CleverTap {
         this.#sendLocationData({ Latitude: lat, Longitude: lng })
       } else {
         if (navigator.geolocation) {
+          // If user already accepted/denied within TTL, skip the prompt
+          if (hasGeoResponseInTTL()) {
+            return
+          }
           navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError)
         } else {
           console.log('Geolocation is not supported by this browser.')
@@ -597,9 +603,31 @@ export default class CleverTap {
       }
     }
 
+    function hasGeoResponseInTTL () {
+      try {
+        const raw = localStorage.getItem(WZRK_GEO)
+        if (raw) {
+          const elapsed = Date.now() - parseInt(raw, 10)
+          if (elapsed < GEO_TTL_MS) {
+            return true
+          }
+          // TTL expired — remove stale entry
+          localStorage.removeItem(WZRK_GEO)
+        }
+      } catch (e) {}
+      return false
+    }
+
+    function setGeoResponse () {
+      try {
+        localStorage.setItem(WZRK_GEO, String(Date.now()))
+      } catch (e) {}
+    }
+
     function showPosition (position) {
       var lat = position.coords.latitude
       var lng = position.coords.longitude
+      setGeoResponse()
       $ct.location = { Latitude: lat, Longitude: lng }
       this.#sendLocationData({ Latitude: lat, Longitude: lng })
     }
@@ -608,6 +636,7 @@ export default class CleverTap {
       switch (error.code) {
         case error.PERMISSION_DENIED:
           console.log('User denied the request for Geolocation.')
+          setGeoResponse()
           break
         case error.POSITION_UNAVAILABLE:
           console.log('Location information is unavailable.')

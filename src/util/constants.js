@@ -80,6 +80,10 @@ export const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'
 // Flag key for Encryption in Transit JSONP fallback (session-level)
 export const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK'
 
+// Geolocation prompt cache key and TTL (30 days in milliseconds)
+export const WZRK_GEO = 'WZRK_GEO'
+export const GEO_TTL_MS = 30 * 24 * 60 * 60 * 1000
+
 export const WEB_NATIVE_TEMPLATES = {
   KV_PAIR: 1,
   BANNER: 2,

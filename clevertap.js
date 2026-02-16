@@ -225,7 +225,10 @@
 
   const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'; // Flag key for Encryption in Transit JSONP fallback (session-level)
 
-  const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK';
+  const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK'; // Geolocation prompt cache key and TTL (30 days in milliseconds)
+
+  const WZRK_GEO = 'WZRK_GEO';
+  const GEO_TTL_MS = 30 * 24 * 60 * 60 * 1000;
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -15408,7 +15411,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.5.2';
+            const sdkVersion = '2.5.3';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -18059,7 +18062,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.5.2',
+        lib: 'web-sdk-v2.5.3',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -19598,6 +19601,11 @@
           });
         } else {
           if (navigator.geolocation) {
+            // If user already accepted/denied within TTL, skip the prompt
+            if (hasGeoResponseInTTL()) {
+              return;
+            }
+
             navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError);
           } else {
             console.log('Geolocation is not supported by this browser.');
@@ -19605,9 +19613,35 @@
         }
       };
 
+      function hasGeoResponseInTTL() {
+        try {
+          const raw = localStorage.getItem(WZRK_GEO);
+
+          if (raw) {
+            const elapsed = Date.now() - parseInt(raw, 10);
+
+            if (elapsed < GEO_TTL_MS) {
+              return true;
+            } // TTL expired — remove stale entry
+
+
+            localStorage.removeItem(WZRK_GEO);
+          }
+        } catch (e) {}
+
+        return false;
+      }
+
+      function setGeoResponse() {
+        try {
+          localStorage.setItem(WZRK_GEO, String(Date.now()));
+        } catch (e) {}
+      }
+
       function showPosition(position) {
         var lat = position.coords.latitude;
         var lng = position.coords.longitude;
+        setGeoResponse();
         $ct.location = {
           Latitude: lat,
           Longitude: lng
@@ -19623,6 +19657,7 @@
         switch (error.code) {
           case error.PERMISSION_DENIED:
             console.log('User denied the request for Geolocation.');
+            setGeoResponse();
             break;
 
           case error.POSITION_UNAVAILABLE:
@@ -20065,7 +20100,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.5.2';
+      return 'web-sdk-v2.5.3';
     }
 
     defineVariable(name, defaultValue) {
