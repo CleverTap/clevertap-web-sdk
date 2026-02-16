@@ -225,7 +225,9 @@
 
   const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'; // Flag key for Encryption in Transit JSONP fallback (session-level)
 
-  const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK';
+  const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK'; // Geolocation prompt cache key
+
+  const WZRK_GEO = 'WZRK_GEO';
   const WEB_NATIVE_TEMPLATES = {
     KV_PAIR: 1,
     BANNER: 2,
@@ -15408,7 +15410,7 @@
         case WVE_QUERY_PARAMS.SDK_CHECK:
           if (parentWindow) {
             logger.debug('SDK version check');
-            const sdkVersion = '2.5.2';
+            const sdkVersion = '2.5.3';
             parentWindow.postMessage({
               message: 'SDKVersion',
               accountId,
@@ -18059,7 +18061,7 @@
       let proto = document.location.protocol;
       proto = proto.replace(':', '');
       dataObject.af = { ...dataObject.af,
-        lib: 'web-sdk-v2.5.2',
+        lib: 'web-sdk-v2.5.3',
         protocol: proto,
         ...$ct.flutterVersion
       }; // app fields
@@ -19598,6 +19600,16 @@
           });
         } else {
           if (navigator.geolocation) {
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+            if (isSafari) {
+              try {
+                if (localStorage.getItem(WZRK_GEO) !== null) {
+                  return;
+                }
+              } catch (e) {}
+            }
+
             navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError);
           } else {
             console.log('Geolocation is not supported by this browser.');
@@ -19608,6 +19620,11 @@
       function showPosition(position) {
         var lat = position.coords.latitude;
         var lng = position.coords.longitude;
+
+        try {
+          localStorage.setItem(WZRK_GEO, 'true');
+        } catch (e) {}
+
         $ct.location = {
           Latitude: lat,
           Longitude: lng
@@ -19623,6 +19640,11 @@
         switch (error.code) {
           case error.PERMISSION_DENIED:
             console.log('User denied the request for Geolocation.');
+
+            try {
+              localStorage.setItem(WZRK_GEO, 'false');
+            } catch (e) {}
+
             break;
 
           case error.POSITION_UNAVAILABLE:
@@ -20065,7 +20087,7 @@
     }
 
     getSDKVersion() {
-      return 'web-sdk-v2.5.2';
+      return 'web-sdk-v2.5.3';
     }
 
     defineVariable(name, defaultValue) {
