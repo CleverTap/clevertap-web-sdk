@@ -12239,7 +12239,6 @@
     var _this = this;
 
     let sendOULFlag = true;
-    let hasCustomId = false;
     StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag);
 
     const addToK = function (ids) {
@@ -12369,6 +12368,7 @@
 
           if (profileObj != null && !isObjectEmpty(profileObj)) {
             // profile got set from above
+            let hasCustomId = false;
             data.type = 'profile';
 
             if (profileObj.tz == null) {

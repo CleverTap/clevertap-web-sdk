@@ -65,7 +65,6 @@ export default class UserLoginHandler extends Array {
   // On User Login
   #processOUL (profileArr) {
     let sendOULFlag = true
-    let hasCustomId = false
     StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
     const addToK = (ids, customIdFlag = false) => {
       let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME)
@@ -176,6 +175,7 @@ export default class UserLoginHandler extends Array {
             }
           }
           if (profileObj != null && (!isObjectEmpty(profileObj))) { // profile got set from above
+            let hasCustomId = false
             data.type = 'profile'
             if (profileObj.tz == null) {
               // try to auto capture user timezone if not present
