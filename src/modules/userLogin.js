@@ -182,7 +182,7 @@ export default class UserLoginHandler extends Array {
               profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
             }
 
-            // Handle customId field for setting custom CleverTap ID
+            // Handle customId field for setting custom CleverTap ID.
             if (profileObj.customId) {
               const result = validateCustomCleverTapID(profileObj.customId)
               if (result.isValid) {
@@ -191,14 +191,13 @@ export default class UserLoginHandler extends Array {
                 this.#device.gcookie = result.sanitizedId
                 StorageManager.saveToLSorCookie(GCOOKIE_NAME, result.sanitizedId)
                 this.#logger.debug('customId set for OUL flow:: ' + result.sanitizedId)
-
-                // Remove customId from profile data before sending to server
-                delete profileObj.customId
               } else {
                 this.#logger.error('Invalid customId: ' + result.error)
-                // Remove invalid customId from profile data
-                delete profileObj.customId
               }
+              delete profileObj.customId
+            } else if ('customId' in profileObj) {
+              // Key present but falsy (e.g. '', 0) — remove so it is not sent as a profile field
+              delete profileObj.customId
             }
 
             data.profile = profileObj

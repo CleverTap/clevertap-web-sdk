@@ -12374,7 +12374,7 @@
             if (profileObj.tz == null) {
               // try to auto capture user timezone if not present
               profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1];
-            } // Handle customId field for setting custom CleverTap ID
+            } // Handle customId field for setting custom CleverTap ID.
 
 
             if (profileObj.customId) {
@@ -12386,16 +12386,15 @@
                 _classPrivateFieldLooseBase(this, _device$2)[_device$2].gcookie = result.sanitizedId;
                 StorageManager.saveToLSorCookie(GCOOKIE_NAME, result.sanitizedId);
 
-                _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('customId set for OUL flow:: ' + result.sanitizedId); // Remove customId from profile data before sending to server
-
-
-                delete profileObj.customId;
+                _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].debug('customId set for OUL flow:: ' + result.sanitizedId);
               } else {
-                _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error('Invalid customId: ' + result.error); // Remove invalid customId from profile data
-
-
-                delete profileObj.customId;
+                _classPrivateFieldLooseBase(this, _logger$6)[_logger$6].error('Invalid customId: ' + result.error);
               }
+
+              delete profileObj.customId;
+            } else if ('customId' in profileObj) {
+              // Key present but falsy (e.g. '', 0) — remove so it is not sent as a profile field
+              delete profileObj.customId;
             }
 
             data.profile = profileObj;
