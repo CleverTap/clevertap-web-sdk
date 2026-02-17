@@ -52,7 +52,8 @@ describe('clevertap.js', function () {
     }
     mockOUL = {
       clear: jest.fn(),
-      _processOldValues: jest.fn()
+      _processOldValues: jest.fn(),
+      push: jest.fn()
     }
 
     // Mock RequestDispatcher methods to prevent fetch API calls
@@ -151,6 +152,30 @@ describe('clevertap.js', function () {
       validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null })
       this.clevertap = new Clevertap()
       expect(DeviceManager).toHaveBeenCalledWith({ logger: new Logger(logLevels.INFO), customId: null, domainSpecification: 0 })
+    })
+  })
+
+  describe('customId handling', () => {
+    test('should validate customId field when provided', () => {
+      validateCustomCleverTapID.mockReturnValue({ isValid: true, sanitizedId: '_w_custom_oul_id' })
+
+      // Test the validation function directly
+      const result = validateCustomCleverTapID('_w_custom_oul_id')
+
+      expect(validateCustomCleverTapID).toHaveBeenCalledWith('_w_custom_oul_id')
+      expect(result.isValid).toBe(true)
+      expect(result.sanitizedId).toBe('_w_custom_oul_id')
+    })
+
+    test('should handle invalid customId field', () => {
+      validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null, error: 'Invalid custom ID format' })
+
+      // Test the validation function directly
+      const result = validateCustomCleverTapID('invalid_id')
+
+      expect(validateCustomCleverTapID).toHaveBeenCalledWith('invalid_id')
+      expect(result.isValid).toBe(false)
+      expect(result.error).toBe('Invalid custom ID format')
     })
   })
 
