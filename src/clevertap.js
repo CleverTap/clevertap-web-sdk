@@ -9,6 +9,7 @@ import User from './modules/user'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
+import RequestDispatcher from './util/requestDispatcher'
 import {
   CAMP_COOKIE_NAME,
   SCOOKIE_PREFIX,
@@ -37,7 +38,8 @@ import {
   GCOOKIE_NAME,
   QUALIFIED_CAMPAIGNS,
   BLOCK_REQUEST_COOKIE,
-  ISOLATE_COOKIE
+  ISOLATE_COOKIE,
+  WZRK_GEO
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -71,6 +73,9 @@ export default class CleverTap {
   #dismissSpamControl
   enablePersonalization
   #pageChangeTimeoutId
+  #enableFetchApi
+  #enableEncryptionInTransit
+  #domainSpecification
 
   get spa () {
     return this.#isSpa
@@ -99,9 +104,42 @@ export default class CleverTap {
     $ct.dismissSpamControl = dismissSpamControl
   }
 
+  get enableFetchApi () {
+    return this.#enableFetchApi
+  }
+
+  set enableFetchApi (value) {
+    this.#enableFetchApi = value
+    // propagate the setting to RequestDispatcher so util layer can honour it
+    RequestDispatcher.enableFetchApi = value
+  }
+
+  get enableEncryptionInTransit () {
+    return this.#enableEncryptionInTransit
+  }
+
+  set enableEncryptionInTransit (value) {
+    this.#enableEncryptionInTransit = value
+    // propagate the setting to RequestDispatcher so util layer can honour it
+    RequestDispatcher.enableEncryptionInTransit = value
+  }
+
+  get domainSpecification () {
+    return this.#domainSpecification
+  }
+
+  set domainSpecification (value) {
+    if (value && isFinite(value)) {
+      this.#domainSpecification = Number(value)
+    } else {
+      this.#domainSpecification = 0
+    }
+  }
+
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
+    this.domainSpecification = clevertap.domainSpecification || null
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
@@ -114,12 +152,21 @@ export default class CleverTap {
       this.#logger.error(result.error)
     }
 
-    this.#device = new DeviceManager({ logger: this.#logger, customId: result?.isValid ? result?.sanitizedId : null })
+    this.#device = new DeviceManager({
+      logger: this.#logger,
+      customId: result?.isValid ? result?.sanitizedId : null,
+      domainSpecification: this.domainSpecification
+    })
     this.#dismissSpamControl = clevertap.dismissSpamControl ?? true
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
+    this.#enableFetchApi = clevertap.enableFetchApi || false
+    RequestDispatcher.enableFetchApi = this.#enableFetchApi
+    this.#enableEncryptionInTransit = clevertap.enableEncryptionInTransit || false
+    RequestDispatcher.enableEncryptionInTransit = this.#enableEncryptionInTransit
     this.#session = new SessionManager({
       logger: this.#logger,
-      isPersonalisationActive: this._isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive,
+      domainSpecification: this.domainSpecification
     })
     this.#request = new ReqestManager({
       logger: this.#logger,
@@ -173,7 +220,8 @@ export default class CleverTap {
       logger: this.#logger,
       request: this.#request,
       device: this.#device,
-      session: this.#session
+      session: this.#session,
+      domainSpecification: this.domainSpecification
     })
 
     this.spa = clevertap.spa
@@ -463,7 +511,7 @@ export default class CleverTap {
       if (Array.isArray(value)) {
         this.profile._handleMultiValueSet(key, value, COMMAND_SET)
       } else {
-        console.error('setMultiValuesForKey should be called with a value of type array')
+        this.#logger.error('setMultiValuesForKey should be called with a value of type array')
       }
     }
 
@@ -471,7 +519,7 @@ export default class CleverTap {
       if (typeof value === 'string' || typeof value === 'number') {
         this.profile._handleMultiValueAdd(key, value, COMMAND_ADD)
       } else {
-        console.error('addMultiValueForKey should be called with a value of type string or number.')
+        this.#logger.error('addMultiValueForKey should be called with a value of type string or number.')
       }
     }
 
@@ -479,7 +527,7 @@ export default class CleverTap {
       if (Array.isArray(value)) {
         this.profile._handleMultiValueAdd(key, value, COMMAND_ADD)
       } else {
-        console.error('addMultiValuesForKey should be called with a value of type array.')
+        this.#logger.error('addMultiValuesForKey should be called with a value of type array.')
       }
     }
 
@@ -487,7 +535,7 @@ export default class CleverTap {
       if (typeof value === 'string' || typeof value === 'number') {
         this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE)
       } else {
-        console.error('removeMultiValueForKey should be called with a value of type string or number.')
+        this.#logger.error('removeMultiValueForKey should be called with a value of type string or number.')
       }
     }
 
@@ -495,7 +543,7 @@ export default class CleverTap {
       if (Array.isArray(value)) {
         this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE)
       } else {
-        console.error('removeMultiValuesForKey should be called with a value of type array.')
+        this.#logger.error('removeMultiValuesForKey should be called with a value of type array.')
       }
     }
 
@@ -543,6 +591,14 @@ export default class CleverTap {
         this.#sendLocationData({ Latitude: lat, Longitude: lng })
       } else {
         if (navigator.geolocation) {
+          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+          if (isSafari) {
+            try {
+              if (localStorage.getItem(WZRK_GEO) !== null) {
+                return
+              }
+            } catch (e) {}
+          }
           navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError)
         } else {
           console.log('Geolocation is not supported by this browser.')
@@ -553,6 +609,7 @@ export default class CleverTap {
     function showPosition (position) {
       var lat = position.coords.latitude
       var lng = position.coords.longitude
+      try { localStorage.setItem(WZRK_GEO, 'true') } catch (e) {}
       $ct.location = { Latitude: lat, Longitude: lng }
       this.#sendLocationData({ Latitude: lat, Longitude: lng })
     }
@@ -561,6 +618,7 @@ export default class CleverTap {
       switch (error.code) {
         case error.PERMISSION_DENIED:
           console.log('User denied the request for Geolocation.')
+          try { localStorage.setItem(WZRK_GEO, 'false') } catch (e) {}
           break
         case error.POSITION_UNAVAILABLE:
           console.log('Location information is unavailable.')
@@ -680,7 +738,13 @@ export default class CleverTap {
     }
   }
 
-  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false }) {
+  init (accountId, region, targetDomain, token, config = { antiFlicker: {}, customId: null, isolateSubdomain: false, domainSpecification: null }) {
+    if (config?.domainSpecification) {
+      this.domainSpecification = config.domainSpecification
+      this.#session.domainSpecification = config.domainSpecification
+      this.#device.domainSpecification = config.domainSpecification
+      this.#api.domainSpecification = config.domainSpecification
+    }
     if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
       addAntiFlicker(config.antiFlicker)
     }
@@ -693,6 +757,9 @@ export default class CleverTap {
       // already initailsed
       return
     }
+
+    // Clear EIT fallback flag on new session (init)
+    RequestDispatcher.clearEITFallback()
 
     if (accountId) {
       encryption.key = accountId
@@ -724,6 +791,17 @@ export default class CleverTap {
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
     }
+
+    if (config.enableFetchApi) {
+      this.#enableFetchApi = config.enableFetchApi
+      RequestDispatcher.enableFetchApi = config.enableFetchApi
+    }
+
+    if (config.enableEncryptionInTransit) {
+      this.#enableEncryptionInTransit = config.enableEncryptionInTransit
+      RequestDispatcher.enableEncryptionInTransit = config.enableEncryptionInTransit
+    }
+
     // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
     // This ensures user identity is established before other events
     if (StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
@@ -919,9 +997,14 @@ export default class CleverTap {
   _handleVisualEditorPreview () {
     if ($ct.intervalArray.length) {
       $ct.intervalArray.forEach(interval => {
-        clearInterval(interval)
+        if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+          clearInterval(parseInt(interval.split('-')[1], 10))
+        } else {
+          clearInterval(interval)
+        }
       })
     }
+    $ct.intervalArray = []
     const storedData = sessionStorage.getItem('visualEditorData')
     const targetJson = storedData ? JSON.parse(storedData) : null
     if (targetJson) {
@@ -1077,7 +1160,11 @@ export default class CleverTap {
      that were qualified and rendered for the current user
   */
   getAllQualifiedCampaignDetails () {
-    const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
-    return existingCampaign
+    try {
+      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
+      return existingCampaign
+    } catch (e) {
+      return null
+    }
   }
 }

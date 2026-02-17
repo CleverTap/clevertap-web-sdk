@@ -1,8 +1,33 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.3.1] XX Sept 2025
-- Custom Id handling in OUL flow
+## [2.5.3] 16th Feb 2026
+- Fixed repeated geolocation permission prompt on every page navigation in Safari. The SDK now caches the user's accept/deny response in localStorage, preventing redundant prompts.
+
+## [2.5.2] 3rd Feb 2026 
+- Added srcset and sizes attribute support for image in visual editor.
+
+## [2.5.1] 30 Jan 2026
+- Fixed the campaign delivery triggers logic
+
+## [2.5.0] 29th Jan 2026
+- Fetch api and encryption support
+
+## [2.4.0] 27 Jan 2026
+- Added Nested object support in profile and event properties.
+
+## [2.3.4] 12th Dec 2025
+- Fixed the issue where interval was not cleared in web native display.
+
+## [2.3.3] 25th Nov 2025
+- WP & WND Session Count Reset on Session Change
+- Cookie management with domain specification support in StorageManager
+
+## [2.3.2] 19th Nov 2025
+- Improved Runtime Exceptions Security Issues
+
+## [2.3.1] 13th Nov 2025
+- Fixed the issue where interval was not cleared in visual editor.
 
 ## [2.3.0] 10th Sept 2025
 - Introduced list reordering in Web Native Display - Visual Editor.

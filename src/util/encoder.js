@@ -348,3 +348,200 @@ export const compressToBase64 = (input) => {
 
   return output
 }
+
+export const decompressFromBase64 = (input) => {
+  if (input == null || input === '') return ''
+  var output = ''
+  var chr1, chr2, chr3
+  var enc1, enc2, enc3, enc4
+  var i = 0
+
+  input = input.replace(/[^A-Za-z0-9\+\/\=]/g, '')
+
+  while (i < input.length) {
+    enc1 = _keyStr.indexOf(input.charAt(i++))
+    enc2 = _keyStr.indexOf(input.charAt(i++))
+    enc3 = _keyStr.indexOf(input.charAt(i++))
+    enc4 = _keyStr.indexOf(input.charAt(i++))
+
+    chr1 = (enc1 << 2) | (enc2 >> 4)
+    chr2 = ((enc2 & 15) << 4) | (enc3 >> 2)
+    chr3 = ((enc3 & 3) << 6) | enc4
+
+    if (output.length % 2 === 0) {
+      output += String.fromCharCode((chr1 << 8) | chr2)
+      if (enc3 != 64) {
+        output += String.fromCharCode((chr3 << 8) | (enc4 === 64 ? 0 : enc4))
+      }
+    } else {
+      output = output.substring(0, output.length - 1) + String.fromCharCode((output.charCodeAt(output.length - 1) & 255) | (chr1 << 8))
+      if (enc3 != 64) {
+        output += String.fromCharCode((chr2 << 8) | chr3)
+      }
+    }
+  }
+
+  return decompress(output)
+}
+
+export const decompress = (compressed) => {
+  if (compressed == null || compressed === '') return ''
+  var dictionary = {}
+  var dictSize = 4
+  var numBits = 3
+  var entry = ''
+  var result = ''
+  var w
+  var c
+  var wc
+  var i = 0
+  var enlargeIn = 4
+  var data = {
+    val: compressed.charCodeAt(0),
+    position: 32768,
+    index: 1
+  }
+
+  var bits = 0
+  var maxpower = 2
+  var power = 1
+
+  while (power != maxpower) {
+    var resb = data.val & data.position
+    data.position >>= 1
+    if (data.position === 0) {
+      data.position = 32768
+      data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0
+    }
+    bits |= (resb > 0 ? 1 : 0) * power
+    power <<= 1
+  }
+
+  switch (bits) {
+    case 0:
+      bits = 0
+      maxpower = Math.pow(2, 8)
+      power = 1
+      while (power != maxpower) {
+        resb = data.val & data.position
+        data.position >>= 1
+        if (data.position === 0) {
+          data.position = 32768
+          data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0
+        }
+        bits |= (resb > 0 ? 1 : 0) * power
+        power <<= 1
+      }
+      c = String.fromCharCode(bits)
+      break
+    case 1:
+      bits = 0
+      maxpower = Math.pow(2, 16)
+      power = 1
+      while (power != maxpower) {
+        resb = data.val & data.position
+        data.position >>= 1
+        if (data.position === 0) {
+          data.position = 32768
+          data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0
+        }
+        bits |= (resb > 0 ? 1 : 0) * power
+        power <<= 1
+      }
+      c = String.fromCharCode(bits)
+      break
+    case 2:
+      return ''
+  }
+
+  dictionary[3] = c
+  w = result = c
+  
+  while (true) {
+    if (data.index > compressed.length) {
+      return ''
+    }
+
+    bits = 0
+    maxpower = Math.pow(2, numBits)
+    power = 1
+    while (power != maxpower) {
+      resb = data.val & data.position
+      data.position >>= 1
+      if (data.position === 0) {
+        data.position = 32768
+        data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0
+      }
+      bits |= (resb > 0 ? 1 : 0) * power
+      power <<= 1
+    }
+
+    switch (c = bits) {
+      case 0:
+        bits = 0
+        maxpower = Math.pow(2, 8)
+        power = 1
+        while (power != maxpower) {
+          resb = data.val & data.position
+          data.position >>= 1
+          if (data.position === 0) {
+            data.position = 32768
+            data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0
+          }
+          bits |= (resb > 0 ? 1 : 0) * power
+          power <<= 1
+        }
+
+        dictionary[dictSize++] = String.fromCharCode(bits)
+        c = dictSize - 1
+        enlargeIn--
+        break
+      case 1:
+        bits = 0
+        maxpower = Math.pow(2, 16)
+        power = 1
+        while (power != maxpower) {
+          resb = data.val & data.position
+          data.position >>= 1
+          if (data.position === 0) {
+            data.position = 32768
+            data.val = data.index < compressed.length ? compressed.charCodeAt(data.index++) : 0
+          }
+          bits |= (resb > 0 ? 1 : 0) * power
+          power <<= 1
+        }
+        dictionary[dictSize++] = String.fromCharCode(bits)
+        c = dictSize - 1
+        enlargeIn--
+        break
+      case 2:
+        return result
+    }
+
+    if (enlargeIn === 0) {
+      enlargeIn = Math.pow(2, numBits)
+      numBits++
+    }
+
+    if (dictionary[c]) {
+      entry = dictionary[c]
+    } else {
+      if (c === dictSize) {
+        entry = w + w.charAt(0)
+      } else {
+        return null
+      }
+    }
+    result += entry
+
+    dictionary[dictSize++] = w + entry.charAt(0)
+    enlargeIn--
+
+    w = entry
+
+    if (enlargeIn === 0) {
+      enlargeIn = Math.pow(2, numBits)
+      numBits++
+    }
+  }
+}

@@ -1,14 +1,24 @@
-import { isValueValid } from '../util/datatypes'
+import { isValueValid, safeJSONParse } from '../util/datatypes'
 import { StorageManager } from '../util/storage'
 import { GCOOKIE_NAME, COOKIE_EXPIRY } from '../util/constants'
 
 export default class DeviceManager {
   #logger
   gcookie
+  #domainSpecification
 
-  constructor ({ logger, customId }) {
+  constructor ({ logger, customId, domainSpecification }) {
     this.#logger = logger
+    this.domainSpecification = domainSpecification
     this.gcookie = this.getGuid() || customId
+  }
+
+  get domainSpecification () {
+    return this.#domainSpecification
+  }
+
+  set domainSpecification (domainSpecification) {
+    this.#domainSpecification = domainSpecification
   }
 
   getGuid () {
@@ -20,7 +30,7 @@ export default class DeviceManager {
       const value = StorageManager.read(GCOOKIE_NAME)
       if (isValueValid(value)) {
         try {
-          guid = JSON.parse(decodeURIComponent(value))
+          guid = safeJSONParse(decodeURIComponent(value), null)
         } catch (e) {
           this.#logger.debug('Cannot parse Gcookie from localstorage - must be encoded ' + value)
           // assumming guids are of size 32. supporting both formats.
@@ -37,7 +47,7 @@ export default class DeviceManager {
 
         // Persist to cookie storage if not present there.
         if (isValueValid(guid)) {
-          StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname)
+          StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification)
         }
       }
     }

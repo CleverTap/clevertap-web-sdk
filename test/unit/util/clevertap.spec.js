@@ -1,3 +1,4 @@
+import 'regenerator-runtime/runtime'
 import {
   addToLocalProfileMap,
   getCampaignObject,
@@ -19,11 +20,33 @@ import {
   PHONE_FORMAT_ERROR
 } from '../../../src/util/messages'
 import { $ct, StorageManager } from '../../../src/util/storage'
+import RequestDispatcher from '../../../src/util/requestDispatcher'
 
 jest.enableAutomock().unmock('../../../src/util/clevertap').unmock('../../../src/util/constants')
   .unmock('../../../src/util/datatypes').unmock('../../../src/util/messages')
 
 describe('util/clevertap', function () {
+  beforeEach(() => {
+    // Clear all mocks
+    jest.clearAllMocks()
+
+    // Mock RequestDispatcher methods to prevent any unexpected calls
+    RequestDispatcher.handleFetchResponse = jest.fn().mockResolvedValue()
+    RequestDispatcher.fireRequest = jest.fn()
+
+    // Mock $ct object with default values to prevent undefined errors
+    Object.assign($ct, {
+      enableFetchApi: false,
+      blockRequest: false,
+      globalCache: {
+        REQ_N: 0,
+        RESP_N: 0
+      },
+      isOptInRequest: false,
+      globalProfileMap: null
+    })
+  })
+
   describe('save campaign object', () => {
     beforeEach(() => {
       this.input = {

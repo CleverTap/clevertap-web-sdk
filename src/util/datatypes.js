@@ -84,3 +84,45 @@ export const removeUnsupportedChars = (o, logger) => {
 export const sanitize = (input, regex) => {
   return input.replace(regex, '')
 }
+
+/**
+ * Safely parses JSON from potentially untrusted sources (like cookies)
+ *
+ * Protects against DOM-based JSON injection by pre-filtering malicious patterns
+ * identified in security scans (Burp Suite) before passing to JSON.parse().
+ *
+*/
+export const safeJSONParse = (jsonString, defaultValue = null) => {
+  // Validate input is a non-empty string
+  if (!jsonString || typeof jsonString !== 'string' || jsonString.trim() === '') {
+    return defaultValue
+  }
+
+  const trimmed = jsonString.trim()
+
+  const maliciousPatterns = [
+    // Block specific dangerous URL-encoded characters (not all % signs)
+    /%27/i, // URL-encoded single quote (') - used in SQL/JS injection
+    /%22/i, // URL-encoded double quote (") - used in string breaking
+    /%3C/i, // URL-encoded < - XSS/HTML injection attempts
+    /%3E/i, // URL-encoded > - XSS/HTML injection attempts
+    /%60/i, // URL-encoded backtick (`) - template literal injection
+    /</, // HTML/script tag start - XSS/injection attempts
+    />/, // HTML/script tag end - XSS/injection attempts
+    /`/ // Template literal/backtick injection
+  ]
+  // Check for any malicious pattern - reject BEFORE calling JSON.parse
+  for (const pattern of maliciousPatterns) {
+    if (pattern.test(trimmed)) {
+      return defaultValue // Malicious pattern detected
+    }
+  }
+
+  // Input passed pre-filter - attempt to parse with error handling
+  try {
+    return JSON.parse(trimmed)
+  } catch (e) {
+    // JSON.parse failed (malformed JSON) - return safe default
+    return defaultValue
+  }
+}

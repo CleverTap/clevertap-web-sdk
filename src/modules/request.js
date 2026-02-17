@@ -1,5 +1,5 @@
 import { SCOOKIE_PREFIX, CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY } from '../util/constants'
-import { isObjectEmpty, isValueValid, removeUnsupportedChars } from '../util/datatypes'
+import { isObjectEmpty, isValueValid, removeUnsupportedChars, safeJSONParse } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
 import RequestDispatcher from '../util/requestDispatcher'
@@ -58,7 +58,8 @@ export default class RequestManager {
           this.#logger.debug(`Processing ${isOULRequest ? 'OUL' : 'regular'} backup event : ${backupEvent.q}`)
 
           if (typeof backupEvent.q !== 'undefined') {
-            const session = JSON.parse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + this.#account.id))
+            // Use safe JSON parsing to prevent injection attacks
+            const session = safeJSONParse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + this.#account.id), null)
             if (session?.s) {
               backupEvent.q = backupEvent.q + '&s=' + session.s
             }
