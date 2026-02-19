@@ -1,5 +1,6 @@
 import {
-  CLEVERTAP_ERROR_PREFIX
+  CLEVERTAP_ERROR_PREFIX,
+  CLEVERTAP_INFO_PREFIX
 } from '../util/messages'
 
 export const logLevels = {
@@ -69,6 +70,12 @@ export class Logger {
     this.wzrkError.c = code
     this.wzrkError.d = description
     this.error(`${CLEVERTAP_ERROR_PREFIX} ${code}: ${description}`)
+  }
+
+  reportInfo (code, description) {
+    this.wzrkError.c = code
+    this.wzrkError.d = description
+    this.info(`${CLEVERTAP_INFO_PREFIX} ${code}: ${description}`)
   }
 
   #log (level, message) {
