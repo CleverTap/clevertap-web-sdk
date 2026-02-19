@@ -2,6 +2,7 @@ export const DATA_NOT_SENT_TEXT = 'This property has been ignored.'
 export const INVALID_ACCOUNT = 'Invalid account ID'
 export const INVALID_EVENT = 'Event structure not valid. Unable to process event'
 export const CLEVERTAP_ERROR_PREFIX = 'CleverTap error:' // Formerly wzrk_error_txt
+export const CLEVERTAP_INFO_PREFIX = 'CleverTap info:'
 export const EMBED_ERROR = `${CLEVERTAP_ERROR_PREFIX} Incorrect embed script.`
 export const EVENT_ERROR = `${CLEVERTAP_ERROR_PREFIX} Event structure not valid. ${DATA_NOT_SENT_TEXT}`
 export const GENDER_ERROR = `${CLEVERTAP_ERROR_PREFIX} Gender value should one of the following: m,f,o,u,male,female,unknown,others (case insensitive). ${DATA_NOT_SENT_TEXT}`

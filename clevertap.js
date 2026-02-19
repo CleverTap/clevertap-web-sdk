@@ -8051,6 +8051,7 @@
   const DATA_NOT_SENT_TEXT = 'This property has been ignored.';
   const CLEVERTAP_ERROR_PREFIX = 'CleverTap error:'; // Formerly wzrk_error_txt
 
+  const CLEVERTAP_INFO_PREFIX = 'CleverTap info:';
   const EMBED_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Incorrect embed script.");
   const EVENT_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Event structure not valid. ").concat(DATA_NOT_SENT_TEXT);
   const GENDER_ERROR = "".concat(CLEVERTAP_ERROR_PREFIX, " Gender value should one of the following: m,f,o,u,male,female,unknown,others (case insensitive). ").concat(DATA_NOT_SENT_TEXT);
@@ -8187,9 +8188,9 @@
             const currentKeyPath = keyPath ? "".concat(keyPath, "[").concat(index, "]") : "[".concat(index, "]");
 
             if (item === null || item === undefined) {
-              logger.reportError(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+              logger.reportInfo(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath));
             } else {
-              logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+              logger.reportInfo(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
             }
           }
 
@@ -8207,7 +8208,7 @@
           cleanedArray.push(cleanedItem);
         } else if (logger) {
           const currentKeyPath = keyPath ? "".concat(keyPath, "[").concat(index, "]") : "[".concat(index, "]");
-          logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+          logger.reportInfo(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
         }
       });
       return cleanedArray.length > 0 ? cleanedArray : undefined;
@@ -8231,9 +8232,9 @@
             cleanedObj[key] = value;
           } else if (logger) {
             if (value === null || value === undefined) {
-              logger.reportError(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+              logger.reportInfo(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath));
             } else {
-              logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
+              logger.reportInfo(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath));
             }
           }
         }
@@ -9037,6 +9038,12 @@
       this.wzrkError.c = code;
       this.wzrkError.d = description;
       this.error("".concat(CLEVERTAP_ERROR_PREFIX, " ").concat(code, ": ").concat(description));
+    }
+
+    reportInfo(code, description) {
+      this.wzrkError.c = code;
+      this.wzrkError.d = description;
+      this.info("".concat(CLEVERTAP_INFO_PREFIX, " ").concat(code, ": ").concat(description));
     }
 
   }

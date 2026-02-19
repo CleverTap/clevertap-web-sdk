@@ -114,9 +114,9 @@ const cleanNullEmptyValues = (obj, logger = null, currentDepth = 0, maxDepth = 3
         if (logger) {
           const currentKeyPath = keyPath ? `${keyPath}[${index}]` : `[${index}]`
           if (item === null || item === undefined) {
-            logger.reportError(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath))
+            logger.reportInfo(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath))
           } else {
-            logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath))
+            logger.reportInfo(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath))
           }
         }
         return
@@ -132,7 +132,7 @@ const cleanNullEmptyValues = (obj, logger = null, currentDepth = 0, maxDepth = 3
         cleanedArray.push(cleanedItem)
       } else if (logger) {
         const currentKeyPath = keyPath ? `${keyPath}[${index}]` : `[${index}]`
-        logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath))
+        logger.reportInfo(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath))
       }
     })
 
@@ -156,9 +156,9 @@ const cleanNullEmptyValues = (obj, logger = null, currentDepth = 0, maxDepth = 3
           cleanedObj[key] = value
         } else if (logger) {
           if (value === null || value === undefined) {
-            logger.reportError(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath))
+            logger.reportInfo(NULL_VALUE_REMOVED.code, NULL_VALUE_REMOVED.message.replace('%s', currentKeyPath))
           } else {
-            logger.reportError(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath))
+            logger.reportInfo(EMPTY_VALUE_REMOVED.code, EMPTY_VALUE_REMOVED.message.replace('%s', currentKeyPath))
           }
         }
       }
