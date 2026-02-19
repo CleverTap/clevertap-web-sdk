@@ -35,6 +35,7 @@ import {
   processGPlusUserObj,
   addToLocalProfileMap
 } from '../util/clevertap'
+import { validateCustomCleverTapID } from '../util/helpers'
 
 export default class UserLoginHandler extends Array {
   #request
@@ -65,7 +66,7 @@ export default class UserLoginHandler extends Array {
   #processOUL (profileArr) {
     let sendOULFlag = true
     StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
-    const addToK = (ids) => {
+    const addToK = (ids, customIdFlag = false) => {
       let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME)
       const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME)
       let kId
@@ -118,7 +119,10 @@ export default class UserLoginHandler extends Array {
           const gFromCache = $ct.LRU_CACHE.get(kId)
           $ct.LRU_CACHE.set(kId, gFromCache)
           StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache)
-          this.#device.gcookie = gFromCache
+          // Only override gcookie if we don't have a customId
+          if (!customIdFlag) {
+            this.#device.gcookie = gFromCache
+          }
 
           const lastK = $ct.LRU_CACHE.getSecondLastKey()
           if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
@@ -127,10 +131,10 @@ export default class UserLoginHandler extends Array {
             this.#request.unregisterTokenForGuid(lastGUID)
           }
         } else {
-          if (!anonymousUser) {
+          if (!anonymousUser && !customIdFlag) {
             this.clear()
           } else {
-            if ((g) != null) {
+            if ((g) != null && !customIdFlag) {
               this.#device.gcookie = g
               StorageManager.saveToLSorCookie(GCOOKIE_NAME, g)
               sendOULFlag = false
@@ -171,10 +175,29 @@ export default class UserLoginHandler extends Array {
             }
           }
           if (profileObj != null && (!isObjectEmpty(profileObj))) { // profile got set from above
+            let hasCustomId = false
             data.type = 'profile'
             if (profileObj.tz == null) {
               // try to auto capture user timezone if not present
               profileObj.tz = new Date().toString().match(/([A-Z]+[\+-][0-9]+)/)[1]
+            }
+
+            // Handle customId field for setting custom CleverTap ID.
+            if (profileObj.customId) {
+              const result = validateCustomCleverTapID(profileObj.customId)
+              if (result.isValid) {
+                hasCustomId = true
+                // Set the custom ID as gcookie
+                this.#device.gcookie = result.sanitizedId
+                StorageManager.saveToLSorCookie(GCOOKIE_NAME, result.sanitizedId)
+                this.#logger.debug('customId set for OUL flow:: ' + result.sanitizedId)
+              } else {
+                this.#logger.error('Invalid customId: ' + result.error)
+              }
+              delete profileObj.customId
+            } else if ('customId' in profileObj) {
+              // Key present but falsy (e.g. '', 0) — remove so it is not sent as a profile field
+              delete profileObj.customId
             }
 
             data.profile = profileObj
@@ -193,7 +216,7 @@ export default class UserLoginHandler extends Array {
                 ids.push('FB:' + profileObj.FBID)
               }
               if (ids.length > 0) {
-                addToK(ids)
+                addToK(ids, hasCustomId)
               }
             }
             addToLocalProfileMap(profileObj, true)
