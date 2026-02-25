@@ -73,7 +73,6 @@ export const appendTVNavigationScript = (targetingMsgJson, html) => {
               '.wzrkClose, .CT_InterstitialClose, .CT_InterstitialCTA, .jsCT_CTA'
           )).filter(el => window.getComputedStyle(el).display !== 'none');
           
-          console.log('Found focusable elements:', focusableElements.length);
           // Ensure iframe has focus
           window.focus();
           if (focusableElements.length > 0) { focusElement(0); }
@@ -100,29 +99,23 @@ export const appendTVNavigationScript = (targetingMsgJson, html) => {
                   if(href) msgCTkv['wzrk_click_c2a'] = href;
                   window.parent.clevertap.renderNotificationClicked({ msgId: ct__campaignId, msgCTkv, pivotId: '${targetingMsgJson.wzrk_pivot}' });
               }
-              console.log('Clicking element:', element);
               element.click();
           }
       }
       
       document.addEventListener('keydown', function(event) { 
-        console.log('Popup received keydown:', event.keyCode);
         event.preventDefault(); 
         switch (event.keyCode) { 
           case 37: case 38: 
-            console.log('Navigate prev');
             navigate('prev'); 
             break; 
           case 39: case 40: 
-            console.log('Navigate next');
             navigate('next'); 
             break; 
           case 13: 
-            console.log('Enter pressed - calling activate()');
             activate(); 
             break; 
           case 10009: case 10182: 
-            console.log('Back/Exit pressed');
             const closeBtn = document.querySelector('.wzrkClose, .CT_InterstitialClose'); 
             if (closeBtn) closeBtn.click(); 
             break; 
