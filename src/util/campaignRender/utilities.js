@@ -116,6 +116,7 @@ export const appendTVNavigationScript = (targetingMsgJson, html) => {
             activate(); 
             break; 
           case 10009: case 10182: 
+          case 461: case 27: 
             const closeBtn = document.querySelector('.wzrkClose, .CT_InterstitialClose'); 
             if (closeBtn) closeBtn.click(); 
             break; 
