@@ -5,7 +5,7 @@ import { eslint } from 'rollup-plugin-eslint'
 import { terser } from 'rollup-plugin-terser'
 import { version } from './package.json'
 import sourcemaps from 'rollup-plugin-sourcemaps'
-import commonjs from '@rollup/plugin-commonjs';
+import commonjs from '@rollup/plugin-commonjs'
 
 /**
  * Returns the input file path
