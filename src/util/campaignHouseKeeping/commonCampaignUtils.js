@@ -17,7 +17,8 @@ import {
   WZRK_ID,
   WEB_NATIVE_TEMPLATES,
   CAMPAIGN_TYPES,
-  WEB_POPUP_TEMPLATES
+  WEB_POPUP_TEMPLATES,
+  ENABLE_TV_CONTROLS
 } from '../constants.js'
 
 import { getNow, getToday } from '../datetime.js'
@@ -51,7 +52,8 @@ import {
   setupClickEvent,
   staleDataUpdate,
   webNativeDisplayCampaignUtils,
-  addCampaignToLocalStorage
+  addCampaignToLocalStorage,
+  appendTVNavigationScript
 } from '../campaignRender/utilities.js'
 import { CampaignContext } from './campaignContext.js'
 import _tr from '../tr.js'
@@ -686,6 +688,10 @@ export const commonCampaignUtils = {
       // Adds custom event scripts if needed
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
+    const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS)
+    if (enableTVControls) {
+      html = appendTVNavigationScript(targetingMsgJson, html)
+    }
     iframe.srcdoc = html
 
     // Adjusts iframe height based on content
@@ -1236,6 +1242,10 @@ export const commonCampaignUtils = {
 
     if (targetingMsgJson.display['custom-editor']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
+    }
+    const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS)
+    if (enableTVControls) {
+      html = appendTVNavigationScript(targetingMsgJson, html)
     }
     iframe.srcdoc = html
 
