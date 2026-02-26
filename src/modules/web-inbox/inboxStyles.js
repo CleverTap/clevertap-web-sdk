@@ -171,9 +171,14 @@ export const inboxContainerStyles = ({
   
         #closeInbox {
           font-size: 20px; 
-          margin-right: 12px; 
+          margin-right: 6px; 
           color: ${closeIconColor}; 
           cursor: pointer;
+          height: 24px;
+          width: 24px;
+          text-align: center;
+          line-height: 24px;
+          border-radius: 50%;
         }
   
         #headerTitle {
