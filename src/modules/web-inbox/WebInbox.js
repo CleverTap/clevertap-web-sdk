@@ -33,7 +33,7 @@ export class Inbox extends HTMLElement {
   }
 
   set incomingMessages (msgs = []) {
-    if (msgs.length > 0 && this.inbox) {
+    if (msgs.length > 0) {
       this.updateInboxMessages(msgs)
     }
   }
@@ -134,7 +134,7 @@ export class Inbox extends HTMLElement {
     const now = Math.floor(Date.now() / 1000)
     for (const msg in messages) {
       if (messages[msg].wzrk_ttl && messages[msg].wzrk_ttl > 0 && messages[msg].wzrk_ttl < now) {
-        if (deleteMsgsFromUI) {
+        if (deleteMsgsFromUI && this.inbox) {
           const el = this.shadowRoot.getElementById(messages[msg].id)
           el && el.remove()
           if (!messages[msg].viewed) {
@@ -168,8 +168,10 @@ export class Inbox extends HTMLElement {
       this.unviewedCounter++
     })
     saveInboxMessages(inboxMsgs)
-    this.buildUIForMessages(incomingMsgs)
-    this.updateUnviewedBadgeCounter()
+    if (this.inbox) {
+      this.buildUIForMessages(incomingMsgs)
+      this.updateUnviewedBadgeCounter()
+    }
   }
 
   createEl (type, id, part) {
@@ -195,9 +197,14 @@ export class Inbox extends HTMLElement {
   }
 
   updateUnviewedBadgePosition () {
-    const { top, right } = this.inboxSelector.getBoundingClientRect()
-    this.unviewedBadge.style.top = `${top - 8}px`
-    this.unviewedBadge.style.left = `${right - 8}px`
+    try {
+      const inboxNode = document.getElementById(this.config.inboxSelector) || this.inboxSelector
+      const { top, right } = inboxNode.getBoundingClientRect()
+      this.unviewedBadge.style.top = `${top - 8}px`
+      this.unviewedBadge.style.left = `${right - 8}px`
+    } catch (error) {
+      this.logger.debug('Error updating unviewed badge position:', error)
+    }
   }
 
   createinbox () {
@@ -377,7 +384,7 @@ export class Inbox extends HTMLElement {
             }
           }
         }
-      } else if (this.inboxSelector.contains(e.target) || this.isInboxOpen) {
+      } else if (this.checkForWebInbox(e) || this.isInboxOpen) {
         if (this.isInboxFromFlutter) {
           this.isInboxFromFlutter = false
         } else {
@@ -386,6 +393,21 @@ export class Inbox extends HTMLElement {
       }
     }
   })()
+
+  /**
+   * Checks if the current event target is part of the stored inboxSelector or the inboxSelector in the document.
+   *
+   * @param {Event} e - The event object to check.
+   * @returns {boolean} - Returns true if the event target is within the inboxSelector, otherwise false.
+   */
+  checkForWebInbox (e) {
+    const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+    const inboxElement = document.getElementById(config.inboxSelector)
+
+    return (
+      this.inboxSelector?.contains(e.target) || inboxElement?.contains(e.target)
+    )
+  }
 
   /**
    * This function will be called every time when a message comes into the inbox viewport and it's visibility increases to 50% or drops below 50%
@@ -463,12 +485,14 @@ export class Inbox extends HTMLElement {
   /**
    * Updates the UI with the number of unviewed messages
    * If there are more than 9 unviewed messages, we show the count as 9+
+   * Only show this badge if the current document has the inboxNode
    */
 
   setBadgeStyle = (msgCount) => {
     if (this.unviewedBadge !== null) {
       this.unviewedBadge.innerText = msgCount > 9 ? '9+' : msgCount
-      this.unviewedBadge.style.display = msgCount > 0 ? 'flex' : 'none'
+      const shouldShowUnviewedBadge = msgCount > 0 && document.getElementById(this.config.inboxSelector)
+      this.unviewedBadge.style.display = shouldShowUnviewedBadge ? 'flex' : 'none'
     }
   }
 

@@ -2,14 +2,22 @@ import {
   GCOOKIE_NAME,
   META_COOKIE,
   KCOOKIE_NAME,
-  LCOOKIE_NAME
+  LCOOKIE_NAME,
+  BLOCK_REQUEST_COOKIE,
+  ISOLATE_COOKIE
 } from './constants'
+import encryption from '../modules/security/Encryption'
+
 export class StorageManager {
   static save (key, value) {
     if (!key || !value) {
       return false
     }
     if (this._isLocalStorageSupported()) {
+      if (encryption.shouldEncrypt(key)) {
+        localStorage.setItem(key, encryption.encrypt(value))
+        return true
+      }
       localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value))
       return true
     }
@@ -25,6 +33,9 @@ export class StorageManager {
     }
     if (data != null) {
       try {
+        if (encryption.shouldDecrypt(key)) {
+          data = encryption.decrypt(data)
+        }
         data = JSON.parse(data)
       } catch (e) {}
     }
@@ -80,7 +91,11 @@ export class StorageManager {
       }
       // eslint-disable-next-line eqeqeq
       if (c.indexOf(nameEQ) == 0) {
-        return decodeURIComponent(c.substring(nameEQ.length, c.length))
+        try {
+          return decodeURIComponent(c.substring(nameEQ.length, c.length))
+        } catch (e) {
+          return null
+        }
       }
     }
     return null
@@ -131,7 +146,47 @@ export class StorageManager {
     }
   }
 
-  static createBroadCookie (name, value, seconds, domain) {
+  static createBroadCookie (name, value, seconds, domain, domainSpecification = null) {
+    if (domainSpecification) {
+      const hostnameParts = window.location.hostname.split('.')
+      const level = domainSpecification
+      let calculatedDomain = ''
+      if (level <= hostnameParts.length) {
+        const domainParts = hostnameParts.slice(-level)
+        calculatedDomain = '.' + domainParts.join('.')
+      } else {
+        // If level is greater than available parts, use the full hostname
+        calculatedDomain = '.' + window.location.hostname
+      }
+      let cookieValue = value
+      if (name === GCOOKIE_NAME && this.readCookie(name)) {
+        // remove duplicate cookies if they exist
+        // removing .bank.in because it is a protected domain
+        cookieValue = this.readCookie(name)
+        this.removeCookie(name, $ct.broadDomain)
+        this.removeCookie(name, calculatedDomain)
+        this.removeCookie(name, '.bank.in')
+      }
+      this.createCookie(name, cookieValue, seconds, calculatedDomain)
+      return
+    }
+    /* -------------------------------------------------------------
+     * Sub-domain isolation: when the global flag is set, skip the
+     * broad-domain logic and write a cookie scoped to the current
+     * host only.  Also remove any legacy broad-domain copy so that
+     * the host-level cookie has precedence.
+     * ----------------------------------------------------------- */
+    const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE)
+    if (isolate) {
+      // remove any legacy broad-domain cookie
+      if ($ct.broadDomain) {
+        this.removeCookie(name, $ct.broadDomain)
+      }
+
+      // write host-scoped cookie and stop
+      this.createCookie(name, value, seconds, domain)
+      return
+    }
     // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
     // To update an existing "broad domain" cookie, we need to know what domain it was actually set on.
     // since a retrieved cookie never tells which domain it was set on, we need to set another test cookie
@@ -226,6 +281,21 @@ export class StorageManager {
     logger.debug(`stored in ${LCOOKIE_NAME} reqNo : ${reqNo} -> ${data}`)
   }
 
+  // Add new method for OUL tracking
+  static markBackupAsOUL (reqNo) {
+    // Store OUL request numbers in a separate meta property
+    const oulRequests = this.getMetaProp('OUL_REQUESTS') || []
+    if (!oulRequests.includes(reqNo)) {
+      oulRequests.push(reqNo)
+      this.setMetaProp('OUL_REQUESTS', oulRequests)
+    }
+  }
+
+  static isBackupOUL (reqNo) {
+    const oulRequests = this.getMetaProp('OUL_REQUESTS') || []
+    return oulRequests.includes(reqNo)
+  }
+
   static removeBackup (respNo, logger) {
     const backupMap = this.readFromLSorCookie(LCOOKIE_NAME)
     if (typeof backupMap !== 'undefined' && backupMap !== null && typeof backupMap[respNo] !== 'undefined') {
@@ -245,7 +315,14 @@ export const $ct = {
   LRU_CACHE: null,
   globalProfileMap: undefined,
   globalEventsMap: undefined,
-  blockRequest: false,
+  // Initialize blockRequest from storage
+  get blockRequest () {
+    const value = StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE)
+    return value === true
+  },
+  set blockRequest (value) {
+    StorageManager.saveToLSorCookie(BLOCK_REQUEST_COOKIE, value)
+  },
   isOptInRequest: false,
   broadDomain: null,
   webPushEnabled: null,
@@ -262,10 +339,14 @@ export const $ct = {
   privacyArray: [],
   offline: false,
   location: null,
-  dismissSpamControl: false,
+  dismissSpamControl: true,
   globalUnsubscribe: true,
   flutterVersion: null,
-  variableStore: {}
+  variableStore: {},
+  pushConfig: null,
+  delayEvents: false,
+  intervalArray: [],
+  enableTVNavigation: false
   // domain: window.location.hostname, url -> getHostName()
   // gcookie: -> device
 }

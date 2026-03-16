@@ -1,3 +1,5 @@
+import { objectHasNestedArrayOrFunction } from '../../util/helpers'
+
 export class Variable {
   #variableStore
 
@@ -39,19 +41,24 @@ export class Variable {
    * @param {VariableStore} variableStore - The VariableStore instance for registration.
    * @returns {Variable|null} - The created Variable instance or null if invalid parameters are provided.
    */
-  static define (name, defaultValue, variableStore) {
+  static define (name, defaultValue, variableStore, logger) {
     if (!name || typeof name !== 'string') {
-      console.error('Empty or invalid name parameter provided.')
+      logger.error('Empty or invalid name parameter provided.')
       return null
     }
     if (name.startsWith('.') || name.endsWith('.')) {
-      console.error('Variable name starts or ends with a `.` which is not allowed: ' + name)
+      logger.error('Variable name starts or ends with a `.` which is not allowed: ' + name)
       return null
     }
 
     const typeOfDefaultValue = typeof defaultValue
-    if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean') {
-      console.error('Only primitive types (string, number, boolean) are accepted as value')
+    if (typeOfDefaultValue !== 'string' && typeOfDefaultValue !== 'number' && typeOfDefaultValue !== 'boolean' && typeOfDefaultValue !== 'object') {
+      logger.error('Only (string, number, boolean, objects) are accepted as value')
+      return null
+    }
+
+    if (typeOfDefaultValue === 'object' && objectHasNestedArrayOrFunction(defaultValue)) {
+      logger.error('Nested arrays/functions are not supported in JSON variables')
       return null
     }
 
@@ -69,7 +76,26 @@ export class Variable {
       variableStore.registerVariable(varInstance)
       varInstance.update(defaultValue)
     } catch (error) {
-      console.error(error)
+      logger.error(error)
+    }
+    return varInstance
+  }
+
+  static defineFileVar (name, variableStore, logger) {
+    if (!name || typeof name !== 'string' || name.startsWith('.') || name.endsWith('.')) {
+      logger.error('Empty or invalid name parameter provided.')
+      return null
+    }
+
+    const varInstance = new Variable({ variableStore })
+    try {
+      varInstance.name = name
+      varInstance.defaultValue = ''
+      varInstance.type = 'file'
+      variableStore.registerVariable(varInstance)
+      varInstance.update(varInstance.defaultValue)
+    } catch (error) {
+      logger.error(error)
     }
     return varInstance
   }
@@ -106,9 +132,9 @@ export class Variable {
    * Adds a callback function to the array and triggers it immediately if variable requests have completed.
    * @param {Function} onValueChanged - The callback function to be added.
    */
-  addValueChangedCallback (onValueChanged) {
+  addValueChangedCallback (onValueChanged, logger) {
     if (!onValueChanged) {
-      console.log('Invalid callback parameter provided.')
+      logger.log('Invalid callback parameter provided.')
       return
     }
     this.valueChangedCallbacks.push(onValueChanged)

@@ -14,6 +14,7 @@ export const SCOOKIE_EXP_TIME_IN_SECS = 60 * 20 // 20 mins
 export const EV_COOKIE = 'WZRK_EV'
 export const META_COOKIE = 'WZRK_META'
 export const PR_COOKIE = 'WZRK_PR'
+export const ACCOUNT_ID = 'WZRK_ACCOUNT_ID'
 export const ARP_COOKIE = 'WZRK_ARP'
 export const LCOOKIE_NAME = 'WZRK_L'
 export const NOTIF_COOKIE_NAME = 'WZRK_N'
@@ -56,6 +57,69 @@ export const VARIABLES = 'WZRK_PE'
 export const PUSH_DELAY_MS = 1000
 export const MAX_DELAY_FREQUENCY = 1000 * 60 * 10
 export const WZRK_FETCH = 'wzrk_fetch'
+export const WEBPUSH_CONFIG = 'WZRK_PUSH_CONFIG'
+export const APPLICATION_SERVER_KEY_RECEIVED = 'WZRK_APPLICATION_SERVER_KEY_RECIEVED'
+export const WEBPUSH_CONFIG_RECEIVED = 'WZRK_WEB_PUSH_CONFIG_RECEIVED'
+export const NOTIFICATION_PUSH_METHOD_DEFERRED = 'WZRK_NOTIFICATION_PUSH_DEFERRED'
+export const VAPID_MIGRATION_PROMPT_SHOWN = 'vapid_migration_prompt_shown'
+export const NOTIF_LAST_TIME = 'notif_last_time'
+export const TIMER_FOR_NOTIF_BADGE_UPDATE = 300
+export const OLD_SOFT_PROMPT_SELCTOR_ID = 'wzrk_wrapper'
+export const NEW_SOFT_PROMPT_SELCTOR_ID = 'pnWrapper'
+export const POPUP_LOADING = 'WZRK_POPUP_LOADING'
+export const CUSTOM_HTML_PREVIEW = 'ctCustomHtmlPreview'
+export const WEB_POPUP_PREVIEW = 'ctWebPopupPreview'
+export const QUALIFIED_CAMPAIGNS = 'WZRK_QC'
+export const CUSTOM_CT_ID_PREFIX = '_w_'
+export const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'
+export const ENABLE_TV_CONTROLS = 'WZRK_TV_CONTROLS'
+export const ENCRYPTION_KEY_NAME = 'WZRK_ENCRYPTION_KEY'
+
+// Flag key for optional sub-domain profile isolation
+export const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'
+
+// Flag key for Encryption in Transit JSONP fallback (session-level)
+export const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK'
+
+// Geolocation prompt cache key
+export const WZRK_GEO = 'WZRK_GEO'
+
+export const WEB_NATIVE_TEMPLATES = {
+  KV_PAIR: 1,
+  BANNER: 2,
+  CAROUSEL: 3,
+  VISUAL_BUILDER: 4,
+  CUSTOM_HTML: 5,
+  JSON: 6
+}
+
+export const WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES = {
+  HTML: 'html',
+  FORM: 'form',
+  JSON: 'json'
+}
+
+export const WEB_POPUP_TEMPLATES = {
+  BOX: 0,
+  INTERSTITIAL: 1,
+  BANNER: 2,
+  IMAGE_ONLY: 3,
+  ADVANCED_BUILDER: 4
+}
+
+export const CAMPAIGN_TYPES = {
+  EXIT_INTENT: 1, /* Deprecated */
+  WEB_NATIVE_DISPLAY: 2,
+  FOOTER_NOTIFICATION: 0, /* Web Popup */
+  FOOTER_NOTIFICATION_2: null /* Web Popup */
+}
+
+export const CUSTOM_EVENTS_CAMPAIGN_SOURCES = {
+  KV_PAIR: 'KV_Pair',
+  JSON: 'JSON',
+  VISUAL_BUILDER: 'Visual_Builder',
+  ADVANCED_BUILDER: 'advanced-web-popup-builder'
+}
 
 export const SYSTEM_EVENTS = [
   'Stayed',
@@ -64,4 +128,93 @@ export const SYSTEM_EVENTS = [
   'Notification Sent',
   NOTIFICATION_VIEWED,
   NOTIFICATION_CLICKED
+]
+
+export const KEYS_TO_ENCRYPT = [
+  KCOOKIE_NAME,
+  LRU_CACHE,
+  PR_COOKIE
+]
+
+export const DELIVERY_PREFERENCE_KEYS = {
+  EXCLUDE_FROM_FREQUENCY_CAP: 'efc',
+  ADVANCE_DELIVERY_PREFERENEC: 'adp',
+  WEB_POPUP: {
+    SESSION_COUNT: 'wsc',
+    FREQUENCY_COUNT: 'wfc',
+    OCCURENCE_COUNT: 'woc',
+    wtq: 'wtq',
+    GLOBAL_SESSION_LIMIT: 'wmc',
+    LEGACY: {
+      ONCE_PER_SESSION: 'mdc',
+      ONCE_PER_DAY: 'tdc'
+    }
+  },
+  WEB_NATIVE_DISPLAY: {
+    SESSION_COUNT: 'wndsc',
+    FREQUENCY_COUNT: 'wndfc',
+    OCCURENCE_COUNT: 'wndoc',
+    wndtq: 'wndtq'
+  }
+}
+
+export const ACTION_TYPES = {
+  OPEN_LINK: 'url',
+  OPEN_LINK_AND_CLOSE: 'urlCloseNotification',
+  CLOSE: 'close',
+  OPEN_WEB_URL: 'open-web-url',
+  SOFT_PROMPT: 'soft-prompt',
+  RUN_JS: 'js'
+}
+
+// Nested object errors
+export const NESTED_OBJECT_ERRORS = {
+  DEPTH_LIMIT_EXCEEDED: {
+    code: 541,
+    message: 'Event data exceeded maximum nesting depth. Depth: %s, Limit: %s'
+  },
+  ARRAY_KEY_COUNT_LIMIT_EXCEEDED: {
+    code: 542,
+    message: 'Event data exceeded maximum array key count. Count: %s, Limit: %s'
+  },
+  OBJECT_KEY_COUNT_LIMIT_EXCEEDED: {
+    code: 543,
+    message: 'Event data exceeded maximum object key count. Count: %s, Limit: %s'
+  },
+  ARRAY_LENGTH_LIMIT_EXCEEDED: {
+    code: 543,
+    message: 'Event data exceeded maximum array length. Length: %s, Limit: %s'
+  },
+  KV_PAIR_COUNT_LIMIT_EXCEEDED: {
+    code: 544,
+    message: 'Event data exceeded maximum key-value pair count. Count: %s, Limit: %s'
+  },
+  NULL_VALUE_REMOVED: {
+    code: 545,
+    message: "Null value for key '%s' was removed"
+  },
+  EMPTY_VALUE_REMOVED: {
+    code: 545,
+    message: "Empty value for key '%s' was removed"
+  },
+  RESTRICTED_PROFILE_PROPERTY: {
+    code: 513,
+    message: "'%s' is a restricted profile property and cannot have nested values (objects or arrays). This property was skipped."
+  }
+}
+
+// Restricted profile keys that cannot be at root level (0th level)
+export const PROFILE_RESTRICTED_ROOT_KEYS = [
+  'Name',
+  'Email',
+  'Education',
+  'Married',
+  'DOB',
+  'Gender',
+  'Phone',
+  'Age',
+  'FBID',
+  'GPID',
+  'Birthday',
+  'Identity'
 ]

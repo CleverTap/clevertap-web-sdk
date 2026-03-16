@@ -1,5 +1,6 @@
 import {
-  CLEVERTAP_ERROR_PREFIX
+  CLEVERTAP_ERROR_PREFIX,
+  CLEVERTAP_INFO_PREFIX
 } from '../util/messages'
 
 export const logLevels = {
@@ -14,8 +15,23 @@ export class Logger {
   #logLevel
   wzrkError = {}
   constructor (logLevel) {
-    this.#logLevel = logLevel == null ? logLevel : logLevels.INFO
+    // Singleton pattern - return existing instance if it exists
+    if (Logger.instance) {
+      return Logger.instance
+    }
+
+    this.#logLevel = logLevel == null ? logLevels.INFO : logLevel
     this.wzrkError = {}
+
+    Logger.instance = this
+  }
+
+  // Static method for explicit singleton access
+  static getInstance (logLevel) {
+    if (!Logger.instance) {
+      Logger.instance = new Logger(logLevel)
+    }
+    return Logger.instance
   }
 
   get logLevel () {
@@ -54,6 +70,12 @@ export class Logger {
     this.wzrkError.c = code
     this.wzrkError.d = description
     this.error(`${CLEVERTAP_ERROR_PREFIX} ${code}: ${description}`)
+  }
+
+  reportInfo (code, description) {
+    this.wzrkError.c = code
+    this.wzrkError.d = description
+    this.info(`${CLEVERTAP_INFO_PREFIX} ${code}: ${description}`)
   }
 
   #log (level, message) {

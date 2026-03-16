@@ -2,7 +2,8 @@ import { StorageManager, $ct } from '../../util/storage'
 import { Inbox } from './WebInbox'
 import { Message } from './Message'
 import { WEBINBOX_CONFIG, GCOOKIE_NAME, WEBINBOX } from '../../util/constants'
-import { isValueValid } from '../../util/datatypes'
+import { isValueValid, safeJSONParse } from '../../util/datatypes'
+import { Logger } from '../logger'
 
 export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
   const _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
@@ -52,65 +53,103 @@ const getAndMigrateInboxMessages = (guid) => {
 }
 
 export const getInboxMessages = () => {
-  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-  if (!isValueValid(guid)) { return {} }
-  const messages = getAndMigrateInboxMessages(guid)
+  try {
+    const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
+    if (!isValueValid(guid)) { return {} }
+    const messages = getAndMigrateInboxMessages(guid)
 
-  return messages.hasOwnProperty(guid) ? messages[guid] : {}
+    return messages.hasOwnProperty(guid) ? messages[guid] : {}
+  } catch (e) {
+    return {}
+  }
 }
 
 export const saveInboxMessages = (messages) => {
-  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
-  if (!isValueValid(guid)) { return }
-  const storedInboxObj = getAndMigrateInboxMessages(guid)
+  try {
+    const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
+    if (!isValueValid(guid)) { return }
+    const storedInboxObj = getAndMigrateInboxMessages(guid)
 
-  const newObj = { ...storedInboxObj, [guid]: messages }
-  StorageManager.saveToLSorCookie(WEBINBOX, newObj)
+    const newObj = { ...storedInboxObj, [guid]: messages }
+    StorageManager.saveToLSorCookie(WEBINBOX, newObj)
+  } catch (e) {
+    Logger.getInstance().error('Error saving inbox messages:', e.message)
+  }
 }
 
 export const initializeWebInbox = (logger) => {
   return new Promise((resolve, reject) => {
-    if (document.readyState === 'complete') {
-      addWebInbox(logger)
-      resolve()
-    } else {
-      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
-      const onLoaded = () => {
-        /**
-         * We need this null check here because $ct.inbox could be initialised via init method too on document load.
-         * In that case we don't need to call addWebInbox method
-         */
-        if ($ct.inbox === null) {
-          addWebInbox(logger)
-        }
-        resolve()
-      }
-      window.addEventListener('load', () => {
-        /**
-         * Scripts can be loaded layzily, we may not get element from dom as it may not be mounted yet
-         * We will to check element for 10 seconds and give up
-         */
-        if (document.getElementById(config.inboxSelector)) {
-          onLoaded()
-        } else {
-          // check for element for next 10 seconds
-          let count = 0
-          if (count < 20) {
-            const t = setInterval(() => {
-              if (document.getElementById(config.inboxSelector)) {
-                onLoaded()
-                clearInterval(t)
-                resolve()
-              } else if (count >= 20) {
-                clearInterval(t)
-                logger.debug('Failed to add inbox')
-              }
-              count++
-            }, 500)
+    const retryUntil = (condition, interval = 500, maxRetries = 20) => {
+      return new Promise((resolve, reject) => {
+        let attempts = 0
+        const retry = setInterval(() => {
+          logger.debug(`Retry attempt: ${attempts + 1}`)
+          if (condition()) {
+            clearInterval(retry)
+            resolve() // Success
+          } else if ($ct.inbox !== null) {
+            clearInterval(retry)
+            resolve() // Inbox already initialized
+          } else if (attempts >= maxRetries) {
+            clearInterval(retry)
+            reject(new Error('Condition not met within max retries'))
           }
-        }
+          attempts++
+        }, interval)
       })
     }
+
+    const addInboxSafely = () => {
+      if ($ct.inbox === null) {
+        addWebInbox(logger)
+      }
+    }
+
+    const checkElementCondition = () => {
+      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+      return document.getElementById(config.inboxSelector) && $ct.inbox === null
+    }
+
+    const onFailure = () => {
+      logger.debug('Failed to add inbox')
+    }
+
+    let retryStarted = false // Guard flag
+    const startRetry = () => {
+      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+      if (!config.inboxSelector) {
+        logger.debug('Web Inbox Retry Skipped, Inbox selector is not configured')
+        return false
+      }
+
+      if (!retryStarted) {
+        retryStarted = true
+        retryUntil(checkElementCondition, 500, 20)
+          .then(() => {
+            addInboxSafely()
+            resolve()
+          })
+          .catch(onFailure)
+      }
+    }
+
+    const setupEventListeners = () => {
+      if (document.readyState === 'complete') {
+        startRetry()
+      } else {
+        window.addEventListener('load', startRetry)
+        document.addEventListener(
+          'readystatechange',
+          () => {
+            if (document.readyState === 'complete') {
+              startRetry()
+            }
+          }
+        )
+      }
+    }
+
+    setupEventListeners()
   })
 }
 

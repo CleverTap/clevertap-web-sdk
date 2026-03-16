@@ -1,5 +1,7 @@
 import { VARIABLES, WZRK_FETCH } from '../../util/constants'
 import { StorageManager, $ct } from '../../util/storage'
+import { flattenObjectToDotNotation } from '../../util/helpers'
+
 class VariableStore {
   #logger
   #account
@@ -34,7 +36,7 @@ class VariableStore {
   registerVariable (varInstance) {
     const { name } = varInstance
     this.#variables[name] = varInstance
-    console.log('registerVariable', this.#variables)
+    this.#logger.debug('registerVariable', this.#variables)
   }
 
   /**
@@ -70,9 +72,25 @@ class VariableStore {
     }
 
     for (const name in this.#variables) {
-      payload.vars[name] = {
-        defaultValue: this.#variables[name].defaultValue,
-        type: this.#variables[name].type
+      if (typeof this.#variables[name].defaultValue === 'object') {
+        const flattenedPayload = flattenObjectToDotNotation({
+          [this.#variables[name]?.name]: this.#variables[name].defaultValue
+        })
+        for (const key in flattenedPayload) {
+          payload.vars[key] = {
+            defaultValue: flattenedPayload[key].defaultValue,
+            type: flattenedPayload[key].type
+          }
+        }
+      } else if (this.#variables[name].type === 'file') {
+        payload.vars[name] = {
+          type: this.#variables[name].type
+        }
+      } else {
+        payload.vars[name] = {
+          defaultValue: this.#variables[name].defaultValue,
+          type: this.#variables[name].type
+        }
       }
     }
 
@@ -125,7 +143,7 @@ class VariableStore {
   }
 
   mergeVariables (vars) {
-    console.log('msg vars is ', vars)
+    this.#logger.debug('msg vars is ', vars)
     this.#hasVarsRequestCompleted = true
 
     StorageManager.saveToLSorCookie(VARIABLES, vars)

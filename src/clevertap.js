@@ -9,6 +9,7 @@ import User from './modules/user'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
+import RequestDispatcher from './util/requestDispatcher'
 import {
   CAMP_COOKIE_NAME,
   SCOOKIE_PREFIX,
@@ -28,7 +29,18 @@ import {
   COMMAND_REMOVE,
   COMMAND_DELETE,
   EVT_PUSH,
-  WZRK_FETCH
+  WZRK_FETCH,
+  WEBINBOX_CONFIG,
+  TIMER_FOR_NOTIF_BADGE_UPDATE,
+  ACCOUNT_ID,
+  APPLICATION_SERVER_KEY_RECEIVED,
+  VARIABLES,
+  GCOOKIE_NAME,
+  QUALIFIED_CAMPAIGNS,
+  BLOCK_REQUEST_COOKIE,
+  ISOLATE_COOKIE,
+  ENABLE_TV_CONTROLS,
+  WZRK_GEO
 } from './util/constants'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
@@ -40,6 +52,13 @@ import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
+import { addAntiFlicker, handleActionMode, renderVisualBuilder } from './modules/visualBuilder/pageBuilder'
+import { setServerKey } from './modules/webPushPrompt/prompt'
+import encryption from './modules/security/Encryption'
+import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
+import { checkWebPopupPreview } from './util/campaignRender/webPopup'
+import { reconstructNestedObject, validateCustomCleverTapID } from './util/helpers'
+import TVNavigation from './modules/tvNavigation'
 
 export default class CleverTap {
   #logger
@@ -55,6 +74,11 @@ export default class CleverTap {
   #boundCheckPageChanged = this.#checkPageChanged.bind(this)
   #dismissSpamControl
   enablePersonalization
+  #pageChangeTimeoutId
+  #tvNavigation
+  #enableFetchApi
+  #enableEncryptionInTransit
+  #domainSpecification
 
   get spa () {
     return this.#isSpa
@@ -83,17 +107,68 @@ export default class CleverTap {
     $ct.dismissSpamControl = dismissSpamControl
   }
 
+  get enableFetchApi () {
+    return this.#enableFetchApi
+  }
+
+  set enableFetchApi (value) {
+    this.#enableFetchApi = value
+    // propagate the setting to RequestDispatcher so util layer can honour it
+    RequestDispatcher.enableFetchApi = value
+  }
+
+  get enableEncryptionInTransit () {
+    return this.#enableEncryptionInTransit
+  }
+
+  set enableEncryptionInTransit (value) {
+    this.#enableEncryptionInTransit = value
+    // propagate the setting to RequestDispatcher so util layer can honour it
+    RequestDispatcher.enableEncryptionInTransit = value
+  }
+
+  get domainSpecification () {
+    return this.#domainSpecification
+  }
+
+  set domainSpecification (value) {
+    if (value && isFinite(value)) {
+      this.#domainSpecification = Number(value)
+    } else {
+      this.#domainSpecification = 0
+    }
+  }
+
   constructor (clevertap = {}) {
     this.#onloadcalled = 0
     this._isPersonalisationActive = this._isPersonalisationActive.bind(this)
+    this.domainSpecification = clevertap.domainSpecification || null
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
-    this.#device = new DeviceManager({ logger: this.#logger })
-    this.#dismissSpamControl = clevertap.dismissSpamControl || false
+    encryption.key = clevertap.account?.[0].id
+    // Custom Guid will be set here
+
+    const result = validateCustomCleverTapID(clevertap?.config?.customId)
+    if (!result.isValid && clevertap?.config?.customId) {
+      this.#logger.error(result.error)
+    }
+
+    this.#device = new DeviceManager({
+      logger: this.#logger,
+      customId: result?.isValid ? result?.sanitizedId : null,
+      domainSpecification: this.domainSpecification
+    })
+    this.#dismissSpamControl = clevertap.dismissSpamControl ?? true
+    this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
+    this.#enableFetchApi = clevertap.enableFetchApi || false
+    RequestDispatcher.enableFetchApi = this.#enableFetchApi
+    this.#enableEncryptionInTransit = clevertap.enableEncryptionInTransit || false
+    RequestDispatcher.enableEncryptionInTransit = this.#enableEncryptionInTransit
     this.#session = new SessionManager({
       logger: this.#logger,
-      isPersonalisationActive: this._isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive,
+      domainSpecification: this.domainSpecification
     })
     this.#request = new ReqestManager({
       logger: this.#logger,
@@ -102,6 +177,7 @@ export default class CleverTap {
       session: this.#session,
       isPersonalisationActive: this._isPersonalisationActive
     })
+    this.#tvNavigation = new TVNavigation(this.#logger)
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
       logger: this.#logger,
@@ -147,15 +223,23 @@ export default class CleverTap {
       logger: this.#logger,
       request: this.#request,
       device: this.#device,
-      session: this.#session
+      session: this.#session,
+      domainSpecification: this.domainSpecification
     })
 
     this.spa = clevertap.spa
-    this.dismissSpamControl = clevertap.dismissSpamControl
+    this.dismissSpamControl = clevertap.dismissSpamControl ?? true
 
+    if (clevertap.config?.enableTVControls) {
+      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
+    } else {
+      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false)
+    }
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
     })
+
+    encryption.logger = this.#logger
 
     this.session = {
       getTimeElapsed: () => {
@@ -215,10 +299,12 @@ export default class CleverTap {
 
     // Get Inbox Unread Message Count
     this.getInboxMessageUnreadCount = () => {
-      if ($ct.inbox) {
-        return $ct.inbox.unviewedCounter
-      } else {
-        this.#logger.debug('No unread messages')
+      try {
+        const unreadMessages = this.getUnreadInboxMessages()
+        const result = Object.keys(unreadMessages).length
+        return result
+      } catch (e) {
+        this.#logger.error('Error in getInboxMessageUnreadCount' + e)
       }
     }
 
@@ -229,10 +315,20 @@ export default class CleverTap {
 
     // Get only Unread messages
     this.getUnreadInboxMessages = () => {
-      if ($ct.inbox) {
-        return $ct.inbox.unviewedMessages
-      } else {
-        this.#logger.debug('No unread messages')
+      try {
+        const messages = getInboxMessages()
+        const result = {}
+
+        if (Object.keys(messages).length > 0) {
+          for (const message in messages) {
+            if (messages[message].viewed === 0) {
+              result[message] = messages[message]
+            }
+          }
+        }
+        return result
+      } catch (e) {
+        this.#logger.error('Error in getUnreadInboxMessages' + e)
       }
     }
 
@@ -252,14 +348,22 @@ export default class CleverTap {
     this.deleteInboxMessage = (messageId) => {
       const messages = getInboxMessages()
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
-        const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
         if (messages[messageId].viewed === 0) {
-          $ct.inbox.unviewedCounter--
-          delete $ct.inbox.unviewedMessages[messageId]
-          document.getElementById('unviewedBadge').innerText = $ct.inbox.unviewedCounter
-          document.getElementById('unviewedBadge').style.display = $ct.inbox.unviewedCounter > 0 ? 'flex' : 'none'
+          if ($ct.inbox) {
+            $ct.inbox.unviewedCounter--
+            delete $ct.inbox.unviewedMessages[messageId]
+          }
+          const unViewedBadge = document.getElementById('unviewedBadge')
+          if (unViewedBadge) {
+            unViewedBadge.innerText = $ct.inbox.unviewedCounter
+            unViewedBadge.style.display = $ct.inbox.unviewedCounter > 0 ? 'flex' : 'none'
+          }
         }
-        el && el.remove()
+        const ctInbox = document.querySelector('ct-web-inbox')
+        if (ctInbox) {
+          const el = ctInbox.shadowRoot.getElementById(messageId)
+          el && el.remove()
+        }
         delete messages[messageId]
         saveInboxMessages(messages)
       } else {
@@ -272,20 +376,30 @@ export default class CleverTap {
      - Remove the unread marker, update the viewed flag, decrement the bage Count
      - renderNotificationViewed */
     this.markReadInboxMessage = (messageId) => {
-      const unreadMsg = $ct.inbox.unviewedMessages
       const messages = getInboxMessages()
-      if ((messageId !== null || messageId !== '') && unreadMsg.hasOwnProperty(messageId)) {
-        const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(messageId)
-        if (el !== null) { el.shadowRoot.getElementById('unreadMarker').style.display = 'none' }
+      if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
+        if (messages[messageId].viewed === 1) {
+          return this.#logger.error('Message already viewed' + messageId)
+        }
+        const ctInbox = document.querySelector('ct-web-inbox')
+        if (ctInbox) {
+          const el = ctInbox.shadowRoot.getElementById(messageId)
+          if (el !== null) {
+            el.shadowRoot.getElementById('unreadMarker').style.display = 'none'
+          }
+        }
         messages[messageId].viewed = 1
-        if (document.getElementById('unviewedBadge')) {
-          var counter = parseInt(document.getElementById('unviewedBadge').innerText) - 1
-          document.getElementById('unviewedBadge').innerText = counter
-          document.getElementById('unviewedBadge').style.display = counter > 0 ? 'flex' : 'none'
+        const unViewedBadge = document.getElementById('unviewedBadge')
+        if (unViewedBadge) {
+          var counter = parseInt(unViewedBadge.innerText) - 1
+          unViewedBadge.innerText = counter
+          unViewedBadge.style.display = counter > 0 ? 'flex' : 'none'
         }
         window.clevertap.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
-        $ct.inbox.unviewedCounter--
-        delete $ct.inbox.unviewedMessages[messageId]
+        if ($ct.inbox) {
+          $ct.inbox.unviewedCounter--
+          delete $ct.inbox.unviewedMessages[messageId]
+        }
         saveInboxMessages(messages)
       } else {
         this.#logger.error('No message available for message Id ' + messageId)
@@ -306,18 +420,26 @@ export default class CleverTap {
       - renderNotificationViewed, update the badge count and style
     */
     this.markReadAllInboxMessage = () => {
-      const unreadMsg = $ct.inbox.unviewedMessages
       const messages = getInboxMessages()
+      const unreadMsg = this.getUnreadInboxMessages()
       if (Object.keys(unreadMsg).length > 0) {
         const msgIds = Object.keys(unreadMsg)
         msgIds.forEach(key => {
-          const el = document.querySelector('ct-web-inbox').shadowRoot.getElementById(key)
-          if (el !== null) { el.shadowRoot.getElementById('unreadMarker').style.display = 'none' }
+          const ctInbox = document.querySelector('ct-web-inbox')
+          if (ctInbox) {
+            const el = ctInbox.shadowRoot.getElementById(key)
+            if (el !== null) {
+              el.shadowRoot.getElementById('unreadMarker').style.display = 'none'
+            }
+          }
           messages[key].viewed = 1
           window.clevertap.renderNotificationViewed({ msgId: messages[key].wzrk_id, pivotId: messages[key].wzrk_pivot })
         })
-        document.getElementById('unviewedBadge').innerText = 0
-        document.getElementById('unviewedBadge').style.display = 'none'
+        const unViewedBadge = document.getElementById('unviewedBadge')
+        if (unViewedBadge) {
+          unViewedBadge.innerText = 0
+          unViewedBadge.style.display = 'none'
+        }
         saveInboxMessages(messages)
         $ct.inbox.unviewedCounter = 0
         $ct.inbox.unviewedMessages = {}
@@ -397,7 +519,7 @@ export default class CleverTap {
       if (Array.isArray(value)) {
         this.profile._handleMultiValueSet(key, value, COMMAND_SET)
       } else {
-        console.error('setMultiValuesForKey should be called with a value of type array')
+        this.#logger.error('setMultiValuesForKey should be called with a value of type array')
       }
     }
 
@@ -405,7 +527,7 @@ export default class CleverTap {
       if (typeof value === 'string' || typeof value === 'number') {
         this.profile._handleMultiValueAdd(key, value, COMMAND_ADD)
       } else {
-        console.error('addMultiValueForKey should be called with a value of type string or number.')
+        this.#logger.error('addMultiValueForKey should be called with a value of type string or number.')
       }
     }
 
@@ -413,7 +535,7 @@ export default class CleverTap {
       if (Array.isArray(value)) {
         this.profile._handleMultiValueAdd(key, value, COMMAND_ADD)
       } else {
-        console.error('addMultiValuesForKey should be called with a value of type array.')
+        this.#logger.error('addMultiValuesForKey should be called with a value of type array.')
       }
     }
 
@@ -421,7 +543,7 @@ export default class CleverTap {
       if (typeof value === 'string' || typeof value === 'number') {
         this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE)
       } else {
-        console.error('removeMultiValueForKey should be called with a value of type string or number.')
+        this.#logger.error('removeMultiValueForKey should be called with a value of type string or number.')
       }
     }
 
@@ -429,12 +551,20 @@ export default class CleverTap {
       if (Array.isArray(value)) {
         this.profile._handleMultiValueRemove(key, value, COMMAND_REMOVE)
       } else {
-        console.error('removeMultiValuesForKey should be called with a value of type array.')
+        this.#logger.error('removeMultiValuesForKey should be called with a value of type array.')
       }
     }
 
     this.removeValueForKey = (key) => {
       this.profile._handleMultiValueDelete(key, COMMAND_DELETE)
+    }
+
+    this.enableLocalStorageEncryption = (value) => {
+      encryption.enableLocalStorageEncryption = value
+    }
+
+    this.isLocalStorageEncryptionEnabled = () => {
+      return encryption.enableLocalStorageEncryption
     }
 
     const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
@@ -466,9 +596,17 @@ export default class CleverTap {
           return
         }
         $ct.location = { Latitude: lat, Longitude: lng }
-        this.sendLocationData({ Latitude: lat, Longitude: lng })
+        this.#sendLocationData({ Latitude: lat, Longitude: lng })
       } else {
         if (navigator.geolocation) {
+          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+          if (isSafari) {
+            try {
+              if (localStorage.getItem(WZRK_GEO) !== null) {
+                return
+              }
+            } catch (e) {}
+          }
           navigator.geolocation.getCurrentPosition(showPosition.bind(this), showError)
         } else {
           console.log('Geolocation is not supported by this browser.')
@@ -479,14 +617,16 @@ export default class CleverTap {
     function showPosition (position) {
       var lat = position.coords.latitude
       var lng = position.coords.longitude
+      try { localStorage.setItem(WZRK_GEO, 'true') } catch (e) {}
       $ct.location = { Latitude: lat, Longitude: lng }
-      this.sendLocationData({ Latitude: lat, Longitude: lng })
+      this.#sendLocationData({ Latitude: lat, Longitude: lng })
     }
 
     function showError (error) {
       switch (error.code) {
         case error.PERMISSION_DENIED:
           console.log('User denied the request for Geolocation.')
+          try { localStorage.setItem(WZRK_GEO, 'false') } catch (e) {}
           break
         case error.POSITION_UNAVAILABLE:
           console.log('Location information is unavailable.')
@@ -507,14 +647,21 @@ export default class CleverTap {
       closeIframe(campaignId, divIdIgnored, this.#session.sessionId)
     }
     api.enableWebPush = (enabled, applicationServerKey) => {
+      setServerKey(applicationServerKey)
       this.notifications._enableWebPush(enabled, applicationServerKey)
+      try {
+        StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, true)
+      } catch (error) {
+        this.#logger.error('Could not read value from local storage', error)
+      }
     }
     api.tr = (msg) => {
       _tr(msg, {
         device: this.#device,
         session: this.#session,
         request: this.#request,
-        logger: this.#logger
+        logger: this.#logger,
+        region: this.#account.region
       })
     }
     api.setEnum = (enumVal) => {
@@ -573,16 +720,74 @@ export default class CleverTap {
       // The accountId is present so can init with empty values.
       // Needed to maintain backward compatability with legacy implementations.
       // Npm imports/require will need to call init explictly with accountId
+      StorageManager.saveToLSorCookie(ACCOUNT_ID, clevertap.account?.[0].id)
       this.init()
     }
   }
 
-  // starts here
-  init (accountId, region, targetDomain, token) {
+  createCustomIdIfValid (customId) {
+    const result = validateCustomCleverTapID(customId)
+
+    if (!result.isValid) {
+      this.#logger.error(result.error)
+    }
+
+    /* Only add Custom Id if no existing id is present */
+    if (this.#device.gcookie) {
+      return
+    }
+
+    if (result.isValid) {
+      this.#device.gcookie = result?.sanitizedId
+      StorageManager.saveToLSorCookie(GCOOKIE_NAME, result?.sanitizedId)
+      this.#logger.debug('CT Initialized with customId:: ' + result?.sanitizedId)
+    } else {
+      this.#logger.error('Invalid customId')
+    }
+  }
+
+  init (accountId, region, targetDomain, token, config = {
+    antiFlicker: {},
+    customId: null,
+    isolateSubdomain: false,
+    enableTVControls: false,
+    domainSpecification: null
+  }) {
+    if (config?.domainSpecification) {
+      this.domainSpecification = config.domainSpecification
+      this.#session.domainSpecification = config.domainSpecification
+      this.#device.domainSpecification = config.domainSpecification
+      this.#api.domainSpecification = config.domainSpecification
+    }
+    if (config?.antiFlicker && Object.keys(config?.antiFlicker).length > 0) {
+      addAntiFlicker(config.antiFlicker)
+    }
+
+    if (config?.isolateSubdomain) {
+      StorageManager.saveToLSorCookie(ISOLATE_COOKIE, true)
+    }
+
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
     }
+
+    // Clear EIT fallback flag on new session (init)
+    RequestDispatcher.clearEITFallback()
+
+    if (accountId) {
+      encryption.key = accountId
+    }
+
+    const enableControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS) ?? false
+    if ((config?.enableTVControls) || enableControls) {
+      // CleverTap handles navigation
+      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
+      this.#logger.debug('CleverTap TV Navigation Mode: CleverTap will handle all navigation')
+      // Initialize CleverTap TV navigation system
+      this.#tvNavigation.init()
+    }
+
     StorageManager.removeCookie('WZRK_P', window.location.hostname)
     if (!this.#account.id) {
       if (!accountId) {
@@ -590,9 +795,13 @@ export default class CleverTap {
         return
       }
       this.#account.id = accountId
+      StorageManager.saveToLSorCookie(ACCOUNT_ID, accountId)
+      this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
+    handleActionMode(this.#logger, this.#account.id)
+    checkCustomHtmlNativeDisplayPreview(this.#logger)
+    checkWebPopupPreview()
     this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
-
     if (region) {
       this.#account.region = region
     }
@@ -602,7 +811,26 @@ export default class CleverTap {
     if (token) {
       this.#account.token = token
     }
+    if (config?.customId) {
+      this.createCustomIdIfValid(config.customId)
+    }
 
+    if (config.enableFetchApi) {
+      this.#enableFetchApi = config.enableFetchApi
+      RequestDispatcher.enableFetchApi = config.enableFetchApi
+    }
+
+    if (config.enableEncryptionInTransit) {
+      this.#enableEncryptionInTransit = config.enableEncryptionInTransit
+      RequestDispatcher.enableEncryptionInTransit = config.enableEncryptionInTransit
+    }
+
+    // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
+    // This ensures user identity is established before other events
+    if (StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
+      this.#logger.debug('Processing OUL backup events first to establish user identity')
+      this.#request.processBackupEvents(true)
+    }
     const currLocation = location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
 
@@ -627,6 +855,9 @@ export default class CleverTap {
     if (this.#isSpa) {
       // listen to click on the document and check if URL has changed.
       document.addEventListener('click', this.#boundCheckPageChanged)
+
+      /* Listen for the Back and Forward buttons */
+      window.addEventListener('popstate', this.#boundCheckPageChanged)
     } else {
       // remove existing click listeners if any
       document.removeEventListener('click', this.#boundCheckPageChanged)
@@ -644,7 +875,7 @@ export default class CleverTap {
     this.notifications._processOldValues()
   }
 
-  #debounce (func, delay = 300) {
+  #debounce (func, delay = 50) {
     let timeout
     return function () {
       clearTimeout(timeout)
@@ -659,6 +890,47 @@ export default class CleverTap {
       }
     })
     debouncedPageChanged()
+  }
+
+  #updateUnviewedBadgePosition () {
+    try {
+      if (this.#pageChangeTimeoutId) {
+        clearTimeout(this.#pageChangeTimeoutId)
+      }
+
+      const unViewedBadge = document.getElementById('unviewedBadge')
+      if (!unViewedBadge) {
+        this.#logger.debug('unViewedBadge not found')
+        return
+      }
+
+      /* Reset to None */
+      unViewedBadge.style.display = 'none'
+
+      /* Set Timeout to let the page load and then update the position and display the badge */
+      this.#pageChangeTimeoutId = setTimeout(() => {
+        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+        const inboxNode = document.getElementById(config?.inboxSelector)
+        /* Creating a Local Variable to avoid reference to stale DOM Node */
+        const unViewedBadge = document.getElementById('unviewedBadge')
+
+        if (!unViewedBadge) {
+          this.#logger.debug('unViewedBadge not found')
+          return
+        }
+
+        if (inboxNode) {
+          const { top, right } = inboxNode.getBoundingClientRect()
+          if (Number(unViewedBadge.innerText) > 0 || unViewedBadge.innerText === '9+') {
+            unViewedBadge.style.display = 'flex'
+          }
+          unViewedBadge.style.top = `${top - 8}px`
+          unViewedBadge.style.left = `${right - 8}px`
+        }
+      }, TIMER_FOR_NOTIF_BADGE_UPDATE)
+    } catch (error) {
+      this.#logger.debug('Error updating unviewed badge position:', error)
+    }
   }
 
   pageChanged () {
@@ -740,6 +1012,27 @@ export default class CleverTap {
         }, CONTINUOUS_PING_FREQ_IN_MILLIS)
       }
     }, FIRST_PING_FREQ_IN_MILLIS)
+
+    this.#updateUnviewedBadgePosition()
+    this._handleVisualEditorPreview()
+  }
+
+  _handleVisualEditorPreview () {
+    if ($ct.intervalArray.length) {
+      $ct.intervalArray.forEach(interval => {
+        if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
+          clearInterval(parseInt(interval.split('-')[1], 10))
+        } else {
+          clearInterval(interval)
+        }
+      })
+    }
+    $ct.intervalArray = []
+    const storedData = sessionStorage.getItem('visualEditorData')
+    const targetJson = storedData ? JSON.parse(storedData) : null
+    if (targetJson) {
+      renderVisualBuilder(targetJson, true, this.#logger)
+    }
   }
 
   #pingRequest () {
@@ -778,7 +1071,7 @@ export default class CleverTap {
    *
    * @param {object} payload
    */
-  sendLocationData (payload) {
+  #sendLocationData (payload) {
     // Send the updated value to LC
     let data = {}
     data.af = {}
@@ -819,16 +1112,32 @@ export default class CleverTap {
       console.error('setOffline should be called with a value of type boolean')
       return
     }
-    $ct.offline = arg
-    // if offline is disabled
-    // process events from cache
-    if (!arg) {
+    // Check if the offline state is changing from true to false
+    // If offline is being disabled (arg is false), process any cached events
+    if ($ct.offline !== arg && !arg) {
       this.#request.processBackupEvents()
     }
+    $ct.offline = arg
+  }
+
+  delayEvents (arg) {
+    if (typeof arg !== 'boolean') {
+      console.error('delayEvents should be called with a value of type boolean')
+      return
+    }
+    $ct.delayEvents = arg
+  }
+
+  getSDKVersion () {
+    return 'web-sdk-v$$PACKAGE_VERSION$$'
   }
 
   defineVariable (name, defaultValue) {
-    return Variable.define(name, defaultValue, this.#variableStore)
+    return Variable.define(name, defaultValue, this.#variableStore, this.#logger)
+  }
+
+  defineFileVariable (name) {
+    return Variable.defineFileVar(name, this.#variableStore, this.#logger)
   }
 
   syncVariables (onSyncSuccess, onSyncFailure) {
@@ -845,11 +1154,40 @@ export default class CleverTap {
     this.#variableStore.fetchVariables(onFetchCallback)
   }
 
+  getVariables () {
+    return reconstructNestedObject(
+      StorageManager.readFromLSorCookie(VARIABLES)
+    )
+  }
+
+  getVariableValue (variableName) {
+    const variables = StorageManager.readFromLSorCookie(VARIABLES)
+    const reconstructedVariables = reconstructNestedObject(variables)
+    if (variables.hasOwnProperty(variableName)) {
+      return variables[variableName]
+    } else if (reconstructedVariables.hasOwnProperty(variableName)) {
+      return reconstructedVariables[variableName]
+    }
+  }
+
   addVariablesChangedCallback (callback) {
     this.#variableStore.addVariablesChangedCallback(callback)
   }
 
   addOneTimeVariablesChangedCallback (callback) {
     this.#variableStore.addOneTimeVariablesChangedCallback(callback)
+  }
+
+  /*
+     This function is used for debugging and getting the details of all the campaigns
+     that were qualified and rendered for the current user
+  */
+  getAllQualifiedCampaignDetails () {
+    try {
+      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
+      return existingCampaign
+    } catch (e) {
+      return null
+    }
   }
 }

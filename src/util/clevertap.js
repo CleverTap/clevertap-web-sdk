@@ -13,7 +13,8 @@ import {
   IS_OUL,
   categoryLongKey,
   CAMP_COOKIE_G,
-  GLOBAL
+  GLOBAL,
+  CAMPAIGN_TYPES
 } from './constants'
 import {
   GENDER_ERROR,
@@ -38,8 +39,11 @@ import {
   isObjectEmpty,
   isString,
   isNumber,
-  isValueValid
+  isValueValid,
+  safeJSONParse
 } from './datatypes'
+
+import { deliveryPreferenceUtils } from '../../src/util/campaignRender/utilities'
 
 import { addToURL, getURLParams } from './url'
 import { compressData } from './encoder'
@@ -50,11 +54,11 @@ export const getCampaignObject = () => {
   if (StorageManager._isLocalStorageSupported()) {
     let campObj = StorageManager.read(CAMP_COOKIE_NAME)
     if (campObj != null) {
-      campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'))
-      if (campObj.hasOwnProperty('global')) {
-        finalcampObj.wp = campObj
-      } else {
+      try {
+        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'))
         finalcampObj = campObj
+      } catch (e) {
+        finalcampObj = {}
       }
     } else {
       finalcampObj = {}
@@ -63,6 +67,7 @@ export const getCampaignObject = () => {
   return finalcampObj
 }
 
+// Save Camp here
 export const saveCampaignObject = (campaignObj) => {
   if (StorageManager._isLocalStorageSupported()) {
     const newObj = { ...getCampaignObject(), ...campaignObj }
@@ -73,17 +78,93 @@ export const saveCampaignObject = (campaignObj) => {
   }
 }
 
+/**
+ * Updates campaign delivery preferences and tracking counters
+ *
+ * This function updates the campaign tracking object in the CAMP localstorage variables based on the campaign type,
+ * increments appropriate show counters, and updates frequency control timestamps.
+ *
+ * @param {CampaignDetails} campaignDetails - The campaign information object
+ * @param {any} wtq - Additional query parameters (if needed)
+ * @returns {void}
+ */
+export const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
+  try {
+    if (!campaignDetails || !campaignDetails.wzrk_id) {
+      throw new Error('Invalid campaign details provided')
+    }
+
+    const campaignObj = getCampaignObject() || {}
+
+    const campaignIdParts = campaignDetails.wzrk_id.split('_')
+    const campaignId = campaignIdParts[0]
+    const isCampaignExcludedFromFrequencyLimits = campaignDetails?.display?.efc
+
+    if (!campaignId) {
+      throw new Error('Failed to parse campaign ID')
+    }
+
+    const campaignType = campaignDetails?.display?.wtarget_type
+
+    const campaignTypeConfig = {
+      [CAMPAIGN_TYPES.FOOTER_NOTIFICATION]: {
+        showCountKey: 'wsc',
+        frequencyControlKey: 'wfc',
+        dailyCountKey: 'wmp'
+      },
+      [CAMPAIGN_TYPES.WEB_NATIVE_DISPLAY]: {
+        showCountKey: 'wndsc',
+        frequencyControlKey: 'wndfc',
+        dailyCountKey: 'wndmp'
+      }
+    }
+
+    const config = campaignTypeConfig[campaignType]
+
+    if (!config) {
+      throw new Error(`Unsupported campaign type: ${campaignType}`)
+    }
+
+    if (!isCampaignExcludedFromFrequencyLimits) {
+      const showCountKey = config.showCountKey
+      const dailyCountKey = config.dailyCountKey
+
+      const currentShowCount =
+        typeof campaignObj[showCountKey] === 'number'
+          ? campaignObj[showCountKey]
+          : 0
+      campaignObj[showCountKey] = currentShowCount + 1
+
+      campaignObj[dailyCountKey] = deliveryPreferenceUtils.getDailyCount(campaignObj, dailyCountKey)
+    }
+
+    if (campaignDetails?.display?.adp) {
+      const frequencyControlKey = config.frequencyControlKey
+      campaignObj[frequencyControlKey] = deliveryPreferenceUtils.updateTimestampTracker(
+        [campaignId],
+        campaignObj[frequencyControlKey] || {}
+      )
+    }
+
+    saveCampaignObject(campaignObj)
+  } catch (error) {
+    logger.error(`Campaign delivery preference update failed: ${error.message}`)
+  }
+}
+
 // set Campaign Object against the guid, with daily count and total count details
 export const setCampaignObjectForGuid = () => {
   if (StorageManager._isLocalStorageSupported()) {
     let guid = StorageManager.read(GCOOKIE_NAME)
     if (isValueValid(guid)) {
       try {
-        guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+        guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
         const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {}
         if (guid && StorageManager._isLocalStorageSupported()) {
           var finalCampObj = {}
           var campObj = getCampaignObject()
+
+          /* TODO: Check if Webinbox needs these keys or get rid of them */
           Object.keys(campObj).forEach(key => {
             const campKeyObj = (guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key]) ? guidCampObj[guid][key] : {}
             const globalObj = campObj[key].global
@@ -111,8 +192,25 @@ export const setCampaignObjectForGuid = () => {
                 }
               }
             }
-            finalCampObj = { ...finalCampObj, [key]: campKeyObj }
+            finalCampObj = {
+              ...finalCampObj,
+              [key]: campKeyObj
+            }
           })
+
+          finalCampObj = {
+            ...finalCampObj,
+            wsc: campObj.wsc,
+            wfc: campObj.wfc,
+            woc: campObj.woc,
+            wmp: campObj.wmp,
+            dnd: campObj.dnd,
+            wndsc: campObj.wndsc,
+            wndfc: campObj.wndfc,
+            wndoc: campObj.wndoc,
+            wndmp: campObj.wndmp
+          }
+
           guidCampObj[guid] = finalCampObj
           StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
         }
@@ -124,42 +222,54 @@ export const setCampaignObjectForGuid = () => {
 }
 export const getCampaignObjForLc = () => {
   // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-  const guid = JSON.parse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)))
+  const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
 
   let campObj = {}
   if (StorageManager._isLocalStorageSupported()) {
     let resultObj = {}
     campObj = getCampaignObject()
     const storageValue = StorageManager.read(CAMP_COOKIE_G)
-    const decodedValue = storageValue ? decodeURIComponent(storageValue) : null
-    const parsedValue = decodedValue ? JSON.parse(decodedValue) : null
-
-    const resultObjWP = (!!guid &&
-                        storageValue !== undefined && storageValue !== null &&
-                        parsedValue && parsedValue[guid] && parsedValue[guid].wp)
-      ? Object.values(parsedValue[guid].wp)
-      : []
+    let decodedValue = null
+    let parsedValue = null
+    try {
+      decodedValue = storageValue ? decodeURIComponent(storageValue) : null
+      parsedValue = decodedValue ? JSON.parse(decodedValue) : null
+    } catch (e) {
+      decodedValue = null
+      parsedValue = null
+    }
 
     const resultObjWI = (!!guid &&
-                        storageValue !== undefined && storageValue !== null &&
-                        parsedValue && parsedValue[guid] && parsedValue[guid].wi)
+      storageValue !== undefined && storageValue !== null &&
+      parsedValue && parsedValue[guid] && parsedValue[guid].wi)
       ? Object.values(parsedValue[guid].wi)
       : []
 
-    const today = getToday()
-    let todayCwp = 0
-    let todayCwi = 0
-    if (campObj.wp && campObj.wp[today] && campObj.wp[today].tc !== 'undefined') {
-      todayCwp = campObj.wp[today].tc
+    const webPopupDeliveryPreferenceDeatils = {
+      wsc: campObj?.wsc ?? 0,
+      wfc: campObj?.wfc ?? {},
+      woc: campObj?.woc ?? {}
     }
+
+    const webNativeDisplayDeliveryPreferenceDeatils = {
+      wndsc: campObj?.wndsc ?? 0,
+      wndfc: campObj?.wndfc ?? {},
+      wndoc: campObj?.wndoc ?? {}
+    }
+
+    const today = getToday()
+    // let todayCwp = 0
+    let todayCwi = 0
     if (campObj.wi && campObj.wi[today] && campObj.wi[today].tc !== 'undefined') {
       todayCwi = campObj.wi[today].tc
     }
+
+    // CAMP Is generated here
     resultObj = {
-      wmp: todayCwp,
       wimp: todayCwi,
-      tlc: resultObjWP,
-      witlc: resultObjWI
+      witlc: resultObjWI,
+      ...webPopupDeliveryPreferenceDeatils,
+      ...webNativeDisplayDeliveryPreferenceDeatils
     }
     return resultObj
   }
@@ -177,7 +287,7 @@ export const isProfileValid = (profileObj, { logger }) => {
           delete profileObj[profileKey]
           continue
         }
-        if (profileKey === 'Gender' && !profileVal.match(/^M$|^F$/)) {
+        if (profileKey === 'Gender' && !profileVal.match(/\b(?:[mM](?:ale)?|[fF](?:emale)?|[oO](?:thers)?|[uU](?:nknown)?)\b/)) {
           valid = false
           logger.error(GENDER_ERROR)
         }
@@ -410,27 +520,275 @@ export const addToLocalProfileMap = (profileObj, override) => {
   }
 }
 
+/**
+ * Parses a nested key path into segments
+ * Handles paths like "Policy[0].price", "Policy[0].Insured[0].policyValue", "InsuranceDetails.Policy[1].Premium"
+ * @param {string} path - The nested key path
+ * @returns {Array} Array of path segments with type 'key' or 'array'
+ */
+export const parseNestedPath = (path) => {
+  const segments = []
+  let current = ''
+  let i = 0
+
+  while (i < path.length) {
+    if (path[i] === '[') {
+      if (current) {
+        segments.push({ type: 'key', value: current })
+        current = ''
+      }
+      i++
+      let index = ''
+      while (i < path.length && path[i] !== ']') {
+        index += path[i]
+        i++
+      }
+      if (i < path.length && path[i] === ']') {
+        segments.push({ type: 'array', index: parseInt(index, 10) })
+        i++
+      }
+    } else if (path[i] === '.') {
+      if (current) {
+        segments.push({ type: 'key', value: current })
+        current = ''
+      }
+      i++
+    } else {
+      current += path[i]
+      i++
+    }
+  }
+
+  if (current) {
+    segments.push({ type: 'key', value: current })
+  }
+
+  return segments
+}
+
+/**
+ * Gets a value from a nested path in an object
+ * @param {Object} obj - The object to navigate
+ * @param {Array} segments - Parsed path segments
+ * @returns {any} The value at the path, or undefined if path doesn't exist
+ */
+export const getNestedValue = (obj, segments) => {
+  let current = obj
+  for (const segment of segments) {
+    if (current == null) {
+      return undefined
+    }
+    if (segment.type === 'key') {
+      current = current[segment.value]
+    } else if (segment.type === 'array') {
+      if (!Array.isArray(current)) {
+        return undefined
+      }
+      current = current[segment.index]
+    }
+  }
+  return current
+}
+
+/**
+ * Sets a value at a nested path in an object, creating intermediate objects/arrays as needed
+ * @param {Object} obj - The object to modify
+ * @param {Array} segments - Parsed path segments
+ * @param {any} value - The value to set
+ * @returns {boolean} True if successful, false otherwise
+ */
+export const setNestedValue = (obj, segments, value) => {
+  let current = obj
+  const lastIndex = segments.length - 1
+
+  for (let i = 0; i < lastIndex; i++) {
+    const segment = segments[i]
+    const nextSegment = segments[i + 1]
+
+    if (segment.type === 'key') {
+      if (current[segment.value] == null) {
+        current[segment.value] = nextSegment?.type === 'array' ? [] : {}
+      }
+      current = current[segment.value]
+    } else if (segment.type === 'array') {
+      if (!Array.isArray(current)) {
+        return false
+      }
+      if (current[segment.index] == null) {
+        current[segment.index] = nextSegment?.type === 'array' ? [] : {}
+      }
+      current = current[segment.index]
+    }
+  }
+
+  const lastSegment = segments[lastIndex]
+  if (lastSegment.type === 'key') {
+    current[lastSegment.value] = value
+  } else if (lastSegment.type === 'array') {
+    if (!Array.isArray(current)) {
+      return false
+    }
+    current[lastSegment.index] = value
+  }
+
+  return true
+}
+
+/**
+ * Builds a nested object structure from path segments for sending to backend
+ * Creates structure like { Policy: [{ price: { $incr: 10 } }] }
+ * @param {Array} segments - Parsed path segments
+ * @param {string} command - The command (COMMAND_INCREMENT or COMMAND_DECREMENT)
+ * @param {number} value - The increment/decrement value
+ * @returns {Object} The nested object structure
+ */
+export const buildNestedCommandObject = (segments, command, value) => {
+  if (segments.length === 0) {
+    return {}
+  }
+
+  const buildStructure = (segIndex) => {
+    if (segIndex >= segments.length) {
+      return null
+    }
+
+    const segment = segments[segIndex]
+    const isLast = segIndex === segments.length - 1
+
+    if (segment.type === 'key') {
+      const next = isLast ? { [command]: value } : buildStructure(segIndex + 1)
+      return { [segment.value]: next }
+    } else if (segment.type === 'array') {
+      const arr = []
+      arr[segment.index] = isLast ? { [command]: value } : buildStructure(segIndex + 1)
+      return arr
+    }
+
+    return null
+  }
+
+  return buildStructure(0)
+}
+
+/**
+ * Removes a value at a nested path in an object
+ * @param {Object} obj - The object to modify
+ * @param {Array} segments - Parsed path segments
+ * @returns {boolean} True if successful, false otherwise
+ */
+export const removeNestedValue = (obj, segments) => {
+  if (segments.length === 0) {
+    return false
+  }
+
+  let current = obj
+  const lastIndex = segments.length - 1
+
+  // Navigate to the parent of the target
+  for (let i = 0; i < lastIndex; i++) {
+    const segment = segments[i]
+    if (segment.type === 'key') {
+      if (current[segment.value] == null) {
+        return false
+      }
+      current = current[segment.value]
+    } else if (segment.type === 'array') {
+      if (!Array.isArray(current)) {
+        return false
+      }
+      if (current[segment.index] == null) {
+        return false
+      }
+      current = current[segment.index]
+    }
+  }
+
+  // Remove the target value
+  const lastSegment = segments[lastIndex]
+  if (lastSegment.type === 'key') {
+    if (current.hasOwnProperty(lastSegment.value)) {
+      delete current[lastSegment.value]
+      return true
+    }
+  } else if (lastSegment.type === 'array') {
+    if (!Array.isArray(current)) {
+      return false
+    }
+    if (current[lastSegment.index] != null) {
+      // For arrays, we can either delete the element or set it to undefined
+      // Using splice to remove the element completely
+      current.splice(lastSegment.index, 1)
+      return true
+    }
+  }
+
+  return false
+}
+
+/**
+ * Builds a nested object structure for delete command
+ * Creates structure like { Policy: [{ price: { $delete: true } }] }
+ * @param {Array} segments - Parsed path segments
+ * @param {string} command - The command (COMMAND_DELETE)
+ * @param {any} value - The value to set (usually true for delete)
+ * @returns {Object} The nested object structure
+ */
+export const buildNestedDeleteObject = (segments, command, value) => {
+  if (segments.length === 0) {
+    return {}
+  }
+
+  const buildStructure = (segIndex) => {
+    if (segIndex >= segments.length) {
+      return null
+    }
+
+    const segment = segments[segIndex]
+    const isLast = segIndex === segments.length - 1
+
+    if (segment.type === 'key') {
+      const next = isLast ? { [command]: value } : buildStructure(segIndex + 1)
+      return { [segment.value]: next }
+    } else if (segment.type === 'array') {
+      const arr = []
+      arr[segment.index] = isLast ? { [command]: value } : buildStructure(segIndex + 1)
+      return arr
+    }
+
+    return null
+  }
+
+  return buildStructure(0)
+}
+
 export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
   if (campaignId != null && campaignId !== '-1') {
     if (StorageManager._isLocalStorageSupported()) {
       const campaignObj = getCampaignObject()
 
-      let sessionCampaignObj = campaignObj.wp[currentSessionId]
-      if (sessionCampaignObj == null) {
-        sessionCampaignObj = {}
-        campaignObj[currentSessionId] = sessionCampaignObj
-      }
-      sessionCampaignObj[campaignId] = 'dnd'
+      // CurrentSesion Id is the problem
+      campaignObj.dnd = [...new Set([
+        ...(campaignObj.dnd ?? []),
+        campaignId
+      ])]
       saveCampaignObject(campaignObj)
     }
   }
   if ($ct.campaignDivMap != null) {
     const divId = $ct.campaignDivMap[campaignId]
     if (divId != null) {
-      document.getElementById(divId).style.display = 'none'
+      document.getElementById(divId).remove()
       if (divId === 'intentPreview') {
         if (document.getElementById('intentOpacityDiv') != null) {
-          document.getElementById('intentOpacityDiv').style.display = 'none'
+          document.getElementById('intentOpacityDiv').remove()
+        }
+      } else if (divId === 'wizParDiv0') {
+        if (document.getElementById('intentOpacityDiv0') != null) {
+          document.getElementById('intentOpacityDiv0').remove()
+        }
+      } else if (divId === 'wizParDiv2') {
+        if (document.getElementById('intentOpacityDiv2') != null) {
+          document.getElementById('intentOpacityDiv2').remove()
         }
       }
     }

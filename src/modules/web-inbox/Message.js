@@ -5,7 +5,7 @@ export class Message extends HTMLElement {
     this.shadow = this.attachShadow({ mode: 'open' })
     this.config = config
     this.message = message
-    this.renderMessage(message)
+    message && this.renderMessage(message)
   }
 
   wrapper = null

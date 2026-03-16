@@ -1,0 +1,29 @@
+version: v1.0
+name: Build Pipeline
+agent:
+  machine:
+    type: s1-agent-t2-micro
+    os_image: ''
+blocks:
+  - name: Build Assets
+    task:
+      jobs:
+        - name: Checkout and Create Artifact
+          commands:
+            - checkout
+            - artifact push workflow clevertap.min.js
+            - artifact push workflow clevertap.js
+            - artifact push workflow clevertap.js.map
+            - | 
+              set -euo pipefail
+              npm install
+              npm run build_sw
+            - artifact push workflow sw_webpush.min.js
+            - artifact push workflow sw_webpush.js
+promotions:
+  - name: Production
+    pipeline_file: production-deploy.yml
+  - name: Staging
+    pipeline_file: staging-deploy.yml
+    auto_promote:
+      when: result = 'passed'
