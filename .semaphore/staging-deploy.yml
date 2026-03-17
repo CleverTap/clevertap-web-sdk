@@ -2,7 +2,7 @@ version: v1.0
 name: Staging-Deploy
 agent:
   machine:
-    type: s1-agent-t2-micro
+    type: s1-agent-c5-large
     os_image: ''
 blocks:
   - name: Deploy Assets
