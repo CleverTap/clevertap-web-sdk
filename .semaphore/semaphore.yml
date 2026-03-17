@@ -11,13 +11,14 @@ blocks:
         - name: Checkout and Create Artifact
           commands:
             - checkout
-            - artifact push workflow clevertap.min.js
-            - artifact push workflow clevertap.js
-            - artifact push workflow clevertap.js.map
-            - | 
+            - |
               set -euo pipefail
               npm install
+              npm run build
               npm run build_sw
+            - artifact push workflow dist/clevertap.min.js
+            - artifact push workflow dist/clevertap.js
+            - artifact push workflow dist/clevertap.js.map
             - artifact push workflow sw_webpush.min.js
             - artifact push workflow sw_webpush.js
 promotions:
