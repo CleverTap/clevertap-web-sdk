@@ -2,7 +2,7 @@ version: v1.0
 name: Staging-Deploy
 agent:
   machine:
-    type: s1-agent-t2-micro
+    type: s1-agent-c5-large
     os_image: ''
 blocks:
   - name: Deploy Assets
@@ -13,6 +13,11 @@ blocks:
             - artifact pull workflow clevertap.min.js 
             - artifact pull workflow clevertap.js 
             - artifact pull workflow clevertap.js.map
+            - artifact pull workflow dist/clevertap_cjs.min.js
+            - artifact pull workflow dist/clevertap_es.min.js
+            - artifact pull workflow dist/clevertap_amd.min.js
+            - artifact pull workflow dist/clevertap_iife.min.js
+            - artifact pull workflow dist/clevertap_system.min.js
             - artifact pull workflow sw_webpush.js
             - artifact pull workflow sw_webpush.min.js
             - |
@@ -28,14 +33,24 @@ blocks:
               aws s3 cp ./clevertap.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
               aws s3 cp ./clevertap.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
               aws s3 cp ./clevertap.js.map s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./dist/clevertap_cjs.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./dist/clevertap_es.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./dist/clevertap_amd.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./dist/clevertap_iife.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./dist/clevertap_system.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
               aws s3 cp ./sw_webpush.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
               aws s3 cp ./sw_webpush.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
-              rm -r clevertap.min.js clevertap.js clevertap.js.map sw_webpush.min.js sw_webpush.js
+              rm -rf clevertap.min.js clevertap.js clevertap.js.map dist sw_webpush.min.js sw_webpush.js
               aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap.js
               aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap.js.map
+              aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap.min.js
+              aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap_cjs.min.js
+              aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap_es.min.js
+              aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap_amd.min.js
+              aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap_iife.min.js
+              aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap_system.min.js
               aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/sw_webpush.min.js
               aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/sw_webpush.js
-              aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/clevertap.min.js
               deactivate
       secrets:
         - name: ProductionAccountAwsCredentials 
