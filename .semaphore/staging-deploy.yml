@@ -13,11 +13,11 @@ blocks:
             - artifact pull workflow clevertap.min.js 
             - artifact pull workflow clevertap.js 
             - artifact pull workflow clevertap.js.map
-            - artifact pull workflow dist/clevertap_cjs.min.js
-            - artifact pull workflow dist/clevertap_es.min.js
-            - artifact pull workflow dist/clevertap_amd.min.js
-            - artifact pull workflow dist/clevertap_iife.min.js
-            - artifact pull workflow dist/clevertap_system.min.js
+            - artifact pull workflow clevertap_cjs.min.js
+            - artifact pull workflow clevertap_es.min.js
+            - artifact pull workflow clevertap_amd.min.js
+            - artifact pull workflow clevertap_iife.min.js
+            - artifact pull workflow clevertap_system.min.js
             - artifact pull workflow sw_webpush.js
             - artifact pull workflow sw_webpush.min.js
             - |
@@ -33,11 +33,11 @@ blocks:
               aws s3 cp ./clevertap.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
               aws s3 cp ./clevertap.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
               aws s3 cp ./clevertap.js.map s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
-              aws s3 cp ./dist/clevertap_cjs.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
-              aws s3 cp ./dist/clevertap_es.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
-              aws s3 cp ./dist/clevertap_amd.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
-              aws s3 cp ./dist/clevertap_iife.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
-              aws s3 cp ./dist/clevertap_system.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./clevertap_cjs.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./clevertap_es.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./clevertap_amd.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./clevertap_iife.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
+              aws s3 cp ./clevertap_system.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
               aws s3 cp ./sw_webpush.min.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
               aws s3 cp ./sw_webpush.js s3://static.wizrocket.com/staging/${SEMAPHORE_GIT_WORKING_BRANCH}/js/ --acl public-read
               rm -rf clevertap.min.js clevertap.js clevertap.js.map dist sw_webpush.min.js sw_webpush.js
