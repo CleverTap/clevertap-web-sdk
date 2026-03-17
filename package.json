@@ -2,7 +2,10 @@
   "name": "clevertap-web-sdk",
   "version": "2.6.0",
   "description": "",
-  "main": "clevertap.js",
+  "main": "dist/clevertap.js",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "MODE=WEB rollup --config rollup.config.js",
     "build_sw": "MODE=SERVICE_WORKER rollup --config rollup.config.js",
