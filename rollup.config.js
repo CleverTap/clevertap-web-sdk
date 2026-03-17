@@ -35,6 +35,12 @@ const getOutput = (mode) => {
     ]
   }
 
+  const baseOutput = {
+    name: 'clevertap',
+    sourcemap: true,
+    plugins: [terser()]
+  }
+
   return [
     {
       name: 'clevertap',
@@ -47,6 +53,32 @@ const getOutput = (mode) => {
       file: 'clevertap.min.js',
       format: 'umd',
       plugins: [terser()]
+    },
+    {
+      ...baseOutput,
+      file: './dist/clevertap_cjs.min.js',
+      format: 'cjs',
+      exports: 'auto'
+    },
+    {
+      ...baseOutput,
+      file: './dist/clevertap_es.min.js',
+      format: 'es'
+    },
+    {
+      ...baseOutput,
+      file: './dist/clevertap_amd.min.js',
+      format: 'amd'
+    },
+    {
+      ...baseOutput,
+      file: './dist/clevertap_iife.min.js',
+      format: 'iife'
+    },
+    {
+      ...baseOutput,
+      file: './dist/clevertap_system.min.js',
+      format: 'system'
     }
   ]
 }
