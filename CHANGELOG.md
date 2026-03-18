@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.6.0] 18th Mar 2026 
+- Added support for CommonJS, ES, AMD, IIFE and SystemJS build formats.
+
 ## [2.5.5] 26th Feb 2026 
 - Added support for remote interaction for Web Popups, Native Display and Inbox on TV platforms. 
 
