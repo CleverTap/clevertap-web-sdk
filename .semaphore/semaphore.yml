@@ -2,7 +2,7 @@ version: v1.0
 name: Build Pipeline
 agent:
   machine:
-    type: s1-agent-t2-micro
+    type: s1-agent-c5-large
     os_image: ''
 blocks:
   - name: Build Assets
@@ -15,10 +15,17 @@ blocks:
               set -euo pipefail
               npm install
               npm run build
+            - artifact push workflow clevertap.min.js
+            - artifact push workflow clevertap.js
+            - artifact push workflow clevertap.js.map
+            - artifact push workflow dist/clevertap_cjs.min.js
+            - artifact push workflow dist/clevertap_es.min.js
+            - artifact push workflow dist/clevertap_amd.min.js
+            - artifact push workflow dist/clevertap_iife.min.js
+            - artifact push workflow dist/clevertap_system.min.js
+            - |
+              set -euo pipefail
               npm run build_sw
-            - artifact push workflow dist/clevertap.min.js
-            - artifact push workflow dist/clevertap.js
-            - artifact push workflow dist/clevertap.js.map
             - artifact push workflow sw_webpush.min.js
             - artifact push workflow sw_webpush.js
 promotions:
