@@ -11,48 +11,41 @@ import commonjs from '@rollup/plugin-commonjs'
  * Returns the input file path
  * @param {('SERVICE_WORKER' | 'WEB')} mode
  */
-const getInput = (mode) => {
-  if (mode === 'SERVICE_WORKER') {
-    return 'sw_webpush.js'
-  }
-
-  return 'src/main.js'
-}
+const getInput = (mode) => (mode === 'SERVICE_WORKER' ? 'sw_webpush.js' : 'src/main.js')
 
 /**
  * returns the output object of the build config
  * @param {('SERVICE_WORKER' | 'WEB')} mode
  */
 const getOutput = (mode) => {
+  const baseOutput = {
+    name: 'clevertap',
+    plugins: [terser()]
+  }
+
   if (mode === 'SERVICE_WORKER') {
     return [
       {
+        ...baseOutput,
         name: 'sw_webpush',
         file: 'sw_webpush.min.js',
-        format: 'umd',
-        plugins: [terser()]
+        format: 'umd'
       }
     ]
   }
 
-  const baseOutput = {
-    name: 'clevertap',
-    sourcemap: true,
-    plugins: [terser()]
-  }
-
-  return [
+  const outputs = [
     {
-      name: 'clevertap',
-      file: 'clevertap.js',
+      ...baseOutput,
+      file: './dist/clevertap.js',
       format: 'umd',
       sourcemap: true
     },
     {
-      name: 'clevertap',
-      file: 'clevertap.min.js',
+      ...baseOutput,
+      file: './dist/clevertap.min.js',
       format: 'umd',
-      plugins: [terser()]
+      exports: 'auto'
     },
     {
       ...baseOutput,
@@ -81,6 +74,8 @@ const getOutput = (mode) => {
       format: 'system'
     }
   ]
+
+  return outputs
 }
 
 /**
