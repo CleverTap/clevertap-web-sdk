@@ -761,6 +761,22 @@ export const buildNestedDeleteObject = (segments, command, value) => {
   return buildStructure(0)
 }
 
+const removeOverlayForDiv = (divId) => {
+  let opacityDivId = null
+  if (divId === 'intentPreview') {
+    opacityDivId = 'intentOpacityDiv'
+  } else if (divId.startsWith('wizParDiv')) {
+    const layout = divId.slice('wizParDiv'.length)
+    opacityDivId = 'intentOpacityDiv' + layout
+  }
+  if (opacityDivId != null) {
+    const opDiv = document.getElementById(opacityDivId)
+    if (opDiv != null) {
+      opDiv.remove()
+    }
+  }
+}
+
 export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
   if (campaignId != null && campaignId !== '-1') {
     if (StorageManager._isLocalStorageSupported()) {
@@ -778,20 +794,31 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     const divId = $ct.campaignDivMap[campaignId]
     if (divId != null) {
       document.getElementById(divId).remove()
-      if (divId === 'intentPreview') {
-        if (document.getElementById('intentOpacityDiv') != null) {
-          document.getElementById('intentOpacityDiv').remove()
-        }
-      } else if (divId === 'wizParDiv0') {
-        if (document.getElementById('intentOpacityDiv0') != null) {
-          document.getElementById('intentOpacityDiv0').remove()
-        }
-      } else if (divId === 'wizParDiv2') {
-        if (document.getElementById('intentOpacityDiv2') != null) {
-          document.getElementById('intentOpacityDiv2').remove()
-        }
-      }
+      removeOverlayForDiv(divId)
     }
+  }
+}
+
+/**
+ * Removes all active campaign popups from the DOM without adding them to the DND list.
+ * Used on SPA route changes so popups don't persist across pages,
+ * but can re-trigger if the user navigates back.
+ */
+export const dismissActiveCampaigns = () => {
+  if ($ct.campaignDivMap == null) {
+    return
+  }
+  const campaignIds = Object.keys($ct.campaignDivMap)
+  for (const campaignId of campaignIds) {
+    const divId = $ct.campaignDivMap[campaignId]
+    if (divId != null) {
+      const el = document.getElementById(divId)
+      if (el != null) {
+        el.remove()
+      }
+      removeOverlayForDiv(divId)
+    }
+    delete $ct.campaignDivMap[campaignId]
   }
 }
 

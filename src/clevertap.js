@@ -45,7 +45,7 @@ import {
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
-import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe } from './util/clevertap'
+import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, dismissActiveCampaigns } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
@@ -934,6 +934,12 @@ export default class CleverTap {
   }
 
   pageChanged () {
+    // Dismiss active campaign popups on SPA route change
+    // so they don't persist across client-side navigations
+    if (this.#isSpa) {
+      dismissActiveCampaigns()
+    }
+
     const currLocation = window.location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
     // -- update page count
