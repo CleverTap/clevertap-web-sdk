@@ -795,6 +795,39 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
   }
 }
 
+/**
+ * Removes all active campaign popups from the DOM without adding them to the DND list.
+ * Used on SPA route changes so popups don't persist across pages,
+ * but can re-trigger if the user navigates back.
+ */
+export const dismissActiveCampaigns = () => {
+  if ($ct.campaignDivMap == null) {
+    return
+  }
+  const campaignIds = Object.keys($ct.campaignDivMap)
+  for (const campaignId of campaignIds) {
+    const divId = $ct.campaignDivMap[campaignId]
+    if (divId != null) {
+      const el = document.getElementById(divId)
+      if (el != null) {
+        el.remove()
+      }
+      // Remove associated opacity overlays
+      if (divId === 'intentPreview') {
+        const opDiv = document.getElementById('intentOpacityDiv')
+        if (opDiv != null) opDiv.remove()
+      } else if (divId === 'wizParDiv0') {
+        const opDiv = document.getElementById('intentOpacityDiv0')
+        if (opDiv != null) opDiv.remove()
+      } else if (divId === 'wizParDiv2') {
+        const opDiv = document.getElementById('intentOpacityDiv2')
+        if (opDiv != null) opDiv.remove()
+      }
+    }
+    delete $ct.campaignDivMap[campaignId]
+  }
+}
+
 export const arp = (jsonMap) => {
   // For unregister calls dont set arp in LS
   if (jsonMap.skipResARP != null && jsonMap.skipResARP) {
