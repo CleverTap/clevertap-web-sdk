@@ -826,6 +826,16 @@ describe('util/clevertap', function () {
       expect(document.getElementById('intentOpacityDiv2')).toBeNull()
     })
 
+    test('should remove wizParDiv1 popup and its opacity overlay', () => {
+      $ct.campaignDivMap.camp1 = 'wizParDiv1'
+      document.body.innerHTML = '<div id="wizParDiv1"></div><div id="intentOpacityDiv1"></div>'
+
+      dismissActiveCampaigns()
+
+      expect(document.getElementById('wizParDiv1')).toBeNull()
+      expect(document.getElementById('intentOpacityDiv1')).toBeNull()
+    })
+
     test('should NOT add campaigns to DND list', () => {
       StorageManager._isLocalStorageSupported.mockReturnValue(true)
       $ct.campaignDivMap.camp1 = 'wizParDiv0'
