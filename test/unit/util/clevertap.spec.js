@@ -1,6 +1,8 @@
 import 'regenerator-runtime/runtime'
 import {
   addToLocalProfileMap,
+  closeIframe,
+  dismissActiveCampaigns,
   getCampaignObject,
   getCampaignObjForLc,
   isProfileValid,
@@ -714,6 +716,145 @@ describe('util/clevertap', function () {
         expect($ct.globalProfileMap).toMatchObject(expectedObj)
         expect(StorageManager.saveToLSorCookie).toHaveBeenCalledWith(PR_COOKIE, expect.objectContaining(expectedObj))
       })
+    })
+  })
+
+  describe('closeIframe', () => {
+    beforeEach(() => {
+      $ct.campaignDivMap = {}
+    })
+
+    test('should add campaign to DND list when localStorage is supported', () => {
+      StorageManager._isLocalStorageSupported.mockReturnValue(true)
+      StorageManager.read.mockReturnValue(encodeURIComponent(JSON.stringify({})))
+      $ct.campaignDivMap.camp1 = 'wizParDiv0'
+      document.body.innerHTML = '<div id="wizParDiv0"></div>'
+
+      closeIframe('camp1', null, 'session1')
+
+      expect(StorageManager.save).toHaveBeenCalled()
+    })
+
+    test('should remove popup div from DOM', () => {
+      StorageManager._isLocalStorageSupported.mockReturnValue(false)
+      $ct.campaignDivMap.camp1 = 'wizParDiv0'
+      document.body.innerHTML = '<div id="wizParDiv0"></div>'
+
+      closeIframe('camp1', null, null)
+
+      expect(document.getElementById('wizParDiv0')).toBeNull()
+    })
+
+    test('should remove opacity overlay for intentPreview', () => {
+      StorageManager._isLocalStorageSupported.mockReturnValue(false)
+      $ct.campaignDivMap.camp1 = 'intentPreview'
+      document.body.innerHTML = '<div id="intentPreview"></div><div id="intentOpacityDiv"></div>'
+
+      closeIframe('camp1', null, null)
+
+      expect(document.getElementById('intentPreview')).toBeNull()
+      expect(document.getElementById('intentOpacityDiv')).toBeNull()
+    })
+  })
+
+  describe('dismissActiveCampaigns', () => {
+    beforeEach(() => {
+      $ct.campaignDivMap = {}
+      document.body.innerHTML = ''
+    })
+
+    test('should do nothing when campaignDivMap is null', () => {
+      $ct.campaignDivMap = null
+      dismissActiveCampaigns()
+      // Should not throw
+    })
+
+    test('should do nothing when campaignDivMap is empty', () => {
+      dismissActiveCampaigns()
+      expect(Object.keys($ct.campaignDivMap)).toHaveLength(0)
+    })
+
+    test('should remove a single popup from DOM', () => {
+      $ct.campaignDivMap.camp1 = 'wizParDiv0'
+      document.body.innerHTML = '<div id="wizParDiv0"></div>'
+
+      dismissActiveCampaigns()
+
+      expect(document.getElementById('wizParDiv0')).toBeNull()
+      expect($ct.campaignDivMap.camp1).toBeUndefined()
+    })
+
+    test('should remove multiple popups from DOM', () => {
+      $ct.campaignDivMap.camp1 = 'wizParDiv0'
+      $ct.campaignDivMap.camp2 = 'wizParDiv2'
+      document.body.innerHTML = '<div id="wizParDiv0"></div><div id="wizParDiv2"></div>'
+
+      dismissActiveCampaigns()
+
+      expect(document.getElementById('wizParDiv0')).toBeNull()
+      expect(document.getElementById('wizParDiv2')).toBeNull()
+      expect(Object.keys($ct.campaignDivMap)).toHaveLength(0)
+    })
+
+    test('should remove intentPreview popup and its opacity overlay', () => {
+      $ct.campaignDivMap.camp1 = 'intentPreview'
+      document.body.innerHTML = '<div id="intentPreview"></div><div id="intentOpacityDiv"></div>'
+
+      dismissActiveCampaigns()
+
+      expect(document.getElementById('intentPreview')).toBeNull()
+      expect(document.getElementById('intentOpacityDiv')).toBeNull()
+    })
+
+    test('should remove wizParDiv0 popup and its opacity overlay', () => {
+      $ct.campaignDivMap.camp1 = 'wizParDiv0'
+      document.body.innerHTML = '<div id="wizParDiv0"></div><div id="intentOpacityDiv0"></div>'
+
+      dismissActiveCampaigns()
+
+      expect(document.getElementById('wizParDiv0')).toBeNull()
+      expect(document.getElementById('intentOpacityDiv0')).toBeNull()
+    })
+
+    test('should remove wizParDiv2 popup and its opacity overlay', () => {
+      $ct.campaignDivMap.camp1 = 'wizParDiv2'
+      document.body.innerHTML = '<div id="wizParDiv2"></div><div id="intentOpacityDiv2"></div>'
+
+      dismissActiveCampaigns()
+
+      expect(document.getElementById('wizParDiv2')).toBeNull()
+      expect(document.getElementById('intentOpacityDiv2')).toBeNull()
+    })
+
+    test('should NOT add campaigns to DND list', () => {
+      StorageManager._isLocalStorageSupported.mockReturnValue(true)
+      $ct.campaignDivMap.camp1 = 'wizParDiv0'
+      document.body.innerHTML = '<div id="wizParDiv0"></div>'
+
+      dismissActiveCampaigns()
+
+      expect(StorageManager.save).not.toHaveBeenCalled()
+    })
+
+    test('should handle gracefully when popup div is already removed from DOM', () => {
+      $ct.campaignDivMap.camp1 = 'wizParDiv0'
+      // No matching DOM element
+      document.body.innerHTML = ''
+
+      dismissActiveCampaigns()
+
+      expect($ct.campaignDivMap.camp1).toBeUndefined()
+    })
+
+    test('should clean up campaignDivMap entries after removal', () => {
+      $ct.campaignDivMap.camp1 = 'wizParDiv0'
+      $ct.campaignDivMap.camp2 = 'intentPreview'
+      $ct.campaignDivMap.camp3 = 'wizParDiv2'
+      document.body.innerHTML = '<div id="wizParDiv0"></div><div id="intentPreview"></div><div id="wizParDiv2"></div>'
+
+      dismissActiveCampaigns()
+
+      expect(Object.keys($ct.campaignDivMap)).toHaveLength(0)
     })
   })
 })
