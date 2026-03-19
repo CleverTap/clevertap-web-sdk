@@ -761,6 +761,23 @@ export const buildNestedDeleteObject = (segments, command, value) => {
   return buildStructure(0)
 }
 
+const removeOverlayForDiv = (divId) => {
+  let opacityDivId = null
+  if (divId === 'intentPreview') {
+    opacityDivId = 'intentOpacityDiv'
+  } else if (divId === 'wizParDiv0') {
+    opacityDivId = 'intentOpacityDiv0'
+  } else if (divId === 'wizParDiv2') {
+    opacityDivId = 'intentOpacityDiv2'
+  }
+  if (opacityDivId != null) {
+    const opDiv = document.getElementById(opacityDivId)
+    if (opDiv != null) {
+      opDiv.remove()
+    }
+  }
+}
+
 export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
   if (campaignId != null && campaignId !== '-1') {
     if (StorageManager._isLocalStorageSupported()) {
@@ -778,19 +795,7 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     const divId = $ct.campaignDivMap[campaignId]
     if (divId != null) {
       document.getElementById(divId).remove()
-      if (divId === 'intentPreview') {
-        if (document.getElementById('intentOpacityDiv') != null) {
-          document.getElementById('intentOpacityDiv').remove()
-        }
-      } else if (divId === 'wizParDiv0') {
-        if (document.getElementById('intentOpacityDiv0') != null) {
-          document.getElementById('intentOpacityDiv0').remove()
-        }
-      } else if (divId === 'wizParDiv2') {
-        if (document.getElementById('intentOpacityDiv2') != null) {
-          document.getElementById('intentOpacityDiv2').remove()
-        }
-      }
+      removeOverlayForDiv(divId)
     }
   }
 }
@@ -812,17 +817,7 @@ export const dismissActiveCampaigns = () => {
       if (el != null) {
         el.remove()
       }
-      // Remove associated opacity overlays
-      if (divId === 'intentPreview') {
-        const opDiv = document.getElementById('intentOpacityDiv')
-        if (opDiv != null) opDiv.remove()
-      } else if (divId === 'wizParDiv0') {
-        const opDiv = document.getElementById('intentOpacityDiv0')
-        if (opDiv != null) opDiv.remove()
-      } else if (divId === 'wizParDiv2') {
-        const opDiv = document.getElementById('intentOpacityDiv2')
-        if (opDiv != null) opDiv.remove()
-      }
+      removeOverlayForDiv(divId)
     }
     delete $ct.campaignDivMap[campaignId]
   }
