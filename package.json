@@ -55,6 +55,7 @@
     "rollup-plugin-terser": "^7.0.2"
   },
   "dependencies": {
+    "core-js": "^3.49.0",
     "crypto-js": "^4.2.0"
   }
 }

@@ -112,10 +112,10 @@ const getPlugins = (mode) => {
     replace({
       preventAssignment: true,
       delimiters: ["", ""],
-      $$PACKAGE_VERSION$$: version,
       values: {
-          'process.env.NODE_ENV': JSON.stringify('production'), // ✅ Replace with actual values
-          'process.env.SOME_VAR': JSON.stringify('custom_value'), // ✅ Add more if needed
+        $$PACKAGE_VERSION$$: version,
+        'process.env.NODE_ENV': JSON.stringify('production'), // ✅ Replace with actual values
+        // 'process.env.SOME_VAR': JSON.stringify('custom_value'), // ✅ Add more if needed
       },
     }),
 
