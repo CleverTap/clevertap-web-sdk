@@ -34,6 +34,17 @@ const getOutput = (mode) => {
     ]
   }
 
+  if (mode === 'WEB_LEGACY') {
+    return [
+      {
+        ...baseOutput,
+        file: './dist/clevertap_legacy.min.js',
+        format: 'umd',
+        sourcemap: true
+      }
+    ]
+  }
+
   const outputs = [
     {
       ...baseOutput,
@@ -84,23 +95,69 @@ const getOutput = (mode) => {
  */
 const getPlugins = (mode) => {
   return [
-    resolve(),
+    mode === "WEB_LEGACY"
+      ? resolve({
+          browser: true,
+          preferBuiltins: false, // ✅ Prevents Rollup from using Node.js built-ins
+          mainFields: ["module", "main"], // ✅ Ensures CommonJS resolution before ESM
+          extensions: [".mjs", ".js", ".json", ".ts"],
+        })
+      : resolve(),
     mode === 'WEB' && commonjs(),
     sourcemaps(),
     eslint({
       fix: true,
-      throwOnError: true
+      throwOnError: true,
     }),
     replace({
       preventAssignment: true,
-      delimiters: ['', ''],
-      $$PACKAGE_VERSION$$: version
+      delimiters: ["", ""],
+      $$PACKAGE_VERSION$$: version,
+      values: {
+          'process.env.NODE_ENV': JSON.stringify('production'), // ✅ Replace with actual values
+          'process.env.SOME_VAR': JSON.stringify('custom_value'), // ✅ Add more if needed
+      },
     }),
-    babel({
-      babelHelpers: 'bundled'
-    })
-  ]
-}
+
+    mode === "WEB_LEGACY" &&
+      commonjs({
+        include: /node_modules/,
+        transformMixedEsModules: true, // ✅ Allows Rollup to handle ESM & CJS in node_modules
+        requireReturnsDefault: "auto", // ✅ Helps with default imports from CJS
+      }),
+
+    babel(
+      mode === "WEB_LEGACY"
+        ? {
+            babelHelpers: "runtime",
+            presets: [
+              [
+                "@babel/preset-env",
+                {
+                  targets: "chrome 39, safari 10",
+                  useBuiltIns: "entry",
+                  corejs: 3,
+                  modules: false,
+                },
+              ],
+            ],
+            // order does not change must be important
+            plugins: [
+              "@babel/plugin-proposal-class-properties",
+              "@babel/plugin-proposal-private-methods",
+              "@babel/plugin-transform-classes",
+              ["@babel/plugin-transform-runtime", { useESModules: true }],
+              "@babel/plugin-transform-optional-chaining",
+            ],
+            include: ["node_modules/**", "src/**"],
+            exclude: [],
+            babelrc: false,
+            configFile: false, // Ensure Babel doesn't load any external config
+          }
+        : { babelHelpers: "bundled" },
+    ),
+  ];
+};
 
 const config = () => {
   const mode = process.env.MODE
