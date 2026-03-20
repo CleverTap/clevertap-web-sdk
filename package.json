@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "build": "MODE=WEB rollup --config rollup.config.js",
+    "build:legacy": "MODE=WEB_LEGACY rollup --config rollup.config.js",
     "build_sw": "MODE=SERVICE_WORKER rollup --config rollup.config.js",
     "test": "eslint --fix test && jest",
     "test:coverage": "rm -rf coverage && jest --coverage"
@@ -29,13 +30,15 @@
   "devDependencies": {
     "@babel/core": "^7.11.4",
     "@babel/eslint-parser": "^7.12.1",
-    "@babel/plugin-proposal-class-properties": "^7.10.4",
-    "@babel/plugin-proposal-private-methods": "^7.12.1",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/plugin-proposal-private-methods": "^7.18.6",
+    "@babel/plugin-transform-classes": "^7.28.6",
+    "@babel/plugin-transform-optional-chaining": "^7.28.6",
     "@babel/plugin-transform-runtime": "^7.23.7",
     "@babel/preset-env": "^7.11.0",
     "@rollup/plugin-babel": "^5.2.0",
-    "@rollup/plugin-commonjs": "^28.0.2",
-    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-commonjs": "^28.0.9",
+    "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-replace": "^2.4.2",
     "babel-jest": "^26.6.3",
     "eslint": "^7.8.1",
@@ -52,6 +55,7 @@
     "rollup-plugin-terser": "^7.0.2"
   },
   "dependencies": {
+    "core-js": "^3.49.0",
     "crypto-js": "^4.2.0"
   }
 }
