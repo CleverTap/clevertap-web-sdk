@@ -435,17 +435,26 @@ export const commonCampaignUtils = {
     return renderPopUpImageOnly(targetingMsgJson, CampaignContext.session)
   },
 
-  // Checks if a campaign is already rendered in an iframe
-  isExistingCampaign (campaignId) {
-    const testIframe =
-      document.getElementById('wiz-iframe-intent') ||
-      document.getElementById('wiz-iframe')
-    if (testIframe) {
-      const iframeDocument =
-        testIframe.contentDocument || testIframe.contentWindow.document
-      return iframeDocument.documentElement.innerHTML.includes(campaignId)
+  handlePIP (targetingMsgJson) {
+    const divId = 'wizPIPDiv'
+    // Skips if frequency limits are exceeded
+    if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
+      return
     }
-    return false
+    // Removes existing popup if spam control is active
+    if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
+      const element = document.getElementById(divId)
+      element.remove()
+    }
+    const msgDiv = document.createElement('div')
+    msgDiv.id = divId
+    document.body.appendChild(msgDiv)
+    // Registers custom element for PIP if not already defined
+    if (customElements.get('ct-web-popup-pip') === undefined) {
+      customElements.define('ct-web-popup-pip', CTWebPopupPIP)
+    }
+    // Renders the PIP
+    return renderPIP(targetingMsgJson, CampaignContext.session)
   },
 
   // Creates and renders campaign templates (e.g., exit intent, banners, popups)
@@ -461,6 +470,10 @@ export const commonCampaignUtils = {
     if (displayObj.layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY) {
       // Handling Web Popup Image Only
       this.handleImageOnlyPopup(targetingMsgJson)
+      return
+    }
+    if (displayObj.layout === WEB_POPUP_TEMPLATES.PIP) {
+      this.handlePIP(targetingMsgJson)
       return
     }
 
