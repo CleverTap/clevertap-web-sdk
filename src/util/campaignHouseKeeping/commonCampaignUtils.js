@@ -1,4 +1,4 @@
-import { renderAdvancedBuilder, renderPopUpImageOnly } from '../campaignRender/webPopup.js'
+import { renderAdvancedBuilder, renderPopUpImageOnly, renderPIP } from '../campaignRender/webPopup.js'
 import {
   addDeliveryPreferenceDetails,
   addToLocalProfileMap,
@@ -26,6 +26,7 @@ import { getNow, getToday } from '../datetime.js'
 import { StorageManager, $ct } from '../storage.js'
 import RequestDispatcher from '../requestDispatcher.js'
 import { CTWebPopupImageOnly } from '../web-popupImageonly/popupImageonly.js'
+import { CTWebPopupPIP } from '../web-popupPIP/popupPIP.js'
 import {
   checkAndRegisterWebInboxElements,
   initializeWebInbox,
