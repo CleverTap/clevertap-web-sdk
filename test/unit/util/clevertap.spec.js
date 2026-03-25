@@ -849,6 +849,15 @@ describe('util/clevertap', function () {
       expect(document.getElementById('wzrkImageOnlyDiv')).toBeNull()
     })
 
+    test('should remove wizAdvBuilder (Advanced Builder) popup', () => {
+      $ct.campaignDivMap.camp1 = 'wizAdvBuilder'
+      document.body.innerHTML = '<div id="wizAdvBuilder"></div>'
+
+      dismissActiveCampaigns()
+
+      expect(document.getElementById('wizAdvBuilder')).toBeNull()
+    })
+
     test('should NOT add campaigns to DND list', () => {
       StorageManager._isLocalStorageSupported.mockReturnValue(true)
       $ct.campaignDivMap.camp1 = 'wizParDiv0'

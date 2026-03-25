@@ -776,14 +776,15 @@ function removePopupContainerAndOpacity (containerId, opacityId) {
 }
 
 /**
- * Removes Box (`wizParDiv0`), Banner (`wizParDiv2`), and Image Only (`wzrkImageOnlyDiv`) from the DOM.
+ * Removes Box (`wizParDiv0`), Banner (`wizParDiv2`), Image Only (`wzrkImageOnlyDiv`), and Advanced Builder (`wizAdvBuilder`) from the DOM.
  * Opacity layers follow the same pattern as {@link closeIframe}.
  * Does not update DND or `campaignDivMap` (unlike {@link closeIframe}) so the same campaign can show again when the URL matches.
  */
 const DISMISS_ACTIVE_CAMPAIGN_TARGETS = [
   ['wizParDiv0', 'intentOpacityDiv0'],
   ['wizParDiv2', 'intentOpacityDiv2'],
-  ['wzrkImageOnlyDiv', null]
+  ['wzrkImageOnlyDiv', null],
+  ['wizAdvBuilder', null]
 ]
 
 export const dismissActiveCampaigns = () => {
