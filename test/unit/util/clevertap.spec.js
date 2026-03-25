@@ -781,7 +781,7 @@ describe('util/clevertap', function () {
       dismissActiveCampaigns()
 
       expect(document.getElementById('wizParDiv0')).toBeNull()
-      expect($ct.campaignDivMap.camp1).toBeUndefined()
+      expect($ct.campaignDivMap.camp1).toBe('wizParDiv0')
     })
 
     test('should remove multiple popups from DOM', () => {
@@ -793,17 +793,20 @@ describe('util/clevertap', function () {
 
       expect(document.getElementById('wizParDiv0')).toBeNull()
       expect(document.getElementById('wizParDiv2')).toBeNull()
-      expect(Object.keys($ct.campaignDivMap)).toHaveLength(0)
+      expect($ct.campaignDivMap.camp1).toBe('wizParDiv0')
+      expect($ct.campaignDivMap.camp2).toBe('wizParDiv2')
+      expect(Object.keys($ct.campaignDivMap)).toHaveLength(2)
     })
 
-    test('should remove intentPreview popup and its opacity overlay', () => {
+    test('should not dismiss exit-intent (intentPreview) popups', () => {
       $ct.campaignDivMap.camp1 = 'intentPreview'
       document.body.innerHTML = '<div id="intentPreview"></div><div id="intentOpacityDiv"></div>'
 
       dismissActiveCampaigns()
 
-      expect(document.getElementById('intentPreview')).toBeNull()
-      expect(document.getElementById('intentOpacityDiv')).toBeNull()
+      expect(document.getElementById('intentPreview')).not.toBeNull()
+      expect(document.getElementById('intentOpacityDiv')).not.toBeNull()
+      expect($ct.campaignDivMap.camp1).toBe('intentPreview')
     })
 
     test('should remove wizParDiv0 popup and its opacity overlay', () => {
@@ -826,14 +829,24 @@ describe('util/clevertap', function () {
       expect(document.getElementById('intentOpacityDiv2')).toBeNull()
     })
 
-    test('should remove wizParDiv1 popup and its opacity overlay', () => {
+    test('should not dismiss interstitial (wizParDiv1) popups', () => {
       $ct.campaignDivMap.camp1 = 'wizParDiv1'
       document.body.innerHTML = '<div id="wizParDiv1"></div><div id="intentOpacityDiv1"></div>'
 
       dismissActiveCampaigns()
 
-      expect(document.getElementById('wizParDiv1')).toBeNull()
-      expect(document.getElementById('intentOpacityDiv1')).toBeNull()
+      expect(document.getElementById('wizParDiv1')).not.toBeNull()
+      expect(document.getElementById('intentOpacityDiv1')).not.toBeNull()
+      expect($ct.campaignDivMap.camp1).toBe('wizParDiv1')
+    })
+
+    test('should remove wzrkImageOnlyDiv even when not in campaignDivMap', () => {
+      $ct.campaignDivMap = {}
+      document.body.innerHTML = '<div id="wzrkImageOnlyDiv"></div>'
+
+      dismissActiveCampaigns()
+
+      expect(document.getElementById('wzrkImageOnlyDiv')).toBeNull()
     })
 
     test('should NOT add campaigns to DND list', () => {
@@ -853,18 +866,24 @@ describe('util/clevertap', function () {
 
       dismissActiveCampaigns()
 
-      expect($ct.campaignDivMap.camp1).toBeUndefined()
+      expect($ct.campaignDivMap.camp1).toBe('wizParDiv0')
     })
 
-    test('should clean up campaignDivMap entries after removal', () => {
+    test('should not modify campaignDivMap (so campaign can render again on URL match)', () => {
       $ct.campaignDivMap.camp1 = 'wizParDiv0'
       $ct.campaignDivMap.camp2 = 'intentPreview'
       $ct.campaignDivMap.camp3 = 'wizParDiv2'
-      document.body.innerHTML = '<div id="wizParDiv0"></div><div id="intentPreview"></div><div id="wizParDiv2"></div>'
+      $ct.campaignDivMap.camp4 = 'wzrkImageOnlyDiv'
+      document.body.innerHTML =
+        '<div id="wizParDiv0"></div><div id="intentPreview"></div><div id="wizParDiv2"></div><div id="wzrkImageOnlyDiv"></div>'
 
       dismissActiveCampaigns()
 
-      expect(Object.keys($ct.campaignDivMap)).toHaveLength(0)
+      expect($ct.campaignDivMap.camp1).toBe('wizParDiv0')
+      expect($ct.campaignDivMap.camp2).toBe('intentPreview')
+      expect($ct.campaignDivMap.camp3).toBe('wizParDiv2')
+      expect($ct.campaignDivMap.camp4).toBe('wzrkImageOnlyDiv')
+      expect(Object.keys($ct.campaignDivMap)).toHaveLength(4)
     })
   })
 })

@@ -761,20 +761,35 @@ export const buildNestedDeleteObject = (segments, command, value) => {
   return buildStructure(0)
 }
 
-const removeOverlayForDiv = (divId) => {
-  let opacityDivId = null
-  if (divId === 'intentPreview') {
-    opacityDivId = 'intentOpacityDiv'
-  } else if (divId.startsWith('wizParDiv')) {
-    const layout = divId.slice('wizParDiv'.length)
-    opacityDivId = 'intentOpacityDiv' + layout
+function removePopupContainerAndOpacity (containerId, opacityId) {
+  const container = document.getElementById(containerId)
+  if (container == null) {
+    return
   }
-  if (opacityDivId != null) {
-    const opDiv = document.getElementById(opacityDivId)
-    if (opDiv != null) {
-      opDiv.remove()
+  container.remove()
+  if (opacityId != null) {
+    const opacity = document.getElementById(opacityId)
+    if (opacity != null) {
+      opacity.remove()
     }
   }
+}
+
+/**
+ * Removes Box (`wizParDiv0`), Banner (`wizParDiv2`), and Image Only (`wzrkImageOnlyDiv`) from the DOM.
+ * Opacity layers follow the same pattern as {@link closeIframe}.
+ * Does not update DND or `campaignDivMap` (unlike {@link closeIframe}) so the same campaign can show again when the URL matches.
+ */
+const DISMISS_ACTIVE_CAMPAIGN_TARGETS = [
+  ['wizParDiv0', 'intentOpacityDiv0'],
+  ['wizParDiv2', 'intentOpacityDiv2'],
+  ['wzrkImageOnlyDiv', null]
+]
+
+export const dismissActiveCampaigns = () => {
+  DISMISS_ACTIVE_CAMPAIGN_TARGETS.forEach(([containerId, opacityId]) => {
+    removePopupContainerAndOpacity(containerId, opacityId)
+  })
 }
 
 export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
@@ -794,31 +809,20 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
     const divId = $ct.campaignDivMap[campaignId]
     if (divId != null) {
       document.getElementById(divId).remove()
-      removeOverlayForDiv(divId)
-    }
-  }
-}
-
-/**
- * Removes all active campaign popups from the DOM without adding them to the DND list.
- * Used on SPA route changes so popups don't persist across pages,
- * but can re-trigger if the user navigates back.
- */
-export const dismissActiveCampaigns = () => {
-  if ($ct.campaignDivMap == null) {
-    return
-  }
-  const campaignIds = Object.keys($ct.campaignDivMap)
-  for (const campaignId of campaignIds) {
-    const divId = $ct.campaignDivMap[campaignId]
-    if (divId != null) {
-      const el = document.getElementById(divId)
-      if (el != null) {
-        el.remove()
+      if (divId === 'intentPreview') {
+        if (document.getElementById('intentOpacityDiv') != null) {
+          document.getElementById('intentOpacityDiv').remove()
+        }
+      } else if (divId === 'wizParDiv0') {
+        if (document.getElementById('intentOpacityDiv0') != null) {
+          document.getElementById('intentOpacityDiv0').remove()
+        }
+      } else if (divId === 'wizParDiv2') {
+        if (document.getElementById('intentOpacityDiv2') != null) {
+          document.getElementById('intentOpacityDiv2').remove()
+        }
       }
-      removeOverlayForDiv(divId)
     }
-    delete $ct.campaignDivMap[campaignId]
   }
 }
 

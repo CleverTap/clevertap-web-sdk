@@ -381,14 +381,18 @@ describe('clevertap.js', function () {
       expect(mockRequestObject.saveAndFireRequest).toHaveBeenCalledTimes(3)
     })
 
-    test('should call dismissActiveCampaigns when spa is true', () => {
+    test('should call dismissActiveCampaigns when spa is true and URL changes', () => {
       this.clevertap.spa = true
+      this.clevertap.pageChanged()
+      window.history.pushState({}, '', '/clevertap-spa-test-path')
       this.clevertap.pageChanged()
       expect(dismissActiveCampaigns).toHaveBeenCalled()
     })
 
-    test('should not call dismissActiveCampaigns when spa is false', () => {
+    test('should not call dismissActiveCampaigns when spa is false even if URL changes', () => {
       this.clevertap.spa = false
+      this.clevertap.pageChanged()
+      window.history.pushState({}, '', '/clevertap-non-spa-path')
       this.clevertap.pageChanged()
       expect(dismissActiveCampaigns).not.toHaveBeenCalled()
     })

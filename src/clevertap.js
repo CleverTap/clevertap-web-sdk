@@ -934,13 +934,14 @@ export default class CleverTap {
   }
 
   pageChanged () {
-    // Dismiss active campaign popups on SPA route change
-    // so they don't persist across client-side navigations
-    if (this.#isSpa) {
+    const currLocation = window.location.href
+    if (
+      this.#isSpa &&
+      this.#previousUrl !== undefined &&
+      this.#previousUrl !== currLocation
+    ) {
       dismissActiveCampaigns()
     }
-
-    const currLocation = window.location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
     // -- update page count
     const obj = this.#session.getSessionCookieObject()
