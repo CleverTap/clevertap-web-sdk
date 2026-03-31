@@ -458,6 +458,19 @@ export const commonCampaignUtils = {
     return renderPIP(targetingMsgJson, CampaignContext.session)
   },
 
+  // Checks if a campaign is already rendered in an iframe
+  isExistingCampaign (campaignId) {
+    const testIframe =
+      document.getElementById('wiz-iframe-intent') ||
+      document.getElementById('wiz-iframe')
+    if (testIframe) {
+      const iframeDocument =
+        testIframe.contentDocument || testIframe.contentWindow.document
+      return iframeDocument.documentElement.innerHTML.includes(campaignId)
+    }
+    return false
+  },
+
   // Creates and renders campaign templates (e.g., exit intent, banners, popups)
   createTemplate (targetingMsgJson, isExitIntent, wtq) {
     const campaignId = targetingMsgJson.wzrk_id.split('_')[0]
