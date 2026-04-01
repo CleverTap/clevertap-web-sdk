@@ -16,6 +16,17 @@ export const renderPopUpImageOnly = (targetingMsgJson, _session) => {
   containerEl.appendChild(popupImageOnly)
 }
 
+export const renderPIP = (targetingMsgJson, _session) => {
+  const divId = 'wizPIPDiv'
+  const pip = document.createElement('ct-web-popup-pip')
+  pip.session = _session
+  pip.target = targetingMsgJson
+  const containerEl = document.getElementById(divId)
+  containerEl.innerHTML = ''
+  containerEl.style.visibility = 'hidden'
+  containerEl.appendChild(pip)
+}
+
 const FULLSCREEN_STYLE = `
   z-index: 2147483647;
   display: block;
