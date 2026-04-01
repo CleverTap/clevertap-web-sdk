@@ -11,14 +11,6 @@ const PIP_PLAY_ICON_SVG = '<path d="M6 14.5007V5.50073C6 5.11831 6.41183 4.87746
 
 const PIP_PAUSE_ICON_SVG = '<path d="M7 5h2v10H7V5zm4 0h2v10h-2V5z" fill="currentColor"></path>'
 
-const PIP_UNMUTED_ICON_SVG =
-  '<path d="M10 4.5V15.5L6.5 12H4C3.44772 12 3 11.5523 3 11V9C3 8.44772 3.44772 8 4 8H6.5L10 4.5Z" fill="currentColor"></path>' +
-  '<path d="M12.5 7.5c1.2 1 1.2 3 0 4M14 6c2 1.6 2 6.4 0 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"></path>'
-
-const PIP_MUTED_ICON_SVG =
-  '<path d="M10 4.5V15.5L6.5 12H4C3.44772 12 3 11.5523 3 11V9C3 8.44772 3.44772 8 4 8H6.5L10 4.5Z" fill="currentColor"></path>' +
-  '<path d="M14 7.5L18 12.5M18 7.5L14 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>'
-
 /** Nearest anchor id -> flex placement on `.ct-pip-overlay` (row: justify = horizontal, align = vertical). */
 const PIP_ANCHOR_FLEX = {
   center: { alignItems: 'center', justifyContent: 'center' },
@@ -56,7 +48,6 @@ export class CTWebPopupPIP extends HTMLElement {
     pipOverlay = null
     _pipDragPointerId = null
     playControlBtn = null
-    muteControlBtn = null
 
     get target () {
       return this._target || ''
@@ -124,10 +115,6 @@ export class CTWebPopupPIP extends HTMLElement {
       return this.getPipDisplayConfig().controls?.playPause !== false
     }
 
-    isPipMuteEnabled () {
-      return this.getPipDisplayConfig().controls?.mute !== false
-    }
-
     syncPipPlayButtonIcon () {
       if (!this.isPipPlayPauseEnabled()) return
       const video = this.getActiveMedia()
@@ -167,55 +154,6 @@ export class CTWebPopupPIP extends HTMLElement {
       })
 
       this.syncPipPlayButtonIcon()
-    }
-
-    syncPipMuteButtonIcon () {
-      if (!this.isPipMuteEnabled()) return
-      const video = this.getActiveMedia()
-      if (video && this.muteControlBtn) {
-        this.updatePipMuteButtonIcon(video)
-      }
-    }
-
-    updatePipMuteButtonIcon (video) {
-      if (!this.muteControlBtn) return
-      const svg = this.muteControlBtn.querySelector('svg')
-      if (!svg) return
-      const muted = video.muted || video.volume === 0
-      svg.innerHTML = muted ? PIP_MUTED_ICON_SVG : PIP_UNMUTED_ICON_SVG
-      this.muteControlBtn.setAttribute('aria-label', muted ? 'Unmute' : 'Mute')
-      this.muteControlBtn.setAttribute('aria-pressed', muted ? 'true' : 'false')
-    }
-
-    applyPipMuteToAllVideos (muted) {
-      ;[this.mediaDesktop, this.mediaMobile].forEach((v) => {
-        if (!v) return
-        if (!muted && v.volume === 0) {
-          v.volume = 1
-        }
-        v.muted = muted
-      })
-    }
-
-    setupPipMuteToggle () {
-      if (!this.isPipMuteEnabled() || !this.muteControlBtn) return
-
-      const onVolumeChange = () => this.syncPipMuteButtonIcon()
-      ;[this.mediaDesktop, this.mediaMobile].forEach((video) => {
-        if (!video) return
-        video.addEventListener('volumechange', onVolumeChange)
-      })
-
-      this.muteControlBtn.addEventListener('click', (e) => {
-        e.stopPropagation()
-        const video = this.getActiveMedia()
-        if (!video) return
-        const effectivelyMuted = video.muted || video.volume === 0
-        this.applyPipMuteToAllVideos(!effectivelyMuted)
-        this.syncPipMuteButtonIcon()
-      })
-
-      this.syncPipMuteButtonIcon()
     }
 
     snapPipContainerToAnchor () {
@@ -349,7 +287,6 @@ export class CTWebPopupPIP extends HTMLElement {
       this.container = this.shadowRoot.getElementById('ct-pip-container')
       this.closeIcon = this.shadowRoot.getElementById('ct-pip-close')
       this.playControlBtn = this.shadowRoot.getElementById('ct-pip-play')
-      this.muteControlBtn = this.shadowRoot.getElementById('ct-pip-mute')
 
       if (!this.container) {
         return
@@ -412,7 +349,6 @@ export class CTWebPopupPIP extends HTMLElement {
       }
 
       this.setupPipPlayPauseToggle()
-      this.setupPipMuteToggle()
       this.setupPipDrag()
     }
 
@@ -432,7 +368,6 @@ export class CTWebPopupPIP extends HTMLElement {
         popup.setAttribute('title', this.mobileAltText || '')
       }
       this.syncPipPlayButtonIcon()
-      this.syncPipMuteButtonIcon()
     }
 
     getPIPPopupContent () {
