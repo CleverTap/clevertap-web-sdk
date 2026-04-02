@@ -15,6 +15,7 @@ blocks:
               set -euo pipefail
               npm install
               npm run build
+              npm run build:legacy
             - artifact push workflow dist/clevertap.min.js
             - artifact push workflow dist/clevertap.js
             - artifact push workflow dist/clevertap.js.map
@@ -23,6 +24,7 @@ blocks:
             - artifact push workflow dist/clevertap_amd.min.js
             - artifact push workflow dist/clevertap_iife.min.js
             - artifact push workflow dist/clevertap_system.min.js
+            - artifact push workflow dist/clevertap_legacy.min.js
             - |
               set -euo pipefail
               npm run build_sw
