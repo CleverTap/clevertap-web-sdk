@@ -16,6 +16,7 @@ blocks:
             - artifact pull workflow clevertap_amd.min.js
             - artifact pull workflow clevertap_iife.min.js
             - artifact pull workflow clevertap_system.min.js
+            - artifact pull workflow clevertap_legacy.min.js
             - |
               set -euo pipefail
               mkdir utils
@@ -32,6 +33,7 @@ blocks:
               aws s3 cp clevertap_amd.min.js s3://static.wizrocket.com/js/ --acl public-read
               aws s3 cp clevertap_iife.min.js s3://static.wizrocket.com/js/ --acl public-read
               aws s3 cp clevertap_system.min.js s3://static.wizrocket.com/js/ --acl public-read
+              aws s3 cp clevertap_legacy.min.js s3://static.wizrocket.com/js/ --acl public-read
               rm -rf clevertap.min.js dist
               aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /js/clevertap.min.js
               aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /js/clevertap_cjs.min.js
@@ -39,6 +41,7 @@ blocks:
               aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /js/clevertap_amd.min.js
               aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /js/clevertap_iife.min.js
               aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /js/clevertap_system.min.js
+              aws cloudfront create-invalidation --distribution-id E1OCAMMKX0F1A1 --paths /js/clevertap_legacy.min.js
               deactivate
       secrets:
         - name: ProductionAccountAwsCredentials
