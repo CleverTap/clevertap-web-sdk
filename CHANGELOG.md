@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.6.1] 2nd April 2026
+- Added support for legacy browsers
+- Dismiss active Web Popups on SPA route change
+
 ## [2.6.0] 18th Mar 2026 
 - Added support for CommonJS, ES, AMD, IIFE and SystemJS build formats.
 
