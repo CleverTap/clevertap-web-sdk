@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.6.2] 13th April 2026
+- Added color scheme for handling background in Adv Builder Web Popup
+
 ## [2.6.1] 2nd April 2026
 - Added support for legacy browsers
 - Dismiss active Web Popups on SPA route change
