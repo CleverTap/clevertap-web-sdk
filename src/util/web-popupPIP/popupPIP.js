@@ -151,9 +151,8 @@ export class CTWebPopupPIP extends HTMLElement {
       this._pipDragPointerId = null
       const host = document.getElementById('wizPIPDiv')
       if (host) {
-        host.style.display = 'none'
+        host.remove()
       }
-      this.remove()
       if (campaignId != null && campaignId !== '-1') {
         if (StorageManager._isLocalStorageSupported()) {
           const campaignObj = getCampaignObject()
