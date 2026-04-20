@@ -1,6 +1,28 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.6.2] 13th April 2026
+- Added color scheme for handling background in Adv Builder Web Popup
+
+## [2.6.1] 2nd April 2026
+- Added support for legacy browsers
+- Dismiss active Web Popups on SPA route change
+
+## [2.6.0] 18th Mar 2026 
+- Added support for CommonJS, ES, AMD, IIFE and SystemJS build formats.
+
+## [2.5.5] 26th Feb 2026 
+- Added support for remote interaction for Web Popups, Native Display and Inbox on TV platforms. 
+
+## [2.5.4] 19th Feb 2026 
+- Added Clevertap Custom Id Support in On User Login. 
+
+## [2.5.3] 16th Feb 2026
+- Fixed repeated geolocation permission prompt on every page navigation in Safari. The SDK now caches the user's accept/deny response in localStorage, preventing redundant prompts.
+
+## [2.5.2] 3rd Feb 2026 
+- Added srcset and sizes attribute support for image in visual editor.
+
 ## [2.5.1] 30 Jan 2026
 - Fixed the campaign delivery triggers logic
 

@@ -761,6 +761,37 @@ export const buildNestedDeleteObject = (segments, command, value) => {
   return buildStructure(0)
 }
 
+function removePopupContainerAndOpacity (containerId, opacityId) {
+  const container = document.getElementById(containerId)
+  if (container == null) {
+    return
+  }
+  container.remove()
+  if (opacityId != null) {
+    const opacity = document.getElementById(opacityId)
+    if (opacity != null) {
+      opacity.remove()
+    }
+  }
+}
+
+/**
+ * Removes Box (`wizParDiv0`), Banner (`wizParDiv2`), and Image Only (`wzrkImageOnlyDiv`) from the DOM.
+ * Opacity layers follow the same pattern as {@link closeIframe}.
+ * Does not update DND or `campaignDivMap` (unlike {@link closeIframe}) so the same campaign can show again when the URL matches.
+ */
+const DISMISS_ACTIVE_CAMPAIGN_TARGETS = [
+  ['wizParDiv0', 'intentOpacityDiv0'],
+  ['wizParDiv2', 'intentOpacityDiv2'],
+  ['wzrkImageOnlyDiv', null]
+]
+
+export const dismissActiveCampaigns = () => {
+  DISMISS_ACTIVE_CAMPAIGN_TARGETS.forEach(([containerId, opacityId]) => {
+    removePopupContainerAndOpacity(containerId, opacityId)
+  })
+}
+
 export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
   if (campaignId != null && campaignId !== '-1') {
     if (StorageManager._isLocalStorageSupported()) {

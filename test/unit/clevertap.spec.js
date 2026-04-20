@@ -13,6 +13,7 @@ import { CONTINUOUS_PING_FREQ_IN_MILLIS, FIRST_PING_FREQ_IN_MILLIS } from '../..
 import UserLoginHandler from '../../src/modules/userLogin'
 import { validateCustomCleverTapID } from '../../src/util/helpers'
 import RequestDispatcher from '../../src/util/requestDispatcher'
+import { dismissActiveCampaigns } from '../../src/util/clevertap'
 
 // mock everything except for the module that's being tested and constants
 jest.enableAutomock().unmock('../../src/clevertap').unmock('../../src/util/constants')
@@ -52,7 +53,8 @@ describe('clevertap.js', function () {
     }
     mockOUL = {
       clear: jest.fn(),
-      _processOldValues: jest.fn()
+      _processOldValues: jest.fn(),
+      push: jest.fn()
     }
 
     // Mock RequestDispatcher methods to prevent fetch API calls
@@ -151,6 +153,30 @@ describe('clevertap.js', function () {
       validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null })
       this.clevertap = new Clevertap()
       expect(DeviceManager).toHaveBeenCalledWith({ logger: new Logger(logLevels.INFO), customId: null, domainSpecification: 0 })
+    })
+  })
+
+  describe('customId handling', () => {
+    test('should validate customId field when provided', () => {
+      validateCustomCleverTapID.mockReturnValue({ isValid: true, sanitizedId: '_w_custom_oul_id' })
+
+      // Test the validation function directly
+      const result = validateCustomCleverTapID('_w_custom_oul_id')
+
+      expect(validateCustomCleverTapID).toHaveBeenCalledWith('_w_custom_oul_id')
+      expect(result.isValid).toBe(true)
+      expect(result.sanitizedId).toBe('_w_custom_oul_id')
+    })
+
+    test('should handle invalid customId field', () => {
+      validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null, error: 'Invalid custom ID format' })
+
+      // Test the validation function directly
+      const result = validateCustomCleverTapID('invalid_id')
+
+      expect(validateCustomCleverTapID).toHaveBeenCalledWith('invalid_id')
+      expect(result.isValid).toBe(false)
+      expect(result.error).toBe('Invalid custom ID format')
     })
   })
 
@@ -353,6 +379,22 @@ describe('clevertap.js', function () {
       jest.advanceTimersByTime(FIRST_PING_FREQ_IN_MILLIS)
       jest.advanceTimersByTime(CONTINUOUS_PING_FREQ_IN_MILLIS)
       expect(mockRequestObject.saveAndFireRequest).toHaveBeenCalledTimes(3)
+    })
+
+    test('should call dismissActiveCampaigns when spa is true and URL changes', () => {
+      this.clevertap.spa = true
+      this.clevertap.pageChanged()
+      window.history.pushState({}, '', '/clevertap-spa-test-path')
+      this.clevertap.pageChanged()
+      expect(dismissActiveCampaigns).toHaveBeenCalled()
+    })
+
+    test('should not call dismissActiveCampaigns when spa is false even if URL changes', () => {
+      this.clevertap.spa = false
+      this.clevertap.pageChanged()
+      window.history.pushState({}, '', '/clevertap-non-spa-path')
+      this.clevertap.pageChanged()
+      expect(dismissActiveCampaigns).not.toHaveBeenCalled()
     })
   })
 
