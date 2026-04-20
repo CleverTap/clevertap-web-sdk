@@ -324,7 +324,11 @@ export const isMuted = () => {
  * @returns {number|null} epoch timestamp in ms, or null if not muted
  */
 export const getMuteExpiry = () => {
-  return StorageManager.readFromLSorCookie(MUTE_EXPIRY_KEY) || null
+  const muteExpiry = StorageManager.readFromLSorCookie(MUTE_EXPIRY_KEY)
+  if (!muteExpiry || muteExpiry <= 0) {
+    return null
+  }
+  return Date.now() < muteExpiry ? muteExpiry : null
 }
 
 export const $ct = {
