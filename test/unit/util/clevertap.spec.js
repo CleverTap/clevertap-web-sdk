@@ -733,6 +733,7 @@ describe('util/clevertap', function () {
       closeIframe('camp1', null, 'session1')
 
       expect(StorageManager.save).toHaveBeenCalled()
+      expect($ct.campaignDivMap.camp1).toBeUndefined()
     })
 
     test('should remove popup div from DOM', () => {
@@ -743,6 +744,7 @@ describe('util/clevertap', function () {
       closeIframe('camp1', null, null)
 
       expect(document.getElementById('wizParDiv0')).toBeNull()
+      expect($ct.campaignDivMap.camp1).toBeUndefined()
     })
 
     test('should remove opacity overlay for intentPreview', () => {
@@ -754,6 +756,16 @@ describe('util/clevertap', function () {
 
       expect(document.getElementById('intentPreview')).toBeNull()
       expect(document.getElementById('intentOpacityDiv')).toBeNull()
+      expect($ct.campaignDivMap.camp1).toBeUndefined()
+    })
+
+    test('should not throw when popup was already removed from DOM (stale campaignDivMap)', () => {
+      StorageManager._isLocalStorageSupported.mockReturnValue(false)
+      $ct.campaignDivMap.camp1 = 'wizParDiv0'
+      document.body.innerHTML = ''
+
+      expect(() => closeIframe('camp1', null, null)).not.toThrow()
+      expect($ct.campaignDivMap.camp1).toBeUndefined()
     })
   })
 
