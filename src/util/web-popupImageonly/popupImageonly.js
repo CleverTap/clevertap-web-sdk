@@ -81,7 +81,10 @@ export class CTWebPopupImageOnly extends HTMLElement {
         const campaignId = this.target.wzrk_id.split('_')[0]
         // const currentSessionId = this.session.sessionId
         this.resizeObserver.unobserve(this.popup)
-        document.getElementById('wzrkImageOnlyDiv').style.display = 'none'
+        const imageOnlyHost = document.getElementById('wzrkImageOnlyDiv')
+        if (imageOnlyHost != null) {
+          imageOnlyHost.style.display = 'none'
+        }
         this.remove()
         if (campaignId != null && campaignId !== '-1') {
           if (StorageManager._isLocalStorageSupported()) {
@@ -162,7 +165,10 @@ export class CTWebPopupImageOnly extends HTMLElement {
         if (this.closeIcon) {
           this.closeIcon.style.setProperty('visibility', 'visible')
         }
-        document.getElementById('wzrkImageOnlyDiv').style.visibility = 'visible'
+        const imageOnlyHost = document.getElementById('wzrkImageOnlyDiv')
+        if (imageOnlyHost != null) {
+          imageOnlyHost.style.visibility = 'visible'
+        }
       }
     }
 
