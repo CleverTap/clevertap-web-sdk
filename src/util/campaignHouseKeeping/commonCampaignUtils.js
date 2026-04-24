@@ -18,6 +18,7 @@ import {
   WEB_NATIVE_TEMPLATES,
   CAMPAIGN_TYPES,
   WEB_POPUP_TEMPLATES,
+  WEB_POPUP_PIP_HOST_ID,
   ENABLE_TV_CONTROLS
 } from '../constants.js'
 
@@ -437,7 +438,7 @@ export const commonCampaignUtils = {
   },
 
   handlePIP (targetingMsgJson) {
-    const divId = 'wizPIPDiv'
+    const divId = WEB_POPUP_PIP_HOST_ID
     // Skips if frequency limits are exceeded
     if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
       return

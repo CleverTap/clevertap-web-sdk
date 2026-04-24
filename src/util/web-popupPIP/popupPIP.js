@@ -5,13 +5,16 @@ import {
 import {
   PIP_COLLAPSE_ICON_SVG,
   PIP_PAUSE_ICON_SVG,
-  PIP_UNMUTE_ICON_SVG
+  PIP_UNMUTE_ICON_SVG,
+  PIP_UNMUTE_ICON_VIEWBOX,
+  WEB_POPUP_PIP_HOST_ID
 } from '../constants'
 import { StorageManager } from '../storage'
 import {
   PIP_ANCHOR_FLEX,
   PIP_DRAG_CONTROL_SELECTOR,
   PIP_EXPAND_RUNTIME_CSS,
+  PIP_REVEAL_FALLBACK_MS,
   getPipOnClickAction,
   runPipClickAction as executePipClickAction
 } from './pipPopupUtils'
@@ -46,6 +49,7 @@ export class CTWebPopupPIP extends HTMLElement {
     _pipPlaySvgFromTemplate = ''
     _pipExpandSvgFromTemplate = ''
     _pipMuteSvgFromTemplate = ''
+    _pipMuteSvgViewBoxFromTemplate = ''
 
     get target () {
       return this._target || ''
@@ -98,10 +102,56 @@ export class CTWebPopupPIP extends HTMLElement {
       return this.isWideViewport() ? (d.pip || {}) : (d.mobile?.pip || d.pip || {})
     }
 
-    /** @param {(v: HTMLVideoElement) => void} fn */
+    /** @param {(v: Element) => void} fn */
     forEachVideo (fn) {
       if (this.mediaDesktop) fn(this.mediaDesktop)
       if (this.mediaMobile) fn(this.mediaMobile)
+    }
+
+    /** @param {(v: HTMLVideoElement) => void} fn */
+    forEachVideoElement (fn) {
+      this.forEachVideo((node) => {
+        if (node instanceof HTMLVideoElement) fn(node)
+      })
+    }
+
+    /**
+     * Refine width / layout when intrinsic media size becomes available (network can finish
+     * long before decode; listeners keep sizing in sync without blocking first paint).
+     */
+    bindPipMediaRevealListeners (tryReveal, forceReveal) {
+      this.forEachVideo((el) => {
+        if (!el) return
+        if (el instanceof HTMLImageElement) {
+          if (typeof el.decode === 'function') {
+            el.decode().then(tryReveal, forceReveal)
+          }
+          el.addEventListener('load', tryReveal, { once: true })
+          el.addEventListener('error', forceReveal, { once: true })
+          return
+        }
+        if (el instanceof HTMLVideoElement) {
+          el.addEventListener('loadeddata', tryReveal, { once: true })
+          el.addEventListener('loadedmetadata', tryReveal, { once: true })
+          el.addEventListener('progress', tryReveal, { once: true })
+          el.addEventListener('error', forceReveal, { once: true })
+          if (typeof el.requestVideoFrameCallback === 'function') {
+            el.requestVideoFrameCallback(() => tryReveal())
+          }
+        }
+      })
+    }
+
+    /** Don’t show the shell until the active slot can paint (avoids close/Chrome without media). */
+    isActiveMediaPaintReady (el) {
+      if (!el) return false
+      if (el instanceof HTMLImageElement) {
+        return el.complete && el.naturalWidth > 0
+      }
+      if (el instanceof HTMLVideoElement) {
+        return el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+      }
+      return false
     }
 
     applyPopupTitle (popup) {
@@ -110,6 +160,14 @@ export class CTWebPopupPIP extends HTMLElement {
         ? (this.desktopAltText || '')
         : (this.mobileAltText || '')
       popup.setAttribute('title', title)
+    }
+
+    /** Title + play/mute glyphs after layout breakpoint or size change. */
+    refreshPipChrome (popup) {
+      if (!popup) return
+      this.applyPopupTitle(popup)
+      this.syncPipPlayButtonIcon()
+      this.syncPipMuteButtonIcon()
     }
 
     getPipFallbackWidthPx () {
@@ -134,6 +192,10 @@ export class CTWebPopupPIP extends HTMLElement {
       return this.getPipDisplayConfig().controls?.mute !== false
     }
 
+    getPipHostEl () {
+      return document.getElementById(WEB_POPUP_PIP_HOST_ID)
+    }
+
     closePipTemplate () {
       if (!this.container) return
       const campaignId = this.target.wzrk_id.split('_')[0]
@@ -149,7 +211,7 @@ export class CTWebPopupPIP extends HTMLElement {
         this._pipDragAbort = null
       }
       this._pipDragPointerId = null
-      const host = document.getElementById('wizPIPDiv')
+      const host = this.getPipHostEl()
       if (host) {
         host.remove()
       }
@@ -187,16 +249,18 @@ export class CTWebPopupPIP extends HTMLElement {
     }
 
     capturePipTemplateControlSvgs () {
-      const pairs = [
+      this._pipMuteSvgViewBoxFromTemplate = ''
+      for (const [el, key] of [
         [this.playControlBtn, '_pipPlaySvgFromTemplate'],
         [this.expandControlBtn, '_pipExpandSvgFromTemplate'],
         [this.muteControlBtn, '_pipMuteSvgFromTemplate']
-      ]
-      for (let i = 0; i < pairs.length; i++) {
-        const el = pairs[i][0]
-        const prop = pairs[i][1]
+      ]) {
         const svg = el?.querySelector('svg')
-        if (svg) this[prop] = svg.innerHTML
+        if (!svg) continue
+        this[key] = svg.innerHTML
+        if (el === this.muteControlBtn) {
+          this._pipMuteSvgViewBoxFromTemplate = svg.getAttribute('viewBox') || ''
+        }
       }
     }
 
@@ -245,7 +309,7 @@ export class CTWebPopupPIP extends HTMLElement {
     }
 
     updatePipPlayButtonIcon (video) {
-      if (!this.playControlBtn) return
+      if (!this.playControlBtn || !(video instanceof HTMLVideoElement)) return
       const svg = this.playControlBtn.querySelector('svg')
       if (!svg) return
       const paused = video.paused
@@ -259,7 +323,7 @@ export class CTWebPopupPIP extends HTMLElement {
       if (!this.isPipPlayPauseEnabled() || !this.playControlBtn) return
 
       const onPlayOrPause = () => this.syncPipPlayButtonIcon()
-      this.forEachVideo((video) => {
+      this.forEachVideoElement((video) => {
         video.addEventListener('play', onPlayOrPause)
         video.addEventListener('pause', onPlayOrPause)
       })
@@ -267,7 +331,7 @@ export class CTWebPopupPIP extends HTMLElement {
       this.playControlBtn.addEventListener('click', (e) => {
         e.stopPropagation()
         const video = this.getActiveMedia()
-        if (!video) return
+        if (!(video instanceof HTMLVideoElement)) return
         if (video.paused) {
           video.play().catch(() => {})
         } else {
@@ -287,18 +351,24 @@ export class CTWebPopupPIP extends HTMLElement {
     }
 
     updatePipMuteButtonIcon (video) {
-      if (!this.muteControlBtn) return
+      if (!this.muteControlBtn || !(video instanceof HTMLVideoElement)) return
       const svg = this.muteControlBtn.querySelector('svg')
       if (!svg) return
-      svg.innerHTML = video.muted
-        ? PIP_UNMUTE_ICON_SVG
-        : (this._pipMuteSvgFromTemplate || '')
+      if (video.muted) {
+        svg.setAttribute('viewBox', PIP_UNMUTE_ICON_VIEWBOX)
+        svg.innerHTML = PIP_UNMUTE_ICON_SVG
+      } else {
+        const vb = this._pipMuteSvgViewBoxFromTemplate
+        if (vb) svg.setAttribute('viewBox', vb)
+        else svg.removeAttribute('viewBox')
+        svg.innerHTML = this._pipMuteSvgFromTemplate || ''
+      }
       this.muteControlBtn.setAttribute('aria-label', video.muted ? 'Unmute' : 'Mute')
       this.muteControlBtn.setAttribute('aria-pressed', video.muted ? 'true' : 'false')
     }
 
     applyPipMutedToAllVideos (muted) {
-      this.forEachVideo((v) => {
+      this.forEachVideoElement((v) => {
         v.muted = muted
       })
     }
@@ -307,14 +377,14 @@ export class CTWebPopupPIP extends HTMLElement {
       if (!this.isPipMuteEnabled() || !this.muteControlBtn) return
 
       const onVolumeChange = () => this.syncPipMuteButtonIcon()
-      this.forEachVideo((video) => {
+      this.forEachVideoElement((video) => {
         video.addEventListener('volumechange', onVolumeChange)
       })
 
       this.muteControlBtn.addEventListener('click', (e) => {
         e.stopPropagation()
         const video = this.getActiveMedia()
-        if (!video) return
+        if (!(video instanceof HTMLVideoElement)) return
         this.applyPipMutedToAllVideos(!video.muted)
         this.syncPipMuteButtonIcon()
       })
@@ -373,7 +443,7 @@ export class CTWebPopupPIP extends HTMLElement {
         { key: 'center', dist: Infinity }
       ).key
 
-      const flex = PIP_ANCHOR_FLEX[bestKey]
+      const flex = PIP_ANCHOR_FLEX[bestKey] || PIP_ANCHOR_FLEX.center
       overlay.style.setProperty('align-items', flex.alignItems)
       overlay.style.setProperty('justify-content', flex.justifyContent)
 
@@ -477,18 +547,16 @@ export class CTWebPopupPIP extends HTMLElement {
 
       this.container.setAttribute('role', 'dialog')
       this.container.setAttribute('aria-modal', 'true')
+      this.container.style.setProperty('visibility', 'hidden')
 
       this.capturePipTemplateControlSvgs()
 
       const tryReveal = () => this.revealPIPContent(false)
       const forceReveal = () => this.revealPIPContent(true)
-      this.forEachVideo((video) => {
-        video.addEventListener('loadeddata', tryReveal, { once: true })
-        video.addEventListener('error', forceReveal, { once: true })
-      })
+      this.bindPipMediaRevealListeners(tryReveal, forceReveal)
       tryReveal()
 
-      this._revealFallbackTimer = window.setTimeout(forceReveal, 2500)
+      this._revealFallbackTimer = window.setTimeout(forceReveal, PIP_REVEAL_FALLBACK_MS)
 
       this.resizeObserver = new ResizeObserver(() =>
         this.handleResize(this.getActiveMedia(), this.container))
@@ -516,12 +584,10 @@ export class CTWebPopupPIP extends HTMLElement {
       this.popup = popup
       if (this._pipExpanded) {
         if (!popup) return
-        this.applyPopupTitle(popup)
-        this.syncPipPlayButtonIcon()
-        this.syncPipMuteButtonIcon()
+        this.refreshPipChrome(popup)
         return
       }
-      let width = this.getRenderedVideoWidth(popup)
+      let width = this.getRenderedMediaWidth(popup)
       if (popup && container && width <= 0) {
         width = this.getPipFallbackWidthPx()
       }
@@ -529,9 +595,7 @@ export class CTWebPopupPIP extends HTMLElement {
         container.style.setProperty('width', `${width}px`)
       }
       if (!popup) return
-      this.applyPopupTitle(popup)
-      this.syncPipPlayButtonIcon()
-      this.syncPipMuteButtonIcon()
+      this.refreshPipChrome(popup)
     }
 
     getPIPPopupContent () {
@@ -545,43 +609,85 @@ export class CTWebPopupPIP extends HTMLElement {
       if (!this.container) return
       this.popup = this.getActiveMedia()
       const hasRenderableMedia = !!(this.mediaDesktop || this.mediaMobile)
-      const activeReady = this.popup &&
-        this.popup.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
-      if (hasRenderableMedia && !activeReady && !force) {
+      if (!hasRenderableMedia && !force) {
         return
       }
-      if (this.popup && hasRenderableMedia) {
-        let width = this.getRenderedVideoWidth(this.popup)
-        if (width <= 0) {
-          width = this.getPipFallbackWidthPx()
+      if (!force && this.popup && !this.isActiveMediaPaintReady(this.popup)) {
+        return
+      }
+
+      const applyReveal = () => {
+        if (!this.container) return
+        this.popup = this.getActiveMedia()
+        if (this.popup && hasRenderableMedia) {
+          let width = this.getRenderedMediaWidth(this.popup)
+          if (width <= 0) {
+            width = this.getPipFallbackWidthPx()
+          }
+          if (width > 0) {
+            this.popup.style.setProperty('width', `${width}px`)
+            this.container.style.setProperty('width', `${width}px`)
+          }
+          this.applyPipAspectRatioPlaceholder(this.popup, width)
         }
-        if (width > 0) {
-          this.popup.style.setProperty('width', `${width}px`)
-          this.container.style.setProperty('width', `${width}px`)
+        this.container.style.setProperty('height', 'auto')
+        this.container.style.removeProperty('visibility')
+        const host = this.getPipHostEl()
+        if (host) {
+          host.style.visibility = 'visible'
         }
       }
-      this.container.style.setProperty('height', 'auto')
-      if (this.popup) {
-        this.popup.style.setProperty('visibility', 'visible')
-      }
-      if (this.closeIcon) {
-        this.closeIcon.style.setProperty('visibility', 'visible')
-      }
-      const host = document.getElementById('wizPIPDiv')
-      if (host) {
-        host.style.visibility = 'visible'
+
+      if (!force && this.popup instanceof HTMLImageElement) {
+        requestAnimationFrame(() => requestAnimationFrame(applyReveal))
+      } else {
+        applyReveal()
       }
     }
 
-    getRenderedVideoWidth (video) {
-      if (!video || !video.videoWidth || !video.videoHeight) {
+    hasIntrinsicMediaSize (popup) {
+      if (!popup) return false
+      if (popup instanceof HTMLImageElement) {
+        return popup.naturalWidth > 0 && popup.naturalHeight > 0
+      }
+      if (popup instanceof HTMLVideoElement) {
+        return popup.videoWidth > 0 && popup.videoHeight > 0
+      }
+      return false
+    }
+
+    /** Stable box before intrinsic video/image dimensions (common with GIF-in-video). */
+    applyPipAspectRatioPlaceholder (popup, widthPx) {
+      if (!popup || widthPx <= 0) return
+      if (this.hasIntrinsicMediaSize(popup)) {
+        popup.style.removeProperty('aspect-ratio')
+        return
+      }
+      const pip = this.getPipDisplayConfig()
+      const ar = pip.aspectRatio
+      if (!ar) return
+      const num = Number(ar.numerator)
+      const den = Number(ar.denominator)
+      if (!num || !den) return
+      popup.style.aspectRatio = `${num} / ${den}`
+    }
+
+    getRenderedMediaWidth (el) {
+      if (!el) return 0
+      let nw
+      let nh
+      if (el instanceof HTMLImageElement) {
+        nw = el.naturalWidth
+        nh = el.naturalHeight
+      } else if (el instanceof HTMLVideoElement) {
+        nw = el.videoWidth
+        nh = el.videoHeight
+      } else {
         return 0
       }
-      const ratio = video.videoWidth / video.videoHeight
-      const h = video.clientHeight || video.offsetHeight
-      if (!h || h < 1) {
-        return this.getPipFallbackWidthPx()
-      }
-      return h * ratio
+      if (!nw || !nh) return 0
+      const h = el.clientHeight || el.offsetHeight
+      if (!h || h < 1) return this.getPipFallbackWidthPx()
+      return (nw / nh) * h
     }
 }

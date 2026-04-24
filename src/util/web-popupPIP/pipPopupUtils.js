@@ -4,6 +4,9 @@ import { invokeExternalJs } from '../campaignRender/utilities'
 export const PIP_DRAG_CONTROL_SELECTOR =
   '#ct-pip-close, #ct-pip-expand, #ct-pip-play, #ct-pip-mute'
 
+/** If media never reaches paint-ready, show shell after this many ms. */
+export const PIP_REVEAL_FALLBACK_MS = 2500
+
 /** Fullscreen expand: letterbox video with native aspect ratio (object-fit: contain). */
 export const PIP_EXPAND_RUNTIME_CSS = `
 .ct-pip-overlay.ct-pip--expanded {
@@ -103,11 +106,15 @@ export function buildPipNotificationClickedPayload (msgId, pivotId, pipConfig) {
   return payload
 }
 
+function openUrlInNewTabNoopener (url) {
+  window.open(url, '_blank', 'noopener')
+}
+
 function navigateOpenWebUrl (url, oc, closeTemplate) {
   const openInNewTab = oc.openInNewTab === true
   const closeOnClick = oc.closeOnClick === true
   if (openInNewTab) {
-    window.open(url, '_blank', 'noopener')
+    openUrlInNewTabNoopener(url)
     if (closeOnClick) closeTemplate()
   } else {
     if (closeOnClick) closeTemplate()
@@ -151,7 +158,7 @@ export function runPipClickAction ({
       if (!url) return
       fireClicked()
       if (getPipOpenLinkUsesNewTab(pipConfig, display)) {
-        window.open(url, '_blank', 'noopener')
+        openUrlInNewTabNoopener(url)
       } else {
         window.parent.location.href = url
       }
