@@ -724,16 +724,24 @@ export const commonCampaignUtils = {
 
     // Adjusts iframe height based on content
     const adjustIFrameHeight = () => {
-      // Gets scroll height of content div inside iframe
-      contentHeight = document
-        .getElementById('wiz-iframe')
-        .contentDocument.getElementById('contentDiv').scrollHeight
+      // Prefer document lookup; fall back to closure `iframe` when detached (e.g. parent removed before onload)
+      const wizIframe = document.getElementById('wiz-iframe') ?? iframe
+      if (!wizIframe?.contentDocument) {
+        return
+      }
+      const innerContentDiv = wizIframe.contentDocument.getElementById('contentDiv')
+      if (!innerContentDiv) {
+        return
+      }
+      contentHeight = innerContentDiv.scrollHeight
       if (displayObj['custom-editor'] !== true && !isBanner) {
         contentHeight += 25
       }
-      document.getElementById('wiz-iframe').contentDocument.body.style.margin =
-        '0px'
-      document.getElementById('wiz-iframe').style.height = contentHeight + 'px'
+      const iframeBody = wizIframe.contentDocument.body
+      if (iframeBody != null) {
+        iframeBody.style.margin = '0px'
+      }
+      wizIframe.style.height = contentHeight + 'px'
     }
 
     const ua = navigator.userAgent.toLowerCase()
@@ -741,9 +749,12 @@ export const commonCampaignUtils = {
       if (ua.indexOf('chrome') > -1) {
         iframe.onload = () => {
           adjustIFrameHeight()
-          const contentDiv = document
-            .getElementById('wiz-iframe')
-            .contentDocument.getElementById('contentDiv')
+          const wizIframe = document.getElementById('wiz-iframe') ?? iframe
+          const contentDiv =
+            wizIframe?.contentDocument?.getElementById('contentDiv') ?? null
+          if (contentDiv == null) {
+            return
+          }
           this.setupClickUrl(
             onClick,
             targetingMsgJson,
@@ -761,9 +772,12 @@ export const commonCampaignUtils = {
             clearInterval(_timer)
             // adjust iframe and body height of html inside correctly
             adjustIFrameHeight()
-            const contentDiv = document
-              .getElementById('wiz-iframe')
-              .contentDocument.getElementById('contentDiv')
+            const wizIframe = document.getElementById('wiz-iframe') ?? iframe
+            const contentDiv =
+              wizIframe?.contentDocument?.getElementById('contentDiv') ?? null
+            if (contentDiv == null) {
+              return
+            }
             this.setupClickUrl(
               onClick,
               targetingMsgJson,
@@ -778,9 +792,12 @@ export const commonCampaignUtils = {
       iframe.onload = () => {
         // adjust iframe and body height of html inside correctly
         adjustIFrameHeight()
-        const contentDiv = document
-          .getElementById('wiz-iframe')
-          .contentDocument.getElementById('contentDiv')
+        const wizIframe = document.getElementById('wiz-iframe') ?? iframe
+        const contentDiv =
+          wizIframe?.contentDocument?.getElementById('contentDiv') ?? null
+        if (contentDiv == null) {
+          return
+        }
         this.setupClickUrl(
           onClick,
           targetingMsgJson,

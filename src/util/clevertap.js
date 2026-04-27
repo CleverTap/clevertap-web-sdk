@@ -808,7 +808,13 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
   if ($ct.campaignDivMap != null) {
     const divId = $ct.campaignDivMap[campaignId]
     if (divId != null) {
-      document.getElementById(divId).remove()
+      const containerEl = document.getElementById(divId)
+      if (containerEl == null) {
+        // DOM already removed (e.g. SPA navigation ran dismissActiveCampaigns); drop stale map entry
+        delete $ct.campaignDivMap[campaignId]
+        return
+      }
+      containerEl.remove()
       if (divId === 'intentPreview') {
         if (document.getElementById('intentOpacityDiv') != null) {
           document.getElementById('intentOpacityDiv').remove()
@@ -822,6 +828,7 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
           document.getElementById('intentOpacityDiv2').remove()
         }
       }
+      delete $ct.campaignDivMap[campaignId]
     }
   }
 }

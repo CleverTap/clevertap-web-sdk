@@ -3,7 +3,7 @@ import { isObjectEmpty, isValueValid, removeUnsupportedChars, safeJSONParse } fr
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
 import RequestDispatcher from '../util/requestDispatcher'
-import { StorageManager, $ct } from '../util/storage'
+import { StorageManager, $ct, isMuted } from '../util/storage'
 import { addToURL } from '../util/url'
 import { getCampaignObjForLc } from '../util/clevertap'
 
@@ -139,6 +139,13 @@ export default class RequestManager {
    * @param {Boolean} sendOULFlag - true in case of a On User Login request
    */
   saveAndFireRequest (url, override, sendOULFlag, evtName) {
+    // Check if SDK is muted (for churned accounts) - drop request silently
+    // Unlike offline mode, muted requests are NOT saved to backup
+    if (isMuted()) {
+      this.#logger.debug('Request dropped - SDK is muted')
+      return
+    }
+
     const now = getNow()
 
     // Get the next available request number that doesn't conflict with existing backups

@@ -43,6 +43,7 @@ const FULLSCREEN_STYLE = `
 const IFRAME_STYLE = `
   ${FULLSCREEN_STYLE}
   border: 0 !important;
+  color-scheme: none;
 `
 
 export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger, isPreview = false) => {
