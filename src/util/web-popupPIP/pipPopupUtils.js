@@ -2,7 +2,7 @@ import { ACTION_TYPES } from '../constants'
 import { invokeExternalJs } from '../campaignRender/utilities'
 
 export const PIP_DRAG_CONTROL_SELECTOR =
-  '#ct-pip-close, #ct-pip-expand, #ct-pip-play, #ct-pip-mute'
+  '#ct-pip-close, #ct-pip-expand, #ct-pip-play, #ct-pip-mute, #ct-pip-open-new'
 
 /** If media never reaches paint-ready, show shell after this many ms. */
 export const PIP_REVEAL_FALLBACK_MS = 2500

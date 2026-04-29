@@ -3,10 +3,7 @@ import {
   saveCampaignObject
 } from '../clevertap'
 import {
-  PIP_COLLAPSE_ICON_SVG,
-  PIP_PAUSE_ICON_SVG,
-  PIP_UNMUTE_ICON_SVG,
-  PIP_UNMUTE_ICON_VIEWBOX,
+  PIP_ICONS,
   WEB_POPUP_PIP_HOST_ID
 } from '../constants'
 import { StorageManager } from '../storage'
@@ -45,11 +42,8 @@ export class CTWebPopupPIP extends HTMLElement {
     playControlBtn = null
     expandControlBtn = null
     muteControlBtn = null
+    openNewTabBtn = null
     _pipExpanded = false
-    _pipPlaySvgFromTemplate = ''
-    _pipExpandSvgFromTemplate = ''
-    _pipMuteSvgFromTemplate = ''
-    _pipMuteSvgViewBoxFromTemplate = ''
 
     get target () {
       return this._target || ''
@@ -248,29 +242,41 @@ export class CTWebPopupPIP extends HTMLElement {
       })
     }
 
-    capturePipTemplateControlSvgs () {
-      this._pipMuteSvgViewBoxFromTemplate = ''
-      for (const [el, key] of [
-        [this.playControlBtn, '_pipPlaySvgFromTemplate'],
-        [this.expandControlBtn, '_pipExpandSvgFromTemplate'],
-        [this.muteControlBtn, '_pipMuteSvgFromTemplate']
-      ]) {
-        const svg = el?.querySelector('svg')
-        if (!svg) continue
-        this[key] = svg.innerHTML
-        if (el === this.muteControlBtn) {
-          this._pipMuteSvgViewBoxFromTemplate = svg.getAttribute('viewBox') || ''
-        }
+    getPipIcons () {
+      return this.isWideViewport() ? PIP_ICONS.desktop : PIP_ICONS.mobile
+    }
+
+    createPipIconSvg (innerHTML) {
+      const icons = this.getPipIcons()
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      svg.setAttribute('width', String(icons.size))
+      svg.setAttribute('height', String(icons.size))
+      svg.setAttribute('viewBox', icons.viewBox)
+      svg.setAttribute('fill', 'none')
+      svg.innerHTML = innerHTML
+      return svg
+    }
+
+    injectPipControlIcons () {
+      const icons = this.getPipIcons()
+      const inject = (el, svgContent) => {
+        if (!el) return
+        el.innerHTML = ''
+        el.appendChild(this.createPipIconSvg(svgContent))
       }
+      inject(this.closeIcon, icons.close)
+      inject(this.playControlBtn, icons.play)
+      inject(this.muteControlBtn, icons.mute)
+      inject(this.expandControlBtn, icons.expand)
+      inject(this.openNewTabBtn, icons.openNewTab)
     }
 
     updatePipExpandButtonIcon () {
       if (!this.expandControlBtn) return
       const svg = this.expandControlBtn.querySelector('svg')
       if (!svg) return
-      svg.innerHTML = this._pipExpanded
-        ? PIP_COLLAPSE_ICON_SVG
-        : (this._pipExpandSvgFromTemplate || '')
+      const icons = this.getPipIcons()
+      svg.innerHTML = this._pipExpanded ? icons.collapse : icons.expand
       this.expandControlBtn.setAttribute('aria-label', this._pipExpanded ? 'Collapse' : 'Expand')
       this.expandControlBtn.setAttribute('aria-expanded', this._pipExpanded ? 'true' : 'false')
     }
@@ -312,10 +318,9 @@ export class CTWebPopupPIP extends HTMLElement {
       if (!this.playControlBtn || !(video instanceof HTMLVideoElement)) return
       const svg = this.playControlBtn.querySelector('svg')
       if (!svg) return
+      const icons = this.getPipIcons()
       const paused = video.paused
-      svg.innerHTML = paused
-        ? (this._pipPlaySvgFromTemplate || '')
-        : PIP_PAUSE_ICON_SVG
+      svg.innerHTML = paused ? icons.play : icons.pause
       this.playControlBtn.setAttribute('aria-label', paused ? 'Play' : 'Pause')
     }
 
@@ -354,15 +359,8 @@ export class CTWebPopupPIP extends HTMLElement {
       if (!this.muteControlBtn || !(video instanceof HTMLVideoElement)) return
       const svg = this.muteControlBtn.querySelector('svg')
       if (!svg) return
-      if (video.muted) {
-        svg.setAttribute('viewBox', PIP_UNMUTE_ICON_VIEWBOX)
-        svg.innerHTML = PIP_UNMUTE_ICON_SVG
-      } else {
-        const vb = this._pipMuteSvgViewBoxFromTemplate
-        if (vb) svg.setAttribute('viewBox', vb)
-        else svg.removeAttribute('viewBox')
-        svg.innerHTML = this._pipMuteSvgFromTemplate || ''
-      }
+      const icons = this.getPipIcons()
+      svg.innerHTML = video.muted ? icons.mute : icons.unmute
       this.muteControlBtn.setAttribute('aria-label', video.muted ? 'Unmute' : 'Mute')
       this.muteControlBtn.setAttribute('aria-pressed', video.muted ? 'true' : 'false')
     }
@@ -540,6 +538,7 @@ export class CTWebPopupPIP extends HTMLElement {
       this.playControlBtn = this.shadowRoot.getElementById('ct-pip-play')
       this.expandControlBtn = this.shadowRoot.getElementById('ct-pip-expand')
       this.muteControlBtn = this.shadowRoot.getElementById('ct-pip-mute')
+      this.openNewTabBtn = this.shadowRoot.getElementById('ct-pip-open-new')
       this.pipOverlay = this.shadowRoot.querySelector('.ct-pip-overlay')
 
       if (!this.container) {
@@ -550,7 +549,7 @@ export class CTWebPopupPIP extends HTMLElement {
       this.container.setAttribute('aria-modal', 'true')
       this.container.style.setProperty('visibility', 'hidden')
 
-      this.capturePipTemplateControlSvgs()
+      this.injectPipControlIcons()
 
       const tryReveal = () => this.revealPIPContent(false)
       const forceReveal = () => this.revealPIPContent(true)
@@ -600,10 +599,11 @@ export class CTWebPopupPIP extends HTMLElement {
     }
 
     getPIPPopupContent () {
-      return `
-        ${this.target.msgContent.css}
-        ${this.target.msgContent.html}
-      `
+      const mc = this.target.msgContent
+      if (this.isWideViewport()) {
+        return `${mc.css || ''}${mc.html || ''}`
+      }
+      return `${mc.css_mobile || mc.css || ''}${mc.html_mobile || mc.html || ''}`
     }
 
     revealPIPContent (force) {
