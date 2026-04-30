@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.7.0] XX April 2026
+- Introduces the new PIP template in 'Web Popup'.
+
 ## [2.6.3] 22nd April 2026
 - Dismiss Popup on SPA logic fix
 - Progressive muting for churned customers
