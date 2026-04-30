@@ -1,7 +1,7 @@
 import { invokeExternalJs } from './utilities'
 import { $ct } from '../storage'
 import { closeIframe } from '../clevertap'
-import { ACTION_TYPES, WEB_POPUP_PREVIEW } from '../constants'
+import { ACTION_TYPES, WEB_POPUP_PREVIEW, WEB_POPUP_PIP_HOST_ID } from '../constants'
 import { WVE_URL_ORIGIN } from '../../modules/visualBuilder/builder_constants'
 import { Logger } from '../../modules/logger'
 
@@ -14,6 +14,17 @@ export const renderPopUpImageOnly = (targetingMsgJson, _session) => {
   containerEl.innerHTML = ''
   containerEl.style.visibility = 'hidden'
   containerEl.appendChild(popupImageOnly)
+}
+
+export const renderPIP = (targetingMsgJson, _session) => {
+  const divId = WEB_POPUP_PIP_HOST_ID
+  const pip = document.createElement('ct-web-popup-pip')
+  pip.session = _session
+  pip.target = targetingMsgJson
+  const containerEl = document.getElementById(divId)
+  containerEl.innerHTML = ''
+  containerEl.style.visibility = 'hidden'
+  containerEl.appendChild(pip)
 }
 
 const FULLSCREEN_STYLE = `
