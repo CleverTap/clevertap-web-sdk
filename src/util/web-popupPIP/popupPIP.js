@@ -12,7 +12,6 @@ import {
   PIP_DRAG_CONTROL_SELECTOR,
   PIP_EXPAND_RUNTIME_CSS,
   PIP_REVEAL_FALLBACK_MS,
-  getPipOnClickAction,
   runPipClickAction as executePipClickAction
 } from './pipPopupUtils'
 
@@ -222,23 +221,14 @@ export class CTWebPopupPIP extends HTMLElement {
       }
     }
 
-    runPipClickAction () {
+    runPipClickAction (options = {}) {
       executePipClickAction({
         pipConfig: this.getPipDisplayConfig(),
         display: this.target.display,
         targetingMsgJson: this.target,
         preview: this.target.display.preview,
-        closeTemplate: () => this.closePipTemplate()
-      })
-    }
-
-    setupPipClickAction () {
-      const action = getPipOnClickAction(this.getPipDisplayConfig())
-      if (!action || !this.container) return
-
-      this.container.addEventListener('click', (e) => {
-        if (e.target.closest(PIP_DRAG_CONTROL_SELECTOR)) return
-        this.runPipClickAction()
+        closeTemplate: () => this.closePipTemplate(),
+        ...options
       })
     }
 
@@ -269,6 +259,22 @@ export class CTWebPopupPIP extends HTMLElement {
       inject(this.muteControlBtn, icons.mute)
       inject(this.expandControlBtn, icons.expand)
       inject(this.openNewTabBtn, icons.openNewTab)
+    }
+
+    setupPipOpenNewTab () {
+      if (!this.openNewTabBtn) return
+      this.openNewTabBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.runPipClickAction({ forceNewTab: true })
+      })
+    }
+
+    /** CTA is only on `#ct-pip-open-new`; media must not capture clicks (overrides template CSS). */
+    disablePipMediaClickTargeting () {
+      this.forEachVideo((el) => {
+        if (!el) return
+        el.style.setProperty('pointer-events', 'none', 'important')
+      })
     }
 
     updatePipExpandButtonIcon () {
@@ -550,6 +556,7 @@ export class CTWebPopupPIP extends HTMLElement {
       this.container.style.setProperty('visibility', 'hidden')
 
       this.injectPipControlIcons()
+      this.disablePipMediaClickTargeting()
 
       const tryReveal = () => this.revealPIPContent(false)
       const forceReveal = () => this.revealPIPContent(true)
@@ -576,8 +583,8 @@ export class CTWebPopupPIP extends HTMLElement {
       this.setupPipPlayPauseToggle()
       this.setupPipMuteToggle()
       this.setupPipExpandCollapse()
+      this.setupPipOpenNewTab()
       this.setupPipDrag()
-      this.setupPipClickAction()
     }
 
     handleResize (popup, container) {

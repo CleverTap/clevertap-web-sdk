@@ -129,13 +129,15 @@ function navigateOpenWebUrl (url, oc, closeTemplate) {
  * @param {Record<string, unknown>} params.targetingMsgJson — campaign / `target`
  * @param {boolean} [params.preview]
  * @param {() => void} params.closeTemplate
+ * @param {boolean} [params.forceNewTab] — when true (e.g. “open in new tab” control), URL actions always use a new tab
  */
 export function runPipClickAction ({
   pipConfig,
   display,
   targetingMsgJson,
   preview,
-  closeTemplate
+  closeTemplate,
+  forceNewTab = false
 }) {
   const action = getPipOnClickAction(pipConfig)
   if (!action) return
@@ -157,7 +159,7 @@ export function runPipClickAction ({
       const url = getPipOnClickUrl(pipConfig, display)
       if (!url) return
       fireClicked()
-      if (getPipOpenLinkUsesNewTab(pipConfig, display)) {
+      if (forceNewTab || getPipOpenLinkUsesNewTab(pipConfig, display)) {
         openUrlInNewTabNoopener(url)
       } else {
         window.parent.location.href = url
@@ -168,7 +170,12 @@ export function runPipClickAction ({
       const url = getPipOnClickUrl(pipConfig, display)
       if (!url) return
       fireClicked()
-      navigateOpenWebUrl(url, getPipOnClickConfig(pipConfig), closeTemplate)
+      const oc = getPipOnClickConfig(pipConfig)
+      navigateOpenWebUrl(
+        url,
+        forceNewTab ? { ...oc, openInNewTab: true } : oc,
+        closeTemplate
+      )
       break
     }
     case ACTION_TYPES.SOFT_PROMPT:
