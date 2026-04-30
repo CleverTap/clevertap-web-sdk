@@ -319,7 +319,7 @@ export class CTWebPopupPIP extends HTMLElement {
       if (!this.openNewTabBtn) return
       this.openNewTabBtn.addEventListener('click', (e) => {
         e.stopPropagation()
-        this.runPipClickAction({ forceNewTab: true })
+        this.runPipClickAction()
       })
     }
 

@@ -131,7 +131,7 @@ function navigateOpenWebUrl (url, oc, closeTemplate) {
  * @param {Record<string, unknown>} params.targetingMsgJson — campaign / `target`
  * @param {boolean} [params.preview]
  * @param {() => void} params.closeTemplate
- * @param {boolean} [params.forceNewTab] — when true (e.g. “open in new tab” control), URL actions always use a new tab
+ * @param {boolean} [params.forceNewTab] — when true, URL actions use a new tab regardless of `onClick.openInNewTab`
  */
 export function runPipClickAction ({
   pipConfig,
