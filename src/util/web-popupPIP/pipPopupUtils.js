@@ -7,6 +7,8 @@ export const PIP_DRAG_CONTROL_SELECTOR =
 /** If media never reaches paint-ready, show shell after this many ms. */
 export const PIP_REVEAL_FALLBACK_MS = 2500
 
+export const PIP_TEMPLATE_ENTRANCE_ANIMATION_NAME = 'ct-pip-enter'
+
 /** Fullscreen expand: letterbox video with native aspect ratio (object-fit: contain). */
 export const PIP_EXPAND_RUNTIME_CSS = `
 .ct-pip-overlay.ct-pip--expanded {

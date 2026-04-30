@@ -12,6 +12,7 @@ import {
   PIP_DRAG_CONTROL_SELECTOR,
   PIP_EXPAND_RUNTIME_CSS,
   PIP_REVEAL_FALLBACK_MS,
+  PIP_TEMPLATE_ENTRANCE_ANIMATION_NAME,
   runPipClickAction as executePipClickAction
 } from './pipPopupUtils'
 
@@ -35,6 +36,7 @@ export class CTWebPopupPIP extends HTMLElement {
     resizeObserver = null
     _revealFallbackTimer = undefined
     _pipDragAbort = null
+    _pipEntranceAnimAbort = null
     /** @type {HTMLElement | null} */
     pipOverlay = null
     _pipDragPointerId = null
@@ -203,6 +205,10 @@ export class CTWebPopupPIP extends HTMLElement {
         this._pipDragAbort.abort()
         this._pipDragAbort = null
       }
+      if (this._pipEntranceAnimAbort) {
+        this._pipEntranceAnimAbort.abort()
+        this._pipEntranceAnimAbort = null
+      }
       this._pipDragPointerId = null
       const host = this.getPipHostEl()
       if (host) {
@@ -236,6 +242,27 @@ export class CTWebPopupPIP extends HTMLElement {
       return this.isWideViewport() ? PIP_ICONS.desktop : PIP_ICONS.mobile
     }
 
+    /**
+     * Parse icon markup in the SVG namespace (innerHTML on &lt;svg&gt; in shadow DOM can skip
+     * painting in WebKit until layout/transform settles — especially with transform entrance).
+     */
+    setPipSvgMarkup (svg, innerMarkup) {
+      if (!svg) return
+      while (svg.lastChild) svg.removeChild(svg.lastChild)
+      const doc = new DOMParser().parseFromString(
+        `<svg xmlns="http://www.w3.org/2000/svg">${innerMarkup}</svg>`,
+        'image/svg+xml'
+      )
+      const parsedRoot = doc.documentElement
+      if (parsedRoot.querySelector('parsererror')) {
+        svg.innerHTML = innerMarkup
+        return
+      }
+      while (parsedRoot.firstChild) {
+        svg.appendChild(parsedRoot.firstChild)
+      }
+    }
+
     createPipIconSvg (innerHTML) {
       const icons = this.getPipIcons()
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -243,8 +270,35 @@ export class CTWebPopupPIP extends HTMLElement {
       svg.setAttribute('height', String(icons.size))
       svg.setAttribute('viewBox', icons.viewBox)
       svg.setAttribute('fill', 'none')
-      svg.innerHTML = innerHTML
+      this.setPipSvgMarkup(svg, innerHTML)
       return svg
+    }
+
+    /** Re-apply icons after layout / CSS entrance animations (idempotent). */
+    refreshPipControlIconsAfterLayout () {
+      this.injectPipControlIcons()
+      this.updatePipExpandButtonIcon()
+      if (this.isPipPlayPauseEnabled()) this.syncPipPlayButtonIcon()
+      if (this.isPipMuteEnabled()) this.syncPipMuteButtonIcon()
+    }
+
+    bindPipEntranceAnimationReinject () {
+      const root = this.pipOverlay || this.container
+      if (!root) return
+      if (this._pipEntranceAnimAbort) {
+        this._pipEntranceAnimAbort.abort()
+      }
+      this._pipEntranceAnimAbort = new AbortController()
+      const { signal } = this._pipEntranceAnimAbort
+      const entranceName = PIP_TEMPLATE_ENTRANCE_ANIMATION_NAME
+      root.addEventListener(
+        'animationend',
+        (e) => {
+          if ((e.animationName || '') !== entranceName) return
+          this.refreshPipControlIconsAfterLayout()
+        },
+        { signal }
+      )
     }
 
     injectPipControlIcons () {
@@ -282,7 +336,7 @@ export class CTWebPopupPIP extends HTMLElement {
       const svg = this.expandControlBtn.querySelector('svg')
       if (!svg) return
       const icons = this.getPipIcons()
-      svg.innerHTML = this._pipExpanded ? icons.collapse : icons.expand
+      this.setPipSvgMarkup(svg, this._pipExpanded ? icons.collapse : icons.expand)
       this.expandControlBtn.setAttribute('aria-label', this._pipExpanded ? 'Collapse' : 'Expand')
       this.expandControlBtn.setAttribute('aria-expanded', this._pipExpanded ? 'true' : 'false')
     }
@@ -326,7 +380,7 @@ export class CTWebPopupPIP extends HTMLElement {
       if (!svg) return
       const icons = this.getPipIcons()
       const paused = video.paused
-      svg.innerHTML = paused ? icons.play : icons.pause
+      this.setPipSvgMarkup(svg, paused ? icons.play : icons.pause)
       this.playControlBtn.setAttribute('aria-label', paused ? 'Play' : 'Pause')
     }
 
@@ -366,7 +420,7 @@ export class CTWebPopupPIP extends HTMLElement {
       const svg = this.muteControlBtn.querySelector('svg')
       if (!svg) return
       const icons = this.getPipIcons()
-      svg.innerHTML = video.muted ? icons.mute : icons.unmute
+      this.setPipSvgMarkup(svg, video.muted ? icons.mute : icons.unmute)
       this.muteControlBtn.setAttribute('aria-label', video.muted ? 'Unmute' : 'Mute')
       this.muteControlBtn.setAttribute('aria-pressed', video.muted ? 'true' : 'false')
     }
@@ -531,6 +585,10 @@ export class CTWebPopupPIP extends HTMLElement {
 
     renderPIPPopup () {
       this._pipExpanded = false
+      if (this._pipEntranceAnimAbort) {
+        this._pipEntranceAnimAbort.abort()
+        this._pipEntranceAnimAbort = null
+      }
       this.shadow.innerHTML = this.getPIPPopupContent()
       const expandStyle = document.createElement('style')
       expandStyle.textContent = PIP_EXPAND_RUNTIME_CSS
@@ -557,6 +615,7 @@ export class CTWebPopupPIP extends HTMLElement {
 
       this.injectPipControlIcons()
       this.disablePipMediaClickTargeting()
+      this.bindPipEntranceAnimationReinject()
 
       const tryReveal = () => this.revealPIPContent(false)
       const forceReveal = () => this.revealPIPContent(true)
@@ -644,6 +703,11 @@ export class CTWebPopupPIP extends HTMLElement {
         if (host) {
           host.style.visibility = 'visible'
         }
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            this.refreshPipControlIconsAfterLayout()
+          })
+        })
       }
 
       if (!force && this.popup instanceof HTMLImageElement) {
