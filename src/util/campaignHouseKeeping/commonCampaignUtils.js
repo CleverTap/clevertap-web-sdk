@@ -1068,7 +1068,7 @@ export const commonCampaignUtils = {
 
     if (targetingMsgJson.display.wtarget_type === 0 &&
       (layout === WEB_POPUP_TEMPLATES.BOX || layout === WEB_POPUP_TEMPLATES.BANNER ||
-        layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY)) {
+        layout === WEB_POPUP_TEMPLATES.IMAGE_ONLY || layout === WEB_POPUP_TEMPLATES.ADVANCED_BUILDER)) {
       this.createTemplate(targetingMsgJson, true)
       return true
     }
