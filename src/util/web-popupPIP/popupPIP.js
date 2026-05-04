@@ -595,7 +595,8 @@ export class CTWebPopupPIP extends HTMLElement {
       this.shadow.appendChild(expandStyle)
       this.mediaDesktop = this.shadowRoot.querySelector('.ct-pip-media--desktop') ||
         this.shadowRoot.querySelector('.ct-pip-media')
-      this.mediaMobile = this.shadowRoot.querySelector('.ct-pip-media--mobile')
+      this.mediaMobile = this.shadowRoot.querySelector('.ct-pip-media--mobile') ||
+        this.shadowRoot.querySelector('.ct-pip-media')
       this.popup = this.getActiveMedia()
       this.container = this.shadowRoot.getElementById('ct-pip-container')
       this.closeIcon = this.shadowRoot.getElementById('ct-pip-close')
