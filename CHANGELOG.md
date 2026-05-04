@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.6.4] 4th May 2026
+- Added support for exit intent in advanced web popup template.
+
 ## [2.6.3] 22nd April 2026
 - Dismiss Popup on SPA logic fix
 - Progressive muting for churned customers
