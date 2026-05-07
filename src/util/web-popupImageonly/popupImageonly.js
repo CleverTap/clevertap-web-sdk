@@ -62,7 +62,7 @@ export class CTWebPopupImageOnly extends HTMLElement {
     }
 
     get mobileAltText () {
-      return this.target.display.mobileALt
+      return this.target.display.mobileAlt
     }
 
     renderImageOnlyPopup () {
@@ -83,7 +83,7 @@ export class CTWebPopupImageOnly extends HTMLElement {
         this.resizeObserver.unobserve(this.popup)
         const imageOnlyHost = document.getElementById('wzrkImageOnlyDiv')
         if (imageOnlyHost != null) {
-          imageOnlyHost.style.display = 'none'
+          imageOnlyHost.remove()
         }
         this.remove()
         if (campaignId != null && campaignId !== '-1') {
