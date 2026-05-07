@@ -164,7 +164,7 @@ export function runPipClickAction ({
       if (forceNewTab || getPipOpenLinkUsesNewTab(pipConfig, display)) {
         openUrlInNewTabNoopener(url)
       } else {
-        window.parent.location.href = url
+        window.location.href = url
       }
       break
     }
