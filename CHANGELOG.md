@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.7.0] 7th May 2026
+- Introduces the new PIP template in 'Web Popup'.
+
 ## [2.6.4] 4th May 2026
 - Added support for exit intent in advanced web popup template.
 
