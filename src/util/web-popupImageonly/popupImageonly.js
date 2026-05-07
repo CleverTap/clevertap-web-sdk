@@ -62,7 +62,7 @@ export class CTWebPopupImageOnly extends HTMLElement {
     }
 
     get mobileAltText () {
-      return this.target.display.mobileALt
+      return this.target.display.mobileAlt
     }
 
     renderImageOnlyPopup () {
