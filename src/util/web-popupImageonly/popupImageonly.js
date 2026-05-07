@@ -83,7 +83,7 @@ export class CTWebPopupImageOnly extends HTMLElement {
         this.resizeObserver.unobserve(this.popup)
         const imageOnlyHost = document.getElementById('wzrkImageOnlyDiv')
         if (imageOnlyHost != null) {
-          imageOnlyHost.style.display = 'none'
+          imageOnlyHost.remove()
         }
         this.remove()
         if (campaignId != null && campaignId !== '-1') {
