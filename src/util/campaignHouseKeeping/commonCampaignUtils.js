@@ -448,6 +448,13 @@ export const commonCampaignUtils = {
       const element = document.getElementById(divId)
       element.remove()
     }
+    // Prevents coexistence with other popups (e.g., exit intent)
+    if (
+      document.getElementById(divId) != null ||
+      document.getElementById('intentPreview') != null
+    ) {
+      return
+    }
     const msgDiv = document.createElement('div')
     msgDiv.id = divId
     document.body.appendChild(msgDiv)

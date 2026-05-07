@@ -78,7 +78,7 @@ export class CTWebPopupPIP extends HTMLElement {
     }
 
     get mobileAltText () {
-      return this.target.display.mobileALt ||
+      return this.target.display.mobileAlt ||
         this.target.display?.mobile?.media?.alt_text ||
         this.target.display?.media?.alt_text
     }
@@ -214,7 +214,7 @@ export class CTWebPopupPIP extends HTMLElement {
       if (host) {
         host.remove()
       }
-      if (campaignId != null && campaignId !== '-1') {
+      if (!this.target.display?.preview && campaignId != null && campaignId !== '-1') {
         if (StorageManager._isLocalStorageSupported()) {
           const campaignObj = getCampaignObject()
 
