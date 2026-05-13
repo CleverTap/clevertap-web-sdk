@@ -220,6 +220,34 @@ export const setCampaignObjectForGuid = () => {
     }
   }
 }
+// Restore WZRK_CAMP from WZRK_CAMP_G[guid] on re-login
+export const restoreCampaignObjectForGuid = () => {
+  if (!StorageManager._isLocalStorageSupported()) {
+    return
+  }
+  try {
+    const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
+    if (!guid) {
+      return
+    }
+    const storageValue = StorageManager.read(CAMP_COOKIE_G)
+    if (!storageValue) {
+      return
+    }
+    const guidCampObj = JSON.parse(decodeURIComponent(storageValue))
+    const archivedCamp = guidCampObj[guid]
+    if (archivedCamp && Object.keys(archivedCamp).length > 0) {
+      // Write directly to WZRK_CAMP without triggering setCampaignObjectForGuid
+      // to avoid overwriting the archived CAMP_G data
+      const existingCamp = getCampaignObject()
+      const merged = { ...existingCamp, ...archivedCamp }
+      StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(JSON.stringify(merged)))
+    }
+  } catch (e) {
+    console.error('Failed to restore campaign object for guid: ' + e)
+  }
+}
+
 export const getCampaignObjForLc = () => {
   // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
   const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
