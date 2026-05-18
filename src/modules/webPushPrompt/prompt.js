@@ -89,7 +89,6 @@ export const processSoftPrompt = () => {
     notificationHandler.setupWebPush(displayArgs)
   }
   StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, false)
-  StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, false)
 }
 
 export const parseDisplayArgs = (displayArgs) => {
