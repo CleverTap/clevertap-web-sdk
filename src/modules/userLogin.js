@@ -33,7 +33,8 @@ import {
   isProfileValid,
   processFBUserObj,
   processGPlusUserObj,
-  addToLocalProfileMap
+  addToLocalProfileMap,
+  restoreCampaignObjectForGuid
 } from '../util/clevertap'
 import { validateCustomCleverTapID } from '../util/helpers'
 
@@ -123,6 +124,9 @@ export default class UserLoginHandler extends Array {
           if (!customIdFlag) {
             this.#device.gcookie = gFromCache
           }
+
+          // Restore WZRK_CAMP from WZRK_CAMP_G for the returning user's guid
+          restoreCampaignObjectForGuid()
 
           const lastK = $ct.LRU_CACHE.getSecondLastKey()
           if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
