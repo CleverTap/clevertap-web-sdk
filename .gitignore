@@ -118,3 +118,9 @@ dist
 
 .DS_Store
 clevertap.min.js
+
+
+clevertap.js
+clevertap.min.js
+clevertap.js.map
+sw_webpush.min.js
