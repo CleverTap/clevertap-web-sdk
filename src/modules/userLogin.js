@@ -17,10 +17,6 @@ import {
   META_COOKIE,
   FIRE_PUSH_UNREGISTERED
 } from '../util/constants'
-import {
-  StorageManager,
-  $ct
-} from '../util/storage'
 import LRUCache from '../util/lruCache'
 import {
   compressData
@@ -45,13 +41,15 @@ export default class UserLoginHandler extends Array {
   #session
   #oldValues
   #device
+  #instanceManager
 
   constructor ({
     request,
     account,
     session,
     logger,
-    device
+    device,
+    instanceManager
   },
   values) {
     super()
@@ -61,15 +59,16 @@ export default class UserLoginHandler extends Array {
     this.#logger = logger
     this.#oldValues = values
     this.#device = device
+    this.#instanceManager = instanceManager
   }
 
   // On User Login
   #processOUL (profileArr) {
     let sendOULFlag = true
-    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
+    this.#instanceManager.storage.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
     const addToK = (ids, customIdFlag = false) => {
-      let k = StorageManager.readFromLSorCookie(KCOOKIE_NAME)
-      const g = StorageManager.readFromLSorCookie(GCOOKIE_NAME)
+      let k = this.#instanceManager.storage.readFromLSorCookie(KCOOKIE_NAME)
+      const g = this.#instanceManager.storage.readFromLSorCookie(GCOOKIE_NAME)
       let kId
       if (k == null) {
         k = {}
@@ -83,15 +82,15 @@ export default class UserLoginHandler extends Array {
           kId = ids[0]
           anonymousUser = true
         }
-        if ($ct.LRU_CACHE == null && StorageManager._isLocalStorageSupported()) {
-          $ct.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
+        if (this.#instanceManager.state.LRU_CACHE == null && this.#instanceManager.storage._isLocalStorageSupported()) {
+          this.#instanceManager.state.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
         }
 
         if (anonymousUser) {
           if ((g) != null) {
             // if have gcookie
-            $ct.LRU_CACHE.set(kId, g)
-            $ct.blockRequest = false
+            this.#instanceManager.state.LRU_CACHE.set(kId, g)
+            this.#instanceManager.state.blockRequest = false
           }
         } else {
           // check if the id is present in the cache
@@ -99,7 +98,7 @@ export default class UserLoginHandler extends Array {
           for (const idx in ids) {
             if (ids.hasOwnProperty(idx)) {
               const id = ids[idx]
-              if ($ct.LRU_CACHE.cache[id]) {
+              if (this.#instanceManager.state.LRU_CACHE.cache[id]) {
                 kId = id
                 foundInCache = true
                 break
@@ -109,17 +108,17 @@ export default class UserLoginHandler extends Array {
         }
 
         if (foundInCache) {
-          if (kId !== $ct.LRU_CACHE.getLastKey()) {
+          if (kId !== this.#instanceManager.state.LRU_CACHE.getLastKey()) {
             // New User found
             // remove the entire cache
             this.#handleCookieFromCache()
           } else {
             sendOULFlag = false
-            StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
+            this.#instanceManager.storage.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, sendOULFlag)
           }
-          const gFromCache = $ct.LRU_CACHE.get(kId)
-          $ct.LRU_CACHE.set(kId, gFromCache)
-          StorageManager.saveToLSorCookie(GCOOKIE_NAME, gFromCache)
+          const gFromCache = this.#instanceManager.state.LRU_CACHE.get(kId)
+          this.#instanceManager.state.LRU_CACHE.set(kId, gFromCache)
+          this.#instanceManager.storage.saveToLSorCookie(GCOOKIE_NAME, gFromCache)
           // Only override gcookie if we don't have a customId
           if (!customIdFlag) {
             this.#device.gcookie = gFromCache
@@ -128,10 +127,10 @@ export default class UserLoginHandler extends Array {
           // Restore WZRK_CAMP from WZRK_CAMP_G for the returning user's guid
           restoreCampaignObjectForGuid()
 
-          const lastK = $ct.LRU_CACHE.getSecondLastKey()
-          if (StorageManager.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
+          const lastK = this.#instanceManager.state.LRU_CACHE.getSecondLastKey()
+          if (this.#instanceManager.storage.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
             // CACHED OLD USER FOUND. TRANSFER PUSH TOKEN TO THIS USER
-            const lastGUID = $ct.LRU_CACHE.cache[lastK]
+            const lastGUID = this.#instanceManager.state.LRU_CACHE.cache[lastK]
             this.#request.unregisterTokenForGuid(lastGUID)
           }
         } else {
@@ -140,16 +139,16 @@ export default class UserLoginHandler extends Array {
           } else {
             if ((g) != null && !customIdFlag) {
               this.#device.gcookie = g
-              StorageManager.saveToLSorCookie(GCOOKIE_NAME, g)
+              this.#instanceManager.storage.saveToLSorCookie(GCOOKIE_NAME, g)
               sendOULFlag = false
             }
           }
-          StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
+          this.#instanceManager.storage.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
           kId = ids[0]
         }
       }
       k.id = kId
-      StorageManager.saveToLSorCookie(KCOOKIE_NAME, k)
+      this.#instanceManager.storage.saveToLSorCookie(KCOOKIE_NAME, k)
     }
 
     if (Array.isArray(profileArr) && profileArr.length > 0) {
@@ -193,7 +192,7 @@ export default class UserLoginHandler extends Array {
                 hasCustomId = true
                 // Set the custom ID as gcookie
                 this.#device.gcookie = result.sanitizedId
-                StorageManager.saveToLSorCookie(GCOOKIE_NAME, result.sanitizedId)
+                this.#instanceManager.storage.saveToLSorCookie(GCOOKIE_NAME, result.sanitizedId)
                 this.#logger.debug('customId set for OUL flow:: ' + result.sanitizedId)
               } else {
                 this.#logger.error('Invalid customId: ' + result.error)
@@ -206,7 +205,7 @@ export default class UserLoginHandler extends Array {
 
             data.profile = profileObj
             const ids = []
-            if (StorageManager._isLocalStorageSupported()) {
+            if (this.#instanceManager.storage._isLocalStorageSupported()) {
               if (profileObj.Identity) {
                 ids.push(profileObj.Identity)
               }
@@ -242,7 +241,7 @@ export default class UserLoginHandler extends Array {
             // Also when this flag is set we will get another flag from LC in arp which tells us to delete arp
             // stored in the cache and replace it with the response arp.
 
-            this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, sendOULFlag)
+            this.#request.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest, sendOULFlag)
           }
         }
       }
@@ -252,49 +251,49 @@ export default class UserLoginHandler extends Array {
   clear () {
     this.#logger.debug('clear called. Reset flag has been set.')
     this.#deleteUser()
-    StorageManager.setMetaProp(CLEAR, true)
+    this.#instanceManager.storage.setMetaProp(CLEAR, true)
   }
 
   #handleCookieFromCache () {
-    $ct.blockRequest = false
+    this.#instanceManager.state.blockRequest = false
     console.debug('Block request is false')
-    if (StorageManager._isLocalStorageSupported()) {
-      delete localStorage[PR_COOKIE]
-      delete localStorage[EV_COOKIE]
-      delete localStorage[META_COOKIE]
-      delete localStorage[ARP_COOKIE]
-      delete localStorage[CAMP_COOKIE_NAME]
-      delete localStorage[CHARGEDID_COOKIE_NAME]
+    if (this.#instanceManager.storage._isLocalStorageSupported()) {
+      this.#instanceManager.storage.remove(PR_COOKIE)
+      this.#instanceManager.storage.remove(EV_COOKIE)
+      this.#instanceManager.storage.remove(META_COOKIE)
+      this.#instanceManager.storage.remove(ARP_COOKIE)
+      this.#instanceManager.storage.remove(CAMP_COOKIE_NAME)
+      this.#instanceManager.storage.remove(CHARGEDID_COOKIE_NAME)
     }
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName())
-    StorageManager.removeCookie(this.#session.cookieName, $ct.broadDomain)
-    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain)
+    this.#instanceManager.storage.removeCookie(CAMP_COOKIE_NAME, getHostName())
+    this.#instanceManager.storage.removeCookie(this.#session.cookieName, this.#instanceManager.state.broadDomain)
+    this.#instanceManager.storage.removeCookie(ARP_COOKIE, this.#instanceManager.state.broadDomain)
     this.#session.setSessionCookieObject('')
   }
 
   #deleteUser () {
-    $ct.blockRequest = true
+    this.#instanceManager.state.blockRequest = true
     this.#logger.debug('Block request is true')
-    $ct.globalCache = {
+    this.#instanceManager.state.globalCache = {
       gcookie: null,
       REQ_N: 0,
       RESP_N: 0
     }
-    if (StorageManager._isLocalStorageSupported()) {
-      delete localStorage[GCOOKIE_NAME]
-      delete localStorage[KCOOKIE_NAME]
-      delete localStorage[PR_COOKIE]
-      delete localStorage[EV_COOKIE]
-      delete localStorage[META_COOKIE]
-      delete localStorage[ARP_COOKIE]
-      delete localStorage[CAMP_COOKIE_NAME]
-      delete localStorage[CHARGEDID_COOKIE_NAME]
+    if (this.#instanceManager.storage._isLocalStorageSupported()) {
+      this.#instanceManager.storage.remove(GCOOKIE_NAME)
+      this.#instanceManager.storage.remove(KCOOKIE_NAME)
+      this.#instanceManager.storage.remove(PR_COOKIE)
+      this.#instanceManager.storage.remove(EV_COOKIE)
+      this.#instanceManager.storage.remove(META_COOKIE)
+      this.#instanceManager.storage.remove(ARP_COOKIE)
+      this.#instanceManager.storage.remove(CAMP_COOKIE_NAME)
+      this.#instanceManager.storage.remove(CHARGEDID_COOKIE_NAME)
     }
-    StorageManager.removeCookie(GCOOKIE_NAME, $ct.broadDomain)
-    StorageManager.removeCookie(CAMP_COOKIE_NAME, getHostName())
-    StorageManager.removeCookie(KCOOKIE_NAME, getHostName())
-    StorageManager.removeCookie(this.#session.cookieName, $ct.broadDomain)
-    StorageManager.removeCookie(ARP_COOKIE, $ct.broadDomain)
+    this.#instanceManager.storage.removeCookie(GCOOKIE_NAME, this.#instanceManager.state.broadDomain)
+    this.#instanceManager.storage.removeCookie(CAMP_COOKIE_NAME, getHostName())
+    this.#instanceManager.storage.removeCookie(KCOOKIE_NAME, getHostName())
+    this.#instanceManager.storage.removeCookie(this.#session.cookieName, this.#instanceManager.state.broadDomain)
+    this.#instanceManager.storage.removeCookie(ARP_COOKIE, this.#instanceManager.state.broadDomain)
     this.#device.gcookie = null
     this.#session.setSessionCookieObject('')
   }
@@ -307,7 +306,7 @@ export default class UserLoginHandler extends Array {
               (profileObj.Facebook != null && Object.keys(profileObj.Facebook).length > 0) ||
               (profileObj['Google Plus'] != null && Object.keys(profileObj['Google Plus']).length > 0))
       if (processProfile) {
-        StorageManager.setInstantDeleteFlagInK()
+        this.#instanceManager.storage.setInstantDeleteFlagInK()
         try {
           this.#processOUL([profileObj])
         } catch (e) {
