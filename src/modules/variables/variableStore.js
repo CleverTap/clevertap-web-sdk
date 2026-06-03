@@ -14,6 +14,7 @@ class VariableStore {
   #variablesChangedCallbacks
   #oneTimeVariablesChangedCallbacks
   #hasVarsRequestCompleted = false
+  #abVariantInfo = []
 
   constructor ({ logger, request, account, event }) {
     this.#logger = logger
@@ -50,6 +51,10 @@ class VariableStore {
 
   hasVarsRequestCompleted () {
     return this.#hasVarsRequestCompleted
+  }
+
+  getVariants () {
+    return this.#abVariantInfo
   }
 
   /**
@@ -142,12 +147,16 @@ class VariableStore {
     }
   }
 
-  mergeVariables (vars) {
+  mergeVariables (vars, abVariantInfo) {
     this.#logger.debug('msg vars is ', vars)
     this.#hasVarsRequestCompleted = true
 
     StorageManager.saveToLSorCookie(VARIABLES, vars)
     this.#remoteVariables = vars
+
+    if (Array.isArray(abVariantInfo)) {
+      this.#abVariantInfo = abVariantInfo
+    }
 
     for (const name in this.#variables) {
       if (vars.hasOwnProperty(name)) {
