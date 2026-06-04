@@ -1562,9 +1562,9 @@ export const commonCampaignUtils = {
   },
 
   handleVariables (msg) {
-    // Merges variables into storage
+    // Merges variables and A/B variant info into storage
     if (msg.vars) {
-      $ct.variableStore.mergeVariables(msg.vars)
+      $ct.variableStore.mergeVariables(msg.vars, msg.abVariantInfo)
     }
   }
 }
