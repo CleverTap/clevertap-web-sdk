@@ -1299,6 +1299,10 @@ export default class CleverTap {
     this.#variableStore.addOneTimeVariablesChangedCallback(callback)
   }
 
+  getVariants () {
+    return this.#variableStore.getVariants()
+  }
+
   /*
      This function is used for debugging and getting the details of all the campaigns
      that were qualified and rendered for the current user
