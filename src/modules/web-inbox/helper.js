@@ -4,24 +4,29 @@ import { Message } from './Message'
 import { WEBINBOX_CONFIG, GCOOKIE_NAME, WEBINBOX } from '../../util/constants'
 import { isValueValid, safeJSONParse } from '../../util/datatypes'
 import { Logger } from '../logger'
+import { CampaignContext } from '../../util/campaignHouseKeeping/campaignContext'
 
 export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
-  const _settings = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+  const storage = CampaignContext.instanceManager ? CampaignContext.instanceManager.storage : StorageManager
+  const inbox = CampaignContext.instanceManager ? CampaignContext.instanceManager.state.inbox : $ct.inbox
+  const _settings = storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+  console.log('[processWebInboxSettings] instanceManager:', !!CampaignContext.instanceManager, 'isDefault:', CampaignContext.instanceManager?.isDefault, 'accountId:', CampaignContext.instanceManager?.id, 'existing settings:', JSON.stringify(_settings), 'new settings:', JSON.stringify(webInboxSetting))
   if (isPreview) {
-    $ct.inbox.inboxConfigForPreview = webInboxSetting
-    $ct.inbox.isPreview = true
-    $ct.inbox && $ct.inbox.init()
+    inbox.inboxConfigForPreview = webInboxSetting
+    inbox.isPreview = true
+    inbox && inbox.init()
   } else if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting)) {
-    StorageManager.saveToLSorCookie(WEBINBOX_CONFIG, webInboxSetting)
-    $ct.inbox && $ct.inbox.init()
+    storage.saveToLSorCookie(WEBINBOX_CONFIG, webInboxSetting)
+    inbox && inbox.init()
   }
 }
 
 export const processInboxNotifs = (msg) => {
+  const inbox = CampaignContext.instanceManager ? CampaignContext.instanceManager.state.inbox : $ct.inbox
   if (msg.inbox_preview) {
-    $ct.inbox.incomingMessagesForPreview = msg.inbox_notifs
+    inbox.incomingMessagesForPreview = msg.inbox_notifs
   } else {
-    $ct.inbox.incomingMessages = msg
+    inbox.incomingMessages = msg
   }
 }
 
@@ -34,29 +39,34 @@ export const processWebInboxResponse = (msg) => {
   }
 }
 
-export const addWebInbox = (logger) => {
+export const addWebInbox = (logger, instanceManager) => {
   checkAndRegisterWebInboxElements()
-  $ct.inbox = new Inbox({ logger })
-  document.body.appendChild($ct.inbox)
+  const inboxState = instanceManager ? instanceManager.state : $ct
+  const inbox = new Inbox({ logger })
+  inbox.instanceManager = instanceManager || null
+  inboxState.inbox = inbox
+  document.body.appendChild(inbox)
 }
 
-const getAndMigrateInboxMessages = (guid) => {
-  const messages = StorageManager.readFromLSorCookie(WEBINBOX) || {}
+const getAndMigrateInboxMessages = (guid, storage) => {
+  const _storage = storage || StorageManager
+  const messages = _storage.readFromLSorCookie(WEBINBOX) || {}
   // Doing this to migrate message to guid level
   if (Object.keys(messages).length > 0 && Object.keys(messages)[0].includes('_')) {
     const gudInboxObj = {}
     gudInboxObj[guid] = messages
-    StorageManager.saveToLSorCookie(WEBINBOX, gudInboxObj)
+    _storage.saveToLSorCookie(WEBINBOX, gudInboxObj)
     return gudInboxObj
   }
   return messages
 }
 
-export const getInboxMessages = () => {
+export const getInboxMessages = (instanceManager) => {
   try {
-    const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
+    const _storage = instanceManager ? instanceManager.storage : StorageManager
+    const guid = safeJSONParse(decodeURIComponent(_storage.read(GCOOKIE_NAME)), null)
     if (!isValueValid(guid)) { return {} }
-    const messages = getAndMigrateInboxMessages(guid)
+    const messages = getAndMigrateInboxMessages(guid, _storage)
 
     return messages.hasOwnProperty(guid) ? messages[guid] : {}
   } catch (e) {
@@ -64,21 +74,26 @@ export const getInboxMessages = () => {
   }
 }
 
-export const saveInboxMessages = (messages) => {
+export const saveInboxMessages = (messages, instanceManager) => {
   try {
-    const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
+    const _storage = instanceManager ? instanceManager.storage : StorageManager
+    const guid = safeJSONParse(decodeURIComponent(_storage.read(GCOOKIE_NAME)), null)
     if (!isValueValid(guid)) { return }
-    const storedInboxObj = getAndMigrateInboxMessages(guid)
+    const storedInboxObj = getAndMigrateInboxMessages(guid, _storage)
 
     const newObj = { ...storedInboxObj, [guid]: messages }
-    StorageManager.saveToLSorCookie(WEBINBOX, newObj)
+    _storage.saveToLSorCookie(WEBINBOX, newObj)
   } catch (e) {
-    Logger.getInstance().error('Error saving inbox messages:', e.message)
+    const _logger = (instanceManager && instanceManager.logger) || Logger.getInstance()
+    _logger.error('Error saving inbox messages:', e.message)
   }
 }
 
-export const initializeWebInbox = (logger) => {
+export const initializeWebInbox = (logger, instanceManager) => {
   return new Promise((resolve, reject) => {
+    const _storage = instanceManager ? instanceManager.storage : StorageManager
+    const inboxState = instanceManager ? instanceManager.state : $ct
+
     const retryUntil = (condition, interval = 500, maxRetries = 20) => {
       return new Promise((resolve, reject) => {
         let attempts = 0
@@ -87,7 +102,7 @@ export const initializeWebInbox = (logger) => {
           if (condition()) {
             clearInterval(retry)
             resolve() // Success
-          } else if ($ct.inbox !== null) {
+          } else if (inboxState.inbox !== null) {
             clearInterval(retry)
             resolve() // Inbox already initialized
           } else if (attempts >= maxRetries) {
@@ -100,14 +115,14 @@ export const initializeWebInbox = (logger) => {
     }
 
     const addInboxSafely = () => {
-      if ($ct.inbox === null) {
-        addWebInbox(logger)
+      if (inboxState.inbox === null) {
+        addWebInbox(logger, instanceManager)
       }
     }
 
     const checkElementCondition = () => {
-      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
-      return document.getElementById(config.inboxSelector) && $ct.inbox === null
+      const config = _storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+      return document.getElementById(config.inboxSelector) && inboxState.inbox === null
     }
 
     const onFailure = () => {
@@ -116,7 +131,7 @@ export const initializeWebInbox = (logger) => {
 
     let retryStarted = false // Guard flag
     const startRetry = () => {
-      const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+      const config = _storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}
       if (!config.inboxSelector) {
         logger.debug('Web Inbox Retry Skipped, Inbox selector is not configured')
         return false
