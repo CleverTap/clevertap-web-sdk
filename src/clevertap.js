@@ -355,12 +355,12 @@ export default class CleverTap {
 
     if (hasWebInboxSettingsInLS()) {
       checkAndRegisterWebInboxElements()
-      initializeWebInbox(this.#logger)
+      initializeWebInbox(this.#logger, this.#instanceManager)
     }
 
     // Get Inbox Message Count
     this.getInboxMessageCount = () => {
-      const msgCount = getInboxMessages()
+      const msgCount = getInboxMessages(this.#instanceManager)
       return Object.keys(msgCount).length
     }
 
@@ -377,13 +377,13 @@ export default class CleverTap {
 
     // Get All Inbox messages
     this.getAllInboxMessages = () => {
-      return getInboxMessages()
+      return getInboxMessages(this.#instanceManager)
     }
 
     // Get only Unread messages
     this.getUnreadInboxMessages = () => {
       try {
-        const messages = getInboxMessages()
+        const messages = getInboxMessages(this.#instanceManager)
         const result = {}
 
         if (Object.keys(messages).length > 0) {
@@ -401,7 +401,7 @@ export default class CleverTap {
 
     // Get message object belonging to the given message id only. Message id should be a String
     this.getInboxMessageForId = (messageId) => {
-      const messages = getInboxMessages()
+      const messages = getInboxMessages(this.#instanceManager)
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
         return messages[messageId]
       } else {
@@ -413,7 +413,7 @@ export default class CleverTap {
     // If the message to be deleted is unviewed then decrement the badge count, delete the message from unviewedMessages list
     // Then remove the message from local storage and update cookie
     this.deleteInboxMessage = (messageId) => {
-      const messages = getInboxMessages()
+      const messages = getInboxMessages(this.#instanceManager)
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
         if (messages[messageId].viewed === 0) {
           if (this.#instanceManager.state.inbox) {
@@ -432,7 +432,7 @@ export default class CleverTap {
           el && el.remove()
         }
         delete messages[messageId]
-        saveInboxMessages(messages)
+        saveInboxMessages(messages, this.#instanceManager)
       } else {
         this.#logger.error('No message available for message Id ' + messageId)
       }
@@ -443,7 +443,7 @@ export default class CleverTap {
      - Remove the unread marker, update the viewed flag, decrement the bage Count
      - renderNotificationViewed */
     this.markReadInboxMessage = (messageId) => {
-      const messages = getInboxMessages()
+      const messages = getInboxMessages(this.#instanceManager)
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
         if (messages[messageId].viewed === 1) {
           return this.#logger.error('Message already viewed' + messageId)
@@ -462,12 +462,12 @@ export default class CleverTap {
           unViewedBadge.innerText = counter
           unViewedBadge.style.display = counter > 0 ? 'flex' : 'none'
         }
-        window.clevertap.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
+        this.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
         if (this.#instanceManager.state.inbox) {
           this.#instanceManager.state.inbox.unviewedCounter--
           delete this.#instanceManager.state.inbox.unviewedMessages[messageId]
         }
-        saveInboxMessages(messages)
+        saveInboxMessages(messages, this.#instanceManager)
       } else {
         this.#logger.error('No message available for message Id ' + messageId)
       }
@@ -487,7 +487,7 @@ export default class CleverTap {
       - renderNotificationViewed, update the badge count and style
     */
     this.markReadAllInboxMessage = () => {
-      const messages = getInboxMessages()
+      const messages = getInboxMessages(this.#instanceManager)
       const unreadMsg = this.getUnreadInboxMessages()
       if (Object.keys(unreadMsg).length > 0) {
         const msgIds = Object.keys(unreadMsg)
@@ -500,14 +500,14 @@ export default class CleverTap {
             }
           }
           messages[key].viewed = 1
-          window.clevertap.renderNotificationViewed({ msgId: messages[key].wzrk_id, pivotId: messages[key].wzrk_pivot })
+          this.renderNotificationViewed({ msgId: messages[key].wzrk_id, pivotId: messages[key].wzrk_pivot })
         })
         const unViewedBadge = document.getElementById('unviewedBadge')
         if (unViewedBadge) {
           unViewedBadge.innerText = 0
           unViewedBadge.style.display = 'none'
         }
-        saveInboxMessages(messages)
+        saveInboxMessages(messages, this.#instanceManager)
         this.#instanceManager.state.inbox.unviewedCounter = 0
         this.#instanceManager.state.inbox.unviewedMessages = {}
       } else {
@@ -728,7 +728,9 @@ export default class CleverTap {
         session: this.#session,
         request: this.#request,
         logger: this.#logger,
-        region: this.#account.region
+        region: this.#account.region,
+        instanceManager: this.#instanceManager,
+        instance: this
       })
     }
     api.setEnum = (enumVal) => {
@@ -798,18 +800,22 @@ export default class CleverTap {
         // Map of reqN -> api handler for routing JSONP responses
         _apiMap: {},
         _defaultApi: api,
+        _lastHandler: null, // tracks which instance s() resolved to, for subsequent tr()/enableWebPush()
         s: function (...args) {
           const rn = args[3] // respNumber is 4th arg
           const handler = this._apiMap[rn] || this._defaultApi
+          this._lastHandler = handler // remember for tr() and enableWebPush() in same response
           if (handler && handler.s) handler.s(...args)
           delete this._apiMap[rn]
         },
         tr: function (...args) {
-          // tr is called with campaign data -- route to default for now
-          if (this._defaultApi && this._defaultApi.tr) this._defaultApi.tr(...args)
+          // Route to the same instance that s() resolved to in this response
+          const handler = this._lastHandler || this._defaultApi
+          if (handler && handler.tr) handler.tr(...args)
         },
         enableWebPush: function (...args) {
-          if (this._defaultApi && this._defaultApi.enableWebPush) this._defaultApi.enableWebPush(...args)
+          const handler = this._lastHandler || this._defaultApi
+          if (handler && handler.enableWebPush) handler.enableWebPush(...args)
         }
       }
       // Copy other api methods for backward compat

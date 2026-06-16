@@ -2,6 +2,7 @@ import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_QUERY_PARAMS, WVE_URL_ORIGIN } f
 import { updateFormData, updateElementCSS } from './dataUpdate'
 import { addScriptTo } from '../../util/campaignRender/utilities'
 import { $ct } from '../../util/storage'
+import { CampaignContext } from '../../util/campaignHouseKeeping/campaignContext'
 
 let logger = null
 
@@ -192,12 +193,14 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
   const raiseViewed = () => {
     if (!isPreview && !notificationViewed) {
       notificationViewed = true
-      window.clevertap.renderNotificationViewed(payload)
+      const _instance = CampaignContext.instance || window.clevertap
+      _instance.renderNotificationViewed(payload)
     }
   }
 
   const raiseClicked = (payload) => {
-    window.clevertap.renderNotificationClicked(payload)
+    const _instance = CampaignContext.instance || window.clevertap
+    _instance.renderNotificationClicked(payload)
   }
 
   const processElement = (element, selector) => {
@@ -257,7 +260,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
         clearInterval(intervalId)
       }
     }, 500)
-    $ct.intervalArray.push(intervalId)
+    (CampaignContext.instanceManager ? CampaignContext.instanceManager.state.intervalArray : $ct.intervalArray).push(intervalId)
   }
 
   details.forEach(d => {
@@ -284,7 +287,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
   const addNewEl = (selector) => {
     const { pos, sibling } = findSiblingSelector(selector.selector)
     let count = 0
-    $ct.intervalArray.forEach(interval => {
+    (CampaignContext.instanceManager ? CampaignContext.instanceManager.state.intervalArray : $ct.intervalArray).forEach(interval => {
       if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
         clearInterval(parseInt(interval.split('-')[1], 10))
       }
@@ -316,7 +319,7 @@ export const renderVisualBuilder = (targetingMsgJson, isPreview, _logger) => {
         clearInterval(intervalId)
       }
     }, 500)
-    $ct.intervalArray.push(`addNewEl-${intervalId}`)
+    (CampaignContext.instanceManager ? CampaignContext.instanceManager.state.intervalArray : $ct.intervalArray).push(`addNewEl-${intervalId}`)
   }
 
   if (insertedElements.length > 0) {

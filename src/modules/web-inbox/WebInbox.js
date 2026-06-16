@@ -3,6 +3,7 @@ import { Message } from './Message'
 import { inboxContainerStyles, messageStyles } from './inboxStyles'
 import { getInboxPosition, determineTimeStampText, arrowSvg, getInboxMessages, saveInboxMessages } from './helper'
 import { WEBINBOX_CONFIG, MAX_INBOX_MSG } from '../../util/constants'
+import { CampaignContext } from '../../util/campaignHouseKeeping/campaignContext'
 
 export class Inbox extends HTMLElement {
   constructor (logger) {
@@ -64,7 +65,8 @@ export class Inbox extends HTMLElement {
   }
 
   init () {
-    this.config = this.isPreview ? this.inboxConfigForPreview : StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+    const _storage = this.instanceManager ? this.instanceManager.storage : StorageManager
+    this.config = this.isPreview ? this.inboxConfigForPreview : _storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}
     if (Object.keys(this.config).length === 0) {
       return
     }
@@ -129,7 +131,7 @@ export class Inbox extends HTMLElement {
    *  In both the above scenarios, we'll still have to decrement the unviewed counter if the message was not viewed.
    */
   deleteExpiredAndGetUnexpiredMsgs (deleteMsgsFromUI = true) {
-    let messages = getInboxMessages()
+    let messages = getInboxMessages(this.instanceManager)
 
     const now = Math.floor(Date.now() / 1000)
     for (const msg in messages) {
@@ -148,7 +150,7 @@ export class Inbox extends HTMLElement {
     if (messages && messages.length > 0) {
       messages = Object.values(messages).sort((a, b) => b.date - a.date).reduce((acc, m) => { acc[m.id] = m; return acc }, {})
     }
-    saveInboxMessages(messages)
+    saveInboxMessages(messages, this.instanceManager)
     return messages
   }
 
@@ -167,7 +169,7 @@ export class Inbox extends HTMLElement {
       this.unviewedMessages[key] = m
       this.unviewedCounter++
     })
-    saveInboxMessages(inboxMsgs)
+    saveInboxMessages(inboxMsgs, this.instanceManager)
     if (this.inbox) {
       this.buildUIForMessages(incomingMsgs)
       this.updateUnviewedBadgeCounter()
@@ -401,7 +403,8 @@ export class Inbox extends HTMLElement {
    * @returns {boolean} - Returns true if the event target is within the inboxSelector, otherwise false.
    */
   checkForWebInbox (e) {
-    const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+    const _storage = this.instanceManager ? this.instanceManager.storage : StorageManager
+    const config = _storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}
     const inboxElement = document.getElementById(config.inboxSelector)
 
     return (
@@ -420,7 +423,8 @@ export class Inbox extends HTMLElement {
         if (e.isIntersecting && this.unviewedMessages.hasOwnProperty(e.target.id) && e.target.message.viewed === 0) {
           e.target.message.viewed = 1
           if (raiseViewedEvent) {
-            window.clevertap.renderNotificationViewed({ msgId: e.target.campaignId, pivotId: e.target.pivotId })
+            const _instance = CampaignContext.instance || window.clevertap
+            _instance.renderNotificationViewed({ msgId: e.target.campaignId, pivotId: e.target.pivotId })
             this.updateMessageInLS(e.target.id, { ...e.target.message, viewed: 1 })
             setTimeout(() => {
               e.target.shadowRoot.getElementById('unreadMarker').style.display = 'none'
@@ -438,9 +442,9 @@ export class Inbox extends HTMLElement {
 
   updateMessageInLS (key, value) {
     if (!this.isPreview) {
-      const messages = getInboxMessages()
+      const messages = getInboxMessages(this.instanceManager)
       messages[key] = value
-      saveInboxMessages(messages)
+      saveInboxMessages(messages, this.instanceManager)
     }
   }
 
@@ -467,7 +471,8 @@ export class Inbox extends HTMLElement {
 
   setInboxPosition (e) {
     const windowWidth = window.outerWidth
-    const customInboxStyles = getComputedStyle($ct.inbox)
+    const inboxEl = this.instanceManager ? this.instanceManager.state.inbox : $ct.inbox
+    const customInboxStyles = getComputedStyle(inboxEl)
     const top = customInboxStyles.getPropertyValue('--inbox-top')
     const bottom = customInboxStyles.getPropertyValue('--inbox-bottom')
     const left = customInboxStyles.getPropertyValue('--inbox-left')
@@ -503,7 +508,7 @@ export class Inbox extends HTMLElement {
     }
     let counter = 0
     this.inboxCard.querySelectorAll('ct-inbox-message').forEach((m) => {
-      const messages = getInboxMessages()
+      const messages = getInboxMessages(this.instanceManager)
       if (messages[m.id] && messages[m.id].viewed === 0) {
         counter++
       }
