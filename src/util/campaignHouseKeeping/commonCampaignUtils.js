@@ -24,7 +24,6 @@ import {
 
 import { getNow, getToday } from '../datetime.js'
 
-import { StorageManager, $ct } from '../storage.js'
 import RequestDispatcher from '../requestDispatcher.js'
 import { CTWebPopupImageOnly } from '../web-popupImageonly/popupImageonly.js'
 import { CTWebPopupPIP } from '../web-popupPIP/popupPIP.js'
@@ -59,7 +58,6 @@ import {
 } from '../campaignRender/utilities.js'
 import { CampaignContext } from './campaignContext.js'
 import _tr from '../tr.js'
-import { Logger } from '../../modules/logger.js'
 
 export const commonCampaignUtils = {
 
@@ -292,12 +290,12 @@ export const commonCampaignUtils = {
 
     if (
       deliveryPreferenceUtils.isCampaignAddedToDND(campaignId) &&
-      !$ct.dismissSpamControl
+      !CampaignContext.instanceManager.state.dismissSpamControl
     ) {
       return false
     }
 
-    if (StorageManager._isLocalStorageSupported()) {
+    if (CampaignContext.instanceManager.storage._isLocalStorageSupported()) {
       // Clears old session storage for campaigns
       delete sessionStorage[CAMP_COOKIE_NAME]
       var campTypeObj = {}
@@ -360,7 +358,9 @@ export const commonCampaignUtils = {
           device: CampaignContext.device,
           session: CampaignContext.session,
           request: CampaignContext.request,
-          logger: logger
+          logger: logger,
+          instanceManager: CampaignContext.instanceManager,
+          instance: CampaignContext.instance
         })
         // Delays execution, skips immediate rendering
         return false
@@ -411,11 +411,11 @@ export const commonCampaignUtils = {
   handleImageOnlyPopup (targetingMsgJson) {
     const divId = 'wzrkImageOnlyDiv'
     // Skips if frequency limits are exceeded
-    if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
+    if (this.doCampHouseKeeping(targetingMsgJson, CampaignContext.logger) === false) {
       return
     }
     // Removes existing popup if spam control is active
-    if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
+    if (CampaignContext.instanceManager.state.dismissSpamControl && document.getElementById(divId) != null) {
       const element = document.getElementById(divId)
       element.remove()
     }
@@ -440,11 +440,11 @@ export const commonCampaignUtils = {
   handlePIP (targetingMsgJson) {
     const divId = WEB_POPUP_PIP_HOST_ID
     // Skips if frequency limits are exceeded
-    if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
+    if (this.doCampHouseKeeping(targetingMsgJson, CampaignContext.logger) === false) {
       return
     }
     // Removes existing popup if spam control is active
-    if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
+    if (CampaignContext.instanceManager.state.dismissSpamControl && document.getElementById(divId) != null) {
       const element = document.getElementById(divId)
       element.remove()
     }
@@ -500,11 +500,11 @@ export const commonCampaignUtils = {
     }
 
     // Skips if frequency limits are exceeded
-    if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
+    if (this.doCampHouseKeeping(targetingMsgJson, CampaignContext.logger) === false) {
       return
     }
     if (displayObj.layout === WEB_POPUP_TEMPLATES.ADVANCED_BUILDER) {
-      renderAdvancedBuilder(targetingMsgJson, CampaignContext.session, Logger.getInstance())
+      renderAdvancedBuilder(targetingMsgJson, CampaignContext.session, CampaignContext.logger)
       return
     }
 
@@ -512,7 +512,7 @@ export const commonCampaignUtils = {
     const opacityDivId = 'intentOpacityDiv' + displayObj.layout
 
     // Removes existing elements if spam control is active
-    if ($ct.dismissSpamControl && document.getElementById(divId) != null) {
+    if (CampaignContext.instanceManager.state.dismissSpamControl && document.getElementById(divId) != null) {
       const element = document.getElementById(divId)
       const opacityElement = document.getElementById(opacityDivId)
       if (element) {
@@ -531,7 +531,7 @@ export const commonCampaignUtils = {
     }
 
     // Maps campaign ID to div ID
-    $ct.campaignDivMap[campaignId] = divId
+    CampaignContext.instanceManager.state.campaignDivMap[campaignId] = divId
     const isBanner = displayObj.layout === WEB_POPUP_TEMPLATES.BANNER
     // Adds opacity layer for exit intent campaigns
     if (isExitIntent) {
@@ -723,7 +723,7 @@ export const commonCampaignUtils = {
       // Adds custom event scripts if needed
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS)
+    const enableTVControls = CampaignContext.instanceManager.storage.readFromLSorCookie(ENABLE_TV_CONTROLS)
     if (enableTVControls) {
       html = appendTVNavigationScript(targetingMsgJson, html)
     }
@@ -828,11 +828,11 @@ export const commonCampaignUtils = {
 
     // Checks for custom notification callback from CleverTap
     if (
-      window.clevertap.hasOwnProperty('notificationCallback') &&
-      typeof window.clevertap.notificationCallback !== 'undefined' &&
-      typeof window.clevertap.notificationCallback === 'function'
+      CampaignContext.instance.hasOwnProperty('notificationCallback') &&
+      typeof CampaignContext.instance.notificationCallback !== 'undefined' &&
+      typeof CampaignContext.instance.notificationCallback === 'function'
     ) {
-      const notificationCallback = window.clevertap.notificationCallback
+      const notificationCallback = CampaignContext.instance.notificationCallback
 
       if (!_callBackCalled) {
         const inaObj = {}
@@ -848,7 +848,7 @@ export const commonCampaignUtils = {
         if (targetingMsgJson.display.deliveryTrigger) {
           inaObj.deliveryTrigger = targetingMsgJson.display.deliveryTrigger
         }
-        window.clevertap.raiseNotificationClicked = () => {
+        CampaignContext.instance.raiseNotificationClicked = () => {
           if (onClick !== '' && onClick != null) {
             const jsFunc = targetingMsgJson.display.jsFunc
             onClick += getCookieParams(
@@ -871,14 +871,14 @@ export const commonCampaignUtils = {
             }
           }
         }
-        window.clevertap.raiseNotificationViewed = () => {
+        CampaignContext.instance.raiseNotificationViewed = () => {
           incrementImpression(targetingMsgJson)
         }
         notificationCallback(inaObj)
         _callBackCalled = true
       }
     } else {
-      window.clevertap.popupCurrentWzrkId = targetingMsgJson.wzrk_id
+      CampaignContext.instance.popupCurrentWzrkId = targetingMsgJson.wzrk_id
 
       // Handles delivery triggers (inactivity, scroll, exit intent, delay)
       // When multiple triggers are set, whichever fires first renders the campaign
@@ -937,13 +937,13 @@ export const commonCampaignUtils = {
 
       // Handles popup-specific callbacks
       if (
-        window.clevertap.hasOwnProperty('popupCallbacks') &&
-        typeof window.clevertap.popupCallbacks !== 'undefined' &&
-        typeof window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id] ===
+        CampaignContext.instance.hasOwnProperty('popupCallbacks') &&
+        typeof CampaignContext.instance.popupCallbacks !== 'undefined' &&
+        typeof CampaignContext.instance.popupCallbacks[targetingMsgJson.wzrk_id] ===
           'function'
       ) {
         const popupCallback =
-          window.clevertap.popupCallbacks[targetingMsgJson.wzrk_id]
+          CampaignContext.instance.popupCallbacks[targetingMsgJson.wzrk_id]
 
         const inaObj = {}
         inaObj.msgContent = targetingMsgJson.msgContent
@@ -975,7 +975,7 @@ export const commonCampaignUtils = {
         }
 
         // Public API to record clicked event
-        window.clevertap.raisePopupNotificationClicked = (notificationData) => {
+        CampaignContext.instance.raisePopupNotificationClicked = (notificationData) => {
           if (!notificationData || !notificationData.msgId) {
             return
           }
@@ -1108,12 +1108,12 @@ export const commonCampaignUtils = {
       return true
     }
     // Skips if frequency limits are exceeded
-    if (this.doCampHouseKeeping(targetingMsgJson, Logger.getInstance()) === false) {
+    if (this.doCampHouseKeeping(targetingMsgJson, CampaignContext.logger) === false) {
       return
     }
 
     // Removes existing exit intent elements if spam control is active
-    if ($ct.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0) {
+    if (CampaignContext.instanceManager.state.dismissSpamControl && targetingMsgJson.display.wtarget_type === 0) {
       const intentPreview = document.getElementById('intentPreview')
       const intentOpacityDiv = document.getElementById('intentOpacityDiv')
       if (intentPreview && intentOpacityDiv) {
@@ -1140,7 +1140,7 @@ export const commonCampaignUtils = {
       return
     }
 
-    $ct.campaignDivMap[campaignId] = 'intentPreview'
+    CampaignContext.instanceManager.state.campaignDivMap[campaignId] = 'intentPreview'
     let legacy = false
     const opacityDiv = document.createElement('div')
     opacityDiv.id = 'intentOpacityDiv'
@@ -1295,7 +1295,7 @@ export const commonCampaignUtils = {
     if (targetingMsgJson.display['custom-editor']) {
       html = appendScriptForCustomEvent(targetingMsgJson, html)
     }
-    const enableTVControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS)
+    const enableTVControls = CampaignContext.instanceManager.storage.readFromLSorCookie(ENABLE_TV_CONTROLS)
     if (enableTVControls) {
       html = appendTVNavigationScript(targetingMsgJson, html)
     }
@@ -1364,7 +1364,7 @@ export const commonCampaignUtils = {
       const msgArr = []
       for (let index = 0; index < msg.inbox_notifs.length; index++) {
         addCampaignToLocalStorage(msg.inbox_notifs[index], CampaignContext.region, CampaignContext.msg?.arp?.id)
-        if (this.doCampHouseKeeping(msg.inbox_notifs[index], Logger.getInstance()) !== false) {
+        if (this.doCampHouseKeeping(msg.inbox_notifs[index], CampaignContext.logger) !== false) {
           msgArr.push(msg.inbox_notifs[index])
         }
       }
@@ -1510,12 +1510,13 @@ export const commonCampaignUtils = {
   },
 
   handleWebInbox (msg, logger) {
+    console.log('[handleWebInbox] accountId:', CampaignContext.instanceManager?.id, 'inbox:', CampaignContext.instanceManager?.state?.inbox, 'hasWebInboxSetting:', !!msg.webInboxSetting)
     if (hasWebInboxSettingsInLS()) {
       checkAndRegisterWebInboxElements()
     }
-    if ($ct.inbox === null) {
+    if (CampaignContext.instanceManager.state.inbox === null) {
       msg.webInboxSetting && processWebInboxSettings(msg.webInboxSetting)
-      initializeWebInbox(logger)
+      initializeWebInbox(logger, CampaignContext.instanceManager)
         .then(() => {
           this.handleInboxNotifications(msg)
         })
@@ -1527,18 +1528,18 @@ export const commonCampaignUtils = {
 
   persistsEventsAndProfileData (msg, logger) {
     // Persists events and profile data to local storage
-    if (StorageManager._isLocalStorageSupported()) {
+    if (CampaignContext.instanceManager.storage._isLocalStorageSupported()) {
       try {
         if (msg.evpr != null) {
           const eventsMap = msg.evpr.events
           const profileMap = msg.evpr.profile
           const syncExpiry = msg.evpr.expires_in
           const now = getNow()
-          StorageManager.setMetaProp('lsTime', now)
-          StorageManager.setMetaProp('exTs', syncExpiry)
+          CampaignContext.instanceManager.storage.setMetaProp('lsTime', now)
+          CampaignContext.instanceManager.storage.setMetaProp('exTs', syncExpiry)
           mergeEventMap(eventsMap)
-          StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap)
-          if ($ct.globalProfileMap == null) {
+          CampaignContext.instanceManager.storage.saveToLSorCookie(EV_COOKIE, CampaignContext.instanceManager.state.globalEventsMap)
+          if (CampaignContext.instanceManager.state.globalProfileMap == null) {
             addToLocalProfileMap(profileMap, true)
           } else {
             addToLocalProfileMap(profileMap, false)
@@ -1564,7 +1565,7 @@ export const commonCampaignUtils = {
   handleVariables (msg) {
     // Merges variables and A/B variant info into storage
     if (msg.vars) {
-      $ct.variableStore.mergeVariables(msg.vars, msg.abVariantInfo)
+      CampaignContext.instanceManager.state.variableStore.mergeVariables(msg.vars, msg.abVariantInfo)
     }
   }
 }
