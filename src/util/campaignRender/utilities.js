@@ -237,7 +237,7 @@ export const setupClickEvent = (
           }
           invokeExternalJs(jsFunc, targetingMsgJson)
           // close iframe. using -1 for no campaignId
-          closeIframe('-1', divId, _session.sessionId)
+          closeIframe('-1', divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
         } else {
           const rValue = targetingMsgJson.display.preview
             ? targetingMsgJson.display.onClick
@@ -257,16 +257,16 @@ export const setupClickEvent = (
             _instance.notifications.push({
               skipDialog: true
             })
-            closeIframe(campaignId, divId, _session.sessionId)
+            closeIframe(campaignId, divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
           } else if (rValue === 'none') {
             // Close notification
-            closeIframe(campaignId, divId, _session.sessionId)
+            closeIframe(campaignId, divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
           } else {
             // Will get the url to open
             if (targetingMsgJson.display.window === 1) {
               window.open(onClick, '_blank')
               if (targetingMsgJson.display['close-popup']) {
-                closeIframe(campaignId, divId, _session.sessionId)
+                closeIframe(campaignId, divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
               }
               if (!targetingMsgJson.display.preview) {
                 const _instance = CampaignContext.instance || window.parent.clevertap

@@ -45,7 +45,7 @@ import {
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct, getMuteExpiry, isMuted } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
-import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, dismissActiveCampaigns } from './util/clevertap'
+import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, dismissActiveCampaigns, _allCampaignDivMaps } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
@@ -66,6 +66,7 @@ import TVNavigation from './modules/tvNavigation'
 export default class CleverTap {
   static _instances = {}
   static defaultInstance = null
+  static MAX_INSTANCES = 5
 
   static createInstance (config = {}) {
     const { accountId, region, targetDomain, token } = config
@@ -74,6 +75,10 @@ export default class CleverTap {
     }
     if (CleverTap._instances[accountId]) {
       return CleverTap._instances[accountId]
+    }
+    if (Object.keys(CleverTap._instances).length >= CleverTap.MAX_INSTANCES) {
+      Logger.getInstance().error('CleverTap: Maximum of ' + CleverTap.MAX_INSTANCES + ' instances allowed. Cannot create instance for ' + accountId)
+      return null
     }
     const instance = new CleverTap({
       account: [{ id: accountId }],
@@ -191,6 +196,9 @@ export default class CleverTap {
     if (isDefault) {
       this.#instanceManager.state = $ct
     }
+
+    // Register this instance's campaignDivMap for cross-instance popup closing
+    _allCampaignDivMaps.push(this.#instanceManager.state.campaignDivMap)
 
     // Register instance
     if (accountId) {
@@ -711,7 +719,7 @@ export default class CleverTap {
     api.logout = this.logout
     api.clear = this.clear
     api.closeIframe = (campaignId, divIdIgnored) => {
-      closeIframe(campaignId, divIdIgnored, this.#session.sessionId)
+      closeIframe(campaignId, divIdIgnored, this.#session.sessionId, this.#instanceManager.state.campaignDivMap)
     }
     api.enableWebPush = (enabled, applicationServerKey) => {
       setServerKey(applicationServerKey)

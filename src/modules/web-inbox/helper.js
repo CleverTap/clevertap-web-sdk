@@ -10,7 +10,6 @@ export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
   const storage = CampaignContext.instanceManager ? CampaignContext.instanceManager.storage : StorageManager
   const inbox = CampaignContext.instanceManager ? CampaignContext.instanceManager.state.inbox : $ct.inbox
   const _settings = storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}
-  console.log('[processWebInboxSettings] instanceManager:', !!CampaignContext.instanceManager, 'isDefault:', CampaignContext.instanceManager?.isDefault, 'accountId:', CampaignContext.instanceManager?.id, 'existing settings:', JSON.stringify(_settings), 'new settings:', JSON.stringify(webInboxSetting))
   if (isPreview) {
     inbox.inboxConfigForPreview = webInboxSetting
     inbox.isPreview = true

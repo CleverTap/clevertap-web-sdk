@@ -102,7 +102,7 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPrev
       if (!isPreview) {
         CampaignContext.instance.renderNotificationClicked(payload)
       }
-      closeIframe(campaignId, divId, _session?.sessionId)
+      closeIframe(campaignId, divId, _session?.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
       break
     case ACTION_TYPES.OPEN_WEB_URL:
       // handle opening of url
@@ -112,7 +112,7 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPrev
       if (detail.openInNewTab) {
         window.open(detail.url.value.replacements, '_blank', 'noopener')
         if (detail.closeOnClick) {
-          closeIframe(campaignId, divId, _session?.sessionId)
+          closeIframe(campaignId, divId, _session?.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
         }
       } else {
         window.location.href = detail.url.value.replacements
