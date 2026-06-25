@@ -1,6 +1,7 @@
 import {
   isObject,
-  isObjectEmpty
+  isObjectEmpty,
+  isValueValid
 } from '../util/datatypes'
 import {
   KCOOKIE_NAME,
@@ -74,6 +75,20 @@ export default class UserLoginHandler extends Array {
       if (k == null) {
         k = {}
         kId = ids
+        // Check if broad domain cookie has a newer GUID than localStorage.
+        // This means a sibling subdomain already did OUL and updated the GUID.
+        // Sync to the cookie GUID and skip OUL to avoid identity conflicts.
+        if (!customIdFlag) {
+          let cookieGuid = StorageManager.readCookie(GCOOKIE_NAME)
+          if (isValueValid(cookieGuid) && (cookieGuid.indexOf('%') === 0 || cookieGuid.indexOf('\'') === 0 || cookieGuid.indexOf('"') === 0)) {
+            cookieGuid = null
+          }
+          if (isValueValid(cookieGuid) && cookieGuid !== g) {
+            this.#device.gcookie = cookieGuid
+            StorageManager.saveToLSorCookie(GCOOKIE_NAME, cookieGuid)
+            sendOULFlag = false
+          }
+        }
       } else {
         /* check if already exists */
         kId = k.id
