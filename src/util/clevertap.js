@@ -14,7 +14,8 @@ import {
   categoryLongKey,
   CAMP_COOKIE_G,
   GLOBAL,
-  CAMPAIGN_TYPES
+  CAMPAIGN_TYPES,
+  DISCARDED_EVENT_JSON_KEY
 } from './constants'
 import {
   GENDER_ERROR,
@@ -868,6 +869,9 @@ export const arp = (jsonMap) => {
     return null
   }
 
+  // Process discarded events list from ARP
+  processDiscardedEventsList(jsonMap)
+
   const isOULARP = jsonMap[IS_OUL] === true
 
   if (StorageManager._isLocalStorageSupported()) {
@@ -890,6 +894,43 @@ export const arp = (jsonMap) => {
     } catch (e) {
       console.error('Unable to parse ARP JSON: ' + e)
     }
+  }
+}
+
+export const isEventDiscarded = (eventName) => {
+  if ($ct.discardedEventsList == null || !eventName) {
+    return false
+  }
+  return $ct.discardedEventsList.has(eventName.toLowerCase())
+}
+
+const DISCARDED_EVENT_XOR_KEY = 'WZRK2014WZRK'
+const utf8Decoder = new TextDecoder('utf-8')
+
+const decodeDiscardedEventName = (encoded) => {
+  const binary = window.atob(encoded)
+  const keyLen = DISCARDED_EVENT_XOR_KEY.length
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i) ^ DISCARDED_EVENT_XOR_KEY.charCodeAt(i % keyLen)
+  }
+  return utf8Decoder.decode(bytes)
+}
+
+const processDiscardedEventsList = (arpResponse) => {
+  if (!arpResponse.hasOwnProperty(DISCARDED_EVENT_JSON_KEY)) {
+    return
+  }
+
+  try {
+    const discardedEventsArray = arpResponse[DISCARDED_EVENT_JSON_KEY]
+    if (Array.isArray(discardedEventsArray)) {
+      $ct.discardedEventsList = new Set(
+        discardedEventsArray.map(encoded => decodeDiscardedEventName(encoded).toLowerCase())
+      )
+    }
+  } catch (e) {
+    console.error('Error parsing discarded events list: ' + e)
   }
 }
 
