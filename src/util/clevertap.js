@@ -904,6 +904,19 @@ export const isEventDiscarded = (eventName) => {
   return $ct.discardedEventsList.has(eventName.toLowerCase())
 }
 
+const DISCARDED_EVENT_XOR_KEY = 'WZRK2014WZRK'
+const utf8Decoder = new TextDecoder('utf-8')
+
+const decodeDiscardedEventName = (encoded) => {
+  const binary = window.atob(encoded)
+  const keyLen = DISCARDED_EVENT_XOR_KEY.length
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i) ^ DISCARDED_EVENT_XOR_KEY.charCodeAt(i % keyLen)
+  }
+  return utf8Decoder.decode(bytes)
+}
+
 const processDiscardedEventsList = (arpResponse) => {
   if (!arpResponse.hasOwnProperty(DISCARDED_EVENT_JSON_KEY)) {
     return
@@ -913,7 +926,7 @@ const processDiscardedEventsList = (arpResponse) => {
     const discardedEventsArray = arpResponse[DISCARDED_EVENT_JSON_KEY]
     if (Array.isArray(discardedEventsArray)) {
       $ct.discardedEventsList = new Set(
-        discardedEventsArray.map(name => name.toLowerCase())
+        discardedEventsArray.map(encoded => decodeDiscardedEventName(encoded).toLowerCase())
       )
     }
   } catch (e) {
