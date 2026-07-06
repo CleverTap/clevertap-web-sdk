@@ -904,6 +904,17 @@ export const isEventDiscarded = (eventName) => {
   return $ct.discardedEventsList.has(eventName.toLowerCase())
 }
 
+export const initDiscardedEventsFromStorage = () => {
+  try {
+    const arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE)
+    if (arpFromStorage != null) {
+      processDiscardedEventsList(arpFromStorage)
+    }
+  } catch (e) {
+    console.error('Error initializing discarded events from storage: ' + e)
+  }
+}
+
 const DISCARDED_EVENT_XOR_KEY = 'WZRK2014WZRK'
 const utf8Decoder = new TextDecoder('utf-8')
 
