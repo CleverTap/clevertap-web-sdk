@@ -56,4 +56,5 @@ class Encryption {
 
 const encryption = new Encryption()
 
+export { Encryption }
 export default encryption

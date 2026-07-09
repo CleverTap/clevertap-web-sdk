@@ -13,10 +13,9 @@ import {
   WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES,
   QUALIFIED_CAMPAIGNS
 } from '../constants'
-import { StorageManager, $ct } from '../storage'
-import RequestDispatcher from '../requestDispatcher'
 import { compressToBase64 } from '../encoder'
 import { safeJSONParse } from '../datatypes'
+import { CampaignContext } from '../campaignHouseKeeping/campaignContext'
 
 export const invokeExternalJs = (jsFunc, targetingMsgJson) => {
   const func = window.parent[jsFunc]
@@ -142,12 +141,12 @@ export const staleDataUpdate = (staledata, campType) => {
     for (const idx in staledata) {
       if (staledata.hasOwnProperty(idx)) {
         delete globalObj[staledata[idx]]
-        if (StorageManager.read(CAMP_COOKIE_G)) {
+        if (CampaignContext.instanceManager.storage.read(CAMP_COOKIE_G)) {
           const guidCampObj = JSON.parse(
-            decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))
+            decodeURIComponent(CampaignContext.instanceManager.storage.read(CAMP_COOKIE_G))
           )
           const guid = safeJSONParse(
-            decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null
+            decodeURIComponent(CampaignContext.instanceManager.storage.read(GCOOKIE_NAME)), null
           )
           if (
             guidCampObj[guid] &&
@@ -155,7 +154,7 @@ export const staleDataUpdate = (staledata, campType) => {
             guidCampObj[guid][campType][staledata[idx]]
           ) {
             delete guidCampObj[guid][campType][staledata[idx]]
-            StorageManager.save(
+            CampaignContext.instanceManager.storage.save(
               CAMP_COOKIE_G,
               encodeURIComponent(JSON.stringify(guidCampObj))
             )
@@ -168,23 +167,23 @@ export const staleDataUpdate = (staledata, campType) => {
 }
 
 export const mergeEventMap = (newEvtMap) => {
-  if ($ct.globalEventsMap == null) {
-    $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE)
-    if ($ct.globalEventsMap == null) {
-      $ct.globalEventsMap = newEvtMap
+  if (CampaignContext.instanceManager.state.globalEventsMap == null) {
+    CampaignContext.instanceManager.state.globalEventsMap = CampaignContext.instanceManager.storage.readFromLSorCookie(EV_COOKIE)
+    if (CampaignContext.instanceManager.state.globalEventsMap == null) {
+      CampaignContext.instanceManager.state.globalEventsMap = newEvtMap
       return
     }
   }
   for (const key in newEvtMap) {
     if (newEvtMap.hasOwnProperty(key)) {
-      const oldEvtObj = $ct.globalEventsMap[key]
+      const oldEvtObj = CampaignContext.instanceManager.state.globalEventsMap[key]
       const newEvtObj = newEvtMap[key]
-      if ($ct.globalEventsMap[key] != null) {
+      if (CampaignContext.instanceManager.state.globalEventsMap[key] != null) {
         if (newEvtObj[0] != null && newEvtObj[0] > oldEvtObj[0]) {
-          $ct.globalEventsMap[key] = newEvtObj
+          CampaignContext.instanceManager.state.globalEventsMap[key] = newEvtObj
         }
       } else {
-        $ct.globalEventsMap[key] = newEvtObj
+        CampaignContext.instanceManager.state.globalEventsMap[key] = newEvtObj
       }
     }
   }
@@ -233,11 +232,11 @@ export const setupClickEvent = (
         if (jsFunc != null) {
           // track notification clicked event
           if (isPreview == null) {
-            RequestDispatcher.fireRequest(onClick)
+            CampaignContext.request.dispatcher.fireRequest(onClick)
           }
           invokeExternalJs(jsFunc, targetingMsgJson)
           // close iframe. using -1 for no campaignId
-          closeIframe('-1', divId, _session.sessionId)
+          closeIframe('-1', divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
         } else {
           const rValue = targetingMsgJson.display.preview
             ? targetingMsgJson.display.onClick
@@ -246,28 +245,31 @@ export const setupClickEvent = (
 
           if (rValue === 'pushPrompt') {
             if (!targetingMsgJson.display.preview) {
-              window.parent.clevertap.renderNotificationClicked({
+              const _instance = CampaignContext.instance || window.parent.clevertap
+              _instance.renderNotificationClicked({
                 msgId: targetingMsgJson.wzrk_id,
                 pivotId: targetingMsgJson.wzrk_pivot
               })
             }
             // Open Web Push Soft prompt
-            window.clevertap.notifications.push({
+            const _instance = CampaignContext.instance || window.clevertap
+            _instance.notifications.push({
               skipDialog: true
             })
-            closeIframe(campaignId, divId, _session.sessionId)
+            closeIframe(campaignId, divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
           } else if (rValue === 'none') {
             // Close notification
-            closeIframe(campaignId, divId, _session.sessionId)
+            closeIframe(campaignId, divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
           } else {
             // Will get the url to open
             if (targetingMsgJson.display.window === 1) {
               window.open(onClick, '_blank')
               if (targetingMsgJson.display['close-popup']) {
-                closeIframe(campaignId, divId, _session.sessionId)
+                closeIframe(campaignId, divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
               }
               if (!targetingMsgJson.display.preview) {
-                window.parent.clevertap.renderNotificationClicked({
+                const _instance = CampaignContext.instance || window.parent.clevertap
+                _instance.renderNotificationClicked({
                   msgId: targetingMsgJson.wzrk_id,
                   pivotId: targetingMsgJson.wzrk_pivot
                 })
@@ -619,7 +621,7 @@ export const deliveryPreferenceUtils = {
   updateOccurenceForPopupAndNativeDisplay (msg, device, logger) {
     // If the guid is present in CAMP_G retain it instead of using the CAMP
     const globalCamp = JSON.parse(
-      decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))
+      decodeURIComponent(CampaignContext.instanceManager.storage.read(CAMP_COOKIE_G))
     )
     const currentIdCamp = globalCamp?.[device?.gcookie]
     let campaignObj =
@@ -789,7 +791,8 @@ export function addCampaignToLocalStorage (campaign, region = 'eu1', accountId) 
     url: dashboardUrl
   }
 
-  const storedData = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)
+  const storage = CampaignContext.instanceManager.storage
+  const storedData = storage.readFromLSorCookie(QUALIFIED_CAMPAIGNS)
   let existingCampaigns = []
   try {
     existingCampaigns = storedData ? JSON.parse(decodeURIComponent(storedData)) : []
@@ -801,7 +804,7 @@ export function addCampaignToLocalStorage (campaign, region = 'eu1', accountId) 
 
   if (!isDuplicate) {
     const updatedCampaigns = [...existingCampaigns, enrichedCampaign]
-    StorageManager.saveToLSorCookie(
+    storage.saveToLSorCookie(
       QUALIFIED_CAMPAIGNS,
       encodeURIComponent(JSON.stringify(updatedCampaigns))
     )
