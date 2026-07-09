@@ -285,8 +285,11 @@ export default class CleverTap {
       logger: this.#logger,
       request: this.#request,
       account: this.#account,
-      event: this.event
+      event: this.event,
+      instanceManager: this.#instanceManager
     })
+    // Set variableStore on instance state so campaign utils can access it
+    this.#instanceManager.state.variableStore = this.#variableStore
 
     this.#api = new CleverTapAPI({
       logger: this.#logger,
