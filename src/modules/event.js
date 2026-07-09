@@ -2,24 +2,25 @@ import { isString, isObject, sanitize } from '../util/datatypes'
 import { EVENT_ERROR } from '../util/messages'
 import { ACCOUNT_ID, EV_COOKIE, SYSTEM_EVENTS, unsupportedKeyCharRegex } from '../util/constants'
 import { isChargedEventStructureValid, isObjStructureValid } from '../util/validator'
-import { StorageManager, $ct } from '../util/storage'
 
 export default class EventHandler extends Array {
   #logger
   #oldValues
   #request
   #isPersonalisationActive
+  #instanceManager
 
-  constructor ({ logger, request, isPersonalisationActive }, values) {
+  constructor ({ logger, request, isPersonalisationActive, instanceManager }, values) {
     super()
     this.#logger = logger
     this.#oldValues = values
     this.#request = request
     this.#isPersonalisationActive = isPersonalisationActive
+    this.#instanceManager = instanceManager
   }
 
   push (...eventsArr) {
-    if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+    if (this.#instanceManager.storage.readFromLSorCookie(ACCOUNT_ID)) {
       this.#processEventArray(eventsArr)
       return 0
     } else {
@@ -93,13 +94,13 @@ export default class EventHandler extends Array {
     if (!this.#isPersonalisationActive()) {
       return
     }
-    if (typeof $ct.globalEventsMap === 'undefined') {
-      $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE)
+    if (typeof this.#instanceManager.state.globalEventsMap === 'undefined') {
+      this.#instanceManager.state.globalEventsMap = this.#instanceManager.storage.readFromLSorCookie(EV_COOKIE)
     }
-    if (typeof $ct.globalEventsMap === 'undefined') {
+    if (typeof this.#instanceManager.state.globalEventsMap === 'undefined') {
       return
     }
-    const evtObj = $ct.globalEventsMap[evtName]
+    const evtObj = this.#instanceManager.state.globalEventsMap[evtName]
     const respObj = {}
     if (typeof evtObj !== 'undefined') {
       respObj.firstTime = new Date(evtObj[1] * 1000)
