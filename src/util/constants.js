@@ -88,6 +88,7 @@ export const WZRK_GEO = 'WZRK_GEO'
 
 // Discarded events key in ARP response
 export const DISCARDED_EVENT_JSON_KEY = 'd_e'
+export const DISCARDED_EVENT_XOR_KEY = 'WZRK2014WZRK'
 
 export const WEB_NATIVE_TEMPLATES = {
   KV_PAIR: 1,

@@ -15,7 +15,8 @@ import {
   CAMP_COOKIE_G,
   GLOBAL,
   CAMPAIGN_TYPES,
-  DISCARDED_EVENT_JSON_KEY
+  DISCARDED_EVENT_JSON_KEY,
+  DISCARDED_EVENT_XOR_KEY
 } from './constants'
 import {
   GENDER_ERROR,
@@ -915,7 +916,6 @@ export const initDiscardedEventsFromStorage = () => {
   }
 }
 
-const DISCARDED_EVENT_XOR_KEY = 'WZRK2014WZRK'
 const utf8Decoder = new TextDecoder('utf-8')
 
 const decodeDiscardedEventName = (encoded) => {
