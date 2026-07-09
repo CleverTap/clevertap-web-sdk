@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.7.3] 9th July 2026
+- Added handling for discarded events.
+
 ## [2.7.2] 4th June 2026
 - Added the method getVariants() to fetch A/B test variants.
 
