@@ -13,7 +13,6 @@ import {
   WEB_NATIVE_DISPLAY_VISUAL_EDITOR_TYPES,
   QUALIFIED_CAMPAIGNS
 } from '../constants'
-import RequestDispatcher from '../requestDispatcher'
 import { compressToBase64 } from '../encoder'
 import { safeJSONParse } from '../datatypes'
 import { CampaignContext } from '../campaignHouseKeeping/campaignContext'
@@ -233,7 +232,7 @@ export const setupClickEvent = (
         if (jsFunc != null) {
           // track notification clicked event
           if (isPreview == null) {
-            RequestDispatcher.fireRequest(onClick)
+            CampaignContext.request.dispatcher.fireRequest(onClick)
           }
           invokeExternalJs(jsFunc, targetingMsgJson)
           // close iframe. using -1 for no campaignId

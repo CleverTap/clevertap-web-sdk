@@ -204,7 +204,8 @@ export default class InstanceStorageManager {
    * @param {number|null} domainSpecification - if set, use this many levels of the hostname
    * @returns {string|null} the discovered broadDomain (caller should store it)
    */
-  createBroadCookie (name, value, seconds, domain, broadDomain = null, domainSpecification = null) {
+  createBroadCookie (name, value, seconds, domain, domainSpecification = null) {
+    let broadDomain = this._broadDomain || null
     if (domainSpecification) {
       const hostnameParts = window.location.hostname.split('.')
       const level = domainSpecification
@@ -275,6 +276,7 @@ export default class InstanceStorageManager {
           // eslint-disable-next-line eqeqeq
           if (tempCookie == value) {
             broadDomain = testBroadDomain
+            this._broadDomain = broadDomain
             break
           }
         }

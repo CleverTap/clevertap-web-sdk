@@ -162,7 +162,10 @@ export default class RequestDispatcher {
         }, this.getDelayFrequency())
       }
     } else {
-      if (!isValueValid(this.device.gcookie) &&
+      // Skip retry for OUL requests -- they must be sent immediately since they
+      // establish the new user identity and will set the gcookie on response.
+      if (!sendOULFlag &&
+        !isValueValid(this.device.gcookie) &&
         (this.instanceManager.state.globalCache.RESP_N < this.instanceManager.state.globalCache.REQ_N - 1) &&
         tries < MAX_TRIES) {
         // if ongoing First Request is in progress, initiate retry

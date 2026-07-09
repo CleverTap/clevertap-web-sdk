@@ -274,11 +274,9 @@ export default class UserLoginHandler extends Array {
   #deleteUser () {
     this.#instanceManager.state.blockRequest = true
     this.#logger.debug('Block request is true')
-    this.#instanceManager.state.globalCache = {
-      gcookie: null,
-      REQ_N: 0,
-      RESP_N: 0
-    }
+    // Only reset gcookie. Preserve REQ_N and RESP_N to avoid triggering
+    // the retry loop in RequestDispatcher (which retries when RESP_N < REQ_N - 1).
+    this.#instanceManager.state.globalCache.gcookie = null
     if (this.#instanceManager.storage._isLocalStorageSupported()) {
       this.#instanceManager.storage.remove(GCOOKIE_NAME)
       this.#instanceManager.storage.remove(KCOOKIE_NAME)

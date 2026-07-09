@@ -1,5 +1,3 @@
-import { BLOCK_REQUEST_COOKIE } from './constants'
-
 export default class InstanceManager {
   constructor (id, isDefault = false) {
     this.id = id

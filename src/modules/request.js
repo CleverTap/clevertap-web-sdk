@@ -6,6 +6,10 @@ import RequestDispatcher from '../util/requestDispatcher'
 import { addToURL } from '../util/url'
 import { getCampaignObjForLc } from '../util/clevertap'
 
+// Global request number counter shared across all instances to prevent
+// JSONP response routing collisions in _apiMap
+let _globalReqN = 0
+
 export default class RequestManager {
   #logger
   #account
@@ -60,6 +64,10 @@ export default class RequestManager {
             const session = safeJSONParse(this.#instanceManager.storage.readCookie(SCOOKIE_PREFIX + '_' + this.#account.id), null)
             if (session?.s) {
               backupEvent.q = backupEvent.q + '&s=' + session.s
+            }
+            // Register in JSONP dispatcher so response routes to this instance
+            if (window.$WZRK_WR && window.$WZRK_WR._apiMap && this.dispatcher && this.dispatcher.api) {
+              window.$WZRK_WR._apiMap[parseInt(idx)] = this.dispatcher.api
             }
             this.dispatcher.fireRequest(backupEvent.q)
           }
@@ -191,8 +199,16 @@ export default class RequestManager {
   // Read existing backup data to check for conflicts
   const backupMap = this.#instanceManager.storage.readFromLSorCookie(LCOOKIE_NAME)
 
-  // Start from the current REQ_N + 1
-  let candidateReqN = this.#instanceManager.state.globalCache.REQ_N + 1
+  // Use the global counter to ensure unique request numbers across all instances.
+  // This prevents JSONP _apiMap collisions where two instances both use rn=1.
+  _globalReqN++
+  let candidateReqN = _globalReqN
+
+  // Also ensure it's greater than this instance's REQ_N
+  if (candidateReqN <= this.#instanceManager.state.globalCache.REQ_N) {
+    candidateReqN = this.#instanceManager.state.globalCache.REQ_N + 1
+    _globalReqN = candidateReqN
+  }
 
   // If no backup data exists, use the candidate
   if (!backupMap || typeof backupMap !== 'object') {
@@ -202,6 +218,7 @@ export default class RequestManager {
   // Keep incrementing until we find a request number that doesn't exist in backup
   while (backupMap.hasOwnProperty(candidateReqN.toString())) {
     candidateReqN++
+    _globalReqN = candidateReqN
     this.#logger.debug(`Request number ${candidateReqN - 1} already exists in backup, trying ${candidateReqN}`)
   }
 

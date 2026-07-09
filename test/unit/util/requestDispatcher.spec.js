@@ -96,7 +96,8 @@ describe('util/requestDispatcher', function () {
         mockInstanceManager.state.globalCache.REQ_N = 2
         mockInstanceManager.state.globalCache.RESP_N = 0
 
-        dispatcher.fireRequest('some', true, true)
+        // sendOULFlag=false so retry logic applies (OUL requests skip retry)
+        dispatcher.fireRequest('some', true, false)
         jest.advanceTimersByTime(49 * 50)
         expect(dispatcher.logger.debug).toHaveBeenNthCalledWith(49, expect.stringContaining('retrying fire request'))
       })

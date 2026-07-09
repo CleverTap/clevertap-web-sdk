@@ -24,7 +24,6 @@ import {
 
 import { getNow, getToday } from '../datetime.js'
 
-import RequestDispatcher from '../requestDispatcher.js'
 import { CTWebPopupImageOnly } from '../web-popupImageonly/popupImageonly.js'
 import { CTWebPopupPIP } from '../web-popupPIP/popupPIP.js'
 import {
@@ -859,7 +858,7 @@ export const commonCampaignUtils = {
             // Invokes JS function or redirects based on click action
             if (jsFunc != null) {
               // Tracks notification clicked event
-              RequestDispatcher.fireRequest(onClick)
+              CampaignContext.request.dispatcher.fireRequest(onClick)
               invokeExternalJs(jsFunc, targetingMsgJson)
               return
             }
@@ -1510,7 +1509,6 @@ export const commonCampaignUtils = {
   },
 
   handleWebInbox (msg, logger) {
-    console.log('[handleWebInbox] accountId:', CampaignContext.instanceManager?.id, 'inbox:', CampaignContext.instanceManager?.state?.inbox, 'hasWebInboxSetting:', !!msg.webInboxSetting)
     if (hasWebInboxSettingsInLS()) {
       checkAndRegisterWebInboxElements()
     }
