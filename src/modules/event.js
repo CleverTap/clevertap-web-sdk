@@ -3,6 +3,7 @@ import { EVENT_ERROR } from '../util/messages'
 import { ACCOUNT_ID, EV_COOKIE, SYSTEM_EVENTS, unsupportedKeyCharRegex } from '../util/constants'
 import { isChargedEventStructureValid, isObjStructureValid } from '../util/validator'
 import { StorageManager, $ct } from '../util/storage'
+import { isEventDiscarded } from '../util/clevertap'
 
 export default class EventHandler extends Array {
   #logger
@@ -50,6 +51,11 @@ export default class EventHandler extends Array {
 
         if (SYSTEM_EVENTS.includes(eventName)) {
           this.#logger.reportError(513, eventName + ' is a restricted system event. It cannot be used as an event name.')
+          continue
+        }
+
+        if (isEventDiscarded(eventName)) {
+          this.#logger.reportError(513, eventName + ' is a discarded event name. Event aborted.')
           continue
         }
 
