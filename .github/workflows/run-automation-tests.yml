@@ -19,7 +19,7 @@ jobs:
       branch_name: ${{ steps.check.outputs.branch_name }}
     steps:
       - name: Checkout PR Branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
@@ -29,7 +29,7 @@ jobs:
           COMMIT_MSG=$(git log -1 --pretty=%B)
           BRANCH_NAME="${GITHUB_HEAD_REF}"
           echo "Latest commit message: $COMMIT_MSG"
-          
+
           if [[ "$COMMIT_MSG" == *"[run-test]"* ]]; then
             echo "should_run=true" >> $GITHUB_OUTPUT
             echo "✅ Found [run-test] in commit message - will proceed"
@@ -37,7 +37,7 @@ jobs:
             echo "should_run=false" >> $GITHUB_OUTPUT
             echo "❌ No [run-test] found in commit message - skipping"
           fi
-          
+
           echo "commit_message=${COMMIT_MSG}" >> $GITHUB_OUTPUT
           echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
 
