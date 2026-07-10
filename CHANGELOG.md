@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [2.7.3] 9th July 2026
+## [2.7.3] 10th July 2026
 - Added handling for discarded events.
 
 ## [2.7.2] 4th June 2026
