@@ -86,6 +86,10 @@ export const CT_EIT_FALLBACK = 'CT_EIT_FALLBACK'
 // Geolocation prompt cache key
 export const WZRK_GEO = 'WZRK_GEO'
 
+// Discarded events key in ARP response
+export const DISCARDED_EVENT_JSON_KEY = 'd_e'
+export const DISCARDED_EVENT_XOR_KEY = 'WZRK2014WZRK'
+
 export const WEB_NATIVE_TEMPLATES = {
   KV_PAIR: 1,
   BANNER: 2,

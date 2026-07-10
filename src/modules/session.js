@@ -1,7 +1,7 @@
 import { singleQuoteRegex, SCOOKIE_EXP_TIME_IN_SECS } from '../util/constants'
 import { isObject, safeJSONParse } from '../util/datatypes'
 import { getNow } from '../util/datetime'
-import { StorageManager } from '../util/storage'
+import { StorageManager, $ct } from '../util/storage'
 import { getHostName } from '../util/url'
 import { getCampaignObject, saveCampaignObject } from '../util/clevertap'
 
@@ -97,6 +97,9 @@ export default class SessionManager {
           sessionCount = 0
         }
         StorageManager.setMetaProp('sc', sessionCount + 1)
+
+        // Clear discarded events list on new session
+        $ct.discardedEventsList = null
 
         // Reset session-based campaign counters on new session
         this.#resetSessionCampaignCounters()
