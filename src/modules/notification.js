@@ -69,7 +69,8 @@ export default class NotificationHandler extends Array {
         account: this.#account,
         request: this.#request,
         displayArgs,
-        fcmPublicKey: this.#fcmPublicKey
+        fcmPublicKey: this.#fcmPublicKey,
+        instanceManager: this.#instanceManager
       })
       if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
         processSoftPrompt()
@@ -89,7 +90,8 @@ export default class NotificationHandler extends Array {
           account: this.#account,
           request: this.#request,
           displayArgs: this.#oldValues.slice(),
-          fcmPublicKey: this.#fcmPublicKey
+          fcmPublicKey: this.#fcmPublicKey,
+          instanceManager: this.#instanceManager
         })
         this.#instanceManager.storage.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
       }
@@ -327,7 +329,7 @@ export default class NotificationHandler extends Array {
                 subscription.unsubscribe().then((successful) => {
                   // You've successfully unsubscribed
                   this.#logger.info('Unsubscription successful')
-                  window.clevertap.notifications.push({
+                  this.push({
                     skipDialog: true
                   })
                 }).catch((e) => {

@@ -53,7 +53,7 @@ const _tr = (msg, { device, session, request, logger, region, instanceManager, i
 
   // Processes web push configuration
   if (msg.webPushConfig) {
-    processWebPushConfig(msg.webPushConfig, logger, request)
+    processWebPushConfig(msg.webPushConfig, logger, request, instanceManager)
   }
 
   commonCampaignUtils.handleVariables(msg)
