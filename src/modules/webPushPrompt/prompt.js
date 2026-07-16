@@ -17,6 +17,10 @@ let account = null
 let request = null
 let displayArgs = null
 let fcmPublicKey = null
+let instanceManager_ref = null
+
+const _storage = () => instanceManager_ref ? instanceManager_ref.storage : StorageManager
+const _state = () => instanceManager_ref ? instanceManager_ref.state : $ct
 
 export const setNotificationHandlerValues = (notificationValues = {}) => {
   logger = notificationValues.logger
@@ -24,20 +28,26 @@ export const setNotificationHandlerValues = (notificationValues = {}) => {
   request = notificationValues.request
   displayArgs = notificationValues.displayArgs
   fcmPublicKey = notificationValues.fcmPublicKey
+  instanceManager_ref = notificationValues.instanceManager || null
 }
 
-export const processWebPushConfig = (webPushConfig, logger, request) => {
-  StorageManager.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true)
+export const processWebPushConfig = (webPushConfig, logger, request, instanceManager) => {
+  const storage = instanceManager ? instanceManager.storage : StorageManager
+  const state = instanceManager ? instanceManager.state : $ct
+  if (instanceManager) {
+    instanceManager_ref = instanceManager
+  }
+  storage.saveToLSorCookie(WEBPUSH_CONFIG_RECEIVED, true)
   const updatePushConfig = () => {
-    $ct.pushConfig = webPushConfig
-    StorageManager.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
+    state.pushConfig = webPushConfig
+    storage.saveToLSorCookie(WEBPUSH_CONFIG, webPushConfig)
   }
   updatePushConfig()
   if (webPushConfig.isPreview) {
     enablePush({ logger, request })
   }
   try {
-    const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED)
+    const isNotificationPushCalled = storage.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED)
     if (isNotificationPushCalled) {
       try {
         processSoftPrompt()
@@ -54,8 +64,8 @@ export const processWebPushConfig = (webPushConfig, logger, request) => {
 }
 
 export const processSoftPrompt = () => {
-  const webPushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
-  notificationHandler = new NotificationHandler({ logger, session: {}, request, account })
+  const webPushConfig = _storage().readFromLSorCookie(WEBPUSH_CONFIG) || {}
+  notificationHandler = new NotificationHandler({ logger, session: {}, request, account, instanceManager: instanceManager_ref })
 
   if (webPushConfig && !(Object.keys(webPushConfig).length > 0)) {
     notificationHandler.setApplicationServerKey(appServerKey)
@@ -88,7 +98,7 @@ export const processSoftPrompt = () => {
     notificationHandler.setApplicationServerKey(appServerKey)
     notificationHandler.setupWebPush(displayArgs)
   }
-  StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, false)
+  _storage().saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, false)
 }
 
 export const parseDisplayArgs = (displayArgs) => {
@@ -114,9 +124,9 @@ export const enablePush = (enablePushParams) => {
     logger, fcmPublicKey, apnsWebPushId, apnsWebPushServiceUrl
   } = enablePushParams
   let { skipDialog } = enablePushParams
-  const _pushConfig = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG) || {}
-  $ct.pushConfig = _pushConfig
-  if (!$ct.pushConfig) {
+  const _pushConfig = _storage().readFromLSorCookie(WEBPUSH_CONFIG) || {}
+  _state().pushConfig = _pushConfig
+  if (!_state().pushConfig) {
     logger.error('Web Push config data not present')
     return
   }
@@ -134,14 +144,14 @@ export const enablePush = (enablePushParams) => {
     return
   }
 
-  const { showBox, boxType, showBellIcon, isPreview } = $ct.pushConfig
+  const { showBox, boxType, showBellIcon, isPreview } = _state().pushConfig
 
   if (isPreview) {
-    if ($ct.pushConfig.boxConfig) createNotificationBox($ct.pushConfig, fcmPublicKey)
-    if ($ct.pushConfig.bellIconConfig) createBellIcon($ct.pushConfig)
+    if (_state().pushConfig.boxConfig) createNotificationBox(_state().pushConfig, fcmPublicKey)
+    if (_state().pushConfig.bellIconConfig) createBellIcon(_state().pushConfig)
   } else {
-    if (showBox && boxType === 'new') createNotificationBox($ct.pushConfig, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl)
-    if (showBellIcon) createBellIcon($ct.pushConfig, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl)
+    if (showBox && boxType === 'new') createNotificationBox(_state().pushConfig, fcmPublicKey, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl)
+    if (showBellIcon) createBellIcon(_state().pushConfig, subscriptionCallback, apnsWebPushId, apnsWebPushServiceUrl)
   }
 }
 
@@ -207,7 +217,7 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
 
   setElementPosition(pnCard, style.card.position)
 
-  const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null
+  const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && _storage().getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && fcmPublicKey !== null
   if (!configData.isPreview) {
     if ('Notification' in window && Notification !== null) {
       if (Notification.permission === 'granted' && (vapidSupportedAndMigrated || isChrome() || isFirefox())) {
@@ -221,16 +231,16 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
   }
 
   const now = new Date().getTime() / 1000
-  const lastNotifTime = StorageManager.getMetaProp('webpush_last_notif_time')
+  const lastNotifTime = _storage().getMetaProp('webpush_last_notif_time')
   const popupFrequency = content.popupFrequency || 7 // number of days
   const shouldShowNotification = !lastNotifTime || now - lastNotifTime >= popupFrequency * 24 * 60 * 60
   if (shouldShowNotification) {
     document.body.insertBefore(wrapper, document.body.firstChild)
     if (!configData.isPreview) {
-      StorageManager.setMetaProp('webpush_last_notif_time', now)
+      _storage().setMetaProp('webpush_last_notif_time', now)
       addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl)
       if (isSafari() && 'PushManager' in window && fcmPublicKey != null) {
-        StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
+        _storage().setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
       }
     }
   } else {
@@ -243,8 +253,8 @@ export const createNotificationBox = (configData, fcmPublicKey, okCallback, subs
       if (!configData.isPreview) {
         document.body.appendChild(wrapper)
         addEventListeners(wrapper, okCallback, subscriptionCallback, rejectCallback, apnsWebPushId, apnsWebPushServiceUrl)
-        StorageManager.setMetaProp('webpush_last_notif_time', now)
-        StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
+        _storage().setMetaProp('webpush_last_notif_time', now)
+        _storage().setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
       }
     }
   }
