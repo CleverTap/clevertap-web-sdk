@@ -1,4 +1,3 @@
-import { StorageManager, $ct } from '../util/storage'
 import { isObject } from '../util/datatypes'
 import {
   PUSH_SUBSCRIPTION_DATA,
@@ -25,12 +24,14 @@ export default class NotificationHandler extends Array {
   #account
   #wizAlertJSPath
   #fcmPublicKey
+  #instanceManager
 
   constructor ({
     logger,
     session,
     request,
-    account
+    account,
+    instanceManager
   }, values) {
     super()
     this.#wizAlertJSPath = 'https://static.clevertap.com/js/wzrk_dialog.min.js'
@@ -39,6 +40,7 @@ export default class NotificationHandler extends Array {
     this.#logger = logger
     this.#request = request
     this.#account = account
+    this.#instanceManager = instanceManager
   }
 
   setupWebPush (displayArgs) {
@@ -50,7 +52,7 @@ export default class NotificationHandler extends Array {
   }
 
   push (...displayArgs) {
-    if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+    if (this.#instanceManager.storage.readFromLSorCookie(ACCOUNT_ID)) {
       /*
         To handle a potential race condition, two flags are stored in Local Storage:
         - `webPushConfigResponseReceived`: Indicates if the backend's webPushConfig has been received (set during the initial API call without a session ID).
@@ -60,19 +62,20 @@ export default class NotificationHandler extends Array {
         - If `webPushConfigResponseReceived` is true, the soft prompt is processed immediately.
         - Otherwise, `NOTIFICATION_PUSH_METHOD_DEFERRED` is set to true, and the rendering is deferred until the webPushConfig is received.
       */
-      const isWebPushConfigPresent = StorageManager.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED)
-      const isApplicationServerKeyReceived = StorageManager.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED)
+      const isWebPushConfigPresent = this.#instanceManager.storage.readFromLSorCookie(WEBPUSH_CONFIG_RECEIVED)
+      const isApplicationServerKeyReceived = this.#instanceManager.storage.readFromLSorCookie(APPLICATION_SERVER_KEY_RECEIVED)
       setNotificationHandlerValues({
         logger: this.#logger,
         account: this.#account,
         request: this.#request,
         displayArgs,
-        fcmPublicKey: this.#fcmPublicKey
+        fcmPublicKey: this.#fcmPublicKey,
+        instanceManager: this.#instanceManager
       })
       if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
         processSoftPrompt()
       } else {
-        StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
+        this.#instanceManager.storage.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
       }
     } else {
       this.#logger.error('Account ID is not set')
@@ -87,9 +90,10 @@ export default class NotificationHandler extends Array {
           account: this.#account,
           request: this.#request,
           displayArgs: this.#oldValues.slice(),
-          fcmPublicKey: this.#fcmPublicKey
+          fcmPublicKey: this.#fcmPublicKey,
+          instanceManager: this.#instanceManager
         })
-        StorageManager.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
+        this.#instanceManager.storage.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
       }
 
       this.#setUpWebPush(this.#oldValues)
@@ -98,12 +102,12 @@ export default class NotificationHandler extends Array {
   }
 
   #setUpWebPush (displayArgs) {
-    if ($ct.webPushEnabled && displayArgs.length > 0) {
+    if (this.#instanceManager.state.webPushEnabled && displayArgs.length > 0) {
       this.#handleNotificationRegistration(displayArgs)
-    } else if ($ct.webPushEnabled == null && displayArgs.length > 0) {
-      $ct.notifApi.notifEnabledFromApi = true
-      $ct.notifApi.displayArgs = displayArgs.slice()
-    } else if ($ct.webPushEnabled === false && displayArgs.length > 0) {
+    } else if (this.#instanceManager.state.webPushEnabled == null && displayArgs.length > 0) {
+      this.#instanceManager.state.notifApi.notifEnabledFromApi = true
+      this.#instanceManager.state.notifApi.displayArgs = displayArgs.slice()
+    } else if (this.#instanceManager.state.webPushEnabled === false && displayArgs.length > 0) {
       this.#logger.error('Make sure push notifications are fully enabled and integrated')
     }
   }
@@ -128,7 +132,7 @@ export default class NotificationHandler extends Array {
     const softPromptCard = document.getElementById('pnWrapper')
     const oldSoftPromptCard = document.getElementById('wzrk_wrapper')
     if (this.#isNativeWebPushSupported() && this.#fcmPublicKey != null) {
-      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
+      this.#instanceManager.storage.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
       navigator.serviceWorker.register(serviceWorkerPath).then((registration) => {
         window.Notification.requestPermission().then((permission) => {
           if (permission === 'granted') {
@@ -149,7 +153,7 @@ export default class NotificationHandler extends Array {
                 const subscriptionData = JSON.parse(JSON.stringify(subscription))
 
                 subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
-                StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+                this.#instanceManager.storage.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
                 this.#request.registerToken(subscriptionData)
 
                 if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
@@ -223,7 +227,7 @@ export default class NotificationHandler extends Array {
               if (oldSoftPromptCard) {
                 oldSoftPromptCard.parentNode.removeChild(oldSoftPromptCard)
               }
-              StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+              this.#instanceManager.storage.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
 
               this.#request.registerToken(subscriptionData)
               this.#logger.info('Safari Web Push registered. Device Token: ' + subscription.deviceToken)
@@ -301,7 +305,7 @@ export default class NotificationHandler extends Array {
               subscriptionData.endpoint = subscriptionData.endpoint.split('/').pop()
               subscriptionData.browser = 'Firefox'
             }
-            StorageManager.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
+            this.#instanceManager.storage.saveToLSorCookie(PUSH_SUBSCRIPTION_DATA, subscriptionData)
             this.#request.registerToken(subscriptionData)
 
             if (typeof subscriptionCallback !== 'undefined' && typeof subscriptionCallback === 'function') {
@@ -325,7 +329,7 @@ export default class NotificationHandler extends Array {
                 subscription.unsubscribe().then((successful) => {
                   // You've successfully unsubscribed
                   this.#logger.info('Unsubscription successful')
-                  window.clevertap.notifications.push({
+                  this.push({
                     skipDialog: true
                   })
                 }).catch((e) => {
@@ -385,7 +389,7 @@ export default class NotificationHandler extends Array {
     let okButtonAriaLabel
     let rejectButtonAriaLabel
 
-    const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && StorageManager.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && this.#fcmPublicKey !== null
+    const vapidSupportedAndMigrated = isSafari() && ('PushManager' in window) && this.#instanceManager.storage.getMetaProp(VAPID_MIGRATION_PROMPT_SHOWN) && this.#fcmPublicKey !== null
 
     if (displayArgs.length === 1) {
       if (isObject(displayArgs[0])) {
@@ -489,15 +493,15 @@ export default class NotificationHandler extends Array {
 
     // make sure the user isn't asked for notifications more than askAgainTimeInSeconds
     const now = new Date().getTime() / 1000
-    if ((StorageManager.getMetaProp(NOTIF_LAST_TIME)) == null) {
-      StorageManager.setMetaProp(NOTIF_LAST_TIME, now)
+    if ((this.#instanceManager.storage.getMetaProp(NOTIF_LAST_TIME)) == null) {
+      this.#instanceManager.storage.setMetaProp(NOTIF_LAST_TIME, now)
     } else {
       if (askAgainTimeInSeconds == null) {
         // 7 days by default
         askAgainTimeInSeconds = 7 * 24 * 60 * 60
       }
 
-      const notifLastTime = StorageManager.getMetaProp(NOTIF_LAST_TIME)
+      const notifLastTime = this.#instanceManager.storage.getMetaProp(NOTIF_LAST_TIME)
       if (now - notifLastTime < askAgainTimeInSeconds) {
         if (!isSafari()) {
           return
@@ -507,22 +511,22 @@ export default class NotificationHandler extends Array {
           return
         }
       } else {
-        StorageManager.setMetaProp(NOTIF_LAST_TIME, now)
+        this.#instanceManager.storage.setMetaProp(NOTIF_LAST_TIME, now)
       }
     }
 
     if (isSafari() && this.#isNativeWebPushSupported() && this.#fcmPublicKey !== null) {
-      StorageManager.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
+      this.#instanceManager.storage.setMetaProp(VAPID_MIGRATION_PROMPT_SHOWN, true)
     }
 
-    if (StorageManager.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
+    if (this.#instanceManager.storage.readFromLSorCookie(POPUP_LOADING) || document.getElementById(OLD_SOFT_PROMPT_SELCTOR_ID)) {
       this.#logger.debug('Soft prompt wrapper is already loading or loaded')
       return
     }
 
-    StorageManager.saveToLSorCookie(POPUP_LOADING, true)
+    this.#instanceManager.storage.saveToLSorCookie(POPUP_LOADING, true)
     this.#addWizAlertJS().onload = () => {
-      StorageManager.saveToLSorCookie(POPUP_LOADING, false)
+      this.#instanceManager.storage.saveToLSorCookie(POPUP_LOADING, false)
       // create our wizrocket popup
       window.wzrkPermissionPopup.wizAlert({
         title: titleText,
@@ -550,17 +554,17 @@ export default class NotificationHandler extends Array {
   }
 
   _enableWebPush (enabled, applicationServerKey) {
-    $ct.webPushEnabled = enabled
+    this.#instanceManager.state.webPushEnabled = enabled
     if (applicationServerKey != null) {
       this.setApplicationServerKey(applicationServerKey)
     }
-    const isNotificationPushCalled = StorageManager.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED)
+    const isNotificationPushCalled = this.#instanceManager.storage.readFromLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED)
     if (isNotificationPushCalled) {
       return
     }
-    if ($ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
-      this.#handleNotificationRegistration($ct.notifApi.displayArgs)
-    } else if (!$ct.webPushEnabled && $ct.notifApi.notifEnabledFromApi) {
+    if (this.#instanceManager.state.webPushEnabled && this.#instanceManager.state.notifApi.notifEnabledFromApi) {
+      this.#handleNotificationRegistration(this.#instanceManager.state.notifApi.displayArgs)
+    } else if (!this.#instanceManager.state.webPushEnabled && this.#instanceManager.state.notifApi.notifEnabledFromApi) {
     }
   }
 }
