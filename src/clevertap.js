@@ -45,7 +45,7 @@ import {
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct, getMuteExpiry, isMuted } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
-import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, dismissActiveCampaigns, _allCampaignDivMaps } from './util/clevertap'
+import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, dismissActiveCampaigns, _allCampaignDivMaps, initDiscardedEventsFromStorage } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
@@ -975,6 +975,7 @@ export default class CleverTap {
       this.privacy.push(this.#instanceManager.state.privacyArray)
     }
 
+    initDiscardedEventsFromStorage()
     this.#processOldValues()
     this.pageChanged()
     const backupInterval = setInterval(() => {

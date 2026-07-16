@@ -34,7 +34,7 @@ export default class NotificationHandler extends Array {
     instanceManager
   }, values) {
     super()
-    this.#wizAlertJSPath = 'https://d2r1yp2w7bby2u.cloudfront.net/js/wzrk_dialog.min.js'
+    this.#wizAlertJSPath = 'https://static.clevertap.com/js/wzrk_dialog.min.js'
     this.#fcmPublicKey = null
     this.#oldValues = values
     this.#logger = logger

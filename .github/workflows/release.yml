@@ -9,15 +9,15 @@ jobs:
   build:
     runs-on: macos-14-large
     steps:
-      - uses: actions/checkout@v4
-      - name: Use node.js version 20.18.0
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - name: Use node.js version 24
+        uses: actions/setup-node@v5
         with:
-          node-version: '20.18.0'
+          node-version: '24'
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -31,9 +31,9 @@ jobs:
       - name: Build package
         run: yarn run build
       - name: Setup node for npm publish
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20.18.0'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
       - name: Upgrade npm for OIDC support
         run: npm install -g npm@latest

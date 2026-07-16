@@ -100,6 +100,9 @@ export default class SessionManager {
         }
         this.#storageManager.setMetaProp('sc', sessionCount + 1)
 
+        // Clear discarded events list on new session
+        $ct.discardedEventsList = null
+
         // Reset session-based campaign counters on new session
         this.#resetSessionCampaignCounters()
       }

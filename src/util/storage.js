@@ -340,6 +340,7 @@ export const $ct = {
   LRU_CACHE: null,
   globalProfileMap: undefined,
   globalEventsMap: undefined,
+  discardedEventsList: null,
   // Initialize blockRequest from storage
   get blockRequest () {
     const value = StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE)
