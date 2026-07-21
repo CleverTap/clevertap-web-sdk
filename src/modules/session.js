@@ -1,6 +1,7 @@
 import { singleQuoteRegex, SCOOKIE_EXP_TIME_IN_SECS } from '../util/constants'
 import { isObject, safeJSONParse } from '../util/datatypes'
 import { getNow } from '../util/datetime'
+import { $ct } from '../util/storage'
 import { getHostName } from '../util/url'
 import { getCampaignObject, saveCampaignObject } from '../util/clevertap'
 
