@@ -80,6 +80,17 @@ export default class CleverTap {
       Logger.getInstance().error('CleverTap: Maximum of ' + CleverTap.MAX_INSTANCES + ' instances allowed. Cannot create instance for ' + accountId)
       return null
     }
+
+    // If the default instance has no account ID (was created empty by main.js),
+    // configure it with this account instead of creating a non-default instance.
+    // This ensures uniform behavior between package and script-tag integrations.
+    if (CleverTap.defaultInstance && !CleverTap.defaultInstance.getAccountID()) {
+      const defaultInst = CleverTap.defaultInstance
+      defaultInst.init(accountId, region, targetDomain, token)
+      CleverTap._instances[accountId] = defaultInst
+      return defaultInst
+    }
+
     const instance = new CleverTap({
       account: [{ id: accountId }],
       region,
