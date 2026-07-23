@@ -95,7 +95,8 @@ export default class RequestManager {
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
     let proto = document.location.protocol
     proto = proto.replace(':', '')
-    dataObject.af = { ...dataObject.af, lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...$ct.flutterVersion } // app fields
+    const locale = $ct.locale
+    dataObject.af = { ...dataObject.af, lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...$ct.flutterVersion, ...(locale && { locale }) } // app fields
     try {
       if (sessionStorage.hasOwnProperty('WZRK_D') || sessionStorage.getItem('WZRK_D')) {
         dataObject.debug = true
