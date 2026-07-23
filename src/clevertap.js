@@ -45,7 +45,7 @@ import {
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct, getMuteExpiry, isMuted } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
-import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, dismissActiveCampaigns, initDiscardedEventsFromStorage } from './util/clevertap'
+import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, dismissActiveCampaigns, _allCampaignDivMaps, initDiscardedEventsFromStorage } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
@@ -55,12 +55,54 @@ import VariableStore from './modules/variables/variableStore'
 import { addAntiFlicker, handleActionMode, renderVisualBuilder } from './modules/visualBuilder/pageBuilder'
 import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
+import InstanceManager from './util/instanceManager'
+import InstanceStorageManager from './util/instanceStorageManager'
+import { Encryption } from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
 import { checkWebPopupPreview } from './util/campaignRender/webPopup'
 import { reconstructNestedObject, validateCustomCleverTapID } from './util/helpers'
 import TVNavigation from './modules/tvNavigation'
 
 export default class CleverTap {
+  static _instances = {}
+  static defaultInstance = null
+  static MAX_INSTANCES = 5
+
+  static createInstance (config = {}) {
+    const { accountId, region, targetDomain, token } = config
+    if (!accountId) {
+      throw new Error('CleverTap.createInstance: accountId is required')
+    }
+    if (CleverTap._instances[accountId]) {
+      return CleverTap._instances[accountId]
+    }
+    if (Object.keys(CleverTap._instances).length >= CleverTap.MAX_INSTANCES) {
+      Logger.getInstance().error('CleverTap: Maximum of ' + CleverTap.MAX_INSTANCES + ' instances allowed. Cannot create instance for ' + accountId)
+      return null
+    }
+
+    // If the default instance has no account ID (was created empty by main.js),
+    // configure it with this account instead of creating a non-default instance.
+    // This ensures uniform behavior between package and script-tag integrations.
+    if (CleverTap.defaultInstance && !CleverTap.defaultInstance.getAccountID()) {
+      const defaultInst = CleverTap.defaultInstance
+      defaultInst.init(accountId, region, targetDomain, token)
+      CleverTap._instances[accountId] = defaultInst
+      return defaultInst
+    }
+
+    const instance = new CleverTap({
+      account: [{ id: accountId }],
+      region,
+      targetDomain,
+      token
+    })
+    // Expose on window
+    const safeId = accountId.replace(/[^a-zA-Z0-9_]/g, '_')
+    window[`clevertap_${safeId}`] = instance
+    return instance
+  }
+
   #logger
   #api
   #onloadcalled
@@ -79,6 +121,7 @@ export default class CleverTap {
   #enableFetchApi
   #enableEncryptionInTransit
   #domainSpecification
+  #instanceManager
 
   get spa () {
     return this.#isSpa
@@ -104,7 +147,7 @@ export default class CleverTap {
   set dismissSpamControl (value) {
     const dismissSpamControl = value === true
     this.#dismissSpamControl = dismissSpamControl
-    $ct.dismissSpamControl = dismissSpamControl
+    this.#instanceManager.state.dismissSpamControl = dismissSpamControl
   }
 
   get enableFetchApi () {
@@ -113,8 +156,8 @@ export default class CleverTap {
 
   set enableFetchApi (value) {
     this.#enableFetchApi = value
-    // propagate the setting to RequestDispatcher so util layer can honour it
-    RequestDispatcher.enableFetchApi = value
+    // propagate the setting to the instance manager so util layer can honour it
+    this.#instanceManager.enableFetchApi = value
   }
 
   get enableEncryptionInTransit () {
@@ -123,8 +166,8 @@ export default class CleverTap {
 
   set enableEncryptionInTransit (value) {
     this.#enableEncryptionInTransit = value
-    // propagate the setting to RequestDispatcher so util layer can honour it
-    RequestDispatcher.enableEncryptionInTransit = value
+    // propagate the setting to the instance manager so util layer can honour it
+    this.#instanceManager.enableEncryptionInTransit = value
   }
 
   get domainSpecification () {
@@ -146,7 +189,36 @@ export default class CleverTap {
     this.raiseNotificationClicked = () => { }
     this.#logger = new Logger(logLevels.INFO)
     this.#account = new Account(clevertap.account?.[0], clevertap.region || clevertap.account?.[1], clevertap.targetDomain || clevertap.account?.[2], clevertap.token || clevertap.account?.[3])
-    encryption.key = clevertap.account?.[0].id
+
+    // Determine if this is the default instance
+    const isDefault = CleverTap.defaultInstance === null
+    const accountId = clevertap.account?.[0]?.id || null
+
+    // Create per-instance encryption
+    const instanceEncryption = isDefault ? encryption : new Encryption()
+    instanceEncryption.key = accountId
+
+    // Create InstanceManager with all per-instance state
+    this.#instanceManager = new InstanceManager(accountId, isDefault)
+    this.#instanceManager.storage = new InstanceStorageManager(accountId, isDefault, instanceEncryption)
+    this.#instanceManager.logger = this.#logger
+
+    // For default instance, make the global $ct point to our state
+    if (isDefault) {
+      this.#instanceManager.state = $ct
+    }
+
+    // Register this instance's campaignDivMap for cross-instance popup closing
+    _allCampaignDivMaps.push(this.#instanceManager.state.campaignDivMap)
+
+    // Register instance
+    if (accountId) {
+      CleverTap._instances[accountId] = this
+    }
+    if (isDefault) {
+      CleverTap.defaultInstance = this
+    }
+
     // Custom Guid will be set here
 
     const result = validateCustomCleverTapID(clevertap?.config?.customId)
@@ -157,39 +229,44 @@ export default class CleverTap {
     this.#device = new DeviceManager({
       logger: this.#logger,
       customId: result?.isValid ? result?.sanitizedId : null,
-      domainSpecification: this.domainSpecification
+      domainSpecification: this.domainSpecification,
+      storageManager: this.#instanceManager.storage
     })
     this.#dismissSpamControl = clevertap.dismissSpamControl ?? true
     this.shpfyProxyPath = clevertap.shpfyProxyPath || ''
     this.#enableFetchApi = clevertap.enableFetchApi || false
-    RequestDispatcher.enableFetchApi = this.#enableFetchApi
+    this.#instanceManager.enableFetchApi = this.#enableFetchApi
     this.#enableEncryptionInTransit = clevertap.enableEncryptionInTransit || false
-    RequestDispatcher.enableEncryptionInTransit = this.#enableEncryptionInTransit
+    this.#instanceManager.enableEncryptionInTransit = this.#enableEncryptionInTransit
     this.#session = new SessionManager({
       logger: this.#logger,
       isPersonalisationActive: this._isPersonalisationActive,
-      domainSpecification: this.domainSpecification
+      domainSpecification: this.domainSpecification,
+      storageManager: this.#instanceManager.storage
     })
     this.#request = new ReqestManager({
       logger: this.#logger,
       account: this.#account,
       device: this.#device,
       session: this.#session,
-      isPersonalisationActive: this._isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive,
+      instanceManager: this.#instanceManager
     })
     this.#tvNavigation = new TVNavigation(this.#logger)
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
       logger: this.#logger,
       request: this.#request,
-      isPersonalisationActive: this._isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive,
+      instanceManager: this.#instanceManager
     }, clevertap.event)
 
     this.profile = new ProfileHandler({
       logger: this.#logger,
       request: this.#request,
       account: this.#account,
-      isPersonalisationActive: this._isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive,
+      instanceManager: this.#instanceManager
     }, clevertap.profile)
 
     this.onUserLogin = new UserLoginHandler({
@@ -197,49 +274,61 @@ export default class CleverTap {
       account: this.#account,
       session: this.#session,
       logger: this.#logger,
-      device: this.#device
+      device: this.#device,
+      instanceManager: this.#instanceManager
     }, clevertap.onUserLogin)
 
     this.privacy = new Privacy({
       request: this.#request,
       account: this.#account,
-      logger: this.#logger
+      logger: this.#logger,
+      instanceManager: this.#instanceManager
     }, clevertap.privacy)
 
     this.notifications = new NotificationHandler({
       logger: this.#logger,
       request: this.#request,
-      account: this.#account
+      account: this.#account,
+      instanceManager: this.#instanceManager
     }, clevertap.notifications)
 
     this.#variableStore = new VariableStore({
       logger: this.#logger,
       request: this.#request,
       account: this.#account,
-      event: this.event
+      event: this.event,
+      instanceManager: this.#instanceManager
     })
+    // Set variableStore on instance state so campaign utils can access it
+    this.#instanceManager.state.variableStore = this.#variableStore
 
     this.#api = new CleverTapAPI({
       logger: this.#logger,
       request: this.#request,
       device: this.#device,
       session: this.#session,
-      domainSpecification: this.domainSpecification
+      domainSpecification: this.domainSpecification,
+      instanceManager: this.#instanceManager
     })
+
+    // Wire the API reference into the request dispatcher for response routing
+    if (this.#request.dispatcher) {
+      this.#request.dispatcher.api = this.#api
+    }
 
     this.spa = clevertap.spa
     this.dismissSpamControl = clevertap.dismissSpamControl ?? true
 
     if (clevertap.config?.enableTVControls) {
-      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
+      this.#instanceManager.storage.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
     } else {
-      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, false)
+      this.#instanceManager.storage.saveToLSorCookie(ENABLE_TV_CONTROLS, false)
     }
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive
     })
 
-    encryption.logger = this.#logger
+    instanceEncryption.logger = this.#logger
 
     this.session = {
       getTimeElapsed: () => {
@@ -252,7 +341,7 @@ export default class CleverTap {
 
     this.logout = () => {
       this.#logger.debug('logout called')
-      StorageManager.setInstantDeleteFlagInK()
+      this.#instanceManager.storage.setInstantDeleteFlagInK()
     }
 
     this.clear = () => {
@@ -272,7 +361,7 @@ export default class CleverTap {
     }
 
     this.setLibrary = (libName, libVersion) => {
-      $ct.flutterVersion = { [libName]: libVersion }
+      this.#instanceManager.state.flutterVersion = { [libName]: libVersion }
     }
 
     // Set the Signed Call sdk version and fire request
@@ -283,17 +372,17 @@ export default class CleverTap {
       let pageLoadUrl = this.#account.dataPostURL
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
-      this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+      this.#request.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest)
     }
 
     if (hasWebInboxSettingsInLS()) {
       checkAndRegisterWebInboxElements()
-      initializeWebInbox(this.#logger)
+      initializeWebInbox(this.#logger, this.#instanceManager)
     }
 
     // Get Inbox Message Count
     this.getInboxMessageCount = () => {
-      const msgCount = getInboxMessages()
+      const msgCount = getInboxMessages(this.#instanceManager)
       return Object.keys(msgCount).length
     }
 
@@ -310,13 +399,13 @@ export default class CleverTap {
 
     // Get All Inbox messages
     this.getAllInboxMessages = () => {
-      return getInboxMessages()
+      return getInboxMessages(this.#instanceManager)
     }
 
     // Get only Unread messages
     this.getUnreadInboxMessages = () => {
       try {
-        const messages = getInboxMessages()
+        const messages = getInboxMessages(this.#instanceManager)
         const result = {}
 
         if (Object.keys(messages).length > 0) {
@@ -334,7 +423,7 @@ export default class CleverTap {
 
     // Get message object belonging to the given message id only. Message id should be a String
     this.getInboxMessageForId = (messageId) => {
-      const messages = getInboxMessages()
+      const messages = getInboxMessages(this.#instanceManager)
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
         return messages[messageId]
       } else {
@@ -346,17 +435,17 @@ export default class CleverTap {
     // If the message to be deleted is unviewed then decrement the badge count, delete the message from unviewedMessages list
     // Then remove the message from local storage and update cookie
     this.deleteInboxMessage = (messageId) => {
-      const messages = getInboxMessages()
+      const messages = getInboxMessages(this.#instanceManager)
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
         if (messages[messageId].viewed === 0) {
-          if ($ct.inbox) {
-            $ct.inbox.unviewedCounter--
-            delete $ct.inbox.unviewedMessages[messageId]
+          if (this.#instanceManager.state.inbox) {
+            this.#instanceManager.state.inbox.unviewedCounter--
+            delete this.#instanceManager.state.inbox.unviewedMessages[messageId]
           }
           const unViewedBadge = document.getElementById('unviewedBadge')
           if (unViewedBadge) {
-            unViewedBadge.innerText = $ct.inbox.unviewedCounter
-            unViewedBadge.style.display = $ct.inbox.unviewedCounter > 0 ? 'flex' : 'none'
+            unViewedBadge.innerText = this.#instanceManager.state.inbox.unviewedCounter
+            unViewedBadge.style.display = this.#instanceManager.state.inbox.unviewedCounter > 0 ? 'flex' : 'none'
           }
         }
         const ctInbox = document.querySelector('ct-web-inbox')
@@ -365,7 +454,7 @@ export default class CleverTap {
           el && el.remove()
         }
         delete messages[messageId]
-        saveInboxMessages(messages)
+        saveInboxMessages(messages, this.#instanceManager)
       } else {
         this.#logger.error('No message available for message Id ' + messageId)
       }
@@ -376,7 +465,7 @@ export default class CleverTap {
      - Remove the unread marker, update the viewed flag, decrement the bage Count
      - renderNotificationViewed */
     this.markReadInboxMessage = (messageId) => {
-      const messages = getInboxMessages()
+      const messages = getInboxMessages(this.#instanceManager)
       if ((messageId !== null || messageId !== '') && messages.hasOwnProperty(messageId)) {
         if (messages[messageId].viewed === 1) {
           return this.#logger.error('Message already viewed' + messageId)
@@ -395,12 +484,12 @@ export default class CleverTap {
           unViewedBadge.innerText = counter
           unViewedBadge.style.display = counter > 0 ? 'flex' : 'none'
         }
-        window.clevertap.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
-        if ($ct.inbox) {
-          $ct.inbox.unviewedCounter--
-          delete $ct.inbox.unviewedMessages[messageId]
+        this.renderNotificationViewed({ msgId: messages[messageId].wzrk_id, pivotId: messages[messageId].pivotId })
+        if (this.#instanceManager.state.inbox) {
+          this.#instanceManager.state.inbox.unviewedCounter--
+          delete this.#instanceManager.state.inbox.unviewedMessages[messageId]
         }
-        saveInboxMessages(messages)
+        saveInboxMessages(messages, this.#instanceManager)
       } else {
         this.#logger.error('No message available for message Id ' + messageId)
       }
@@ -420,7 +509,7 @@ export default class CleverTap {
       - renderNotificationViewed, update the badge count and style
     */
     this.markReadAllInboxMessage = () => {
-      const messages = getInboxMessages()
+      const messages = getInboxMessages(this.#instanceManager)
       const unreadMsg = this.getUnreadInboxMessages()
       if (Object.keys(unreadMsg).length > 0) {
         const msgIds = Object.keys(unreadMsg)
@@ -433,22 +522,22 @@ export default class CleverTap {
             }
           }
           messages[key].viewed = 1
-          window.clevertap.renderNotificationViewed({ msgId: messages[key].wzrk_id, pivotId: messages[key].wzrk_pivot })
+          this.renderNotificationViewed({ msgId: messages[key].wzrk_id, pivotId: messages[key].wzrk_pivot })
         })
         const unViewedBadge = document.getElementById('unviewedBadge')
         if (unViewedBadge) {
           unViewedBadge.innerText = 0
           unViewedBadge.style.display = 'none'
         }
-        saveInboxMessages(messages)
-        $ct.inbox.unviewedCounter = 0
-        $ct.inbox.unviewedMessages = {}
+        saveInboxMessages(messages, this.#instanceManager)
+        this.#instanceManager.state.inbox.unviewedCounter = 0
+        this.#instanceManager.state.inbox.unviewedMessages = {}
       } else {
         this.#logger.debug('All messages are already read')
       }
     }
 
-    this.toggleInbox = (e) => $ct.inbox?.toggleInbox(e)
+    this.toggleInbox = (e) => this.#instanceManager.state.inbox?.toggleInbox(e)
 
     // method for notification viewed
     this.renderNotificationViewed = (detail) => {
@@ -560,11 +649,11 @@ export default class CleverTap {
     }
 
     this.enableLocalStorageEncryption = (value) => {
-      encryption.enableLocalStorageEncryption = value
+      instanceEncryption.enableLocalStorageEncryption = value
     }
 
     this.isLocalStorageEncryptionEnabled = () => {
-      return encryption.enableLocalStorageEncryption
+      return instanceEncryption.enableLocalStorageEncryption
     }
 
     const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
@@ -595,7 +684,7 @@ export default class CleverTap {
           console.log('A valid longitude must range between -180 and 180')
           return
         }
-        $ct.location = { Latitude: lat, Longitude: lng }
+        this.#instanceManager.state.location = { Latitude: lat, Longitude: lng }
         this.#sendLocationData({ Latitude: lat, Longitude: lng })
       } else {
         if (navigator.geolocation) {
@@ -618,7 +707,7 @@ export default class CleverTap {
       var lat = position.coords.latitude
       var lng = position.coords.longitude
       try { localStorage.setItem(WZRK_GEO, 'true') } catch (e) {}
-      $ct.location = { Latitude: lat, Longitude: lng }
+      this.#instanceManager.state.location = { Latitude: lat, Longitude: lng }
       this.#sendLocationData({ Latitude: lat, Longitude: lng })
     }
 
@@ -644,13 +733,13 @@ export default class CleverTap {
     api.logout = this.logout
     api.clear = this.clear
     api.closeIframe = (campaignId, divIdIgnored) => {
-      closeIframe(campaignId, divIdIgnored, this.#session.sessionId)
+      closeIframe(campaignId, divIdIgnored, this.#session.sessionId, this.#instanceManager.state.campaignDivMap)
     }
     api.enableWebPush = (enabled, applicationServerKey) => {
       setServerKey(applicationServerKey)
       this.notifications._enableWebPush(enabled, applicationServerKey)
       try {
-        StorageManager.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, true)
+        this.#instanceManager.storage.saveToLSorCookie(APPLICATION_SERVER_KEY_RECEIVED, true)
       } catch (error) {
         this.#logger.error('Could not read value from local storage', error)
       }
@@ -661,7 +750,9 @@ export default class CleverTap {
         session: this.#session,
         request: this.#request,
         logger: this.#logger,
-        region: this.#account.region
+        region: this.#account.region,
+        instanceManager: this.#instanceManager,
+        instance: this
       })
     }
     api.setEnum = (enumVal) => {
@@ -680,38 +771,38 @@ export default class CleverTap {
       _handleEmailSubscription('0', reEncoded)
     }
     api.unsubEmailGroups = (reEncoded) => {
-      $ct.unsubGroups = []
+      this.#instanceManager.state.unsubGroups = []
       const elements = document.getElementsByClassName('ct-unsub-group-input-item')
 
       for (let i = 0; i < elements.length; i++) {
         const element = elements[i]
         if (element.name) {
           const data = { name: element.name, isUnsubscribed: element.checked }
-          $ct.unsubGroups.push(data)
+          this.#instanceManager.state.unsubGroups.push(data)
         }
       }
 
       _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
     }
     api.setSubscriptionGroups = (value) => {
-      $ct.unsubGroups = value
+      this.#instanceManager.state.unsubGroups = value
     }
     api.getSubscriptionGroups = () => {
-      return $ct.unsubGroups
+      return this.#instanceManager.state.unsubGroups
     }
     api.changeSubscriptionGroups = (reEncoded, updatedGroups) => {
       api.setSubscriptionGroups(updatedGroups)
       _handleEmailSubscription(GROUP_SUBSCRIPTION_REQUEST_ID, reEncoded)
     }
     api.isGlobalUnsubscribe = () => {
-      return $ct.globalUnsubscribe
+      return this.#instanceManager.state.globalUnsubscribe
     }
     api.setIsGlobalUnsubscribe = (value) => {
-      $ct.globalUnsubscribe = value
+      this.#instanceManager.state.globalUnsubscribe = value
     }
     api.setUpdatedCategoryLong = (profile) => {
       if (profile[categoryLongKey]) {
-        $ct.updatedCategoryLong = profile[categoryLongKey]
+        this.#instanceManager.state.updatedCategoryLong = profile[categoryLongKey]
       }
     }
     // SDK Muting - for churned accounts (progressive muting)
@@ -721,13 +812,55 @@ export default class CleverTap {
     api.isMuted = () => {
       return isMuted()
     }
-    window.$CLTP_WR = window.$WZRK_WR = api
+    // Set up JSONP response routing
+    // For the default instance, set the global callback directly.
+    // For multi-instance, the dispatcher routes responses to the correct instance
+    // based on a global request-number-to-api map.
+    if (!window.$WZRK_WR) {
+      // First instance -- create the dispatcher
+      window.$WZRK_WR = {
+        // Map of reqN -> api handler for routing JSONP responses
+        _apiMap: {},
+        _defaultApi: api,
+        _lastHandler: null, // tracks which instance s() resolved to, for subsequent tr()/enableWebPush()
+        s: function (...args) {
+          const rn = args[3] // respNumber is 4th arg
+          const handler = this._apiMap[rn] || this._defaultApi
+          this._lastHandler = handler // remember for tr() and enableWebPush() in same response
+          if (handler && handler.s) handler.s(...args)
+          delete this._apiMap[rn]
+        },
+        tr: function (...args) {
+          // Route to the same instance that s() resolved to in this response
+          const handler = this._lastHandler || this._defaultApi
+          if (handler && handler.tr) handler.tr(...args)
+        },
+        enableWebPush: function (...args) {
+          const handler = this._lastHandler || this._defaultApi
+          if (handler && handler.enableWebPush) handler.enableWebPush(...args)
+        }
+      }
+      // Copy other api methods for backward compat
+      const dispatcherProxy = window.$WZRK_WR
+      Object.keys(api).forEach(key => {
+        if (!dispatcherProxy.hasOwnProperty(key)) {
+          dispatcherProxy[key] = typeof api[key] === 'function' ? api[key].bind(api) : api[key]
+        }
+      })
+      window.$CLTP_WR = window.$WZRK_WR
+    } else {
+      // Additional instances register themselves
+      // The api's response handler will be routed via _apiMap
+    }
+    // Store reference so request module can register request numbers
+    this.#api._wzrkDispatcher = window.$WZRK_WR
+    this.#api._selfApi = api
 
     if (clevertap.account?.[0].id) {
       // The accountId is present so can init with empty values.
       // Needed to maintain backward compatability with legacy implementations.
       // Npm imports/require will need to call init explictly with accountId
-      StorageManager.saveToLSorCookie(ACCOUNT_ID, clevertap.account?.[0].id)
+      this.#instanceManager.storage.saveToLSorCookie(ACCOUNT_ID, clevertap.account?.[0].id)
       this.init()
     }
   }
@@ -746,7 +879,7 @@ export default class CleverTap {
 
     if (result.isValid) {
       this.#device.gcookie = result?.sanitizedId
-      StorageManager.saveToLSorCookie(GCOOKIE_NAME, result?.sanitizedId)
+      this.#instanceManager.storage.saveToLSorCookie(GCOOKIE_NAME, result?.sanitizedId)
       this.#logger.debug('CT Initialized with customId:: ' + result?.sanitizedId)
     } else {
       this.#logger.error('Invalid customId')
@@ -771,7 +904,7 @@ export default class CleverTap {
     }
 
     if (config?.isolateSubdomain) {
-      StorageManager.saveToLSorCookie(ISOLATE_COOKIE, true)
+      this.#instanceManager.storage.saveToLSorCookie(ISOLATE_COOKIE, true)
     }
 
     if (this.#onloadcalled === 1) {
@@ -780,29 +913,31 @@ export default class CleverTap {
     }
 
     // Clear EIT fallback flag on new session (init)
-    RequestDispatcher.clearEITFallback()
-
-    if (accountId) {
-      encryption.key = accountId
+    if (this.#request.dispatcher) {
+      this.#request.dispatcher.clearEITFallback()
     }
 
-    const enableControls = StorageManager.readFromLSorCookie(ENABLE_TV_CONTROLS) ?? false
+    if (accountId) {
+      this.#instanceManager.storage.encryption.key = accountId
+    }
+
+    const enableControls = this.#instanceManager.storage.readFromLSorCookie(ENABLE_TV_CONTROLS) ?? false
     if ((config?.enableTVControls) || enableControls) {
       // CleverTap handles navigation
-      StorageManager.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
+      this.#instanceManager.storage.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
       this.#logger.debug('CleverTap TV Navigation Mode: CleverTap will handle all navigation')
       // Initialize CleverTap TV navigation system
       this.#tvNavigation.init()
     }
 
-    StorageManager.removeCookie('WZRK_P', window.location.hostname)
+    this.#instanceManager.storage.removeCookie('WZRK_P', window.location.hostname)
     if (!this.#account.id) {
       if (!accountId) {
         this.#logger.error(EMBED_ERROR)
         return
       }
       this.#account.id = accountId
-      StorageManager.saveToLSorCookie(ACCOUNT_ID, accountId)
+      this.#instanceManager.storage.saveToLSorCookie(ACCOUNT_ID, accountId)
       this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
     handleActionMode(this.#logger, this.#account.id)
@@ -824,17 +959,17 @@ export default class CleverTap {
 
     if (config.enableFetchApi) {
       this.#enableFetchApi = config.enableFetchApi
-      RequestDispatcher.enableFetchApi = config.enableFetchApi
+      this.#instanceManager.enableFetchApi = config.enableFetchApi
     }
 
     if (config.enableEncryptionInTransit) {
       this.#enableEncryptionInTransit = config.enableEncryptionInTransit
-      RequestDispatcher.enableEncryptionInTransit = config.enableEncryptionInTransit
+      this.#instanceManager.enableEncryptionInTransit = config.enableEncryptionInTransit
     }
 
     // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
     // This ensures user identity is established before other events
-    if (StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
+    if (this.#instanceManager.storage.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
       this.#logger.debug('Processing OUL backup events first to establish user identity')
       this.#request.processBackupEvents(true)
     }
@@ -846,9 +981,9 @@ export default class CleverTap {
       return
     }
 
-    $ct.isPrivacyArrPushed = true
-    if ($ct.privacyArray.length > 0) {
-      this.privacy.push($ct.privacyArray)
+    this.#instanceManager.state.isPrivacyArrPushed = true
+    if (this.#instanceManager.state.privacyArray.length > 0) {
+      this.privacy.push(this.#instanceManager.state.privacyArray)
     }
 
     initDiscardedEventsFromStorage()
@@ -917,7 +1052,7 @@ export default class CleverTap {
 
       /* Set Timeout to let the page load and then update the position and display the badge */
       this.#pageChangeTimeoutId = setTimeout(() => {
-        const config = StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}
+        const config = this.#instanceManager.storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}
         const inboxNode = document.getElementById(config?.inboxSelector)
         /* Creating a Local Variable to avoid reference to stale DOM Node */
         const unViewedBadge = document.getElementById('unviewedBadge')
@@ -1008,7 +1143,7 @@ export default class CleverTap {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
-    this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+    this.#request.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest)
 
     if (parseInt(data.pg) === 1) {
       this.event.push(WZRK_FETCH, { t: 4 })
@@ -1033,8 +1168,8 @@ export default class CleverTap {
   }
 
   _handleVisualEditorPreview () {
-    if ($ct.intervalArray.length) {
-      $ct.intervalArray.forEach(interval => {
+    if (this.#instanceManager.state.intervalArray.length) {
+      this.#instanceManager.state.intervalArray.forEach(interval => {
         if (typeof interval === 'string' && interval.startsWith('addNewEl-')) {
           clearInterval(parseInt(interval.split('-')[1], 10))
         } else {
@@ -1042,7 +1177,7 @@ export default class CleverTap {
         }
       })
     }
-    $ct.intervalArray = []
+    this.#instanceManager.state.intervalArray = []
     const storedData = sessionStorage.getItem('visualEditorData')
     const targetJson = storedData ? JSON.parse(storedData) : null
     if (targetJson) {
@@ -1057,7 +1192,7 @@ export default class CleverTap {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PING)
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
 
-    this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+    this.#request.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest)
   }
 
   #isPingContinuous () {
@@ -1102,8 +1237,8 @@ export default class CleverTap {
         data.af[key] = payload[key]
       })
     }
-    if ($ct.location) {
-      data.af = { ...data.af, ...$ct.location }
+    if (this.#instanceManager.state.location) {
+      data.af = { ...data.af, ...this.#instanceManager.state.location }
     }
     data = this.#request.addSystemDataToObject(data, true)
     this.#request.addFlags(data)
@@ -1112,7 +1247,7 @@ export default class CleverTap {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-    this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+    this.#request.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest)
   }
 
   // offline mode
@@ -1129,10 +1264,10 @@ export default class CleverTap {
     }
     // Check if the offline state is changing from true to false
     // If offline is being disabled (arg is false), process any cached events
-    if ($ct.offline !== arg && !arg) {
+    if (this.#instanceManager.state.offline !== arg && !arg) {
       this.#request.processBackupEvents()
     }
-    $ct.offline = arg
+    this.#instanceManager.state.offline = arg
   }
 
   delayEvents (arg) {
@@ -1140,7 +1275,7 @@ export default class CleverTap {
       console.error('delayEvents should be called with a value of type boolean')
       return
     }
-    $ct.delayEvents = arg
+    this.#instanceManager.state.delayEvents = arg
   }
 
   getSDKVersion () {
@@ -1171,12 +1306,12 @@ export default class CleverTap {
 
   getVariables () {
     return reconstructNestedObject(
-      StorageManager.readFromLSorCookie(VARIABLES)
+      this.#instanceManager.storage.readFromLSorCookie(VARIABLES)
     )
   }
 
   getVariableValue (variableName) {
-    const variables = StorageManager.readFromLSorCookie(VARIABLES)
+    const variables = this.#instanceManager.storage.readFromLSorCookie(VARIABLES)
     const reconstructedVariables = reconstructNestedObject(variables)
     if (variables.hasOwnProperty(variableName)) {
       return variables[variableName]
@@ -1203,7 +1338,7 @@ export default class CleverTap {
   */
   getAllQualifiedCampaignDetails () {
     try {
-      const existingCampaign = StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(StorageManager.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
+      const existingCampaign = this.#instanceManager.storage.readFromLSorCookie(QUALIFIED_CAMPAIGNS) && JSON.parse(decodeURIComponent(this.#instanceManager.storage.readFromLSorCookie(QUALIFIED_CAMPAIGNS)))
       return existingCampaign
     } catch (e) {
       return null

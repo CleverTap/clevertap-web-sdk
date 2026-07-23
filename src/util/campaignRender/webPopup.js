@@ -1,9 +1,9 @@
 import { invokeExternalJs } from './utilities'
-import { $ct } from '../storage'
 import { closeIframe } from '../clevertap'
 import { ACTION_TYPES, WEB_POPUP_PREVIEW, WEB_POPUP_PIP_HOST_ID } from '../constants'
 import { WVE_URL_ORIGIN } from '../../modules/visualBuilder/builder_constants'
 import { Logger } from '../../modules/logger'
+import { CampaignContext } from '../campaignHouseKeeping/campaignContext'
 
 export const renderPopUpImageOnly = (targetingMsgJson, _session) => {
   const divId = 'wzrkImageOnlyDiv'
@@ -54,7 +54,7 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger, isPre
   if (handleExistingWrapper(divId)) {
     return // Early exit if existing wrapper should not be replaced
   }
-  $ct.campaignDivMap[campaignId] = divId
+  CampaignContext.instanceManager.state.campaignDivMap[campaignId] = divId
 
   // Create DOM elements
   const msgDiv = createWrapperDiv(divId)
@@ -73,7 +73,7 @@ export const renderAdvancedBuilder = (targetingMsgJson, _session, _logger, isPre
   document.body.appendChild(msgDiv)
 
   // Track notification view
-  window.clevertap.renderNotificationViewed({
+  CampaignContext.instance.renderNotificationViewed({
     msgId: targetingMsgJson.wzrk_id,
     pivotId: targetingMsgJson.wzrk_pivot
   })
@@ -100,19 +100,19 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPrev
     case ACTION_TYPES.CLOSE:
       // close Iframe
       if (!isPreview) {
-        window.clevertap.renderNotificationClicked(payload)
+        CampaignContext.instance.renderNotificationClicked(payload)
       }
-      closeIframe(campaignId, divId, _session?.sessionId)
+      closeIframe(campaignId, divId, _session?.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
       break
     case ACTION_TYPES.OPEN_WEB_URL:
       // handle opening of url
       if (!isPreview) {
-        window.clevertap.renderNotificationClicked(payload)
+        CampaignContext.instance.renderNotificationClicked(payload)
       }
       if (detail.openInNewTab) {
         window.open(detail.url.value.replacements, '_blank', 'noopener')
         if (detail.closeOnClick) {
-          closeIframe(campaignId, divId, _session?.sessionId)
+          closeIframe(campaignId, divId, _session?.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
         }
       } else {
         window.location.href = detail.url.value.replacements
@@ -121,14 +121,14 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPrev
     case ACTION_TYPES.SOFT_PROMPT:
       // Handle soft prompt
       if (!isPreview) {
-        window.clevertap.renderNotificationClicked(payload)
+        CampaignContext.instance.renderNotificationClicked(payload)
       }
-      window.clevertap.notifications.push({ skipDialog: true })
+      CampaignContext.instance.notifications.push({ skipDialog: true })
       break
     case ACTION_TYPES.RUN_JS:
       // Handle JS code
       if (!isPreview) {
-        window.clevertap.renderNotificationClicked(payload)
+        CampaignContext.instance.renderNotificationClicked(payload)
       }
       invokeExternalJs(e.detail.js.name, targetingMsgJson)
       break
@@ -142,7 +142,7 @@ const handleExistingWrapper = (divId) => {
   const existingWrapper = document.getElementById(divId)
 
   if (existingWrapper) {
-    if ($ct.dismissSpamControl) {
+    if (CampaignContext.instanceManager.state.dismissSpamControl) {
       existingWrapper.remove()
       return false // Continue with creation
     } else {
