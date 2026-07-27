@@ -1,5 +1,5 @@
-import { SCOOKIE_PREFIX, CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY } from '../util/constants'
-import { isObjectEmpty, isValueValid, removeUnsupportedChars, safeJSONParse } from '../util/datatypes'
+import { SCOOKIE_PREFIX, CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY, OPTOUT_COOKIE_ENDSWITH } from '../util/constants'
+import { isObjectEmpty, isValueValid, removeUnsupportedChars, safeJSONParse, isString } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
 import RequestDispatcher from '../util/requestDispatcher'
@@ -18,6 +18,7 @@ export default class RequestManager {
   #isPersonalisationActive
   #clearCookie = false
   processingBackup = false
+  processedBackup = false
 
   constructor ({ logger, account, device, session, isPersonalisationActive }) {
     this.#logger = logger
@@ -33,11 +34,16 @@ export default class RequestManager {
 
   /**
  * Unified backup processing method
- * @param {boolean} oulOnly - If true, process only OUL requests. If false, process all non-fired requests.
+ * @param {boolean} oulOnly - If true, process only OUL requests. If false, process all backup requests.
  */
   processBackupEvents (oulOnly = false) {
     const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
     if (typeof backupMap === 'undefined' || backupMap === null) {
+      return
+    }
+
+    if (this.processingBackup || this.processedBackup) {
+      this.#logger.debug('Backup processing already in progress or completed..')
       return
     }
 
@@ -46,10 +52,6 @@ export default class RequestManager {
     for (const idx in backupMap) {
       if (backupMap.hasOwnProperty(idx)) {
         const backupEvent = backupMap[idx]
-
-        if (typeof backupEvent.fired !== 'undefined') {
-          continue
-        }
 
         const isOULRequest = StorageManager.isBackupOUL(parseInt(idx))
         const shouldProcess = oulOnly ? isOULRequest : true
@@ -64,13 +66,15 @@ export default class RequestManager {
               backupEvent.q = backupEvent.q + '&s=' + session.s
             }
             RequestDispatcher.fireRequest(backupEvent.q)
+          } else {
+            this.#logger.error('Backup event is malformed.. removing from backup', backupEvent)
+            StorageManager.removeBackup(idx, this.#logger)
           }
-          backupEvent.fired = true
         }
       }
     }
-    StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap)
     this.processingBackup = false
+    this.processedBackup = true
   }
 
   addSystemDataToObject (dataObject, ignoreTrim) {
@@ -146,6 +150,11 @@ export default class RequestManager {
       return
     }
 
+    if (this.#dropRequestDueToOptOut()) {
+      this.#logger.debug('req dropped due to optout cookie: ' + this.#device.gcookie)
+      return
+    }
+
     const now = getNow()
 
     // Get the next available request number that doesn't conflict with existing backups
@@ -183,80 +192,88 @@ export default class RequestManager {
     }
   }
 
-#getNextAvailableReqN () {
-  // Read existing backup data to check for conflicts
-  const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
+  #dropRequestDueToOptOut () {
+    if ($ct.isOptInRequest || !isValueValid(this.#device.gcookie) || !isString(this.#device.gcookie)) {
+      $ct.isOptInRequest = false
+      return false
+    }
+    return this.#device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH
+  }
 
-  // Start from the current REQ_N + 1
-  let candidateReqN = $ct.globalCache.REQ_N + 1
+  #getNextAvailableReqN () {
+    // Read existing backup data to check for conflicts
+    const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
 
-  // If no backup data exists, use the candidate
-  if (!backupMap || typeof backupMap !== 'object') {
+    // Start from the current REQ_N + 1
+    let candidateReqN = $ct.globalCache.REQ_N + 1
+
+    // If no backup data exists, use the candidate
+    if (!backupMap || typeof backupMap !== 'object') {
+      return candidateReqN
+    }
+
+    // Keep incrementing until we find a request number that doesn't exist in backup
+    while (backupMap.hasOwnProperty(candidateReqN.toString())) {
+      candidateReqN++
+      this.#logger.debug(`Request number ${candidateReqN - 1} already exists in backup, trying ${candidateReqN}`)
+    }
+
+    this.#logger.debug(`Using request number: ${candidateReqN}`)
     return candidateReqN
   }
 
-  // Keep incrementing until we find a request number that doesn't exist in backup
-  while (backupMap.hasOwnProperty(candidateReqN.toString())) {
-    candidateReqN++
-    this.#logger.debug(`Request number ${candidateReqN - 1} already exists in backup, trying ${candidateReqN}`)
+  unregisterTokenForGuid (givenGUID) {
+    const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
+    // Send unregister event only when token is available
+    if (payload) {
+      const data = {}
+      data.type = 'data'
+      if (isValueValid(givenGUID)) {
+        data.g = givenGUID
+      }
+      data.action = 'unregister'
+      data.id = this.#account.id
+
+      const obj = this.#session.getSessionCookieObject()
+
+      data.s = obj.s // session cookie
+      const compressedData = compressData(JSON.stringify(data), this.#logger)
+
+      let pageLoadUrl = this.#account.dataPostURL
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+      RequestDispatcher.fireRequest(pageLoadUrl, true)
+      StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
+    }
+    // REGISTER TOKEN
+    this.registerToken(payload)
   }
 
-  this.#logger.debug(`Using request number: ${candidateReqN}`)
-  return candidateReqN
-}
-
-unregisterTokenForGuid (givenGUID) {
-  const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
-  // Send unregister event only when token is available
-  if (payload) {
-    const data = {}
-    data.type = 'data'
-    if (isValueValid(givenGUID)) {
-      data.g = givenGUID
-    }
-    data.action = 'unregister'
-    data.id = this.#account.id
-
-    const obj = this.#session.getSessionCookieObject()
-
-    data.s = obj.s // session cookie
-    const compressedData = compressData(JSON.stringify(data), this.#logger)
-
+  registerToken (payload) {
+    if (!payload) return
+    // add gcookie etc to the payload
+    payload = this.addSystemDataToObject(payload, true)
+    payload = JSON.stringify(payload)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
-    RequestDispatcher.fireRequest(pageLoadUrl, true)
-    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
+    RequestDispatcher.fireRequest(pageLoadUrl)
+    // set in localstorage
+    StorageManager.save(WEBPUSH_LS_KEY, 'ok')
   }
-  // REGISTER TOKEN
-  this.registerToken(payload)
-}
 
-registerToken (payload) {
-  if (!payload) return
-  // add gcookie etc to the payload
-  payload = this.addSystemDataToObject(payload, true)
-  payload = JSON.stringify(payload)
-  let pageLoadUrl = this.#account.dataPostURL
-  pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-  pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
-  RequestDispatcher.fireRequest(pageLoadUrl)
-  // set in localstorage
-  StorageManager.save(WEBPUSH_LS_KEY, 'ok')
-}
+  processEvent (data) {
+    this.#addToLocalEventMap(data.evtName)
+    data = this.addSystemDataToObject(data, undefined)
+    this.addFlags(data)
+    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    const compressedData = compressData(JSON.stringify(data), this.#logger)
+    let pageLoadUrl = this.#account.dataPostURL
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-processEvent (data) {
-  this.#addToLocalEventMap(data.evtName)
-  data = this.addSystemDataToObject(data, undefined)
-  this.addFlags(data)
-  data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
-  const compressedData = compressData(JSON.stringify(data), this.#logger)
-  let pageLoadUrl = this.#account.dataPostURL
-  pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-  pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
-
-  this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
-}
+    this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
+  }
 
   #addToLocalEventMap (evtName) {
     if (StorageManager._isLocalStorageSupported()) {
