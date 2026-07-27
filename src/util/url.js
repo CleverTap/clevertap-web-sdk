@@ -26,8 +26,10 @@ export const getURLParams = (url) => {
 }
 
 export const getURLParam = (url, param) => {
-  if (url === '' || param === '' || !url.includes(param)) return ''
-  const paramValue = url.split(`${param}=`)[1].split('&')[0]
+  if (url === '' || param === '') return ''
+  const paramPrefix = url.includes(`?${param}=`) ? `?${param}=` : `&${param}=`
+  if (!url.includes(paramPrefix)) return ''
+  const paramValue = url.split(paramPrefix)[1].split('&')[0]
   return decode(paramValue)
 }
 
