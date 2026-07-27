@@ -1,9 +1,9 @@
 
-import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY, MAX_DELAY_FREQUENCY, PUSH_DELAY_MS, WZRK_FETCH, CT_EIT_FALLBACK, MUTE_EXPIRY_KEY } from './constants'
-import { isString, isValueValid } from './datatypes'
+import { ARP_COOKIE, MAX_TRIES, USEIP_KEY, MAX_DELAY_FREQUENCY, PUSH_DELAY_MS, WZRK_FETCH, CT_EIT_FALLBACK, MUTE_EXPIRY_KEY, INITIAL_RETRY_DELAY_MS, MAX_RETRY_DELAY_MS, OPTOUT_COOKIE_ENDSWITH } from './constants'
+import { isValueValid, isString } from './datatypes'
 import { compressData } from './encoder'
 import { StorageManager, $ct, isMuted, getMuteExpiry } from './storage'
-import { addToURL } from './url'
+import { addToURL, getURLParam } from './url'
 import encryptionInTransitInstance from './security/encryptionInTransit'
 
 export default class RequestDispatcher {
@@ -63,7 +63,7 @@ export default class RequestDispatcher {
    * Used when EIT is rejected by the backend.
    * @param {string} url - The URL to send via JSONP
    */
-  static #retryViaJSONP (url) {
+  static #retryViaJSONP (url, retryAttempt = 0) {
     // Clean up any existing callback scripts
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
     while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
@@ -77,8 +77,36 @@ export default class RequestDispatcher {
     s.setAttribute('class', 'ct-jp-cb')
     s.setAttribute('rel', 'nofollow')
     s.async = true
+    s.onerror = () => {
+      this.#scheduleRetryViaJSONP(url, retryAttempt)
+    }
     document.getElementsByTagName('head')[0].appendChild(s)
     this.logger.debug('EIT fallback: req snt via JSONP -> url: ' + url)
+  }
+
+  /**
+   * Retries failed transport requests with an exponential delay. Once the
+   * max delay has been used, the following retry starts at initial delay.
+   * A 50%-100% jitter is applied to avoid retrying requests simultaneously.
+   */
+  static #scheduleRetryViaFetch (encryptedUrl, originalUrl, retryAttempt = 0) {
+    const retryDelay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, retryAttempt), MAX_RETRY_DELAY_MS)
+    const delay = Math.floor(retryDelay * (0.5 + Math.random() * 0.5))
+    const nextRetryAttempt = retryDelay === MAX_RETRY_DELAY_MS ? 0 : retryAttempt + 1
+    this.logger.debug(`Retrying request in ${delay}ms: ${encryptedUrl}`)
+    setTimeout(() => {
+      this.handleFetchResponse(encryptedUrl, originalUrl, nextRetryAttempt)
+    }, delay)
+  }
+
+  static #scheduleRetryViaJSONP (url, retryAttempt = 0) {
+    const retryDelay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, retryAttempt), MAX_RETRY_DELAY_MS)
+    const delay = Math.floor(retryDelay * (0.5 + Math.random() * 0.5))
+    const nextRetryAttempt = retryDelay === MAX_RETRY_DELAY_MS ? 0 : retryAttempt + 1
+    this.logger.debug(`Retrying request in ${delay}ms: ${url}`)
+    setTimeout(() => {
+      this.#retryViaJSONP(url, nextRetryAttempt)
+    }, delay)
   }
 
   /**
@@ -139,11 +167,15 @@ export default class RequestDispatcher {
     // Check if SDK is muted (for churned accounts) - drop request silently
     if (isMuted()) {
       const muteExpiry = getMuteExpiry()
+      const rn = parseInt(getURLParam(url, 'rn'))
+      StorageManager.removeBackup(rn, this.logger)
       this.logger.debug('Request dropped - SDK is muted until ' + new Date(muteExpiry).toISOString())
       return
     }
 
     if (this.#dropRequestDueToOptOut()) {
+      const rn = parseInt(getURLParam(url, 'rn'))
+      StorageManager.removeBackup(rn, this.logger)
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
     }
@@ -228,6 +260,9 @@ export default class RequestDispatcher {
           s.setAttribute('class', 'ct-jp-cb')
           s.setAttribute('rel', 'nofollow')
           s.async = true
+          s.onerror = () => {
+            this.#scheduleRetryViaJSONP(requestConfig.url)
+          }
           document.getElementsByTagName('head')[0].appendChild(s)
           this.logger.debug('req snt -> url: ' + requestConfig.url)
         } else {
@@ -317,6 +352,7 @@ export default class RequestDispatcher {
               this.#retryViaJSONP(originalUrl)
               return null // Signal that we've handled this via JSONP
             }
+
             throw new Error(`Encryption not enabled for account: ${response.statusText}`)
           }
 
@@ -332,7 +368,9 @@ export default class RequestDispatcher {
             }
           }
 
-          throw new Error(`Network response was not ok: ${response.statusText}`)
+          if (response.status >= 500 && response.status < 600) {
+            throw new Error(`Network response was not ok: ${response.statusText}`)
+          }
         }
         return response.text()
       })
@@ -399,10 +437,16 @@ export default class RequestDispatcher {
         this.logger.debug('req snt -> url: ' + encryptedUrl)
       })
       .catch((error) => {
-        if (error.message && error.message.includes('EIT decryption failed')) {
-          this.logger.error('EIT decryption failed', error)
-          // Safely ignore the response payload and proceed without applying server changes
-          return
+        if (error.message) {
+          if (error.message.includes('EIT decryption failed')) {
+            this.logger.error('EIT decryption failed', error)
+            // Safely ignore the response payload and proceed without applying server changes
+            return
+          } else if (error.message.includes('Network response was not ok')) {
+            this.logger.error('Network response was not ok', error)
+            this.#scheduleRetryViaFetch(encryptedUrl, originalUrl, retryCount)
+            return
+          }
         }
         this.logger.error('Fetch error:', error)
       })

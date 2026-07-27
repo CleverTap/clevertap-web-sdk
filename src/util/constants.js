@@ -74,6 +74,8 @@ export const CUSTOM_CT_ID_PREFIX = '_w_'
 export const BLOCK_REQUEST_COOKIE = 'WZRK_BLOCK'
 export const ENABLE_TV_CONTROLS = 'WZRK_TV_CONTROLS'
 export const ENCRYPTION_KEY_NAME = 'WZRK_ENCRYPTION_KEY'
+export const INITIAL_RETRY_DELAY_MS = 1000
+export const MAX_RETRY_DELAY_MS = 30 * 60 * 1000 // 30 minutes
 
 // Flag key for optional sub-domain profile isolation
 export const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'
