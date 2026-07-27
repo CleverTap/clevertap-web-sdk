@@ -854,7 +854,7 @@ export default class CleverTap {
     initDiscardedEventsFromStorage()
     this.#processOldValues()
     this.pageChanged()
-
+    this.#request.processBackupEvents()
     if (this.#isSpa) {
       // listen to click on the document and check if URL has changed.
       document.addEventListener('click', this.#boundCheckPageChanged)
