@@ -89,24 +89,27 @@ export default class RequestDispatcher {
    * max delay has been used, the following retry starts at initial delay.
    * A 50%-100% jitter is applied to avoid retrying requests simultaneously.
    */
-  static #scheduleRetryViaFetch (encryptedUrl, originalUrl, retryAttempt = 0) {
-    const retryDelay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, retryAttempt), MAX_RETRY_DELAY_MS)
-    const delay = Math.floor(retryDelay * (0.5 + Math.random() * 0.5))
-    const nextRetryAttempt = retryDelay === MAX_RETRY_DELAY_MS ? 0 : retryAttempt + 1
-    this.logger.debug(`Retrying request in ${delay}ms: ${encryptedUrl}`)
-    setTimeout(() => {
-      this.handleFetchResponse(encryptedUrl, originalUrl, nextRetryAttempt)
-    }, delay)
-  }
 
-  static #scheduleRetryViaJSONP (url, retryAttempt = 0) {
+  static #scheduleRetry (url, retryAttempt = 0, run) {
     const retryDelay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, retryAttempt), MAX_RETRY_DELAY_MS)
     const delay = Math.floor(retryDelay * (0.5 + Math.random() * 0.5))
     const nextRetryAttempt = retryDelay === MAX_RETRY_DELAY_MS ? 0 : retryAttempt + 1
     this.logger.debug(`Retrying request in ${delay}ms: ${url}`)
-    setTimeout(() => {
-      this.#retryViaJSONP(url, nextRetryAttempt)
-    }, delay)
+    setTimeout(() => run(nextRetryAttempt), delay)
+  }
+
+  static #scheduleRetryViaFetch (encryptedUrl, originalUrl, retryAttempt = 0) {
+    this.#scheduleRetry(
+      encryptedUrl, retryAttempt,
+      (nextRetryAttempt) => this.handleFetchResponse(encryptedUrl, originalUrl, nextRetryAttempt)
+    )
+  }
+
+  static #scheduleRetryViaJSONP (url, retryAttempt = 0) {
+    this.#scheduleRetry(
+      url, retryAttempt,
+      (nextRetryAttempt) => this.#retryViaJSONP(url, nextRetryAttempt)
+    )
   }
 
   /**
