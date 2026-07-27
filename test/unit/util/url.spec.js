@@ -36,6 +36,11 @@ describe('util/url', function () {
       const value = getURLParam(url, param)
       expect(value).toBe(expectedValue)
     })
+
+    test('should match the complete parameter name', () => {
+      const value = getURLParam('?wzrk_rn=9&rn=3', 'rn')
+      expect(value).toBe('3')
+    })
   })
 
   describe('get domain', () => {
