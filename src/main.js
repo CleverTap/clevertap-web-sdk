@@ -20,8 +20,9 @@ if (!hasDefaultAccount && instances.length > 0) {
 
 const clevertap = new CleverTap(defaultConfig)
 
-// Attach createInstance on the default instance for easy access
+// Attach static methods on the default instance for easy access
 clevertap.createInstance = CleverTap.createInstance.bind(CleverTap)
+clevertap.getDefaultInstance = CleverTap.getDefaultInstance.bind(CleverTap)
 clevertap.CleverTap = CleverTap
 
 window.clevertap = window.wizrocket = clevertap

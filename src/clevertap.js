@@ -68,6 +68,14 @@ export default class CleverTap {
   static defaultInstance = null
   static MAX_INSTANCES = 5
 
+  /**
+   * Returns the default CleverTap instance.
+   * @returns {CleverTap|null}
+   */
+  static getDefaultInstance () {
+    return CleverTap.defaultInstance
+  }
+
   static createInstance (config = {}) {
     const { accountId, region, targetDomain, token } = config
     if (!accountId) {
