@@ -1,5 +1,8 @@
 import { StorageManager } from './storage'
-import { LRU_CACHE } from './constants'
+import { LRU_CACHE, COOKIE_EXPIRY } from './constants'
+
+// Max entries to persist in the broad-domain cookie to stay within ~4 KB cookie size limit
+const LRU_COOKIE_MAX = 10
 
 export default class LRUCache {
   #keyOrder
@@ -21,6 +24,48 @@ export default class LRUCache {
     } else {
       this.cache = {}
       this.#keyOrder = []
+    }
+
+    // Merge entries from broad-domain cookie so that identity→GUID
+    // mappings written on a sibling sub-domain are visible here.
+    this.#mergeCookieCache()
+  }
+
+  #mergeCookieCache () {
+    try {
+      const cookieData = StorageManager.readCookie(LRU_CACHE)
+      if (cookieData) {
+        const parsed = JSON.parse(cookieData)
+        if (parsed && parsed.cache) {
+          let merged = false
+          for (const entry of parsed.cache) {
+            const key = entry[0]
+            const value = entry[1]
+            if (key && value && !this.cache[key]) {
+              this.cache[key] = value
+              this.#keyOrder.push(key)
+              merged = true
+            }
+          }
+          if (merged) {
+            // Persist merged state back to localStorage and cookie
+            this.saveCacheToLS(this.cache)
+          }
+        }
+      }
+    } catch (e) {
+      // Cookie data may be malformed; ignore
+    }
+  }
+
+  #saveCacheToBroadCookie (objToArray) {
+    try {
+      // Only keep the most recent entries to stay within cookie size limits
+      const recentEntries = objToArray.slice(-LRU_COOKIE_MAX)
+      const cookieValue = JSON.stringify({ cache: recentEntries })
+      StorageManager.createBroadCookie(LRU_CACHE, cookieValue, COOKIE_EXPIRY, window.location.hostname)
+    } catch (e) {
+      // Cookie storage may fail; non-critical
     }
   }
 
@@ -62,6 +107,9 @@ export default class LRUCache {
       }
     }
     StorageManager.saveToLSorCookie(LRU_CACHE, { cache: objToArray })
+
+    // Also persist to broad-domain cookie for cross-subdomain sharing
+    this.#saveCacheToBroadCookie(objToArray)
   }
 
   getKey (value) {
