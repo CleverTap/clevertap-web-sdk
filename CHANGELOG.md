@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [2.7.5] 30th July 2026
+- Dropping the discarded event data from requests
+
 ## [2.7.4] 14th July 2026
 - Updated the src for wzrk dialog needed for web pusbh
 
