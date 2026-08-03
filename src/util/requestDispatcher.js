@@ -272,7 +272,11 @@ export default class RequestDispatcher {
       return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger))
     }
     if (StorageManager._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
-      return addToURL(url, 'arp', compressData(JSON.stringify(StorageManager.readFromLSorCookie(ARP_COOKIE)), this.logger))
+      const arpData = StorageManager.readFromLSorCookie(ARP_COOKIE)
+      if (arpData) {
+        delete arpData.d_e
+      }
+      return addToURL(url, 'arp', compressData(JSON.stringify(arpData), this.logger))
     }
     return url
   }
