@@ -1,9 +1,6 @@
 import { StorageManager } from './storage'
 import { LRU_CACHE, COOKIE_EXPIRY } from './constants'
 
-// Max entries to persist in the broad-domain cookie to stay within ~4 KB cookie size limit
-const LRU_COOKIE_MAX = 10
-
 export default class LRUCache {
   #keyOrder
 
@@ -60,9 +57,7 @@ export default class LRUCache {
 
   #saveCacheToBroadCookie (objToArray) {
     try {
-      // Only keep the most recent entries to stay within cookie size limits
-      const recentEntries = objToArray.slice(-LRU_COOKIE_MAX)
-      const cookieValue = JSON.stringify({ cache: recentEntries })
+      const cookieValue = JSON.stringify({ cache: objToArray })
       StorageManager.createBroadCookie(LRU_CACHE, cookieValue, COOKIE_EXPIRY, window.location.hostname)
     } catch (e) {
       // Cookie storage may fail; non-critical
