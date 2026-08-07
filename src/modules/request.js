@@ -157,6 +157,13 @@ export default class RequestManager {
 
     // Get the next available request number that doesn't conflict with existing backups
     const nextReqN = this.#getNextAvailableReqN()
+
+    // For the first request of this instance, align RESP_N to avoid false retries.
+    // The global counter may have advanced past 0 due to other instances, creating a
+    // gap (RESP_N=0, REQ_N=4) that the retry logic misinterprets as pending requests.
+    if (this.#instanceManager.state.globalCache.REQ_N === 0) {
+      this.#instanceManager.state.globalCache.RESP_N = nextReqN - 1
+    }
     this.#instanceManager.state.globalCache.REQ_N = nextReqN
 
     // Register this request number in the JSONP dispatcher so responses route to this instance
