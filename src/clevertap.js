@@ -846,6 +846,15 @@ export default class CleverTap {
       return
     }
 
+    if (!$ct.locale) {
+      try {
+        const browserLocale = navigator.language || navigator.userLanguage
+        if (browserLocale) {
+          $ct.locale = browserLocale.replace('-', '_')
+        }
+      } catch (e) {}
+    }
+
     $ct.isPrivacyArrPushed = true
     if ($ct.privacyArray.length > 0) {
       this.privacy.push($ct.privacyArray)
@@ -1141,6 +1150,18 @@ export default class CleverTap {
       return
     }
     $ct.delayEvents = arg
+  }
+
+  setLocale (locale) {
+    if (typeof locale !== 'string' || locale.trim().length === 0) {
+      this.#logger.error('setLocale should be called with a non-empty string value')
+      return
+    }
+    $ct.locale = locale
+  }
+
+  getLocale () {
+    return $ct.locale || null
   }
 
   getSDKVersion () {
