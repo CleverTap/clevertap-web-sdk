@@ -1,3 +1,13 @@
+const decode = function (s) {
+  let replacement = s.replace(/\+/g, ' ') // Regex for replacing addition symbol with a space
+  try {
+    replacement = decodeURIComponent(replacement)
+  } catch (e) {
+    // eat
+  }
+  return replacement
+}
+
 export const getURLParams = (url) => {
   const urlParams = {}
   const idx = url.indexOf('?')
@@ -5,17 +15,7 @@ export const getURLParams = (url) => {
   if (idx > 1) {
     const uri = url.substring(idx + 1)
     let match
-    const pl = /\+/g // Regex for replacing addition symbol with a space
     const search = /([^&=]+)=?([^&]*)/g
-    const decode = function (s) {
-      let replacement = s.replace(pl, ' ')
-      try {
-        replacement = decodeURIComponent(replacement)
-      } catch (e) {
-        // eat
-      }
-      return replacement
-    }
     match = search.exec(uri)
     while (match) {
       urlParams[decode(match[1])] = decode(match[2])
@@ -23,6 +23,14 @@ export const getURLParams = (url) => {
     }
   }
   return urlParams
+}
+
+export const getURLParam = (url, param) => {
+  if (url === '' || param === '') return ''
+  const paramPrefix = url.includes(`?${param}=`) ? `?${param}=` : `&${param}=`
+  if (!url.includes(paramPrefix)) return ''
+  const paramValue = url.split(paramPrefix)[1].split('&')[0]
+  return decode(paramValue)
 }
 
 export const getDomain = (url) => {
