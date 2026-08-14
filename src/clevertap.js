@@ -989,6 +989,15 @@ export default class CleverTap {
       return
     }
 
+    if (!$ct.locale) {
+      try {
+        const browserLocale = navigator.language || navigator.userLanguage
+        if (browserLocale) {
+          $ct.locale = browserLocale.replace('-', '_')
+        }
+      } catch (e) {}
+    }
+
     this.#instanceManager.state.isPrivacyArrPushed = true
     if (this.#instanceManager.state.privacyArray.length > 0) {
       this.privacy.push(this.#instanceManager.state.privacyArray)
@@ -997,12 +1006,7 @@ export default class CleverTap {
     initDiscardedEventsFromStorage()
     this.#processOldValues()
     this.pageChanged()
-    const backupInterval = setInterval(() => {
-      if (this.#device.gcookie) {
-        clearInterval(backupInterval)
-        this.#request.processBackupEvents()
-      }
-    }, 3000)
+    this.#request.processBackupEvents()
     if (this.#isSpa) {
       // listen to click on the document and check if URL has changed.
       document.addEventListener('click', this.#boundCheckPageChanged)
@@ -1284,6 +1288,18 @@ export default class CleverTap {
       return
     }
     this.#instanceManager.state.delayEvents = arg
+  }
+
+  setLocale (locale) {
+    if (typeof locale !== 'string' || locale.trim().length === 0) {
+      this.#logger.error('setLocale should be called with a non-empty string value')
+      return
+    }
+    $ct.locale = locale
+  }
+
+  getLocale () {
+    return $ct.locale || null
   }
 
   getSDKVersion () {

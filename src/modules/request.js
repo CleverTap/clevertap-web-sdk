@@ -3,6 +3,7 @@ import { isObjectEmpty, isValueValid, removeUnsupportedChars, safeJSONParse } fr
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
 import RequestDispatcher from '../util/requestDispatcher'
+import { $ct } from '../util/storage'
 import { addToURL } from '../util/url'
 import { getCampaignObjForLc } from '../util/clevertap'
 
@@ -21,6 +22,7 @@ export default class RequestManager {
   #seqNo = 0
   #requestTime = 0
   processingBackup = false
+  processedBackup = false
 
   constructor ({ logger, account, device, session, isPersonalisationActive, instanceManager }) {
     this.#logger = logger
@@ -35,11 +37,16 @@ export default class RequestManager {
 
   /**
  * Unified backup processing method
- * @param {boolean} oulOnly - If true, process only OUL requests. If false, process all non-fired requests.
+ * @param {boolean} oulOnly - If true, process only OUL requests. If false, process all backup requests.
  */
   processBackupEvents (oulOnly = false) {
     const backupMap = this.#instanceManager.storage.readFromLSorCookie(LCOOKIE_NAME)
     if (typeof backupMap === 'undefined' || backupMap === null) {
+      return
+    }
+
+    if (this.processingBackup || this.processedBackup) {
+      this.#logger.debug('Backup processing already in progress or completed..')
       return
     }
 
@@ -70,13 +77,16 @@ export default class RequestManager {
               window.$WZRK_WR._apiMap[parseInt(idx)] = this.dispatcher.api
             }
             this.dispatcher.fireRequest(backupEvent.q)
+          } else {
+            this.#logger.error('Backup event is malformed.. removing from backup', backupEvent)
+            this.#instanceManager.storage.removeBackup(idx, this.#logger)
           }
-          backupEvent.fired = true
         }
       }
     }
     this.#instanceManager.storage.saveToLSorCookie(LCOOKIE_NAME, backupMap)
     this.processingBackup = false
+    this.processedBackup = true
   }
 
   addSystemDataToObject (dataObject, ignoreTrim) {
@@ -101,7 +111,8 @@ export default class RequestManager {
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
     let proto = document.location.protocol
     proto = proto.replace(':', '')
-    dataObject.af = { ...dataObject.af, lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...this.#instanceManager.state.flutterVersion } // app fields
+    const locale = $ct.locale
+    dataObject.af = { ...dataObject.af, lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...this.#instanceManager.state.flutterVersion, ...(locale && { locale }) } // app fields
     try {
       if (sessionStorage.hasOwnProperty('WZRK_D') || sessionStorage.getItem('WZRK_D')) {
         dataObject.debug = true
@@ -202,89 +213,89 @@ export default class RequestManager {
     }
   }
 
-#getNextAvailableReqN () {
-  // Read existing backup data to check for conflicts
-  const backupMap = this.#instanceManager.storage.readFromLSorCookie(LCOOKIE_NAME)
+  #getNextAvailableReqN () {
+    // Read existing backup data to check for conflicts
+    const backupMap = this.#instanceManager.storage.readFromLSorCookie(LCOOKIE_NAME)
 
-  // Use the global counter to ensure unique request numbers across all instances.
-  // This prevents JSONP _apiMap collisions where two instances both use rn=1.
-  _globalReqN++
-  let candidateReqN = _globalReqN
+    // Use the global counter to ensure unique request numbers across all instances.
+    // This prevents JSONP _apiMap collisions where two instances both use rn=1.
+    _globalReqN++
+    let candidateReqN = _globalReqN
 
-  // Also ensure it's greater than this instance's REQ_N
-  if (candidateReqN <= this.#instanceManager.state.globalCache.REQ_N) {
-    candidateReqN = this.#instanceManager.state.globalCache.REQ_N + 1
-    _globalReqN = candidateReqN
-  }
+    // Also ensure it's greater than this instance's REQ_N
+    if (candidateReqN <= this.#instanceManager.state.globalCache.REQ_N) {
+      candidateReqN = this.#instanceManager.state.globalCache.REQ_N + 1
+      _globalReqN = candidateReqN
+    }
 
-  // If no backup data exists, use the candidate
-  if (!backupMap || typeof backupMap !== 'object') {
+    // If no backup data exists, use the candidate
+    if (!backupMap || typeof backupMap !== 'object') {
+      return candidateReqN
+    }
+
+    // Keep incrementing until we find a request number that doesn't exist in backup
+    while (backupMap.hasOwnProperty(candidateReqN.toString())) {
+      candidateReqN++
+      _globalReqN = candidateReqN
+      this.#logger.debug(`Request number ${candidateReqN - 1} already exists in backup, trying ${candidateReqN}`)
+    }
+
+    this.#logger.debug(`Using request number: ${candidateReqN}`)
     return candidateReqN
   }
 
-  // Keep incrementing until we find a request number that doesn't exist in backup
-  while (backupMap.hasOwnProperty(candidateReqN.toString())) {
-    candidateReqN++
-    _globalReqN = candidateReqN
-    this.#logger.debug(`Request number ${candidateReqN - 1} already exists in backup, trying ${candidateReqN}`)
+  unregisterTokenForGuid (givenGUID) {
+    const payload = this.#instanceManager.storage.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
+    // Send unregister event only when token is available
+    if (payload) {
+      const data = {}
+      data.type = 'data'
+      if (isValueValid(givenGUID)) {
+        data.g = givenGUID
+      }
+      data.action = 'unregister'
+      data.id = this.#account.id
+
+      const obj = this.#session.getSessionCookieObject()
+
+      data.s = obj.s // session cookie
+      const compressedData = compressData(JSON.stringify(data), this.#logger)
+
+      let pageLoadUrl = this.#account.dataPostURL
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+      this.dispatcher.fireRequest(pageLoadUrl, true)
+      this.#instanceManager.storage.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
+    }
+    // REGISTER TOKEN
+    this.registerToken(payload)
   }
 
-  this.#logger.debug(`Using request number: ${candidateReqN}`)
-  return candidateReqN
-}
-
-unregisterTokenForGuid (givenGUID) {
-  const payload = this.#instanceManager.storage.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
-  // Send unregister event only when token is available
-  if (payload) {
-    const data = {}
-    data.type = 'data'
-    if (isValueValid(givenGUID)) {
-      data.g = givenGUID
-    }
-    data.action = 'unregister'
-    data.id = this.#account.id
-
-    const obj = this.#session.getSessionCookieObject()
-
-    data.s = obj.s // session cookie
-    const compressedData = compressData(JSON.stringify(data), this.#logger)
-
+  registerToken (payload) {
+    if (!payload) return
+    // add gcookie etc to the payload
+    payload = this.addSystemDataToObject(payload, true)
+    payload = JSON.stringify(payload)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
-    this.dispatcher.fireRequest(pageLoadUrl, true)
-    this.#instanceManager.storage.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
+    this.dispatcher.fireRequest(pageLoadUrl)
+    // set in localstorage
+    this.#instanceManager.storage.save(WEBPUSH_LS_KEY, 'ok')
   }
-  // REGISTER TOKEN
-  this.registerToken(payload)
-}
 
-registerToken (payload) {
-  if (!payload) return
-  // add gcookie etc to the payload
-  payload = this.addSystemDataToObject(payload, true)
-  payload = JSON.stringify(payload)
-  let pageLoadUrl = this.#account.dataPostURL
-  pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-  pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
-  this.dispatcher.fireRequest(pageLoadUrl)
-  // set in localstorage
-  this.#instanceManager.storage.save(WEBPUSH_LS_KEY, 'ok')
-}
+  processEvent (data) {
+    this.#addToLocalEventMap(data.evtName)
+    data = this.addSystemDataToObject(data, undefined)
+    this.addFlags(data)
+    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    const compressedData = compressData(JSON.stringify(data), this.#logger)
+    let pageLoadUrl = this.#account.dataPostURL
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-processEvent (data) {
-  this.#addToLocalEventMap(data.evtName)
-  data = this.addSystemDataToObject(data, undefined)
-  this.addFlags(data)
-  data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
-  const compressedData = compressData(JSON.stringify(data), this.#logger)
-  let pageLoadUrl = this.#account.dataPostURL
-  pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-  pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
-
-  this.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest, false, data.evtName)
-}
+    this.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest, false, data.evtName)
+  }
 
   #addToLocalEventMap (evtName) {
     if (this.#instanceManager.storage._isLocalStorageSupported()) {
