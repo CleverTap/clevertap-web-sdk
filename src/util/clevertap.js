@@ -822,7 +822,10 @@ export const dismissActiveCampaigns = () => {
   })
 }
 
-export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
+// Global registry of all campaignDivMaps across instances (for cross-instance popup closing)
+export const _allCampaignDivMaps = []
+
+export const closeIframe = (campaignId, divIdIgnored, currentSessionId, instanceCampaignDivMap) => {
   if (campaignId != null && campaignId !== '-1') {
     if (StorageManager._isLocalStorageSupported()) {
       const campaignObj = getCampaignObject()
@@ -835,13 +838,32 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
       saveCampaignObject(campaignObj)
     }
   }
-  if ($ct.campaignDivMap != null) {
-    const divId = $ct.campaignDivMap[campaignId]
+
+  // Find the campaignDivMap that contains this campaignId.
+  // Check the instance-specific map first, then the global $ct map,
+  // then search all registered instance maps (for cross-instance close via iframe).
+  let targetMap = null
+  if (instanceCampaignDivMap != null && instanceCampaignDivMap[campaignId] != null) {
+    targetMap = instanceCampaignDivMap
+  } else if ($ct.campaignDivMap != null && $ct.campaignDivMap[campaignId] != null) {
+    targetMap = $ct.campaignDivMap
+  } else {
+    // Search all instance campaignDivMaps (handles cross-instance close from iframe)
+    for (const map of _allCampaignDivMaps) {
+      if (map != null && map[campaignId] != null) {
+        targetMap = map
+        break
+      }
+    }
+  }
+
+  if (targetMap != null) {
+    const divId = targetMap[campaignId]
     if (divId != null) {
       const containerEl = document.getElementById(divId)
       if (containerEl == null) {
         // DOM already removed (e.g. SPA navigation ran dismissActiveCampaigns); drop stale map entry
-        delete $ct.campaignDivMap[campaignId]
+        delete targetMap[campaignId]
         return
       }
       containerEl.remove()
@@ -858,7 +880,7 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId) => {
           document.getElementById('intentOpacityDiv2').remove()
         }
       }
-      delete $ct.campaignDivMap[campaignId]
+      delete targetMap[campaignId]
     }
   }
 }

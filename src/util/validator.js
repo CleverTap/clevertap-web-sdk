@@ -93,6 +93,7 @@ const createValidationResult = (isValid, errorMessage = null, processedObj = nul
 // Helper function to check if object/array is null or empty
 const isNullOrEmpty = (obj) => {
   if (obj === null || obj === undefined) return true
+  if (typeof obj === 'string' && obj.trim() === '') return true
   if (Array.isArray(obj)) return obj.length === 0
   if (isObject(obj)) return Object.keys(obj).length === 0
   return false
