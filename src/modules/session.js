@@ -13,15 +13,18 @@ export default class SessionManager {
   scookieObj
   #domainSpecification
   #storageManager
+  #instanceManager
 
   constructor ({
     logger,
     isPersonalisationActive,
     domainSpecification,
-    storageManager
+    storageManager,
+    instanceManager
   }) {
     this.domainSpecification = domainSpecification
     this.#storageManager = storageManager
+    this.#instanceManager = instanceManager
     this.sessionId = this.#storageManager.getMetaProp('cs')
     this.#logger = logger
     this.#isPersonalisationActive = isPersonalisationActive
@@ -102,7 +105,11 @@ export default class SessionManager {
         this.#storageManager.setMetaProp('sc', sessionCount + 1)
 
         // Clear discarded events list on new session
-        $ct.discardedEventsList = null
+        if (this.#instanceManager) {
+          this.#instanceManager.state.discardedEventsList = null
+        } else {
+          $ct.discardedEventsList = null
+        }
 
         // Reset session-based campaign counters on new session
         this.#resetSessionCampaignCounters()
