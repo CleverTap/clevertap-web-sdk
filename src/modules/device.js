@@ -1,14 +1,15 @@
 import { isValueValid, safeJSONParse } from '../util/datatypes'
-import { StorageManager } from '../util/storage'
 import { GCOOKIE_NAME, COOKIE_EXPIRY } from '../util/constants'
 
 export default class DeviceManager {
   #logger
   gcookie
   #domainSpecification
+  #storageManager
 
-  constructor ({ logger, customId, domainSpecification }) {
+  constructor ({ logger, customId, domainSpecification, storageManager }) {
     this.#logger = logger
+    this.#storageManager = storageManager
     this.domainSpecification = domainSpecification
     this.gcookie = this.getGuid() || customId
   }
@@ -26,8 +27,8 @@ export default class DeviceManager {
     if (isValueValid(this.gcookie)) {
       return this.gcookie
     }
-    if (StorageManager._isLocalStorageSupported()) {
-      const value = StorageManager.read(GCOOKIE_NAME)
+    if (this.#storageManager._isLocalStorageSupported()) {
+      const value = this.#storageManager.read(GCOOKIE_NAME)
       if (isValueValid(value)) {
         try {
           guid = safeJSONParse(decodeURIComponent(value), null)
@@ -39,7 +40,7 @@ export default class DeviceManager {
           // 2.%2256e4078ed15749928c042479ec2b4d47%22
           if (value.length === 32) {
             guid = value
-            StorageManager.saveToLSorCookie(GCOOKIE_NAME, value)
+            this.#storageManager.saveToLSorCookie(GCOOKIE_NAME, value)
           } else {
             this.#logger.error('Illegal guid ' + value)
           }
@@ -47,18 +48,18 @@ export default class DeviceManager {
 
         // Persist to cookie storage if not present there.
         if (isValueValid(guid)) {
-          StorageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification)
+          this.#storageManager.createBroadCookie(GCOOKIE_NAME, guid, COOKIE_EXPIRY, window.location.hostname, this.domainSpecification)
         }
       }
     }
 
     if (!isValueValid(guid)) {
-      guid = StorageManager.readCookie(GCOOKIE_NAME)
+      guid = this.#storageManager.readCookie(GCOOKIE_NAME)
       if (isValueValid(guid) && (guid.indexOf('%') === 0 || guid.indexOf('\'') === 0 || guid.indexOf('"') === 0)) {
         guid = null
       }
       if (isValueValid(guid)) {
-        StorageManager.saveToLSorCookie(GCOOKIE_NAME, guid)
+        this.#storageManager.saveToLSorCookie(GCOOKIE_NAME, guid)
       }
     }
 

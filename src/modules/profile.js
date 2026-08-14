@@ -23,10 +23,6 @@ import {
 import {
   addToURL
 } from '../util/url'
-import {
-  StorageManager,
-  $ct
-} from '../util/storage'
 import { compressData } from '../util/encoder'
 import { isObjStructureValid } from '../util/validator'
 export default class ProfileHandler extends Array {
@@ -35,12 +31,14 @@ export default class ProfileHandler extends Array {
   #account
   #oldValues
   #isPersonalisationActive
+  #instanceManager
 
   constructor ({
     logger,
     request,
     account,
-    isPersonalisationActive
+    isPersonalisationActive,
+    instanceManager
   }, values) {
     super()
     this.#logger = logger
@@ -48,10 +46,11 @@ export default class ProfileHandler extends Array {
     this.#account = account
     this.#oldValues = values
     this.#isPersonalisationActive = isPersonalisationActive
+    this.#instanceManager = instanceManager
   }
 
   push (...profilesArr) {
-    if (StorageManager.readFromLSorCookie(ACCOUNT_ID)) {
+    if (this.#instanceManager.storage.readFromLSorCookie(ACCOUNT_ID)) {
       this.#processProfileArray(profilesArr)
       return 0
     } else {
@@ -70,11 +69,11 @@ export default class ProfileHandler extends Array {
     if (!this.#isPersonalisationActive()) {
       return
     }
-    if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
+    if (this.#instanceManager.state.globalProfileMap == null) {
+      this.#instanceManager.state.globalProfileMap = this.#instanceManager.storage.readFromLSorCookie(PR_COOKIE)
     }
-    if ($ct.globalProfileMap != null) {
-      return $ct.globalProfileMap[propName]
+    if (this.#instanceManager.state.globalProfileMap != null) {
+      return this.#instanceManager.state.globalProfileMap[propName]
     }
   }
 
@@ -150,7 +149,7 @@ export default class ProfileHandler extends Array {
             pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
             pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-            this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+            this.#request.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest)
           }
         }
       }
@@ -222,7 +221,7 @@ export default class ProfileHandler extends Array {
       pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-      this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+      this.#request.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest)
     }
   }
 
@@ -234,10 +233,10 @@ export default class ProfileHandler extends Array {
    * increases or decreases value of the number type properties in profile object
    */
   _handleIncrementDecrementValue (key, value, command) {
-    if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
+    if (this.#instanceManager.state.globalProfileMap == null) {
+      this.#instanceManager.state.globalProfileMap = this.#instanceManager.storage.readFromLSorCookie(PR_COOKIE)
     }
-    if ($ct.globalProfileMap == null) {
+    if (this.#instanceManager.state.globalProfileMap == null) {
       this.#logger.error('Profile map is not initialized. Please create a profile first.')
       return
     }
@@ -256,7 +255,7 @@ export default class ProfileHandler extends Array {
         return
       }
 
-      const currentValue = getNestedValue($ct.globalProfileMap, segments)
+      const currentValue = getNestedValue(this.#instanceManager.state.globalProfileMap, segments)
       if (currentValue === undefined) {
         this.#logger.error(`Path '${key}' does not exist in profile. Please create the profile structure first.`)
         return
@@ -271,26 +270,26 @@ export default class ProfileHandler extends Array {
         ? currentValue + value
         : currentValue - value
 
-      if (!setNestedValue($ct.globalProfileMap, segments, newValue)) {
+      if (!setNestedValue(this.#instanceManager.state.globalProfileMap, segments, newValue)) {
         this.#logger.error(`Failed to update value at path '${key}'.`)
         return
       }
 
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+      this.#instanceManager.storage.saveToLSorCookie(PR_COOKIE, this.#instanceManager.state.globalProfileMap)
       // Use flat key notation (e.g., "Trip[0].Total Amount") instead of nested structure
       profileObj[key] = { [command]: value }
     } else {
-      if (!$ct.globalProfileMap.hasOwnProperty(key)) {
+      if (!this.#instanceManager.state.globalProfileMap.hasOwnProperty(key)) {
         this.#logger.error('Kindly create profile with required property to increment/decrement.')
         return
       }
 
-      const currentValue = $ct.globalProfileMap[key] || 0
-      $ct.globalProfileMap[key] = command === COMMAND_INCREMENT
+      const currentValue = this.#instanceManager.state.globalProfileMap[key] || 0
+      this.#instanceManager.state.globalProfileMap[key] = command === COMMAND_INCREMENT
         ? currentValue + value
         : currentValue - value
 
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+      this.#instanceManager.storage.saveToLSorCookie(PR_COOKIE, this.#instanceManager.state.globalProfileMap)
       profileObj[key] = { [command]: value }
     }
 
@@ -305,8 +304,8 @@ export default class ProfileHandler extends Array {
    * overwrites/sets new value(s) against a key/property in profile object
    */
   _handleMultiValueSet (key, arrayVal, command) {
-    if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) ?? {}
+    if (this.#instanceManager.state.globalProfileMap == null) {
+      this.#instanceManager.state.globalProfileMap = this.#instanceManager.storage.readFromLSorCookie(PR_COOKIE) ?? {}
     }
 
     // Build the normalized array
@@ -343,9 +342,9 @@ export default class ProfileHandler extends Array {
       // Navigate to the parent object
       let parentObj
       if (parentSegments.length === 0) {
-        parentObj = $ct.globalProfileMap
+        parentObj = this.#instanceManager.state.globalProfileMap
       } else {
-        parentObj = getNestedValue($ct.globalProfileMap, parentSegments)
+        parentObj = getNestedValue(this.#instanceManager.state.globalProfileMap, parentSegments)
         if (parentObj === undefined || parentObj === null) {
           this.#logger.error('Parent path does not exist in profile. Please create the profile structure first.')
           return
@@ -359,12 +358,12 @@ export default class ProfileHandler extends Array {
       // Set the array at the target key
       parentObj[lastSegment.value] = array
 
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+      this.#instanceManager.storage.saveToLSorCookie(PR_COOKIE, this.#instanceManager.state.globalProfileMap)
       this.sendMultiValueData(key, arrayVal, command, true)
     } else {
       // Simple key handling (existing logic)
-      $ct.globalProfileMap[key] = array
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+      this.#instanceManager.state.globalProfileMap[key] = array
+      this.#instanceManager.storage.saveToLSorCookie(PR_COOKIE, this.#instanceManager.state.globalProfileMap)
       this.sendMultiValueData(key, arrayVal, command, false)
     }
   }
@@ -377,8 +376,8 @@ export default class ProfileHandler extends Array {
    * Adds array or single value against a key/property in profile object
    */
   _handleMultiValueAdd (propKey, propVal, command) {
-    if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {}
+    if (this.#instanceManager.state.globalProfileMap == null) {
+      this.#instanceManager.state.globalProfileMap = this.#instanceManager.storage.readFromLSorCookie(PR_COOKIE) || {}
     }
 
     const isNestedPath = propKey.includes('.') || propKey.includes('[')
@@ -430,9 +429,9 @@ export default class ProfileHandler extends Array {
       // Navigate to the parent object
       let parentObj
       if (parentSegments.length === 0) {
-        parentObj = $ct.globalProfileMap
+        parentObj = this.#instanceManager.state.globalProfileMap
       } else {
-        parentObj = getNestedValue($ct.globalProfileMap, parentSegments)
+        parentObj = getNestedValue(this.#instanceManager.state.globalProfileMap, parentSegments)
         if (parentObj === undefined || parentObj === null) {
           this.#logger.error('Parent path does not exist in profile. Please create the profile structure first.')
           return
@@ -456,11 +455,11 @@ export default class ProfileHandler extends Array {
       // Set the array back
       parentObj[targetKey] = array
 
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+      this.#instanceManager.storage.saveToLSorCookie(PR_COOKIE, this.#instanceManager.state.globalProfileMap)
       this.sendMultiValueData(propKey, propVal, command, true)
     } else {
       // Simple key handling (existing logic)
-      const existingValue = $ct.globalProfileMap[propKey]
+      const existingValue = this.#instanceManager.state.globalProfileMap[propKey]
       const array = Array.isArray(existingValue) ? existingValue : (existingValue != null ? [existingValue] : [])
 
       // Add values to array
@@ -468,8 +467,8 @@ export default class ProfileHandler extends Array {
         return
       }
 
-      $ct.globalProfileMap[propKey] = array
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+      this.#instanceManager.state.globalProfileMap[propKey] = array
+      this.#instanceManager.storage.saveToLSorCookie(PR_COOKIE, this.#instanceManager.state.globalProfileMap)
       this.sendMultiValueData(propKey, propVal, command, false)
     }
   }
@@ -482,8 +481,8 @@ export default class ProfileHandler extends Array {
    * removes value(s) against a key/property in profile object
    */
   _handleMultiValueRemove (propKey, propVal, command) {
-    if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE) || {}
+    if (this.#instanceManager.state.globalProfileMap == null) {
+      this.#instanceManager.state.globalProfileMap = this.#instanceManager.storage.readFromLSorCookie(PR_COOKIE) || {}
     }
 
     const isNestedPath = propKey.includes('.') || propKey.includes('[')
@@ -508,9 +507,9 @@ export default class ProfileHandler extends Array {
       // Navigate to the parent object
       let parentObj
       if (parentSegments.length === 0) {
-        parentObj = $ct.globalProfileMap
+        parentObj = this.#instanceManager.state.globalProfileMap
       } else {
-        parentObj = getNestedValue($ct.globalProfileMap, parentSegments)
+        parentObj = getNestedValue(this.#instanceManager.state.globalProfileMap, parentSegments)
         if (parentObj === undefined || parentObj === null) {
           this.#logger.error('Parent path does not exist in profile.')
           return
@@ -555,19 +554,19 @@ export default class ProfileHandler extends Array {
         delete parentObj[targetKey]
       }
 
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+      this.#instanceManager.storage.saveToLSorCookie(PR_COOKIE, this.#instanceManager.state.globalProfileMap)
       this.sendMultiValueData(propKey, propVal, command, true)
     } else {
       // Simple key handling (existing logic)
-      if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+      if (!this.#instanceManager.state.globalProfileMap.hasOwnProperty(propKey)) {
         this.#logger.error(`The property ${propKey} does not exist.`)
         return
       }
 
       const removeValue = (value) => {
-        const index = $ct.globalProfileMap[propKey].indexOf(value)
+        const index = this.#instanceManager.state.globalProfileMap[propKey].indexOf(value)
         if (index !== -1) {
-          $ct.globalProfileMap[propKey].splice(index, 1)
+          this.#instanceManager.state.globalProfileMap[propKey].splice(index, 1)
         }
       }
 
@@ -581,10 +580,10 @@ export default class ProfileHandler extends Array {
       }
 
       // Remove the key if the array is empty
-      if ($ct.globalProfileMap[propKey].length === 0) {
-        delete $ct.globalProfileMap[propKey]
+      if (this.#instanceManager.state.globalProfileMap[propKey].length === 0) {
+        delete this.#instanceManager.state.globalProfileMap[propKey]
       }
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+      this.#instanceManager.storage.saveToLSorCookie(PR_COOKIE, this.#instanceManager.state.globalProfileMap)
       this.sendMultiValueData(propKey, propVal, command, false)
     }
   }
@@ -598,11 +597,11 @@ export default class ProfileHandler extends Array {
    * Arrays and objects cannot be deleted - use specific methods for those.
    */
   _handleMultiValueDelete (propKey, command) {
-    if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
+    if (this.#instanceManager.state.globalProfileMap == null) {
+      this.#instanceManager.state.globalProfileMap = this.#instanceManager.storage.readFromLSorCookie(PR_COOKIE)
     }
-    if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = {}
+    if (this.#instanceManager.state.globalProfileMap == null) {
+      this.#instanceManager.state.globalProfileMap = {}
     }
 
     // Helper to check if value is primitive (not array or object)
@@ -624,7 +623,7 @@ export default class ProfileHandler extends Array {
       }
 
       // Check if the path exists
-      const currentValue = getNestedValue($ct.globalProfileMap, segments)
+      const currentValue = getNestedValue(this.#instanceManager.state.globalProfileMap, segments)
       if (currentValue === undefined) {
         this.#logger.error(`Path '${propKey}' does not exist in profile.`)
         return
@@ -637,21 +636,21 @@ export default class ProfileHandler extends Array {
       }
 
       // Remove the nested value
-      if (!removeNestedValue($ct.globalProfileMap, segments)) {
+      if (!removeNestedValue(this.#instanceManager.state.globalProfileMap, segments)) {
         this.#logger.error(`Failed to remove value at path '${propKey}'.`)
         return
       }
 
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+      this.#instanceManager.storage.saveToLSorCookie(PR_COOKIE, this.#instanceManager.state.globalProfileMap)
       this.sendMultiValueData(propKey, null, command, true)
     } else {
       // Handle simple key (existing logic)
-      if (!$ct.globalProfileMap.hasOwnProperty(propKey)) {
+      if (!this.#instanceManager.state.globalProfileMap.hasOwnProperty(propKey)) {
         this.#logger.error(`The property ${propKey} does not exist.`)
         return
       }
 
-      const currentValue = $ct.globalProfileMap[propKey]
+      const currentValue = this.#instanceManager.state.globalProfileMap[propKey]
 
       // Check if value is primitive - only allow deletion of primitive values
       if (!isPrimitive(currentValue)) {
@@ -659,8 +658,8 @@ export default class ProfileHandler extends Array {
         return
       }
 
-      delete $ct.globalProfileMap[propKey]
-      StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+      delete this.#instanceManager.state.globalProfileMap[propKey]
+      this.#instanceManager.storage.saveToLSorCookie(PR_COOKIE, this.#instanceManager.state.globalProfileMap)
       this.sendMultiValueData(propKey, null, command, false)
     }
   }
@@ -710,6 +709,6 @@ export default class ProfileHandler extends Array {
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
     pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-    this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+    this.#request.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest)
   }
 }

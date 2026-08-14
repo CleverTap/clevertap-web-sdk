@@ -8,10 +8,6 @@ import {
   CT_OPTOUT_KEY
 } from '../util/constants'
 import {
-  StorageManager,
-  $ct
-} from '../util/storage'
-import {
   compressData
 } from '../util/encoder'
 import {
@@ -23,11 +19,13 @@ export default class Privacy extends Array {
   #account
   #oldValues
   #logger
+  #instanceManager
 
   constructor ({
     request,
     account,
-    logger
+    logger,
+    instanceManager
   },
   values) {
     super()
@@ -35,14 +33,15 @@ export default class Privacy extends Array {
     this.#request = request
     this.#account = account
     this.#oldValues = values
+    this.#instanceManager = instanceManager
   }
 
   // TODO : Do we need to check if account id is set or not here?
   push (...privacyArr) {
-    if ($ct.isPrivacyArrPushed) {
-      this.#processPrivacyArray($ct.privacyArray.length > 0 ? $ct.privacyArray : privacyArr)
+    if (this.#instanceManager.state.isPrivacyArrPushed) {
+      this.#processPrivacyArray(this.#instanceManager.state.privacyArray.length > 0 ? this.#instanceManager.state.privacyArray : privacyArr)
     } else {
-      $ct.privacyArray.push(...privacyArr)
+      this.#instanceManager.state.privacyArray.push(...privacyArr)
     }
     return 0
   }
@@ -66,13 +65,13 @@ export default class Privacy extends Array {
         if (typeof optOut === 'boolean') {
           profileObj[CT_OPTOUT_KEY] = optOut
           // should be true when user wants to opt in
-          $ct.isOptInRequest = !optOut
+          this.#instanceManager.state.isOptInRequest = !optOut
         }
       }
       if (privacyObj.hasOwnProperty(USEIP_KEY)) {
         const useIP = privacyObj[USEIP_KEY]
         const shouldUseIP = (typeof useIP === 'boolean') ? useIP : false
-        StorageManager.setMetaProp(USEIP_KEY, shouldUseIP)
+        this.#instanceManager.storage.setMetaProp(USEIP_KEY, shouldUseIP)
       }
       if (!isObjectEmpty(profileObj)) {
         data.type = 'profile'
@@ -83,7 +82,7 @@ export default class Privacy extends Array {
         pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
         pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
         pageLoadUrl = addToURL(pageLoadUrl, OPTOUT_KEY, optOut ? 'true' : 'false')
-        this.#request.saveAndFireRequest(pageLoadUrl, $ct.blockRequest)
+        this.#request.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest)
         privacyArr.splice(0, privacyArr.length)
       }
     }

@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.0.0] 14th August 2026
+- Added Exponential backoff retry mechanism for failed requests.
+- Added Multi-instance support.
+- Added locale to 'af' object. 
+- Empty string handling in user properties.
+
 ## [2.7.5] 30th July 2026
 - Dropping the discarded event data from requests
 
