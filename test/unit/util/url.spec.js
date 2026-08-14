@@ -2,7 +2,8 @@ import {
   addToURL,
   getDomain,
   getHostName,
-  getURLParams
+  getURLParams,
+  getURLParam
 } from '../../../src/util/url'
 
 describe('util/url', function () {
@@ -21,6 +22,24 @@ describe('util/url', function () {
         bar: 'test user'
       }
       expect(urlParams).toMatchObject(expectedObject)
+    })
+  })
+
+  describe('get url param', () => {
+    test('should return empty string when url is empty string', () => {
+      const param = getURLParam('', 'foo')
+      expect(param).toBe('')
+    })
+
+    test.each([['foo', 'abc'], ['bar', 'test user']])('should return urlParam for given param name', (param, expectedValue) => {
+      const url = 'www.example.com/test?foo=abc&bar=test+user'
+      const value = getURLParam(url, param)
+      expect(value).toBe(expectedValue)
+    })
+
+    test('should match the complete parameter name', () => {
+      const value = getURLParam('?wzrk_rn=9&rn=3', 'rn')
+      expect(value).toBe('3')
     })
   })
 
