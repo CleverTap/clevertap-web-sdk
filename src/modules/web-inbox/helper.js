@@ -11,9 +11,11 @@ export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
   const inbox = CampaignContext.instanceManager ? CampaignContext.instanceManager.state.inbox : $ct.inbox
   const _settings = storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}
   if (isPreview) {
-    inbox.inboxConfigForPreview = webInboxSetting
-    inbox.isPreview = true
-    inbox && inbox.init()
+    if (inbox) {
+      inbox.inboxConfigForPreview = webInboxSetting
+      inbox.isPreview = true
+      inbox.init()
+    }
   } else if (JSON.stringify(_settings) !== JSON.stringify(webInboxSetting)) {
     storage.saveToLSorCookie(WEBINBOX_CONFIG, webInboxSetting)
     inbox && inbox.init()
@@ -284,8 +286,9 @@ export const determineTimeStampText = (ts) => {
   return `${diff} day${diff > 1 ? 's' : ''} ago`
 }
 
-export const hasWebInboxSettingsInLS = () => {
-  return Object.keys(StorageManager.readFromLSorCookie(WEBINBOX_CONFIG) || {}).length > 0
+export const hasWebInboxSettingsInLS = (instanceManager) => {
+  const storage = instanceManager ? instanceManager.storage : StorageManager
+  return Object.keys(storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}).length > 0
 }
 
 export const arrowSvg = `<svg width="6" height="10" viewBox="0 0 6 10" fill="none" xmlns="http://www.w3.org/2000/svg">

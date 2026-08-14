@@ -250,7 +250,8 @@ export default class CleverTap {
       logger: this.#logger,
       isPersonalisationActive: this._isPersonalisationActive,
       domainSpecification: this.domainSpecification,
-      storageManager: this.#instanceManager.storage
+      storageManager: this.#instanceManager.storage,
+      instanceManager: this.#instanceManager
     })
     this.#request = new ReqestManager({
       logger: this.#logger,
@@ -383,7 +384,7 @@ export default class CleverTap {
       this.#request.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest)
     }
 
-    if (hasWebInboxSettingsInLS()) {
+    if (hasWebInboxSettingsInLS(this.#instanceManager)) {
       checkAndRegisterWebInboxElements()
       initializeWebInbox(this.#logger, this.#instanceManager)
     }
@@ -449,11 +450,11 @@ export default class CleverTap {
           if (this.#instanceManager.state.inbox) {
             this.#instanceManager.state.inbox.unviewedCounter--
             delete this.#instanceManager.state.inbox.unviewedMessages[messageId]
-          }
-          const unViewedBadge = document.getElementById('unviewedBadge')
-          if (unViewedBadge) {
-            unViewedBadge.innerText = this.#instanceManager.state.inbox.unviewedCounter
-            unViewedBadge.style.display = this.#instanceManager.state.inbox.unviewedCounter > 0 ? 'flex' : 'none'
+            const unViewedBadge = document.getElementById('unviewedBadge')
+            if (unViewedBadge) {
+              unViewedBadge.innerText = this.#instanceManager.state.inbox.unviewedCounter
+              unViewedBadge.style.display = this.#instanceManager.state.inbox.unviewedCounter > 0 ? 'flex' : 'none'
+            }
           }
         }
         const ctInbox = document.querySelector('ct-web-inbox')
@@ -538,8 +539,10 @@ export default class CleverTap {
           unViewedBadge.style.display = 'none'
         }
         saveInboxMessages(messages, this.#instanceManager)
-        this.#instanceManager.state.inbox.unviewedCounter = 0
-        this.#instanceManager.state.inbox.unviewedMessages = {}
+        if (this.#instanceManager.state.inbox) {
+          this.#instanceManager.state.inbox.unviewedCounter = 0
+          this.#instanceManager.state.inbox.unviewedMessages = {}
+        }
       } else {
         this.#logger.debug('All messages are already read')
       }
@@ -989,11 +992,11 @@ export default class CleverTap {
       return
     }
 
-    if (!$ct.locale) {
+    if (!this.#instanceManager.state.locale) {
       try {
         const browserLocale = navigator.language || navigator.userLanguage
         if (browserLocale) {
-          $ct.locale = browserLocale.replace('-', '_')
+          this.#instanceManager.state.locale = browserLocale.replace('-', '_')
         }
       } catch (e) {}
     }
@@ -1300,11 +1303,11 @@ export default class CleverTap {
       this.#logger.error('setLocale should be called with a non-empty string value')
       return
     }
-    $ct.locale = locale
+    this.#instanceManager.state.locale = locale
   }
 
   getLocale () {
-    return $ct.locale || null
+    return this.#instanceManager.state.locale || null
   }
 
   getSDKVersion () {

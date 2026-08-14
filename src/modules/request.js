@@ -111,7 +111,7 @@ export default class RequestManager {
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
     let proto = document.location.protocol
     proto = proto.replace(':', '')
-    const locale = $ct.locale
+    const locale = this.#instanceManager.state.locale
     dataObject.af = { ...dataObject.af, lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...this.#instanceManager.state.flutterVersion, ...(locale && { locale }) } // app fields
     try {
       if (sessionStorage.hasOwnProperty('WZRK_D') || sessionStorage.getItem('WZRK_D')) {
@@ -206,7 +206,9 @@ export default class RequestManager {
         this.#requestTime = now
         this.#seqNo = 0
       }
-      this.#instanceManager.oulReqN = nextReqN
+      if (sendOULFlag) {
+        this.#instanceManager.oulReqN = nextReqN
+      }
       this.dispatcher.fireRequest(data, false, sendOULFlag, evtName)
     } else {
       this.#logger.debug(`Not fired due to override - ${this.#instanceManager.state.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${this.#instanceManager.isOULInProgress}`)

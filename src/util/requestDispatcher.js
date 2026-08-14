@@ -13,10 +13,16 @@ export default class RequestDispatcher {
     this.instanceManager = instanceManager
     this.networkRetryCount = 0
     this.minDelayFrequency = 0
-    this.enableFetchApi = instanceManager.enableFetchApi
-    this.enableEncryptionInTransit = instanceManager.enableEncryptionInTransit
     this.api = null // Set by RequestManager after CleverTapAPI is created
   }
+
+  // Read transport flags from instanceManager at request time so late
+  // configuration in init() (lines 968-975) is always honoured.
+  // Setter propagates back so #prepareEncryptedRequest can force Fetch API.
+  get enableFetchApi () { return this.instanceManager.enableFetchApi }
+  set enableFetchApi (value) { this.instanceManager.enableFetchApi = value }
+  get enableEncryptionInTransit () { return this.instanceManager.enableEncryptionInTransit }
+  set enableEncryptionInTransit (value) { this.instanceManager.enableEncryptionInTransit = value }
 
   /**
    * Checks if the EIT fallback flag is set in local storage.
@@ -195,6 +201,7 @@ export default class RequestDispatcher {
           this.logger.debug(`retrying fire request for url: ${url}, tries: ${this.networkRetryCount}`)
           this.#fireRequest(url, undefined, skipARP, sendOULFlag)
         }, this.getDelayFrequency())
+        return
       }
     } else {
       // Skip retry for OUL requests -- they must be sent immediately since they
@@ -324,7 +331,7 @@ export default class RequestDispatcher {
       }
     }
 
-    fetch(encryptedUrl, fetchOptions)
+    return fetch(encryptedUrl, fetchOptions)
       .then((response) => {
         // Check for SDK mute headers (progressive muting for churned accounts)
         // X-WZRK-MUTE-DURATION contains epoch timestamp in ms
