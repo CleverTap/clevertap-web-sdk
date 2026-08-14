@@ -1,5 +1,5 @@
 import { VARIABLES, WZRK_FETCH } from '../../util/constants'
-import { StorageManager, $ct } from '../../util/storage'
+import { StorageManager } from '../../util/storage'
 import { flattenObjectToDotNotation } from '../../util/helpers'
 
 class VariableStore {
@@ -7,6 +7,7 @@ class VariableStore {
   #account
   #request
   #event
+  #storage
 
   #variables
   #remoteVariables
@@ -16,18 +17,17 @@ class VariableStore {
   #hasVarsRequestCompleted = false
   #abVariantInfo = []
 
-  constructor ({ logger, request, account, event }) {
+  constructor ({ logger, request, account, event, instanceManager }) {
     this.#logger = logger
     this.#account = account
     this.#request = request
     this.#event = event
+    this.#storage = instanceManager ? instanceManager.storage : StorageManager
 
     this.#variables = {}
     this.#remoteVariables = {}
     this.#variablesChangedCallbacks = []
     this.#oneTimeVariablesChangedCallbacks = []
-
-    $ct.variableStore = this
   }
 
   /**
@@ -151,7 +151,7 @@ class VariableStore {
     this.#logger.debug('msg vars is ', vars)
     this.#hasVarsRequestCompleted = true
 
-    StorageManager.saveToLSorCookie(VARIABLES, vars)
+    this.#storage.saveToLSorCookie(VARIABLES, vars)
     this.#remoteVariables = vars
 
     if (Array.isArray(abVariantInfo)) {

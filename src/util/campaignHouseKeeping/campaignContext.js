@@ -6,15 +6,19 @@ export const CampaignContext = {
   _logger: null,
   _msg: null,
   _region: null,
+  _instanceManager: null,
+  _instance: null,
 
   // Initialize with context objects
-  update (device, session, request, logger, msg, region) {
+  update (device, session, request, logger, msg, region, instanceManager, instance) {
     this._device = device
     this._session = session
     this._request = request
     this._logger = logger
     this._msg = msg
     this._region = region
+    this._instanceManager = instanceManager
+    this._instance = instance
   },
 
   // Getters for clean access
@@ -35,5 +39,11 @@ export const CampaignContext = {
   },
   get region () {
     return this._region
+  },
+  get instanceManager () {
+    return this._instanceManager
+  },
+  get instance () {
+    return this._instance
   }
 }
