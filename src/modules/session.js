@@ -1,7 +1,7 @@
 import { singleQuoteRegex, SCOOKIE_EXP_TIME_IN_SECS } from '../util/constants'
 import { isObject, safeJSONParse } from '../util/datatypes'
 import { getNow } from '../util/datetime'
-import { StorageManager, $ct } from '../util/storage'
+import { $ct } from '../util/storage'
 import { getHostName } from '../util/url'
 import { getCampaignObject, saveCampaignObject } from '../util/clevertap'
 
@@ -12,14 +12,17 @@ export default class SessionManager {
   cookieName // SCOOKIE_NAME
   scookieObj
   #domainSpecification
+  #storageManager
 
   constructor ({
     logger,
     isPersonalisationActive,
-    domainSpecification
+    domainSpecification,
+    storageManager
   }) {
     this.domainSpecification = domainSpecification
-    this.sessionId = StorageManager.getMetaProp('cs')
+    this.#storageManager = storageManager
+    this.sessionId = this.#storageManager.getMetaProp('cs')
     this.#logger = logger
     this.#isPersonalisationActive = isPersonalisationActive
   }
@@ -41,7 +44,7 @@ export default class SessionManager {
   }
 
   getSessionCookieObject () {
-    let scookieStr = StorageManager.readCookie(this.cookieName)
+    let scookieStr = this.#storageManager.readCookie(this.cookieName)
     let obj = {}
 
     if (scookieStr != null) {
@@ -75,28 +78,28 @@ export default class SessionManager {
 
   setSessionCookieObject (obj) {
     const objStr = JSON.stringify(obj)
-    StorageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName(), this.domainSpecification)
+    this.#storageManager.createBroadCookie(this.cookieName, objStr, SCOOKIE_EXP_TIME_IN_SECS, getHostName(), this.domainSpecification)
   }
 
   manageSession (session) {
     // first time. check if current session id in localstorage is same
     // if not same then prev = current and current = this new session
     if (typeof this.sessionId === 'undefined' || this.sessionId !== session) {
-      const currentSessionInLS = StorageManager.getMetaProp('cs')
+      const currentSessionInLS = this.#storageManager.getMetaProp('cs')
       // if sessionId in meta is undefined - set current to both
       if (typeof currentSessionInLS === 'undefined') {
-        StorageManager.setMetaProp('ps', session)
-        StorageManager.setMetaProp('cs', session)
-        StorageManager.setMetaProp('sc', 1)
+        this.#storageManager.setMetaProp('ps', session)
+        this.#storageManager.setMetaProp('cs', session)
+        this.#storageManager.setMetaProp('sc', 1)
       } else if (currentSessionInLS !== session) {
         // not same as session in local storage. new session
-        StorageManager.setMetaProp('ps', currentSessionInLS)
-        StorageManager.setMetaProp('cs', session)
-        let sessionCount = StorageManager.getMetaProp('sc')
+        this.#storageManager.setMetaProp('ps', currentSessionInLS)
+        this.#storageManager.setMetaProp('cs', session)
+        let sessionCount = this.#storageManager.getMetaProp('sc')
         if (typeof sessionCount === 'undefined') {
           sessionCount = 0
         }
-        StorageManager.setMetaProp('sc', sessionCount + 1)
+        this.#storageManager.setMetaProp('sc', sessionCount + 1)
 
         // Clear discarded events list on new session
         $ct.discardedEventsList = null
