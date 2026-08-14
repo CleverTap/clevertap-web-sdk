@@ -1,6 +1,6 @@
 {
   "name": "clevertap-web-sdk",
-  "version": "2.7.5",
+  "version": "3.0.0",
   "description": "",
   "main": "dist/clevertap.js",
   "files": [
