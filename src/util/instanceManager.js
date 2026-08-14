@@ -31,7 +31,8 @@ export default class InstanceManager {
       pushConfig: null,
       delayEvents: false,
       intervalArray: [],
-      enableTVNavigation: false
+      enableTVNavigation: false,
+      locale: null
     }
 
     // Replaces window.isOULInProgress and window.oulReqN
