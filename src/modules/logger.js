@@ -15,23 +15,18 @@ export class Logger {
   #logLevel
   wzrkError = {}
   constructor (logLevel) {
-    // Singleton pattern - return existing instance if it exists
-    if (Logger.instance) {
-      return Logger.instance
-    }
-
     this.#logLevel = logLevel == null ? logLevels.INFO : logLevel
     this.wzrkError = {}
-
-    Logger.instance = this
   }
 
-  // Static method for explicit singleton access
+  /**
+   * @deprecated Use dependency injection instead of this static accessor.
+   */
   static getInstance (logLevel) {
-    if (!Logger.instance) {
-      Logger.instance = new Logger(logLevel)
+    if (!Logger._fallbackInstance) {
+      Logger._fallbackInstance = new Logger(logLevel)
     }
-    return Logger.instance
+    return Logger._fallbackInstance
   }
 
   get logLevel () {
