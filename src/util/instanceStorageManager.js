@@ -78,6 +78,8 @@ export default class InstanceStorageManager {
       return false
     }
     const prefixed = this._prefixKey(key)
+    // Clear from in-memory cache so readFromLSorCookie doesn't return stale data
+    delete this.globalCache[key]
     if (this._isLocalStorageSupported()) {
       localStorage.removeItem(prefixed)
       return true

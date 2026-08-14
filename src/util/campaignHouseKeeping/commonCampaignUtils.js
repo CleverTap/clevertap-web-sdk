@@ -1509,7 +1509,7 @@ export const commonCampaignUtils = {
   },
 
   handleWebInbox (msg, logger) {
-    if (hasWebInboxSettingsInLS()) {
+    if (hasWebInboxSettingsInLS(CampaignContext.instanceManager)) {
       checkAndRegisterWebInboxElements()
     }
     if (CampaignContext.instanceManager.state.inbox === null) {
