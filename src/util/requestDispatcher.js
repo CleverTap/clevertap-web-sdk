@@ -1,49 +1,42 @@
 
-import { ARP_COOKIE, MAX_TRIES, OPTOUT_COOKIE_ENDSWITH, USEIP_KEY, MAX_DELAY_FREQUENCY, PUSH_DELAY_MS, WZRK_FETCH, CT_EIT_FALLBACK, MUTE_EXPIRY_KEY } from './constants'
-import { isString, isValueValid } from './datatypes'
+import { ARP_COOKIE, MAX_TRIES, USEIP_KEY, MAX_DELAY_FREQUENCY, PUSH_DELAY_MS, WZRK_FETCH, CT_EIT_FALLBACK, MUTE_EXPIRY_KEY, INITIAL_RETRY_DELAY_MS, MAX_RETRY_DELAY_MS, OPTOUT_COOKIE_ENDSWITH } from './constants'
+import { isValueValid, isString } from './datatypes'
 import { compressData } from './encoder'
-import { StorageManager, $ct, isMuted, getMuteExpiry } from './storage'
-import { addToURL } from './url'
+import { addToURL, getURLParam } from './url'
 import encryptionInTransitInstance from './security/encryptionInTransit'
 
 export default class RequestDispatcher {
-  static logger
-  static device
-  static account
-  /**
-   * Controls whether Fetch API should be used instead of the JSONP <script> fallback.
-   * This is configured at runtime by the CleverTap SDK during initialisation.
-   * Do NOT access this flag via the global $ct map anymore.
-   */
-  static enableFetchApi = false
-  /**
-   * Controls whether outbound payloads should be encrypted using AES-GCM-256.
-   * This is configured at runtime by the CleverTap SDK during initialisation.
-   * When enabled, all requests will be sent using Fetch API with encrypted payload envelope.
-   */
-  static enableEncryptionInTransit = false
-  networkRetryCount = 0
-  minDelayFrequency = 0
+  constructor ({ logger, device, account, instanceManager }) {
+    this.logger = logger
+    this.device = device
+    this.account = account
+    this.instanceManager = instanceManager
+    this.networkRetryCount = 0
+    this.minDelayFrequency = 0
+    this.enableFetchApi = instanceManager.enableFetchApi
+    this.enableEncryptionInTransit = instanceManager.enableEncryptionInTransit
+    this.api = null // Set by RequestManager after CleverTapAPI is created
+  }
 
   /**
    * Checks if the EIT fallback flag is set in local storage.
    * When set, the SDK should bypass encryption and use JSONP for the session.
    * @returns {boolean} - true if fallback is active
    */
-  static isEITFallbackActive () {
-    if (!StorageManager._isLocalStorageSupported()) {
+  isEITFallbackActive () {
+    if (!this.instanceManager.storage._isLocalStorageSupported()) {
       return false
     }
-    return StorageManager.read(CT_EIT_FALLBACK) === true
+    return this.instanceManager.storage.read(CT_EIT_FALLBACK) === true
   }
 
   /**
    * Sets the EIT fallback flag in local storage.
    * This will cause the SDK to bypass encryption and use JSONP for the session.
    */
-  static setEITFallback () {
-    if (StorageManager._isLocalStorageSupported()) {
-      StorageManager.save(CT_EIT_FALLBACK, true)
+  setEITFallback () {
+    if (this.instanceManager.storage._isLocalStorageSupported()) {
+      this.instanceManager.storage.save(CT_EIT_FALLBACK, true)
       this.logger.debug('EIT fallback flag set - subsequent requests will use JSONP')
     }
   }
@@ -52,9 +45,9 @@ export default class RequestDispatcher {
    * Clears the EIT fallback flag from local storage.
    * Called during clevertap.init() to reset for new session.
    */
-  static clearEITFallback () {
-    if (StorageManager._isLocalStorageSupported()) {
-      StorageManager.remove(CT_EIT_FALLBACK)
+  clearEITFallback () {
+    if (this.instanceManager.storage._isLocalStorageSupported()) {
+      this.instanceManager.storage.remove(CT_EIT_FALLBACK)
     }
   }
 
@@ -63,7 +56,7 @@ export default class RequestDispatcher {
    * Used when EIT is rejected by the backend.
    * @param {string} url - The URL to send via JSONP
    */
-  static #retryViaJSONP (url) {
+  #retryViaJSONP (url, retryAttempt = 0) {
     // Clean up any existing callback scripts
     var ctCbScripts = document.getElementsByClassName('ct-jp-cb')
     while (ctCbScripts[0] && ctCbScripts[0].parentNode) {
@@ -77,8 +70,39 @@ export default class RequestDispatcher {
     s.setAttribute('class', 'ct-jp-cb')
     s.setAttribute('rel', 'nofollow')
     s.async = true
+    s.onerror = () => {
+      this.#scheduleRetryViaJSONP(url, retryAttempt)
+    }
     document.getElementsByTagName('head')[0].appendChild(s)
     this.logger.debug('EIT fallback: req snt via JSONP -> url: ' + url)
+  }
+
+  /**
+   * Retries failed transport requests with an exponential delay. Once the
+   * max delay has been used, the following retry starts at initial delay.
+   * A 50%-100% jitter is applied to avoid retrying requests simultaneously.
+   */
+
+  #scheduleRetry (url, retryAttempt = 0, run) {
+    const retryDelay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, retryAttempt), MAX_RETRY_DELAY_MS)
+    const delay = Math.floor(retryDelay * (0.5 + Math.random() * 0.5))
+    const nextRetryAttempt = retryDelay === MAX_RETRY_DELAY_MS ? 0 : retryAttempt + 1
+    this.logger.debug(`Retrying request in ${delay}ms: ${url}`)
+    setTimeout(() => run(nextRetryAttempt), delay)
+  }
+
+  #scheduleRetryViaFetch (encryptedUrl, originalUrl, retryAttempt = 0) {
+    this.#scheduleRetry(
+      encryptedUrl, retryAttempt,
+      (nextRetryAttempt) => this.handleFetchResponse(encryptedUrl, originalUrl, nextRetryAttempt)
+    )
+  }
+
+  #scheduleRetryViaJSONP (url, retryAttempt = 0) {
+    this.#scheduleRetry(
+      url, retryAttempt,
+      (nextRetryAttempt) => this.#retryViaJSONP(url, nextRetryAttempt)
+    )
   }
 
   /**
@@ -86,7 +110,7 @@ export default class RequestDispatcher {
    * @param {string} url - The URL containing query parameters
    * @returns {Promise<{url: string, body?: string, method: string, useFallback?: boolean}>} - Modified URL with encrypted 'd' parameter
    */
-  static #prepareEncryptedRequest (url) {
+  #prepareEncryptedRequest (url) {
     // Check if encryption is disabled or fallback is active
     if (!this.enableEncryptionInTransit || this.isEITFallbackActive()) {
       if (this.isEITFallbackActive() && this.enableEncryptionInTransit) {
@@ -135,15 +159,19 @@ export default class RequestDispatcher {
   }
 
   // ANCHOR - Requests get fired from here
-  static #fireRequest (url, tries, skipARP, sendOULFlag, evtName) {
+  #fireRequest (url, tries, skipARP, sendOULFlag, evtName) {
     // Check if SDK is muted (for churned accounts) - drop request silently
-    if (isMuted()) {
-      const muteExpiry = getMuteExpiry()
+    const muteExpiry = this.instanceManager.storage.readFromLSorCookie(MUTE_EXPIRY_KEY)
+    if (muteExpiry && muteExpiry > 0 && Date.now() < muteExpiry) {
+      const rn = parseInt(getURLParam(url, 'rn'))
+      this.instanceManager.storage.removeBackup(rn, this.logger)
       this.logger.debug('Request dropped - SDK is muted until ' + new Date(muteExpiry).toISOString())
       return
     }
 
     if (this.#dropRequestDueToOptOut()) {
+      const rn = parseInt(getURLParam(url, 'rn'))
+      this.instanceManager.storage.removeBackup(rn, this.logger)
       this.logger.debug('req dropped due to optout cookie: ' + this.device.gcookie)
       return
     }
@@ -151,7 +179,7 @@ export default class RequestDispatcher {
     // set a request in progress
     // so that if gcookie is not present, no other request can be made asynchronusly
     if (!isValueValid(this.device.gcookie)) {
-      $ct.blockRequest = true
+      this.instanceManager.state.blockRequest = true
     }
     /**
      * if the gcookie is null
@@ -162,15 +190,18 @@ export default class RequestDispatcher {
 
     if (evtName && evtName === WZRK_FETCH) {
       // New retry mechanism
-      if (!isValueValid(this.device.gcookie) && ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1)) {
+      if (!isValueValid(this.device.gcookie) && (this.instanceManager.state.globalCache.RESP_N < this.instanceManager.state.globalCache.REQ_N - 1)) {
         setTimeout(() => {
           this.logger.debug(`retrying fire request for url: ${url}, tries: ${this.networkRetryCount}`)
           this.#fireRequest(url, undefined, skipARP, sendOULFlag)
         }, this.getDelayFrequency())
       }
     } else {
-      if (!isValueValid(this.device.gcookie) &&
-        ($ct.globalCache.RESP_N < $ct.globalCache.REQ_N - 1) &&
+      // Skip retry for OUL requests -- they must be sent immediately since they
+      // establish the new user identity and will set the gcookie on response.
+      if (!sendOULFlag &&
+        !isValueValid(this.device.gcookie) &&
+        (this.instanceManager.state.globalCache.RESP_N < this.instanceManager.state.globalCache.REQ_N - 1) &&
         tries < MAX_TRIES) {
         // if ongoing First Request is in progress, initiate retry
         setTimeout(() => {
@@ -190,7 +221,7 @@ export default class RequestDispatcher {
       }
       url = this.#addARPToRequest(url, skipARP)
     } else {
-      window.isOULInProgress = true
+      this.instanceManager.isOULInProgress = true
     }
 
     url = addToURL(url, 'tries', tries) // Add tries to URL
@@ -217,7 +248,7 @@ export default class RequestDispatcher {
           ctCbScripts[0].parentNode.removeChild(ctCbScripts[0])
         }
 
-        // Use the static flag instead of the global $ct map
+        // Use the instance flag instead of the global $ct map
         // When encryption is enabled (and not in fallback mode), always use Fetch API
         // If fallback is active, use JSONP regardless of encryption setting
         const shouldUseJSONP = (!this.enableFetchApi && !this.enableEncryptionInTransit) || requestConfig.useFallback
@@ -228,6 +259,9 @@ export default class RequestDispatcher {
           s.setAttribute('class', 'ct-jp-cb')
           s.setAttribute('rel', 'nofollow')
           s.async = true
+          s.onerror = () => {
+            this.#scheduleRetryViaJSONP(requestConfig.url)
+          }
           document.getElementsByTagName('head')[0].appendChild(s)
           this.logger.debug('req snt -> url: ' + requestConfig.url)
         } else {
@@ -245,34 +279,34 @@ export default class RequestDispatcher {
    * @param {*} skipARP
    * @param {boolean} sendOULFlag
    */
-  static fireRequest (url, skipARP, sendOULFlag, evtName) {
+  fireRequest (url, skipARP, sendOULFlag, evtName) {
     this.#fireRequest(url, 1, skipARP, sendOULFlag, evtName)
   }
 
-  static #dropRequestDueToOptOut () {
-    if ($ct.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
-      $ct.isOptInRequest = false
+  #dropRequestDueToOptOut () {
+    if (this.instanceManager.state.isOptInRequest || !isValueValid(this.device.gcookie) || !isString(this.device.gcookie)) {
+      this.instanceManager.state.isOptInRequest = false
       return false
     }
     return this.device.gcookie.slice(-3) === OPTOUT_COOKIE_ENDSWITH
   }
 
-  static #addUseIPToRequest (pageLoadUrl) {
-    var useIP = StorageManager.getMetaProp(USEIP_KEY)
+  #addUseIPToRequest (pageLoadUrl) {
+    var useIP = this.instanceManager.storage.getMetaProp(USEIP_KEY)
     if (typeof useIP !== 'boolean') {
       useIP = false
     }
     return addToURL(pageLoadUrl, USEIP_KEY, useIP ? 'true' : 'false')
   };
 
-  static #addARPToRequest (url, skipResARP) {
+  #addARPToRequest (url, skipResARP) {
     if (skipResARP === true) {
       const _arp = {}
       _arp.skipResARP = true
       return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger))
     }
-    if (StorageManager._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
-      const arpData = StorageManager.readFromLSorCookie(ARP_COOKIE)
+    if (this.instanceManager.storage._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
+      const arpData = this.instanceManager.storage.readFromLSorCookie(ARP_COOKIE)
       if (arpData) {
         delete arpData.d_e
       }
@@ -281,7 +315,7 @@ export default class RequestDispatcher {
     return url
   }
 
-  static handleFetchResponse (encryptedUrl, originalUrl, retryCount = 0) {
+  handleFetchResponse (encryptedUrl, originalUrl, retryCount = 0) {
     const fetchOptions = {
       method: 'GET',
       headers: {
@@ -298,7 +332,7 @@ export default class RequestDispatcher {
         if (muteDurationHeader) {
           const muteExpiryMs = parseInt(muteDurationHeader, 10)
           if (!isNaN(muteExpiryMs) && muteExpiryMs > 0) {
-            StorageManager.saveToLSorCookie(MUTE_EXPIRY_KEY, muteExpiryMs)
+            this.instanceManager.storage.saveToLSorCookie(MUTE_EXPIRY_KEY, muteExpiryMs)
             this.logger.info(`SDK muted until: ${new Date(muteExpiryMs).toISOString()}`)
           }
         }
@@ -317,6 +351,7 @@ export default class RequestDispatcher {
               this.#retryViaJSONP(originalUrl)
               return null // Signal that we've handled this via JSONP
             }
+
             throw new Error(`Encryption not enabled for account: ${response.statusText}`)
           }
 
@@ -332,7 +367,9 @@ export default class RequestDispatcher {
             }
           }
 
-          throw new Error(`Network response was not ok: ${response.statusText}`)
+          if (response.status >= 500 && response.status < 600) {
+            throw new Error(`Network response was not ok: ${response.statusText}`)
+          }
         }
         return response.text()
       })
@@ -378,7 +415,7 @@ export default class RequestDispatcher {
 
         const { tr, meta, wpe } = jsonResponse
         if (tr) {
-          window.$WZRK_WR.tr(tr)
+          this.api.tr(tr)
         }
         if (meta) {
           const { g, sid, rf, rn, optOut } = meta
@@ -387,22 +424,28 @@ export default class RequestDispatcher {
 
             // Include optOut as 5th parameter if present
             if (optOut !== undefined) {
-              window.$WZRK_WR.s(g, sid, rf, parsedRn, optOut)
+              this.api.s(g, sid, rf, parsedRn, optOut)
             } else {
-              window.$WZRK_WR.s(g, sid, rf, parsedRn)
+              this.api.s(g, sid, rf, parsedRn)
             }
           }
         }
         if (wpe) {
-          window.$WZRK_WR.enableWebPush(wpe.enabled, wpe.key)
+          this.api.enableWebPush(wpe.enabled, wpe.key)
         }
         this.logger.debug('req snt -> url: ' + encryptedUrl)
       })
       .catch((error) => {
-        if (error.message && error.message.includes('EIT decryption failed')) {
-          this.logger.error('EIT decryption failed', error)
-          // Safely ignore the response payload and proceed without applying server changes
-          return
+        if (error.message) {
+          if (error.message.includes('EIT decryption failed')) {
+            this.logger.error('EIT decryption failed', error)
+            // Safely ignore the response payload and proceed without applying server changes
+            return
+          } else if (error.message.includes('Network response was not ok')) {
+            this.logger.error('Network response was not ok', error)
+            this.#scheduleRetryViaFetch(encryptedUrl, originalUrl, retryCount)
+            return
+          }
         }
         this.logger.error('Fetch error:', error)
       })
