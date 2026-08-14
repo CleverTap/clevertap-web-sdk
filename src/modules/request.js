@@ -1,14 +1,15 @@
-import { SCOOKIE_PREFIX, CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY } from '../util/constants'
+import { SCOOKIE_PREFIX, CAMP_COOKIE_NAME, CLEAR, EVT_PUSH, EV_COOKIE, FIRE_PUSH_UNREGISTERED, LCOOKIE_NAME, PUSH_SUBSCRIPTION_DATA, WEBPUSH_LS_KEY, MUTE_EXPIRY_KEY } from '../util/constants'
 import { isObjectEmpty, isValueValid, removeUnsupportedChars, safeJSONParse } from '../util/datatypes'
 import { getNow } from '../util/datetime'
 import { compressData } from '../util/encoder'
 import RequestDispatcher from '../util/requestDispatcher'
-import { StorageManager, $ct, isMuted } from '../util/storage'
+import { $ct } from '../util/storage'
 import { addToURL } from '../util/url'
 import { getCampaignObjForLc } from '../util/clevertap'
 
-let seqNo = 0
-let requestTime = 0
+// Global request number counter shared across all instances to prevent
+// JSONP response routing collisions in _apiMap
+let _globalReqN = 0
 
 export default class RequestManager {
   #logger
@@ -16,28 +17,36 @@ export default class RequestManager {
   #device
   #session
   #isPersonalisationActive
+  #instanceManager
   #clearCookie = false
+  #seqNo = 0
+  #requestTime = 0
   processingBackup = false
+  processedBackup = false
 
-  constructor ({ logger, account, device, session, isPersonalisationActive }) {
+  constructor ({ logger, account, device, session, isPersonalisationActive, instanceManager }) {
     this.#logger = logger
     this.#account = account
     this.#device = device
     this.#session = session
     this.#isPersonalisationActive = isPersonalisationActive
+    this.#instanceManager = instanceManager
 
-    RequestDispatcher.logger = logger
-    RequestDispatcher.device = device
-    RequestDispatcher.account = account
+    this.dispatcher = new RequestDispatcher({ logger, device, account, instanceManager })
   }
 
   /**
  * Unified backup processing method
- * @param {boolean} oulOnly - If true, process only OUL requests. If false, process all non-fired requests.
+ * @param {boolean} oulOnly - If true, process only OUL requests. If false, process all backup requests.
  */
   processBackupEvents (oulOnly = false) {
-    const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
+    const backupMap = this.#instanceManager.storage.readFromLSorCookie(LCOOKIE_NAME)
     if (typeof backupMap === 'undefined' || backupMap === null) {
+      return
+    }
+
+    if (this.processingBackup || this.processedBackup) {
+      this.#logger.debug('Backup processing already in progress or completed..')
       return
     }
 
@@ -51,7 +60,7 @@ export default class RequestManager {
           continue
         }
 
-        const isOULRequest = StorageManager.isBackupOUL(parseInt(idx))
+        const isOULRequest = this.#instanceManager.storage.isBackupOUL(parseInt(idx))
         const shouldProcess = oulOnly ? isOULRequest : true
 
         if (shouldProcess) {
@@ -59,18 +68,25 @@ export default class RequestManager {
 
           if (typeof backupEvent.q !== 'undefined') {
             // Use safe JSON parsing to prevent injection attacks
-            const session = safeJSONParse(StorageManager.readCookie(SCOOKIE_PREFIX + '_' + this.#account.id), null)
+            const session = safeJSONParse(this.#instanceManager.storage.readCookie(SCOOKIE_PREFIX + '_' + this.#account.id), null)
             if (session?.s) {
               backupEvent.q = backupEvent.q + '&s=' + session.s
             }
-            RequestDispatcher.fireRequest(backupEvent.q)
+            // Register in JSONP dispatcher so response routes to this instance
+            if (window.$WZRK_WR && window.$WZRK_WR._apiMap && this.dispatcher && this.dispatcher.api) {
+              window.$WZRK_WR._apiMap[parseInt(idx)] = this.dispatcher.api
+            }
+            this.dispatcher.fireRequest(backupEvent.q)
+          } else {
+            this.#logger.error('Backup event is malformed.. removing from backup', backupEvent)
+            this.#instanceManager.storage.removeBackup(idx, this.#logger)
           }
-          backupEvent.fired = true
         }
       }
     }
-    StorageManager.saveToLSorCookie(LCOOKIE_NAME, backupMap)
+    this.#instanceManager.storage.saveToLSorCookie(LCOOKIE_NAME, backupMap)
     this.processingBackup = false
+    this.processedBackup = true
   }
 
   addSystemDataToObject (dataObject, ignoreTrim) {
@@ -95,7 +111,8 @@ export default class RequestManager {
     dataObject.pg = (typeof obj.p === 'undefined') ? 1 : obj.p // Page count
     let proto = document.location.protocol
     proto = proto.replace(':', '')
-    dataObject.af = { ...dataObject.af, lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...$ct.flutterVersion } // app fields
+    const locale = this.#instanceManager.state.locale
+    dataObject.af = { ...dataObject.af, lib: 'web-sdk-v$$PACKAGE_VERSION$$', protocol: proto, ...this.#instanceManager.state.flutterVersion, ...(locale && { locale }) } // app fields
     try {
       if (sessionStorage.hasOwnProperty('WZRK_D') || sessionStorage.getItem('WZRK_D')) {
         dataObject.debug = true
@@ -109,14 +126,14 @@ export default class RequestManager {
 
   addFlags (data) {
     // check if cookie should be cleared.
-    this.#clearCookie = StorageManager.getAndClearMetaProp(CLEAR)
+    this.#clearCookie = this.#instanceManager.storage.getAndClearMetaProp(CLEAR)
     if (this.#clearCookie !== undefined && this.#clearCookie) {
       data.rc = true
       this.#logger.debug('reset cookie sent in request and cleared from meta for future requests.')
     }
     if (this.#isPersonalisationActive()) {
-      const lastSyncTime = StorageManager.getMetaProp('lsTime')
-      const expirySeconds = StorageManager.getMetaProp('exTs')
+      const lastSyncTime = this.#instanceManager.storage.getMetaProp('lsTime')
+      const expirySeconds = this.#instanceManager.storage.getMetaProp('exTs')
 
       // dsync not found in local storage - get data from server
       if (typeof lastSyncTime === 'undefined' || typeof expirySeconds === 'undefined') {
@@ -141,7 +158,8 @@ export default class RequestManager {
   saveAndFireRequest (url, override, sendOULFlag, evtName) {
     // Check if SDK is muted (for churned accounts) - drop request silently
     // Unlike offline mode, muted requests are NOT saved to backup
-    if (isMuted()) {
+    const muteExpiry = this.#instanceManager.storage.readFromLSorCookie(MUTE_EXPIRY_KEY)
+    if (muteExpiry && muteExpiry > 0 && Date.now() < muteExpiry) {
       this.#logger.debug('Request dropped - SDK is muted')
       return
     }
@@ -150,125 +168,148 @@ export default class RequestManager {
 
     // Get the next available request number that doesn't conflict with existing backups
     const nextReqN = this.#getNextAvailableReqN()
-    $ct.globalCache.REQ_N = nextReqN
+
+    // For the first request of this instance, align RESP_N to avoid false retries.
+    // The global counter may have advanced past 0 due to other instances, creating a
+    // gap (RESP_N=0, REQ_N=4) that the retry logic misinterprets as pending requests.
+    if (this.#instanceManager.state.globalCache.REQ_N === 0) {
+      this.#instanceManager.state.globalCache.RESP_N = nextReqN - 1
+    }
+    this.#instanceManager.state.globalCache.REQ_N = nextReqN
+
+    // Register this request number in the JSONP dispatcher so responses route to this instance
+    if (window.$WZRK_WR && window.$WZRK_WR._apiMap && this.dispatcher && this.dispatcher.api) {
+      window.$WZRK_WR._apiMap[nextReqN] = this.dispatcher.api
+    }
 
     url = addToURL(url, 'rn', nextReqN)
-    const data = url + '&i=' + now + '&sn=' + seqNo
-    StorageManager.backupEvent(data, nextReqN, this.#logger)
+    const data = url + '&i=' + now + '&sn=' + this.#seqNo
+    this.#instanceManager.storage.backupEvent(data, nextReqN, this.#logger)
 
     // Mark as OUL if it's an OUL request
     if (sendOULFlag) {
-      StorageManager.markBackupAsOUL(nextReqN)
+      this.#instanceManager.storage.markBackupAsOUL(nextReqN)
     }
 
     // if offline is set to true, save the request in backup and return
-    if ($ct.offline || $ct.delayEvents) return
+    if (this.#instanceManager.state.offline || this.#instanceManager.state.delayEvents) return
 
     // if there is no override
     // and an OUL request is not in progress
     // then process the request as it is
     // else block the request
-    // note - $ct.blockRequest should ideally be used for override
-    if ((!override || (this.#clearCookie !== undefined && this.#clearCookie)) && !window.isOULInProgress) {
-      if (now === requestTime) {
-        seqNo++
+    // note - blockRequest should ideally be used for override
+    if ((!override || (this.#clearCookie !== undefined && this.#clearCookie)) && !this.#instanceManager.isOULInProgress) {
+      if (now === this.#requestTime) {
+        this.#seqNo++
       } else {
-        requestTime = now
-        seqNo = 0
+        this.#requestTime = now
+        this.#seqNo = 0
       }
-      window.oulReqN = nextReqN
-      RequestDispatcher.fireRequest(data, false, sendOULFlag, evtName)
+      if (sendOULFlag) {
+        this.#instanceManager.oulReqN = nextReqN
+      }
+      this.dispatcher.fireRequest(data, false, sendOULFlag, evtName)
     } else {
-      this.#logger.debug(`Not fired due to override - ${$ct.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${window.isOULInProgress}`)
+      this.#logger.debug(`Not fired due to override - ${this.#instanceManager.state.blockRequest} or clearCookie - ${this.#clearCookie} or OUL request in progress - ${this.#instanceManager.isOULInProgress}`)
     }
   }
 
-#getNextAvailableReqN () {
-  // Read existing backup data to check for conflicts
-  const backupMap = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
+  #getNextAvailableReqN () {
+    // Read existing backup data to check for conflicts
+    const backupMap = this.#instanceManager.storage.readFromLSorCookie(LCOOKIE_NAME)
 
-  // Start from the current REQ_N + 1
-  let candidateReqN = $ct.globalCache.REQ_N + 1
+    // Use the global counter to ensure unique request numbers across all instances.
+    // This prevents JSONP _apiMap collisions where two instances both use rn=1.
+    _globalReqN++
+    let candidateReqN = _globalReqN
 
-  // If no backup data exists, use the candidate
-  if (!backupMap || typeof backupMap !== 'object') {
+    // Also ensure it's greater than this instance's REQ_N
+    if (candidateReqN <= this.#instanceManager.state.globalCache.REQ_N) {
+      candidateReqN = this.#instanceManager.state.globalCache.REQ_N + 1
+      _globalReqN = candidateReqN
+    }
+
+    // If no backup data exists, use the candidate
+    if (!backupMap || typeof backupMap !== 'object') {
+      return candidateReqN
+    }
+
+    // Keep incrementing until we find a request number that doesn't exist in backup
+    while (backupMap.hasOwnProperty(candidateReqN.toString())) {
+      candidateReqN++
+      _globalReqN = candidateReqN
+      this.#logger.debug(`Request number ${candidateReqN - 1} already exists in backup, trying ${candidateReqN}`)
+    }
+
+    this.#logger.debug(`Using request number: ${candidateReqN}`)
     return candidateReqN
   }
 
-  // Keep incrementing until we find a request number that doesn't exist in backup
-  while (backupMap.hasOwnProperty(candidateReqN.toString())) {
-    candidateReqN++
-    this.#logger.debug(`Request number ${candidateReqN - 1} already exists in backup, trying ${candidateReqN}`)
+  unregisterTokenForGuid (givenGUID) {
+    const payload = this.#instanceManager.storage.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
+    // Send unregister event only when token is available
+    if (payload) {
+      const data = {}
+      data.type = 'data'
+      if (isValueValid(givenGUID)) {
+        data.g = givenGUID
+      }
+      data.action = 'unregister'
+      data.id = this.#account.id
+
+      const obj = this.#session.getSessionCookieObject()
+
+      data.s = obj.s // session cookie
+      const compressedData = compressData(JSON.stringify(data), this.#logger)
+
+      let pageLoadUrl = this.#account.dataPostURL
+      pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
+      pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
+      this.dispatcher.fireRequest(pageLoadUrl, true)
+      this.#instanceManager.storage.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
+    }
+    // REGISTER TOKEN
+    this.registerToken(payload)
   }
 
-  this.#logger.debug(`Using request number: ${candidateReqN}`)
-  return candidateReqN
-}
-
-unregisterTokenForGuid (givenGUID) {
-  const payload = StorageManager.readFromLSorCookie(PUSH_SUBSCRIPTION_DATA)
-  // Send unregister event only when token is available
-  if (payload) {
-    const data = {}
-    data.type = 'data'
-    if (isValueValid(givenGUID)) {
-      data.g = givenGUID
-    }
-    data.action = 'unregister'
-    data.id = this.#account.id
-
-    const obj = this.#session.getSessionCookieObject()
-
-    data.s = obj.s // session cookie
-    const compressedData = compressData(JSON.stringify(data), this.#logger)
-
+  registerToken (payload) {
+    if (!payload) return
+    // add gcookie etc to the payload
+    payload = this.addSystemDataToObject(payload, true)
+    payload = JSON.stringify(payload)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
-    RequestDispatcher.fireRequest(pageLoadUrl, true)
-    StorageManager.saveToLSorCookie(FIRE_PUSH_UNREGISTERED, false)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
+    this.dispatcher.fireRequest(pageLoadUrl)
+    // set in localstorage
+    this.#instanceManager.storage.save(WEBPUSH_LS_KEY, 'ok')
   }
-  // REGISTER TOKEN
-  this.registerToken(payload)
-}
 
-registerToken (payload) {
-  if (!payload) return
-  // add gcookie etc to the payload
-  payload = this.addSystemDataToObject(payload, true)
-  payload = JSON.stringify(payload)
-  let pageLoadUrl = this.#account.dataPostURL
-  pageLoadUrl = addToURL(pageLoadUrl, 'type', 'data')
-  pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(payload, this.#logger))
-  RequestDispatcher.fireRequest(pageLoadUrl)
-  // set in localstorage
-  StorageManager.save(WEBPUSH_LS_KEY, 'ok')
-}
+  processEvent (data) {
+    this.#addToLocalEventMap(data.evtName)
+    data = this.addSystemDataToObject(data, undefined)
+    this.addFlags(data)
+    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    const compressedData = compressData(JSON.stringify(data), this.#logger)
+    let pageLoadUrl = this.#account.dataPostURL
+    pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
+    pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
 
-processEvent (data) {
-  this.#addToLocalEventMap(data.evtName)
-  data = this.addSystemDataToObject(data, undefined)
-  this.addFlags(data)
-  data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
-  const compressedData = compressData(JSON.stringify(data), this.#logger)
-  let pageLoadUrl = this.#account.dataPostURL
-  pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
-  pageLoadUrl = addToURL(pageLoadUrl, 'd', compressedData)
-
-  this.saveAndFireRequest(pageLoadUrl, $ct.blockRequest, false, data.evtName)
-}
+    this.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest, false, data.evtName)
+  }
 
   #addToLocalEventMap (evtName) {
-    if (StorageManager._isLocalStorageSupported()) {
-      if (typeof $ct.globalEventsMap === 'undefined') {
-        $ct.globalEventsMap = StorageManager.readFromLSorCookie(EV_COOKIE)
-        if (typeof $ct.globalEventsMap === 'undefined') {
-          $ct.globalEventsMap = {}
+    if (this.#instanceManager.storage._isLocalStorageSupported()) {
+      if (typeof this.#instanceManager.state.globalEventsMap === 'undefined') {
+        this.#instanceManager.state.globalEventsMap = this.#instanceManager.storage.readFromLSorCookie(EV_COOKIE)
+        if (typeof this.#instanceManager.state.globalEventsMap === 'undefined') {
+          this.#instanceManager.state.globalEventsMap = {}
         }
       }
 
       const nowTs = getNow()
-      let evtDetail = $ct.globalEventsMap[evtName]
+      let evtDetail = this.#instanceManager.state.globalEventsMap[evtName]
       if (typeof evtDetail !== 'undefined') {
         evtDetail[2] = nowTs
         evtDetail[0]++
@@ -278,8 +319,8 @@ processEvent (data) {
         evtDetail.push(nowTs)
         evtDetail.push(nowTs)
       }
-      $ct.globalEventsMap[evtName] = evtDetail
-      StorageManager.saveToLSorCookie(EV_COOKIE, $ct.globalEventsMap)
+      this.#instanceManager.state.globalEventsMap[evtName] = evtDetail
+      this.#instanceManager.storage.saveToLSorCookie(EV_COOKIE, this.#instanceManager.state.globalEventsMap)
     }
   }
 
