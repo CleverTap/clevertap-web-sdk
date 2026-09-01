@@ -49,7 +49,6 @@ import { deliveryPreferenceUtils } from '../../src/util/campaignRender/utilities
 
 import { addToURL, getURLParams } from './url'
 import { compressData } from './encoder'
-import RequestDispatcher from './requestDispatcher'
 
 export const getCampaignObject = () => {
   let finalcampObj = {}
@@ -1015,7 +1014,7 @@ export const setEnum = (enumVal, logger) => {
   }
   logger.error(ENUM_FORMAT_ERROR)
 }
-export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, account, logger) => {
+export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, account, logger, dispatcher, instanceManager) => {
   const urlParamsAsIs = getURLParams(location.href) // can't use url_params as it is in lowercase above
   const encodedEmailId = urlParamsAsIs.e
   const encodedProfileProps = urlParamsAsIs.p
@@ -1024,10 +1023,10 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
   if (typeof encodedEmailId !== 'undefined') {
     const data = {}
     data.id = account.id // accountId
-    data.unsubGroups = $ct.unsubGroups // unsubscribe groups
+    data.unsubGroups = instanceManager.state.unsubGroups
 
-    if ($ct.updatedCategoryLong) {
-      data[categoryLongKey] = $ct.updatedCategoryLong
+    if (instanceManager.state.updatedCategoryLong) {
+      data[categoryLongKey] = instanceManager.state.updatedCategoryLong
     }
 
     let url = account.emailURL
@@ -1048,9 +1047,9 @@ export const handleEmailSubscription = (subscription, reEncoded, fetchGroups, ac
     }
 
     if (pageType) {
-      $ct.globalUnsubscribe = pageType === GLOBAL
+      instanceManager.state.globalUnsubscribe = pageType === GLOBAL
       url = addToURL(url, 'page_type', pageType)
     }
-    RequestDispatcher.fireRequest(url)
+    dispatcher.fireRequest(url)
   }
 }
