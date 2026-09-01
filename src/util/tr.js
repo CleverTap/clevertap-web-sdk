@@ -56,6 +56,16 @@ const _tr = (msg, { device, session, request, logger, region, instanceManager, i
     processWebPushConfig(msg.webPushConfig, logger, request, instanceManager)
   }
 
+  // Processes linked content fetch requests
+  if (msg.content_fetch != null && msg.content_fetch.length > 0) {
+    if (instance && instance.contentFetchManager) {
+      instance.contentFetchManager.handleContentFetch(
+        msg.content_fetch,
+        { device, session, request, logger, region, instanceManager, instance }
+      )
+    }
+  }
+
   commonCampaignUtils.handleVariables(msg)
   commonCampaignUtils.persistsEventsAndProfileData(msg, logger)
 }
