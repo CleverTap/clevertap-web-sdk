@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.0.2] 1st September 2026
+- Fixed the multi-instance handling for email subscribe.
+
 ## [3.0.1] 31st August 2026
 - Updated the local forage url in service worker
 
