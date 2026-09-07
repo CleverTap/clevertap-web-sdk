@@ -13,7 +13,7 @@
  * -> Use Google's closure compiler on http://closure-compiler.appspot.com/ for minifying
  */
 
-importScripts('https://d2r1yp2w7bby2u.cloudfront.net/js/localforage.min.js')
+importScripts('https://static.clevertap.com/js/localforage.min.js')
 // var CACHE_VERSION = 3;
 // var CURRENT_CACHES = {
 //     prefetch: 'prefetch-cache-v' + CACHE_VERSION
