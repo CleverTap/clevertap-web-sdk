@@ -619,20 +619,42 @@ export const deliveryPreferenceUtils = {
   },
 
   updateOccurenceForPopupAndNativeDisplay (msg, device, logger) {
-    // If the guid is present in CAMP_G retain it instead of using the CAMP
-    const globalCamp = JSON.parse(
-      decodeURIComponent(CampaignContext.instanceManager.storage.read(CAMP_COOKIE_G))
-    )
+    let globalCamp = {}
+    try {
+      const raw = CampaignContext.instanceManager.storage.read(CAMP_COOKIE_G)
+      if (raw) {
+        globalCamp = JSON.parse(decodeURIComponent(raw))
+      }
+    } catch (e) {
+      logger.debug('Failed to parse CAMP_G: ' + e.message)
+    }
+
     const currentIdCamp = globalCamp?.[device?.gcookie]
-    let campaignObj =
-      currentIdCamp || getCampaignObject()
+    const campData = getCampaignObject()
+
+    let campaignObj = currentIdCamp || campData
     const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc)
     const wndoc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wndtq, campaignObj.wndoc)
-    // If we are retreiving CAMP_G data, we can not retain details on web inbox as they are only session based.
-    const wi = getCampaignObject()?.wi ?? {}
-    const wp = getCampaignObject()?.wp ?? {}
-    const wsc = getCampaignObject()?.wsc ?? 0
-    const wndsc = getCampaignObject()?.wndsc ?? 0
+    // Session-based fields always come from CAMP, not CAMP_G
+    const wi = campData?.wi ?? {}
+    const wp = campData?.wp ?? {}
+    const wsc = campData?.wsc ?? 0
+    const wndsc = campData?.wndsc ?? 0
+
+    // Merge frequency control data from both sources — keep whichever
+    // has more timestamps per campaign to avoid stale CAMP_G overwriting CAMP
+    const mergeFrequencyControl = (campGFc, campFc) => {
+      const gFc = campGFc || {}
+      const cFc = campFc || {}
+      const allIds = new Set([...Object.keys(gFc), ...Object.keys(cFc)])
+      const merged = {}
+      for (const id of allIds) {
+        const a = Array.isArray(gFc[id]) ? gFc[id] : []
+        const b = Array.isArray(cFc[id]) ? cFc[id] : []
+        merged[id] = a.length >= b.length ? a : b
+      }
+      return merged
+    }
 
     campaignObj = {
       ...campaignObj,
@@ -641,9 +663,11 @@ export const deliveryPreferenceUtils = {
       wi,
       wp,
       wsc,
-      wndsc
+      wndsc,
+      wfc: mergeFrequencyControl(currentIdCamp?.wfc, campData?.wfc),
+      wndfc: mergeFrequencyControl(currentIdCamp?.wndfc, campData?.wndfc)
     }
-    saveCampaignObject(campaignObj)
+    saveCampaignObject(campaignObj, true)
   },
 
   /**

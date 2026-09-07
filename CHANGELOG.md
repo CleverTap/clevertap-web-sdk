@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.0.3] 3rd September 2026
+- Fixed the frequency capping logic
+
 ## [3.0.2] 1st September 2026
 - Fixed the multi-instance handling for email subscribe.
 
