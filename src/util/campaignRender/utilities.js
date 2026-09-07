@@ -667,7 +667,7 @@ export const deliveryPreferenceUtils = {
       wfc: mergeFrequencyControl(currentIdCamp?.wfc, campData?.wfc),
       wndfc: mergeFrequencyControl(currentIdCamp?.wndfc, campData?.wndfc)
     }
-    saveCampaignObject(campaignObj, true)
+    saveCampaignObject(campaignObj)
   },
 
   /**
