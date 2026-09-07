@@ -74,7 +74,6 @@ export const saveCampaignObject = (campaignObj) => {
     const newObj = { ...getCampaignObject(), ...campaignObj }
     const campObj = JSON.stringify(newObj)
     StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj))
-    // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
     setCampaignObjectForGuid()
   }
 }

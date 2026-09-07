@@ -1,5 +1,5 @@
 import { StorageManager } from './storage'
-import { LRU_CACHE, COOKIE_EXPIRY } from './constants'
+import { LRU_CACHE, COOKIE_EXPIRY, LRU_COOKIE_LIMIT } from './constants'
 
 export default class LRUCache {
   #keyOrder
@@ -57,7 +57,8 @@ export default class LRUCache {
 
   #saveCacheToBroadCookie (objToArray) {
     try {
-      const cookieValue = JSON.stringify({ cache: objToArray })
+      const recentEntries = objToArray.slice(-LRU_COOKIE_LIMIT)
+      const cookieValue = JSON.stringify({ cache: recentEntries })
       StorageManager.createBroadCookie(LRU_CACHE, cookieValue, COOKIE_EXPIRY, window.location.hostname)
     } catch (e) {
       // Cookie storage may fail; non-critical
