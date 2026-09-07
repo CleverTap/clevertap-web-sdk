@@ -86,4 +86,8 @@ export default class Account {
   get emailURL () {
     return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/e?r=1`
   }
+
+  get contentURL () {
+    return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/content`
+  }
 }
