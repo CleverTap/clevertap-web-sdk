@@ -69,13 +69,14 @@ export const getCampaignObject = () => {
 }
 
 // Save Camp here
-export const saveCampaignObject = (campaignObj) => {
+export const saveCampaignObject = (campaignObj, skipArchive = false) => {
   if (StorageManager._isLocalStorageSupported()) {
     const newObj = { ...getCampaignObject(), ...campaignObj }
     const campObj = JSON.stringify(newObj)
     StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj))
-    // Update the CAMP_COOKIE_G to be in sync with CAMP_COOKIE_NAME
-    setCampaignObjectForGuid()
+    if (!skipArchive) {
+      setCampaignObjectForGuid()
+    }
   }
 }
 
