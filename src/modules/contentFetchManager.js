@@ -87,8 +87,6 @@ export default class ContentFetchManager {
       signal: abortController.signal
     })
       .then(response => {
-        clearTimeout(timeoutId)
-
         if (response.status === 429) {
           this.#logger.info('ContentFetchManager: rate limited (429)')
           return null
@@ -117,7 +115,6 @@ export default class ContentFetchManager {
         }
       })
       .catch(err => {
-        clearTimeout(timeoutId)
         if (err.name === 'AbortError') {
           return
         }
@@ -127,6 +124,7 @@ export default class ContentFetchManager {
         }
       })
       .finally(() => {
+        clearTimeout(timeoutId)
         this.#inFlightCount--
         const idx = this.#abortControllers.indexOf(abortController)
         if (idx > -1) {
