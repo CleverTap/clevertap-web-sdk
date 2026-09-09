@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.0.4] 9th September 2026
+- Raise Notification Viewed event per carousel slide in Web Native Display.
+
 ## [3.0.3] 7th September 2026
 - Fixed the frequency capping logic.
 
