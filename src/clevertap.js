@@ -262,6 +262,12 @@ export default class CleverTap {
       isPersonalisationActive: this._isPersonalisationActive,
       instanceManager: this.#instanceManager
     })
+    this.contentFetchManager = new ContentFetchManager({
+      logger: this.#logger,
+      account: this.#account,
+      request: this.#request,
+      instanceManager: this.#instanceManager
+    })
     this.#tvNavigation = new TVNavigation(this.#logger)
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
@@ -285,7 +291,8 @@ export default class CleverTap {
       session: this.#session,
       logger: this.#logger,
       device: this.#device,
-      instanceManager: this.#instanceManager
+      instanceManager: this.#instanceManager,
+      contentFetchManager: this.contentFetchManager
     }, clevertap.onUserLogin)
 
     this.privacy = new Privacy({

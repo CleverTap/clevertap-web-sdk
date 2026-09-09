@@ -1,4 +1,5 @@
 import _tr from '../util/tr'
+import { webNativeDisplayCampaignUtils } from '../util/campaignRender/utilities'
 
 const MAX_CONCURRENT = 5
 const REQUEST_TIMEOUT_MS = 10000
@@ -10,85 +11,60 @@ export default class ContentFetchManager {
   #instanceManager
   #inFlightCount = 0
   #abortControllers = []
+  #unloadHandler = null
 
   constructor ({ logger, account, request, instanceManager }) {
     this.#logger = logger
     this.#account = account
     this.#request = request
     this.#instanceManager = instanceManager
+
+    this.#unloadHandler = () => this.cancelAll()
+    window.addEventListener('beforeunload', this.#unloadHandler)
   }
 
-  /**
-   * Called from _tr() when the server response contains a content_fetch array.
-   * Builds the payload and sends a POST request to /content.
-   * @param {Array} contentFetchItems - the content_fetch array from the response
-   * @param {object} trDeps - dependencies for processing the response: { device, session, request, logger, region, instanceManager, instance }
-   */
-  handleContentFetch (contentFetchItems, trDeps) {
+  handleContentFetch (contentFetchItems, trDeps, deferredNotifs) {
     if (!contentFetchItems || contentFetchItems.length === 0) {
       return
     }
 
-    this.#logger.debug('ContentFetchManager: received ' + contentFetchItems.length + ' content_fetch items')
-
     const payload = this.#buildPayload(contentFetchItems)
     if (!payload) {
-      this.#logger.debug('ContentFetchManager: failed to build payload')
+      if (deferredNotifs && deferredNotifs.length > 0) {
+        _tr({ inapp_notifs: deferredNotifs }, trDeps)
+      }
       return
     }
 
-    this.#sendContentFetchRequest(payload, trDeps)
+    this.#sendRequest(payload, trDeps, deferredNotifs)
   }
 
-  /**
-   * Builds the request payload: [metaHeader, event1, event2, ...]
-   * The meta header contains system data (id, g, af, arp, etc.)
-   * Each event wraps a content_fetch item with event metadata.
-   */
   #buildPayload (contentFetchItems) {
     try {
-      // Build meta header with system data
       const header = this.#request.addSystemDataToObject({ type: 'meta' }, undefined)
       this.#request.addFlags(header)
 
-      // Build event entries for each content_fetch item
-      const events = []
-      const session = this.#instanceManager.state.globalCache
-      const now = Math.floor(Date.now() / 1000)
+      const events = contentFetchItems.map(item => ({
+        type: 'event',
+        evtName: 'content_fetch',
+        s: header.s,
+        pg: header.pg || 1,
+        evtData: item
+      }))
 
-      for (let i = 0; i < contentFetchItems.length; i++) {
-        const item = contentFetchItems[i]
-        const event = {
-          type: 'event',
-          evtName: 'content_fetch',
-          s: session.s || 0,
-          pg: header.pg || 1,
-          ep: now,
-          f: false,
-          evtData: item
-        }
-        events.push(event)
-      }
-
-      // Serialize: [header, event1, event2, ...]
-      const payloadArray = [header, ...events]
-      return JSON.stringify(payloadArray)
+      return JSON.stringify([header, ...events])
     } catch (e) {
-      this.#logger.error('ContentFetchManager: error building payload', e)
+      this.#logger.error('ContentFetchManager: error building payload - ' + e.message)
       return null
     }
   }
 
-  /**
-   * Sends a POST request to the /content endpoint.
-   * - Max 5 concurrent requests
-   * - 10-second timeout per request
-   * - No retries on failure
-   * - On success: processes response via _tr() (same as /a1 response)
-   */
-  #sendContentFetchRequest (payload, trDeps) {
+  #sendRequest (payload, trDeps, deferredNotifs) {
     if (this.#inFlightCount >= MAX_CONCURRENT) {
-      this.#logger.debug('ContentFetchManager: max concurrent requests reached (' + MAX_CONCURRENT + '). Dropping request.')
+      this.#logger.debug('ContentFetchManager: max concurrent requests reached, dropping')
+      if (deferredNotifs && deferredNotifs.length > 0) {
+        _tr({ inapp_notifs: deferredNotifs }, trDeps)
+      }
       return
     }
 
@@ -104,8 +80,6 @@ export default class ContentFetchManager {
     this.#abortControllers.push(abortController)
     this.#inFlightCount++
 
-    this.#logger.debug('ContentFetchManager: sending request to ' + url)
-
     fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -115,30 +89,41 @@ export default class ContentFetchManager {
       .then(response => {
         clearTimeout(timeoutId)
 
-        if (response.ok) {
-          return response.json()
-        }
-
         if (response.status === 429) {
           this.#logger.info('ContentFetchManager: rate limited (429)')
-        } else {
-          this.#logger.error('ContentFetchManager: request failed with status ' + response.status)
+          return null
         }
-        return null
+
+        if (!response.ok) {
+          this.#logger.error('ContentFetchManager: request failed with status ' + response.status)
+          return null
+        }
+
+        return response.json()
       })
       .then(data => {
         if (data) {
-          this.#logger.debug('ContentFetchManager: response received, processing via _tr()')
-          // Process response through the same _tr() pipeline as /a1
+          if (deferredNotifs && deferredNotifs.length > 0) {
+            if (!data.inapp_notifs) {
+              data.inapp_notifs = []
+            }
+            data.inapp_notifs = webNativeDisplayCampaignUtils.mergeCampaignsByPriority(
+              data.inapp_notifs, deferredNotifs
+            )
+          }
           _tr(data, trDeps)
+        } else if (deferredNotifs && deferredNotifs.length > 0) {
+          _tr({ inapp_notifs: deferredNotifs }, trDeps)
         }
       })
       .catch(err => {
         clearTimeout(timeoutId)
         if (err.name === 'AbortError') {
-          this.#logger.debug('ContentFetchManager: request aborted (timeout or user switch)')
-        } else {
-          this.#logger.error('ContentFetchManager: request error', err)
+          return
+        }
+        this.#logger.error('ContentFetchManager: request error - ' + err.message)
+        if (deferredNotifs && deferredNotifs.length > 0) {
+          _tr({ inapp_notifs: deferredNotifs }, trDeps)
         }
       })
       .finally(() => {
@@ -150,16 +135,19 @@ export default class ContentFetchManager {
       })
   }
 
-  /**
-   * Cancels all in-flight content_fetch requests.
-   * Called during user switch (OUL) to prevent stale data from being processed.
-   */
   cancelAll () {
-    this.#logger.debug('ContentFetchManager: cancelling all pending requests')
     this.#abortControllers.forEach(controller => {
       try { controller.abort() } catch (e) { /* ignore */ }
     })
     this.#abortControllers = []
     this.#inFlightCount = 0
+  }
+
+  destroy () {
+    this.cancelAll()
+    if (this.#unloadHandler) {
+      window.removeEventListener('beforeunload', this.#unloadHandler)
+      this.#unloadHandler = null
+    }
   }
 }

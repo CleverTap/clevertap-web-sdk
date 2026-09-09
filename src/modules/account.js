@@ -88,6 +88,6 @@ export default class Account {
   }
 
   get contentURL () {
-    return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/content`
+    return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/content-web`
   }
 }
