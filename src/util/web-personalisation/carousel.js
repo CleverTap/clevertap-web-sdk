@@ -1,4 +1,8 @@
 import { CTWebPersonalisationBanner } from './banner'
+import { CampaignContext } from '../campaignHouseKeeping/campaignContext'
+
+const SLIDE_VIEWED_KEY = 'WZRK_WND_CAROUSEL_SLIDE_VIEWED'
+
 export class CTWebPersonalisationCarousel extends HTMLElement {
   constructor () {
     super()
@@ -16,6 +20,7 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
   selectedItem = 1
   autoSlide = null
   stopAutoSlideTimeout = null
+  viewedSlides = new Set()
 
   get target () {
     return this._target || ''
@@ -54,7 +59,6 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
     // TODO: enable conditionally
     this.startAutoSlide()
     this.setupOnHover()
-    window.clevertap.renderNotificationViewed({ msgId: this.target.wzrk_id, pivotId: this.target.wzrk_pivot })
   }
 
   setupClick () {
@@ -158,6 +162,59 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
     item.classList.add('carousel__item--selected')
     if (button) {
       button.classList.add('carousel__button--selected')
+    }
+    this.raiseSlideViewed(this.selectedItem)
+  }
+
+  getSessionId () {
+    return CampaignContext.session?.sessionId || 'session'
+  }
+
+  getViewedSlideStore () {
+    try {
+      const raw = sessionStorage.getItem(SLIDE_VIEWED_KEY)
+      const parsed = raw ? JSON.parse(raw) : {}
+      return parsed && typeof parsed === 'object' ? parsed : {}
+    } catch (e) { 
+      return {}
+    } // sessionStorage may be unavailable
+  }
+
+  hasSlideBeenViewed (slideNo) {
+    if (this.viewedSlides.has(slideNo)) return true
+    const sessionId = this.getSessionId()
+    const msgId = this.target?.wzrk_id
+    const slides = this.getViewedSlideStore()?.[sessionId]?.[msgId]
+    return Array.isArray(slides) && slides.includes(slideNo)
+  }
+
+  markSlideViewed (slideNo) {
+    this.viewedSlides.add(slideNo)
+    const msgId = this.target?.wzrk_id
+    if (!msgId) return
+    try {
+      const sessionId = this.getSessionId()
+      const bySession = this.getViewedSlideStore()?.[sessionId] || {}
+      const slides = new Set(bySession[msgId] || [])
+      slides.add(slideNo)
+      sessionStorage.setItem(SLIDE_VIEWED_KEY, JSON.stringify({
+        [sessionId]: { ...bySession, [msgId]: [...slides] }
+      }))
+    } catch (e) {
+      // sessionStorage may be unavailable
+    }
+  }
+
+  raiseSlideViewed (slideNo) {
+    if (!slideNo || !this.target?.wzrk_id || this.hasSlideBeenViewed(slideNo)) return
+    const payload = {
+      msgId: this.target.wzrk_id,
+      pivotId: this.target.wzrk_pivot,
+      wzrk_slideNo: slideNo
+    }
+    if (window.clevertap?.renderNotificationViewed) {
+      window.clevertap.renderNotificationViewed(payload)
+      this.markSlideViewed(slideNo)
     }
   }
 
