@@ -59,7 +59,6 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
     // TODO: enable conditionally
     this.startAutoSlide()
     this.setupOnHover()
-    window.clevertap.renderNotificationViewed({ msgId: this.target.wzrk_id, pivotId: this.target.wzrk_pivot })
   }
 
   setupClick () {

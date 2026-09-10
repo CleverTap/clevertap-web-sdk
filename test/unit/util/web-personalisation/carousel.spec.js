@@ -58,12 +58,10 @@ describe('web native display carousel notification viewed', function () {
     CampaignContext._session = null
   })
 
-  test('raises campaign viewed and first slide viewed on render', () => {
+  test('raises first slide viewed on render', () => {
     mountCarousel()
 
-    expect(campaignViewedCalls()).toEqual([
-      { msgId: 'campaign_1', pivotId: 'pivot_1' }
-    ])
+    expect(campaignViewedCalls()).toEqual([])
     expect(slideViewedCalls()).toEqual([
       { msgId: 'campaign_1', pivotId: 'pivot_1', wzrk_slideNo: 1 }
     ])
@@ -99,9 +97,7 @@ describe('web native display carousel notification viewed', function () {
     mountCarousel()
 
     expect(slideViewedCalls()).toEqual([])
-    expect(campaignViewedCalls()).toEqual([
-      { msgId: 'campaign_1', pivotId: 'pivot_1' }
-    ])
+    expect(campaignViewedCalls()).toEqual([])
   })
 
   test('raises slide viewed again for a new session', () => {
