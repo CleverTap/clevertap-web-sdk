@@ -111,4 +111,16 @@ describe('web native display carousel notification viewed', function () {
       { msgId: 'campaign_1', pivotId: 'pivot_1', wzrk_slideNo: 1 }
     ])
   })
+
+  test('raises slide viewed again on existing carousel after session change', () => {
+    const carousel = mountCarousel()
+    window.clevertap.renderNotificationViewed.mockClear()
+
+    CampaignContext._session = { sessionId: 'session-2' }
+    carousel.raiseSlideViewed(1)
+
+    expect(slideViewedCalls()).toEqual([
+      { msgId: 'campaign_1', pivotId: 'pivot_1', wzrk_slideNo: 1 }
+    ])
+  })
 })

@@ -180,18 +180,25 @@ export class CTWebPersonalisationCarousel extends HTMLElement {
     } // sessionStorage may be unavailable
   }
 
-  hasSlideBeenViewed (slideNo) {
-    if (this.viewedSlides.has(slideNo)) return true
+  getSlideViewedKey (slideNo) {
     const sessionId = this.getSessionId()
     const msgId = this.target?.wzrk_id
+    return `${sessionId}:${msgId}:${slideNo}`
+  }
+
+  hasSlideBeenViewed (slideNo) {
+    const msgId = this.target?.wzrk_id
+    if (!msgId) return false
+    if (this.viewedSlides.has(this.getSlideViewedKey(slideNo))) return true
+    const sessionId = this.getSessionId()
     const slides = this.getViewedSlideStore()?.[sessionId]?.[msgId]
     return Array.isArray(slides) && slides.includes(slideNo)
   }
 
   markSlideViewed (slideNo) {
-    this.viewedSlides.add(slideNo)
     const msgId = this.target?.wzrk_id
     if (!msgId) return
+    this.viewedSlides.add(this.getSlideViewedKey(slideNo))
     try {
       const sessionId = this.getSessionId()
       const bySession = this.getViewedSlideStore()?.[sessionId] || {}
