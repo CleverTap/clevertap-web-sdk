@@ -17,7 +17,13 @@ describe('util/security/encryptionInTransit', () => {
   }
 
   beforeAll(() => {
-    global.crypto = mockCrypto
+    // jsdom exposes `crypto` as a getter-only accessor, so plain assignment
+    // silently no-ops; redefine the property outright to inject the mock.
+    Object.defineProperty(global, 'crypto', {
+      value: mockCrypto,
+      configurable: true,
+      writable: true
+    })
     // Use Node.js native TextEncoder/TextDecoder (already set up in test/setup.js)
     // Just ensure btoa/atob are available
     global.btoa = (str) => Buffer.from(str, 'binary').toString('base64')

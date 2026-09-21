@@ -1,7 +1,6 @@
 import resolve from '@rollup/plugin-node-resolve'
 import babel from '@rollup/plugin-babel'
 import replace from '@rollup/plugin-replace'
-import { eslint } from 'rollup-plugin-eslint'
 import { terser } from 'rollup-plugin-terser'
 import { version } from './package.json'
 import sourcemaps from 'rollup-plugin-sourcemaps'
@@ -105,10 +104,6 @@ const getPlugins = (mode) => {
       : resolve(),
     mode === 'WEB' && commonjs(),
     sourcemaps(),
-    eslint({
-      fix: true,
-      throwOnError: true,
-    }),
     replace({
       preventAssignment: true,
       delimiters: ["", ""],

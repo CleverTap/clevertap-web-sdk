@@ -149,27 +149,28 @@ describe('util/datatypes', function () {
   })
 
   describe('removeUnsupportedChars', () => {
+    let logger
     beforeEach(() => {
-      this.logger = {
+      logger = {
         reportError: jest.fn()
       }
     })
 
     test('should return value without changing when input is number', () => {
-      const result = removeUnsupportedChars(1234, this.logger)
+      const result = removeUnsupportedChars(1234, logger)
       expect(result).toBe(result)
     })
 
     test('should remove unsupported characters when input is string', () => {
       const input = unsupportedValueString
-      const result = removeUnsupportedChars(input, this.logger)
+      const result = removeUnsupportedChars(input, logger)
       expect(result).toBe('String with unsupported characters')
     })
 
     test('should trim string greater than 1024 characters and log the error', () => {
       const input = string1500Chars
-      const result = removeUnsupportedChars(input, this.logger)
-      expect(this.logger.reportError).toHaveBeenCalledWith(521, expect.any(String))
+      const result = removeUnsupportedChars(input, logger)
+      expect(logger.reportError).toHaveBeenCalledWith(521, expect.any(String))
       expect(result.length).toBe(1024)
     })
 
@@ -179,9 +180,9 @@ describe('util/datatypes', function () {
         [unsupportedKeyString]: 'fooBar',
         [string1500Chars]: string1500Chars
       }
-      const result = removeUnsupportedChars(input, this.logger)
-      expect(this.logger.reportError).toHaveBeenCalledWith(521, expect.any(String))
-      expect(this.logger.reportError).toHaveBeenCalledWith(520, expect.any(String))
+      const result = removeUnsupportedChars(input, logger)
+      expect(logger.reportError).toHaveBeenCalledWith(521, expect.any(String))
+      expect(logger.reportError).toHaveBeenCalledWith(520, expect.any(String))
       expect(result[123]).toBe('String with unsupported characters')
       let keyForFooBar
       for (const key in result) {
