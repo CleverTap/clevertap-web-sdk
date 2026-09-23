@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.0.4] 23rd September 2026
+- Capped WZRK_L backup queue at 2MB and dropped backups older than 3 days to prevent localStorage bloat.
+
 ## [3.0.3] 7th September 2026
 - Fixed the frequency capping logic.
 
