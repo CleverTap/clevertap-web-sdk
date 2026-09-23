@@ -4,7 +4,7 @@ import { CTWebPersonalisationCarousel } from '../web-personalisation/carousel'
 
 import { addScriptTo, appendScriptForCustomEvent } from '../campaignRender/utilities'
 import { WVE_URL_ORIGIN } from '../../modules/visualBuilder/builder_constants'
-import { commonCampaignUtils } from '../../util/campaignHouseKeeping/commonCampaignUtils'
+import { doCampHouseKeeping } from '../../util/campaignHouseKeeping/frequencyCapping'
 import { Logger } from '../../../src/modules/logger'
 import { CampaignContext } from '../campaignHouseKeeping/campaignContext'
 
@@ -21,7 +21,7 @@ export const renderPersonalisationBanner = (targetingMsgJson) => {
   const containerEl = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId)
   containerEl.innerHTML = ''
   containerEl.appendChild(bannerEl)
-  commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, CampaignContext.logger)
+  doCampHouseKeeping(targetingMsgJson, CampaignContext.logger)
 }
 
 export const renderPersonalisationCarousel = (targetingMsgJson) => {
@@ -34,7 +34,7 @@ export const renderPersonalisationCarousel = (targetingMsgJson) => {
   const container = targetingMsgJson.display.divId ? document.getElementById(divId) : document.querySelector(divId)
   container.innerHTML = ''
   container.appendChild(carousel)
-  commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, CampaignContext.logger)
+  doCampHouseKeeping(targetingMsgJson, CampaignContext.logger)
 }
 
 export const handleKVpairCampaign = (targetingMsgJson) => {
@@ -49,7 +49,7 @@ export const handleKVpairCampaign = (targetingMsgJson) => {
 
   const kvPairsEvent = new CustomEvent('CT_web_native_display', { detail: inaObj })
   document.dispatchEvent(kvPairsEvent)
-  commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, CampaignContext.logger)
+  doCampHouseKeeping(targetingMsgJson, CampaignContext.logger)
 }
 
 export const renderCustomHtml = (targetingMsgJson, logger) => {
@@ -95,7 +95,7 @@ export const renderCustomHtml = (targetingMsgJson, logger) => {
         scripts.forEach((script) => {
           addScriptTo(script)
         })
-        commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, CampaignContext.logger || logger)
+        doCampHouseKeeping(targetingMsgJson, CampaignContext.logger || logger)
         clearInterval(intervalId)
       } else if (++count >= 20) {
         logger.error(`No element present on DOM with divId '${divId}'.`)
@@ -121,7 +121,7 @@ export const handleJson = (targetingMsgJson) => {
 
   const jsonEvent = new CustomEvent('CT_web_native_display_json', { detail: inaObj })
   document.dispatchEvent(jsonEvent)
-  commonCampaignUtils.doCampHouseKeeping(targetingMsgJson, CampaignContext.logger)
+  doCampHouseKeeping(targetingMsgJson, CampaignContext.logger)
 }
 
 function handleCustomHtmlPreviewPostMessageEvent (event, logger) {

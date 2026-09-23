@@ -70,7 +70,8 @@ export default class NotificationHandler extends Array {
         request: this.#request,
         displayArgs,
         fcmPublicKey: this.#fcmPublicKey,
-        instanceManager: this.#instanceManager
+        instanceManager: this.#instanceManager,
+        NotificationHandler
       })
       if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
         processSoftPrompt()
@@ -91,7 +92,8 @@ export default class NotificationHandler extends Array {
           request: this.#request,
           displayArgs: this.#oldValues.slice(),
           fcmPublicKey: this.#fcmPublicKey,
-          instanceManager: this.#instanceManager
+          instanceManager: this.#instanceManager,
+          NotificationHandler
         })
         this.#instanceManager.storage.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
       }

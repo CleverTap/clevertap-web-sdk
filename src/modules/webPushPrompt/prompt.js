@@ -5,7 +5,6 @@ import {
   NOTIFICATION_PUSH_METHOD_DEFERRED, WEBPUSH_CONFIG_RECEIVED
 } from '../../util/constants.js'
 import { StorageManager, $ct } from '../../util/storage.js'
-import NotificationHandler from '../notification.js'
 import { BELL_BASE64, PROMPT_BELL_BASE64 } from './promptConstants.js'
 import { isFirefox, isSafari, isChrome } from '../../util/helpers.js'
 
@@ -18,6 +17,7 @@ let request = null
 let displayArgs = null
 let fcmPublicKey = null
 let instanceManager_ref = null
+let NotificationHandlerRef = null
 
 const _storage = () => instanceManager_ref ? instanceManager_ref.storage : StorageManager
 const _state = () => instanceManager_ref ? instanceManager_ref.state : $ct
@@ -29,6 +29,9 @@ export const setNotificationHandlerValues = (notificationValues = {}) => {
   displayArgs = notificationValues.displayArgs
   fcmPublicKey = notificationValues.fcmPublicKey
   instanceManager_ref = notificationValues.instanceManager || null
+  if (notificationValues.NotificationHandler) {
+    NotificationHandlerRef = notificationValues.NotificationHandler
+  }
 }
 
 export const processWebPushConfig = (webPushConfig, logger, request, instanceManager) => {
@@ -65,7 +68,7 @@ export const processWebPushConfig = (webPushConfig, logger, request, instanceMan
 
 export const processSoftPrompt = () => {
   const webPushConfig = _storage().readFromLSorCookie(WEBPUSH_CONFIG) || {}
-  notificationHandler = new NotificationHandler({ logger, session: {}, request, account, instanceManager: instanceManager_ref })
+  notificationHandler = new NotificationHandlerRef({ logger, session: {}, request, account, instanceManager: instanceManager_ref })
 
   if (webPushConfig && !(Object.keys(webPushConfig).length > 0)) {
     notificationHandler.setApplicationServerKey(appServerKey)
