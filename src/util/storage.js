@@ -8,6 +8,8 @@ import {
   MUTE_EXPIRY_KEY
 } from './constants'
 import encryption from '../modules/security/Encryption'
+import { getNow } from './datetime'
+import { pruneBackupMap } from './backupQueue'
 
 export class StorageManager {
   static save (key, value) {
@@ -277,7 +279,8 @@ export class StorageManager {
     if (typeof backupArr === 'undefined') {
       backupArr = {}
     }
-    backupArr[reqNo] = { q: data }
+    backupArr[reqNo] = { q: data, ts: getNow() }
+    pruneBackupMap(backupArr, logger)
     this.saveToLSorCookie(LCOOKIE_NAME, backupArr)
     logger.debug(`stored in ${LCOOKIE_NAME} reqNo : ${reqNo} -> ${data}`)
   }

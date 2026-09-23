@@ -6,6 +6,7 @@ import RequestDispatcher from '../util/requestDispatcher'
 import { $ct } from '../util/storage'
 import { addToURL } from '../util/url'
 import { getCampaignObjForLc } from '../util/clevertap'
+import { pruneBackupMap } from '../util/backupQueue'
 
 // Global request number counter shared across all instances to prevent
 // JSONP response routing collisions in _apiMap
@@ -51,6 +52,12 @@ export default class RequestManager {
     }
 
     this.processingBackup = true
+
+    const keysBeforePrune = Object.keys(backupMap)
+    pruneBackupMap(backupMap, this.#logger)
+    if (Object.keys(backupMap).length !== keysBeforePrune.length) {
+      this.#instanceManager.storage.saveToLSorCookie(LCOOKIE_NAME, backupMap)
+    }
 
     for (const idx in backupMap) {
       if (backupMap.hasOwnProperty(idx)) {
