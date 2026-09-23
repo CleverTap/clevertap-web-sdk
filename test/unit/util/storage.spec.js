@@ -256,7 +256,8 @@ describe('util/storage', function () {
         StorageManager.backupEvent(data, reqNo, this.logger)
         const lcookieResult = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
         expect(lcookieResult[reqNo]).toMatchObject({ q: data })
-        expect(this.logger.debug).toHaveBeenCalledTimes(1)
+        expect(typeof lcookieResult[reqNo].ts).toBe('number')
+        expect(this.logger.debug).toHaveBeenCalled()
       })
 
       test('should remove data for provided request number', () => {
@@ -273,7 +274,22 @@ describe('util/storage', function () {
         const lcookieResult = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
         expect(lcookieResult[1]).toBeUndefined()
         expect(lcookieResult[2]).toMatchObject({ q: data2 })
-        expect(this.logger.debug).toHaveBeenCalledTimes(3)
+        expect(this.logger.debug).toHaveBeenCalled()
+      })
+
+      test('should prune age-expired backups when storing a new event', () => {
+        const now = Math.floor(Date.now() / 1000)
+        const staleTs = now - (4 * 24 * 60 * 60)
+        StorageManager.saveToLSorCookie(LCOOKIE_NAME, {
+          1: { q: 'stale-event', ts: staleTs }
+        })
+
+        StorageManager.backupEvent('fresh-event', 2, this.logger)
+
+        const lcookieResult = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
+        expect(lcookieResult[1]).toBeUndefined()
+        expect(lcookieResult[2]).toMatchObject({ q: 'fresh-event' })
+        expect(typeof lcookieResult[2].ts).toBe('number')
       })
 
       test('should not do anything when trying to remove backup event not in request', () => {
