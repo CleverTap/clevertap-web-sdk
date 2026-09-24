@@ -173,6 +173,21 @@ describe('modules/request', function () {
       expect(requestManager.processingBackup).toBe(false)
     })
 
+    test('should append session to the request URL without mutating stored backupEvent.q', () => {
+      const backupMap = { 1: { q: 'foo=bar', ts: freshTs() } }
+      mockInstanceManager.storage.readFromLSorCookie.mockReturnValue(backupMap)
+      mockInstanceManager.storage.readCookie.mockReturnValue(JSON.stringify({ s: 'sess123' }))
+
+      requestManager.processBackupEvents()
+
+      expect(mockDispatcher.fireRequest).toHaveBeenCalledWith('foo=bar&s=sess123')
+      expect(backupMap[1].q).toBe('foo=bar')
+      expect(mockInstanceManager.storage.saveToLSorCookie).toHaveBeenCalledWith(
+        'WZRK_L',
+        expect.objectContaining({ 1: expect.objectContaining({ q: 'foo=bar' }) })
+      )
+    })
+
     test('should remove malformed backup events (missing q) instead of retrying them forever', () => {
       const malformedEvent = { ts: freshTs() } // no q property and not already fired
       mockInstanceManager.storage.readFromLSorCookie.mockReturnValue({ 1: malformedEvent })

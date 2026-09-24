@@ -76,11 +76,11 @@ export const pruneBackupMap = (backupMap, logger, options = {}) => {
     }
   }
 
-  while (getWZRK_LStoredSize(backupMap) > maxSizeBytes) {
-    let oldestReqNo = null
-    let oldestTs = Infinity
-    let oldestNumericReqNo = Infinity
-
+  let currentSize = getWZRK_LStoredSize(backupMap)
+  if (currentSize > maxSizeBytes) {
+    // Sort eviction order once (oldest ts first; same-ts tie-break by lower reqNo),
+    // then subtract each removed pair's encoded contribution instead of re-serializing.
+    const evictionOrder = []
     for (const reqNo in backupMap) {
       if (!Object.prototype.hasOwnProperty.call(backupMap, reqNo)) {
         continue
@@ -88,22 +88,34 @@ export const pruneBackupMap = (backupMap, logger, options = {}) => {
       const ts = getBackupEntryTs(backupMap[reqNo])
       const numericReqNo = parseInt(reqNo, 10)
       const reqNoRank = isNaN(numericReqNo) ? Infinity : numericReqNo
-
-      if (
-        ts < oldestTs ||
-        (ts === oldestTs && reqNoRank < oldestNumericReqNo)
-      ) {
-        oldestTs = ts
-        oldestReqNo = reqNo
-        oldestNumericReqNo = reqNoRank
+      evictionOrder.push({ reqNo, ts, reqNoRank })
+    }
+    evictionOrder.sort((a, b) => {
+      if (a.ts !== b.ts) {
+        return a.ts - b.ts
       }
-    }
+      return a.reqNoRank - b.reqNoRank
+    })
 
-    if (oldestReqNo == null) {
-      break
+    let keyCount = evictionOrder.length
+    for (let i = 0; i < evictionOrder.length && currentSize > maxSizeBytes; i++) {
+      const { reqNo } = evictionOrder[i]
+      const entry = backupMap[reqNo]
+      if (entry === undefined) {
+        continue
+      }
+      // encodeURIComponent is compositional, so pair + optional comma matches
+      // the size drop from removing one key in JSON.stringify(backupMap).
+      const pairJson = `${JSON.stringify(reqNo)}:${JSON.stringify(entry)}`
+      let contribution = encodeURIComponent(pairJson).length
+      if (keyCount > 1) {
+        contribution += encodeURIComponent(',').length
+      }
+      delete backupMap[reqNo]
+      currentSize -= contribution
+      keyCount--
+      sizeDropped++
     }
-    delete backupMap[oldestReqNo]
-    sizeDropped++
   }
 
   if ((ageDropped > 0 || sizeDropped > 0) && logger && typeof logger.debug === 'function') {

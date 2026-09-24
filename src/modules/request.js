@@ -76,14 +76,16 @@ export default class RequestManager {
           if (typeof backupEvent.q !== 'undefined') {
             // Use safe JSON parsing to prevent injection attacks
             const session = safeJSONParse(this.#instanceManager.storage.readCookie(SCOOKIE_PREFIX + '_' + this.#account.id), null)
+            // Keep stored backupEvent.q unchanged so session suffix is not persisted/duplicated on retry
+            let requestUrl = backupEvent.q
             if (session?.s) {
-              backupEvent.q = backupEvent.q + '&s=' + session.s
+              requestUrl = requestUrl + '&s=' + session.s
             }
             // Register in JSONP dispatcher so response routes to this instance
             if (window.$WZRK_WR && window.$WZRK_WR._apiMap && this.dispatcher && this.dispatcher.api) {
               window.$WZRK_WR._apiMap[parseInt(idx)] = this.dispatcher.api
             }
-            this.dispatcher.fireRequest(backupEvent.q)
+            this.dispatcher.fireRequest(requestUrl)
           } else {
             this.#logger.error('Backup event is malformed.. removing from backup', backupEvent)
             this.#instanceManager.storage.removeBackup(idx, this.#logger)
