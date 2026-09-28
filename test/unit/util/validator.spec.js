@@ -52,15 +52,16 @@ describe('util/validator', function () {
   })
 
   describe('isChargedEventStructureValid', () => {
+    let logger
     beforeEach(() => {
-      this.logger = {
+      logger = {
         reportError: jest.fn(),
         error: jest.fn()
       }
     })
 
     test('should return false if input is not an object', () => {
-      const result = isChargedEventStructureValid('test', this.logger)
+      const result = isChargedEventStructureValid('test', logger)
       expect(result).toBeFalsy()
     })
 
@@ -69,7 +70,7 @@ describe('util/validator', function () {
         const input = {
           Items: {}
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, logger)
         expect(result).toBeFalsy()
       })
 
@@ -81,9 +82,9 @@ describe('util/validator', function () {
         const input = {
           Items: items
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, logger)
         expect(result).toBeFalsy()
-        expect(this.logger.reportError).toHaveBeenCalledWith(522, expect.any(String))
+        expect(logger.reportError).toHaveBeenCalledWith(522, expect.any(String))
       })
 
       test('should return false if Items array is not a flat object', () => {
@@ -98,7 +99,7 @@ describe('util/validator', function () {
         const input = {
           Items: items
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, logger)
         expect(result).toBeFalsy()
       })
 
@@ -112,7 +113,7 @@ describe('util/validator', function () {
         const input = {
           Items: items
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, logger)
         expect(result).toBeTruthy()
       })
     })
@@ -125,7 +126,7 @@ describe('util/validator', function () {
             some: 'foo'
           }
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, logger)
         expect(result).toBeFalsy()
       })
 
@@ -134,7 +135,7 @@ describe('util/validator', function () {
           name: 'test',
           value: [1, 2, 3]
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, logger)
         expect(result).toBeFalsy()
       })
 
@@ -143,7 +144,7 @@ describe('util/validator', function () {
           name: 'test',
           ts: new Date()
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, logger)
         expect(result).toBeTruthy()
         expect(input.ts).toBe('supported_date_format')
       })
@@ -156,7 +157,7 @@ describe('util/validator', function () {
           [CHARGED_ID]: 'abc'
         }
 
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, logger)
         expect(result).toBeTruthy()
         expect(StorageManager.saveToLSorCookie).toHaveBeenCalledWith(CHARGEDID_COOKIE_NAME, 'abc')
       })
@@ -166,16 +167,16 @@ describe('util/validator', function () {
           name: 'test1',
           [CHARGED_ID]: '123'
         }
-        const result1 = isChargedEventStructureValid(input1, this.logger)
+        const result1 = isChargedEventStructureValid(input1, logger)
         expect(result1).toBeTruthy()
 
         const input2 = {
           name: 'test2',
           [CHARGED_ID]: 123
         }
-        const result2 = isChargedEventStructureValid(input2, this.logger)
+        const result2 = isChargedEventStructureValid(input2, logger)
         expect(result2).toBeFalsy()
-        expect(this.logger.error).toHaveBeenCalled()
+        expect(logger.error).toHaveBeenCalled()
       })
     })
   })

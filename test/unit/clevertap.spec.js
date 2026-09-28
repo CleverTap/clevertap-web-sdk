@@ -28,7 +28,7 @@ const region = 'in'
 const targetDomain = 'foo.com'
 const dataPostURL = 'data.post.url'
 const token = undefined
-let mockLogger, mockDevice, mockSessionObject, mockRequestObject, mockOUL
+let mockLogger, mockDevice, mockSessionObject, mockRequestObject, mockOUL, clevertap
 
 describe('clevertap.js', function () {
   beforeEach(() => {
@@ -147,13 +147,13 @@ describe('clevertap.js', function () {
 
     test('should init with Custom CT ID when provided', () => {
       validateCustomCleverTapID.mockReturnValue({ isValid: true, sanitizedId: '_w_custom_ct_id' })
-      this.clevertap = new Clevertap()
+      clevertap = new Clevertap()
       expect(DeviceManager).toHaveBeenCalledWith(expect.objectContaining({ customId: '_w_custom_ct_id', domainSpecification: 0 }))
     })
 
     test('should init with Regular ID when Custom ID is invalid or Not provided', () => {
       validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null })
-      this.clevertap = new Clevertap()
+      clevertap = new Clevertap()
       expect(DeviceManager).toHaveBeenCalledWith(expect.objectContaining({ customId: null, domainSpecification: 0 }))
     })
   })
@@ -185,11 +185,11 @@ describe('clevertap.js', function () {
   describe('init', () => {
     beforeEach(() => {
       mockSessionObject.getSessionCookieObject.mockReturnValue({})
-      this.clevertap = new Clevertap()
+      clevertap = new Clevertap()
     })
 
     test('should log error when accountId is not provided', () => {
-      this.clevertap.init()
+      clevertap.init()
       expect(mockLogger.error).toHaveBeenCalledWith(EMBED_ERROR)
     })
 
@@ -198,7 +198,7 @@ describe('clevertap.js', function () {
         e: '1',
         wzrk_ex: '0'
       })
-      this.clevertap.init(accountId, region, targetDomain)
+      clevertap.init(accountId, region, targetDomain)
       expect(mockRequestObject.saveAndFireRequest).not.toHaveBeenCalled()
     })
 
@@ -206,7 +206,7 @@ describe('clevertap.js', function () {
       test('should not add referrer to data when referrer is empty', () => {
         getURLParams.mockReturnValue({})
         getDomain.mockReturnValue('')
-        this.clevertap.init(accountId, region, targetDomain)
+        clevertap.init(accountId, region, targetDomain)
         const data = JSON.parse(compressData.mock.calls[0][0])
         expect(data.referrer).toBeUndefined()
       })
@@ -216,7 +216,7 @@ describe('clevertap.js', function () {
           getURLParams.mockReturnValue({})
           const referrer = 'fooBar'
           getDomain.mockReturnValue(referrer)
-          this.clevertap.init(accountId, region, targetDomain)
+          clevertap.init(accountId, region, targetDomain)
           const data = JSON.parse(compressData.mock.calls[0][0])
           expect(data.referrer).toBe(referrer)
         })
@@ -225,7 +225,7 @@ describe('clevertap.js', function () {
           getURLParams.mockReturnValue({})
           const referrer = string121Char
           getDomain.mockReturnValue(referrer)
-          this.clevertap.init(accountId, region, targetDomain)
+          clevertap.init(accountId, region, targetDomain)
           const data = JSON.parse(compressData.mock.calls[0][0])
           expect(data.referrer).not.toBe(referrer)
           expect(data.referrer.length).toBe(maxLen)
@@ -241,7 +241,7 @@ describe('clevertap.js', function () {
             getURLParams.mockReturnValue({
               utm_source: 'mock_utm_source'
             })
-            this.clevertap.init(accountId, region, targetDomain)
+            clevertap.init(accountId, region, targetDomain)
             const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.us).toBe('mock_utm_source')
           })
@@ -250,7 +250,7 @@ describe('clevertap.js', function () {
             getURLParams.mockReturnValue({
               wzrk_source: string121Char
             })
-            this.clevertap.init(accountId, region, targetDomain)
+            clevertap.init(accountId, region, targetDomain)
             const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.us.length).toBe(maxLen)
           })
@@ -266,7 +266,7 @@ describe('clevertap.js', function () {
             getURLParams.mockReturnValue({
               utm_medium: 'mock_utm_medium'
             })
-            this.clevertap.init(accountId, region, targetDomain)
+            clevertap.init(accountId, region, targetDomain)
             const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.um).toBe('mock_utm_medium')
           })
@@ -275,7 +275,7 @@ describe('clevertap.js', function () {
             getURLParams.mockReturnValue({
               wzrk_medium: string121Char
             })
-            this.clevertap.init(accountId, region, targetDomain)
+            clevertap.init(accountId, region, targetDomain)
             const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.um.length).toBe(maxLen)
           })
@@ -284,7 +284,7 @@ describe('clevertap.js', function () {
             getURLParams.mockReturnValue({
               wzrk_medium: 'email'
             })
-            this.clevertap.init(accountId, region, targetDomain)
+            clevertap.init(accountId, region, targetDomain)
             const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.wm).toBe('email')
           })
@@ -300,7 +300,7 @@ describe('clevertap.js', function () {
             getURLParams.mockReturnValue({
               utm_campaign: 'mock_utm_campaign'
             })
-            this.clevertap.init(accountId, region, targetDomain)
+            clevertap.init(accountId, region, targetDomain)
             const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.uc).toBe('mock_utm_campaign')
           })
@@ -309,7 +309,7 @@ describe('clevertap.js', function () {
             getURLParams.mockReturnValue({
               wzrk_campaign: string121Char
             })
-            this.clevertap.init(accountId, region, targetDomain)
+            clevertap.init(accountId, region, targetDomain)
             const data = JSON.parse(compressData.mock.calls[0][0])
             expect(data.uc.length).toBe(maxLen)
           })
@@ -321,8 +321,8 @@ describe('clevertap.js', function () {
       getURLParams.mockReturnValue({})
       getDomain.mockReturnValue('')
       mockRequestObject.addSystemDataToObject.mockImplementation(data => ({ ...data, pg: 1 }))
-      this.clevertap.enablePersonalization = true
-      this.clevertap.init(accountId)
+      clevertap.enablePersonalization = true
+      clevertap.init(accountId)
       const data = JSON.parse(compressData.mock.calls[0][0])
       expect(data.dsync).toBeTruthy()
     })
@@ -331,8 +331,8 @@ describe('clevertap.js', function () {
       getURLParams.mockReturnValue({})
       getDomain.mockReturnValue('')
       mockRequestObject.addSystemDataToObject.mockImplementation(data => ({ ...data, pg: 1 }))
-      this.clevertap.enablePersonalization = false
-      this.clevertap.init(accountId)
+      clevertap.enablePersonalization = false
+      clevertap.init(accountId)
       const data = JSON.parse(compressData.mock.calls[0][0])
       expect(data.dsync).not.toBeTruthy()
     })
@@ -340,9 +340,9 @@ describe('clevertap.js', function () {
     test('should not try to initalise twice', () => {
       getURLParams.mockReturnValue({})
       getDomain.mockReturnValue('')
-      this.clevertap.init(accountId)
+      clevertap.init(accountId)
       const firstCallCount = compressData.mock.calls.length
-      this.clevertap.init(accountId)
+      clevertap.init(accountId)
       // compressData should not be called again (init returns early)
       expect(compressData.mock.calls.length).toBe(firstCallCount)
     })
@@ -355,11 +355,11 @@ describe('clevertap.js', function () {
       })
       getURLParams.mockReturnValue({})
       getDomain.mockReturnValue('')
-      this.clevertap = new Clevertap()
+      clevertap = new Clevertap()
     })
 
     test('should send ping request after 2 minutes when page count <= 3', () => {
-      this.clevertap.pageChanged()
+      clevertap.pageChanged()
       jest.advanceTimersByTime(FIRST_PING_FREQ_IN_MILLIS)
       expect(addToURL).toHaveBeenCalledWith(dataPostURL, 'type', 'ping')
       expect(mockRequestObject.saveAndFireRequest).toHaveBeenCalledTimes(2)
@@ -369,7 +369,7 @@ describe('clevertap.js', function () {
       mockSessionObject.getSessionCookieObject.mockReturnValue({
         p: 4
       })
-      this.clevertap.pageChanged()
+      clevertap.pageChanged()
       jest.advanceTimersByTime(FIRST_PING_FREQ_IN_MILLIS)
       expect(mockRequestObject.saveAndFireRequest).toHaveBeenCalledTimes(1)
     })
@@ -378,54 +378,54 @@ describe('clevertap.js', function () {
       window.wzrk_d = {
         ping: 'continuous'
       }
-      this.clevertap.pageChanged()
+      clevertap.pageChanged()
       jest.advanceTimersByTime(FIRST_PING_FREQ_IN_MILLIS)
       jest.advanceTimersByTime(CONTINUOUS_PING_FREQ_IN_MILLIS)
       expect(mockRequestObject.saveAndFireRequest).toHaveBeenCalledTimes(3)
     })
 
     test('should call dismissActiveCampaigns when spa is true and URL changes', () => {
-      this.clevertap.spa = true
-      this.clevertap.pageChanged()
+      clevertap.spa = true
+      clevertap.pageChanged()
       window.history.pushState({}, '', '/clevertap-spa-test-path')
-      this.clevertap.pageChanged()
+      clevertap.pageChanged()
       expect(dismissActiveCampaigns).toHaveBeenCalled()
     })
 
     test('should not call dismissActiveCampaigns when spa is false even if URL changes', () => {
-      this.clevertap.spa = false
-      this.clevertap.pageChanged()
+      clevertap.spa = false
+      clevertap.pageChanged()
       window.history.pushState({}, '', '/clevertap-non-spa-path')
-      this.clevertap.pageChanged()
+      clevertap.pageChanged()
       expect(dismissActiveCampaigns).not.toHaveBeenCalled()
     })
   })
 
   describe('clear', () => {
     test('should call clear method of onUserLogin', () => {
-      this.clevertap = new Clevertap()
-      this.clevertap.clear()
+      clevertap = new Clevertap()
+      clevertap.clear()
       expect(mockOUL.clear).toHaveBeenCalled()
     })
   })
 
   describe('logout', () => {
     test('should invoke logout without error', () => {
-      this.clevertap = new Clevertap()
-      expect(() => this.clevertap.logout()).not.toThrow()
+      clevertap = new Clevertap()
+      expect(() => clevertap.logout()).not.toThrow()
     })
   })
 
   describe('session', () => {
     test('should invoke `getTimeElapsed` from SessionManager when `getTimeElapsed` is called', () => {
-      this.clevertap = new Clevertap()
-      this.clevertap.session.getTimeElapsed()
+      clevertap = new Clevertap()
+      clevertap.session.getTimeElapsed()
       expect(mockSessionObject.getTimeElapsed).toHaveBeenCalled()
     })
 
     test('should invoke `getPageCount` from SessionManager when `getPageCount` is called', () => {
-      this.clevertap = new Clevertap()
-      this.clevertap.session.getPageCount()
+      clevertap = new Clevertap()
+      clevertap.session.getPageCount()
       expect(mockSessionObject.getPageCount).toHaveBeenCalled()
     })
   })

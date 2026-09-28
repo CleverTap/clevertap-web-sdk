@@ -4,12 +4,13 @@ import { StorageManager } from '../../../src/util/storage'
 
 jest.enableAutomock().unmock('../../../src/util/lruCache')
 
-describe('util/lruCache', function () {
+describe('util/lruCache', () => {
+  let lruCache
   describe('constructor', () => {
     test('should initialise empty cache object when LS or cookie has no previous LRUCache', () => {
       StorageManager.readFromLSorCookie.mockReturnValue(undefined)
-      this.lruCache = new LRUCache(2)
-      expect(this.lruCache.cache).toMatchObject({})
+      lruCache = new LRUCache(2)
+      expect(lruCache.cache).toMatchObject({})
     })
 
     test('should initialise cache with data from LS or cookie', () => {
@@ -26,8 +27,8 @@ describe('util/lruCache', function () {
       }
 
       StorageManager.readFromLSorCookie.mockReturnValue(previousCacheData)
-      this.lruCache = new LRUCache(2)
-      expect(this.lruCache.cache).toMatchObject(expectedCache)
+      lruCache = new LRUCache(2)
+      expect(lruCache.cache).toMatchObject(expectedCache)
     })
 
     describe('LRU cache initalised', () => {
@@ -40,16 +41,16 @@ describe('util/lruCache', function () {
           ]
         }
         StorageManager.readFromLSorCookie.mockReturnValue(previousCacheData)
-        this.lruCache = new LRUCache(4)
+        lruCache = new LRUCache(4)
       })
 
       test('should return undefined if key is not present', () => {
-        const result = this.lruCache.get('blah')
+        const result = lruCache.get('blah')
         expect(result).toBeUndefined()
       })
 
       test('should return value and update the order of cache if key is present', () => {
-        const result = this.lruCache.get('foo')
+        const result = lruCache.get('foo')
         expect(result).toBe('value 1')
 
         const expectedCacheDataStored = {
@@ -64,7 +65,7 @@ describe('util/lruCache', function () {
 
       describe('set value', () => {
         test('should add new value and append to LS data array when new key is provided', () => {
-          this.lruCache.set('test 1', 'value for test 1')
+          lruCache.set('test 1', 'value for test 1')
           const expectedCacheDataStored = {
             cache: [
               ['foo', 'value 1'],
@@ -77,7 +78,7 @@ describe('util/lruCache', function () {
         })
 
         test('should update exisiting value and append to end of LS data array when setting value for exisiting key', () => {
-          this.lruCache.set('foo', 'updated value for foo')
+          lruCache.set('foo', 'updated value for foo')
           const expectedCacheDataStored = {
             cache: [
               ['bar', 'value 2'],
@@ -89,8 +90,8 @@ describe('util/lruCache', function () {
         })
 
         test('should remove oldest value from LS data array when max limit is reached with adding new values', () => {
-          this.lruCache.set('test 1', 'value for test 1')
-          this.lruCache.set('test 2', 'value for test 2')
+          lruCache.set('test 1', 'value for test 1')
+          lruCache.set('test 2', 'value for test 2')
           const expectedCacheDataStored = {
             cache: [
               ['bar', 'value 2'],
@@ -105,24 +106,24 @@ describe('util/lruCache', function () {
 
       describe('get key from value', () => {
         test('should return null if value is null', () => {
-          const result = this.lruCache.getKey(null)
+          const result = lruCache.getKey(null)
           expect(result).toBeNull()
         })
 
         test('should return null if value is not present in cache object', () => {
-          const result = this.lruCache.getKey('unsaved value')
+          const result = lruCache.getKey('unsaved value')
           expect(result).toBeNull()
         })
 
         test('should return key when value is present in cache object', () => {
-          const result = this.lruCache.getKey('value 2')
+          const result = lruCache.getKey('value 2')
           expect(result).toBe('bar')
         })
       })
 
       describe('get last key', () => {
         test('should get last key', () => {
-          const result = this.lruCache.getLastKey()
+          const result = lruCache.getLastKey()
           expect(result).toBe('test')
         })
 
@@ -136,7 +137,7 @@ describe('util/lruCache', function () {
 
       describe('get second last key', () => {
         test('should get second last key when available', () => {
-          const result = this.lruCache.getSecondLastKey()
+          const result = lruCache.getSecondLastKey()
           expect(result).toBe('bar')
         })
 

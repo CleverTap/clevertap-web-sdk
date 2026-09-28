@@ -242,8 +242,9 @@ describe('util/storage', function () {
     })
 
     describe('backup event', () => {
+      let logger
       beforeEach(() => {
-        this.logger = {
+        logger = {
           debug: jest.fn()
         }
       })
@@ -253,10 +254,10 @@ describe('util/storage', function () {
           event: 'test'
         }
         const reqNo = 1
-        StorageManager.backupEvent(data, reqNo, this.logger)
+        StorageManager.backupEvent(data, reqNo, logger)
         const lcookieResult = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
         expect(lcookieResult[reqNo]).toMatchObject({ q: data })
-        expect(this.logger.debug).toHaveBeenCalledTimes(1)
+        expect(logger.debug).toHaveBeenCalledTimes(1)
       })
 
       test('should remove data for provided request number', () => {
@@ -267,18 +268,18 @@ describe('util/storage', function () {
           event: 'test2'
         }
         let reqNo = 1
-        StorageManager.backupEvent(data1, reqNo++, this.logger)
-        StorageManager.backupEvent(data2, reqNo++, this.logger)
-        StorageManager.removeBackup(1, this.logger)
+        StorageManager.backupEvent(data1, reqNo++, logger)
+        StorageManager.backupEvent(data2, reqNo++, logger)
+        StorageManager.removeBackup(1, logger)
         const lcookieResult = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
         expect(lcookieResult[1]).toBeUndefined()
         expect(lcookieResult[2]).toMatchObject({ q: data2 })
-        expect(this.logger.debug).toHaveBeenCalledTimes(3)
+        expect(logger.debug).toHaveBeenCalledTimes(3)
       })
 
       test('should not do anything when trying to remove backup event not in request', () => {
-        StorageManager.removeBackup(10, this.logger)
-        expect(this.logger.debug).not.toHaveBeenCalled()
+        StorageManager.removeBackup(10, logger)
+        expect(logger.debug).not.toHaveBeenCalled()
       })
     })
   })

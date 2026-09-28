@@ -137,10 +137,12 @@ module.exports = {
   // snapshotSerializers: [],
 
   // The test environment that will be used for testing
-  // testEnvironment: "jest-environment-jsdom",
+  testEnvironment: 'jsdom',
 
   // Options that will be passed to the testEnvironment
-  // testEnvironmentOptions: {},
+  testEnvironmentOptions: {
+    url: 'http://www.example.com'
+  },
 
   // Adds a location field to test results
   // testLocationInResults: false,
@@ -167,11 +169,10 @@ module.exports = {
   // This option allows use of a custom test runner
   // testRunner: "jasmine2",
 
-  // This option sets the URL for the jsdom environment. It is reflected in properties such as location.href
-  testURL: 'http://www.example.com',
-
-  // Setting this value to "fake" allows the use of fake timers for functions such as "setTimeout"
-  timers: 'modern'
+  // Enables fake timers globally for all test files (replaces the removed top-level "timers" option)
+  fakeTimers: {
+    enableGlobally: true
+  }
 
   // A map from regular expressions to paths to transformers
   // transform: {

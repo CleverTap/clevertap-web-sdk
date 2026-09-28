@@ -50,21 +50,22 @@ describe('util/clevertap', function () {
   })
 
   describe('save campaign object', () => {
+    let input
     beforeEach(() => {
-      this.input = {
+      input = {
         foo: 'bar'
       }
     })
     test('should do nothing if localStorage is not supported', () => {
       StorageManager._isLocalStorageSupported.mockReturnValue(false)
-      saveCampaignObject(this.input)
+      saveCampaignObject(input)
       expect(StorageManager.save).not.toHaveBeenCalled()
     })
 
     test('should save to localStorage when localStorage is supported', () => {
       StorageManager._isLocalStorageSupported.mockReturnValue(true)
-      saveCampaignObject(this.input)
-      expect(StorageManager.save).toHaveBeenCalledWith(CAMP_COOKIE_NAME, encodeURIComponent(JSON.stringify(this.input)))
+      saveCampaignObject(input)
+      expect(StorageManager.save).toHaveBeenCalledWith(CAMP_COOKIE_NAME, encodeURIComponent(JSON.stringify(input)))
     })
   })
 
@@ -156,8 +157,9 @@ describe('util/clevertap', function () {
   })
 
   describe('is profile valid', () => {
+    let logger
     beforeEach(() => {
-      this.logger = {
+      logger = {
         error: jest.fn()
       }
 
@@ -165,7 +167,7 @@ describe('util/clevertap', function () {
     })
 
     test('should return false if profile is not an object', () => {
-      const result = isProfileValid('some', { logger: this.logger })
+      const result = isProfileValid('some', { logger: logger })
       expect(result).toBeFalsy()
     })
 
@@ -174,7 +176,7 @@ describe('util/clevertap', function () {
         name: 'fooBar',
         key1: null
       }
-      isProfileValid(input, { logger: this.logger })
+      isProfileValid(input, { logger: logger })
       expect(input).toMatchObject({ name: 'fooBar' })
     })
 
@@ -184,9 +186,9 @@ describe('util/clevertap', function () {
         Gender: 'hello'
       }
 
-      isProfileValid(input, { logger: this.logger })
+      isProfileValid(input, { logger: logger })
       expect(input).toMatchObject({ name: 'fooBar' })
-      expect(this.logger.error).toHaveBeenCalledWith(GENDER_ERROR)
+      expect(logger.error).toHaveBeenCalledWith(GENDER_ERROR)
     })
 
     test('should delete Employed key and log error if value is not "Y" or "N"', () => {
@@ -195,9 +197,9 @@ describe('util/clevertap', function () {
         Employed: 'yes'
       }
 
-      isProfileValid(input, { logger: this.logger })
+      isProfileValid(input, { logger: logger })
       expect(input).toMatchObject({ name: 'fooBar' })
-      expect(this.logger.error).toHaveBeenCalledWith(EMPLOYED_ERROR)
+      expect(logger.error).toHaveBeenCalledWith(EMPLOYED_ERROR)
     })
 
     test('should delete Married key and log error if value is not "Y" or "N"', () => {
@@ -206,9 +208,9 @@ describe('util/clevertap', function () {
         Married: 'yes'
       }
 
-      isProfileValid(input, { logger: this.logger })
+      isProfileValid(input, { logger: logger })
       expect(input).toMatchObject({ name: 'fooBar' })
-      expect(this.logger.error).toHaveBeenCalledWith(MARRIED_ERROR)
+      expect(logger.error).toHaveBeenCalledWith(MARRIED_ERROR)
     })
 
     test('should delete Education key and log error if value is not "School", "College" or "Graduate"', () => {
@@ -217,9 +219,9 @@ describe('util/clevertap', function () {
         Education: 'MBA'
       }
 
-      isProfileValid(input, { logger: this.logger })
+      isProfileValid(input, { logger: logger })
       expect(input).toMatchObject({ name: 'fooBar' })
-      expect(this.logger.error).toHaveBeenCalledWith(EDUCATION_ERROR)
+      expect(logger.error).toHaveBeenCalledWith(EDUCATION_ERROR)
     })
 
     test('should delete Age key and log error if value is not convertible to number', () => {
@@ -228,9 +230,9 @@ describe('util/clevertap', function () {
         Age: 'twenty'
       }
 
-      isProfileValid(input, { logger: this.logger })
+      isProfileValid(input, { logger: logger })
       expect(input).toMatchObject({ name: 'fooBar' })
-      expect(this.logger.error).toHaveBeenCalledWith(AGE_ERROR)
+      expect(logger.error).toHaveBeenCalledWith(AGE_ERROR)
     })
 
     test('should delete DOB key and log error if value is not JS Date object or clevertap date format', () => {
@@ -239,9 +241,9 @@ describe('util/clevertap', function () {
         DOB: '01-01-2020'
       }
 
-      isProfileValid(input, { logger: this.logger })
+      isProfileValid(input, { logger: logger })
       expect(input).toMatchObject({ name: 'fooBar' })
-      expect(this.logger.error).toHaveBeenCalledWith(DOB_ERROR)
+      expect(logger.error).toHaveBeenCalledWith(DOB_ERROR)
     })
 
     test('should delete Phone key and log error if value does not start with "+"', () => {
@@ -250,9 +252,9 @@ describe('util/clevertap', function () {
         Phone: '1234567890'
       }
 
-      isProfileValid(input, { logger: this.logger })
+      isProfileValid(input, { logger: logger })
       expect(input).toMatchObject({ name: 'fooBar' })
-      expect(this.logger.error).toHaveBeenCalledWith(PHONE_FORMAT_ERROR + '. Removed.')
+      expect(logger.error).toHaveBeenCalledWith(PHONE_FORMAT_ERROR + '. Removed.')
     })
 
     test('should delete Phone key and log error if value is not convertible to number', () => {
@@ -261,9 +263,9 @@ describe('util/clevertap', function () {
         Phone: '+oneTwoThree'
       }
 
-      isProfileValid(input, { logger: this.logger })
+      isProfileValid(input, { logger: logger })
       expect(input).toMatchObject({ name: 'fooBar' })
-      expect(this.logger.error).toHaveBeenCalledWith(PHONE_FORMAT_ERROR + '. Removed.')
+      expect(logger.error).toHaveBeenCalledWith(PHONE_FORMAT_ERROR + '. Removed.')
     })
 
     test('should return true if all values are valid and convert date to clevertap format', () => {
@@ -291,7 +293,7 @@ describe('util/clevertap', function () {
         PurchaseDate: 'converted_date'
       }
 
-      const result = isProfileValid(input, { logger: this.logger })
+      const result = isProfileValid(input, { logger: logger })
       expect(result).toBeTruthy()
       expect(input).toMatchObject(expectedObject)
     })
@@ -468,8 +470,9 @@ describe('util/clevertap', function () {
   })
 
   describe('process GPlus usrs', () => {
+    let mockLogger
     beforeEach(() => {
-      this.mockLogger = {
+      mockLogger = {
         logger: {
           debug: jest.fn()
         }
@@ -480,7 +483,7 @@ describe('util/clevertap', function () {
 
     test('should return empty object when user is empty', () => {
       const input = {}
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({})
     })
 
@@ -489,7 +492,7 @@ describe('util/clevertap', function () {
         displayName: 'user'
       }
 
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({
         Name: 'user'
       })
@@ -500,7 +503,7 @@ describe('util/clevertap', function () {
         id: '123'
       }
 
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({
         GPID: '123'
       })
@@ -511,7 +514,7 @@ describe('util/clevertap', function () {
         gender: 'male'
       }
 
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({
         Gender: 'M'
       })
@@ -522,7 +525,7 @@ describe('util/clevertap', function () {
         gender: 'female'
       }
 
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({
         Gender: 'F'
       })
@@ -533,7 +536,7 @@ describe('util/clevertap', function () {
         gender: 'other'
       }
 
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({
         Gender: 'O'
       })
@@ -547,7 +550,7 @@ describe('util/clevertap', function () {
         }
       }
 
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({
         Photo: 'http://image/url'
       })
@@ -567,7 +570,7 @@ describe('util/clevertap', function () {
         ]
       }
 
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({
         Email: 'user@example.com'
       })
@@ -578,7 +581,7 @@ describe('util/clevertap', function () {
         organizations: []
       }
 
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({
         Employed: 'N'
       })
@@ -591,7 +594,7 @@ describe('util/clevertap', function () {
         ]
       }
 
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({
         Employed: 'Y'
       })
@@ -602,7 +605,7 @@ describe('util/clevertap', function () {
         birthday: '2020-01-01'
       }
 
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({
         DOB: '20200101'
       })
@@ -613,7 +616,7 @@ describe('util/clevertap', function () {
         relationshipStatus: 'single'
       }
 
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({
         Married: 'N'
       })
@@ -624,7 +627,7 @@ describe('util/clevertap', function () {
         relationshipStatus: 'married'
       }
 
-      const result = processGPlusUserObj(input, this.mockLogger)
+      const result = processGPlusUserObj(input, mockLogger)
       expect(result).toMatchObject({
         Married: 'Y'
       })
