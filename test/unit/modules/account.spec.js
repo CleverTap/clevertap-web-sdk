@@ -13,6 +13,13 @@ describe('modules/account', function () {
       expect(this.account.dataPostURL).toBe('https://test.clevertap-prod.com/a?t=96')
       expect(this.account.recorderURL).toBe('https://test.clevertap-prod.com/r?r=1')
       expect(this.account.emailURL).toBe('https://test.clevertap-prod.com/e?r=1')
+      expect(this.account.editorApiURL).toBe('')
+    })
+
+    test('should allow editorApiURL override', () => {
+      this.account = new Account({ id: '123' }, 'eu1')
+      this.account.editorApiURL = 'https://eu1.wizrocketedit.net'
+      expect(this.account.editorApiURL).toBe('https://eu1.wizrocketedit.net')
     })
 
     test('should initalise accountId with custom target', () => {
