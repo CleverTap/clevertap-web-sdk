@@ -11,7 +11,8 @@ import { encodeSdkVersion } from '../../../../src/modules/visualBuilder/serverSe
 import { createEditorApi, EditorApiError } from '../../../../src/modules/visualBuilder/serverSession/api'
 import {
   getEditorApiBase,
-  buildPersonalisation
+  buildPersonalisation,
+  buildEvtMasterFromMeta
 } from '../../../../src/modules/visualBuilder/serverSession'
 import { decompressFromBase64 } from '../../../../src/modules/visualBuilder/serverSession/lzsDecompress'
 import Account from '../../../../src/modules/account'
@@ -107,7 +108,7 @@ describe('visualBuilder/serverSession', () => {
   describe('buildPersonalisation', () => {
     test('profile from meta; event and recommendations from dashboard bootstrap', () => {
       expect(buildPersonalisation({
-        meta: { profileProps: { 1: 'Email', 2: 'Name' } },
+        meta: { profileProps: { 1: 'Email', 2: 'Name' }, eventProps: { 5: 'Amount' } },
         eventId: 42,
         recommendations: { r1: { id: 1 } }
       })).toEqual({
@@ -126,6 +127,36 @@ describe('visualBuilder/serverSession', () => {
         profile: [],
         event: 0,
         recommendations: {}
+      })
+    })
+  })
+
+  describe('buildEvtMasterFromMeta', () => {
+    test('maps LC eventProps id→name into evtMaster shape for the widget', () => {
+      expect(buildEvtMasterFromMeta(
+        { eventProps: { 5: 'Amount', 9: 'Currency' }, profileProps: { 1: 'Email' } },
+        42
+      )).toEqual({
+        42: {
+          id: 42,
+          name: '',
+          drp: 0,
+          props: [
+            { id: 5, name: 'Amount' },
+            { id: 9, name: 'Currency' }
+          ]
+        }
+      })
+    })
+
+    test('returns empty object when eventId is missing or invalid', () => {
+      expect(buildEvtMasterFromMeta({ eventProps: { 5: 'Amount' } }, null)).toEqual({})
+      expect(buildEvtMasterFromMeta({ eventProps: { 5: 'Amount' } }, 0)).toEqual({})
+    })
+
+    test('returns event entry with empty props when meta has no eventProps', () => {
+      expect(buildEvtMasterFromMeta({ profileProps: { 1: 'Email' } }, 7)).toEqual({
+        7: { id: 7, name: '', drp: 0, props: [] }
       })
     })
   })

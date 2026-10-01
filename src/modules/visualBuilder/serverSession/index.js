@@ -22,7 +22,42 @@ function profileNamesFromMeta (meta) {
 }
 
 /**
+ * Map LC `/editor/meta` eventProps (`{ propId: name }`) into the `window.evtMaster`
+ * shape PersonalisationInputWidget reads (`{ [eventId]: { id, props: [{ id, name }] } }`).
+ */
+export function buildEvtMasterFromMeta (meta, eventId) {
+  if (typeof eventId !== 'number' || eventId <= 0) {
+    return {}
+  }
+  const eventProps = meta?.eventProps
+  const props = []
+  if (eventProps && typeof eventProps === 'object' && !Array.isArray(eventProps)) {
+    Object.keys(eventProps).forEach((key) => {
+      const id = Number(key)
+      if (!Number.isFinite(id)) {
+        return
+      }
+      const value = eventProps[key]
+      const name = typeof value === 'string' ? value : String(value ?? '')
+      if (!name) {
+        return
+      }
+      props.push({ id, name })
+    })
+  }
+  return {
+    [eventId]: {
+      id: eventId,
+      name: '',
+      drp: 0,
+      props
+    }
+  }
+}
+
+/**
  * Profile from LC `/editor/meta`; event + recommendations from the dashboard fragment.
+ * Event prop names stay on meta → `window.evtMaster` (see `buildEvtMasterFromMeta`).
  */
 export function buildPersonalisation ({ meta, eventId, recommendations }) {
   return {
@@ -150,6 +185,14 @@ export function startServerSessionBuilder ({ account, logger, initialiseCTBuilde
             recommendations
           })
 
+          // Widget reads event props from window.evtMaster (classic path posts full evtMaster).
+          // Server session only gets id→name maps from LC meta — materialise that shape here.
+          try {
+            window.evtMaster = buildEvtMasterFromMeta(meta, eventId)
+          } catch (_) {
+            // ignore — overlay still opens without event personalisation names
+          }
+
           const metaCache = new Map()
           if (meta && eventId != null) {
             metaCache.set(String(eventId), meta)
@@ -162,6 +205,18 @@ export function startServerSessionBuilder ({ account, logger, initialiseCTBuilde
             }
             return editorApi.meta(handle, id).then((response) => {
               metaCache.set(key, response)
+              // Keep evtMaster in sync if a later event id is requested.
+              try {
+                const n = Number(id)
+                if (Number.isFinite(n) && n > 0) {
+                  window.evtMaster = {
+                    ...(window.evtMaster || {}),
+                    ...buildEvtMasterFromMeta(response, n)
+                  }
+                }
+              } catch (_) {
+                // ignore
+              }
               return response
             })
           }
