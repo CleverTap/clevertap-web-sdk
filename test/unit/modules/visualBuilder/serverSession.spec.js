@@ -6,7 +6,8 @@ import {
   stripFragment,
   persistEditorSession,
   readPersistedEditorSession,
-  clearPersistedEditorSession
+  clearPersistedEditorSession,
+  sanitizeEditorSiteUrl
 } from '../../../../src/modules/visualBuilder/serverSession/fragment'
 import { encodeSdkVersion } from '../../../../src/modules/visualBuilder/serverSession/sdkVersion'
 import { createEditorApi, EditorApiError } from '../../../../src/modules/visualBuilder/serverSession/api'
@@ -86,6 +87,21 @@ describe('visualBuilder/serverSession', () => {
       expect(readPersistedEditorSession('OTHER')).toBeNull()
       clearPersistedEditorSession()
       expect(sessionStorage.getItem(WVE_EDITOR.SESSION_STORAGE_KEY)).toBeNull()
+    })
+
+    test('sanitizeEditorSiteUrl strips ctActionMode and editor fragment keys', () => {
+      const dirty =
+        'https://shop.example.com/page?ctActionMode=ctBuilderV2&x=1#ctEditor=h&ctPers=%7B%7D&section=hero'
+      const clean = sanitizeEditorSiteUrl(dirty)
+      const parsed = new URL(clean)
+      expect(parsed.searchParams.get('ctActionMode')).toBeNull()
+      expect(parsed.searchParams.get('x')).toBe('1')
+      expect(parsed.hash).toBe('#section=hero')
+    })
+
+    test('sanitizeEditorSiteUrl leaves a clean customer url unchanged', () => {
+      expect(sanitizeEditorSiteUrl('https://shop.example.com/page?q=1#top'))
+        .toBe('https://shop.example.com/page?q=1#top')
     })
   })
 

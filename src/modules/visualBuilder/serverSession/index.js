@@ -7,6 +7,7 @@ import {
   readPersistedEditorSession,
   readPersonalisation,
   readPreviewBlob,
+  sanitizeEditorSiteUrl,
   stripFragment
 } from './fragment'
 import { encodeSdkVersion } from './sdkVersion'
@@ -225,7 +226,9 @@ export function startServerSessionBuilder ({ account, logger, initialiseCTBuilde
             fetchEventMeta
           })
 
-          const url = details[0]?.url || window.location.href
+          // Never pass ctActionMode into the overlay iframe — that re-enters builder mode
+          // and nests the Visual Editor inside itself (site never renders).
+          const url = sanitizeEditorSiteUrl(details[0]?.url || window.location.href)
           initialiseCTBuilder(url, null, details, personalisation, {
             onSave: saveAndFinish,
             fetchEventMeta,

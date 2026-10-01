@@ -117,3 +117,37 @@ export function clearPersistedEditorSession () {
     // ignore
   }
 }
+
+/**
+ * URL the overlay iframe should load — the real customer page, not a builder/preview mode URL.
+ * Passing `window.location.href` (or a saved detail url) that still has `ctActionMode=ctBuilderV2`
+ * nests the Visual Editor inside itself.
+ */
+export function sanitizeEditorSiteUrl (rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') {
+    return rawUrl
+  }
+  try {
+    const url = new URL(rawUrl)
+    url.searchParams.delete('ctActionMode')
+    if (url.hash) {
+      const raw = url.hash.charAt(0) === '#' ? url.hash.slice(1) : url.hash
+      const params = new URLSearchParams(raw)
+      const hadEditorKey =
+        params.has(WVE_FRAGMENT_KEYS.CT_EDITOR) ||
+        params.has(WVE_FRAGMENT_KEYS.CT_PREVIEW) ||
+        params.has(WVE_FRAGMENT_KEYS.CT_PERS)
+      // Leave customer hashes alone (`#top`, `#/spa/route`). Only rewrite when our
+      // transport keys are present — URLSearchParams would otherwise turn `#top` into `#top=`.
+      if (hadEditorKey) {
+        params.delete(WVE_FRAGMENT_KEYS.CT_EDITOR)
+        params.delete(WVE_FRAGMENT_KEYS.CT_PREVIEW)
+        params.delete(WVE_FRAGMENT_KEYS.CT_PERS)
+        url.hash = params.toString()
+      }
+    }
+    return url.toString()
+  } catch (_) {
+    return rawUrl
+  }
+}
