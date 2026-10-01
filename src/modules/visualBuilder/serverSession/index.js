@@ -1,6 +1,14 @@
 import { WVE_EDITOR } from '../builder_constants'
 import { createEditorApi, EditorApiError } from './api'
-import { readEditorHandle, readPreviewBlob, stripFragment } from './fragment'
+import {
+  clearPersistedEditorSession,
+  persistEditorSession,
+  readEditorHandle,
+  readPersistedEditorSession,
+  readPersonalisation,
+  readPreviewBlob,
+  stripFragment
+} from './fragment'
 import { encodeSdkVersion } from './sdkVersion'
 
 const EMPTY_PERSONALISATION = {
@@ -18,6 +26,30 @@ function profileNamesFromMeta (meta) {
     const value = props[key]
     return typeof value === 'string' ? value : String(key)
   }).filter(Boolean)
+}
+
+/**
+ * Prefer dashboard-packed personalisation (team-filtered names + eventId + recommendations).
+ * Fall back to LC meta profile names when the fragment had no ctPers.
+ */
+function resolvePersonalisation (fromFragment, meta) {
+  if (fromFragment) {
+    return {
+      profile: fromFragment.profile.length
+        ? fromFragment.profile
+        : profileNamesFromMeta(meta),
+      event: fromFragment.event || 0,
+      recommendations: fromFragment.recommendations || {}
+    }
+  }
+  if (meta) {
+    return {
+      profile: profileNamesFromMeta(meta),
+      event: 0,
+      recommendations: {}
+    }
+  }
+  return { ...EMPTY_PERSONALISATION }
 }
 
 function installBridge (bridge) {
@@ -77,7 +109,21 @@ export function getEditorApiBase (account) {
  * terminal save posts to LC. No window.opener / postMessage to the dashboard.
  */
 export function startServerSessionBuilder ({ account, logger, initialiseCTBuilder }) {
-  const handle = readEditorHandle()
+  // Read handle + personalisation BEFORE stripFragment — the hash is intentional ephemeral transport.
+  let handle = readEditorHandle()
+  let personalisationFromFragment = readPersonalisation()
+
+  if (handle) {
+    persistEditorSession(account?.id, handle, personalisationFromFragment)
+  } else {
+    // Same-tab refresh: hash is gone, recover from sessionStorage.
+    const persisted = readPersistedEditorSession(account?.id)
+    if (persisted) {
+      handle = persisted.handle
+      personalisationFromFragment = persisted.personalisation
+    }
+  }
+
   stripFragment()
 
   if (!handle) {
@@ -101,8 +147,13 @@ export function startServerSessionBuilder ({ account, logger, initialiseCTBuilde
     logger
   })
 
+  const bootstrapEventId = personalisationFromFragment?.event > 0
+    ? personalisationFromFragment.event
+    : undefined
+
   return editorApi.auth(handle, encodeSdkVersion())
     .catch((err) => {
+      clearPersistedEditorSession()
       const message = err instanceof EditorApiError
         ? (err.message || 'Could not start the visual editor session.')
         : 'Could not start the visual editor session.'
@@ -117,21 +168,19 @@ export function startServerSessionBuilder ({ account, logger, initialiseCTBuilde
       const details = Array.isArray(authResponse.details) ? authResponse.details : []
       const sessionId = authResponse.sessionId
 
-      return editorApi.meta(handle)
+      // Bootstrap meta: include eventId so eventProps are available when the campaign has one.
+      return editorApi.meta(handle, bootstrapEventId)
         .catch((err) => {
           logger?.debug?.('Visual editor meta bootstrap failed; continuing without personalisation names', err)
           return null
         })
         .then((meta) => {
-          const personalisation = meta
-            ? {
-              profile: profileNamesFromMeta(meta),
-              event: 0,
-              recommendations: {}
-            }
-            : { ...EMPTY_PERSONALISATION }
+          const personalisation = resolvePersonalisation(personalisationFromFragment, meta)
 
           const metaCache = new Map()
+          if (meta && bootstrapEventId != null) {
+            metaCache.set(String(bootstrapEventId), meta)
+          }
 
           const fetchEventMeta = (eventId) => {
             const key = String(eventId ?? '')
@@ -152,6 +201,7 @@ export function startServerSessionBuilder ({ account, logger, initialiseCTBuilde
             return editorApi.saveContent(handle, saveDetails)
               .then(() => {
                 clearBridge()
+                clearPersistedEditorSession()
                 logger?.debug?.('Visual editor edits saved to dashboard session', sessionId)
                 try {
                   window.close()

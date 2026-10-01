@@ -2,11 +2,16 @@ import {
   readFragmentValue,
   readEditorHandle,
   readPreviewBlob,
-  stripFragment
+  readPersonalisation,
+  stripFragment,
+  persistEditorSession,
+  readPersistedEditorSession,
+  clearPersistedEditorSession
 } from '../../../../src/modules/visualBuilder/serverSession/fragment'
 import { encodeSdkVersion } from '../../../../src/modules/visualBuilder/serverSession/sdkVersion'
 import { createEditorApi, EditorApiError } from '../../../../src/modules/visualBuilder/serverSession/api'
 import { getEditorApiBase } from '../../../../src/modules/visualBuilder/serverSession'
+import { WVE_EDITOR } from '../../../../src/modules/visualBuilder/builder_constants'
 import Account from '../../../../src/modules/account'
 
 describe('visualBuilder/serverSession', () => {
@@ -27,6 +32,7 @@ describe('visualBuilder/serverSession', () => {
   describe('fragment helpers', () => {
     afterEach(() => {
       window.history.replaceState({}, '', '/?')
+      sessionStorage.clear()
     })
 
     test('readFragmentValue decodes ctEditor handle', () => {
@@ -40,6 +46,23 @@ describe('visualBuilder/serverSession', () => {
       expect(readPreviewBlob()).toBe('preview-blob')
     })
 
+    test('readPersonalisation parses ctPers JSON', () => {
+      const pers = { profile: ['Email'], event: 42, recommendations: { r1: { id: 1 } } }
+      window.history.replaceState(
+        {},
+        '',
+        '/page#ctEditor=h&ctPers=' + encodeURIComponent(JSON.stringify(pers))
+      )
+      expect(readPersonalisation()).toEqual(pers)
+    })
+
+    test('readPersonalisation returns null when missing or invalid', () => {
+      window.history.replaceState({}, '', '/page#ctEditor=h')
+      expect(readPersonalisation()).toBeNull()
+      window.history.replaceState({}, '', '/page#ctPers=' + encodeURIComponent('{bad'))
+      expect(readPersonalisation()).toBeNull()
+    })
+
     test('stripFragment clears the hash', () => {
       window.history.replaceState({}, '', '/page?ctActionMode=ctBuilderV2#ctEditor=handle')
       stripFragment()
@@ -51,6 +74,18 @@ describe('visualBuilder/serverSession', () => {
       window.history.replaceState({}, '', '/page')
       expect(readEditorHandle()).toBeNull()
       expect(readPreviewBlob()).toBeNull()
+    })
+
+    test('persistEditorSession survives hash strip for same account', () => {
+      const personalisation = { profile: ['Name'], event: 7, recommendations: {} }
+      persistEditorSession('ACC-1', 'signed-handle', personalisation)
+      expect(readPersistedEditorSession('ACC-1')).toEqual({
+        handle: 'signed-handle',
+        personalisation
+      })
+      expect(readPersistedEditorSession('OTHER')).toBeNull()
+      clearPersistedEditorSession()
+      expect(sessionStorage.getItem(WVE_EDITOR.SESSION_STORAGE_KEY)).toBeNull()
     })
   })
 
@@ -99,6 +134,23 @@ describe('visualBuilder/serverSession', () => {
             body: JSON.stringify({ handle: 'the-handle', sdkVersion: 30000 })
           })
         )
+      })
+    })
+
+    test('meta includes eventId when provided', () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ profileProps: {}, eventProps: {} })
+      })
+      const api = createEditorApi({
+        accountId: 'acc',
+        apiBase: 'https://eu1.clevertap-prod.com'
+      })
+      return api.meta('h', 42).then(() => {
+        expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({
+          handle: 'h',
+          eventId: '42'
+        })
       })
     })
 
