@@ -1,10 +1,7 @@
 import { WVE_EDITOR } from '../builder_constants'
 import { createEditorApi, EditorApiError } from './api'
 import {
-  clearPersistedEditorSession,
-  persistEditorSession,
   readEditorHandle,
-  readPersistedEditorSession,
   readPersonalisation,
   readPreviewBlob,
   sanitizeEditorSiteUrl,
@@ -108,24 +105,13 @@ export function getEditorApiBase (account) {
 /**
  * Server-session Visual Editor entry (ctBuilderV2). Auth via signed handle → overlay bootstrap;
  * terminal save posts to LC. No window.opener / postMessage to the dashboard.
+ *
+ * The `#ctEditor` / `#ctPers` hash is left in place during the session so a refresh can re-auth.
+ * Fragments are never sent on the wire (Referer/logs). Strip only after a successful terminal save.
  */
 export function startServerSessionBuilder ({ account, logger, initialiseCTBuilder }) {
-  // Read handle + personalisation BEFORE stripFragment — the hash is intentional ephemeral transport.
-  let handle = readEditorHandle()
-  let personalisationFromFragment = readPersonalisation()
-
-  if (handle) {
-    persistEditorSession(account?.id, handle, personalisationFromFragment)
-  } else {
-    // Same-tab refresh: hash is gone, recover from sessionStorage.
-    const persisted = readPersistedEditorSession(account?.id)
-    if (persisted) {
-      handle = persisted.handle
-      personalisationFromFragment = persisted.personalisation
-    }
-  }
-
-  stripFragment()
+  const handle = readEditorHandle()
+  const personalisationFromFragment = readPersonalisation()
 
   if (!handle) {
     showSessionError(logger, 'Missing visual editor session. Open the editor again from the dashboard.')
@@ -154,7 +140,6 @@ export function startServerSessionBuilder ({ account, logger, initialiseCTBuilde
 
   return editorApi.auth(handle, encodeSdkVersion())
     .catch((err) => {
-      clearPersistedEditorSession()
       const message = err instanceof EditorApiError
         ? (err.message || 'Could not start the visual editor session.')
         : 'Could not start the visual editor session.'
@@ -202,7 +187,8 @@ export function startServerSessionBuilder ({ account, logger, initialiseCTBuilde
             return editorApi.saveContent(handle, saveDetails)
               .then(() => {
                 clearBridge()
-                clearPersistedEditorSession()
+                // Session is done — drop the capability from the address bar / history entry.
+                stripFragment()
                 logger?.debug?.('Visual editor edits saved to dashboard session', sessionId)
                 try {
                   window.close()

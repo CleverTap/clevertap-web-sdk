@@ -1,8 +1,8 @@
-import { WVE_EDITOR, WVE_FRAGMENT_KEYS } from '../builder_constants'
+import { WVE_FRAGMENT_KEYS } from '../builder_constants'
 
 /**
  * Reads a single key from the URL fragment (`#key=value&other=...`) and returns its decoded value.
- * Fragments are never sent to servers; the SDK must strip them after reading.
+ * Fragments are never sent to servers (no access logs / Referer).
  */
 export function readFragmentValue (key, hash = window.location.hash) {
   if (!hash || hash === '#') {
@@ -57,8 +57,9 @@ export function readPersonalisation () {
 }
 
 /**
- * Clears the fragment (and rewrites the current history entry) so the handle/blob is not retained
- * in the address bar, Referer, or history after the SDK has consumed it.
+ * Clears the fragment (and rewrites the current history entry).
+ * Used after a terminal save / preview consume — not on editor bootstrap, so a refresh can
+ * re-read `#ctEditor` / `#ctPers` from the address bar.
  */
 export function stripFragment () {
   const { pathname, search } = window.location
@@ -66,55 +67,6 @@ export function stripFragment () {
     window.history.replaceState(window.history.state, '', `${pathname}${search}`)
   } catch (_) {
     // ignore — some browsers / sandboxes may block history mutation
-  }
-}
-
-/**
- * Persist handle + personalisation so a same-tab refresh can re-auth after the hash is stripped.
- * Bound to account id so a different project on the same origin cannot reuse the handle.
- */
-export function persistEditorSession (accountId, handle, personalisation) {
-  if (!accountId || !handle) {
-    return
-  }
-  try {
-    sessionStorage.setItem(WVE_EDITOR.SESSION_STORAGE_KEY, JSON.stringify({
-      accountId: String(accountId),
-      handle,
-      personalisation: personalisation || null
-    }))
-  } catch (_) {
-    // private mode / quota
-  }
-}
-
-export function readPersistedEditorSession (accountId) {
-  if (!accountId) {
-    return null
-  }
-  try {
-    const raw = sessionStorage.getItem(WVE_EDITOR.SESSION_STORAGE_KEY)
-    if (!raw) {
-      return null
-    }
-    const parsed = JSON.parse(raw)
-    if (!parsed || parsed.accountId !== String(accountId) || !parsed.handle) {
-      return null
-    }
-    return {
-      handle: parsed.handle,
-      personalisation: parsed.personalisation || null
-    }
-  } catch (_) {
-    return null
-  }
-}
-
-export function clearPersistedEditorSession () {
-  try {
-    sessionStorage.removeItem(WVE_EDITOR.SESSION_STORAGE_KEY)
-  } catch (_) {
-    // ignore
   }
 }
 

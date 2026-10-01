@@ -4,15 +4,11 @@ import {
   readPreviewBlob,
   readPersonalisation,
   stripFragment,
-  persistEditorSession,
-  readPersistedEditorSession,
-  clearPersistedEditorSession,
   sanitizeEditorSiteUrl
 } from '../../../../src/modules/visualBuilder/serverSession/fragment'
 import { encodeSdkVersion } from '../../../../src/modules/visualBuilder/serverSession/sdkVersion'
 import { createEditorApi, EditorApiError } from '../../../../src/modules/visualBuilder/serverSession/api'
 import { getEditorApiBase } from '../../../../src/modules/visualBuilder/serverSession'
-import { WVE_EDITOR } from '../../../../src/modules/visualBuilder/builder_constants'
 import Account from '../../../../src/modules/account'
 
 describe('visualBuilder/serverSession', () => {
@@ -33,7 +29,6 @@ describe('visualBuilder/serverSession', () => {
   describe('fragment helpers', () => {
     afterEach(() => {
       window.history.replaceState({}, '', '/?')
-      sessionStorage.clear()
     })
 
     test('readFragmentValue decodes ctEditor handle', () => {
@@ -75,18 +70,6 @@ describe('visualBuilder/serverSession', () => {
       window.history.replaceState({}, '', '/page')
       expect(readEditorHandle()).toBeNull()
       expect(readPreviewBlob()).toBeNull()
-    })
-
-    test('persistEditorSession survives hash strip for same account', () => {
-      const personalisation = { profile: ['Name'], event: 7, recommendations: {} }
-      persistEditorSession('ACC-1', 'signed-handle', personalisation)
-      expect(readPersistedEditorSession('ACC-1')).toEqual({
-        handle: 'signed-handle',
-        personalisation
-      })
-      expect(readPersistedEditorSession('OTHER')).toBeNull()
-      clearPersistedEditorSession()
-      expect(sessionStorage.getItem(WVE_EDITOR.SESSION_STORAGE_KEY)).toBeNull()
     })
 
     test('sanitizeEditorSiteUrl strips ctActionMode and editor fragment keys', () => {

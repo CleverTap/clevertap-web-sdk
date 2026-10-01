@@ -25,9 +25,7 @@ export const WVE_FRAGMENT_KEYS = {
 export const WVE_EDITOR = {
   ACCOUNT_HEADER: 'X-CleverTap-Account-Id',
   /** Exposed for lib-overlay to call when `onSave` is not yet wired into a deployed overlay build. */
-  BRIDGE_KEY: '__CT_VISUAL_EDITOR_V2__',
-  /** Survives hash strip so same-tab refresh can re-auth the editor session. */
-  SESSION_STORAGE_KEY: 'ct-visual-editor-v2-session'
+  BRIDGE_KEY: '__CT_VISUAL_EDITOR_V2__'
 }
 
 export const WVE_URL_ORIGIN = {
