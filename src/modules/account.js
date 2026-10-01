@@ -6,6 +6,7 @@ export default class Account {
   #targetDomain = TARGET_DOMAIN
   #dcSdkversion = ''
   #token = ''
+  #editorApiURL = ''
 
   constructor ({ id } = {}, region = '', targetDomain = TARGET_DOMAIN, token = '') {
     this.id = id
@@ -85,5 +86,17 @@ export default class Account {
 
   get emailURL () {
     return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/e?r=1`
+  }
+
+  /**
+   * Optional override for the Visual Editor LC host (defaults to the same host as dataPostURL).
+   * Ops can point this at a dedicated editor domain without an SDK release.
+   */
+  get editorApiURL () {
+    return this.#editorApiURL
+  }
+
+  set editorApiURL (url) {
+    this.#editorApiURL = url || ''
   }
 }
