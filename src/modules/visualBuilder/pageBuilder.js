@@ -1,19 +1,49 @@
-import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_QUERY_PARAMS, WVE_URL_ORIGIN } from './builder_constants'
+import { CSS_PATH, OVERLAY_PATH, WVE_CLASS, WVE_EDITOR, WVE_QUERY_PARAMS, WVE_URL_ORIGIN } from './builder_constants'
 import { updateFormData, updateElementCSS } from './dataUpdate'
 import { addScriptTo } from '../../util/campaignRender/utilities'
 import { $ct } from '../../util/storage'
 import { CampaignContext } from '../../util/campaignHouseKeeping/campaignContext'
+import { startServerSessionBuilder, startServerSessionPreview } from './serverSession'
 
 let logger = null
 
-export const handleActionMode = (_logger, accountId) => {
+/**
+ * Entry for Visual Editor URL modes. Legacy modes (`ctBuilder` / `ctBuilderPreview` /
+ * `ctBuilderSDKCheck`) keep window.opener + postMessage. Server-session modes
+ * (`ctBuilderV2` / `ctPreviewV2`) talk to LC instead — both paths stay supported during rollout.
+ *
+ * @param _logger logger instance
+ * @param account Account instance (or legacy accountId string for SDK_CHECK)
+ */
+export const handleActionMode = (_logger, account) => {
   const searchParams = new URLSearchParams(window.location.search)
   const ctType = searchParams.get('ctActionMode')
   logger = _logger
+  const accountId = typeof account === 'string' ? account : account?.id
 
   if (ctType) {
     const parentWindow = window.opener
     switch (ctType) {
+      case WVE_QUERY_PARAMS.BUILDER_V2:
+        logger.debug('open in visual builder mode (server session)')
+        startServerSessionBuilder({
+          account: typeof account === 'object' ? account : { id: accountId },
+          logger,
+          initialiseCTBuilder
+        }).catch((err) => {
+          logger.error('Visual editor server session failed to start', err)
+        })
+        break
+      case WVE_QUERY_PARAMS.PREVIEW_V2:
+        logger.debug('preview of visual editor (server session)')
+        startServerSessionPreview({
+          account: typeof account === 'object' ? account : { id: accountId },
+          logger,
+          renderVisualBuilder
+        }).catch((err) => {
+          logger.error('Visual editor server preview failed', err)
+        })
+        break
       case WVE_QUERY_PARAMS.BUILDER:
         logger.debug('open in visual builder mode')
         window.addEventListener('message', handleMessageEvent, false)
@@ -83,14 +113,15 @@ const handleMessageEvent = (event) => {
  * @param {string} variant - The variant of the builder.
  * @param {Object} details - The details object.
  * @param {Object} personalisation - The personalisation object
+ * @param {Object} [sessionOptions] - Optional server-session hooks (`onSave`, `fetchEventMeta`)
  */
-const initialiseCTBuilder = (url, variant, details, personalisation) => {
+const initialiseCTBuilder = (url, variant, details, personalisation, sessionOptions) => {
   if (document.readyState === 'complete') {
-    onContentLoad(url, variant, details, personalisation)
+    onContentLoad(url, variant, details, personalisation, sessionOptions)
   } else {
     document.addEventListener('readystatechange', () => {
       if (document.readyState === 'complete') {
-        onContentLoad(url, variant, details, personalisation)
+        onContentLoad(url, variant, details, personalisation, sessionOptions)
       }
     })
   }
@@ -102,7 +133,7 @@ let isShopify = false
 /**
  * Handles content load for Clevertap builder.
  */
-function onContentLoad (url, variant, details, personalisation) {
+function onContentLoad (url, variant, details, personalisation, sessionOptions) {
   if (!contentLoaded) {
     if (window.Shopify) {
       isShopify = true
@@ -115,7 +146,7 @@ function onContentLoad (url, variant, details, personalisation) {
     container.style.position = 'relative' // Ensure relative positioning for absolute positioning of form
     container.style.display = 'flex'
     document.body.appendChild(container)
-    loadOverlayScript(OVERLAY_PATH, url, variant, details, personalisation)
+    loadOverlayScript(OVERLAY_PATH, url, variant, details, personalisation, sessionOptions)
       .then(() => {
         logger.debug('Overlay script loaded successfully.')
         contentLoaded = true
@@ -145,16 +176,37 @@ function loadCSS () {
  * @param {string} variant - The variant.
  * @param {Object} details - The details object.
  * @param {Object} personalisation
+ * @param {Object} [sessionOptions]
  * @returns {Promise} A promise.
  */
-function loadOverlayScript (overlayPath, url, variant, details, personalisation) {
+function loadOverlayScript (overlayPath, url, variant, details, personalisation, sessionOptions) {
   return new Promise((resolve, reject) => {
     var script = document.createElement('script')
     script.type = 'module'
     script.src = overlayPath
     script.onload = function () {
       if (typeof window.Overlay === 'function') {
-        window.Overlay({ id: '#overlayDiv', url, variant, details, isShopify, personalisation })
+        const overlayPayload = {
+          id: '#overlayDiv',
+          url,
+          variant,
+          details,
+          isShopify,
+          personalisation
+        }
+        // Server-session: prefer onSave (overlay v2) and fall back to the window bridge for
+        // overlays that still only postMessage to window.opener.
+        if (sessionOptions?.onSave) {
+          overlayPayload.onSave = sessionOptions.onSave
+        }
+        if (sessionOptions?.fetchEventMeta) {
+          overlayPayload.fetchEventMeta = sessionOptions.fetchEventMeta
+        }
+        if (sessionOptions?.serverSession) {
+          overlayPayload.serverSession = true
+          wrapOverlaySaveFallback(sessionOptions.onSave)
+        }
+        window.Overlay(overlayPayload)
         resolve()
       } else {
         reject(new Error('ContentLayout not found in overlay.js'))
@@ -165,6 +217,31 @@ function loadOverlayScript (overlayPath, url, variant, details, personalisation)
     }
     document.head.appendChild(script)
   })
+}
+
+/**
+ * When overlay still saves only via window.opener.postMessage (cross-origin, unpatchable),
+ * also listen for same-window / bridge-driven saves. Overlay builds that honour `onSave` or
+ * `window.__CT_VISUAL_EDITOR_V2__.save` skip opener entirely.
+ */
+function wrapOverlaySaveFallback (onSave) {
+  if (typeof onSave !== 'function') {
+    return
+  }
+  const bridge = window[WVE_EDITOR.BRIDGE_KEY]
+  if (bridge && typeof bridge.save !== 'function') {
+    bridge.save = onSave
+  }
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) {
+      return
+    }
+    if (event.data?.message === 'Overlay' && Array.isArray(event.data.details)) {
+      onSave(event.data).catch((err) => {
+        logger?.debug?.('Visual editor save via same-window message failed', err)
+      })
+    }
+  }, false)
 }
 
 /**
