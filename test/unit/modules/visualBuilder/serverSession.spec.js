@@ -190,7 +190,7 @@ describe('visualBuilder/serverSession', () => {
       return api.meta('h', 42).then(() => {
         expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({
           handle: 'h',
-          eventId: '42'
+          eventId: 42
         })
       })
     })

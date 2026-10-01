@@ -57,7 +57,10 @@ export function createEditorApi ({ accountId, apiBase, logger }) {
     meta (handle, eventId) {
       const body = { handle }
       if (eventId != null && eventId !== '') {
-        body.eventId = String(eventId)
+        const n = Number(eventId)
+        if (Number.isFinite(n)) {
+          body.eventId = n
+        }
       }
       return post('/editor/meta', body)
     },
