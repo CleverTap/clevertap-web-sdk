@@ -2,18 +2,13 @@ import { WVE_EDITOR } from '../builder_constants'
 import { createEditorApi, EditorApiError } from './api'
 import {
   readEditorHandle,
-  readPersonalisation,
+  readEventId,
   readPreviewBlob,
+  readRecommendations,
   sanitizeEditorSiteUrl,
   stripFragment
 } from './fragment'
 import { encodeSdkVersion } from './sdkVersion'
-
-const EMPTY_PERSONALISATION = {
-  profile: [],
-  event: 0,
-  recommendations: {}
-}
 
 function profileNamesFromMeta (meta) {
   const props = meta?.profileProps
@@ -27,27 +22,17 @@ function profileNamesFromMeta (meta) {
 }
 
 /**
- * Prefer dashboard-packed personalisation (team-filtered names + eventId + recommendations).
- * Fall back to LC meta profile names when the fragment had no ctPers.
+ * Profile from LC `/editor/meta`; event + recommendations from the dashboard fragment.
  */
-function resolvePersonalisation (fromFragment, meta) {
-  if (fromFragment) {
-    return {
-      profile: fromFragment.profile.length
-        ? fromFragment.profile
-        : profileNamesFromMeta(meta),
-      event: fromFragment.event || 0,
-      recommendations: fromFragment.recommendations || {}
-    }
+export function buildPersonalisation ({ meta, eventId, recommendations }) {
+  return {
+    profile: meta ? profileNamesFromMeta(meta) : [],
+    event: typeof eventId === 'number' && eventId > 0 ? eventId : 0,
+    recommendations:
+      recommendations && typeof recommendations === 'object' && !Array.isArray(recommendations)
+        ? recommendations
+        : {}
   }
-  if (meta) {
-    return {
-      profile: profileNamesFromMeta(meta),
-      event: 0,
-      recommendations: {}
-    }
-  }
-  return { ...EMPTY_PERSONALISATION }
 }
 
 function installBridge (bridge) {
@@ -106,12 +91,14 @@ export function getEditorApiBase (account) {
  * Server-session Visual Editor entry (ctBuilderV2). Auth via signed handle → overlay bootstrap;
  * terminal save posts to LC. No window.opener / postMessage to the dashboard.
  *
- * The `#ctEditor` / `#ctPers` hash is left in place during the session so a refresh can re-auth.
- * Fragments are never sent on the wire (Referer/logs). Strip only after a successful terminal save.
+ * Fragment: `#ctEditor` (handle), optional `#ctEvent` / `#ctRecs` from the dashboard.
+ * Profile names come from LC `/editor/meta`; eventProps are fetched with the fragment eventId.
+ * The hash is left in place during the session so a refresh can re-auth; strip after save.
  */
 export function startServerSessionBuilder ({ account, logger, initialiseCTBuilder }) {
   const handle = readEditorHandle()
-  const personalisationFromFragment = readPersonalisation()
+  const eventId = readEventId()
+  const recommendations = readRecommendations()
 
   if (!handle) {
     showSessionError(logger, 'Missing visual editor session. Open the editor again from the dashboard.')
@@ -134,10 +121,6 @@ export function startServerSessionBuilder ({ account, logger, initialiseCTBuilde
     logger
   })
 
-  const bootstrapEventId = personalisationFromFragment?.event > 0
-    ? personalisationFromFragment.event
-    : undefined
-
   return editorApi.auth(handle, encodeSdkVersion())
     .catch((err) => {
       const message = err instanceof EditorApiError
@@ -154,26 +137,30 @@ export function startServerSessionBuilder ({ account, logger, initialiseCTBuilde
       const details = Array.isArray(authResponse.details) ? authResponse.details : []
       const sessionId = authResponse.sessionId
 
-      // Bootstrap meta: include eventId so eventProps are available when the campaign has one.
-      return editorApi.meta(handle, bootstrapEventId)
+      // Profile (+ eventProps when dashboard sent ctEvent) from LC meta.
+      return editorApi.meta(handle, eventId != null ? eventId : undefined)
         .catch((err) => {
           logger?.debug?.('Visual editor meta bootstrap failed; continuing without personalisation names', err)
           return null
         })
         .then((meta) => {
-          const personalisation = resolvePersonalisation(personalisationFromFragment, meta)
+          const personalisation = buildPersonalisation({
+            meta,
+            eventId,
+            recommendations
+          })
 
           const metaCache = new Map()
-          if (meta && bootstrapEventId != null) {
-            metaCache.set(String(bootstrapEventId), meta)
+          if (meta && eventId != null) {
+            metaCache.set(String(eventId), meta)
           }
 
-          const fetchEventMeta = (eventId) => {
-            const key = String(eventId ?? '')
+          const fetchEventMeta = (id) => {
+            const key = String(id ?? '')
             if (metaCache.has(key)) {
               return Promise.resolve(metaCache.get(key))
             }
-            return editorApi.meta(handle, eventId).then((response) => {
+            return editorApi.meta(handle, id).then((response) => {
               metaCache.set(key, response)
               return response
             })

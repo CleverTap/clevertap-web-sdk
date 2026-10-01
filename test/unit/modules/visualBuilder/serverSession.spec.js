@@ -2,13 +2,18 @@ import {
   readFragmentValue,
   readEditorHandle,
   readPreviewBlob,
-  readPersonalisation,
+  readEventId,
+  readRecommendations,
   stripFragment,
   sanitizeEditorSiteUrl
 } from '../../../../src/modules/visualBuilder/serverSession/fragment'
 import { encodeSdkVersion } from '../../../../src/modules/visualBuilder/serverSession/sdkVersion'
 import { createEditorApi, EditorApiError } from '../../../../src/modules/visualBuilder/serverSession/api'
-import { getEditorApiBase } from '../../../../src/modules/visualBuilder/serverSession'
+import {
+  getEditorApiBase,
+  buildPersonalisation
+} from '../../../../src/modules/visualBuilder/serverSession'
+import { decompressFromBase64 } from '../../../../src/modules/visualBuilder/serverSession/lzsDecompress'
 import Account from '../../../../src/modules/account'
 
 describe('visualBuilder/serverSession', () => {
@@ -42,21 +47,32 @@ describe('visualBuilder/serverSession', () => {
       expect(readPreviewBlob()).toBe('preview-blob')
     })
 
-    test('readPersonalisation parses ctPers JSON', () => {
-      const pers = { profile: ['Email'], event: 42, recommendations: { r1: { id: 1 } } }
+    test('readEventId parses positive ctEvent', () => {
+      window.history.replaceState({}, '', '/page#ctEditor=h&ctEvent=42')
+      expect(readEventId()).toBe(42)
+      window.history.replaceState({}, '', '/page#ctEditor=h&ctEvent=0')
+      expect(readEventId()).toBeNull()
+      window.history.replaceState({}, '', '/page#ctEditor=h')
+      expect(readEventId()).toBeNull()
+    })
+
+    test('readRecommendations decompresses ctRecs LZS payload from dashboard', () => {
+      // compressToBase64(JSON.stringify({ r1: { id: 1, name: 'Top' } })) via dashboard util/lzs
+      const compressed = 'N4IgTgjCBcoJYBMYQDQgHYEMC2BTGIAKgPYAOIAvhUA='
+      expect(JSON.parse(decompressFromBase64(compressed))).toEqual({ r1: { id: 1, name: 'Top' } })
       window.history.replaceState(
         {},
         '',
-        '/page#ctEditor=h&ctPers=' + encodeURIComponent(JSON.stringify(pers))
+        '/page#ctEditor=h&ctRecs=' + encodeURIComponent(compressed)
       )
-      expect(readPersonalisation()).toEqual(pers)
+      expect(readRecommendations()).toEqual({ r1: { id: 1, name: 'Top' } })
     })
 
-    test('readPersonalisation returns null when missing or invalid', () => {
+    test('readRecommendations returns {} when missing or invalid', () => {
       window.history.replaceState({}, '', '/page#ctEditor=h')
-      expect(readPersonalisation()).toBeNull()
-      window.history.replaceState({}, '', '/page#ctPers=' + encodeURIComponent('{bad'))
-      expect(readPersonalisation()).toBeNull()
+      expect(readRecommendations()).toEqual({})
+      window.history.replaceState({}, '', '/page#ctRecs=not-valid-lzs!!!')
+      expect(readRecommendations()).toEqual({})
     })
 
     test('stripFragment clears the hash', () => {
@@ -74,7 +90,7 @@ describe('visualBuilder/serverSession', () => {
 
     test('sanitizeEditorSiteUrl strips ctActionMode and editor fragment keys', () => {
       const dirty =
-        'https://shop.example.com/page?ctActionMode=ctBuilderV2&x=1#ctEditor=h&ctPers=%7B%7D&section=hero'
+        'https://shop.example.com/page?ctActionMode=ctBuilderV2&x=1#ctEditor=h&ctEvent=7&ctRecs=abc&section=hero'
       const clean = sanitizeEditorSiteUrl(dirty)
       const parsed = new URL(clean)
       expect(parsed.searchParams.get('ctActionMode')).toBeNull()
@@ -85,6 +101,32 @@ describe('visualBuilder/serverSession', () => {
     test('sanitizeEditorSiteUrl leaves a clean customer url unchanged', () => {
       expect(sanitizeEditorSiteUrl('https://shop.example.com/page?q=1#top'))
         .toBe('https://shop.example.com/page?q=1#top')
+    })
+  })
+
+  describe('buildPersonalisation', () => {
+    test('profile from meta; event and recommendations from dashboard bootstrap', () => {
+      expect(buildPersonalisation({
+        meta: { profileProps: { 1: 'Email', 2: 'Name' } },
+        eventId: 42,
+        recommendations: { r1: { id: 1 } }
+      })).toEqual({
+        profile: ['Email', 'Name'],
+        event: 42,
+        recommendations: { r1: { id: 1 } }
+      })
+    })
+
+    test('defaults safely when bootstrap pieces are missing', () => {
+      expect(buildPersonalisation({
+        meta: null,
+        eventId: null,
+        recommendations: {}
+      })).toEqual({
+        profile: [],
+        event: 0,
+        recommendations: {}
+      })
     })
   })
 

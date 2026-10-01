@@ -1,4 +1,5 @@
 import { WVE_FRAGMENT_KEYS } from '../builder_constants'
+import { decompressFromBase64 } from './lzsDecompress'
 
 /**
  * Reads a single key from the URL fragment (`#key=value&other=...`) and returns its decoded value.
@@ -30,36 +31,44 @@ export function readPreviewBlob () {
 }
 
 /**
- * Dashboard packs `{ profile, event, recommendations }` as JSON under `ctPers`.
- * Returns null when absent or malformed.
+ * Campaign event id from `#ctEvent=` (dashboard bootstrap). Returns a positive number or null.
  */
-export function readPersonalisation () {
-  const raw = readFragmentValue(WVE_FRAGMENT_KEYS.CT_PERS)
-  if (!raw) {
+export function readEventId () {
+  const raw = readFragmentValue(WVE_FRAGMENT_KEYS.CT_EVENT)
+  if (raw == null || raw === '') {
     return null
+  }
+  const n = Number(raw)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+/**
+ * Recommendations from `#ctRecs=` (LZS-compressed JSON). Returns `{}` when absent/invalid.
+ */
+export function readRecommendations () {
+  const raw = readFragmentValue(WVE_FRAGMENT_KEYS.CT_RECS)
+  if (!raw) {
+    return {}
   }
   try {
-    const parsed = JSON.parse(raw)
-    if (!parsed || typeof parsed !== 'object') {
-      return null
+    const json = decompressFromBase64(raw)
+    if (!json) {
+      return {}
     }
-    return {
-      profile: Array.isArray(parsed.profile) ? parsed.profile : [],
-      event: typeof parsed.event === 'number' ? parsed.event : 0,
-      recommendations:
-        parsed.recommendations && typeof parsed.recommendations === 'object'
-          ? parsed.recommendations
-          : {}
+    const parsed = JSON.parse(json)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed
     }
   } catch (_) {
-    return null
+    // ignore malformed fragment
   }
+  return {}
 }
 
 /**
  * Clears the fragment (and rewrites the current history entry).
  * Used after a terminal save / preview consume — not on editor bootstrap, so a refresh can
- * re-read `#ctEditor` / `#ctPers` from the address bar.
+ * re-read `#ctEditor` / `#ctEvent` / `#ctRecs` from the address bar.
  */
 export function stripFragment () {
   const { pathname, search } = window.location
@@ -88,13 +97,15 @@ export function sanitizeEditorSiteUrl (rawUrl) {
       const hadEditorKey =
         params.has(WVE_FRAGMENT_KEYS.CT_EDITOR) ||
         params.has(WVE_FRAGMENT_KEYS.CT_PREVIEW) ||
-        params.has(WVE_FRAGMENT_KEYS.CT_PERS)
+        params.has(WVE_FRAGMENT_KEYS.CT_EVENT) ||
+        params.has(WVE_FRAGMENT_KEYS.CT_RECS)
       // Leave customer hashes alone (`#top`, `#/spa/route`). Only rewrite when our
       // transport keys are present — URLSearchParams would otherwise turn `#top` into `#top=`.
       if (hadEditorKey) {
         params.delete(WVE_FRAGMENT_KEYS.CT_EDITOR)
         params.delete(WVE_FRAGMENT_KEYS.CT_PREVIEW)
-        params.delete(WVE_FRAGMENT_KEYS.CT_PERS)
+        params.delete(WVE_FRAGMENT_KEYS.CT_EVENT)
+        params.delete(WVE_FRAGMENT_KEYS.CT_RECS)
         url.hash = params.toString()
       }
     }

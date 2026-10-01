@@ -18,8 +18,10 @@ export const WVE_QUERY_PARAMS = {
 export const WVE_FRAGMENT_KEYS = {
   CT_EDITOR: 'ctEditor',
   CT_PREVIEW: 'ctPreview',
-  /** Personalisation bootstrap from the dashboard (eventId, profile names, recommendations). */
-  CT_PERS: 'ctPers'
+  /** Campaign event id — used to request eventProps from LC `/editor/meta`. */
+  CT_EVENT: 'ctEvent',
+  /** LZS-compressed recommendations JSON from the dashboard (when present). */
+  CT_RECS: 'ctRecs'
 }
 
 export const WVE_EDITOR = {
