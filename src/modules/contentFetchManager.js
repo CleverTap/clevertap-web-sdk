@@ -82,7 +82,7 @@ export default class ContentFetchManager {
 
     fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { Accept: 'application/json' },
       body: payload,
       signal: abortController.signal
     })
@@ -99,7 +99,8 @@ export default class ContentFetchManager {
 
         return response.json()
       })
-      .then(data => {
+      .then(json => {
+        const data = json && json.tr
         if (data) {
           if (deferredNotifs && deferredNotifs.length > 0) {
             if (!data.inapp_notifs) {
