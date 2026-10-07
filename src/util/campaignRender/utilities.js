@@ -347,6 +347,22 @@ export const webNativeDisplayCampaignUtils = {
     return campaigns.sort((a, b) => b.priority - a.priority)
   },
 
+  mergeCampaignsByPriority: (arr1, arr2) => {
+    const merged = []
+    let i = 0
+    let j = 0
+    while (i < arr1.length && j < arr2.length) {
+      if ((arr1[i].priority || 0) >= (arr2[j].priority || 0)) {
+        merged.push(arr1[i++])
+      } else {
+        merged.push(arr2[j++])
+      }
+    }
+    while (i < arr1.length) merged.push(arr1[i++])
+    while (j < arr2.length) merged.push(arr2[j++])
+    return merged
+  },
+
   /**
    * Retrieves the DOM nodes associated with a campaign based on its template type.
    *
