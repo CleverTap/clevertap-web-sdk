@@ -29,6 +29,7 @@ export const OPTOUT_COOKIE_ENDSWITH = ':OO'
 export const USEIP_KEY = 'useIP'
 export const LRU_CACHE = 'WZRK_X'
 export const LRU_CACHE_SIZE = 100
+export const LRU_COOKIE_LIMIT = 5
 export const IS_OUL = 'isOUL'
 export const EVT_PUSH = 'push'
 export const EVT_PING = 'ping'

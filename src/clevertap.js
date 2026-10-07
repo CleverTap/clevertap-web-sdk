@@ -668,7 +668,7 @@ export default class CleverTap {
     }
 
     const _handleEmailSubscription = (subscription, reEncoded, fetchGroups) => {
-      handleEmailSubscription(subscription, reEncoded, fetchGroups, this.#account, this.#logger)
+      handleEmailSubscription(subscription, reEncoded, fetchGroups, this.#account, this.#logger, this.#request.dispatcher, this.#instanceManager)
     }
 
     /**
