@@ -3,6 +3,7 @@ All notable changes to this project will be documented in this file.
 
 ## [3.1.0] 13th October 2026
 - Capped WZRK_L backup queue at 2MB and dropped backups older than 3 days to prevent localStorage bloat.
+- Added 'Recommendations' support for Web channels(Web Popup, Web Native Display,Web Inbox).
 
 ## [3.0.3] 7th September 2026
 - Fixed the frequency capping logic.
