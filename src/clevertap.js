@@ -68,6 +68,16 @@ export default class CleverTap {
   static _instances = {}
   static defaultInstance = null
   static MAX_INSTANCES = 5
+  static _accountsSyncScheduled = false
+
+  static _scheduleAccountsSync () {
+    if (CleverTap._accountsSyncScheduled) return
+    CleverTap._accountsSyncScheduled = true
+    setTimeout(() => {
+      CleverTap._accountsSyncScheduled = false
+      InstanceStorageManager.saveActiveAccounts(Object.keys(CleverTap._instances))
+    }, 0)
+  }
 
   /**
    * Returns the default CleverTap instance.
@@ -956,9 +966,21 @@ export default class CleverTap {
         return
       }
       this.#account.id = accountId
+      if (!CleverTap._instances[accountId]) {
+        CleverTap._instances[accountId] = this
+      }
       this.#instanceManager.storage.saveToLSorCookie(ACCOUNT_ID, accountId)
       this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
+
+    if (this.#instanceManager.storage.checkAndClaimOwnership(this.#account.id)) {
+      this.#device.gcookie = null
+      this.#device.gcookie = this.#device.getGuid()
+      this.#logger.debug('Default account changed — GUID refreshed to: ' + this.#device.gcookie)
+    }
+
+    CleverTap._scheduleAccountsSync()
+
     handleActionMode(this.#logger, this.#account.id)
     checkCustomHtmlNativeDisplayPreview(this.#logger)
     checkWebPopupPreview()
@@ -1014,7 +1036,7 @@ export default class CleverTap {
       this.privacy.push(this.#instanceManager.state.privacyArray)
     }
 
-    initDiscardedEventsFromStorage()
+    initDiscardedEventsFromStorage(this.#instanceManager.storage)
     this.#processOldValues()
     this.pageChanged()
     const backupInterval = setInterval(() => {

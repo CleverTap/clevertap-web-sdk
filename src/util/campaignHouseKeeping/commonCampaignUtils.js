@@ -1544,7 +1544,7 @@ export const commonCampaignUtils = {
           }
         }
         if (msg.arp != null) {
-          arp(msg.arp)
+          arp(msg.arp, CampaignContext.instanceManager.storage)
         }
         if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
           // Updates stale web popup data

@@ -3,11 +3,13 @@ import {
   META_COOKIE,
   KCOOKIE_NAME,
   LCOOKIE_NAME,
-  ISOLATE_COOKIE,
-  MUTE_EXPIRY_KEY
+  ISOLATE_COOKIE
 } from './constants'
 import { getNow } from './datetime'
 import { pruneBackupMap } from './backupQueue'
+
+const ACCOUNT_OWNER_KEY = 'WZRK_OWNER'
+const ACCOUNTS_KEY = 'WZRK_ACCOUNTS'
 
 export default class InstanceStorageManager {
   /**
@@ -22,6 +24,141 @@ export default class InstanceStorageManager {
 
     // Per-instance global cache (not shared across instances)
     this.globalCache = { gcookie: null, REQ_N: 0, RESP_N: 0 }
+
+    // Ownership check is deferred to checkAndClaimOwnership() called from init(),
+    // because the default instance may not have an accountId at construction time.
+  }
+
+  checkAndClaimOwnership (accountId) {
+    if (!accountId || !this.isDefault || !this._isLocalStorageSupported()) {
+      return false
+    }
+    this.accountId = accountId
+
+    const storedOwner = localStorage.getItem(ACCOUNT_OWNER_KEY)
+    if (storedOwner && storedOwner !== accountId) {
+      const outgoingPrefix = storedOwner + ':'
+      const incomingPrefix = accountId + ':'
+
+      const allKeys = InstanceStorageManager._snapshotKeys()
+
+      const toBackup = []
+      const toRemove = []
+      const toMigrate = []
+      for (const key of allKeys) {
+        if (!key || key === ACCOUNT_OWNER_KEY || key === ACCOUNTS_KEY) continue
+        if (key.startsWith(incomingPrefix)) {
+          toMigrate.push(key)
+        } else if (key.startsWith('WZRK_')) {
+          toBackup.push(key)
+        } else if (key.startsWith(outgoingPrefix)) {
+          toRemove.push(key)
+        }
+      }
+
+      for (const key of toBackup) {
+        localStorage.setItem(outgoingPrefix + key, localStorage.getItem(key))
+        localStorage.removeItem(key)
+      }
+      for (const key of toRemove) {
+        localStorage.removeItem(key)
+      }
+      this.globalCache = { gcookie: null, REQ_N: 0, RESP_N: 0 }
+
+      this._expireAllWzrkCookies(outgoingPrefix, incomingPrefix)
+
+      for (const key of toMigrate) {
+        const unprefixed = key.substring(incomingPrefix.length)
+        localStorage.setItem(unprefixed, localStorage.getItem(key))
+        localStorage.removeItem(key)
+      }
+
+      localStorage.setItem(ACCOUNT_OWNER_KEY, accountId)
+      return true
+    }
+
+    localStorage.setItem(ACCOUNT_OWNER_KEY, accountId)
+    return false
+  }
+
+  /**
+   * Saves the current set of active account IDs and removes
+   * orphaned prefixed keys/cookies for accounts no longer active.
+   * Called via setTimeout(0) after all instances are initialized.
+   */
+  static saveActiveAccounts (accountIds) {
+    if (typeof localStorage === 'undefined') return
+
+    const activeSet = new Set(accountIds)
+    let storedAccounts = []
+    try {
+      storedAccounts = JSON.parse(localStorage.getItem(ACCOUNTS_KEY)) || []
+    } catch (e) {}
+
+    const removedAccounts = storedAccounts.filter(id => !activeSet.has(id))
+
+    if (removedAccounts.length > 0) {
+      const prefixes = removedAccounts.map(id => id + ':')
+      const matcher = (name) => prefixes.some(p => name.startsWith(p))
+
+      InstanceStorageManager._removeMatchingKeys(matcher)
+      InstanceStorageManager._expireMatchingCookies(matcher)
+    }
+
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accountIds))
+  }
+
+  _expireAllWzrkCookies (outgoingPrefix, incomingPrefix) {
+    const matcher = (name) =>
+      name.startsWith('WZRK_') ||
+      name.startsWith(outgoingPrefix) ||
+      name.startsWith(incomingPrefix)
+
+    InstanceStorageManager._expireMatchingCookies(matcher)
+  }
+
+  // ---------------------------------------------------------------
+  // Shared cleanup helpers
+  // ---------------------------------------------------------------
+
+  static _snapshotKeys () {
+    const keys = []
+    for (let i = 0; i < localStorage.length; i++) {
+      keys.push(localStorage.key(i))
+    }
+    return keys
+  }
+
+  static _removeMatchingKeys (matcher) {
+    const allKeys = InstanceStorageManager._snapshotKeys()
+    for (const key of allKeys) {
+      if (key && matcher(key)) {
+        localStorage.removeItem(key)
+      }
+    }
+  }
+
+  static _expireMatchingCookies (matcher) {
+    const cookieNames = []
+    const ca = document.cookie.split(';')
+    for (const c of ca) {
+      const name = c.trim().split('=')[0]
+      if (name && matcher(name)) {
+        cookieNames.push(name)
+      }
+    }
+
+    const hostname = window.location.hostname
+    const parts = hostname.split('.')
+    for (const name of cookieNames) {
+      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/'
+      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=' + hostname + '; path=/'
+      let domain = ''
+      for (let i = parts.length - 1; i >= 0; i--) {
+        domain = (i === 0 ? '' : '.') + parts[i] + domain
+        document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=' + domain + '; path=/'
+      }
+    }
   }
 
   /**
