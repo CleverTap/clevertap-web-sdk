@@ -2,6 +2,7 @@ import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 import { CampaignContext } from './campaignHouseKeeping/campaignContext'
 import { commonCampaignUtils } from './campaignHouseKeeping/commonCampaignUtils'
 import { deliveryPreferenceUtils } from './campaignRender/utilities'
+import { setTrRef } from './campaignHouseKeeping/frequencyCapping'
 
 const _tr = (msg, { device, session, request, logger, region, instanceManager, instance }) => {
   const _device = device
@@ -80,5 +81,7 @@ const _tr = (msg, { device, session, request, logger, region, instanceManager, i
   commonCampaignUtils.handleVariables(msg)
   commonCampaignUtils.persistsEventsAndProfileData(msg, logger)
 }
+
+setTrRef(_tr)
 
 export default _tr
