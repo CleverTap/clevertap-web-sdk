@@ -423,11 +423,6 @@ export default class CleverTap {
       this.#request.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest)
     }
 
-    if (hasWebInboxSettingsInLS(this.#instanceManager)) {
-      checkAndRegisterWebInboxElements()
-      initializeWebInbox(this.#logger, this.#instanceManager)
-    }
-
     // Get Inbox Message Count
     this.getInboxMessageCount = () => {
       const msgCount = getInboxMessages(this.#instanceManager)
@@ -965,6 +960,12 @@ export default class CleverTap {
   }) {
     // Bind storage to the account before anything is read or written
     this.#bindStorageToAccount(this.#account.id || accountId)
+
+    // Storage is only readable once bound to the account (npm flow has no account in the constructor)
+    if (hasWebInboxSettingsInLS(this.#instanceManager)) {
+      checkAndRegisterWebInboxElements()
+      initializeWebInbox(this.#logger, this.#instanceManager)
+    }
 
     if (config?.domainSpecification) {
       this.domainSpecification = config.domainSpecification

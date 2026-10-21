@@ -359,14 +359,14 @@ describe('util/storageMigration', () => {
     })
 
     test('does not delete accounts that merely share a prefix with a removed one', () => {
-      localStorage.setItem('AB:key', '1')
-      localStorage.setItem('ABC:key', '2')
+      localStorage.setItem('AB:' + GCOOKIE_NAME, '1')
+      localStorage.setItem('ABC:' + GCOOKIE_NAME, '2')
       registerActiveAccount('AB')
       registerActiveAccount('ABC')
 
       expect(syncActiveAccounts(['ABC'])).toEqual(['AB'])
-      expect(localStorage.getItem('AB:key')).toBeNull()
-      expect(localStorage.getItem('ABC:key')).toBe('2')
+      expect(localStorage.getItem('AB:' + GCOOKIE_NAME)).toBeNull()
+      expect(localStorage.getItem('ABC:' + GCOOKIE_NAME)).toBe('2')
     })
 
     test('is skipped while a migration is in progress', () => {
@@ -448,15 +448,29 @@ describe('util/storageMigration', () => {
     })
 
     test('does not delete accounts that merely share a prefix', () => {
-      localStorage.setItem('AB:key', '1')
-      localStorage.setItem('ABC:key', '2')
+      localStorage.setItem('AB:' + GCOOKIE_NAME, '1')
+      localStorage.setItem('ABC:' + GCOOKIE_NAME, '2')
       registerActiveAccount('AB')
       registerActiveAccount('ABC')
 
       expect(removeAccounts(['AB'])).toEqual(['AB'])
-      expect(localStorage.getItem('AB:key')).toBeNull()
-      expect(localStorage.getItem('ABC:key')).toBe('2')
+      expect(localStorage.getItem('AB:' + GCOOKIE_NAME)).toBeNull()
+      expect(localStorage.getItem('ABC:' + GCOOKIE_NAME)).toBe('2')
       expect(readRegistry()).toEqual(['ABC'])
+    })
+
+    test('leaves keys and cookies that the SDK does not own', () => {
+      seedAccount(SK1)
+      setCookie(SK1 + ':' + SCOOKIE_PREFIX, '{"s":1}', BROAD_DOMAIN)
+      localStorage.setItem(SK1 + ':cart', 'host-app-data')
+      setCookie(SK1 + ':theme', 'dark', BROAD_DOMAIN)
+
+      removeAccounts([SK1], BROAD_DOMAIN)
+
+      expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).toBeNull()
+      expect(cookieNames()).not.toContain(SK1 + ':' + SCOOKIE_PREFIX)
+      expect(localStorage.getItem(SK1 + ':cart')).toBe('host-app-data')
+      expect(cookieNames()).toContain(SK1 + ':theme')
     })
 
     test('is skipped while a migration is in progress', () => {

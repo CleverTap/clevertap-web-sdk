@@ -136,8 +136,8 @@ export const appendTVNavigationScript = (targetingMsgJson, html) => {
 
 export const staleDataUpdate = (staledata, campType) => {
   const campObj = getCampaignObject(CampaignContext.instanceManager.storage)
-  const globalObj = campObj[campType].global
-  if (globalObj != null && campType) {
+  const globalObj = campType ? campObj[campType]?.global : null
+  if (globalObj != null) {
     for (const idx in staledata) {
       if (staledata.hasOwnProperty(idx)) {
         delete globalObj[staledata[idx]]

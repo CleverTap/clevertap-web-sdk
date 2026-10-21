@@ -72,6 +72,10 @@ const ACCOUNT_SCOPED_KEYS = [
   ACCOUNT_ID
 ]
 
+// Every key/cookie name the SDK writes per account as `{accountId}:KEY`
+// (the session cookie is not part of the legacy list: it used to be `WZRK_S_{accountId}`)
+const SDK_STORAGE_KEYS = [...ACCOUNT_SCOPED_KEYS, SCOOKIE_PREFIX]
+
 // Cookies shared across sub-domains (written with createBroadCookie)
 const BROAD_COOKIE_KEYS = [GCOOKIE_NAME, LRU_CACHE]
 
@@ -240,13 +244,15 @@ export const registerActiveAccount = (accountId) => {
   } catch (e) {} // e.g. storage quota, must never surface on the host page
 }
 
-const deleteAccountStorage = (removed, broadDomain) => {
-  if (removed.length === 0) {
+const deleteAccountStorage = (removedAccounts, broadDomain) => {
+  if (removedAccounts.length === 0) {
     return
   }
-  const isRemoved = (name) => removed.some(id => name.startsWith(id + ':'))
-  Object.keys(localStorage).filter(isRemoved).forEach(key => localStorage.removeItem(key))
-  snapshotCookieNames().filter(isRemoved).forEach(name => expireCookie(name, broadDomain))
+  // exact SDK names only: the host app may own other `{id}:...` keys
+  const sdkNames = new Set(removedAccounts.flatMap(id => SDK_STORAGE_KEYS.map(key => id + ':' + key)))
+  const isAccountRemoved = (name) => sdkNames.has(name)
+  Object.keys(localStorage).filter(isAccountRemoved).forEach(key => localStorage.removeItem(key))
+  snapshotCookieNames().filter(isAccountRemoved).forEach(name => expireCookie(name, broadDomain))
 }
 
 /**
@@ -284,8 +290,8 @@ export const syncActiveAccounts = (activeAccountIds, broadDomain) => {
   if (!isLocalStorageSupported() || activeAccountIds.length === 0 || isMigrationInProgress()) {
     return []
   }
-  const removed = readAccountsRegistry().filter(id => !activeAccountIds.includes(id))
-  deleteAccountStorage(removed, broadDomain)
+  const removedAccounts = readAccountsRegistry().filter(id => !activeAccountIds.includes(id))
+  deleteAccountStorage(removedAccounts, broadDomain)
   writeAccountsRegistry(activeAccountIds)
-  return removed
+  return removedAccounts
 }
