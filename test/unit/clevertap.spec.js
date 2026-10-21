@@ -39,7 +39,7 @@ describe('clevertap.js', function () {
       debug: jest.fn(),
       error: jest.fn()
     }
-    mockDevice = {}
+    mockDevice = { refreshGuid: jest.fn() }
     mockSessionObject = {
       cookieName: '',
       getTimeElapsed: jest.fn(),

@@ -139,7 +139,7 @@ export default class ProfileHandler extends Array {
             }
 
             data.profile = profileObj
-            addToLocalProfileMap(profileObj, true)
+            addToLocalProfileMap(profileObj, true, this.#instanceManager)
             data = this.#request.addSystemDataToObject(data, undefined)
 
             this.#request.addFlags(data)

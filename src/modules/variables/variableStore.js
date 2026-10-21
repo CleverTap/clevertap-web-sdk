@@ -1,5 +1,4 @@
 import { VARIABLES, WZRK_FETCH } from '../../util/constants'
-import { StorageManager } from '../../util/storage'
 import { flattenObjectToDotNotation } from '../../util/helpers'
 
 class VariableStore {
@@ -22,7 +21,7 @@ class VariableStore {
     this.#account = account
     this.#request = request
     this.#event = event
-    this.#storage = instanceManager ? instanceManager.storage : StorageManager
+    this.#storage = instanceManager.storage
 
     this.#variables = {}
     this.#remoteVariables = {}
