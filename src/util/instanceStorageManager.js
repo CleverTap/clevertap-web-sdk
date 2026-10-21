@@ -3,18 +3,17 @@ import {
   META_COOKIE,
   KCOOKIE_NAME,
   LCOOKIE_NAME,
-  ISOLATE_COOKIE
+  ISOLATE_COOKIE,
+  SCOOKIE_PREFIX
 } from './constants'
 import { getNow } from './datetime'
 import { pruneBackupMap } from './backupQueue'
 
-const ACCOUNT_OWNER_KEY = 'WZRK_OWNER'
-const ACCOUNTS_KEY = 'WZRK_ACCOUNTS'
-
 export default class InstanceStorageManager {
   /**
-   * @param {string} accountId - The CleverTap account ID
-   * @param {boolean} isDefault - Whether this is the default instance (no key prefix)
+   * @param {string} accountId - The CleverTap account ID (may be null for the default
+   *   instance until init() supplies it, see setAccountId)
+   * @param {boolean} isDefault - Whether this is the default instance
    * @param {object} encryption - The per-instance Encryption object
    */
   constructor (accountId, isDefault, encryption) {
@@ -25,152 +24,44 @@ export default class InstanceStorageManager {
     // Per-instance global cache (not shared across instances)
     this.globalCache = { gcookie: null, REQ_N: 0, RESP_N: 0 }
 
-    // Ownership check is deferred to checkAndClaimOwnership() called from init(),
-    // because the default instance may not have an accountId at construction time.
-  }
-
-  checkAndClaimOwnership (accountId) {
-    if (!accountId || !this.isDefault || !this._isLocalStorageSupported()) {
-      return false
-    }
-    this.accountId = accountId
-
-    const storedOwner = localStorage.getItem(ACCOUNT_OWNER_KEY)
-    if (storedOwner && storedOwner !== accountId) {
-      const outgoingPrefix = storedOwner + ':'
-      const incomingPrefix = accountId + ':'
-
-      const allKeys = InstanceStorageManager._snapshotKeys()
-
-      const toBackup = []
-      const toRemove = []
-      const toMigrate = []
-      for (const key of allKeys) {
-        if (!key || key === ACCOUNT_OWNER_KEY || key === ACCOUNTS_KEY) continue
-        if (key.startsWith(incomingPrefix)) {
-          toMigrate.push(key)
-        } else if (key.startsWith('WZRK_')) {
-          toBackup.push(key)
-        } else if (key.startsWith(outgoingPrefix)) {
-          toRemove.push(key)
-        }
-      }
-
-      for (const key of toBackup) {
-        localStorage.setItem(outgoingPrefix + key, localStorage.getItem(key))
-        localStorage.removeItem(key)
-      }
-      for (const key of toRemove) {
-        localStorage.removeItem(key)
-      }
-      this.globalCache = { gcookie: null, REQ_N: 0, RESP_N: 0 }
-
-      this._expireAllWzrkCookies(outgoingPrefix, incomingPrefix)
-
-      for (const key of toMigrate) {
-        const unprefixed = key.substring(incomingPrefix.length)
-        localStorage.setItem(unprefixed, localStorage.getItem(key))
-        localStorage.removeItem(key)
-      }
-
-      localStorage.setItem(ACCOUNT_OWNER_KEY, accountId)
-      return true
-    }
-
-    localStorage.setItem(ACCOUNT_OWNER_KEY, accountId)
-    return false
+    // While a storage migration is pending/in progress, reads fall back to the
+    // legacy (unprefixed) key when the prefixed key is missing.
+    this._legacyFallback = false
   }
 
   /**
-   * Saves the current set of active account IDs and removes
-   * orphaned prefixed keys/cookies for accounts no longer active.
-   * Called via setTimeout(0) after all instances are initialized.
+   * Binds this storage to an account. The default instance can be created before
+   * its account ID is known (npm flow), so the prefix is only available after init().
+   * Every account, default or not, stores keys as `{accountId}:{key}`.
    */
-  static saveActiveAccounts (accountIds) {
-    if (typeof localStorage === 'undefined') return
-
-    const activeSet = new Set(accountIds)
-    let storedAccounts = []
-    try {
-      storedAccounts = JSON.parse(localStorage.getItem(ACCOUNTS_KEY)) || []
-    } catch (e) {}
-
-    const removedAccounts = storedAccounts.filter(id => !activeSet.has(id))
-
-    if (removedAccounts.length > 0) {
-      const prefixes = removedAccounts.map(id => id + ':')
-      const matcher = (name) => prefixes.some(p => name.startsWith(p))
-
-      InstanceStorageManager._removeMatchingKeys(matcher)
-      InstanceStorageManager._expireMatchingCookies(matcher)
-    }
-
-    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accountIds))
-  }
-
-  _expireAllWzrkCookies (outgoingPrefix, incomingPrefix) {
-    const matcher = (name) =>
-      name.startsWith('WZRK_') ||
-      name.startsWith(outgoingPrefix) ||
-      name.startsWith(incomingPrefix)
-
-    InstanceStorageManager._expireMatchingCookies(matcher)
-  }
-
-  // ---------------------------------------------------------------
-  // Shared cleanup helpers
-  // ---------------------------------------------------------------
-
-  static _snapshotKeys () {
-    const keys = []
-    for (let i = 0; i < localStorage.length; i++) {
-      keys.push(localStorage.key(i))
-    }
-    return keys
-  }
-
-  static _removeMatchingKeys (matcher) {
-    const allKeys = InstanceStorageManager._snapshotKeys()
-    for (const key of allKeys) {
-      if (key && matcher(key)) {
-        localStorage.removeItem(key)
-      }
-    }
-  }
-
-  static _expireMatchingCookies (matcher) {
-    const cookieNames = []
-    const ca = document.cookie.split(';')
-    for (const c of ca) {
-      const name = c.trim().split('=')[0]
-      if (name && matcher(name)) {
-        cookieNames.push(name)
-      }
-    }
-
-    const hostname = window.location.hostname
-    const parts = hostname.split('.')
-    for (const name of cookieNames) {
-      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT; path=/'
-      document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=' + hostname + '; path=/'
-      let domain = ''
-      for (let i = parts.length - 1; i >= 0; i--) {
-        domain = (i === 0 ? '' : '.') + parts[i] + domain
-        document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT; domain=' + domain + '; path=/'
-      }
+  setAccountId (accountId) {
+    if (accountId) {
+      this.accountId = accountId
     }
   }
 
   /**
-   * Returns the prefixed key for storage.
-   * Default instance: no prefix (backward compat).
-   * Additional instances: prefix with `{accountId}:`.
+   * Enables/disables reading the legacy unprefixed key when the prefixed one is missing.
+   * Only enabled while a storage migration for this account is pending.
+   */
+  setLegacyFallback (enabled) {
+    this._legacyFallback = enabled
+  }
+
+  /**
+   * Returns the prefixed key for storage: `{accountId}:{key}`.
+   * Applies to the default instance as well, so that no two accounts share a key.
    */
   _prefixKey (key) {
-    if (this.isDefault) {
-      return key
-    }
     return this.accountId + ':' + key
+  }
+
+  _hasAccount () {
+    return !!this.accountId
+  }
+
+  _legacySessionCookieName () {
+    return SCOOKIE_PREFIX + '_' + this.accountId
   }
 
   // ---------------------------------------------------------------
@@ -178,7 +69,7 @@ export default class InstanceStorageManager {
   // ---------------------------------------------------------------
 
   save (key, value) {
-    if (!key || !value) {
+    if (!key || !value || !this._hasAccount()) {
       return false
     }
     const prefixed = this._prefixKey(key)
@@ -196,10 +87,16 @@ export default class InstanceStorageManager {
     if (!key) {
       return false
     }
+    if (!this._hasAccount()) {
+      return null
+    }
     const prefixed = this._prefixKey(key)
     let data = null
     if (this._isLocalStorageSupported()) {
       data = localStorage.getItem(prefixed)
+      if (data == null && this._legacyFallback) {
+        data = localStorage.getItem(key)
+      }
     }
     if (data != null) {
       try {
@@ -216,11 +113,17 @@ export default class InstanceStorageManager {
     if (!key) {
       return false
     }
-    const prefixed = this._prefixKey(key)
     // Clear from in-memory cache so readFromLSorCookie doesn't return stale data
     delete this.globalCache[key]
+    if (!this._hasAccount()) {
+      return false
+    }
+    const prefixed = this._prefixKey(key)
     if (this._isLocalStorageSupported()) {
       localStorage.removeItem(prefixed)
+      if (this._legacyFallback) {
+        localStorage.removeItem(key)
+      }
       return true
     }
   }
@@ -230,17 +133,27 @@ export default class InstanceStorageManager {
   // ---------------------------------------------------------------
 
   removeCookie (name, domain) {
-    const prefixed = this._prefixKey(name)
-    let cookieStr = prefixed + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
-
-    if (domain) {
-      cookieStr = cookieStr + ' domain=' + domain + '; path=/'
+    if (!this._hasAccount()) {
+      return
     }
-
-    document.cookie = cookieStr
+    const expire = (storedName) => {
+      let cookieStr = storedName + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+      if (domain) {
+        cookieStr = cookieStr + ' domain=' + domain + '; path=/'
+      }
+      document.cookie = cookieStr
+    }
+    expire(this._prefixKey(name))
+    // previous SDK stored the session as WZRK_S_{accountId}
+    if (name === SCOOKIE_PREFIX) {
+      expire(this._legacySessionCookieName())
+    }
   }
 
   createCookie (name, value, seconds, domain) {
+    if (!this._hasAccount()) {
+      return
+    }
     const prefixed = this._prefixKey(name)
     let expires = ''
     let domainStr = ''
@@ -260,8 +173,24 @@ export default class InstanceStorageManager {
   }
 
   readCookie (name) {
-    const prefixed = this._prefixKey(name)
-    const nameEQ = prefixed + '='
+    if (!this._hasAccount()) {
+      return null
+    }
+    let value = InstanceStorageManager._readRawCookie(this._prefixKey(name))
+    if (value === null && this._legacyFallback) {
+      value = InstanceStorageManager._readRawCookie(name)
+    }
+    if (value === null && name === SCOOKIE_PREFIX) {
+      value = InstanceStorageManager._readRawCookie(this._legacySessionCookieName())
+    }
+    return value
+  }
+
+  /**
+   * Reads a cookie by its exact (already prefixed, or legacy) name.
+   */
+  static _readRawCookie (fullName) {
+    const nameEQ = fullName + '='
     const ca = document.cookie.split(';')
     for (let idx = 0; idx < ca.length; idx++) {
       let c = ca[idx]
@@ -285,7 +214,7 @@ export default class InstanceStorageManager {
   // ---------------------------------------------------------------
 
   saveToLSorCookie (property, value) {
-    if (value == null) {
+    if (value == null || !this._hasAccount()) {
       return
     }
     try {
@@ -304,6 +233,9 @@ export default class InstanceStorageManager {
 
   readFromLSorCookie (property) {
     let data
+    if (!this._hasAccount()) {
+      return undefined
+    }
     if (this.globalCache.hasOwnProperty(property)) {
       return this.globalCache[property]
     }
@@ -517,7 +449,11 @@ export default class InstanceStorageManager {
   // Utility
   // ---------------------------------------------------------------
 
-  _isLocalStorageSupported () {
+  static isLocalStorageSupported () {
     return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function'
+  }
+
+  _isLocalStorageSupported () {
+    return InstanceStorageManager.isLocalStorageSupported()
   }
 }

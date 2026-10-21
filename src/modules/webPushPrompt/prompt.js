@@ -4,7 +4,7 @@ import {
   WEBPUSH_CONFIG, VAPID_MIGRATION_PROMPT_SHOWN, NEW_SOFT_PROMPT_SELCTOR_ID, APPLICATION_SERVER_KEY_RECEIVED,
   NOTIFICATION_PUSH_METHOD_DEFERRED, WEBPUSH_CONFIG_RECEIVED
 } from '../../util/constants.js'
-import { StorageManager, $ct } from '../../util/storage.js'
+import { $ct } from '../../util/storage.js'
 import NotificationHandler from '../notification.js'
 import { BELL_BASE64, PROMPT_BELL_BASE64 } from './promptConstants.js'
 import { isFirefox, isSafari, isChrome } from '../../util/helpers.js'
@@ -19,7 +19,7 @@ let displayArgs = null
 let fcmPublicKey = null
 let instanceManager_ref = null
 
-const _storage = () => instanceManager_ref ? instanceManager_ref.storage : StorageManager
+const _storage = () => instanceManager_ref.storage
 const _state = () => instanceManager_ref ? instanceManager_ref.state : $ct
 
 export const setNotificationHandlerValues = (notificationValues = {}) => {
@@ -32,7 +32,7 @@ export const setNotificationHandlerValues = (notificationValues = {}) => {
 }
 
 export const processWebPushConfig = (webPushConfig, logger, request, instanceManager) => {
-  const storage = instanceManager ? instanceManager.storage : StorageManager
+  const storage = instanceManager.storage
   const state = instanceManager ? instanceManager.state : $ct
   if (instanceManager) {
     instanceManager_ref = instanceManager

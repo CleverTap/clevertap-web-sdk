@@ -6,12 +6,20 @@ export default class DeviceManager {
   gcookie
   #domainSpecification
   #storageManager
+  #customId
 
   constructor ({ logger, customId, domainSpecification, storageManager }) {
     this.#logger = logger
     this.#storageManager = storageManager
     this.domainSpecification = domainSpecification
+    this.#customId = customId
     this.gcookie = this.getGuid() || customId
+  }
+
+  refreshGuid () {
+    this.gcookie = null
+    this.gcookie = this.getGuid() || this.#customId
+    return this.gcookie
   }
 
   get domainSpecification () {

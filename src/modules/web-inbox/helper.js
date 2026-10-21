@@ -1,4 +1,4 @@
-import { StorageManager, $ct } from '../../util/storage'
+import { $ct } from '../../util/storage'
 import { Inbox } from './WebInbox'
 import { Message } from './Message'
 import { WEBINBOX_CONFIG, GCOOKIE_NAME, WEBINBOX } from '../../util/constants'
@@ -7,7 +7,7 @@ import { Logger } from '../logger'
 import { CampaignContext } from '../../util/campaignHouseKeeping/campaignContext'
 
 export const processWebInboxSettings = (webInboxSetting, isPreview = false) => {
-  const storage = CampaignContext.instanceManager ? CampaignContext.instanceManager.storage : StorageManager
+  const storage = CampaignContext.instanceManager.storage
   const inbox = CampaignContext.instanceManager ? CampaignContext.instanceManager.state.inbox : $ct.inbox
   const _settings = storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}
   if (isPreview) {
@@ -50,7 +50,7 @@ export const addWebInbox = (logger, instanceManager) => {
 }
 
 const getAndMigrateInboxMessages = (guid, storage) => {
-  const _storage = storage || StorageManager
+  const _storage = storage
   const messages = _storage.readFromLSorCookie(WEBINBOX) || {}
   // Doing this to migrate message to guid level
   if (Object.keys(messages).length > 0 && Object.keys(messages)[0].includes('_')) {
@@ -64,7 +64,7 @@ const getAndMigrateInboxMessages = (guid, storage) => {
 
 export const getInboxMessages = (instanceManager) => {
   try {
-    const _storage = instanceManager ? instanceManager.storage : StorageManager
+    const _storage = instanceManager.storage
     const guid = safeJSONParse(decodeURIComponent(_storage.read(GCOOKIE_NAME)), null)
     if (!isValueValid(guid)) { return {} }
     const messages = getAndMigrateInboxMessages(guid, _storage)
@@ -77,7 +77,7 @@ export const getInboxMessages = (instanceManager) => {
 
 export const saveInboxMessages = (messages, instanceManager) => {
   try {
-    const _storage = instanceManager ? instanceManager.storage : StorageManager
+    const _storage = instanceManager.storage
     const guid = safeJSONParse(decodeURIComponent(_storage.read(GCOOKIE_NAME)), null)
     if (!isValueValid(guid)) { return }
     const storedInboxObj = getAndMigrateInboxMessages(guid, _storage)
@@ -92,7 +92,7 @@ export const saveInboxMessages = (messages, instanceManager) => {
 
 export const initializeWebInbox = (logger, instanceManager) => {
   return new Promise((resolve, reject) => {
-    const _storage = instanceManager ? instanceManager.storage : StorageManager
+    const _storage = instanceManager.storage
     const inboxState = instanceManager ? instanceManager.state : $ct
 
     const retryUntil = (condition, interval = 500, maxRetries = 20) => {
@@ -287,7 +287,7 @@ export const determineTimeStampText = (ts) => {
 }
 
 export const hasWebInboxSettingsInLS = (instanceManager) => {
-  const storage = instanceManager ? instanceManager.storage : StorageManager
+  const storage = instanceManager.storage
   return Object.keys(storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}).length > 0
 }
 

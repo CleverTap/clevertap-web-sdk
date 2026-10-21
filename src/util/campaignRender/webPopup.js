@@ -9,6 +9,7 @@ export const renderPopUpImageOnly = (targetingMsgJson, _session) => {
   const divId = 'wzrkImageOnlyDiv'
   const popupImageOnly = document.createElement('ct-web-popup-imageonly')
   popupImageOnly.session = _session
+  popupImageOnly.storage = CampaignContext.instanceManager?.storage
   popupImageOnly.target = targetingMsgJson
   const containerEl = document.getElementById(divId)
   containerEl.innerHTML = ''
@@ -20,6 +21,7 @@ export const renderPIP = (targetingMsgJson, _session) => {
   const divId = WEB_POPUP_PIP_HOST_ID
   const pip = document.createElement('ct-web-popup-pip')
   pip.session = _session
+  pip.storage = CampaignContext.instanceManager?.storage
   pip.target = targetingMsgJson
   const containerEl = document.getElementById(divId)
   containerEl.innerHTML = ''
@@ -102,7 +104,7 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPrev
       if (!isPreview) {
         CampaignContext.instance.renderNotificationClicked(payload)
       }
-      closeIframe(campaignId, divId, _session?.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
+      closeIframe(campaignId, divId, _session?.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap, CampaignContext.instanceManager?.storage)
       break
     case ACTION_TYPES.OPEN_WEB_URL:
       // handle opening of url
@@ -112,7 +114,7 @@ const handleIframeEvent = (e, targetingMsgJson, divId, _session, _logger, isPrev
       if (detail.openInNewTab) {
         window.open(detail.url.value.replacements, '_blank', 'noopener')
         if (detail.closeOnClick) {
-          closeIframe(campaignId, divId, _session?.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
+          closeIframe(campaignId, divId, _session?.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap, CampaignContext.instanceManager?.storage)
         }
       } else {
         window.location.href = detail.url.value.replacements
