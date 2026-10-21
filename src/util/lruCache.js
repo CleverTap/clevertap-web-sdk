@@ -1,12 +1,13 @@
-import { StorageManager } from './storage'
 import { LRU_CACHE, COOKIE_EXPIRY, LRU_COOKIE_LIMIT } from './constants'
 
 export default class LRUCache {
   #keyOrder
+  #storage
 
-  constructor (max) {
+  constructor (max, storage) {
     this.max = max
-    let lruCache = StorageManager.readFromLSorCookie(LRU_CACHE)
+    this.#storage = storage
+    let lruCache = this.#storage.readFromLSorCookie(LRU_CACHE)
     if (lruCache) {
       const tempLruCache = {}
       this.#keyOrder = []
@@ -30,7 +31,7 @@ export default class LRUCache {
 
   #mergeCookieCache () {
     try {
-      const cookieData = StorageManager.readCookie(LRU_CACHE)
+      const cookieData = this.#storage.readCookie(LRU_CACHE)
       if (cookieData) {
         const parsed = JSON.parse(cookieData)
         if (parsed && parsed.cache) {
@@ -59,7 +60,7 @@ export default class LRUCache {
     try {
       const recentEntries = objToArray.slice(-LRU_COOKIE_LIMIT)
       const cookieValue = JSON.stringify({ cache: recentEntries })
-      StorageManager.createBroadCookie(LRU_CACHE, cookieValue, COOKIE_EXPIRY, window.location.hostname)
+      this.#storage.createBroadCookie(LRU_CACHE, cookieValue, COOKIE_EXPIRY, window.location.hostname)
     } catch (e) {
       // Cookie storage may fail; non-critical
     }
@@ -102,7 +103,7 @@ export default class LRUCache {
         objToArray.push(temp)
       }
     }
-    StorageManager.saveToLSorCookie(LRU_CACHE, { cache: objToArray })
+    this.#storage.saveToLSorCookie(LRU_CACHE, { cache: objToArray })
 
     // Also persist to broad-domain cookie for cross-subdomain sharing
     this.#saveCacheToBroadCookie(objToArray)
