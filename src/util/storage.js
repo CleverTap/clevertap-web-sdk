@@ -314,8 +314,8 @@ export class StorageManager {
  * Check if SDK is currently muted (for churned accounts)
  * @returns {boolean} true if SDK is muted and should not send requests
  */
-export const isMuted = () => {
-  const muteExpiry = StorageManager.readFromLSorCookie(MUTE_EXPIRY_KEY)
+export const isMuted = (storage) => {
+  const muteExpiry = storage.readFromLSorCookie(MUTE_EXPIRY_KEY)
   if (!muteExpiry || muteExpiry <= 0) {
     return false
   }
@@ -326,8 +326,8 @@ export const isMuted = () => {
  * Get the mute expiry timestamp
  * @returns {number|null} epoch timestamp in ms, or null if not muted
  */
-export const getMuteExpiry = () => {
-  const muteExpiry = StorageManager.readFromLSorCookie(MUTE_EXPIRY_KEY)
+export const getMuteExpiry = (storage) => {
+  const muteExpiry = storage.readFromLSorCookie(MUTE_EXPIRY_KEY)
   if (!muteExpiry || muteExpiry <= 0) {
     return null
   }
@@ -344,13 +344,22 @@ export const $ct = {
   globalProfileMap: undefined,
   globalEventsMap: undefined,
   discardedEventsList: null,
-  // Initialize blockRequest from storage
+  // The default instance uses this object as its state. Its InstanceStorageManager is
+  // attached as `_storage` by the CleverTap constructor, so blockRequest is persisted
+  // under the default account's prefixed key (never under a shared one).
+  _storage: null,
+  _blockRequest: false,
   get blockRequest () {
-    const value = StorageManager.readFromLSorCookie(BLOCK_REQUEST_COOKIE)
-    return value === true
+    if (!this._storage || !this._storage.accountId) {
+      return this._blockRequest
+    }
+    return this._storage.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true
   },
   set blockRequest (value) {
-    StorageManager.saveToLSorCookie(BLOCK_REQUEST_COOKIE, value)
+    this._blockRequest = value
+    if (this._storage) {
+      this._storage.saveToLSorCookie(BLOCK_REQUEST_COOKIE, value)
+    }
   },
   isOptInRequest: false,
   broadDomain: null,

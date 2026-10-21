@@ -1,20 +1,20 @@
-import {
-  StorageManager
-} from '../util/storage'
 export default class User {
   #isPersonalisationActive
+  #instanceManager
 
   constructor ({
-    isPersonalisationActive
+    isPersonalisationActive,
+    instanceManager
   }) {
     this.#isPersonalisationActive = isPersonalisationActive
+    this.#instanceManager = instanceManager
   }
 
   getTotalVisits () {
     if (!this.#isPersonalisationActive()) {
       return
     }
-    let visitCount = StorageManager.getMetaProp('sc')
+    let visitCount = this.#instanceManager.storage.getMetaProp('sc')
     if (visitCount == null) {
       visitCount = 1
     }
@@ -25,7 +25,7 @@ export default class User {
     if (!this.#isPersonalisationActive()) {
       return
     }
-    const prevSession = StorageManager.getMetaProp('ps')
+    const prevSession = this.#instanceManager.storage.getMetaProp('ps')
     if (prevSession != null) {
       return new Date(prevSession * 1000)
     }

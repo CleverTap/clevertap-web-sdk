@@ -1,8 +1,6 @@
 import { isObject, isDateObject, isString, isNumber } from './datatypes'
 import { convertToWZRKDate } from './datetime'
 import { CHARGED_ID, CHARGEDID_COOKIE_NAME, NESTED_OBJECT_ERRORS } from './constants'
-import { StorageManager } from './storage'
-
 // Destructure error constants for cleaner code
 const {
   DEPTH_LIMIT_EXCEEDED,
@@ -13,8 +11,6 @@ const {
   NULL_VALUE_REMOVED,
   EMPTY_VALUE_REMOVED
 } = NESTED_OBJECT_ERRORS
-
-let _globalChargedId
 
 export const isEventStructureFlat = (eventObj) => {
   // Events cannot have nested structure or Arrays
@@ -33,7 +29,7 @@ export const isEventStructureFlat = (eventObj) => {
   return false
 }
 
-export const isChargedEventStructureValid = (chargedObj, logger) => {
+export const isChargedEventStructureValid = (chargedObj, logger, storage) => {
   if (isObject(chargedObj)) {
     for (var key in chargedObj) {
       if (chargedObj.hasOwnProperty(key)) {
@@ -67,16 +63,14 @@ export const isChargedEventStructureValid = (chargedObj, logger) => {
       // save charged Id
       const chargedId = chargedObj[CHARGED_ID] + '' // casting chargedId to string
 
-      if (typeof _globalChargedId === 'undefined') {
-        _globalChargedId = StorageManager.readFromLSorCookie(CHARGEDID_COOKIE_NAME)
-      }
-      if (typeof _globalChargedId !== 'undefined' && _globalChargedId.trim() === chargedId.trim()) {
+      // the instance storage keeps its own in-memory copy, so accounts never share the last id
+      const lastChargedId = storage.readFromLSorCookie(CHARGEDID_COOKIE_NAME)
+      if (typeof lastChargedId !== 'undefined' && lastChargedId !== null && String(lastChargedId).trim() === chargedId.trim()) {
         // drop event- duplicate charged id
         logger.error('Duplicate charged Id - Dropped' + chargedObj)
         return false
       }
-      _globalChargedId = chargedId
-      StorageManager.saveToLSorCookie(CHARGEDID_COOKIE_NAME, chargedId)
+      storage.saveToLSorCookie(CHARGEDID_COOKIE_NAME, chargedId)
     }
     return true
   } // if object (chargedObject)

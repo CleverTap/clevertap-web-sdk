@@ -299,7 +299,7 @@ export const commonCampaignUtils = {
       delete sessionStorage[CAMP_COOKIE_NAME]
       var campTypeObj = {}
       // Retrieves stored campaign data from local storage
-      const campObj = getCampaignObject()
+      const campObj = getCampaignObject(CampaignContext.instanceManager.storage)
       // Determines campaign type (web inbox or web popup) and fetches corresponding data
       if (
         targetingMsgJson.display.wtarget_type === 3 &&
@@ -382,10 +382,10 @@ export const commonCampaignUtils = {
         newCampObj[today] = dailyObj
         newCampObj[GLOBAL] = globalObj
         // Save CAMP to localstorage here
-        saveCampaignObject({ [campKey]: newCampObj })
+        saveCampaignObject({ [campKey]: newCampObj }, CampaignContext.instanceManager.storage)
       } else {
       /* For Web Native Display and Web Popup */
-        addDeliveryPreferenceDetails(targetingMsgJson, logger)
+        addDeliveryPreferenceDetails(targetingMsgJson, logger, CampaignContext.instanceManager.storage)
       }
     }
   },
@@ -1538,13 +1538,13 @@ export const commonCampaignUtils = {
           mergeEventMap(eventsMap)
           CampaignContext.instanceManager.storage.saveToLSorCookie(EV_COOKIE, CampaignContext.instanceManager.state.globalEventsMap)
           if (CampaignContext.instanceManager.state.globalProfileMap == null) {
-            addToLocalProfileMap(profileMap, true)
+            addToLocalProfileMap(profileMap, true, CampaignContext.instanceManager)
           } else {
-            addToLocalProfileMap(profileMap, false)
+            addToLocalProfileMap(profileMap, false, CampaignContext.instanceManager)
           }
         }
         if (msg.arp != null) {
-          arp(msg.arp)
+          arp(msg.arp, CampaignContext.instanceManager.storage, CampaignContext.instanceManager.state)
         }
         if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
           // Updates stale web popup data
