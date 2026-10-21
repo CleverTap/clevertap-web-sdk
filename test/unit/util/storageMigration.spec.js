@@ -3,7 +3,7 @@ import DeviceManager from '../../../src/modules/device'
 import { Encryption } from '../../../src/modules/security/Encryption'
 import {
   ACCOUNT_ID,
-  ACCOUNTS_REGISTRY_KEY,
+  ACCOUNTS_REGISTRY,
   CAMP_COOKIE_G,
   CAMP_COOKIE_NAME,
   GCOOKIE_NAME,
@@ -17,6 +17,8 @@ import { clearAllStorage } from './storageTestUtils'
 import {
   isMigrationInProgress,
   migrateLegacyStorage,
+  registerActiveAccount,
+  removeAccounts,
   snapshotCookieNames,
   syncActiveAccounts
 } from '../../../src/util/storageMigration'
@@ -149,18 +151,6 @@ describe('util/storageMigration', () => {
         // EU1 keeps its own guid and never sees SK1's
         expect(storage.readFromLSorCookie(GCOOKIE_NAME)).toBe('guid-eu1')
         expect(storage._legacyFallback).toBe(false)
-      })
-
-      test('registers the previous owner so the next sync can clean it up', () => {
-        seedLegacyDefault(SK1, 'guid-sk1')
-        const storage = createStorage(EU1)
-        migrateLegacyStorage(storage, EU1, logger)
-
-        expect(JSON.parse(localStorage.getItem(ACCOUNTS_REGISTRY_KEY))).toEqual([SK1])
-
-        const removed = syncActiveAccounts([EU1])
-        expect(removed).toEqual([SK1])
-        expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).toBeNull()
       })
 
       test('new default instance starts without the old account GUID', () => {
@@ -300,6 +290,41 @@ describe('util/storageMigration', () => {
     })
   })
 
+  describe('registerActiveAccount', () => {
+    const readRegistry = () => JSON.parse(localStorage.getItem(ACCOUNTS_REGISTRY))
+
+    test('appends each new account without deleting keys', () => {
+      localStorage.setItem(SK1 + ':' + GCOOKIE_NAME, encodeLS('guid-sk1'))
+      localStorage.setItem(EU1 + ':' + GCOOKIE_NAME, encodeLS('guid-eu1'))
+
+      registerActiveAccount(SK1)
+      expect(readRegistry()).toEqual([SK1])
+      registerActiveAccount(EU1)
+      expect(readRegistry()).toEqual([SK1, EU1])
+      expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).not.toBeNull()
+    })
+
+    test('is a no-op for an id already in the registry', () => {
+      registerActiveAccount(SK1)
+      registerActiveAccount(EU1)
+      registerActiveAccount(SK1)
+      expect(readRegistry()).toEqual([SK1, EU1])
+    })
+
+    test('ignores missing or non-string ids', () => {
+      registerActiveAccount(undefined)
+      registerActiveAccount('')
+      registerActiveAccount(42)
+      expect(localStorage.getItem(ACCOUNTS_REGISTRY)).toBeNull()
+    })
+
+    test('is skipped while a migration is in progress', () => {
+      localStorage.setItem(STORAGE_MIGRATION_FLAG, false)
+      registerActiveAccount(SK1)
+      expect(localStorage.getItem(ACCOUNTS_REGISTRY)).toBeNull()
+    })
+  })
+
   describe('syncActiveAccounts (cleanup of removed accounts)', () => {
     const seedAccount = (id) => {
       localStorage.setItem(id + ':' + GCOOKIE_NAME, encodeLS('guid-' + id))
@@ -307,17 +332,20 @@ describe('util/storageMigration', () => {
       setCookie(id + ':' + GCOOKIE_NAME, 'guid-' + id, BROAD_DOMAIN)
     }
 
-    test('stores the list of integrated accounts on the first run without deleting anything', () => {
+    const readRegistry = () => JSON.parse(localStorage.getItem(ACCOUNTS_REGISTRY))
+
+    test('stores the live set on the first run without deleting anything', () => {
       seedAccount(SK1)
       expect(syncActiveAccounts([SK1])).toEqual([])
-      expect(JSON.parse(localStorage.getItem(ACCOUNTS_REGISTRY_KEY))).toEqual([SK1])
+      expect(readRegistry()).toEqual([SK1])
       expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).not.toBeNull()
     })
 
-    test('deletes LS keys and cookies of an account whose integration was removed', () => {
+    test('deletes LS keys and cookies of accounts that are no longer live', () => {
       seedAccount(SK1)
       seedAccount(EU1)
-      syncActiveAccounts([SK1, EU1])
+      registerActiveAccount(SK1)
+      registerActiveAccount(EU1)
 
       const removed = syncActiveAccounts([EU1], BROAD_DOMAIN)
 
@@ -325,38 +353,39 @@ describe('util/storageMigration', () => {
       expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).toBeNull()
       expect(localStorage.getItem(SK1 + ':' + CAMP_COOKIE_NAME)).toBeNull()
       expect(cookieNames()).not.toContain(SK1 + ':' + GCOOKIE_NAME)
-      // the remaining account is untouched
       expect(localStorage.getItem(EU1 + ':' + GCOOKIE_NAME)).not.toBeNull()
       expect(cookieNames()).toContain(EU1 + ':' + GCOOKIE_NAME)
-      expect(JSON.parse(localStorage.getItem(ACCOUNTS_REGISTRY_KEY))).toEqual([EU1])
+      expect(readRegistry()).toEqual([EU1])
     })
 
     test('does not delete accounts that merely share a prefix with a removed one', () => {
       localStorage.setItem('AB:key', '1')
       localStorage.setItem('ABC:key', '2')
-      syncActiveAccounts(['AB', 'ABC'])
+      registerActiveAccount('AB')
+      registerActiveAccount('ABC')
 
-      syncActiveAccounts(['ABC'])
-
+      expect(syncActiveAccounts(['ABC'])).toEqual(['AB'])
       expect(localStorage.getItem('AB:key')).toBeNull()
       expect(localStorage.getItem('ABC:key')).toBe('2')
     })
 
     test('is skipped while a migration is in progress', () => {
       seedAccount(SK1)
-      syncActiveAccounts([SK1, EU1])
+      registerActiveAccount(SK1)
+      registerActiveAccount(EU1)
       localStorage.setItem(STORAGE_MIGRATION_FLAG, false)
 
       expect(syncActiveAccounts([EU1])).toEqual([])
       expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).not.toBeNull()
-      expect(JSON.parse(localStorage.getItem(ACCOUNTS_REGISTRY_KEY))).toEqual([SK1, EU1])
+      expect(readRegistry()).toEqual([SK1, EU1])
     })
 
     test('is skipped when no account is active', () => {
       seedAccount(SK1)
-      syncActiveAccounts([SK1])
+      registerActiveAccount(SK1)
       expect(syncActiveAccounts([])).toEqual([])
       expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).not.toBeNull()
+      expect(readRegistry()).toEqual([SK1])
     })
 
     test('does nothing when localStorage is not supported', () => {
@@ -367,27 +396,86 @@ describe('util/storageMigration', () => {
         restoreLocalStorage()
       }
     })
+
+    test('registers and cleans up a previous owner after a mismatch migrate', () => {
+      seedLegacyDefault(SK1, 'guid-sk1')
+      migrateLegacyStorage(createStorage(EU1), EU1, logger)
+
+      expect(readRegistry()).toEqual([SK1])
+      expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).not.toBeNull()
+
+      expect(syncActiveAccounts([EU1])).toEqual([SK1])
+      expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).toBeNull()
+      expect(readRegistry()).toEqual([EU1])
+    })
   })
 
-  describe('end to end: first account removed, second becomes the default', () => {
-    test('the new default gets its own GUID and the old account storage is cleaned up', () => {
-      // 1. both accounts integrated: sk1 default (migrated state) + eu1 additional
-      const sk1 = createStorage(SK1, true)
-      const eu1 = createStorage(EU1, false)
-      sk1.saveToLSorCookie(GCOOKIE_NAME, 'guid-sk1')
-      eu1.saveToLSorCookie(GCOOKIE_NAME, 'guid-eu1')
-      sk1.saveToLSorCookie(CAMP_COOKIE_G, 'camp-g-sk1')
-      syncActiveAccounts([SK1, EU1])
+  describe('removeAccounts (ids to delete)', () => {
+    const seedAccount = (id) => {
+      localStorage.setItem(id + ':' + GCOOKIE_NAME, encodeLS('guid-' + id))
+      setCookie(id + ':' + GCOOKIE_NAME, 'guid-' + id, BROAD_DOMAIN)
+    }
+    const readRegistry = () => JSON.parse(localStorage.getItem(ACCOUNTS_REGISTRY))
 
-      // 2. sk1 integration is removed, eu1 is now the default instance
-      const promoted = createStorage(EU1, true)
-      const device = new DeviceManager({ logger, customId: null, domainSpecification: null, storageManager: promoted })
-      syncActiveAccounts([EU1])
+    test('deletes only the listed ids and leaves uninitialized accounts in the registry', () => {
+      seedAccount(SK1)
+      seedAccount(EU1)
+      registerActiveAccount(SK1)
+      registerActiveAccount(EU1)
 
-      expect(device.gcookie).toBe('guid-eu1')
-      expect(promoted.readFromLSorCookie(CAMP_COOKIE_G)).toBeUndefined()
+      expect(removeAccounts([SK1], BROAD_DOMAIN)).toEqual([SK1])
       expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).toBeNull()
-      expect(localStorage.getItem(SK1 + ':' + CAMP_COOKIE_G)).toBeNull()
+      expect(cookieNames()).not.toContain(SK1 + ':' + GCOOKIE_NAME)
+      expect(localStorage.getItem(EU1 + ':' + GCOOKIE_NAME)).not.toBeNull()
+      expect(readRegistry()).toEqual([EU1])
+    })
+
+    test('is a no-op for an empty list', () => {
+      seedAccount(SK1)
+      registerActiveAccount(SK1)
+      expect(removeAccounts([])).toEqual([])
+      expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).not.toBeNull()
+      expect(readRegistry()).toEqual([SK1])
+    })
+
+    test('removes an account that was never registered', () => {
+      seedAccount(SK1)
+      registerActiveAccount(EU1)
+
+      expect(removeAccounts([SK1], BROAD_DOMAIN)).toEqual([SK1])
+      expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).toBeNull()
+      expect(readRegistry()).toEqual([EU1])
+    })
+
+    test('does not delete accounts that merely share a prefix', () => {
+      localStorage.setItem('AB:key', '1')
+      localStorage.setItem('ABC:key', '2')
+      registerActiveAccount('AB')
+      registerActiveAccount('ABC')
+
+      expect(removeAccounts(['AB'])).toEqual(['AB'])
+      expect(localStorage.getItem('AB:key')).toBeNull()
+      expect(localStorage.getItem('ABC:key')).toBe('2')
+      expect(readRegistry()).toEqual(['ABC'])
+    })
+
+    test('is skipped while a migration is in progress', () => {
+      seedAccount(SK1)
+      registerActiveAccount(SK1)
+      localStorage.setItem(STORAGE_MIGRATION_FLAG, false)
+
+      expect(removeAccounts([SK1])).toEqual([])
+      expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).not.toBeNull()
+      expect(readRegistry()).toEqual([SK1])
+    })
+
+    test('does nothing when localStorage is not supported', () => {
+      disableLocalStorage()
+      try {
+        expect(removeAccounts([SK1])).toEqual([])
+      } finally {
+        restoreLocalStorage()
+      }
     })
   })
 })

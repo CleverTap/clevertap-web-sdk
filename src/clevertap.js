@@ -9,7 +9,6 @@ import User from './modules/user'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
-import RequestDispatcher from './util/requestDispatcher'
 import {
   CAMP_COOKIE_NAME,
   SCOOKIE_PREFIX,
@@ -58,7 +57,7 @@ import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 import InstanceManager from './util/instanceManager'
 import InstanceStorageManager from './util/instanceStorageManager'
-import { migrateLegacyStorage, syncActiveAccounts } from './util/storageMigration'
+import { migrateLegacyStorage, registerActiveAccount, removeAccounts, syncActiveAccounts } from './util/storageMigration'
 import { Encryption } from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
 import { checkWebPopupPreview } from './util/campaignRender/webPopup'
@@ -69,15 +68,26 @@ export default class CleverTap {
   static _instances = {}
   static defaultInstance = null
   static MAX_INSTANCES = 5
-  static _accountsSyncTimer = null
 
-  static _scheduleAccountsSync () {
-    clearTimeout(CleverTap._accountsSyncTimer)
-    CleverTap._accountsSyncTimer = setTimeout(() => {
-      try {
-        syncActiveAccounts(Object.keys(CleverTap._instances), $ct._storage?._broadDomain)
-      } catch (e) {} // e.g. storage quota, must never surface on the host page
-    }, 0)
+  /**
+   * With a list: those are the account ids to delete. Other registered
+   * accounts (including ones not initialized on this page) are left alone,
+   * and `_instances` is not modified.
+   * With no list: keep set is live `_instances`; everything else in
+   * WZRK_ACCOUNTS is deleted.
+   * @param {string[]} [accountIds] account ids to remove
+   * @returns {string[]} account ids whose storage was removed
+   */
+  static removeStaleInstances (accountIds) {
+    try {
+      const broadDomain = $ct._storage?._broadDomain
+      if (Array.isArray(accountIds)) {
+        return removeAccounts(accountIds, broadDomain)
+      }
+      return syncActiveAccounts(Object.keys(CleverTap._instances), broadDomain)
+    } catch (e) {
+      return []
+    }
   }
 
   /**
@@ -108,6 +118,7 @@ export default class CleverTap {
       const defaultInst = CleverTap.defaultInstance
       defaultInst.init(accountId, region, targetDomain, token)
       CleverTap._instances[accountId] = defaultInst
+      registerActiveAccount(accountId)
       return defaultInst
     }
 
@@ -241,6 +252,7 @@ export default class CleverTap {
     // Register instance
     if (accountId) {
       CleverTap._instances[accountId] = this
+      registerActiveAccount(accountId)
     }
     if (isDefault) {
       CleverTap.defaultInstance = this
@@ -1005,8 +1017,7 @@ export default class CleverTap {
       this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
 
-    // Clean up the storage of accounts that are no longer integrated
-    CleverTap._scheduleAccountsSync()
+    registerActiveAccount(this.#account.id)
 
     handleActionMode(this.#logger, this.#account.id)
     checkCustomHtmlNativeDisplayPreview(this.#logger)

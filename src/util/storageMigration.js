@@ -1,6 +1,6 @@
 import {
   ACCOUNT_ID,
-  ACCOUNTS_REGISTRY_KEY,
+  ACCOUNTS_REGISTRY,
   APPLICATION_SERVER_KEY_RECEIVED,
   ARP_COOKIE,
   BLOCK_REQUEST_COOKIE,
@@ -121,11 +121,15 @@ const hasUnprefixedAccountId = () =>
 
 const readAccountsRegistry = () => {
   try {
-    const ids = JSON.parse(localStorage.getItem(ACCOUNTS_REGISTRY_KEY))
+    const ids = JSON.parse(localStorage.getItem(ACCOUNTS_REGISTRY))
     return Array.isArray(ids) ? ids : []
   } catch (e) {
     return []
   }
+}
+
+const writeAccountsRegistry = (ids) => {
+  localStorage.setItem(ACCOUNTS_REGISTRY, JSON.stringify(ids))
 }
 
 // Copy only if the prefixed key is missing (never clobber), then drop the legacy key
@@ -173,7 +177,7 @@ const migrateSessionCookie = (owner, ownerStorage) => {
 }
 
 // Moves the legacy un-prefixed storage of the default instance to `{owner}:KEY`.
-export const migrateLegacyStorage = async (storage, accountId, logger) => {
+export const migrateLegacyStorage = (storage, accountId, logger) => {
   const inProgress = isMigrationInProgress()
   if (!accountId || (!inProgress && !hasUnprefixedAccountId())) {
     return { migrated: false, owner: null }
@@ -195,11 +199,10 @@ export const migrateLegacyStorage = async (storage, accountId, logger) => {
     migrateSessionCookie(owner, ownerStorage)
 
     if (lsSupported && owner !== accountId) {
-      // not the default any more: let the next sync clean it up if it is not integrated
-      // (safe to register first, the sync is skipped while the flag exists)
+      // not the default any more: register it so removeStaleInstances can clean it up
       const registry = readAccountsRegistry()
       if (!registry.includes(owner)) {
-        localStorage.setItem(ACCOUNTS_REGISTRY_KEY, JSON.stringify([...registry, owner]))
+        writeAccountsRegistry([...registry, owner])
       }
     }
 
@@ -221,9 +224,57 @@ export const migrateLegacyStorage = async (storage, accountId, logger) => {
 }
 
 /**
- * Deletes every key and cookie of accounts that were integrated on the previous sync but
- * are not any more, then stores the current list. Skipped while a migration is pending
- * and when no account is active.
+ * Appends one account id to WZRK_ACCOUNTS. Does not delete anything.
+ *
+ * @param {string} accountId
+ */
+export const registerActiveAccount = (accountId) => {
+  if (!isLocalStorageSupported() || typeof accountId !== 'string' || !accountId || isMigrationInProgress()) {
+    return
+  }
+  try {
+    const registry = readAccountsRegistry()
+    if (!registry.includes(accountId)) {
+      writeAccountsRegistry([...registry, accountId])
+    }
+  } catch (e) {} // e.g. storage quota, must never surface on the host page
+}
+
+const deleteAccountStorage = (removed, broadDomain) => {
+  if (removed.length === 0) {
+    return
+  }
+  const isRemoved = (name) => removed.some(id => name.startsWith(id + ':'))
+  Object.keys(localStorage).filter(isRemoved).forEach(key => localStorage.removeItem(key))
+  snapshotCookieNames().filter(isRemoved).forEach(name => expireCookie(name, broadDomain))
+}
+
+/**
+ * Deletes storage for these account ids and drops them from WZRK_ACCOUNTS.
+ * Other registered accounts (including ones not initialized on this page) stay.
+ *
+ * @param {string[]} accountIds
+ * @param {string} [broadDomain]
+ * @returns {string[]} the account ids that were removed
+ */
+export const removeAccounts = (accountIds, broadDomain) => {
+  if (!isLocalStorageSupported() || isMigrationInProgress()) {
+    return []
+  }
+  if (accountIds.length === 0) {
+    return []
+  }
+  deleteAccountStorage(accountIds, broadDomain)
+  writeAccountsRegistry(readAccountsRegistry().filter(id => !accountIds.includes(id)))
+  return accountIds
+}
+
+/**
+ * Keep-list: deletes storage for accounts in WZRK_ACCOUNTS that are not in
+ * activeAccountIds, then writes that list as the new registry.
+ * Used by removeStaleInstances when no remove-list is given.
+ *
+ * Skipped while a migration is pending and when no account is active.
  *
  * @param {string[]} activeAccountIds
  * @param {string} [broadDomain] parent domain the shared cookies are written on
@@ -234,11 +285,7 @@ export const syncActiveAccounts = (activeAccountIds, broadDomain) => {
     return []
   }
   const removed = readAccountsRegistry().filter(id => !activeAccountIds.includes(id))
-  if (removed.length > 0) {
-    const isRemoved = (name) => removed.some(id => name.startsWith(id + ':'))
-    Object.keys(localStorage).filter(isRemoved).forEach(key => localStorage.removeItem(key))
-    snapshotCookieNames().filter(isRemoved).forEach(name => expireCookie(name, broadDomain))
-  }
-  localStorage.setItem(ACCOUNTS_REGISTRY_KEY, JSON.stringify(activeAccountIds))
+  deleteAccountStorage(removed, broadDomain)
+  writeAccountsRegistry(activeAccountIds)
   return removed
 }

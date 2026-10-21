@@ -83,8 +83,9 @@ export const MAX_RETRY_DELAY_MS = 30 * 60 * 1000 // 30 minutes
 // Storage migration (unprefixed default-account keys -> `{accountId}:KEY`).
 // Stored un-prefixed. Present only while a migration is in progress.
 export const STORAGE_MIGRATION_FLAG = 'WZRK_MIGRATED'
-// Global (un-prefixed) list of account IDs that were integrated on the last sync.
-export const ACCOUNTS_REGISTRY_KEY = 'WZRK_ACCOUNTS'
+// Global (un-prefixed) list of account IDs that have been created in this browser.
+// Grown on each instance create; pruned only when the customer calls removeStaleInstances.
+export const ACCOUNTS_REGISTRY = 'WZRK_ACCOUNTS'
 
 // Flag key for optional sub-domain profile isolation
 export const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'
