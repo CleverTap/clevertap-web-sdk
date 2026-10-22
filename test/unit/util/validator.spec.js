@@ -1,6 +1,5 @@
 import { CHARGEDID_COOKIE_NAME, CHARGED_ID } from '../../../src/util/constants'
 import { convertToWZRKDate } from '../../../src/util/datetime'
-import { StorageManager } from '../../../src/util/storage'
 import {
   isChargedEventStructureValid,
   isEventStructureFlat
@@ -51,16 +50,27 @@ describe('util/validator', function () {
     })
   })
 
+  // remembers what is saved, like the real instance storage does
+  const createMockStorage = () => {
+    const values = {}
+    return {
+      readFromLSorCookie: jest.fn(key => values[key]),
+      saveToLSorCookie: jest.fn((key, value) => { values[key] = value })
+    }
+  }
+
   describe('isChargedEventStructureValid', () => {
     beforeEach(() => {
       this.logger = {
         reportError: jest.fn(),
         error: jest.fn()
       }
+      // the instance storage is passed in, so every instance tracks its own charged id
+      this.storage = createMockStorage()
     })
 
     test('should return false if input is not an object', () => {
-      const result = isChargedEventStructureValid('test', this.logger)
+      const result = isChargedEventStructureValid('test', this.logger, this.storage)
       expect(result).toBeFalsy()
     })
 
@@ -69,7 +79,7 @@ describe('util/validator', function () {
         const input = {
           Items: {}
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, this.logger, this.storage)
         expect(result).toBeFalsy()
       })
 
@@ -81,7 +91,7 @@ describe('util/validator', function () {
         const input = {
           Items: items
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, this.logger, this.storage)
         expect(result).toBeFalsy()
         expect(this.logger.reportError).toHaveBeenCalledWith(522, expect.any(String))
       })
@@ -98,7 +108,7 @@ describe('util/validator', function () {
         const input = {
           Items: items
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, this.logger, this.storage)
         expect(result).toBeFalsy()
       })
 
@@ -112,7 +122,7 @@ describe('util/validator', function () {
         const input = {
           Items: items
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, this.logger, this.storage)
         expect(result).toBeTruthy()
       })
     })
@@ -125,7 +135,7 @@ describe('util/validator', function () {
             some: 'foo'
           }
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, this.logger, this.storage)
         expect(result).toBeFalsy()
       })
 
@@ -134,7 +144,7 @@ describe('util/validator', function () {
           name: 'test',
           value: [1, 2, 3]
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, this.logger, this.storage)
         expect(result).toBeFalsy()
       })
 
@@ -143,7 +153,7 @@ describe('util/validator', function () {
           name: 'test',
           ts: new Date()
         }
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, this.logger, this.storage)
         expect(result).toBeTruthy()
         expect(input.ts).toBe('supported_date_format')
       })
@@ -156,9 +166,9 @@ describe('util/validator', function () {
           [CHARGED_ID]: 'abc'
         }
 
-        const result = isChargedEventStructureValid(input, this.logger)
+        const result = isChargedEventStructureValid(input, this.logger, this.storage)
         expect(result).toBeTruthy()
-        expect(StorageManager.saveToLSorCookie).toHaveBeenCalledWith(CHARGEDID_COOKIE_NAME, 'abc')
+        expect(this.storage.saveToLSorCookie).toHaveBeenCalledWith(CHARGEDID_COOKIE_NAME, 'abc')
       })
 
       test('should log error and return false when saving 2 charged objects with same Charged ID', () => {
@@ -166,16 +176,24 @@ describe('util/validator', function () {
           name: 'test1',
           [CHARGED_ID]: '123'
         }
-        const result1 = isChargedEventStructureValid(input1, this.logger)
+        const result1 = isChargedEventStructureValid(input1, this.logger, this.storage)
         expect(result1).toBeTruthy()
 
         const input2 = {
           name: 'test2',
           [CHARGED_ID]: 123
         }
-        const result2 = isChargedEventStructureValid(input2, this.logger)
+        const result2 = isChargedEventStructureValid(input2, this.logger, this.storage)
         expect(result2).toBeFalsy()
         expect(this.logger.error).toHaveBeenCalled()
+      })
+
+      test('should not treat the same Charged ID of another instance storage as duplicate', () => {
+        const otherStorage = createMockStorage()
+        const input = { name: 'test', [CHARGED_ID]: 'shared-id' }
+        expect(isChargedEventStructureValid({ ...input }, this.logger, this.storage)).toBeTruthy()
+        expect(isChargedEventStructureValid({ ...input }, this.logger, otherStorage)).toBeTruthy()
+        expect(otherStorage.saveToLSorCookie).toHaveBeenCalledWith(CHARGEDID_COOKIE_NAME, 'shared-id')
       })
     })
   })
