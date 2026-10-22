@@ -85,13 +85,27 @@ const readCookie = InstanceStorageManager._readRawCookie
 export const snapshotCookieNames = () =>
   document.cookie.split(';').map(c => c.split('=')[0].trim()).filter(Boolean)
 
-// The SDK always wrote its cookies with a `domain` attribute: the host, or the broad
-// (parent) domain for the shared cookies, so both have to be expired.
-const expireCookie = (name, broadDomain) => {
-  StorageManager.removeCookie(name, window.location.hostname)
-  if (broadDomain) {
-    StorageManager.removeCookie(name, broadDomain)
+// Parent domains of a hostname, e.g. a.b.example.com -> .b.example.com, .example.com, .com.
+// The SDK writes the shared cookies on the broadest one the browser accepted.
+export const parentDomains = (hostname) => {
+  const parts = hostname.split('.')
+  const domains = []
+  for (let i = 1; i < parts.length; i++) {
+    domains.push('.' + parts.slice(i).join('.'))
   }
+  return domains
+}
+
+// The SDK always wrote its cookies with a `domain` attribute: the host, or a parent
+// domain for the shared cookies.
+const expireCookie = (name, broadDomain) => {
+  const hostname = window.location.hostname
+  const domains = new Set([hostname, broadDomain, ...parentDomains(hostname)])
+  domains.forEach(domain => {
+    if (domain) {
+      StorageManager.removeCookie(name, domain)
+    }
+  })
 }
 
 // Flag: the value `false` ("not migrated yet"), in LS or as a cookie when LS is unsupported.
@@ -123,9 +137,11 @@ const hasUnprefixedAccountId = () =>
   (isLocalStorageSupported() && localStorage.getItem(ACCOUNT_ID) != null) ||
   readCookie(ACCOUNT_ID) != null
 
+// WZRK_ACCOUNTS lives in localStorage, or in a cookie when localStorage is unsupported
 const readAccountsRegistry = () => {
   try {
-    const ids = JSON.parse(localStorage.getItem(ACCOUNTS_REGISTRY))
+    const raw = isLocalStorageSupported() ? localStorage.getItem(ACCOUNTS_REGISTRY) : readCookie(ACCOUNTS_REGISTRY)
+    const ids = JSON.parse(raw)
     return Array.isArray(ids) ? ids : []
   } catch (e) {
     return []
@@ -133,7 +149,11 @@ const readAccountsRegistry = () => {
 }
 
 const writeAccountsRegistry = (ids) => {
-  localStorage.setItem(ACCOUNTS_REGISTRY, JSON.stringify(ids))
+  if (isLocalStorageSupported()) {
+    localStorage.setItem(ACCOUNTS_REGISTRY, JSON.stringify(ids))
+  } else {
+    StorageManager.createCookie(ACCOUNTS_REGISTRY, JSON.stringify(ids), COOKIE_EXPIRY, window.location.hostname)
+  }
 }
 
 // Copy only if the prefixed key is missing (never clobber), then drop the legacy key
@@ -202,7 +222,7 @@ export const migrateLegacyStorage = (storage, accountId, logger) => {
     const ownerStorage = new InstanceStorageManager(owner, false, storage.encryption)
     migrateSessionCookie(owner, ownerStorage)
 
-    if (lsSupported && owner !== accountId) {
+    if (owner !== accountId) {
       // not the default any more: register it so removeStaleInstances can clean it up
       const registry = readAccountsRegistry()
       if (!registry.includes(owner)) {
@@ -233,7 +253,7 @@ export const migrateLegacyStorage = (storage, accountId, logger) => {
  * @param {string} accountId
  */
 export const registerActiveAccount = (accountId) => {
-  if (!isLocalStorageSupported() || typeof accountId !== 'string' || !accountId || isMigrationInProgress()) {
+  if (typeof accountId !== 'string' || !accountId) {
     return
   }
   try {
@@ -244,15 +264,25 @@ export const registerActiveAccount = (accountId) => {
   } catch (e) {} // e.g. storage quota, must never surface on the host page
 }
 
-const deleteAccountStorage = (removedAccounts, broadDomain) => {
-  if (removedAccounts.length === 0) {
-    return
+const deleteAccountStorage = (accountIds, broadDomain) => {
+  const cleaned = new Set()
+  if (accountIds.length === 0) {
+    return []
   }
   // exact SDK names only: the host app may own other `{id}:...` keys
-  const sdkNames = new Set(removedAccounts.flatMap(id => SDK_STORAGE_KEYS.map(key => id + ':' + key)))
-  const isAccountRemoved = (name) => sdkNames.has(name)
-  Object.keys(localStorage).filter(isAccountRemoved).forEach(key => localStorage.removeItem(key))
-  snapshotCookieNames().filter(isAccountRemoved).forEach(name => expireCookie(name, broadDomain))
+  const owners = new Map()
+  accountIds.forEach(id => SDK_STORAGE_KEYS.forEach(key => owners.set(id + ':' + key, id)))
+  if (isLocalStorageSupported()) {
+    Object.keys(localStorage).filter(key => owners.has(key)).forEach(key => {
+      localStorage.removeItem(key)
+      cleaned.add(owners.get(key))
+    })
+  }
+  snapshotCookieNames().filter(name => owners.has(name)).forEach(name => {
+    expireCookie(name, broadDomain)
+    cleaned.add(owners.get(name))
+  })
+  return [...cleaned]
 }
 
 /**
@@ -261,18 +291,15 @@ const deleteAccountStorage = (removedAccounts, broadDomain) => {
  *
  * @param {string[]} accountIds
  * @param {string} [broadDomain]
- * @returns {string[]} the account ids that were removed
+ * @returns {string[]} the account ids that had SDK storage deleted
  */
 export const removeAccounts = (accountIds, broadDomain) => {
-  if (!isLocalStorageSupported() || isMigrationInProgress()) {
+  if (isMigrationInProgress() || accountIds.length === 0) {
     return []
   }
-  if (accountIds.length === 0) {
-    return []
-  }
-  deleteAccountStorage(accountIds, broadDomain)
+  const removed = deleteAccountStorage(accountIds, broadDomain)
   writeAccountsRegistry(readAccountsRegistry().filter(id => !accountIds.includes(id)))
-  return accountIds
+  return removed
 }
 
 /**
@@ -284,14 +311,14 @@ export const removeAccounts = (accountIds, broadDomain) => {
  *
  * @param {string[]} activeAccountIds
  * @param {string} [broadDomain] parent domain the shared cookies are written on
- * @returns {string[]} the account ids whose storage was removed
+ * @returns {string[]} the account ids that had SDK storage deleted
  */
 export const syncActiveAccounts = (activeAccountIds, broadDomain) => {
-  if (!isLocalStorageSupported() || activeAccountIds.length === 0 || isMigrationInProgress()) {
+  if (isMigrationInProgress()) {
     return []
   }
   const removedAccounts = readAccountsRegistry().filter(id => !activeAccountIds.includes(id))
-  deleteAccountStorage(removedAccounts, broadDomain)
+  const removed = deleteAccountStorage(removedAccounts, broadDomain)
   writeAccountsRegistry(activeAccountIds)
-  return removedAccounts
+  return removed
 }

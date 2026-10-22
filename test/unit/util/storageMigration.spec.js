@@ -17,6 +17,7 @@ import { clearAllStorage } from './storageTestUtils'
 import {
   isMigrationInProgress,
   migrateLegacyStorage,
+  parentDomains,
   registerActiveAccount,
   removeAccounts,
   snapshotCookieNames,
@@ -290,6 +291,16 @@ describe('util/storageMigration', () => {
     })
   })
 
+  describe('parentDomains', () => {
+    test('lists every parent domain of a hostname', () => {
+      expect(parentDomains('a.b.example.com')).toEqual(['.b.example.com', '.example.com', '.com'])
+    })
+
+    test('returns nothing for a single-label host', () => {
+      expect(parentDomains('localhost')).toEqual([])
+    })
+  })
+
   describe('registerActiveAccount', () => {
     const readRegistry = () => JSON.parse(localStorage.getItem(ACCOUNTS_REGISTRY))
 
@@ -318,10 +329,10 @@ describe('util/storageMigration', () => {
       expect(localStorage.getItem(ACCOUNTS_REGISTRY)).toBeNull()
     })
 
-    test('is skipped while a migration is in progress', () => {
+    test('still registers while a migration is in progress', () => {
       localStorage.setItem(STORAGE_MIGRATION_FLAG, false)
       registerActiveAccount(SK1)
-      expect(localStorage.getItem(ACCOUNTS_REGISTRY)).toBeNull()
+      expect(readRegistry()).toEqual([SK1])
     })
   })
 
@@ -388,13 +399,25 @@ describe('util/storageMigration', () => {
       expect(readRegistry()).toEqual([SK1])
     })
 
-    test('does nothing when localStorage is not supported', () => {
+    test('cookie-only: the registry is a cookie and not-live accounts are removed', () => {
+      setCookie(SK1 + ':' + GCOOKIE_NAME, 'guid-sk1', BROAD_DOMAIN)
+      setCookie(SK1 + ':' + CAMP_COOKIE_NAME, 'camp', BROAD_DOMAIN)
+      setCookie(EU1 + ':' + GCOOKIE_NAME, 'guid-eu1', BROAD_DOMAIN)
+      setCookie(SK1 + ':cart', 'host-app', BROAD_DOMAIN)
       disableLocalStorage()
       try {
-        expect(syncActiveAccounts([SK1])).toEqual([])
+        registerActiveAccount(SK1)
+        registerActiveAccount(EU1)
+        expect(cookieNames()).toContain(ACCOUNTS_REGISTRY)
+
+        expect(syncActiveAccounts([EU1], BROAD_DOMAIN)).toEqual([SK1])
       } finally {
         restoreLocalStorage()
       }
+      expect(cookieNames()).not.toContain(SK1 + ':' + GCOOKIE_NAME)
+      expect(cookieNames()).not.toContain(SK1 + ':' + CAMP_COOKIE_NAME)
+      expect(cookieNames()).toContain(EU1 + ':' + GCOOKIE_NAME)
+      expect(cookieNames()).toContain(SK1 + ':cart')
     })
 
     test('registers and cleans up a previous owner after a mismatch migrate', () => {
@@ -428,6 +451,13 @@ describe('util/storageMigration', () => {
       expect(cookieNames()).not.toContain(SK1 + ':' + GCOOKIE_NAME)
       expect(localStorage.getItem(EU1 + ':' + GCOOKIE_NAME)).not.toBeNull()
       expect(readRegistry()).toEqual([EU1])
+    })
+
+    test('returns only the accounts that actually had storage deleted', () => {
+      seedAccount(SK1)
+      registerActiveAccount(SK1)
+
+      expect(removeAccounts([SK1, EU1], BROAD_DOMAIN)).toEqual([SK1])
     })
 
     test('is a no-op for an empty list', () => {
@@ -483,13 +513,20 @@ describe('util/storageMigration', () => {
       expect(readRegistry()).toEqual([SK1])
     })
 
-    test('does nothing when localStorage is not supported', () => {
+    test('cookie-only: removes the cookies of the listed accounts and updates the cookie registry', () => {
+      setCookie(SK1 + ':' + GCOOKIE_NAME, 'guid-sk1', BROAD_DOMAIN)
+      setCookie(EU1 + ':' + GCOOKIE_NAME, 'guid-eu1', BROAD_DOMAIN)
       disableLocalStorage()
       try {
-        expect(removeAccounts([SK1])).toEqual([])
+        registerActiveAccount(SK1)
+        registerActiveAccount(EU1)
+        expect(removeAccounts([SK1], BROAD_DOMAIN)).toEqual([SK1])
+        expect(syncActiveAccounts([SK1], BROAD_DOMAIN)).toEqual([EU1])
       } finally {
         restoreLocalStorage()
       }
+      expect(cookieNames()).not.toContain(SK1 + ':' + GCOOKIE_NAME)
+      expect(cookieNames()).not.toContain(EU1 + ':' + GCOOKIE_NAME)
     })
   })
 })

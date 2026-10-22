@@ -184,13 +184,29 @@ describe('clevertap.js', function () {
 
     describe('removeStaleInstances', () => {
       test('with a list: removes only those accounts and leaves _instances untouched', () => {
-        Clevertap._instances = { A: {}, B: {} }
+        Clevertap._instances = { B: {} }
         removeAccounts.mockReturnValue(['A'])
 
         expect(Clevertap.removeStaleInstances(['A'])).toEqual(['A'])
         expect(removeAccounts).toHaveBeenCalledWith(['A'], $ct._storage?._broadDomain)
         expect(syncActiveAccounts).not.toHaveBeenCalled()
-        expect(Object.keys(Clevertap._instances)).toEqual(['A', 'B'])
+        expect(Object.keys(Clevertap._instances)).toEqual(['B'])
+      })
+
+      test('with a list: skips accounts that are live in _instances', () => {
+        Clevertap._instances = { A: {}, B: {} }
+        removeAccounts.mockReturnValue(['C'])
+
+        expect(Clevertap.removeStaleInstances(['A', 'C'])).toEqual(['C'])
+        expect(removeAccounts).toHaveBeenCalledWith(['C'], $ct._storage?._broadDomain)
+      })
+
+      test('with a list: works before any instance is initialised', () => {
+        Clevertap._instances = {}
+        removeAccounts.mockReturnValue(['A'])
+
+        expect(Clevertap.removeStaleInstances(['A'])).toEqual(['A'])
+        expect(removeAccounts).toHaveBeenCalledWith(['A'], $ct._storage?._broadDomain)
       })
 
       test('without a list: keeps the live instances and removes the rest', () => {

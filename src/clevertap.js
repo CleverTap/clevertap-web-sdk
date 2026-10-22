@@ -70,19 +70,19 @@ export default class CleverTap {
   static MAX_INSTANCES = 5
 
   /**
-   * With a list: those are the account ids to delete. Other registered
-   * accounts (including ones not initialized on this page) are left alone,
-   * and `_instances` is not modified.
+   * With a list: those are the account ids to delete. Accounts that are live
+   * in `_instances` are skipped, and other registered accounts (including ones
+   * not initialized on this page) are left alone. `_instances` is not modified.
    * With no list: keep set is live `_instances`; everything else in
    * WZRK_ACCOUNTS is deleted.
    * @param {string[]} [accountIds] account ids to remove
-   * @returns {string[]} account ids whose storage was removed
+   * @returns {string[]} account ids that had SDK storage deleted
    */
   static removeStaleInstances (accountIds) {
     try {
       const broadDomain = $ct._storage?._broadDomain
       if (Array.isArray(accountIds)) {
-        return removeAccounts(accountIds, broadDomain)
+        return removeAccounts(accountIds.filter(id => !CleverTap._instances[id]), broadDomain)
       }
       return syncActiveAccounts(Object.keys(CleverTap._instances), broadDomain)
     } catch (e) {
