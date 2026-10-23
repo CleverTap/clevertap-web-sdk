@@ -1,14 +1,24 @@
 import { LRU_CACHE } from '../../../src/util/constants'
 import LRUCache from '../../../src/util/lruCache'
-import { StorageManager } from '../../../src/util/storage'
 
 jest.enableAutomock().unmock('../../../src/util/lruCache')
 
+const mockStorage = {
+  readFromLSorCookie: jest.fn(),
+  saveToLSorCookie: jest.fn(),
+  readCookie: jest.fn(),
+  createBroadCookie: jest.fn()
+}
+
 describe('util/lruCache', function () {
+  beforeEach(() => {
+    Object.values(mockStorage).forEach(fn => fn.mockReset())
+  })
+
   describe('constructor', () => {
     test('should initialise empty cache object when LS or cookie has no previous LRUCache', () => {
-      StorageManager.readFromLSorCookie.mockReturnValue(undefined)
-      this.lruCache = new LRUCache(2)
+      mockStorage.readFromLSorCookie.mockReturnValue(undefined)
+      this.lruCache = new LRUCache(2, mockStorage)
       expect(this.lruCache.cache).toMatchObject({})
     })
 
@@ -25,8 +35,8 @@ describe('util/lruCache', function () {
         bar: 'value 2'
       }
 
-      StorageManager.readFromLSorCookie.mockReturnValue(previousCacheData)
-      this.lruCache = new LRUCache(2)
+      mockStorage.readFromLSorCookie.mockReturnValue(previousCacheData)
+      this.lruCache = new LRUCache(2, mockStorage)
       expect(this.lruCache.cache).toMatchObject(expectedCache)
     })
 
@@ -39,8 +49,8 @@ describe('util/lruCache', function () {
             ['test', 'value 3']
           ]
         }
-        StorageManager.readFromLSorCookie.mockReturnValue(previousCacheData)
-        this.lruCache = new LRUCache(4)
+        mockStorage.readFromLSorCookie.mockReturnValue(previousCacheData)
+        this.lruCache = new LRUCache(4, mockStorage)
       })
 
       test('should return undefined if key is not present', () => {
@@ -59,7 +69,7 @@ describe('util/lruCache', function () {
             ['foo', 'value 1']
           ]
         }
-        expect(StorageManager.saveToLSorCookie).toHaveBeenCalledWith(LRU_CACHE, expect.objectContaining(expectedCacheDataStored))
+        expect(mockStorage.saveToLSorCookie).toHaveBeenCalledWith(LRU_CACHE, expect.objectContaining(expectedCacheDataStored))
       })
 
       describe('set value', () => {
@@ -73,7 +83,7 @@ describe('util/lruCache', function () {
               ['test 1', 'value for test 1']
             ]
           }
-          expect(StorageManager.saveToLSorCookie).toHaveBeenCalledWith(LRU_CACHE, expect.objectContaining(expectedCacheDataStored))
+          expect(mockStorage.saveToLSorCookie).toHaveBeenCalledWith(LRU_CACHE, expect.objectContaining(expectedCacheDataStored))
         })
 
         test('should update exisiting value and append to end of LS data array when setting value for exisiting key', () => {
@@ -85,7 +95,7 @@ describe('util/lruCache', function () {
               ['foo', 'updated value for foo']
             ]
           }
-          expect(StorageManager.saveToLSorCookie).toHaveBeenCalledWith(LRU_CACHE, expect.objectContaining(expectedCacheDataStored))
+          expect(mockStorage.saveToLSorCookie).toHaveBeenCalledWith(LRU_CACHE, expect.objectContaining(expectedCacheDataStored))
         })
 
         test('should remove oldest value from LS data array when max limit is reached with adding new values', () => {
@@ -99,7 +109,7 @@ describe('util/lruCache', function () {
               ['test 2', 'value for test 2']
             ]
           }
-          expect(StorageManager.saveToLSorCookie).toHaveBeenCalledWith(LRU_CACHE, expect.objectContaining(expectedCacheDataStored))
+          expect(mockStorage.saveToLSorCookie).toHaveBeenCalledWith(LRU_CACHE, expect.objectContaining(expectedCacheDataStored))
         })
       })
 
@@ -127,8 +137,8 @@ describe('util/lruCache', function () {
         })
 
         test('should return undefined when no items in cache', () => {
-          StorageManager.readFromLSorCookie.mockReturnValue(undefined)
-          const lruCache = new LRUCache(2)
+          mockStorage.readFromLSorCookie.mockReturnValue(undefined)
+          const lruCache = new LRUCache(2, mockStorage)
           const result = lruCache.getLastKey()
           expect(result).toBeUndefined()
         })
@@ -141,8 +151,8 @@ describe('util/lruCache', function () {
         })
 
         test('should return -1 when only one value is in cache', () => {
-          StorageManager.readFromLSorCookie.mockReturnValue({ cache: [['foo', 'value 1']] })
-          const lruCache = new LRUCache(2)
+          mockStorage.readFromLSorCookie.mockReturnValue({ cache: [['foo', 'value 1']] })
+          const lruCache = new LRUCache(2, mockStorage)
           const result = lruCache.getSecondLastKey()
           expect(result).toBe(-1)
         })
