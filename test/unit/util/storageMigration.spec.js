@@ -391,12 +391,12 @@ describe('util/storageMigration', () => {
       expect(readRegistry()).toEqual([SK1, EU1])
     })
 
-    test('is skipped when no account is active', () => {
+    test('removes every registered account when no account is active', () => {
       seedAccount(SK1)
       registerActiveAccount(SK1)
-      expect(syncActiveAccounts([])).toEqual([])
-      expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).not.toBeNull()
-      expect(readRegistry()).toEqual([SK1])
+      expect(syncActiveAccounts([])).toEqual([SK1])
+      expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).toBeNull()
+      expect(readRegistry()).toEqual([])
     })
 
     test('cookie-only: the registry is a cookie and not-live accounts are removed', () => {

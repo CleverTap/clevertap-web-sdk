@@ -2,6 +2,7 @@ import {
   getCampaignObject,
   saveCampaignObject
 } from '../clevertap'
+import { StorageManager } from '../storage'
 import { ACTION_TYPES } from '../constants'
 
 export class CTWebPopupImageOnly extends HTMLElement {
@@ -87,14 +88,15 @@ export class CTWebPopupImageOnly extends HTMLElement {
         }
         this.remove()
         if (campaignId != null && campaignId !== '-1') {
-          if (this.storage && this.storage._isLocalStorageSupported()) {
-            const campaignObj = getCampaignObject(this.storage)
+          const storage = this.storage || StorageManager
+          if (storage._isLocalStorageSupported()) {
+            const campaignObj = getCampaignObject(storage)
 
             campaignObj.dnd = [...new Set([
               ...(campaignObj.dnd ?? []),
               campaignId
             ])]
-            saveCampaignObject(campaignObj, this.storage)
+            saveCampaignObject(campaignObj, storage)
           }
         }
       }

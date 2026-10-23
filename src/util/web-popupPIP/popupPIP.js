@@ -6,6 +6,7 @@ import {
   PIP_ICONS,
   WEB_POPUP_PIP_HOST_ID
 } from '../constants'
+import { StorageManager } from '../storage'
 import {
   PIP_ANCHOR_FLEX,
   PIP_DRAG_CONTROL_SELECTOR,
@@ -215,14 +216,15 @@ export class CTWebPopupPIP extends HTMLElement {
         host.remove()
       }
       if (!this.target.display?.preview && campaignId != null && campaignId !== '-1') {
-        if (this.storage && this.storage._isLocalStorageSupported()) {
-          const campaignObj = getCampaignObject(this.storage)
+        const storage = this.storage || StorageManager
+        if (storage._isLocalStorageSupported()) {
+          const campaignObj = getCampaignObject(storage)
 
           campaignObj.dnd = [...new Set([
             ...(campaignObj.dnd ?? []),
             campaignId
           ])]
-          saveCampaignObject(campaignObj, this.storage)
+          saveCampaignObject(campaignObj, storage)
         }
       }
     }

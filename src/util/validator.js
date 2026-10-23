@@ -1,6 +1,7 @@
 import { isObject, isDateObject, isString, isNumber } from './datatypes'
 import { convertToWZRKDate } from './datetime'
 import { CHARGED_ID, CHARGEDID_COOKIE_NAME, NESTED_OBJECT_ERRORS } from './constants'
+import { StorageManager } from './storage'
 // Destructure error constants for cleaner code
 const {
   DEPTH_LIMIT_EXCEEDED,
@@ -29,7 +30,7 @@ export const isEventStructureFlat = (eventObj) => {
   return false
 }
 
-export const isChargedEventStructureValid = (chargedObj, logger, storage) => {
+export const isChargedEventStructureValid = (chargedObj, logger, storage = StorageManager) => {
   if (isObject(chargedObj)) {
     for (var key in chargedObj) {
       if (chargedObj.hasOwnProperty(key)) {

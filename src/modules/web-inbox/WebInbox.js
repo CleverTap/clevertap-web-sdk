@@ -1,4 +1,4 @@
-import { $ct } from '../../util/storage'
+import { StorageManager, $ct } from '../../util/storage'
 import { Message } from './Message'
 import { inboxContainerStyles, messageStyles } from './inboxStyles'
 import { getInboxPosition, determineTimeStampText, arrowSvg, getInboxMessages, saveInboxMessages } from './helper'
@@ -65,7 +65,7 @@ export class Inbox extends HTMLElement {
   }
 
   init () {
-    const _storage = this.instanceManager.storage
+    const _storage = this.instanceManager ? this.instanceManager.storage : StorageManager
     this.config = this.isPreview ? this.inboxConfigForPreview : _storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}
     if (Object.keys(this.config).length === 0) {
       return
@@ -403,7 +403,7 @@ export class Inbox extends HTMLElement {
    * @returns {boolean} - Returns true if the event target is within the inboxSelector, otherwise false.
    */
   checkForWebInbox (e) {
-    const _storage = this.instanceManager.storage
+    const _storage = this.instanceManager ? this.instanceManager.storage : StorageManager
     const config = _storage.readFromLSorCookie(WEBINBOX_CONFIG) || {}
     const inboxElement = document.getElementById(config.inboxSelector)
 

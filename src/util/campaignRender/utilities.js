@@ -135,7 +135,7 @@ export const appendTVNavigationScript = (targetingMsgJson, html) => {
 }
 
 export const staleDataUpdate = (staledata, campType) => {
-  const campObj = getCampaignObject(CampaignContext.instanceManager.storage)
+  const campObj = getCampaignObject(CampaignContext.instanceManager?.storage)
   const globalObj = campType ? campObj[campType]?.global : null
   if (globalObj != null) {
     for (const idx in staledata) {
@@ -163,7 +163,7 @@ export const staleDataUpdate = (staledata, campType) => {
       }
     }
   }
-  saveCampaignObject(campObj, CampaignContext.instanceManager.storage)
+  saveCampaignObject(campObj, CampaignContext.instanceManager?.storage)
 }
 
 export const mergeEventMap = (newEvtMap) => {
@@ -521,7 +521,7 @@ export const deliveryPreferenceUtils = {
    */
   portTLC (_session) {
     // TODO: Add the campaignId keys which has value as `dnd` to the `dnd` array
-    const existingCamp = getCampaignObject(CampaignContext.instanceManager.storage)
+    const existingCamp = getCampaignObject(CampaignContext.instanceManager?.storage)
     const dnd = []
 
     /* If no campaigns are present, then we don't need to port anything */
@@ -545,22 +545,22 @@ export const deliveryPreferenceUtils = {
           sessionCampaignCount,
           globalCampaignCount
         )
-        saveCampaignObject(updatedCamp, CampaignContext.instanceManager.storage)
+        saveCampaignObject(updatedCamp, CampaignContext.instanceManager?.storage)
       }
     }
 
-    const updatedCamp = getCampaignObject(CampaignContext.instanceManager.storage)
+    const updatedCamp = getCampaignObject(CampaignContext.instanceManager?.storage)
     saveCampaignObject({
       ...updatedCamp,
       dnd: [...new Set([...(updatedCamp.dnd || []), ...dnd])],
       wp: {}
-    }, CampaignContext.instanceManager.storage)
+    }, CampaignContext.instanceManager?.storage)
   },
 
   portCampaignDetails (campaignId, sessionCount, globalCount) {
     /* If we have a dnd count for sesion then we will default its count to globalCount */
     const sCount = sessionCount === 'dnd' ? globalCount : sessionCount
-    const campaignObj = getCampaignObject(CampaignContext.instanceManager.storage)
+    const campaignObj = getCampaignObject(CampaignContext.instanceManager?.storage)
 
     // Ensure campaignObj and campaignObj.wfc exist
     campaignObj.wfc = campaignObj.wfc || {}
@@ -624,13 +624,13 @@ export const deliveryPreferenceUtils = {
   },
 
   isPopupCampaignAlreadyShown (campaignId) {
-    const campaignObj = getCampaignObject(CampaignContext.instanceManager.storage)
+    const campaignObj = getCampaignObject(CampaignContext.instanceManager?.storage)
     const campaignDetails = campaignObj?.wfc?.[campaignId]
     return campaignDetails?.length > 0
   },
 
   isCampaignAddedToDND (campaignId) {
-    const campaignObj = getCampaignObject(CampaignContext.instanceManager.storage)
+    const campaignObj = getCampaignObject(CampaignContext.instanceManager?.storage)
     return campaignObj?.dnd?.includes(campaignId)
   },
 
@@ -646,7 +646,7 @@ export const deliveryPreferenceUtils = {
     }
 
     const currentIdCamp = globalCamp?.[device?.gcookie]
-    const campData = getCampaignObject(CampaignContext.instanceManager.storage)
+    const campData = getCampaignObject(CampaignContext.instanceManager?.storage)
 
     let campaignObj = currentIdCamp || campData
     const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc)
@@ -683,7 +683,7 @@ export const deliveryPreferenceUtils = {
       wfc: mergeFrequencyControl(currentIdCamp?.wfc, campData?.wfc),
       wndfc: mergeFrequencyControl(currentIdCamp?.wndfc, campData?.wndfc)
     }
-    saveCampaignObject(campaignObj, CampaignContext.instanceManager.storage)
+    saveCampaignObject(campaignObj, CampaignContext.instanceManager?.storage)
   },
 
   /**
@@ -735,7 +735,7 @@ export const deliveryPreferenceUtils = {
   clearStaleCampaigns (msg, logger) {
     try {
       // Get current campaign object
-      const campaignObject = getCampaignObject(CampaignContext.instanceManager.storage)
+      const campaignObject = getCampaignObject(CampaignContext.instanceManager?.storage)
 
       if (!campaignObject) {
         logger.debug('No campaign object found')
@@ -788,7 +788,7 @@ export const deliveryPreferenceUtils = {
 
       // Save updated campaign object if modifications were made
       if (modified) {
-        saveCampaignObject(campaignObject, CampaignContext.instanceManager.storage)
+        saveCampaignObject(campaignObject, CampaignContext.instanceManager?.storage)
         logger.debug('Campaign object updated with stale campaign removals')
       } else {
         logger.debug('No stale campaigns found to clear')

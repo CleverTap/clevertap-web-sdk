@@ -12,7 +12,22 @@ import { getNow } from './datetime'
 import { pruneBackupMap } from './backupQueue'
 
 export class StorageManager {
-  static save (key, value) {
+  /**
+   * Every read/write helper takes an optional trailing `prefixed` flag (default true).
+   * Prefixed access goes through the default instance's InstanceStorageManager, i.e. the
+   * key is stored as `{accountId}:{key}`. Pass `prefixed = false` for the few keys that are
+   * not account specific (e.g. WZRK_GEO, the accounts registry, the migration flag) so they
+   * are read/written with the raw key.
+   */
+  static _prefixedStorage (prefixed) {
+    return prefixed ? $ct._storage : null
+  }
+
+  static save (key, value, prefixed = true) {
+    const instanceStorage = this._prefixedStorage(prefixed)
+    if (instanceStorage) {
+      return instanceStorage.save(key, value)
+    }
     if (!key || !value) {
       return false
     }
@@ -26,7 +41,11 @@ export class StorageManager {
     }
   }
 
-  static read (key) {
+  static read (key, prefixed = true) {
+    const instanceStorage = this._prefixedStorage(prefixed)
+    if (instanceStorage) {
+      return instanceStorage.read(key)
+    }
     if (!key) {
       return false
     }
@@ -45,7 +64,11 @@ export class StorageManager {
     return data
   }
 
-  static remove (key) {
+  static remove (key, prefixed = true) {
+    const instanceStorage = this._prefixedStorage(prefixed)
+    if (instanceStorage) {
+      return instanceStorage.remove(key)
+    }
     if (!key) {
       return false
     }
@@ -55,7 +78,11 @@ export class StorageManager {
     }
   }
 
-  static removeCookie (name, domain) {
+  static removeCookie (name, domain, prefixed = true) {
+    const instanceStorage = this._prefixedStorage(prefixed)
+    if (instanceStorage) {
+      return instanceStorage.removeCookie(name, domain)
+    }
     let cookieStr = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
 
     if (domain) {
@@ -65,7 +92,11 @@ export class StorageManager {
     document.cookie = cookieStr
   }
 
-  static createCookie (name, value, seconds, domain) {
+  static createCookie (name, value, seconds, domain, prefixed = true) {
+    const instanceStorage = this._prefixedStorage(prefixed)
+    if (instanceStorage) {
+      return instanceStorage.createCookie(name, value, seconds, domain)
+    }
     let expires = ''
     let domainStr = ''
     if (seconds) {
@@ -84,7 +115,11 @@ export class StorageManager {
     document.cookie = name + '=' + value + expires + domainStr + '; path=/'
   }
 
-  static readCookie (name) {
+  static readCookie (name, prefixed = true) {
+    const instanceStorage = this._prefixedStorage(prefixed)
+    if (instanceStorage) {
+      return instanceStorage.readCookie(name)
+    }
     const nameEQ = name + '='
     const ca = document.cookie.split(';')
     for (let idx = 0; idx < ca.length; idx++) {
@@ -108,33 +143,41 @@ export class StorageManager {
     return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function'
   }
 
-  static saveToLSorCookie (property, value) {
+  static saveToLSorCookie (property, value, prefixed = true) {
+    const instanceStorage = this._prefixedStorage(prefixed)
+    if (instanceStorage) {
+      return instanceStorage.saveToLSorCookie(property, value)
+    }
     if (value == null) {
       return
     }
     try {
       if (this._isLocalStorageSupported()) {
-        this.save(property, encodeURIComponent(JSON.stringify(value)))
+        this.save(property, encodeURIComponent(JSON.stringify(value)), prefixed)
       } else {
         if (property === GCOOKIE_NAME) {
-          this.createCookie(property, encodeURIComponent(value), 0, window.location.hostname)
+          this.createCookie(property, encodeURIComponent(value), 0, window.location.hostname, prefixed)
         } else {
-          this.createCookie(property, encodeURIComponent(JSON.stringify(value)), 0, window.location.hostname)
+          this.createCookie(property, encodeURIComponent(JSON.stringify(value)), 0, window.location.hostname, prefixed)
         }
       }
       $ct.globalCache[property] = value
     } catch (e) {}
   }
 
-  static readFromLSorCookie (property) {
+  static readFromLSorCookie (property, prefixed = true) {
+    const instanceStorage = this._prefixedStorage(prefixed)
+    if (instanceStorage) {
+      return instanceStorage.readFromLSorCookie(property)
+    }
     let data
     if ($ct.globalCache.hasOwnProperty(property)) {
       return $ct.globalCache[property]
     }
     if (this._isLocalStorageSupported()) {
-      data = this.read(property)
+      data = this.read(property, prefixed)
     } else {
-      data = this.readCookie(property)
+      data = this.readCookie(property, prefixed)
     }
 
     if (data !== null && data !== undefined && !(typeof data.trim === 'function' && data.trim() === '')) {
@@ -149,7 +192,11 @@ export class StorageManager {
     }
   }
 
-  static createBroadCookie (name, value, seconds, domain, domainSpecification = null) {
+  static createBroadCookie (name, value, seconds, domain, domainSpecification = null, prefixed = true) {
+    const instanceStorage = this._prefixedStorage(prefixed)
+    if (instanceStorage) {
+      return instanceStorage.createBroadCookie(name, value, seconds, domain, domainSpecification)
+    }
     if (domainSpecification) {
       const hostnameParts = window.location.hostname.split('.')
       const level = domainSpecification
@@ -162,15 +209,15 @@ export class StorageManager {
         calculatedDomain = '.' + window.location.hostname
       }
       let cookieValue = value
-      if (name === GCOOKIE_NAME && this.readCookie(name)) {
+      if (name === GCOOKIE_NAME && this.readCookie(name, prefixed)) {
         // remove duplicate cookies if they exist
         // removing .bank.in because it is a protected domain
-        cookieValue = this.readCookie(name)
-        this.removeCookie(name, $ct.broadDomain)
-        this.removeCookie(name, calculatedDomain)
-        this.removeCookie(name, '.bank.in')
+        cookieValue = this.readCookie(name, prefixed)
+        this.removeCookie(name, $ct.broadDomain, prefixed)
+        this.removeCookie(name, calculatedDomain, prefixed)
+        this.removeCookie(name, '.bank.in', prefixed)
       }
-      this.createCookie(name, cookieValue, seconds, calculatedDomain)
+      this.createCookie(name, cookieValue, seconds, calculatedDomain, prefixed)
       return
     }
     /* -------------------------------------------------------------
@@ -179,15 +226,15 @@ export class StorageManager {
      * host only.  Also remove any legacy broad-domain copy so that
      * the host-level cookie has precedence.
      * ----------------------------------------------------------- */
-    const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE)
+    const isolate = !!this.readFromLSorCookie(ISOLATE_COOKIE, prefixed)
     if (isolate) {
       // remove any legacy broad-domain cookie
       if ($ct.broadDomain) {
-        this.removeCookie(name, $ct.broadDomain)
+        this.removeCookie(name, $ct.broadDomain, prefixed)
       }
 
       // write host-scoped cookie and stop
-      this.createCookie(name, value, seconds, domain)
+      this.createCookie(name, value, seconds, domain, prefixed)
       return
     }
     // sets cookie on the base domain. e.g. if domain is baz.foo.bar.com, set cookie on ".bar.com"
@@ -209,19 +256,19 @@ export class StorageManager {
           }
 
           // only needed if the cookie already exists and needs to be updated. See note above.
-          if (this.readCookie(name)) {
+          if (this.readCookie(name, prefixed)) {
             // no guarantee that browser will delete cookie, hence create short lived cookies
             var testCookieName = 'test_' + name + idx
-            this.createCookie(testCookieName, value, 10, testBroadDomain) // self-destruct after 10 seconds
-            if (!this.readCookie(testCookieName)) { // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
+            this.createCookie(testCookieName, value, 10, testBroadDomain, prefixed) // self-destruct after 10 seconds
+            if (!this.readCookie(testCookieName, prefixed)) { // if test cookie not set, then the actual cookie wouldn't have been set on this domain either.
               continue
             } else { // else if cookie set, then delete the test and the original cookie
-              this.removeCookie(testCookieName, testBroadDomain)
+              this.removeCookie(testCookieName, testBroadDomain, prefixed)
             }
           }
 
-          this.createCookie(name, value, seconds, testBroadDomain)
-          const tempCookie = this.readCookie(name)
+          this.createCookie(name, value, seconds, testBroadDomain, prefixed)
+          const tempCookie = this.readCookie(name, prefixed)
           // eslint-disable-next-line eqeqeq
           if (tempCookie == value) {
             broadDomain = testBroadDomain
@@ -230,10 +277,10 @@ export class StorageManager {
           }
         }
       } else {
-        this.createCookie(name, value, seconds, broadDomain)
+        this.createCookie(name, value, seconds, broadDomain, prefixed)
       }
     } else {
-      this.createCookie(name, value, seconds, domain)
+      this.createCookie(name, value, seconds, domain, prefixed)
     }
   }
 
@@ -314,7 +361,7 @@ export class StorageManager {
  * Check if SDK is currently muted (for churned accounts)
  * @returns {boolean} true if SDK is muted and should not send requests
  */
-export const isMuted = (storage) => {
+export const isMuted = (storage = StorageManager) => {
   const muteExpiry = storage.readFromLSorCookie(MUTE_EXPIRY_KEY)
   if (!muteExpiry || muteExpiry <= 0) {
     return false
@@ -326,7 +373,7 @@ export const isMuted = (storage) => {
  * Get the mute expiry timestamp
  * @returns {number|null} epoch timestamp in ms, or null if not muted
  */
-export const getMuteExpiry = (storage) => {
+export const getMuteExpiry = (storage = StorageManager) => {
   const muteExpiry = storage.readFromLSorCookie(MUTE_EXPIRY_KEY)
   if (!muteExpiry || muteExpiry <= 0) {
     return null

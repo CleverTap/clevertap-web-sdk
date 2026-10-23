@@ -1,10 +1,11 @@
+import { StorageManager } from './storage'
 import { LRU_CACHE, COOKIE_EXPIRY, LRU_COOKIE_LIMIT } from './constants'
 
 export default class LRUCache {
   #keyOrder
   #storage
 
-  constructor (max, storage) {
+  constructor (max, storage = StorageManager) {
     this.max = max
     this.#storage = storage
     let lruCache = this.#storage.readFromLSorCookie(LRU_CACHE)

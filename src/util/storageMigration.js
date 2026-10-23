@@ -103,7 +103,7 @@ const expireCookie = (name, broadDomain) => {
   const domains = new Set([hostname, broadDomain, ...parentDomains(hostname)])
   domains.forEach(domain => {
     if (domain) {
-      StorageManager.removeCookie(name, domain)
+      StorageManager.removeCookie(name, domain, false)
     }
   })
 }
@@ -116,7 +116,7 @@ export const isMigrationInProgress = () =>
 const writeFlag = () =>
   isLocalStorageSupported()
     ? localStorage.setItem(STORAGE_MIGRATION_FLAG, false)
-    : StorageManager.createCookie(STORAGE_MIGRATION_FLAG, false, 0, window.location.hostname)
+    : StorageManager.createCookie(STORAGE_MIGRATION_FLAG, false, 0, window.location.hostname, false)
 
 const clearFlag = () =>
   isLocalStorageSupported() ? localStorage.removeItem(STORAGE_MIGRATION_FLAG) : expireCookie(STORAGE_MIGRATION_FLAG)
@@ -152,7 +152,7 @@ const writeAccountsRegistry = (ids) => {
   if (isLocalStorageSupported()) {
     localStorage.setItem(ACCOUNTS_REGISTRY, JSON.stringify(ids))
   } else {
-    StorageManager.createCookie(ACCOUNTS_REGISTRY, JSON.stringify(ids), COOKIE_EXPIRY, window.location.hostname)
+    StorageManager.createCookie(ACCOUNTS_REGISTRY, JSON.stringify(ids), COOKIE_EXPIRY, window.location.hostname, false)
   }
 }
 
@@ -307,7 +307,8 @@ export const removeAccounts = (accountIds, broadDomain) => {
  * activeAccountIds, then writes that list as the new registry.
  * Used by removeStaleInstances when no remove-list is given.
  *
- * Skipped while a migration is pending and when no account is active.
+ * Skipped while a migration is pending. An empty list is valid and removes every
+ * registered account.
  *
  * @param {string[]} activeAccountIds
  * @param {string} [broadDomain] parent domain the shared cookies are written on
