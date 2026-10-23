@@ -75,7 +75,7 @@ export default class RequestManager {
 
           if (typeof backupEvent.q !== 'undefined') {
             // Use safe JSON parsing to prevent injection attacks
-            const session = safeJSONParse(this.#instanceManager.storage.readCookie(SCOOKIE_PREFIX + '_' + this.#account.id), null)
+            const session = safeJSONParse(this.#instanceManager.storage.readCookie(SCOOKIE_PREFIX), null)
             // Keep stored backupEvent.q unchanged so session suffix is not persisted/duplicated on retry
             let requestUrl = backupEvent.q
             if (session?.s) {
@@ -299,7 +299,7 @@ export default class RequestManager {
     this.#addToLocalEventMap(data.evtName)
     data = this.addSystemDataToObject(data, undefined)
     this.addFlags(data)
-    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    data[CAMP_COOKIE_NAME] = getCampaignObjForLc(this.#instanceManager.storage)
     const compressedData = compressData(JSON.stringify(data), this.#logger)
     let pageLoadUrl = this.#account.dataPostURL
     pageLoadUrl = addToURL(pageLoadUrl, 'type', EVT_PUSH)
