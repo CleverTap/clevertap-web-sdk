@@ -88,7 +88,7 @@ export default class CleverTapAPI {
       }
       if (global && this.#instanceManager.storage._isLocalStorageSupported()) {
         if (this.#instanceManager.state.LRU_CACHE == null) {
-          this.#instanceManager.state.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
+          this.#instanceManager.state.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE, this.#instanceManager.storage)
         }
 
         const kIdFromLS = this.#instanceManager.storage.readFromLSorCookie(KCOOKIE_NAME)
