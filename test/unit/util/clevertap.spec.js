@@ -21,16 +21,27 @@ import {
   MARRIED_ERROR,
   PHONE_FORMAT_ERROR
 } from '../../../src/util/messages'
-import { $ct, StorageManager } from '../../../src/util/storage'
+import { $ct } from '../../../src/util/storage'
 import RequestDispatcher from '../../../src/util/requestDispatcher'
 
 jest.enableAutomock().unmock('../../../src/util/clevertap').unmock('../../../src/util/constants')
   .unmock('../../../src/util/datatypes').unmock('../../../src/util/messages')
 
+// Every helper now works on the storage of the instance that owns it
+const mockStorage = {
+  _isLocalStorageSupported: jest.fn(),
+  save: jest.fn(),
+  read: jest.fn(),
+  readFromLSorCookie: jest.fn(),
+  saveToLSorCookie: jest.fn()
+}
+const mockInstanceManager = { storage: mockStorage, state: $ct }
+
 describe('util/clevertap', function () {
   beforeEach(() => {
     // Clear all mocks
     jest.clearAllMocks()
+    Object.values(mockStorage).forEach(fn => fn.mockReset())
 
     // Mock RequestDispatcher methods to prevent any unexpected calls
     RequestDispatcher.handleFetchResponse = jest.fn().mockResolvedValue()
@@ -56,29 +67,29 @@ describe('util/clevertap', function () {
       }
     })
     test('should do nothing if localStorage is not supported', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(false)
-      saveCampaignObject(this.input)
-      expect(StorageManager.save).not.toHaveBeenCalled()
+      mockStorage._isLocalStorageSupported.mockReturnValue(false)
+      saveCampaignObject(this.input, mockStorage)
+      expect(mockStorage.save).not.toHaveBeenCalled()
     })
 
     test('should save to localStorage when localStorage is supported', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(true)
-      saveCampaignObject(this.input)
-      expect(StorageManager.save).toHaveBeenCalledWith(CAMP_COOKIE_NAME, encodeURIComponent(JSON.stringify(this.input)))
+      mockStorage._isLocalStorageSupported.mockReturnValue(true)
+      saveCampaignObject(this.input, mockStorage)
+      expect(mockStorage.save).toHaveBeenCalledWith(CAMP_COOKIE_NAME, encodeURIComponent(JSON.stringify(this.input)))
     })
   })
 
   describe('get campaign object', () => {
     test('should return empty object if localStorage is not supported', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(false)
-      const result = getCampaignObject()
+      mockStorage._isLocalStorageSupported.mockReturnValue(false)
+      const result = getCampaignObject(mockStorage)
       expect(result).toMatchObject({})
     })
 
     test('should return empty object if campaign object is not stored in localStorage', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(true)
-      StorageManager.read.mockReturnValue(null)
-      const result = getCampaignObject()
+      mockStorage._isLocalStorageSupported.mockReturnValue(true)
+      mockStorage.read.mockReturnValue(null)
+      const result = getCampaignObject(mockStorage)
       expect(result).toMatchObject({})
     })
 
@@ -86,24 +97,24 @@ describe('util/clevertap', function () {
       const campObject = {
         camp: 'test'
       }
-      StorageManager._isLocalStorageSupported.mockReturnValue(true)
-      StorageManager.read.mockReturnValue(encodeURIComponent(JSON.stringify(campObject)))
-      const result = getCampaignObject()
+      mockStorage._isLocalStorageSupported.mockReturnValue(true)
+      mockStorage.read.mockReturnValue(encodeURIComponent(JSON.stringify(campObject)))
+      const result = getCampaignObject(mockStorage)
       expect(result).toMatchObject(campObject)
     })
   })
 
   describe('get campaign object for LC', () => {
     test('should return undefined if localStorage is not supported', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(false)
-      const result = getCampaignObjForLc()
+      mockStorage._isLocalStorageSupported.mockReturnValue(false)
+      const result = getCampaignObjForLc(mockStorage)
       expect(result).toBeUndefined()
     })
 
     test('should return object with empty values when campaign object is not saved to local storage', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(true)
-      StorageManager.read.mockReturnValue(null)
-      const result = getCampaignObjForLc()
+      mockStorage._isLocalStorageSupported.mockReturnValue(true)
+      mockStorage.read.mockReturnValue(null)
+      const result = getCampaignObjForLc(mockStorage)
       const expectedObj = {
         /* Webpopup */
         wfc: {},
@@ -137,10 +148,10 @@ describe('util/clevertap', function () {
     //       id2: 1
     //     }
     //   }
-    //   StorageManager._isLocalStorageSupported.mockReturnValue(true)
-    //   StorageManager.read.mockReturnValue(encodeURIComponent(JSON.stringify(campObject)))
+    //   mockStorage._isLocalStorageSupported.mockReturnValue(true)
+    //   mockStorage.read.mockReturnValue(encodeURIComponent(JSON.stringify(campObject)))
     //   getToday.mockReturnValue('today')
-    //   const result = getCampaignObjForLc()
+    //   const result = getCampaignObjForLc(mockStorage)
     //   const expectedObj = {
     //     wmp: 5,
     //     tlc: [
@@ -633,15 +644,15 @@ describe('util/clevertap', function () {
 
   describe('add to local profile map', () => {
     test('should do nothing when localStorage is not supported', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(false)
+      mockStorage._isLocalStorageSupported.mockReturnValue(false)
       const profileObj = {}
-      addToLocalProfileMap(profileObj, false)
-      expect(StorageManager.saveToLSorCookie).not.toHaveBeenCalled()
+      addToLocalProfileMap(profileObj, false, mockInstanceManager)
+      expect(mockStorage.saveToLSorCookie).not.toHaveBeenCalled()
     })
 
     describe('supports localStorage', () => {
       beforeEach(() => {
-        StorageManager._isLocalStorageSupported.mockReturnValue(true)
+        mockStorage._isLocalStorageSupported.mockReturnValue(true)
         $ct.globalProfileMap = null
       })
 
@@ -650,11 +661,11 @@ describe('util/clevertap', function () {
           id1: 'value 1',
           id2: 'value 2'
         }
-        StorageManager.readFromLSorCookie.mockReturnValue(null)
+        mockStorage.readFromLSorCookie.mockReturnValue(null)
 
-        addToLocalProfileMap(profileObject, false)
+        addToLocalProfileMap(profileObject, false, mockInstanceManager)
         expect($ct.globalProfileMap).toMatchObject(profileObject)
-        expect(StorageManager.saveToLSorCookie).toHaveBeenCalledWith(PR_COOKIE, expect.objectContaining(profileObject))
+        expect(mockStorage.saveToLSorCookie).toHaveBeenCalledWith(PR_COOKIE, expect.objectContaining(profileObject))
       })
 
       test('should not override existing values in map when override flag is false', () => {
@@ -672,8 +683,8 @@ describe('util/clevertap', function () {
           }
         }
 
-        StorageManager.readFromLSorCookie.mockReturnValue(lsProfileMap)
-        addToLocalProfileMap(profileObj, false)
+        mockStorage.readFromLSorCookie.mockReturnValue(lsProfileMap)
+        addToLocalProfileMap(profileObj, false, mockInstanceManager)
 
         const expectedObj = {
           id1: 'value 1',
@@ -683,7 +694,7 @@ describe('util/clevertap', function () {
           id5: 'value 5'
         }
         expect($ct.globalProfileMap).toMatchObject(expectedObj)
-        expect(StorageManager.saveToLSorCookie).toHaveBeenCalledWith(PR_COOKIE, expect.objectContaining(expectedObj))
+        expect(mockStorage.saveToLSorCookie).toHaveBeenCalledWith(PR_COOKIE, expect.objectContaining(expectedObj))
       })
 
       test('should override existing values in map when override flag is true', () => {
@@ -704,7 +715,7 @@ describe('util/clevertap', function () {
           }
         }
 
-        addToLocalProfileMap(profileObj, true)
+        addToLocalProfileMap(profileObj, true, mockInstanceManager)
 
         const expectedObj = {
           id1: 'updated value 1',
@@ -714,7 +725,7 @@ describe('util/clevertap', function () {
           id5: 'value 5'
         }
         expect($ct.globalProfileMap).toMatchObject(expectedObj)
-        expect(StorageManager.saveToLSorCookie).toHaveBeenCalledWith(PR_COOKIE, expect.objectContaining(expectedObj))
+        expect(mockStorage.saveToLSorCookie).toHaveBeenCalledWith(PR_COOKIE, expect.objectContaining(expectedObj))
       })
     })
   })
@@ -725,34 +736,34 @@ describe('util/clevertap', function () {
     })
 
     test('should add campaign to DND list when localStorage is supported', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(true)
-      StorageManager.read.mockReturnValue(encodeURIComponent(JSON.stringify({})))
+      mockStorage._isLocalStorageSupported.mockReturnValue(true)
+      mockStorage.read.mockReturnValue(encodeURIComponent(JSON.stringify({})))
       $ct.campaignDivMap.camp1 = 'wizParDiv0'
       document.body.innerHTML = '<div id="wizParDiv0"></div>'
 
-      closeIframe('camp1', null, 'session1')
+      closeIframe('camp1', null, 'session1', undefined, mockStorage)
 
-      expect(StorageManager.save).toHaveBeenCalled()
+      expect(mockStorage.save).toHaveBeenCalled()
       expect($ct.campaignDivMap.camp1).toBeUndefined()
     })
 
     test('should remove popup div from DOM', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(false)
+      mockStorage._isLocalStorageSupported.mockReturnValue(false)
       $ct.campaignDivMap.camp1 = 'wizParDiv0'
       document.body.innerHTML = '<div id="wizParDiv0"></div>'
 
-      closeIframe('camp1', null, null)
+      closeIframe('camp1', null, null, undefined, mockStorage)
 
       expect(document.getElementById('wizParDiv0')).toBeNull()
       expect($ct.campaignDivMap.camp1).toBeUndefined()
     })
 
     test('should remove opacity overlay for intentPreview', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(false)
+      mockStorage._isLocalStorageSupported.mockReturnValue(false)
       $ct.campaignDivMap.camp1 = 'intentPreview'
       document.body.innerHTML = '<div id="intentPreview"></div><div id="intentOpacityDiv"></div>'
 
-      closeIframe('camp1', null, null)
+      closeIframe('camp1', null, null, undefined, mockStorage)
 
       expect(document.getElementById('intentPreview')).toBeNull()
       expect(document.getElementById('intentOpacityDiv')).toBeNull()
@@ -760,11 +771,11 @@ describe('util/clevertap', function () {
     })
 
     test('should not throw when popup was already removed from DOM (stale campaignDivMap)', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(false)
+      mockStorage._isLocalStorageSupported.mockReturnValue(false)
       $ct.campaignDivMap.camp1 = 'wizParDiv0'
       document.body.innerHTML = ''
 
-      expect(() => closeIframe('camp1', null, null)).not.toThrow()
+      expect(() => closeIframe('camp1', null, null, undefined, mockStorage)).not.toThrow()
       expect($ct.campaignDivMap.camp1).toBeUndefined()
     })
   })
@@ -862,13 +873,13 @@ describe('util/clevertap', function () {
     })
 
     test('should NOT add campaigns to DND list', () => {
-      StorageManager._isLocalStorageSupported.mockReturnValue(true)
+      mockStorage._isLocalStorageSupported.mockReturnValue(true)
       $ct.campaignDivMap.camp1 = 'wizParDiv0'
       document.body.innerHTML = '<div id="wizParDiv0"></div>'
 
       dismissActiveCampaigns()
 
-      expect(StorageManager.save).not.toHaveBeenCalled()
+      expect(mockStorage.save).not.toHaveBeenCalled()
     })
 
     test('should handle gracefully when popup div is already removed from DOM', () => {
