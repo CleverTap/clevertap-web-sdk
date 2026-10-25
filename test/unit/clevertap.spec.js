@@ -187,7 +187,7 @@ describe('clevertap.js', function () {
         Clevertap._instances = { B: {} }
         removeAccounts.mockReturnValue(['A'])
 
-        expect(Clevertap.removeStaleInstances(['A'])).toEqual(['A'])
+        expect(Clevertap.removeStaleInstances({ accountIds: ['A'] })).toEqual(['A'])
         expect(removeAccounts).toHaveBeenCalledWith(['A'], $ct._storage?._broadDomain)
         expect(syncActiveAccounts).not.toHaveBeenCalled()
         expect(Object.keys(Clevertap._instances)).toEqual(['B'])
@@ -197,7 +197,7 @@ describe('clevertap.js', function () {
         Clevertap._instances = { A: {}, B: {} }
         removeAccounts.mockReturnValue(['C'])
 
-        expect(Clevertap.removeStaleInstances(['A', 'C'])).toEqual(['C'])
+        expect(Clevertap.removeStaleInstances({ accountIds: ['A', 'C'] })).toEqual(['C'])
         expect(removeAccounts).toHaveBeenCalledWith(['C'], $ct._storage?._broadDomain)
       })
 
@@ -205,7 +205,7 @@ describe('clevertap.js', function () {
         Clevertap._instances = {}
         removeAccounts.mockReturnValue(['A'])
 
-        expect(Clevertap.removeStaleInstances(['A'])).toEqual(['A'])
+        expect(Clevertap.removeStaleInstances({ accountIds: ['A'] })).toEqual(['A'])
         expect(removeAccounts).toHaveBeenCalledWith(['A'], $ct._storage?._broadDomain)
       })
 
@@ -214,16 +214,32 @@ describe('clevertap.js', function () {
         syncActiveAccounts.mockReturnValue(['C'])
 
         expect(Clevertap.removeStaleInstances()).toEqual(['C'])
-        expect(syncActiveAccounts).toHaveBeenCalledWith(['A', 'B'], $ct._storage?._broadDomain)
+        expect(syncActiveAccounts).toHaveBeenCalledWith(['A', 'B'], $ct._storage?._broadDomain, false)
         expect(removeAccounts).not.toHaveBeenCalled()
         expect(Object.keys(Clevertap._instances)).toEqual(['A', 'B'])
+      })
+
+      test('with a list and removeAll: also removes accounts that are live in _instances', () => {
+        Clevertap._instances = { A: {}, B: {} }
+        removeAccounts.mockReturnValue(['A', 'C'])
+
+        expect(Clevertap.removeStaleInstances({ accountIds: ['A', 'C'], removeAll: true })).toEqual(['A', 'C'])
+        expect(removeAccounts).toHaveBeenCalledWith(['A', 'C'], $ct._storage?._broadDomain)
+      })
+
+      test('without a list and removeAll: removes every registered account', () => {
+        Clevertap._instances = { A: {}, B: {} }
+        syncActiveAccounts.mockReturnValue(['A', 'B', 'C'])
+
+        expect(Clevertap.removeStaleInstances({ removeAll: true })).toEqual(['A', 'B', 'C'])
+        expect(syncActiveAccounts).toHaveBeenCalledWith([], $ct._storage?._broadDomain, true)
       })
 
       test('never throws and returns an empty list when storage fails', () => {
         removeAccounts.mockImplementation(() => { throw new Error('quota exceeded') })
         syncActiveAccounts.mockImplementation(() => { throw new Error('quota exceeded') })
 
-        expect(Clevertap.removeStaleInstances(['A'])).toEqual([])
+        expect(Clevertap.removeStaleInstances({ accountIds: ['A'] })).toEqual([])
         expect(Clevertap.removeStaleInstances()).toEqual([])
       })
     })

@@ -307,15 +307,17 @@ export const removeAccounts = (accountIds, broadDomain) => {
  * activeAccountIds, then writes that list as the new registry.
  * Used by removeStaleInstances when no remove-list is given.
  *
- * Skipped while a migration is pending. An empty list is valid and removes every
- * registered account.
+ * Skipped while a migration is pending. Also skipped when no account is active
+ * (e.g. called before any instance is initialised), unless `removeAll` is true,
+ * in which case every registered account is removed.
  *
  * @param {string[]} activeAccountIds
  * @param {string} [broadDomain] parent domain the shared cookies are written on
+ * @param {boolean} [removeAll=false] allow an empty active list to remove every registered account
  * @returns {string[]} the account ids that had SDK storage deleted
  */
-export const syncActiveAccounts = (activeAccountIds, broadDomain) => {
-  if (isMigrationInProgress()) {
+export const syncActiveAccounts = (activeAccountIds, broadDomain, removeAll = false) => {
+  if (isMigrationInProgress() || (activeAccountIds.length === 0 && !removeAll)) {
     return []
   }
   const removedAccounts = readAccountsRegistry().filter(id => !activeAccountIds.includes(id))

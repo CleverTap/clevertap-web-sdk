@@ -391,10 +391,18 @@ describe('util/storageMigration', () => {
       expect(readRegistry()).toEqual([SK1, EU1])
     })
 
-    test('removes every registered account when no account is active', () => {
+    test('does nothing when no account is active and removeAll is not set', () => {
       seedAccount(SK1)
       registerActiveAccount(SK1)
-      expect(syncActiveAccounts([])).toEqual([SK1])
+      expect(syncActiveAccounts([])).toEqual([])
+      expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).not.toBeNull()
+      expect(readRegistry()).toEqual([SK1])
+    })
+
+    test('removes every registered account when no account is active and removeAll is true', () => {
+      seedAccount(SK1)
+      registerActiveAccount(SK1)
+      expect(syncActiveAccounts([], undefined, true)).toEqual([SK1])
       expect(localStorage.getItem(SK1 + ':' + GCOOKIE_NAME)).toBeNull()
       expect(readRegistry()).toEqual([])
     })

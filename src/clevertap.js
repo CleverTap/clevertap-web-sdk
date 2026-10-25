@@ -70,22 +70,31 @@ export default class CleverTap {
   static MAX_INSTANCES = 5
 
   /**
-   * With a list: those are the account ids to delete. Accounts that are live
-   * in `_instances` are skipped, and other registered accounts (including ones
-   * not initialized on this page) are left alone. `_instances` is not modified.
-   * With no list: keep set is live `_instances`; everything else in
-   * WZRK_ACCOUNTS is deleted.
-   * @param {string[]} [accountIds] account ids to remove
+   * By default, active instances (those live in `_instances`) are never removed.
+   * With `removeAll` true, active instances are removed too.
+   *
+   * With `accountIds`: those are the account ids to delete. Without `removeAll`,
+   * accounts that are live in `_instances` are skipped. Other registered accounts
+   * (including ones not initialized on this page) are left alone. `_instances`
+   * is not modified.
+   * Without `accountIds`: without `removeAll`, keep set is live `_instances` and
+   * everything else in WZRK_ACCOUNTS is deleted (nothing is deleted when no instance
+   * is active yet); with `removeAll`, every registered account is deleted.
+   * @param {{accountIds?: string[], removeAll?: boolean}} [options]
    * @returns {string[]} account ids that had SDK storage deleted
    */
-  static removeStaleInstances (accountIds) {
+  static removeStaleInstances (options) {
     try {
+      const { accountIds, removeAll } = options || {}
       const broadDomain = $ct._storage?._broadDomain
+      const removeActive = removeAll === true
       if (Array.isArray(accountIds)) {
-        return removeAccounts(accountIds.filter(id => !CleverTap._instances[id]), broadDomain)
+        const ids = removeActive ? accountIds : accountIds.filter(id => !CleverTap._instances[id])
+        return removeAccounts(ids, broadDomain)
       }
-      return syncActiveAccounts(Object.keys(CleverTap._instances), broadDomain)
+      return syncActiveAccounts(removeActive ? [] : Object.keys(CleverTap._instances), broadDomain, removeActive)
     } catch (e) {
+      // storage can be blocked or full (quota, privacy mode); this is public API and must never throw into the host page
       return []
     }
   }
