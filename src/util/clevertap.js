@@ -135,7 +135,7 @@ export const addDeliveryPreferenceDetails = (campaignDetails, logger, storage = 
           : 0
       campaignObj[showCountKey] = currentShowCount + 1
 
-      campaignObj[dailyCountKey] = deliveryPreferenceUtils.getDailyCount(campaignObj, dailyCountKey)
+      campaignObj[dailyCountKey] = deliveryPreferenceUtils.getDailyCount(campaignObj, dailyCountKey, storage)
     }
 
     if (campaignDetails?.display?.adp) {

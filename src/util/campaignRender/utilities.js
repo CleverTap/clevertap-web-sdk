@@ -691,13 +691,13 @@ export const deliveryPreferenceUtils = {
    * Date tracking is done in localStorage for persistence across page reloads
    * @param {Object} campaignObj - The campaign object to store count
    * @param {string} dailyCountKey - The key to store the daily count
+   * @param {Object} storage - The instance storage; keys are scoped to its account
    * @returns {number} The new daily count (incremented from previous or reset to 1)
    */
-  getDailyCount (campaignObj, dailyCountKey) {
+  getDailyCount (campaignObj, dailyCountKey, storage) {
     const DATE_TRACKER_KEY = 'ct_daily_date_tracker'
     const today = new Date().toISOString().split('T')[0]
-    let storedDate = null
-    storedDate = localStorage.getItem(DATE_TRACKER_KEY)
+    const storedDate = storage.read(DATE_TRACKER_KEY)
 
     // Get current count
     const storedCount = typeof campaignObj[dailyCountKey] === 'number'
@@ -708,7 +708,7 @@ export const deliveryPreferenceUtils = {
 
     if (storedDate !== today) {
       newDailyCount = 1
-      localStorage.setItem(DATE_TRACKER_KEY, today)
+      storage.save(DATE_TRACKER_KEY, today)
     } else {
       newDailyCount = storedCount + 1
     }
