@@ -29,9 +29,11 @@ export const setNotificationHandlerValues = (notificationValues = {}) => {
   displayArgs = notificationValues.displayArgs
   fcmPublicKey = notificationValues.fcmPublicKey
   instanceManager_ref = notificationValues.instanceManager || null
-  if (notificationValues.NotificationHandler) {
-    NotificationHandlerRef = notificationValues.NotificationHandler
-  }
+}
+
+// Injected by notification.js at module load; importing it here would be circular.
+export const setNotificationHandlerRef = (handler) => {
+  NotificationHandlerRef = handler
 }
 
 export const processWebPushConfig = (webPushConfig, logger, request, instanceManager) => {

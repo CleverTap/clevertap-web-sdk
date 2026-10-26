@@ -13,7 +13,7 @@ import {
 import {
   urlBase64ToUint8Array
 } from '../util/encoder'
-import { setNotificationHandlerValues, processSoftPrompt } from './webPushPrompt/prompt'
+import { setNotificationHandlerValues, setNotificationHandlerRef, processSoftPrompt } from './webPushPrompt/prompt'
 
 import { isChrome, isFirefox, isSafari } from '../util/helpers'
 
@@ -70,8 +70,7 @@ export default class NotificationHandler extends Array {
         request: this.#request,
         displayArgs,
         fcmPublicKey: this.#fcmPublicKey,
-        instanceManager: this.#instanceManager,
-        NotificationHandler
+        instanceManager: this.#instanceManager
       })
       if (isWebPushConfigPresent && isApplicationServerKeyReceived) {
         processSoftPrompt()
@@ -92,8 +91,7 @@ export default class NotificationHandler extends Array {
           request: this.#request,
           displayArgs: this.#oldValues.slice(),
           fcmPublicKey: this.#fcmPublicKey,
-          instanceManager: this.#instanceManager,
-          NotificationHandler
+          instanceManager: this.#instanceManager
         })
         this.#instanceManager.storage.saveToLSorCookie(NOTIFICATION_PUSH_METHOD_DEFERRED, true)
       }
@@ -570,3 +568,5 @@ export default class NotificationHandler extends Array {
     }
   }
 }
+
+setNotificationHandlerRef(NotificationHandler)
