@@ -42,6 +42,7 @@ export default class UserLoginHandler extends Array {
   #oldValues
   #device
   #instanceManager
+  #contentFetchManager
 
   constructor ({
     request,
@@ -49,7 +50,8 @@ export default class UserLoginHandler extends Array {
     session,
     logger,
     device,
-    instanceManager
+    instanceManager,
+    contentFetchManager
   },
   values) {
     super()
@@ -60,6 +62,7 @@ export default class UserLoginHandler extends Array {
     this.#oldValues = values
     this.#device = device
     this.#instanceManager = instanceManager
+    this.#contentFetchManager = contentFetchManager
   }
 
   // On User Login
@@ -272,6 +275,9 @@ export default class UserLoginHandler extends Array {
   }
 
   #deleteUser () {
+    if (this.#contentFetchManager) {
+      this.#contentFetchManager.cancelAll()
+    }
     this.#instanceManager.state.blockRequest = true
     this.#logger.debug('Block request is true')
     // Only reset gcookie. Preserve REQ_N and RESP_N to avoid triggering
