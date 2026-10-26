@@ -1,7 +1,7 @@
 import { StorageManager, $ct } from '../../util/storage'
 import { Message } from './Message'
 import { inboxContainerStyles, messageStyles } from './inboxStyles'
-import { getInboxPosition, determineTimeStampText, arrowSvg, getInboxMessages, saveInboxMessages } from './helper'
+import { getInboxPosition, determineTimeStampText, arrowSvg, getInboxMessages, saveInboxMessages } from './inboxUtils'
 import { WEBINBOX_CONFIG, MAX_INBOX_MSG } from '../../util/constants'
 import { CampaignContext } from '../../util/campaignHouseKeeping/campaignContext'
 
