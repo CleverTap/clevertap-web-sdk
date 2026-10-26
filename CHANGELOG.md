@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [3.1.1] 19th October 2026
+## [3.1.1] 26th October 2026
 - Raise Notification Viewed event per carousel slide in Web Native Display.
 
 ## [3.1.0] 13th October 2026
