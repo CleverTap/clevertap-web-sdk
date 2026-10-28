@@ -449,11 +449,7 @@ export default class InstanceStorageManager {
   // Utility
   // ---------------------------------------------------------------
 
-  static isLocalStorageSupported () {
-    return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function'
-  }
-
   _isLocalStorageSupported () {
-    return InstanceStorageManager.isLocalStorageSupported()
+    return 'localStorage' in window && window.localStorage !== null && typeof window.localStorage.setItem === 'function'
   }
 }

@@ -79,7 +79,7 @@ const SDK_STORAGE_KEYS = [...ACCOUNT_SCOPED_KEYS, SCOOKIE_PREFIX]
 // Cookies shared across sub-domains (written with createBroadCookie)
 const BROAD_COOKIE_KEYS = [GCOOKIE_NAME, LRU_CACHE]
 
-const isLocalStorageSupported = InstanceStorageManager.isLocalStorageSupported
+const isLocalStorageSupported = StorageManager._isLocalStorageSupported
 const readCookie = InstanceStorageManager._readRawCookie
 
 export const snapshotCookieNames = () =>
