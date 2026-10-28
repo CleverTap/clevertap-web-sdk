@@ -28,6 +28,7 @@ export class CTWebPopupPIP extends HTMLElement {
 
     _target = null
     _session = null
+    storage = null
     shadow = null
     popup = null
     container = null
@@ -215,14 +216,15 @@ export class CTWebPopupPIP extends HTMLElement {
         host.remove()
       }
       if (!this.target.display?.preview && campaignId != null && campaignId !== '-1') {
-        if (StorageManager._isLocalStorageSupported()) {
-          const campaignObj = getCampaignObject()
+        const storage = this.storage || StorageManager
+        if (storage._isLocalStorageSupported()) {
+          const campaignObj = getCampaignObject(storage)
 
           campaignObj.dnd = [...new Set([
             ...(campaignObj.dnd ?? []),
             campaignId
           ])]
-          saveCampaignObject(campaignObj)
+          saveCampaignObject(campaignObj, storage)
         }
       }
     }

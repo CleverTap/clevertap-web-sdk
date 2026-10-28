@@ -135,9 +135,9 @@ export const appendTVNavigationScript = (targetingMsgJson, html) => {
 }
 
 export const staleDataUpdate = (staledata, campType) => {
-  const campObj = getCampaignObject()
-  const globalObj = campObj[campType].global
-  if (globalObj != null && campType) {
+  const campObj = getCampaignObject(CampaignContext.instanceManager?.storage)
+  const globalObj = campType ? campObj[campType]?.global : null
+  if (globalObj != null) {
     for (const idx in staledata) {
       if (staledata.hasOwnProperty(idx)) {
         delete globalObj[staledata[idx]]
@@ -163,7 +163,7 @@ export const staleDataUpdate = (staledata, campType) => {
       }
     }
   }
-  saveCampaignObject(campObj)
+  saveCampaignObject(campObj, CampaignContext.instanceManager?.storage)
 }
 
 export const mergeEventMap = (newEvtMap) => {
@@ -236,7 +236,7 @@ export const setupClickEvent = (
           }
           invokeExternalJs(jsFunc, targetingMsgJson)
           // close iframe. using -1 for no campaignId
-          closeIframe('-1', divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
+          closeIframe('-1', divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap, CampaignContext.instanceManager?.storage)
         } else {
           const rValue = targetingMsgJson.display.preview
             ? targetingMsgJson.display.onClick
@@ -256,16 +256,16 @@ export const setupClickEvent = (
             _instance.notifications.push({
               skipDialog: true
             })
-            closeIframe(campaignId, divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
+            closeIframe(campaignId, divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap, CampaignContext.instanceManager?.storage)
           } else if (rValue === 'none') {
             // Close notification
-            closeIframe(campaignId, divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
+            closeIframe(campaignId, divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap, CampaignContext.instanceManager?.storage)
           } else {
             // Will get the url to open
             if (targetingMsgJson.display.window === 1) {
               window.open(onClick, '_blank')
               if (targetingMsgJson.display['close-popup']) {
-                closeIframe(campaignId, divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap)
+                closeIframe(campaignId, divId, _session.sessionId, CampaignContext.instanceManager?.state?.campaignDivMap, CampaignContext.instanceManager?.storage)
               }
               if (!targetingMsgJson.display.preview) {
                 const _instance = CampaignContext.instance || window.parent.clevertap
@@ -521,7 +521,7 @@ export const deliveryPreferenceUtils = {
    */
   portTLC (_session) {
     // TODO: Add the campaignId keys which has value as `dnd` to the `dnd` array
-    const existingCamp = getCampaignObject()
+    const existingCamp = getCampaignObject(CampaignContext.instanceManager?.storage)
     const dnd = []
 
     /* If no campaigns are present, then we don't need to port anything */
@@ -545,22 +545,22 @@ export const deliveryPreferenceUtils = {
           sessionCampaignCount,
           globalCampaignCount
         )
-        saveCampaignObject(updatedCamp)
+        saveCampaignObject(updatedCamp, CampaignContext.instanceManager?.storage)
       }
     }
 
-    const updatedCamp = getCampaignObject()
+    const updatedCamp = getCampaignObject(CampaignContext.instanceManager?.storage)
     saveCampaignObject({
       ...updatedCamp,
       dnd: [...new Set([...(updatedCamp.dnd || []), ...dnd])],
       wp: {}
-    })
+    }, CampaignContext.instanceManager?.storage)
   },
 
   portCampaignDetails (campaignId, sessionCount, globalCount) {
     /* If we have a dnd count for sesion then we will default its count to globalCount */
     const sCount = sessionCount === 'dnd' ? globalCount : sessionCount
-    const campaignObj = getCampaignObject()
+    const campaignObj = getCampaignObject(CampaignContext.instanceManager?.storage)
 
     // Ensure campaignObj and campaignObj.wfc exist
     campaignObj.wfc = campaignObj.wfc || {}
@@ -624,13 +624,13 @@ export const deliveryPreferenceUtils = {
   },
 
   isPopupCampaignAlreadyShown (campaignId) {
-    const campaignObj = getCampaignObject()
+    const campaignObj = getCampaignObject(CampaignContext.instanceManager?.storage)
     const campaignDetails = campaignObj?.wfc?.[campaignId]
     return campaignDetails?.length > 0
   },
 
   isCampaignAddedToDND (campaignId) {
-    const campaignObj = getCampaignObject()
+    const campaignObj = getCampaignObject(CampaignContext.instanceManager?.storage)
     return campaignObj?.dnd?.includes(campaignId)
   },
 
@@ -646,7 +646,7 @@ export const deliveryPreferenceUtils = {
     }
 
     const currentIdCamp = globalCamp?.[device?.gcookie]
-    const campData = getCampaignObject()
+    const campData = getCampaignObject(CampaignContext.instanceManager?.storage)
 
     let campaignObj = currentIdCamp || campData
     const woc = deliveryPreferenceUtils.updateFrequencyCounter(msg.wtq, campaignObj.woc)
@@ -683,7 +683,7 @@ export const deliveryPreferenceUtils = {
       wfc: mergeFrequencyControl(currentIdCamp?.wfc, campData?.wfc),
       wndfc: mergeFrequencyControl(currentIdCamp?.wndfc, campData?.wndfc)
     }
-    saveCampaignObject(campaignObj)
+    saveCampaignObject(campaignObj, CampaignContext.instanceManager?.storage)
   },
 
   /**
@@ -691,13 +691,13 @@ export const deliveryPreferenceUtils = {
    * Date tracking is done in localStorage for persistence across page reloads
    * @param {Object} campaignObj - The campaign object to store count
    * @param {string} dailyCountKey - The key to store the daily count
+   * @param {Object} storage - The instance storage; keys are scoped to its account
    * @returns {number} The new daily count (incremented from previous or reset to 1)
    */
-  getDailyCount (campaignObj, dailyCountKey) {
+  getDailyCount (campaignObj, dailyCountKey, storage) {
     const DATE_TRACKER_KEY = 'ct_daily_date_tracker'
     const today = new Date().toISOString().split('T')[0]
-    let storedDate = null
-    storedDate = localStorage.getItem(DATE_TRACKER_KEY)
+    const storedDate = storage.read(DATE_TRACKER_KEY)
 
     // Get current count
     const storedCount = typeof campaignObj[dailyCountKey] === 'number'
@@ -708,7 +708,7 @@ export const deliveryPreferenceUtils = {
 
     if (storedDate !== today) {
       newDailyCount = 1
-      localStorage.setItem(DATE_TRACKER_KEY, today)
+      storage.save(DATE_TRACKER_KEY, today)
     } else {
       newDailyCount = storedCount + 1
     }
@@ -735,7 +735,7 @@ export const deliveryPreferenceUtils = {
   clearStaleCampaigns (msg, logger) {
     try {
       // Get current campaign object
-      const campaignObject = getCampaignObject()
+      const campaignObject = getCampaignObject(CampaignContext.instanceManager?.storage)
 
       if (!campaignObject) {
         logger.debug('No campaign object found')
@@ -788,7 +788,7 @@ export const deliveryPreferenceUtils = {
 
       // Save updated campaign object if modifications were made
       if (modified) {
-        saveCampaignObject(campaignObject)
+        saveCampaignObject(campaignObject, CampaignContext.instanceManager?.storage)
         logger.debug('Campaign object updated with stale campaign removals')
       } else {
         logger.debug('No stale campaigns found to clear')
