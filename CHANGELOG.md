@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.1.2] 2nd November 2026
+- Fixed the global "per day" Web Popup limit not being enforced.
+
 ## [3.1.1] 26th October 2026
 - Raise Notification Viewed event per carousel slide in Web Native Display.
 
