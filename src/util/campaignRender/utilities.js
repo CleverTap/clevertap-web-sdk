@@ -702,21 +702,25 @@ export const deliveryPreferenceUtils = {
   },
 
   /**
-   * Resets both daily counts (wmp, wndmp) to 0 when the date has changed since they were last tracked.
+   * Resets both daily counts (wmp, wndmp) to 0 when the date they were tracked for is not today.
+   * The date (wmpdt) lives in the campaign object next to the counts, so the counts and their date
+   * are saved, archived per GUID and restored together as one unit.
    * Mutates campaignObj and saves it to storage.
-   * @param {Object} campaignObj - The campaign object holding wmp / wndmp
+   * @param {Object} campaignObj - The campaign object holding wmp / wndmp / wmpdt
    */
   resetDailyCountsIfNewDay (campaignObj) {
-    const DATE_TRACKER_KEY = 'ct_daily_date_tracker'
     const today = new Date().toISOString().split('T')[0]
-    const storedDate = localStorage.getItem(DATE_TRACKER_KEY)
 
-    if (storedDate === today) return
+    if (campaignObj.wmpdt === today) return
 
     campaignObj.wmp = 0
     campaignObj.wndmp = 0
-    localStorage.setItem(DATE_TRACKER_KEY, today)
-    saveCampaignObject(campaignObj)
+    campaignObj.wmpdt = today
+    try {
+      saveCampaignObject(campaignObj)
+    } catch (e) {
+      // storage full: counts above are still right for this request; the save is retried next time
+    }
   },
 
   /**
