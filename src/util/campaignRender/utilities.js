@@ -713,8 +713,14 @@ export const deliveryPreferenceUtils = {
 
     if (campaignObj.wmpdt === today) return
 
-    campaignObj.wmp = 0
-    campaignObj.wndmp = 0
+    // users have no wmpdt yet, check if the date tracker is today
+    const isLegacyToday = campaignObj.wmpdt == null &&
+      localStorage.getItem('ct_daily_date_tracker') === today
+
+    if (!isLegacyToday) {
+      campaignObj.wmp = 0
+      campaignObj.wndmp = 0
+    }
     campaignObj.wmpdt = today
     try {
       saveCampaignObject(campaignObj)
