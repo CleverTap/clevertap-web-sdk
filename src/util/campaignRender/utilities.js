@@ -714,8 +714,8 @@ export const deliveryPreferenceUtils = {
     if (campaignObj.wmpdt === today) return
 
     // users have no wmpdt yet, check if the date tracker is today
-    const isLegacyToday = campaignObj.wmpdt == null &&
-      localStorage.getItem('ct_daily_date_tracker') === today
+    const legacyDate = localStorage.getItem('ct_daily_date_tracker')
+    const isLegacyToday = campaignObj.wmpdt == null && legacyDate === today
 
     if (!isLegacyToday) {
       campaignObj.wmp = 0
@@ -724,6 +724,10 @@ export const deliveryPreferenceUtils = {
     campaignObj.wmpdt = today
     try {
       saveCampaignObject(campaignObj)
+      // wmpdt is persisted now, so the legacy tracker is no longer needed
+      if (legacyDate !== null) {
+        localStorage.removeItem('ct_daily_date_tracker')
+      }
     } catch (e) {
       // storage full: counts above are still right for this request; the save is retried next time
     }
