@@ -694,25 +694,43 @@ export const deliveryPreferenceUtils = {
    * @returns {number} The new daily count (incremented from previous or reset to 1)
    */
   getDailyCount (campaignObj, dailyCountKey) {
-    const DATE_TRACKER_KEY = 'ct_daily_date_tracker'
-    const today = new Date().toISOString().split('T')[0]
-    let storedDate = null
-    storedDate = localStorage.getItem(DATE_TRACKER_KEY)
-
-    // Get current count
+    this.resetDailyCountsIfNewDay(campaignObj)
     const storedCount = typeof campaignObj[dailyCountKey] === 'number'
       ? campaignObj[dailyCountKey]
       : 0
+    return storedCount + 1
+  },
 
-    let newDailyCount
+  /**
+   * Resets both daily counts (wmp, wndmp) to 0 when the date they were tracked for is not today.
+   * The date (wmpdt) lives in the campaign object next to the counts, so the counts and their date
+   * are saved, archived per GUID and restored together as one unit.
+   * Mutates campaignObj and saves it to storage.
+   * @param {Object} campaignObj - The campaign object holding wmp / wndmp / wmpdt
+   */
+  resetDailyCountsIfNewDay (campaignObj) {
+    const today = new Date().toISOString().split('T')[0]
 
-    if (storedDate !== today) {
-      newDailyCount = 1
-      localStorage.setItem(DATE_TRACKER_KEY, today)
-    } else {
-      newDailyCount = storedCount + 1
+    if (campaignObj.wmpdt === today) return
+
+    // users have no wmpdt yet, check if the date tracker is today
+    const legacyDate = localStorage.getItem('ct_daily_date_tracker')
+    const isLegacyToday = campaignObj.wmpdt == null && legacyDate === today
+
+    if (!isLegacyToday) {
+      campaignObj.wmp = 0
+      campaignObj.wndmp = 0
     }
-    return newDailyCount
+    campaignObj.wmpdt = today
+    try {
+      saveCampaignObject(campaignObj)
+      // wmpdt is persisted now, so the legacy tracker is no longer needed
+      if (legacyDate !== null) {
+        localStorage.removeItem('ct_daily_date_tracker')
+      }
+    } catch (e) {
+      // storage full: counts above are still right for this request; the save is retried next time
+    }
   },
 
   /**
