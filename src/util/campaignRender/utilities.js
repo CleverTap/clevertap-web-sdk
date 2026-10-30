@@ -694,25 +694,29 @@ export const deliveryPreferenceUtils = {
    * @returns {number} The new daily count (incremented from previous or reset to 1)
    */
   getDailyCount (campaignObj, dailyCountKey) {
-    const DATE_TRACKER_KEY = 'ct_daily_date_tracker'
-    const today = new Date().toISOString().split('T')[0]
-    let storedDate = null
-    storedDate = localStorage.getItem(DATE_TRACKER_KEY)
-
-    // Get current count
+    this.resetDailyCountsIfNewDay(campaignObj)
     const storedCount = typeof campaignObj[dailyCountKey] === 'number'
       ? campaignObj[dailyCountKey]
       : 0
+    return storedCount + 1
+  },
 
-    let newDailyCount
+  /**
+   * Resets both daily counts (wmp, wndmp) to 0 when the date has changed since they were last tracked.
+   * Mutates campaignObj and saves it to storage.
+   * @param {Object} campaignObj - The campaign object holding wmp / wndmp
+   */
+  resetDailyCountsIfNewDay (campaignObj) {
+    const DATE_TRACKER_KEY = 'ct_daily_date_tracker'
+    const today = new Date().toISOString().split('T')[0]
+    const storedDate = localStorage.getItem(DATE_TRACKER_KEY)
 
-    if (storedDate !== today) {
-      newDailyCount = 1
-      localStorage.setItem(DATE_TRACKER_KEY, today)
-    } else {
-      newDailyCount = storedCount + 1
-    }
-    return newDailyCount
+    if (storedDate === today) return
+
+    campaignObj.wmp = 0
+    campaignObj.wndmp = 0
+    localStorage.setItem(DATE_TRACKER_KEY, today)
+    saveCampaignObject(campaignObj)
   },
 
   /**
