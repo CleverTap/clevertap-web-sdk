@@ -204,6 +204,7 @@ export const setCampaignObjectForGuid = () => {
             wfc: campObj.wfc,
             woc: campObj.woc,
             wmp: campObj.wmp,
+            wmpdt: campObj.wmpdt,
             dnd: campObj.dnd,
             wndsc: campObj.wndsc,
             wndfc: campObj.wndfc,
@@ -256,6 +257,7 @@ export const getCampaignObjForLc = () => {
   if (StorageManager._isLocalStorageSupported()) {
     let resultObj = {}
     campObj = getCampaignObject()
+    deliveryPreferenceUtils.resetDailyCountsIfNewDay(campObj)
     const storageValue = StorageManager.read(CAMP_COOKIE_G)
     let decodedValue = null
     let parsedValue = null
@@ -276,7 +278,8 @@ export const getCampaignObjForLc = () => {
     const webPopupDeliveryPreferenceDeatils = {
       wsc: campObj?.wsc ?? 0,
       wfc: campObj?.wfc ?? {},
-      woc: campObj?.woc ?? {}
+      woc: campObj?.woc ?? {},
+      wmp: campObj?.wmp ?? 0
     }
 
     const webNativeDisplayDeliveryPreferenceDeatils = {
