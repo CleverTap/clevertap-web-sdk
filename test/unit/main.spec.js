@@ -11,6 +11,10 @@ describe('main.js', function () {
     expect(typeof main.createInstance).toBe('function')
   })
 
+  test('Main exports removeStaleInstances method', () => {
+    expect(typeof main.removeStaleInstances).toBe('function')
+  })
+
   test('Main exports CleverTap class reference', () => {
     expect(main.CleverTap).toBe(CleverTap)
   })
