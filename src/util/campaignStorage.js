@@ -14,10 +14,10 @@ import {
 import { getToday } from './datetime'
 import { isValueValid, safeJSONParse } from './datatypes'
 
-export const getCampaignObject = () => {
+export const getCampaignObject = (storage = StorageManager) => {
   let finalcampObj = {}
-  if (StorageManager._isLocalStorageSupported()) {
-    let campObj = StorageManager.read(CAMP_COOKIE_NAME)
+  if (storage._isLocalStorageSupported()) {
+    let campObj = storage.read(CAMP_COOKIE_NAME)
     if (campObj != null) {
       try {
         campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'))
@@ -33,26 +33,26 @@ export const getCampaignObject = () => {
 }
 
 // Save Camp here
-export const saveCampaignObject = (campaignObj) => {
-  if (StorageManager._isLocalStorageSupported()) {
-    const newObj = { ...getCampaignObject(), ...campaignObj }
+export const saveCampaignObject = (campaignObj, storage = StorageManager) => {
+  if (storage._isLocalStorageSupported()) {
+    const newObj = { ...getCampaignObject(storage), ...campaignObj }
     const campObj = JSON.stringify(newObj)
-    StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj))
-    setCampaignObjectForGuid()
+    storage.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj))
+    setCampaignObjectForGuid(storage)
   }
 }
 
 // set Campaign Object against the guid, with daily count and total count details
-export const setCampaignObjectForGuid = () => {
-  if (StorageManager._isLocalStorageSupported()) {
-    let guid = StorageManager.read(GCOOKIE_NAME)
+export const setCampaignObjectForGuid = (storage = StorageManager) => {
+  if (storage._isLocalStorageSupported()) {
+    let guid = storage.read(GCOOKIE_NAME)
     if (isValueValid(guid)) {
       try {
-        guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
-        const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {}
-        if (guid && StorageManager._isLocalStorageSupported()) {
+        guid = safeJSONParse(decodeURIComponent(storage.read(GCOOKIE_NAME)), null)
+        const guidCampObj = storage.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(storage.read(CAMP_COOKIE_G))) : {}
+        if (guid && storage._isLocalStorageSupported()) {
           var finalCampObj = {}
-          var campObj = getCampaignObject()
+          var campObj = getCampaignObject(storage)
 
           /* TODO: Check if Webinbox needs these keys or get rid of them */
           Object.keys(campObj).forEach(key => {
@@ -94,6 +94,7 @@ export const setCampaignObjectForGuid = () => {
             wfc: campObj.wfc,
             woc: campObj.woc,
             wmp: campObj.wmp,
+            wmpdt: campObj.wmpdt,
             dnd: campObj.dnd,
             wndsc: campObj.wndsc,
             wndfc: campObj.wndfc,
@@ -102,7 +103,7 @@ export const setCampaignObjectForGuid = () => {
           }
 
           guidCampObj[guid] = finalCampObj
-          StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
+          storage.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
         }
       } catch (e) {
         console.error('Invalid clevertap Id ' + e)
@@ -111,23 +112,13 @@ export const setCampaignObjectForGuid = () => {
   }
 }
 
-// Global registry of all campaignDivMaps across instances (for cross-instance popup closing)
-export const _allCampaignDivMaps = []
+const _storageByCampaignDivMap = new Map()
 
-export const closeIframe = (campaignId, divIdIgnored, currentSessionId, instanceCampaignDivMap) => {
-  if (campaignId != null && campaignId !== '-1') {
-    if (StorageManager._isLocalStorageSupported()) {
-      const campaignObj = getCampaignObject()
+export const registerCampaignDivMap = (campaignDivMap, storage) => {
+  _storageByCampaignDivMap.set(campaignDivMap, storage)
+}
 
-      // CurrentSesion Id is the problem
-      campaignObj.dnd = [...new Set([
-        ...(campaignObj.dnd ?? []),
-        campaignId
-      ])]
-      saveCampaignObject(campaignObj)
-    }
-  }
-
+export const closeIframe = (campaignId, divIdIgnored, currentSessionId, instanceCampaignDivMap, storage) => {
   // Find the campaignDivMap that contains this campaignId.
   // Check the instance-specific map first, then the global $ct map,
   // then search all registered instance maps (for cross-instance close via iframe).
@@ -138,11 +129,25 @@ export const closeIframe = (campaignId, divIdIgnored, currentSessionId, instance
     targetMap = $ct.campaignDivMap
   } else {
     // Search all instance campaignDivMaps (handles cross-instance close from iframe)
-    for (const map of _allCampaignDivMaps) {
+    for (const map of _storageByCampaignDivMap.keys()) {
       if (map != null && map[campaignId] != null) {
         targetMap = map
         break
       }
+    }
+  }
+
+  const ownerStorage = (targetMap != null && _storageByCampaignDivMap.get(targetMap)) || storage || StorageManager
+  if (campaignId != null && campaignId !== '-1') {
+    if (ownerStorage._isLocalStorageSupported()) {
+      const campaignObj = getCampaignObject(ownerStorage)
+
+      // CurrentSesion Id is the problem
+      campaignObj.dnd = [...new Set([
+        ...(campaignObj.dnd ?? []),
+        campaignId
+      ])]
+      saveCampaignObject(campaignObj, ownerStorage)
     }
   }
 

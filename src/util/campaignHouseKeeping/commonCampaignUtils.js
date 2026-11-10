@@ -1230,13 +1230,13 @@ export const commonCampaignUtils = {
           mergeEventMap(eventsMap)
           CampaignContext.instanceManager.storage.saveToLSorCookie(EV_COOKIE, CampaignContext.instanceManager.state.globalEventsMap)
           if (CampaignContext.instanceManager.state.globalProfileMap == null) {
-            addToLocalProfileMap(profileMap, true)
+            addToLocalProfileMap(profileMap, true, CampaignContext.instanceManager)
           } else {
-            addToLocalProfileMap(profileMap, false)
+            addToLocalProfileMap(profileMap, false, CampaignContext.instanceManager)
           }
         }
         if (msg.arp != null) {
-          arp(msg.arp)
+          arp(msg.arp, CampaignContext.instanceManager?.storage, CampaignContext.instanceManager?.state)
         }
         if (msg.inapp_stale != null && msg.inapp_stale.length > 0) {
           // Updates stale web popup data
