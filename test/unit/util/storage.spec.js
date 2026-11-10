@@ -19,6 +19,9 @@ function deleteAllCookies () {
 
 describe('util/storage', function () {
   beforeAll(() => {
+    // jsdom expires cookies on the real clock; a frozen fake Date makes the SDK's short-lived
+    // probe cookies (10s) already expired on a slow run, so use real timers here
+    jest.useRealTimers()
     // clean start for tests in this file
     localStorage.clear()
     deleteAllCookies()

@@ -57,6 +57,12 @@ const seedLegacyDefault = (owner, guid) => {
 }
 
 describe('util/storageMigration', () => {
+  // jsdom expires cookies on the real clock; a frozen fake Date makes the SDK's short-lived
+  // probe cookies (10s) already expired on a slow run, so use real timers here
+  beforeAll(() => {
+    jest.useRealTimers()
+  })
+
   beforeEach(() => {
     clearAllStorage()
     jest.clearAllMocks()
