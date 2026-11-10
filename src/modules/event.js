@@ -55,7 +55,7 @@ export default class EventHandler extends Array {
           continue
         }
 
-        if (isEventDiscarded(eventName)) {
+        if (isEventDiscarded(eventName, this.#instanceManager.state)) {
           this.#logger.reportError(513, eventName + ' is a discarded event name. Event aborted.')
           continue
         }
@@ -72,7 +72,7 @@ export default class EventHandler extends Array {
           } else {
             // check Charged Event vs. other events.
             if (eventName === 'Charged') {
-              if (!isChargedEventStructureValid(eventObj, this.#logger)) {
+              if (!isChargedEventStructureValid(eventObj, this.#logger, this.#instanceManager.storage)) {
                 this.#logger.reportError(511, 'Charged event structure invalid. Not sent.')
                 continue
               }
