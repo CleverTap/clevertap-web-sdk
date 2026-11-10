@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.2.0] 10th November 2026
+- Added `CleverTap.removeStaleInstances()` to clear SDK storage of inactive accounts.
+- Migrated existing accounts' un-prefixed storage keys to account-scoped keys.
+- Fixed multi-instance bugs: campaign data, profile, ARP and discarded events are now read from and saved to each instance's own storage.
+- Resolved circular dependencies between SDK modules.
+
 ## [3.1.2] 2nd November 2026
 - Fixed the global "per day" Web Popup limit not being enforced.
 
@@ -30,7 +36,7 @@ All notable changes to this project will be documented in this file.
 - Dropping the discarded event data from requests
 
 ## [2.7.4] 14th July 2026
-- Updated the src for wzrk dialog needed for web pusbh
+- Updated the src for wzrk dialog needed for web push
 
 ## [2.7.3] 10th July 2026
 - Added handling for discarded events.
