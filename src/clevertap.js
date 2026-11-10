@@ -146,6 +146,8 @@ export default class CleverTap {
   #logger
   #api
   #storageBound = false
+  // enableTVControls value from the constructor config; written once storage is bound (npm flow)
+  #tvControlsConfig
   #onloadcalled
   #device
   #session
@@ -375,10 +377,11 @@ export default class CleverTap {
     this.spa = clevertap.spa
     this.dismissSpamControl = clevertap.dismissSpamControl ?? true
 
-    if (clevertap.config?.enableTVControls) {
-      this.#instanceManager.storage.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
-    } else {
-      this.#instanceManager.storage.saveToLSorCookie(ENABLE_TV_CONTROLS, false)
+    // Reset the TV controls flag to the constructor config on every load. In the npm flow storage
+    // is not bound yet, so the value is written in #bindStorageToAccount instead.
+    this.#tvControlsConfig = !!clevertap.config?.enableTVControls
+    if (this.#storageBound) {
+      this.#instanceManager.storage.saveToLSorCookie(ENABLE_TV_CONTROLS, this.#tvControlsConfig)
     }
     this.user = new User({
       isPersonalisationActive: this._isPersonalisationActive,
@@ -934,6 +937,11 @@ export default class CleverTap {
     storage.encryption.key = accountId
     if (this.#instanceManager.isDefault) {
       migrateLegacyStorage(storage, accountId, this.#logger)
+    }
+    // npm flow: persist the constructor's enableTVControls value now that storage is bound,
+    // so a flag left over from an earlier session does not stay on
+    if (this.#tvControlsConfig !== undefined) {
+      storage.saveToLSorCookie(ENABLE_TV_CONTROLS, this.#tvControlsConfig)
     }
     // the GUID resolved before the account was known (npm flow) has to be re-read
     this.#device?.refreshGuid()
