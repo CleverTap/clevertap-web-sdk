@@ -86,7 +86,7 @@ export default class UserLoginHandler extends Array {
           anonymousUser = true
         }
         if (this.#instanceManager.state.LRU_CACHE == null && this.#instanceManager.storage._isLocalStorageSupported()) {
-          this.#instanceManager.state.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE)
+          this.#instanceManager.state.LRU_CACHE = new LRUCache(LRU_CACHE_SIZE, this.#instanceManager.storage)
         }
 
         if (anonymousUser) {
@@ -128,7 +128,7 @@ export default class UserLoginHandler extends Array {
           }
 
           // Restore WZRK_CAMP from WZRK_CAMP_G for the returning user's guid
-          restoreCampaignObjectForGuid()
+          restoreCampaignObjectForGuid(this.#instanceManager.storage)
 
           const lastK = this.#instanceManager.state.LRU_CACHE.getSecondLastKey()
           if (this.#instanceManager.storage.readFromLSorCookie(FIRE_PUSH_UNREGISTERED) && lastK !== -1) {
@@ -225,7 +225,7 @@ export default class UserLoginHandler extends Array {
                 addToK(ids, hasCustomId)
               }
             }
-            addToLocalProfileMap(profileObj, true)
+            addToLocalProfileMap(profileObj, true, this.#instanceManager)
             data = this.#request.addSystemDataToObject(data, undefined)
 
             this.#request.addFlags(data)

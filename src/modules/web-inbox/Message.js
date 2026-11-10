@@ -1,4 +1,4 @@
-import { determineTimeStampText, greenTickSvg } from './helper'
+import { determineTimeStampText, greenTickSvg } from './inboxUtils'
 export class Message extends HTMLElement {
   constructor (config, message) {
     super()

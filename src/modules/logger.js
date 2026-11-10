@@ -37,27 +37,27 @@ export class Logger {
     this.#logLevel = logLevel
   }
 
-  error (message) {
+  error (message, ...args) {
     if (this.#logLevel >= logLevels.ERROR) {
-      this.#log('error', message)
+      this.#log('error', message, ...args)
     }
   }
 
-  info (message) {
+  info (message, ...args) {
     if (this.#logLevel >= logLevels.INFO) {
-      this.#log('log', message)
+      this.#log('log', message, ...args)
     }
   }
 
-  debug (message) {
+  debug (message, ...args) {
     if (this.#logLevel >= logLevels.DEBUG || this.#isLegacyDebug) {
-      this.#log('debug', message)
+      this.#log('debug', message, ...args)
     }
   }
 
-  debugPE (message) {
+  debugPE (message, ...args) {
     if (this.#logLevel >= logLevels.DEBUG_PE) {
-      this.#log('debug_pe', message)
+      this.#log('debug_pe', message, ...args)
     }
   }
 
@@ -73,11 +73,12 @@ export class Logger {
     this.info(`${CLEVERTAP_INFO_PREFIX} ${code}: ${description}`)
   }
 
-  #log (level, message) {
+  // extra args (e.g. an Error or object) are passed to the console as-is so they are not lost
+  #log (level, message, ...args) {
     if (window.console) {
       try {
         const ts = new Date().getTime()
-        console[level](`CleverTap [${ts}]: ${message}`)
+        console[level](`CleverTap [${ts}]: ${message}`, ...args)
       } catch (e) {}
     }
   }

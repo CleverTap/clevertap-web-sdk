@@ -13,7 +13,7 @@ import {
 import {
   urlBase64ToUint8Array
 } from '../util/encoder'
-import { setNotificationHandlerValues, processSoftPrompt } from './webPushPrompt/prompt'
+import { setNotificationHandlerValues, setNotificationHandlerRef, processSoftPrompt } from './webPushPrompt/prompt'
 
 import { isChrome, isFirefox, isSafari } from '../util/helpers'
 
@@ -568,3 +568,5 @@ export default class NotificationHandler extends Array {
     }
   }
 }
+
+setNotificationHandlerRef(NotificationHandler)
