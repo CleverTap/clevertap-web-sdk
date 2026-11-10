@@ -26,6 +26,7 @@ import RequestDispatcher from '../../../src/util/requestDispatcher'
 
 jest.enableAutomock().unmock('../../../src/util/clevertap').unmock('../../../src/util/constants')
   .unmock('../../../src/util/datatypes').unmock('../../../src/util/messages')
+  .unmock('../../../src/util/campaignStorage')
 
 // Every helper now works on the storage of the instance that owns it
 const mockStorage = {
