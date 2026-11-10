@@ -2,7 +2,7 @@ import {
   getCampaignObject,
   saveCampaignObject,
   closeIframe
-} from '../clevertap'
+} from '../campaignStorage'
 import {
   CAMP_COOKIE_G,
   GCOOKIE_NAME,
