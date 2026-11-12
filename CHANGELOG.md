@@ -17,6 +17,9 @@ All notable changes to this project will be documented in this file.
 - Capped WZRK_L backup queue at 2MB and dropped backups older than 3 days to prevent localStorage bloat.
 - Added 'Recommendations' support for Web channels(Web Popup, Web Native Display,Web Inbox).
 
+## [3.0.4] 8th October 2026
+- Added server-side session support for Visual Editor (auth via signed handle; save/preview via LC APIs).
+
 ## [3.0.3] 7th September 2026
 - Fixed the frequency capping logic.
 
