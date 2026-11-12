@@ -17,6 +17,8 @@ export const PR_COOKIE = 'WZRK_PR'
 export const ACCOUNT_ID = 'WZRK_ACCOUNT_ID'
 export const ARP_COOKIE = 'WZRK_ARP'
 export const LCOOKIE_NAME = 'WZRK_L'
+export const WZRK_L_MAX_SIZE_BYTES = 2 * 1024 * 1024 // 2MB stored string size cap
+export const WZRK_L_MAX_AGE_SECONDS = 3 * 24 * 60 * 60 // 3 days — matches LC drop window
 export const NOTIF_COOKIE_NAME = 'WZRK_N'
 export const GLOBAL = 'global' // used for email unsubscribe also
 export const TOTAL_COUNT = 'tc'
@@ -77,6 +79,13 @@ export const ENABLE_TV_CONTROLS = 'WZRK_TV_CONTROLS'
 export const ENCRYPTION_KEY_NAME = 'WZRK_ENCRYPTION_KEY'
 export const INITIAL_RETRY_DELAY_MS = 1000
 export const MAX_RETRY_DELAY_MS = 30 * 60 * 1000 // 30 minutes
+
+// Storage migration (unprefixed default-account keys -> `{accountId}:KEY`).
+// Stored un-prefixed. Present only while a migration is in progress.
+export const STORAGE_MIGRATION_FLAG = 'WZRK_MIGRATED'
+// Global (un-prefixed) list of account IDs that have been created in this browser.
+// Grown on each instance create; pruned only when the customer calls removeStaleInstances.
+export const ACCOUNTS_REGISTRY = 'WZRK_ACCOUNTS'
 
 // Flag key for optional sub-domain profile isolation
 export const ISOLATE_COOKIE = 'WZRK_ISOLATE_SD'

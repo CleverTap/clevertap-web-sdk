@@ -2,6 +2,7 @@ import { processWebPushConfig } from '../modules/webPushPrompt/prompt'
 import { CampaignContext } from './campaignHouseKeeping/campaignContext'
 import { commonCampaignUtils } from './campaignHouseKeeping/commonCampaignUtils'
 import { deliveryPreferenceUtils } from './campaignRender/utilities'
+import { setTrRef } from './campaignHouseKeeping/frequencyCapping'
 
 const _tr = (msg, { device, session, request, logger, region, instanceManager, instance }) => {
   const _device = device
@@ -35,6 +36,16 @@ const _tr = (msg, { device, session, request, logger, region, instanceManager, i
     return
   }
 
+  let deferredNotifs = null
+
+  if (msg.content_fetch != null && msg.content_fetch.length > 0 && msg.inapp_notifs != null) {
+    const maxFetchPriority = Math.max(...msg.content_fetch.map(item => item.priority || 0))
+    if (maxFetchPriority > 0) {
+      deferredNotifs = msg.inapp_notifs.filter(n => n.priority != null && n.priority < maxFetchPriority)
+      msg.inapp_notifs = msg.inapp_notifs.filter(n => n.priority == null || n.priority >= maxFetchPriority)
+    }
+  }
+
   // Processes in-app notifications (e.g., footers, exit intents, native displays)
   if (msg.inapp_notifs != null) {
     commonCampaignUtils.processCampaigns(msg, _callBackCalled, exitintentObj, logger)
@@ -56,8 +67,21 @@ const _tr = (msg, { device, session, request, logger, region, instanceManager, i
     processWebPushConfig(msg.webPushConfig, logger, request, instanceManager)
   }
 
+  // Processes linked content fetch requests
+  if (msg.content_fetch != null && msg.content_fetch.length > 0) {
+    if (instance && instance.contentFetchManager) {
+      instance.contentFetchManager.handleContentFetch(
+        msg.content_fetch,
+        { device, session, request, logger, region, instanceManager, instance },
+        deferredNotifs
+      )
+    }
+  }
+
   commonCampaignUtils.handleVariables(msg)
   commonCampaignUtils.persistsEventsAndProfileData(msg, logger)
 }
+
+setTrRef(_tr)
 
 export default _tr

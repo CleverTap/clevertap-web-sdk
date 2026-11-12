@@ -99,4 +99,8 @@ export default class Account {
   set editorApiURL (url) {
     this.#editorApiURL = url || ''
   }
+
+  get contentURL () {
+    return `${TARGET_PROTOCOL}//${this.finalTargetDomain}/content-web`
+  }
 }

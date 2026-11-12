@@ -312,7 +312,7 @@ export default class RequestDispatcher {
       _arp.skipResARP = true
       return addToURL(url, 'arp', compressData(JSON.stringify(_arp), this.logger))
     }
-    if (this.instanceManager.storage._isLocalStorageSupported() && typeof localStorage.getItem(ARP_COOKIE) !== 'undefined' && localStorage.getItem(ARP_COOKIE) !== null) {
+    if (this.instanceManager.storage._isLocalStorageSupported()) {
       const arpData = this.instanceManager.storage.readFromLSorCookie(ARP_COOKIE)
       if (arpData) {
         delete arpData.d_e

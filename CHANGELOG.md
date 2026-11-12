@@ -1,6 +1,22 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.2.0] 10th November 2026
+- Added `CleverTap.removeStaleInstances()` to clear SDK storage of inactive accounts.
+- Migrated existing accounts' un-prefixed storage keys to account-scoped keys.
+- Fixed multi-instance bugs: campaign data, profile, ARP and discarded events are now read from and saved to each instance's own storage.
+- Resolved circular dependencies between SDK modules.
+
+## [3.1.2] 2nd November 2026
+- Fixed the global "per day" Web Popup limit not being enforced.
+
+## [3.1.1] 26th October 2026
+- Raise Notification Viewed event per carousel slide in Web Native Display.
+
+## [3.1.0] 13th October 2026
+- Capped WZRK_L backup queue at 2MB and dropped backups older than 3 days to prevent localStorage bloat.
+- Added 'Recommendations' support for Web channels(Web Popup, Web Native Display,Web Inbox).
+
 ## [3.0.4] 8th October 2026
 - Added server-side session support for Visual Editor (auth via signed handle; save/preview via LC APIs).
 
@@ -23,7 +39,7 @@ All notable changes to this project will be documented in this file.
 - Dropping the discarded event data from requests
 
 ## [2.7.4] 14th July 2026
-- Updated the src for wzrk dialog needed for web pusbh
+- Updated the src for wzrk dialog needed for web push
 
 ## [2.7.3] 10th July 2026
 - Added handling for discarded events.

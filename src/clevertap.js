@@ -9,7 +9,6 @@ import User from './modules/user'
 import { Logger, logLevels } from './modules/logger'
 import SessionManager from './modules/session'
 import ReqestManager from './modules/request'
-import RequestDispatcher from './util/requestDispatcher'
 import {
   CAMP_COOKIE_NAME,
   SCOOKIE_PREFIX,
@@ -45,18 +44,20 @@ import {
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct, getMuteExpiry, isMuted } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
-import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, dismissActiveCampaigns, _allCampaignDivMaps, initDiscardedEventsFromStorage } from './util/clevertap'
+import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, dismissActiveCampaigns, registerCampaignDivMap, initDiscardedEventsFromStorage } from './util/clevertap'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
 import { hasWebInboxSettingsInLS, checkAndRegisterWebInboxElements, initializeWebInbox, getInboxMessages, saveInboxMessages } from './modules/web-inbox/helper'
 import { Variable } from './modules/variables/variable'
 import VariableStore from './modules/variables/variableStore'
+import ContentFetchManager from './modules/contentFetchManager'
 import { addAntiFlicker, handleActionMode, renderVisualBuilder } from './modules/visualBuilder/pageBuilder'
 import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 import InstanceManager from './util/instanceManager'
 import InstanceStorageManager from './util/instanceStorageManager'
+import { migrateLegacyStorage, registerActiveAccount, removeAccounts, syncActiveAccounts } from './util/storageMigration'
 import { Encryption } from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
 import { checkWebPopupPreview } from './util/campaignRender/webPopup'
@@ -67,6 +68,36 @@ export default class CleverTap {
   static _instances = {}
   static defaultInstance = null
   static MAX_INSTANCES = 5
+
+  /**
+   * By default, active instances (those live in `_instances`) are never removed.
+   * With `removeAll` true, active instances are removed too.
+   *
+   * With `accountIds`: those are the account ids to delete. Without `removeAll`,
+   * accounts that are live in `_instances` are skipped. Other registered accounts
+   * (including ones not initialized on this page) are left alone. `_instances`
+   * is not modified.
+   * Without `accountIds`: without `removeAll`, keep set is live `_instances` and
+   * everything else in WZRK_ACCOUNTS is deleted (nothing is deleted when no instance
+   * is active yet); with `removeAll`, every registered account is deleted.
+   * @param {{accountIds?: string[], removeAll?: boolean}} [options]
+   * @returns {string[]} account ids that had SDK storage deleted
+   */
+  static removeStaleInstances (options) {
+    try {
+      const { accountIds, removeAll } = options || {}
+      const broadDomain = $ct._storage?._broadDomain
+      const removeActive = removeAll === true
+      if (Array.isArray(accountIds)) {
+        const ids = removeActive ? accountIds : accountIds.filter(id => !CleverTap._instances[id])
+        return removeAccounts(ids, broadDomain)
+      }
+      return syncActiveAccounts(removeActive ? [] : Object.keys(CleverTap._instances), broadDomain, removeActive)
+    } catch (e) {
+      // storage can be blocked or full (quota, privacy mode); this is public API and must never throw into the host page
+      return []
+    }
+  }
 
   /**
    * Returns the default CleverTap instance.
@@ -96,6 +127,7 @@ export default class CleverTap {
       const defaultInst = CleverTap.defaultInstance
       defaultInst.init(accountId, region, targetDomain, token)
       CleverTap._instances[accountId] = defaultInst
+      registerActiveAccount(accountId)
       return defaultInst
     }
 
@@ -113,6 +145,9 @@ export default class CleverTap {
 
   #logger
   #api
+  #storageBound = false
+  // enableTVControls value from the constructor config; written once storage is bound (npm flow)
+  #tvControlsConfig
   #onloadcalled
   #device
   #session
@@ -211,17 +246,24 @@ export default class CleverTap {
     this.#instanceManager.storage = new InstanceStorageManager(accountId, isDefault, instanceEncryption)
     this.#instanceManager.logger = this.#logger
 
+    // When the account is already known (script-tag integration) bind storage to it now,
+    // before anything (e.g. the DeviceManager reading the GUID) touches it.
+    // For npm integrations this happens in init(accountId).
+    this.#bindStorageToAccount(accountId)
+
     // For default instance, make the global $ct point to our state
     if (isDefault) {
       this.#instanceManager.state = $ct
+      $ct._storage = this.#instanceManager.storage
     }
 
     // Register this instance's campaignDivMap for cross-instance popup closing
-    _allCampaignDivMaps.push(this.#instanceManager.state.campaignDivMap)
+    registerCampaignDivMap(this.#instanceManager.state.campaignDivMap, this.#instanceManager.storage)
 
     // Register instance
     if (accountId) {
       CleverTap._instances[accountId] = this
+      registerActiveAccount(accountId)
     }
     if (isDefault) {
       CleverTap.defaultInstance = this
@@ -261,6 +303,12 @@ export default class CleverTap {
       isPersonalisationActive: this._isPersonalisationActive,
       instanceManager: this.#instanceManager
     })
+    this.contentFetchManager = new ContentFetchManager({
+      logger: this.#logger,
+      account: this.#account,
+      request: this.#request,
+      instanceManager: this.#instanceManager
+    })
     this.#tvNavigation = new TVNavigation(this.#logger)
     this.enablePersonalization = clevertap.enablePersonalization || false
     this.event = new EventHandler({
@@ -284,7 +332,8 @@ export default class CleverTap {
       session: this.#session,
       logger: this.#logger,
       device: this.#device,
-      instanceManager: this.#instanceManager
+      instanceManager: this.#instanceManager,
+      contentFetchManager: this.contentFetchManager
     }, clevertap.onUserLogin)
 
     this.privacy = new Privacy({
@@ -328,13 +377,15 @@ export default class CleverTap {
     this.spa = clevertap.spa
     this.dismissSpamControl = clevertap.dismissSpamControl ?? true
 
-    if (clevertap.config?.enableTVControls) {
-      this.#instanceManager.storage.saveToLSorCookie(ENABLE_TV_CONTROLS, true)
-    } else {
-      this.#instanceManager.storage.saveToLSorCookie(ENABLE_TV_CONTROLS, false)
+    // Reset the TV controls flag to the constructor config on every load. In the npm flow storage
+    // is not bound yet, so the value is written in #bindStorageToAccount instead.
+    this.#tvControlsConfig = !!clevertap.config?.enableTVControls
+    if (this.#storageBound) {
+      this.#instanceManager.storage.saveToLSorCookie(ENABLE_TV_CONTROLS, this.#tvControlsConfig)
     }
     this.user = new User({
-      isPersonalisationActive: this._isPersonalisationActive
+      isPersonalisationActive: this._isPersonalisationActive,
+      instanceManager: this.#instanceManager
     })
 
     instanceEncryption.logger = this.#logger
@@ -382,11 +433,6 @@ export default class CleverTap {
       pageLoadUrl = addToURL(pageLoadUrl, 'type', 'page')
       pageLoadUrl = addToURL(pageLoadUrl, 'd', compressData(JSON.stringify(data), this.#logger))
       this.#request.saveAndFireRequest(pageLoadUrl, this.#instanceManager.state.blockRequest)
-    }
-
-    if (hasWebInboxSettingsInLS(this.#instanceManager)) {
-      checkAndRegisterWebInboxElements()
-      initializeWebInbox(this.#logger, this.#instanceManager)
     }
 
     // Get Inbox Message Count
@@ -744,7 +790,7 @@ export default class CleverTap {
     api.logout = this.logout
     api.clear = this.clear
     api.closeIframe = (campaignId, divIdIgnored) => {
-      closeIframe(campaignId, divIdIgnored, this.#session.sessionId, this.#instanceManager.state.campaignDivMap)
+      closeIframe(campaignId, divIdIgnored, this.#session.sessionId, this.#instanceManager.state.campaignDivMap, this.#instanceManager.storage)
     }
     api.enableWebPush = (enabled, applicationServerKey) => {
       setServerKey(applicationServerKey)
@@ -818,10 +864,10 @@ export default class CleverTap {
     }
     // SDK Muting - for churned accounts (progressive muting)
     api.getMuteExpiry = () => {
-      return getMuteExpiry()
+      return getMuteExpiry(this.#instanceManager.storage)
     }
     api.isMuted = () => {
-      return isMuted()
+      return isMuted(this.#instanceManager.storage)
     }
     // Set up JSONP response routing
     // For the default instance, set the global callback directly.
@@ -876,6 +922,31 @@ export default class CleverTap {
     }
   }
 
+  /**
+   * Binds the instance storage to its account so every key is stored as `{accountId}:KEY`,
+   * sets the encryption key and, for the default instance, moves legacy un-prefixed data
+   * to the prefixed keys (see util/storageMigration). Runs once per instance.
+   */
+  #bindStorageToAccount (accountId) {
+    if (!accountId || this.#storageBound) {
+      return
+    }
+    this.#storageBound = true
+    const storage = this.#instanceManager.storage
+    storage.setAccountId(accountId)
+    storage.encryption.key = accountId
+    if (this.#instanceManager.isDefault) {
+      migrateLegacyStorage(storage, accountId, this.#logger)
+    }
+    // npm flow: persist the constructor's enableTVControls value now that storage is bound,
+    // so a flag left over from an earlier session does not stay on
+    if (this.#tvControlsConfig !== undefined) {
+      storage.saveToLSorCookie(ENABLE_TV_CONTROLS, this.#tvControlsConfig)
+    }
+    // the GUID resolved before the account was known (npm flow) has to be re-read
+    this.#device?.refreshGuid()
+  }
+
   createCustomIdIfValid (customId) {
     const result = validateCustomCleverTapID(customId)
 
@@ -904,6 +975,15 @@ export default class CleverTap {
     enableTVControls: false,
     domainSpecification: null
   }) {
+    // Bind storage to the account before anything is read or written
+    this.#bindStorageToAccount(this.#account.id || accountId)
+
+    // Storage is only readable once bound to the account (npm flow has no account in the constructor)
+    if (hasWebInboxSettingsInLS(this.#instanceManager)) {
+      checkAndRegisterWebInboxElements()
+      initializeWebInbox(this.#logger, this.#instanceManager)
+    }
+
     if (config?.domainSpecification) {
       this.domainSpecification = config.domainSpecification
       this.#session.domainSpecification = config.domainSpecification
@@ -948,9 +1028,14 @@ export default class CleverTap {
         return
       }
       this.#account.id = accountId
+      if (!CleverTap._instances[accountId]) {
+        CleverTap._instances[accountId] = this
+      }
       this.#instanceManager.storage.saveToLSorCookie(ACCOUNT_ID, accountId)
       this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
+    registerActiveAccount(this.#account.id)
+
     // Region / targetDomain must be applied before Visual Editor modes resolve the LC host.
     if (region) {
       this.#account.region = region
@@ -1007,7 +1092,7 @@ export default class CleverTap {
       this.privacy.push(this.#instanceManager.state.privacyArray)
     }
 
-    initDiscardedEventsFromStorage()
+    initDiscardedEventsFromStorage(this.#instanceManager.storage, this.#instanceManager.state)
     this.#processOldValues()
     this.pageChanged()
     const backupInterval = setInterval(() => {
@@ -1154,7 +1239,7 @@ export default class CleverTap {
     data = this.#request.addSystemDataToObject(data, undefined)
     data.cpg = currLocation
 
-    data[CAMP_COOKIE_NAME] = getCampaignObjForLc()
+    data[CAMP_COOKIE_NAME] = getCampaignObjForLc(this.#instanceManager.storage)
     let pageLoadUrl = this.#account.dataPostURL
     this.#request.addFlags(data)
     // send dsync flag when page = 1

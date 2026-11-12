@@ -120,7 +120,7 @@ export default class SessionManager {
 
   #resetSessionCampaignCounters () {
     try {
-      const campaignObj = getCampaignObject()
+      const campaignObj = getCampaignObject(this.#storageManager)
       if (campaignObj) {
         // Reset Web Popup Show Count
         if (typeof campaignObj.wsc !== 'undefined') {
@@ -134,7 +134,7 @@ export default class SessionManager {
           this.#logger.debug('Reset wndsc (Web Native Display Show Count) to 0 for new session')
         }
 
-        saveCampaignObject(campaignObj)
+        saveCampaignObject(campaignObj, this.#storageManager)
       }
     } catch (error) {
       this.#logger.error('Failed to reset session campaign counters: ' + error.message)

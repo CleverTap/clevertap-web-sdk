@@ -14,6 +14,9 @@ import UserLoginHandler from '../../src/modules/userLogin'
 import { validateCustomCleverTapID } from '../../src/util/helpers'
 import RequestDispatcher from '../../src/util/requestDispatcher'
 import { dismissActiveCampaigns } from '../../src/util/clevertap'
+import { registerActiveAccount, removeAccounts, syncActiveAccounts } from '../../src/util/storageMigration'
+import InstanceStorageManager from '../../src/util/instanceStorageManager'
+import TVNavigation from '../../src/modules/tvNavigation'
 
 // mock everything except for the module that's being tested and constants
 jest.enableAutomock().unmock('../../src/clevertap').unmock('../../src/util/constants')
@@ -39,7 +42,7 @@ describe('clevertap.js', function () {
       debug: jest.fn(),
       error: jest.fn()
     }
-    mockDevice = {}
+    mockDevice = { refreshGuid: jest.fn() }
     mockSessionObject = {
       cookieName: '',
       getTimeElapsed: jest.fn(),
@@ -155,6 +158,92 @@ describe('clevertap.js', function () {
       validateCustomCleverTapID.mockReturnValue({ isValid: false, sanitizedId: null })
       this.clevertap = new Clevertap()
       expect(DeviceManager).toHaveBeenCalledWith(expect.objectContaining({ customId: null, domainSpecification: 0 }))
+    })
+  })
+
+  describe('account registry', () => {
+    let savedInstances
+    beforeEach(() => {
+      savedInstances = Clevertap._instances
+      Clevertap._instances = {}
+    })
+    afterEach(() => {
+      Clevertap._instances = savedInstances
+    })
+
+    test('registers the account when an instance is constructed with an account id', () => {
+      mockSessionObject.getSessionCookieObject.mockReturnValue({})
+      // eslint-disable-next-line no-new
+      new Clevertap({ account: [{ id: accountId }], region, targetDomain, token })
+      expect(registerActiveAccount).toHaveBeenCalledWith(accountId)
+    })
+
+    test('does not register anything for an instance without an account id', () => {
+      // eslint-disable-next-line no-new
+      new Clevertap()
+      expect(registerActiveAccount).not.toHaveBeenCalled()
+    })
+
+    describe('removeStaleInstances', () => {
+      test('with a list: removes only those accounts and leaves _instances untouched', () => {
+        Clevertap._instances = { B: {} }
+        removeAccounts.mockReturnValue(['A'])
+
+        expect(Clevertap.removeStaleInstances({ accountIds: ['A'] })).toEqual(['A'])
+        expect(removeAccounts).toHaveBeenCalledWith(['A'], $ct._storage?._broadDomain)
+        expect(syncActiveAccounts).not.toHaveBeenCalled()
+        expect(Object.keys(Clevertap._instances)).toEqual(['B'])
+      })
+
+      test('with a list: skips accounts that are live in _instances', () => {
+        Clevertap._instances = { A: {}, B: {} }
+        removeAccounts.mockReturnValue(['C'])
+
+        expect(Clevertap.removeStaleInstances({ accountIds: ['A', 'C'] })).toEqual(['C'])
+        expect(removeAccounts).toHaveBeenCalledWith(['C'], $ct._storage?._broadDomain)
+      })
+
+      test('with a list: works before any instance is initialised', () => {
+        Clevertap._instances = {}
+        removeAccounts.mockReturnValue(['A'])
+
+        expect(Clevertap.removeStaleInstances({ accountIds: ['A'] })).toEqual(['A'])
+        expect(removeAccounts).toHaveBeenCalledWith(['A'], $ct._storage?._broadDomain)
+      })
+
+      test('without a list: keeps the live instances and removes the rest', () => {
+        Clevertap._instances = { A: {}, B: {} }
+        syncActiveAccounts.mockReturnValue(['C'])
+
+        expect(Clevertap.removeStaleInstances()).toEqual(['C'])
+        expect(syncActiveAccounts).toHaveBeenCalledWith(['A', 'B'], $ct._storage?._broadDomain, false)
+        expect(removeAccounts).not.toHaveBeenCalled()
+        expect(Object.keys(Clevertap._instances)).toEqual(['A', 'B'])
+      })
+
+      test('with a list and removeAll: also removes accounts that are live in _instances', () => {
+        Clevertap._instances = { A: {}, B: {} }
+        removeAccounts.mockReturnValue(['A', 'C'])
+
+        expect(Clevertap.removeStaleInstances({ accountIds: ['A', 'C'], removeAll: true })).toEqual(['A', 'C'])
+        expect(removeAccounts).toHaveBeenCalledWith(['A', 'C'], $ct._storage?._broadDomain)
+      })
+
+      test('without a list and removeAll: removes every registered account', () => {
+        Clevertap._instances = { A: {}, B: {} }
+        syncActiveAccounts.mockReturnValue(['A', 'B', 'C'])
+
+        expect(Clevertap.removeStaleInstances({ removeAll: true })).toEqual(['A', 'B', 'C'])
+        expect(syncActiveAccounts).toHaveBeenCalledWith([], $ct._storage?._broadDomain, true)
+      })
+
+      test('never throws and returns an empty list when storage fails', () => {
+        removeAccounts.mockImplementation(() => { throw new Error('quota exceeded') })
+        syncActiveAccounts.mockImplementation(() => { throw new Error('quota exceeded') })
+
+        expect(Clevertap.removeStaleInstances({ accountIds: ['A'] })).toEqual([])
+        expect(Clevertap.removeStaleInstances()).toEqual([])
+      })
     })
   })
 
@@ -345,6 +434,45 @@ describe('clevertap.js', function () {
       this.clevertap.init(accountId)
       // compressData should not be called again (init returns early)
       expect(compressData.mock.calls.length).toBe(firstCallCount)
+    })
+  })
+
+  describe('TV controls flag (npm flow)', () => {
+    let store, saveToLSorCookieMock, readFromLSorCookieMock
+
+    beforeEach(() => {
+      mockSessionObject.getSessionCookieObject.mockReturnValue({})
+      store = {}
+      saveToLSorCookieMock = jest.spyOn(InstanceStorageManager.prototype, 'saveToLSorCookie')
+        .mockImplementation(function (key, value) {
+          if (this._hasAccount()) store[key] = value
+        })
+      readFromLSorCookieMock = jest.spyOn(InstanceStorageManager.prototype, 'readFromLSorCookie')
+        .mockImplementation(function (key) {
+          return this._hasAccount() ? store[key] : undefined
+        })
+    })
+
+    afterEach(() => {
+      saveToLSorCookieMock.mockRestore()
+      readFromLSorCookieMock.mockRestore()
+    })
+
+    const tvNavInitCalls = () => TVNavigation.mock.instances.reduce((n, inst) => n + inst.init.mock.calls.length, 0)
+
+    test('resets a stale flag from an earlier session when TV controls are not enabled', () => {
+      store.WZRK_TV_CONTROLS = true
+      const clevertap = new Clevertap()
+      clevertap.init(accountId)
+      expect(store.WZRK_TV_CONTROLS).toBe(false)
+      expect(tvNavInitCalls()).toBe(0)
+    })
+
+    test('keeps TV controls on when enabled in the constructor config', () => {
+      const clevertap = new Clevertap({ config: { enableTVControls: true } })
+      clevertap.init(accountId)
+      expect(store.WZRK_TV_CONTROLS).toBe(true)
+      expect(tvNavInitCalls()).toBe(1)
     })
   })
 

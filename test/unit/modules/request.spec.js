@@ -4,7 +4,8 @@ import RequestManager from '../../../src/modules/request'
 import { isMuted } from '../../../src/util/storage'
 
 jest.enableAutomock().unmock('../../../src/modules/request').unmock('../../../src/util/constants')
-  .unmock('../../../src/util/datatypes')
+  .unmock('../../../src/util/datatypes').unmock('../../../src/util/backupQueue')
+  .unmock('../../../src/util/datetime').unmock('../../../src/util/url')
 
 const createMockInstanceManager = () => ({
   id: 'test',
@@ -141,8 +142,10 @@ describe('modules/request', function () {
   })
 
   describe('processBackupEvents', () => {
+    const freshTs = () => Math.floor(Date.now() / 1000)
+
     test('should skip processing entirely when a previous run is already in progress', () => {
-      mockInstanceManager.storage.readFromLSorCookie.mockReturnValue({ 1: { q: 'foo=bar' } })
+      mockInstanceManager.storage.readFromLSorCookie.mockReturnValue({ 1: { q: 'foo=bar', ts: freshTs() } })
       requestManager.processingBackup = true
 
       requestManager.processBackupEvents()
@@ -152,7 +155,7 @@ describe('modules/request', function () {
     })
 
     test('should skip processing when backup events are already processed', () => {
-      mockInstanceManager.storage.readFromLSorCookie.mockReturnValue({ 1: { q: 'foo=bar' } })
+      mockInstanceManager.storage.readFromLSorCookie.mockReturnValue({ 1: { q: 'foo=bar', ts: freshTs() } })
       requestManager.processedBackup = true
 
       requestManager.processBackupEvents()
@@ -162,7 +165,7 @@ describe('modules/request', function () {
     })
 
     test('should fire backup events that have a valid query string and clear the in-progress flag', () => {
-      mockInstanceManager.storage.readFromLSorCookie.mockReturnValue({ 1: { q: 'foo=bar' } })
+      mockInstanceManager.storage.readFromLSorCookie.mockReturnValue({ 1: { q: 'foo=bar', ts: freshTs() } })
 
       requestManager.processBackupEvents()
 
@@ -170,8 +173,23 @@ describe('modules/request', function () {
       expect(requestManager.processingBackup).toBe(false)
     })
 
+    test('should append session to the request URL without mutating stored backupEvent.q', () => {
+      const backupMap = { 1: { q: 'foo=bar', ts: freshTs() } }
+      mockInstanceManager.storage.readFromLSorCookie.mockReturnValue(backupMap)
+      mockInstanceManager.storage.readCookie.mockReturnValue(JSON.stringify({ s: 'sess123' }))
+
+      requestManager.processBackupEvents()
+
+      expect(mockDispatcher.fireRequest).toHaveBeenCalledWith('foo=bar&s=sess123')
+      expect(backupMap[1].q).toBe('foo=bar')
+      expect(mockInstanceManager.storage.saveToLSorCookie).toHaveBeenCalledWith(
+        'WZRK_L',
+        expect.objectContaining({ 1: expect.objectContaining({ q: 'foo=bar' }) })
+      )
+    })
+
     test('should remove malformed backup events (missing q) instead of retrying them forever', () => {
-      const malformedEvent = {} // no q property and not already fired
+      const malformedEvent = { ts: freshTs() } // no q property and not already fired
       mockInstanceManager.storage.readFromLSorCookie.mockReturnValue({ 1: malformedEvent })
 
       requestManager.processBackupEvents()
@@ -181,9 +199,10 @@ describe('modules/request', function () {
     })
 
     test('should only process OUL backups when oulOnly is true', () => {
+      const ts = freshTs()
       mockInstanceManager.storage.readFromLSorCookie.mockReturnValue({
-        1: { q: 'oul=1' },
-        2: { q: 'normal=1' }
+        1: { q: 'oul=1', ts },
+        2: { q: 'normal=1', ts }
       })
       mockInstanceManager.storage.isBackupOUL.mockImplementation((idx) => idx === 1)
 
@@ -198,6 +217,35 @@ describe('modules/request', function () {
 
       requestManager.processBackupEvents()
 
+      expect(mockDispatcher.fireRequest).not.toHaveBeenCalled()
+    })
+
+    test('should not fire age-expired backups and persist the pruned map', () => {
+      const now = Math.floor(Date.now() / 1000)
+      const staleTs = now - (4 * 24 * 60 * 60)
+      mockInstanceManager.storage.readFromLSorCookie.mockReturnValue({
+        1: { q: 'stale=1', ts: staleTs },
+        2: { q: 'fresh=1', ts: now }
+      })
+
+      requestManager.processBackupEvents()
+
+      expect(mockDispatcher.fireRequest).toHaveBeenCalledTimes(1)
+      expect(mockDispatcher.fireRequest).toHaveBeenCalledWith('fresh=1')
+      expect(mockInstanceManager.storage.saveToLSorCookie).toHaveBeenCalledWith(
+        'WZRK_L',
+        expect.not.objectContaining({ 1: expect.anything() })
+      )
+    })
+  })
+
+  describe('saveAndFireRequest - offline', () => {
+    test('should backup the request without firing when offline', () => {
+      mockInstanceManager.state.offline = true
+
+      requestManager.saveAndFireRequest('http://x.com?d=abc', false, false, 'evt')
+
+      expect(mockInstanceManager.storage.backupEvent).toHaveBeenCalled()
       expect(mockDispatcher.fireRequest).not.toHaveBeenCalled()
     })
   })

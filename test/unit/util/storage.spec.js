@@ -1,4 +1,6 @@
-import { GCOOKIE_NAME, KCOOKIE_NAME, LCOOKIE_NAME } from '../../../src/util/constants'
+import { GCOOKIE_NAME, KCOOKIE_NAME, LCOOKIE_NAME, WZRK_GEO } from '../../../src/util/constants'
+import InstanceStorageManager from '../../../src/util/instanceStorageManager'
+import { Encryption } from '../../../src/modules/security/Encryption'
 import {
   StorageManager,
   $ct
@@ -17,6 +19,9 @@ function deleteAllCookies () {
 
 describe('util/storage', function () {
   beforeAll(() => {
+    // jsdom expires cookies on the real clock; a frozen fake Date makes the SDK's short-lived
+    // probe cookies (10s) already expired on a slow run, so use real timers here
+    jest.useRealTimers()
     // clean start for tests in this file
     localStorage.clear()
     deleteAllCookies()
@@ -256,7 +261,8 @@ describe('util/storage', function () {
         StorageManager.backupEvent(data, reqNo, this.logger)
         const lcookieResult = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
         expect(lcookieResult[reqNo]).toMatchObject({ q: data })
-        expect(this.logger.debug).toHaveBeenCalledTimes(1)
+        expect(typeof lcookieResult[reqNo].ts).toBe('number')
+        expect(this.logger.debug).toHaveBeenCalled()
       })
 
       test('should remove data for provided request number', () => {
@@ -273,12 +279,105 @@ describe('util/storage', function () {
         const lcookieResult = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
         expect(lcookieResult[1]).toBeUndefined()
         expect(lcookieResult[2]).toMatchObject({ q: data2 })
-        expect(this.logger.debug).toHaveBeenCalledTimes(3)
+        expect(this.logger.debug).toHaveBeenCalled()
+      })
+
+      test('should prune age-expired backups when storing a new event', () => {
+        const now = Math.floor(Date.now() / 1000)
+        const staleTs = now - (4 * 24 * 60 * 60)
+        StorageManager.saveToLSorCookie(LCOOKIE_NAME, {
+          1: { q: 'stale-event', ts: staleTs }
+        })
+
+        StorageManager.backupEvent('fresh-event', 2, this.logger)
+
+        const lcookieResult = StorageManager.readFromLSorCookie(LCOOKIE_NAME)
+        expect(lcookieResult[1]).toBeUndefined()
+        expect(lcookieResult[2]).toMatchObject({ q: 'fresh-event' })
+        expect(typeof lcookieResult[2].ts).toBe('number')
       })
 
       test('should not do anything when trying to remove backup event not in request', () => {
         StorageManager.removeBackup(10, this.logger)
         expect(this.logger.debug).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('prefixed parameter', () => {
+      let defaultStorage
+
+      beforeEach(() => {
+        localStorage.clear()
+        deleteAllCookies()
+        $ct.globalCache = { gcookie: null, REQ_N: 0, RESP_N: 0 }
+        defaultStorage = new InstanceStorageManager('ACC-DEF', true, new Encryption())
+        $ct._storage = defaultStorage
+      })
+
+      afterEach(() => {
+        $ct._storage = null
+        localStorage.clear()
+        deleteAllCookies()
+      })
+
+      test('read/write are prefixed with the default account id by default', () => {
+        StorageManager.saveToLSorCookie(GCOOKIE_NAME, 'guid-1')
+
+        expect(localStorage.getItem('ACC-DEF:' + GCOOKIE_NAME)).not.toBeNull()
+        expect(localStorage.getItem(GCOOKIE_NAME)).toBeNull()
+        expect(StorageManager.readFromLSorCookie(GCOOKIE_NAME)).toBe('guid-1')
+        // same data as the default instance storage sees
+        expect(defaultStorage.readFromLSorCookie(GCOOKIE_NAME)).toBe('guid-1')
+      })
+
+      test('save/read/remove honour the prefix', () => {
+        StorageManager.save('foo', 'bar')
+        expect(localStorage.getItem('ACC-DEF:foo')).toBe('bar')
+        expect(StorageManager.read('foo')).toBe('bar')
+
+        StorageManager.remove('foo')
+        expect(localStorage.getItem('ACC-DEF:foo')).toBeNull()
+      })
+
+      test('cookies are prefixed by default', () => {
+        StorageManager.createCookie('foo', 'bar', 0, window.location.hostname)
+        expect(document.cookie).toContain('ACC-DEF:foo=bar')
+        expect(StorageManager.readCookie('foo')).toBe('bar')
+
+        StorageManager.removeCookie('foo', window.location.hostname)
+        expect(StorageManager.readCookie('foo')).toBeNull()
+      })
+
+      test('prefixed = false reads/writes the raw key', () => {
+        StorageManager.save(WZRK_GEO, 'true', false)
+        expect(localStorage.getItem(WZRK_GEO)).toBe('true')
+        expect(localStorage.getItem('ACC-DEF:' + WZRK_GEO)).toBeNull()
+        expect(StorageManager.read(WZRK_GEO, false)).toBe(true)
+        expect(StorageManager.read(WZRK_GEO)).toBeNull()
+
+        StorageManager.createCookie('raw', 'v', 0, window.location.hostname, false)
+        expect(document.cookie).toContain('raw=v')
+        expect(document.cookie).not.toContain('ACC-DEF:raw')
+        expect(StorageManager.readCookie('raw', false)).toBe('v')
+        expect(StorageManager.readCookie('raw')).toBeNull()
+
+        StorageManager.removeCookie('raw', window.location.hostname, false)
+        expect(StorageManager.readCookie('raw', false)).toBeNull()
+      })
+
+      test('prefixed = false on saveToLSorCookie / readFromLSorCookie uses the raw key', () => {
+        StorageManager.saveToLSorCookie('rawProp', { a: 1 }, false)
+        expect(localStorage.getItem('rawProp')).not.toBeNull()
+        expect(localStorage.getItem('ACC-DEF:rawProp')).toBeNull()
+        expect(StorageManager.readFromLSorCookie('rawProp', false)).toEqual({ a: 1 })
+      })
+
+      test('prefixed = false on createBroadCookie keeps the cookie name raw', () => {
+        StorageManager.createBroadCookie('rawBroad', 'v', 0, window.location.hostname, null, false)
+        expect(document.cookie).toContain('rawBroad=v')
+        expect(document.cookie).not.toContain('ACC-DEF:rawBroad')
+        StorageManager.removeCookie('rawBroad', window.location.hostname, false)
+        StorageManager.removeCookie('rawBroad', '.example.com', false)
       })
     })
   })

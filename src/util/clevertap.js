@@ -6,7 +6,6 @@ import {
 } from './storage'
 import {
   CAMP_COOKIE_NAME,
-  singleQuoteRegex,
   PR_COOKIE,
   ARP_COOKIE,
   GCOOKIE_NAME,
@@ -41,7 +40,6 @@ import {
   isObjectEmpty,
   isString,
   isNumber,
-  isValueValid,
   safeJSONParse
 } from './datatypes'
 
@@ -49,33 +47,20 @@ import { deliveryPreferenceUtils } from '../../src/util/campaignRender/utilities
 
 import { addToURL, getURLParams } from './url'
 import { compressData } from './encoder'
+import {
+  getCampaignObject,
+  saveCampaignObject,
+  setCampaignObjectForGuid,
+  closeIframe,
+  registerCampaignDivMap
+} from './campaignStorage'
 
-export const getCampaignObject = () => {
-  let finalcampObj = {}
-  if (StorageManager._isLocalStorageSupported()) {
-    let campObj = StorageManager.read(CAMP_COOKIE_NAME)
-    if (campObj != null) {
-      try {
-        campObj = JSON.parse(decodeURIComponent(campObj).replace(singleQuoteRegex, '\"'))
-        finalcampObj = campObj
-      } catch (e) {
-        finalcampObj = {}
-      }
-    } else {
-      finalcampObj = {}
-    }
-  }
-  return finalcampObj
-}
-
-// Save Camp here
-export const saveCampaignObject = (campaignObj) => {
-  if (StorageManager._isLocalStorageSupported()) {
-    const newObj = { ...getCampaignObject(), ...campaignObj }
-    const campObj = JSON.stringify(newObj)
-    StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(campObj))
-    setCampaignObjectForGuid()
-  }
+export {
+  getCampaignObject,
+  saveCampaignObject,
+  setCampaignObjectForGuid,
+  closeIframe,
+  registerCampaignDivMap
 }
 
 /**
@@ -88,13 +73,13 @@ export const saveCampaignObject = (campaignObj) => {
  * @param {any} wtq - Additional query parameters (if needed)
  * @returns {void}
  */
-export const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
+export const addDeliveryPreferenceDetails = (campaignDetails, logger, storage = StorageManager) => {
   try {
     if (!campaignDetails || !campaignDetails.wzrk_id) {
       throw new Error('Invalid campaign details provided')
     }
 
-    const campaignObj = getCampaignObject() || {}
+    const campaignObj = getCampaignObject(storage) || {}
 
     const campaignIdParts = campaignDetails.wzrk_id.split('_')
     const campaignId = campaignIdParts[0]
@@ -135,7 +120,7 @@ export const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
           : 0
       campaignObj[showCountKey] = currentShowCount + 1
 
-      campaignObj[dailyCountKey] = deliveryPreferenceUtils.getDailyCount(campaignObj, dailyCountKey)
+      campaignObj[dailyCountKey] = deliveryPreferenceUtils.getDailyCount(campaignObj, dailyCountKey, storage)
     }
 
     if (campaignDetails?.display?.adp) {
@@ -146,91 +131,23 @@ export const addDeliveryPreferenceDetails = (campaignDetails, logger) => {
       )
     }
 
-    saveCampaignObject(campaignObj)
+    saveCampaignObject(campaignObj, storage)
   } catch (error) {
     logger.error(`Campaign delivery preference update failed: ${error.message}`)
   }
 }
 
-// set Campaign Object against the guid, with daily count and total count details
-export const setCampaignObjectForGuid = () => {
-  if (StorageManager._isLocalStorageSupported()) {
-    let guid = StorageManager.read(GCOOKIE_NAME)
-    if (isValueValid(guid)) {
-      try {
-        guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
-        const guidCampObj = StorageManager.read(CAMP_COOKIE_G) ? JSON.parse(decodeURIComponent(StorageManager.read(CAMP_COOKIE_G))) : {}
-        if (guid && StorageManager._isLocalStorageSupported()) {
-          var finalCampObj = {}
-          var campObj = getCampaignObject()
-
-          /* TODO: Check if Webinbox needs these keys or get rid of them */
-          Object.keys(campObj).forEach(key => {
-            const campKeyObj = (guid in guidCampObj && Object.keys(guidCampObj[guid]).length && guidCampObj[guid][key]) ? guidCampObj[guid][key] : {}
-            const globalObj = campObj[key].global
-            const today = getToday()
-            const dailyObj = campObj[key][today]
-            if (typeof globalObj !== 'undefined') {
-              const campaignIdArray = Object.keys(globalObj)
-              for (const index in campaignIdArray) {
-                let resultObj = []
-                if (campaignIdArray.hasOwnProperty(index)) {
-                  let dailyC = 0
-                  let totalC = 0
-                  const campaignId = campaignIdArray[index]
-                  if (campaignId === 'tc') {
-                    continue
-                  }
-                  if (typeof dailyObj !== 'undefined' && typeof dailyObj[campaignId] !== 'undefined') {
-                    dailyC = dailyObj[campaignId]
-                  }
-                  if (typeof globalObj !== 'undefined' && typeof globalObj[campaignId] !== 'undefined') {
-                    totalC = globalObj[campaignId]
-                  }
-                  resultObj = [campaignId, dailyC, totalC]
-                  campKeyObj[campaignId] = resultObj
-                }
-              }
-            }
-            finalCampObj = {
-              ...finalCampObj,
-              [key]: campKeyObj
-            }
-          })
-
-          finalCampObj = {
-            ...finalCampObj,
-            wsc: campObj.wsc,
-            wfc: campObj.wfc,
-            woc: campObj.woc,
-            wmp: campObj.wmp,
-            dnd: campObj.dnd,
-            wndsc: campObj.wndsc,
-            wndfc: campObj.wndfc,
-            wndoc: campObj.wndoc,
-            wndmp: campObj.wndmp
-          }
-
-          guidCampObj[guid] = finalCampObj
-          StorageManager.save(CAMP_COOKIE_G, encodeURIComponent(JSON.stringify(guidCampObj)))
-        }
-      } catch (e) {
-        console.error('Invalid clevertap Id ' + e)
-      }
-    }
-  }
-}
 // Restore WZRK_CAMP from WZRK_CAMP_G[guid] on re-login
-export const restoreCampaignObjectForGuid = () => {
-  if (!StorageManager._isLocalStorageSupported()) {
+export const restoreCampaignObjectForGuid = (storage = StorageManager) => {
+  if (!storage._isLocalStorageSupported()) {
     return
   }
   try {
-    const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
+    const guid = safeJSONParse(decodeURIComponent(storage.read(GCOOKIE_NAME)), null)
     if (!guid) {
       return
     }
-    const storageValue = StorageManager.read(CAMP_COOKIE_G)
+    const storageValue = storage.read(CAMP_COOKIE_G)
     if (!storageValue) {
       return
     }
@@ -239,24 +156,25 @@ export const restoreCampaignObjectForGuid = () => {
     if (archivedCamp && Object.keys(archivedCamp).length > 0) {
       // Write directly to WZRK_CAMP without triggering setCampaignObjectForGuid
       // to avoid overwriting the archived CAMP_G data
-      const existingCamp = getCampaignObject()
+      const existingCamp = getCampaignObject(storage)
       const merged = { ...existingCamp, ...archivedCamp }
-      StorageManager.save(CAMP_COOKIE_NAME, encodeURIComponent(JSON.stringify(merged)))
+      storage.save(CAMP_COOKIE_NAME, encodeURIComponent(JSON.stringify(merged)))
     }
   } catch (e) {
     console.error('Failed to restore campaign object for guid: ' + e)
   }
 }
 
-export const getCampaignObjForLc = () => {
+export const getCampaignObjForLc = (storage = StorageManager) => {
   // before preparing data to send to LC , check if the entry for the guid is already there in CAMP_COOKIE_G
-  const guid = safeJSONParse(decodeURIComponent(StorageManager.read(GCOOKIE_NAME)), null)
+  const guid = safeJSONParse(decodeURIComponent(storage.read(GCOOKIE_NAME)), null)
 
   let campObj = {}
-  if (StorageManager._isLocalStorageSupported()) {
+  if (storage._isLocalStorageSupported()) {
     let resultObj = {}
-    campObj = getCampaignObject()
-    const storageValue = StorageManager.read(CAMP_COOKIE_G)
+    campObj = getCampaignObject(storage)
+    deliveryPreferenceUtils.resetDailyCountsIfNewDay(campObj, storage)
+    const storageValue = storage.read(CAMP_COOKIE_G)
     let decodedValue = null
     let parsedValue = null
     try {
@@ -276,7 +194,8 @@ export const getCampaignObjForLc = () => {
     const webPopupDeliveryPreferenceDeatils = {
       wsc: campObj?.wsc ?? 0,
       wfc: campObj?.wfc ?? {},
-      woc: campObj?.woc ?? {}
+      woc: campObj?.woc ?? {},
+      wmp: campObj?.wmp ?? 0
     }
 
     const webNativeDisplayDeliveryPreferenceDeatils = {
@@ -513,12 +432,15 @@ export const processGPlusUserObj = (user, { logger }) => {
   return profileData
 }
 
-export const addToLocalProfileMap = (profileObj, override) => {
-  if (StorageManager._isLocalStorageSupported()) {
-    if ($ct.globalProfileMap == null) {
-      $ct.globalProfileMap = StorageManager.readFromLSorCookie(PR_COOKIE)
-      if ($ct.globalProfileMap == null) {
-        $ct.globalProfileMap = {}
+export const addToLocalProfileMap = (profileObj, override, instanceManager) => {
+  const storage = instanceManager ? instanceManager.storage : StorageManager
+  // for the default instance `state` is the global $ct
+  const state = instanceManager ? instanceManager.state : $ct
+  if (storage._isLocalStorageSupported()) {
+    if (state.globalProfileMap == null) {
+      state.globalProfileMap = storage.readFromLSorCookie(PR_COOKIE)
+      if (state.globalProfileMap == null) {
+        state.globalProfileMap = {}
       }
     }
 
@@ -535,16 +457,16 @@ export const addToLocalProfileMap = (profileObj, override) => {
 
     for (const prop in profileObj) {
       if (profileObj.hasOwnProperty(prop)) {
-        if ($ct.globalProfileMap.hasOwnProperty(prop) && !override) {
+        if (state.globalProfileMap.hasOwnProperty(prop) && !override) {
           continue
         }
-        $ct.globalProfileMap[prop] = profileObj[prop]
+        state.globalProfileMap[prop] = profileObj[prop]
       }
     }
-    if ($ct.globalProfileMap._custom != null) {
-      delete $ct.globalProfileMap._custom
+    if (state.globalProfileMap._custom != null) {
+      delete state.globalProfileMap._custom
     }
-    StorageManager.saveToLSorCookie(PR_COOKIE, $ct.globalProfileMap)
+    storage.saveToLSorCookie(PR_COOKIE, state.globalProfileMap)
   }
 }
 
@@ -820,70 +742,7 @@ export const dismissActiveCampaigns = () => {
   })
 }
 
-// Global registry of all campaignDivMaps across instances (for cross-instance popup closing)
-export const _allCampaignDivMaps = []
-
-export const closeIframe = (campaignId, divIdIgnored, currentSessionId, instanceCampaignDivMap) => {
-  if (campaignId != null && campaignId !== '-1') {
-    if (StorageManager._isLocalStorageSupported()) {
-      const campaignObj = getCampaignObject()
-
-      // CurrentSesion Id is the problem
-      campaignObj.dnd = [...new Set([
-        ...(campaignObj.dnd ?? []),
-        campaignId
-      ])]
-      saveCampaignObject(campaignObj)
-    }
-  }
-
-  // Find the campaignDivMap that contains this campaignId.
-  // Check the instance-specific map first, then the global $ct map,
-  // then search all registered instance maps (for cross-instance close via iframe).
-  let targetMap = null
-  if (instanceCampaignDivMap != null && instanceCampaignDivMap[campaignId] != null) {
-    targetMap = instanceCampaignDivMap
-  } else if ($ct.campaignDivMap != null && $ct.campaignDivMap[campaignId] != null) {
-    targetMap = $ct.campaignDivMap
-  } else {
-    // Search all instance campaignDivMaps (handles cross-instance close from iframe)
-    for (const map of _allCampaignDivMaps) {
-      if (map != null && map[campaignId] != null) {
-        targetMap = map
-        break
-      }
-    }
-  }
-
-  if (targetMap != null) {
-    const divId = targetMap[campaignId]
-    if (divId != null) {
-      const containerEl = document.getElementById(divId)
-      if (containerEl == null) {
-        // DOM already removed (e.g. SPA navigation ran dismissActiveCampaigns); drop stale map entry
-        delete targetMap[campaignId]
-        return
-      }
-      containerEl.remove()
-      if (divId === 'intentPreview') {
-        if (document.getElementById('intentOpacityDiv') != null) {
-          document.getElementById('intentOpacityDiv').remove()
-        }
-      } else if (divId === 'wizParDiv0') {
-        if (document.getElementById('intentOpacityDiv0') != null) {
-          document.getElementById('intentOpacityDiv0').remove()
-        }
-      } else if (divId === 'wizParDiv2') {
-        if (document.getElementById('intentOpacityDiv2') != null) {
-          document.getElementById('intentOpacityDiv2').remove()
-        }
-      }
-      delete targetMap[campaignId]
-    }
-  }
-}
-
-export const arp = (jsonMap) => {
+export const arp = (jsonMap, instanceStorage = StorageManager, instanceState = $ct) => {
   // For unregister calls dont set arp in LS
   if (jsonMap.skipResARP != null && jsonMap.skipResARP) {
     console.debug('Update ARP Request rejected', jsonMap)
@@ -891,14 +750,15 @@ export const arp = (jsonMap) => {
   }
 
   // Process discarded events list from ARP
-  processDiscardedEventsList(jsonMap)
+  processDiscardedEventsList(jsonMap, instanceState)
 
   const isOULARP = jsonMap[IS_OUL] === true
 
-  if (StorageManager._isLocalStorageSupported()) {
+  const storage = instanceStorage
+  if (storage._isLocalStorageSupported()) {
     // Update arp only if it is null or an oul request
     try {
-      let arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE)
+      let arpFromStorage = storage.readFromLSorCookie(ARP_COOKIE)
       if (arpFromStorage == null || isOULARP) {
         arpFromStorage = {}
         for (const key in jsonMap) {
@@ -910,7 +770,7 @@ export const arp = (jsonMap) => {
             }
           }
         }
-        StorageManager.saveToLSorCookie(ARP_COOKIE, arpFromStorage)
+        storage.saveToLSorCookie(ARP_COOKIE, arpFromStorage)
       }
     } catch (e) {
       console.error('Unable to parse ARP JSON: ' + e)
@@ -918,18 +778,20 @@ export const arp = (jsonMap) => {
   }
 }
 
-export const isEventDiscarded = (eventName) => {
-  if ($ct.discardedEventsList == null || !eventName) {
+// The discarded events list comes from each account's own ARP response, so it lives
+// in the instance state (for the default instance that state is the global $ct).
+export const isEventDiscarded = (eventName, instanceState = $ct) => {
+  if (instanceState == null || instanceState.discardedEventsList == null || !eventName) {
     return false
   }
-  return $ct.discardedEventsList.has(eventName.toLowerCase())
+  return instanceState.discardedEventsList.has(eventName.toLowerCase())
 }
 
-export const initDiscardedEventsFromStorage = () => {
+export const initDiscardedEventsFromStorage = (instanceStorage = StorageManager, instanceState = $ct) => {
   try {
-    const arpFromStorage = StorageManager.readFromLSorCookie(ARP_COOKIE)
+    const arpFromStorage = instanceStorage.readFromLSorCookie(ARP_COOKIE)
     if (arpFromStorage != null) {
-      processDiscardedEventsList(arpFromStorage)
+      processDiscardedEventsList(arpFromStorage, instanceState)
     }
   } catch (e) {
     console.error('Error initializing discarded events from storage: ' + e)
@@ -948,7 +810,7 @@ const decodeDiscardedEventName = (encoded) => {
   return utf8Decoder.decode(bytes)
 }
 
-const processDiscardedEventsList = (arpResponse) => {
+const processDiscardedEventsList = (arpResponse, instanceState = $ct) => {
   if (!arpResponse.hasOwnProperty(DISCARDED_EVENT_JSON_KEY)) {
     return
   }
@@ -956,7 +818,7 @@ const processDiscardedEventsList = (arpResponse) => {
   try {
     const discardedEventsArray = arpResponse[DISCARDED_EVENT_JSON_KEY]
     if (Array.isArray(discardedEventsArray)) {
-      $ct.discardedEventsList = new Set(
+      instanceState.discardedEventsList = new Set(
         discardedEventsArray.map(encoded => decodeDiscardedEventName(encoded).toLowerCase())
       )
     }
