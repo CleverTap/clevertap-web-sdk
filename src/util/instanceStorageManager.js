@@ -231,12 +231,13 @@ export default class InstanceStorageManager {
     } catch (e) {}
   }
 
-  readFromLSorCookie (property) {
+  // skipCache reads storage even when cached, e.g. when another tab may have written it
+  readFromLSorCookie (property, skipCache = false) {
     let data
     if (!this._hasAccount()) {
       return undefined
     }
-    if (this.globalCache.hasOwnProperty(property)) {
+    if (!skipCache && this.globalCache.hasOwnProperty(property)) {
       return this.globalCache[property]
     }
     if (this._isLocalStorageSupported()) {

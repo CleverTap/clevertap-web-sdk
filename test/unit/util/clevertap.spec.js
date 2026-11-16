@@ -1,6 +1,7 @@
 import 'regenerator-runtime/runtime'
 import {
   addToLocalProfileMap,
+  arp,
   closeIframe,
   dismissActiveCampaigns,
   getCampaignObject,
@@ -10,7 +11,7 @@ import {
   processGPlusUserObj,
   saveCampaignObject
 } from '../../../src/util/clevertap'
-import { CAMP_COOKIE_NAME, PR_COOKIE } from '../../../src/util/constants'
+import { ARP_COOKIE, ARP_ENCODED_ZERO_ID, CAMP_COOKIE_NAME, PR_COOKIE } from '../../../src/util/constants'
 import { convertToWZRKDate, setDate } from '../../../src/util/datetime'
 import {
   AGE_ERROR,
@@ -908,6 +909,56 @@ describe('util/clevertap', function () {
       expect($ct.campaignDivMap.camp3).toBe('wizParDiv2')
       expect($ct.campaignDivMap.camp4).toBe('wzrkImageOnlyDiv')
       expect(Object.keys($ct.campaignDivMap)).toHaveLength(4)
+    })
+  })
+
+  describe('arp fills a missing j', () => {
+    const ID_19275 = 'ZmNgfAc='
+    const OTHER_ID = 'ZmNgfAQ='
+
+    const seed = (value) => {
+      mockStorage._isLocalStorageSupported.mockReturnValue(true)
+      mockStorage.readFromLSorCookie.mockImplementation(() => ({ ...value }))
+    }
+
+    test('fills only j when the stored i matches the response i', () => {
+      seed({ i_n: ID_19275, j_n: ARP_ENCODED_ZERO_ID, k_n: 'k' })
+
+      arp({ i_n: ID_19275, j_n: ID_19275, k_n: 'other' }, mockStorage, $ct)
+
+      expect(mockStorage.saveToLSorCookie).toHaveBeenCalledWith(ARP_COOKIE, { i_n: ID_19275, j_n: ID_19275, k_n: 'k' })
+    })
+
+    test('fills keys that carry an account suffix', () => {
+      seed({ i_nX: ID_19275, j_nX: ARP_ENCODED_ZERO_ID })
+
+      arp({ i_nX: ID_19275, j_nX: ID_19275 }, mockStorage, $ct)
+
+      expect(mockStorage.saveToLSorCookie).toHaveBeenCalledWith(ARP_COOKIE, { i_nX: ID_19275, j_nX: ID_19275 })
+    })
+
+    test.each([
+      ['the response i differs', { i_n: ID_19275, j_n: ARP_ENCODED_ZERO_ID }, { i_n: OTHER_ID, j_n: OTHER_ID }],
+      ['the stored i is zero', { i_n: ARP_ENCODED_ZERO_ID, j_n: ARP_ENCODED_ZERO_ID }, { i_n: ARP_ENCODED_ZERO_ID, j_n: ID_19275 }],
+      ['the stored j is already non-zero', { i_n: ID_19275, j_n: OTHER_ID }, { i_n: ID_19275, j_n: ID_19275 }],
+      ['the response j is the -1 delete sentinel', { i_n: ID_19275, j_n: ARP_ENCODED_ZERO_ID }, { i_n: ID_19275, j_n: -1 }]
+    ])('skips when %s', (_name, seeded, response) => {
+      seed(seeded)
+
+      arp(response, mockStorage, $ct)
+
+      expect(mockStorage.saveToLSorCookie).not.toHaveBeenCalled()
+    })
+
+    test('skips when another tab has stored a different user since this tab cached the ARP', () => {
+      mockStorage._isLocalStorageSupported.mockReturnValue(true)
+      mockStorage.readFromLSorCookie.mockImplementation((property, skipCache) => (skipCache
+        ? { i_n: OTHER_ID, j_n: ARP_ENCODED_ZERO_ID }
+        : { i_n: ID_19275, j_n: ARP_ENCODED_ZERO_ID }))
+
+      arp({ i_n: ID_19275, j_n: ID_19275 }, mockStorage, $ct)
+
+      expect(mockStorage.saveToLSorCookie).not.toHaveBeenCalled()
     })
   })
 })
