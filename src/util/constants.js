@@ -33,6 +33,9 @@ export const LRU_CACHE = 'WZRK_X'
 export const LRU_CACHE_SIZE = 100
 export const LRU_COOKIE_LIMIT = 5
 export const IS_OUL = 'isOUL'
+export const ARP_I_KEY = 'i_n'
+export const ARP_J_KEY = 'j_n'
+export const ARP_ENCODED_ZERO_ID = 'Zw=='
 export const EVT_PUSH = 'push'
 export const EVT_PING = 'ping'
 export const COOKIE_EXPIRY = 86400 * 365 // 1 Year in seconds
