@@ -15,7 +15,10 @@ import {
   GLOBAL,
   CAMPAIGN_TYPES,
   DISCARDED_EVENT_JSON_KEY,
-  DISCARDED_EVENT_XOR_KEY
+  DISCARDED_EVENT_XOR_KEY,
+  ARP_I_KEY,
+  ARP_J_KEY,
+  ARP_ENCODED_ZERO_ID
 } from './constants'
 import {
   GENDER_ERROR,
@@ -742,6 +745,8 @@ export const dismissActiveCampaigns = () => {
   })
 }
 
+const isZeroArpId = (id) => id == null || id === 0 || id === ARP_ENCODED_ZERO_ID
+
 export const arp = (jsonMap, instanceStorage = StorageManager, instanceState = $ct) => {
   // For unregister calls dont set arp in LS
   if (jsonMap.skipResARP != null && jsonMap.skipResARP) {
@@ -771,6 +776,17 @@ export const arp = (jsonMap, instanceStorage = StorageManager, instanceState = $
           }
         }
         storage.saveToLSorCookie(ARP_COOKIE, arpFromStorage)
+      } else {
+        // Fill a zero j once from a later response of the same i
+        const latestArp = storage.readFromLSorCookie(ARP_COOKIE, true)
+        const jKey = Object.keys(jsonMap).find((key) => key.startsWith(ARP_J_KEY))
+        const iKey = jKey != null ? ARP_I_KEY + jKey.slice(ARP_J_KEY.length) : null
+        if (latestArp != null && jKey != null &&
+          !isZeroArpId(latestArp[iKey]) && latestArp[iKey] === jsonMap[iKey] &&
+          isZeroArpId(latestArp[jKey]) && !isZeroArpId(jsonMap[jKey]) && jsonMap[jKey] !== -1) {
+          latestArp[jKey] = jsonMap[jKey]
+          storage.saveToLSorCookie(ARP_COOKIE, latestArp)
+        }
       }
     } catch (e) {
       console.error('Unable to parse ARP JSON: ' + e)
