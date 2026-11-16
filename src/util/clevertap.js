@@ -783,7 +783,7 @@ export const arp = (jsonMap, instanceStorage = StorageManager, instanceState = $
         const iKey = jKey != null ? ARP_I_KEY + jKey.slice(ARP_J_KEY.length) : null
         if (latestArp != null && jKey != null &&
           !isZeroArpId(latestArp[iKey]) && latestArp[iKey] === jsonMap[iKey] &&
-          isZeroArpId(latestArp[jKey]) && !isZeroArpId(jsonMap[jKey])) {
+          isZeroArpId(latestArp[jKey]) && !isZeroArpId(jsonMap[jKey]) && jsonMap[jKey] !== -1) {
           latestArp[jKey] = jsonMap[jKey]
           storage.saveToLSorCookie(ARP_COOKIE, latestArp)
         }

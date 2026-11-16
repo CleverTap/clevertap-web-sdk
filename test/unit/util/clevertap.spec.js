@@ -940,7 +940,8 @@ describe('util/clevertap', function () {
     test.each([
       ['the response i differs', { i_n: ID_19275, j_n: ARP_ENCODED_ZERO_ID }, { i_n: OTHER_ID, j_n: OTHER_ID }],
       ['the stored i is zero', { i_n: ARP_ENCODED_ZERO_ID, j_n: ARP_ENCODED_ZERO_ID }, { i_n: ARP_ENCODED_ZERO_ID, j_n: ID_19275 }],
-      ['the stored j is already non-zero', { i_n: ID_19275, j_n: OTHER_ID }, { i_n: ID_19275, j_n: ID_19275 }]
+      ['the stored j is already non-zero', { i_n: ID_19275, j_n: OTHER_ID }, { i_n: ID_19275, j_n: ID_19275 }],
+      ['the response j is the -1 delete sentinel', { i_n: ID_19275, j_n: ARP_ENCODED_ZERO_ID }, { i_n: ID_19275, j_n: -1 }]
     ])('skips when %s', (_name, seeded, response) => {
       seed(seeded)
 
