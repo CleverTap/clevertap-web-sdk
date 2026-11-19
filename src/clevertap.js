@@ -57,7 +57,7 @@ import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 import InstanceManager from './util/instanceManager'
 import InstanceStorageManager from './util/instanceStorageManager'
-import { migrateLegacyStorage, registerActiveAccount, removeAccounts, syncActiveAccounts } from './util/storageMigration'
+import { migrateLegacyStorage, migratePrefixedStorage, registerActiveAccount, removeAccounts, syncActiveAccounts } from './util/storageMigration'
 import { Encryption } from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
 import { checkWebPopupPreview } from './util/campaignRender/webPopup'
@@ -923,9 +923,10 @@ export default class CleverTap {
   }
 
   /**
-   * Binds the instance storage to its account so every key is stored as `{accountId}:KEY`,
-   * sets the encryption key and, for the default instance, moves legacy un-prefixed data
-   * to the prefixed keys (see util/storageMigration). Runs once per instance.
+   * Binds the instance storage to its account so every key is stored as `KEY:{accountId}`,
+   * sets the encryption key and moves older data to it (see util/storageMigration):
+   * the bare keys of the default instance (before v3.2.0) and the `{accountId}:KEY`
+   * keys of any instance (v3.2.0 - v3.2.1). Runs once per instance.
    */
   #bindStorageToAccount (accountId) {
     if (!accountId || this.#storageBound) {
@@ -938,6 +939,7 @@ export default class CleverTap {
     if (this.#instanceManager.isDefault) {
       migrateLegacyStorage(storage, accountId, this.#logger)
     }
+    migratePrefixedStorage(storage, accountId, this.#logger)
     // npm flow: persist the constructor's enableTVControls value now that storage is bound,
     // so a flag left over from an earlier session does not stay on
     if (this.#tvControlsConfig !== undefined) {

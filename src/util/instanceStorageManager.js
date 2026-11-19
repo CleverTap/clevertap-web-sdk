@@ -25,14 +25,16 @@ export default class InstanceStorageManager {
     this.globalCache = { gcookie: null, REQ_N: 0, RESP_N: 0 }
 
     // While a storage migration is pending/in progress, reads fall back to the
-    // legacy (unprefixed) key when the prefixed key is missing.
+    // older key names when the `{key}:{accountId}` key is missing:
+    // `{accountId}:{key}` (v3.2.0 - v3.2.1) and, for the default account, the bare key.
     this._legacyFallback = false
+    this._prefixedFallback = false
   }
 
   /**
    * Binds this storage to an account. The default instance can be created before
    * its account ID is known (npm flow), so the prefix is only available after init().
-   * Every account, default or not, stores keys as `{accountId}:{key}`.
+   * Every account, default or not, stores keys as `{key}:{accountId}`.
    */
   setAccountId (accountId) {
     if (accountId) {
@@ -41,7 +43,7 @@ export default class InstanceStorageManager {
   }
 
   /**
-   * Enables/disables reading the legacy unprefixed key when the prefixed one is missing.
+   * Enables/disables reading the legacy bare key when the scoped one is missing.
    * Only enabled while a storage migration for this account is pending.
    */
   setLegacyFallback (enabled) {
@@ -49,10 +51,26 @@ export default class InstanceStorageManager {
   }
 
   /**
-   * Returns the prefixed key for storage: `{accountId}:{key}`.
+   * Enables/disables reading the v3.2.x `{accountId}:{key}` key when the scoped one is missing.
+   * Only enabled while a storage migration for this account is pending.
+   */
+  setPrefixedFallback (enabled) {
+    this._prefixedFallback = enabled
+  }
+
+  /**
+   * Returns the account scoped key for storage: `{key}:{accountId}`.
+   * The SDK name stays first so that allow-lists matching `WZRK_*` keep working.
    * Applies to the default instance as well, so that no two accounts share a key.
    */
-  _prefixKey (key) {
+  _scopedKey (key) {
+    return key + ':' + this.accountId
+  }
+
+  /**
+   * The key format written by v3.2.0 - v3.2.1: `{accountId}:{key}`.
+   */
+  _prefixedKey (key) {
     return this.accountId + ':' + key
   }
 
@@ -72,13 +90,13 @@ export default class InstanceStorageManager {
     if (!key || !value || !this._hasAccount()) {
       return false
     }
-    const prefixed = this._prefixKey(key)
+    const scoped = this._scopedKey(key)
     if (this._isLocalStorageSupported()) {
       if (this.encryption.shouldEncrypt(key)) {
-        localStorage.setItem(prefixed, this.encryption.encrypt(value))
+        localStorage.setItem(scoped, this.encryption.encrypt(value))
         return true
       }
-      localStorage.setItem(prefixed, typeof value === 'string' ? value : JSON.stringify(value))
+      localStorage.setItem(scoped, typeof value === 'string' ? value : JSON.stringify(value))
       return true
     }
   }
@@ -90,10 +108,12 @@ export default class InstanceStorageManager {
     if (!this._hasAccount()) {
       return null
     }
-    const prefixed = this._prefixKey(key)
     let data = null
     if (this._isLocalStorageSupported()) {
-      data = localStorage.getItem(prefixed)
+      data = localStorage.getItem(this._scopedKey(key))
+      if (data == null && this._prefixedFallback) {
+        data = localStorage.getItem(this._prefixedKey(key))
+      }
       if (data == null && this._legacyFallback) {
         data = localStorage.getItem(key)
       }
@@ -118,9 +138,11 @@ export default class InstanceStorageManager {
     if (!this._hasAccount()) {
       return false
     }
-    const prefixed = this._prefixKey(key)
     if (this._isLocalStorageSupported()) {
-      localStorage.removeItem(prefixed)
+      localStorage.removeItem(this._scopedKey(key))
+      if (this._prefixedFallback) {
+        localStorage.removeItem(this._prefixedKey(key))
+      }
       if (this._legacyFallback) {
         localStorage.removeItem(key)
       }
@@ -143,7 +165,10 @@ export default class InstanceStorageManager {
       }
       document.cookie = cookieStr
     }
-    expire(this._prefixKey(name))
+    expire(this._scopedKey(name))
+    if (this._prefixedFallback) {
+      expire(this._prefixedKey(name))
+    }
     // previous SDK stored the session as WZRK_S_{accountId}
     if (name === SCOOKIE_PREFIX) {
       expire(this._legacySessionCookieName())
@@ -154,7 +179,7 @@ export default class InstanceStorageManager {
     if (!this._hasAccount()) {
       return
     }
-    const prefixed = this._prefixKey(name)
+    const scoped = this._scopedKey(name)
     let expires = ''
     let domainStr = ''
     if (seconds) {
@@ -169,14 +194,17 @@ export default class InstanceStorageManager {
 
     value = encodeURIComponent(value)
 
-    document.cookie = prefixed + '=' + value + expires + domainStr + '; path=/'
+    document.cookie = scoped + '=' + value + expires + domainStr + '; path=/'
   }
 
   readCookie (name) {
     if (!this._hasAccount()) {
       return null
     }
-    let value = InstanceStorageManager._readRawCookie(this._prefixKey(name))
+    let value = InstanceStorageManager._readRawCookie(this._scopedKey(name))
+    if (value === null && this._prefixedFallback) {
+      value = InstanceStorageManager._readRawCookie(this._prefixedKey(name))
+    }
     if (value === null && this._legacyFallback) {
       value = InstanceStorageManager._readRawCookie(name)
     }
@@ -187,7 +215,7 @@ export default class InstanceStorageManager {
   }
 
   /**
-   * Reads a cookie by its exact (already prefixed, or legacy) name.
+   * Reads a cookie by its exact (already scoped, or legacy) name.
    */
   static _readRawCookie (fullName) {
     const nameEQ = fullName + '='

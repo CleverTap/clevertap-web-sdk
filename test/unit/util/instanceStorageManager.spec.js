@@ -9,37 +9,38 @@ const createStorage = (accountId, isDefault = false) => new InstanceStorageManag
 describe('util/instanceStorageManager', () => {
   beforeEach(clearAllStorage)
 
-  describe('key prefixing', () => {
-    test('default instance stores keys as {accountId}:KEY (no bare keys)', () => {
+  describe('key scoping', () => {
+    test('default instance stores keys as KEY:{accountId} (no bare keys)', () => {
       const storage = createStorage('ACC-1', true)
       storage.saveToLSorCookie(GCOOKIE_NAME, 'guid-1')
 
-      expect(localStorage.getItem('ACC-1:' + GCOOKIE_NAME)).not.toBeNull()
+      expect(localStorage.getItem(GCOOKIE_NAME + ':ACC-1')).not.toBeNull()
       expect(localStorage.getItem(GCOOKIE_NAME)).toBeNull()
+      expect(localStorage.getItem('ACC-1:' + GCOOKIE_NAME)).toBeNull()
       expect(storage.readFromLSorCookie(GCOOKIE_NAME)).toBe('guid-1')
     })
 
-    test('non-default instance stores keys as {accountId}:KEY', () => {
+    test('non-default instance stores keys as KEY:{accountId}', () => {
       const storage = createStorage('ACC-2', false)
       storage.save('foo', 'bar')
 
-      expect(localStorage.getItem('ACC-2:foo')).toBe('bar')
+      expect(localStorage.getItem('foo:ACC-2')).toBe('bar')
       expect(localStorage.getItem('foo')).toBeNull()
     })
 
-    test('cookies are prefixed with the account id for the default instance too', () => {
+    test('cookies are suffixed with the account id for the default instance too', () => {
       const storage = createStorage('ACC-1', true)
       storage.createCookie('some_cookie', 'value', 0, window.location.hostname)
 
-      expect(document.cookie).toContain('ACC-1:some_cookie=value')
+      expect(document.cookie).toContain('some_cookie:ACC-1=value')
       expect(storage.readCookie('some_cookie')).toBe('value')
     })
 
-    test('session cookie is stored as {accountId}:WZRK_S', () => {
+    test('session cookie is stored as WZRK_S:{accountId}', () => {
       const storage = createStorage('ACC-1', true)
       storage.createCookie(SCOOKIE_PREFIX, '{"s":1}', 0, window.location.hostname)
 
-      expect(document.cookie).toContain('ACC-1:' + SCOOKIE_PREFIX + '=' + encodeURIComponent('{"s":1}'))
+      expect(document.cookie).toContain(SCOOKIE_PREFIX + ':ACC-1=' + encodeURIComponent('{"s":1}'))
       expect(document.cookie).not.toContain(SCOOKIE_PREFIX + '_ACC-1=')
       expect(storage.readCookie(SCOOKIE_PREFIX)).toBe('{"s":1}')
     })
@@ -82,8 +83,8 @@ describe('util/instanceStorageManager', () => {
       expect(storage.readFromLSorCookie(GCOOKIE_NAME)).toBeUndefined()
     })
 
-    test('setAccountId binds the prefix and drops values cached before binding', () => {
-      localStorage.setItem('ACC-1:' + GCOOKIE_NAME, encodeURIComponent(JSON.stringify('guid-1')))
+    test('setAccountId binds the account suffix', () => {
+      localStorage.setItem(GCOOKIE_NAME + ':ACC-1', encodeURIComponent(JSON.stringify('guid-1')))
       const storage = createStorage(null, true)
       storage.setAccountId('ACC-1')
 
@@ -104,16 +105,16 @@ describe('util/instanceStorageManager', () => {
       expect(storage.read('foo')).toBeNull()
     })
 
-    test('reads the legacy key when the prefixed one is missing', () => {
+    test('reads the legacy key when the scoped one is missing', () => {
       localStorage.setItem('foo', 'legacy')
       const storage = createStorage('ACC-1', true)
       storage.setLegacyFallback(true)
       expect(storage.read('foo')).toBe('legacy')
     })
 
-    test('prefers the prefixed key over the legacy one', () => {
+    test('prefers the scoped key over the legacy one', () => {
       localStorage.setItem('foo', 'legacy')
-      localStorage.setItem('ACC-1:foo', 'current')
+      localStorage.setItem('foo:ACC-1', 'current')
       const storage = createStorage('ACC-1', true)
       storage.setLegacyFallback(true)
       expect(storage.read('foo')).toBe('current')
@@ -129,7 +130,7 @@ describe('util/instanceStorageManager', () => {
 
     test('remove also drops the legacy copy so it cannot resurrect', () => {
       localStorage.setItem('foo', 'legacy')
-      localStorage.setItem('ACC-1:foo', 'current')
+      localStorage.setItem('foo:ACC-1', 'current')
       const storage = createStorage('ACC-1', true)
       storage.setLegacyFallback(true)
       storage.remove('foo')
@@ -137,8 +138,47 @@ describe('util/instanceStorageManager', () => {
     })
   })
 
+  describe('v3.2.x {accountId}:KEY fallback (dual read while migrating)', () => {
+    test('is off by default', () => {
+      localStorage.setItem('ACC-1:foo', 'old')
+      document.cookie = 'ACC-1:old_cookie=old; path=/'
+      const storage = createStorage('ACC-1')
+      expect(storage.read('foo')).toBeNull()
+      expect(storage.readCookie('old_cookie')).toBeNull()
+    })
+
+    test('reads the {accountId}:KEY key and cookie when the scoped one is missing', () => {
+      localStorage.setItem('ACC-1:foo', 'old')
+      document.cookie = 'ACC-1:old_cookie=old; path=/'
+      const storage = createStorage('ACC-1')
+      storage.setPrefixedFallback(true)
+      expect(storage.read('foo')).toBe('old')
+      expect(storage.readCookie('old_cookie')).toBe('old')
+    })
+
+    test('prefers the scoped key, and is tried before the bare legacy key', () => {
+      localStorage.setItem('foo', 'legacy')
+      localStorage.setItem('ACC-1:foo', 'old')
+      const storage = createStorage('ACC-1', true)
+      storage.setLegacyFallback(true)
+      storage.setPrefixedFallback(true)
+      expect(storage.read('foo')).toBe('old')
+      localStorage.setItem('foo:ACC-1', 'current')
+      expect(storage.read('foo')).toBe('current')
+    })
+
+    test('remove also drops the {accountId}:KEY copy', () => {
+      localStorage.setItem('ACC-1:foo', 'old')
+      localStorage.setItem('foo:ACC-1', 'current')
+      const storage = createStorage('ACC-1')
+      storage.setPrefixedFallback(true)
+      storage.remove('foo')
+      expect(storage.read('foo')).toBeNull()
+    })
+  })
+
   describe('blockRequest state', () => {
-    test('is persisted per instance under its own prefixed key', () => {
+    test('is persisted per instance under its own scoped key', () => {
       const first = new InstanceManager('ACC-1', false)
       first.storage = createStorage('ACC-1')
       const second = new InstanceManager('ACC-2', false)
@@ -148,8 +188,8 @@ describe('util/instanceStorageManager', () => {
 
       expect(first.state.blockRequest).toBe(true)
       expect(second.state.blockRequest).toBe(false)
-      expect(localStorage.getItem('ACC-1:' + BLOCK_REQUEST_COOKIE)).not.toBeNull()
-      expect(localStorage.getItem('ACC-2:' + BLOCK_REQUEST_COOKIE)).toBeNull()
+      expect(localStorage.getItem(BLOCK_REQUEST_COOKIE + ':ACC-1')).not.toBeNull()
+      expect(localStorage.getItem(BLOCK_REQUEST_COOKIE + ':ACC-2')).toBeNull()
     })
 
     test('is kept in memory until the storage is bound to an account', () => {
