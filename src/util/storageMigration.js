@@ -72,7 +72,7 @@ const ACCOUNT_SCOPED_KEYS = [
   ACCOUNT_ID
 ]
 
-// Every key/cookie name the SDK writes per account as `{accountId}:KEY`
+// Every key/cookie name the SDK writes per account as `KEY:{accountId}`
 // (the session cookie is not part of the legacy list: it used to be `WZRK_S_{accountId}`)
 const SDK_STORAGE_KEYS = [...ACCOUNT_SCOPED_KEYS, SCOOKIE_PREFIX]
 
@@ -156,51 +156,73 @@ const writeAccountsRegistry = (ids) => {
   }
 }
 
-// Copy only if the prefixed key is missing (never clobber), then drop the legacy key
-const migrateLocalStorageKey = (key, owner) => {
-  const raw = localStorage.getItem(key)
+const scopedName = (key, accountId) => key + ':' + accountId
+const prefixedName = (key, accountId) => accountId + ':' + key
+
+// Copy only if the scoped key is missing (never clobber), then drop the old key
+const moveLocalStorageKey = (source, target) => {
+  const raw = localStorage.getItem(source)
   if (raw == null) {
     return
   }
-  const target = owner + ':' + key
   if (localStorage.getItem(target) == null) {
     localStorage.setItem(target, raw)
   }
-  localStorage.removeItem(key)
+  localStorage.removeItem(source)
 }
 
-const migrateCookie = (key, owner, ownerStorage, lsSupported) => {
-  const value = readCookie(key)
+// `source` is the old cookie name, written as `{key}:{owner}` through ownerStorage
+const moveCookie = (source, key, owner, ownerStorage, lsSupported) => {
+  const value = readCookie(source)
   if (value === null) {
     return
   }
   const hostname = window.location.hostname
-  const existing = readCookie(owner + ':' + key)
+  const existing = readCookie(scopedName(key, owner))
   let broadDomain
   if (BROAD_COOKIE_KEYS.includes(key)) {
-    // returns the parent domain the cookie was written on, which is where the legacy one lives too
+    // returns the parent domain the cookie was written on, which is where the old one lives too
     broadDomain = ownerStorage.createBroadCookie(key, existing ?? value, COOKIE_EXPIRY, hostname)
   } else if (existing === null && !lsSupported) {
     // cookie-only mode: the cookies are the storage
     ownerStorage.createCookie(key, value, 0, hostname)
   }
-  expireCookie(key, broadDomain)
+  expireCookie(source, broadDomain)
 }
 
-// Previous SDK: WZRK_S_{accountId}. Now: {accountId}:WZRK_S
-const migrateSessionCookie = (owner, ownerStorage) => {
-  const legacyName = SCOOKIE_PREFIX + '_' + owner
-  const value = readCookie(legacyName)
+// Session cookie, previously WZRK_S_{accountId} (before v3.2.0) or {accountId}:WZRK_S (v3.2.x).
+// Now: WZRK_S:{accountId}
+const moveSessionCookie = (source, owner, ownerStorage) => {
+  const value = readCookie(source)
   if (value === null) {
     return
   }
-  const existing = readCookie(owner + ':' + SCOOKIE_PREFIX)
+  const existing = readCookie(scopedName(SCOOKIE_PREFIX, owner))
   const hostname = window.location.hostname
   const broadDomain = ownerStorage.createBroadCookie(SCOOKIE_PREFIX, existing ?? value, SCOOKIE_EXP_TIME_IN_SECS, hostname)
-  expireCookie(legacyName, broadDomain)
+  expireCookie(source, broadDomain)
 }
 
-// Moves the legacy un-prefixed storage of the default instance to `{owner}:KEY`.
+// Moves every SDK key of `owner` to `{key}:{owner}`. The v3.2.x `{owner}:{key}` copy is newer than
+// the bare one, so it is moved first; with includeLegacy the bare (pre v3.2.0) keys follow.
+const moveAccountKeys = (owner, ownerStorage, includeLegacy) => {
+  const lsSupported = isLocalStorageSupported()
+  moveSessionCookie(prefixedName(SCOOKIE_PREFIX, owner), owner, ownerStorage)
+  if (includeLegacy) {
+    moveSessionCookie(SCOOKIE_PREFIX + '_' + owner, owner, ownerStorage)
+  }
+  for (const key of ACCOUNT_SCOPED_KEYS) {
+    const sources = includeLegacy ? [prefixedName(key, owner), key] : [prefixedName(key, owner)]
+    for (const source of sources) {
+      if (lsSupported) {
+        moveLocalStorageKey(source, scopedName(key, owner))
+      }
+      moveCookie(source, key, owner, ownerStorage, lsSupported)
+    }
+  }
+}
+
+// Moves the legacy un-prefixed storage of the default instance to `{key}:{owner}`.
 export const migrateLegacyStorage = (storage, accountId, logger) => {
   const inProgress = isMigrationInProgress()
   if (!accountId || (!inProgress && !hasUnprefixedAccountId())) {
@@ -210,17 +232,16 @@ export const migrateLegacyStorage = (storage, accountId, logger) => {
   // WZRK_ACCOUNT_ID is the last key to move, so an interrupted run still finds the owner
   const owner = readLegacyOwner() || accountId
   if (owner === accountId) {
-    // until the migration is done, reads fall back to the legacy keys
+    // until the migration is done, reads fall back to the old keys
     storage.setLegacyFallback(true)
+    storage.setPrefixedFallback(true)
   }
 
   try {
     if (!inProgress) {
       writeFlag()
     }
-    const lsSupported = isLocalStorageSupported()
     const ownerStorage = new InstanceStorageManager(owner, false, storage.encryption)
-    migrateSessionCookie(owner, ownerStorage)
 
     if (owner !== accountId) {
       // not the default any more: register it so removeStaleInstances can clean it up
@@ -230,20 +251,45 @@ export const migrateLegacyStorage = (storage, accountId, logger) => {
       }
     }
 
-    for (const key of ACCOUNT_SCOPED_KEYS) {
-      if (lsSupported) {
-        migrateLocalStorageKey(key, owner)
-      }
-      migrateCookie(key, owner, ownerStorage, lsSupported)
-    }
+    moveAccountKeys(owner, ownerStorage, true)
 
     clearFlag()
     storage.setLegacyFallback(false)
+    storage.setPrefixedFallback(false)
     return { migrated: true, owner }
   } catch (e) {
     // the flag stays, the next load resumes
     logger?.error('Storage migration interrupted: ' + e)
     return { migrated: false, owner }
+  }
+}
+
+// Old v3.2.x `{accountId}:{key}` names of every SDK key
+const prefixedNames = (accountId) => new Set(SDK_STORAGE_KEYS.map(key => prefixedName(key, accountId)))
+
+const hasPrefixedStorage = (accountId) => {
+  const names = prefixedNames(accountId)
+  return (isLocalStorageSupported() && Object.keys(localStorage).some(key => names.has(key))) ||
+    snapshotCookieNames().some(name => names.has(name))
+}
+
+/**
+ * Moves the v3.2.0 - v3.2.1 `{accountId}:{key}` storage of one account to `{key}:{accountId}`.
+ * Runs for every instance. Copy-before-delete and never clobbers, so an interrupted run
+ * resumes on the next load (reads fall back to the old keys until then).
+ */
+export const migratePrefixedStorage = (storage, accountId, logger) => {
+  if (!accountId || !hasPrefixedStorage(accountId)) {
+    return { migrated: false }
+  }
+  storage.setPrefixedFallback(true)
+  try {
+    moveAccountKeys(accountId, new InstanceStorageManager(accountId, false, storage.encryption), false)
+    storage.setPrefixedFallback(false)
+    return { migrated: true }
+  } catch (e) {
+    logger?.error('Storage migration interrupted: ' + e)
+    return { migrated: false }
   }
 }
 
@@ -269,9 +315,9 @@ const deleteAccountStorage = (accountIds, broadDomain) => {
   if (accountIds.length === 0) {
     return []
   }
-  // exact SDK names only: the host app may own other `{id}:...` keys
+  // exact SDK names only: the host app may own other `...:{id}` keys
   const owners = new Map()
-  accountIds.forEach(id => SDK_STORAGE_KEYS.forEach(key => owners.set(id + ':' + key, id)))
+  accountIds.forEach(id => SDK_STORAGE_KEYS.forEach(key => owners.set(scopedName(key, id), id)))
   if (isLocalStorageSupported()) {
     Object.keys(localStorage).filter(key => owners.has(key)).forEach(key => {
       localStorage.removeItem(key)

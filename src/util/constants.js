@@ -83,7 +83,7 @@ export const ENCRYPTION_KEY_NAME = 'WZRK_ENCRYPTION_KEY'
 export const INITIAL_RETRY_DELAY_MS = 1000
 export const MAX_RETRY_DELAY_MS = 30 * 60 * 1000 // 30 minutes
 
-// Storage migration (unprefixed default-account keys -> `{accountId}:KEY`).
+// Storage migration (unprefixed default-account keys -> `KEY:{accountId}`).
 // Stored un-prefixed. Present only while a migration is in progress.
 export const STORAGE_MIGRATION_FLAG = 'WZRK_MIGRATED'
 // Global (un-prefixed) list of account IDs that have been created in this browser.

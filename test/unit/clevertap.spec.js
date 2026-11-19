@@ -14,7 +14,7 @@ import UserLoginHandler from '../../src/modules/userLogin'
 import { validateCustomCleverTapID } from '../../src/util/helpers'
 import RequestDispatcher from '../../src/util/requestDispatcher'
 import { dismissActiveCampaigns } from '../../src/util/clevertap'
-import { registerActiveAccount, removeAccounts, syncActiveAccounts } from '../../src/util/storageMigration'
+import { migrateLegacyStorage, migratePrefixedStorage, registerActiveAccount, removeAccounts, syncActiveAccounts } from '../../src/util/storageMigration'
 import InstanceStorageManager from '../../src/util/instanceStorageManager'
 import TVNavigation from '../../src/modules/tvNavigation'
 
@@ -176,6 +176,26 @@ describe('clevertap.js', function () {
       // eslint-disable-next-line no-new
       new Clevertap({ account: [{ id: accountId }], region, targetDomain, token })
       expect(registerActiveAccount).toHaveBeenCalledWith(accountId)
+    })
+
+    test('moves the old key formats to KEY:{accountId} for the default and other instances', () => {
+      const savedDefault = Clevertap.defaultInstance
+      Clevertap.defaultInstance = null
+      try {
+        mockSessionObject.getSessionCookieObject.mockReturnValue({})
+        // eslint-disable-next-line no-new
+        new Clevertap({ account: [{ id: accountId }], region, targetDomain, token })
+        expect(migrateLegacyStorage).toHaveBeenCalledWith(expect.any(InstanceStorageManager), accountId, mockLogger)
+        expect(migratePrefixedStorage).toHaveBeenCalledWith(expect.any(InstanceStorageManager), accountId, mockLogger)
+
+        jest.clearAllMocks()
+        // eslint-disable-next-line no-new
+        new Clevertap({ account: [{ id: 'OTHER' }], region, targetDomain, token })
+        expect(migrateLegacyStorage).not.toHaveBeenCalled()
+        expect(migratePrefixedStorage).toHaveBeenCalledWith(expect.any(InstanceStorageManager), 'OTHER', mockLogger)
+      } finally {
+        Clevertap.defaultInstance = savedDefault
+      }
     })
 
     test('does not register anything for an instance without an account id', () => {
