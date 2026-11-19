@@ -39,8 +39,10 @@ import {
   BLOCK_REQUEST_COOKIE,
   ISOLATE_COOKIE,
   ENABLE_TV_CONTROLS,
-  WZRK_GEO
+  WZRK_GEO,
+  LCOOKIE_NAME
 } from './util/constants'
+import { isValueValid } from './util/datatypes'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct, getMuteExpiry, isMuted } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
@@ -57,7 +59,7 @@ import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 import InstanceManager from './util/instanceManager'
 import InstanceStorageManager from './util/instanceStorageManager'
-import { migrateLegacyStorage, migratePrefixedStorage, registerActiveAccount, removeAccounts, syncActiveAccounts } from './util/storageMigration'
+import { migrateLegacyStorage, registerActiveAccount, removeAccounts, syncActiveAccounts } from './util/storageMigration'
 import { Encryption } from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
 import { checkWebPopupPreview } from './util/campaignRender/webPopup'
@@ -1066,12 +1068,28 @@ export default class CleverTap {
       this.#instanceManager.enableEncryptionInTransit = config.enableEncryptionInTransit
     }
 
-    // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
-    // This ensures user identity is established before other events
-    if (this.#instanceManager.storage.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
-      this.#logger.debug('Processing OUL backup events first to establish user identity')
-      this.#request.processBackupEvents(true)
+    // Recover from sticky WZRK_BLOCK (e.g. CSP/network failed before gcookie was set).
+    // - Pending OUL in WZRK_L: keep block, replay OUL only (bypasses block via fireRequest).
+    // - No pending OUL: clear stale block so pageChanged can bootstrap identity again.
+    if (
+      this.#instanceManager.state.blockRequest === true &&
+      !isValueValid(this.#device.gcookie)
+    ) {
+      const oulRequestNs = this.#instanceManager.storage.getMetaProp('OUL_REQUESTS') || []
+      const backupMap = this.#instanceManager.storage.readFromLSorCookie(LCOOKIE_NAME) || {}
+      const hasPendingOULBackup = oulRequestNs.some(
+        (rn) => backupMap[rn] != null || backupMap[String(rn)] != null
+      )
+
+      if (hasPendingOULBackup) {
+        this.#logger.debug('WZRK_BLOCK set with pending OUL backup; replaying OUL to establish identity')
+        this.#request.processBackupEvents(true)
+      } else {
+        this.#logger.debug('Clearing stale WZRK_BLOCK; no gcookie and no pending OUL')
+        this.#instanceManager.state.blockRequest = false
+      }
     }
+
     const currLocation = location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
 
