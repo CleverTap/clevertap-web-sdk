@@ -587,6 +587,19 @@ describe('util/storageMigration', () => {
       expect(cookieNames()).toContain('cart:' + SK1)
     })
 
+    test('also deletes v3.2.x {accountId}:KEY storage of accounts not initialised since', () => {
+      localStorage.setItem(pk(SK1, GCOOKIE_NAME), encodeLS('guid-sk1'))
+      setCookie(pk(SK1, SCOOKIE_PREFIX), '{"s":1}', BROAD_DOMAIN)
+      localStorage.setItem(pk(SK1, 'cart'), 'host-app')
+      registerActiveAccount(SK1)
+      registerActiveAccount(EU1)
+
+      expect(syncActiveAccounts([EU1], BROAD_DOMAIN)).toEqual([SK1])
+      expect(localStorage.getItem(pk(SK1, GCOOKIE_NAME))).toBeNull()
+      expect(cookieNames()).not.toContain(pk(SK1, SCOOKIE_PREFIX))
+      expect(localStorage.getItem(pk(SK1, 'cart'))).toBe('host-app')
+    })
+
     test('registers and cleans up a previous owner after a mismatch migrate', () => {
       seedLegacyDefault(SK1, 'guid-sk1')
       migrateLegacyStorage(createStorage(EU1), EU1, logger)

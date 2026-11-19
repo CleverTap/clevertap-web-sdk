@@ -183,9 +183,14 @@ const moveCookie = (source, key, owner, ownerStorage, lsSupported) => {
   if (BROAD_COOKIE_KEYS.includes(key)) {
     // returns the parent domain the cookie was written on, which is where the old one lives too
     broadDomain = ownerStorage.createBroadCookie(key, existing ?? value, COOKIE_EXPIRY, hostname)
-  } else if (existing === null && !lsSupported) {
-    // cookie-only mode: the cookies are the storage
-    ownerStorage.createCookie(key, value, 0, hostname)
+  } else if (!lsSupported) {
+    if (existing === null) {
+      // cookie-only mode: the cookies are the storage
+      ownerStorage.createCookie(key, value, 0, hostname)
+    }
+  } else if (localStorage.getItem(scopedName(key, owner)) == null) {
+    // written in cookie-only mode, localStorage works now: keep the value there
+    ownerStorage.save(key, value)
   }
   expireCookie(source, broadDomain)
 }
@@ -207,10 +212,6 @@ const moveSessionCookie = (source, owner, ownerStorage) => {
 // the bare one, so it is moved first; with includeLegacy the bare (pre v3.2.0) keys follow.
 const moveAccountKeys = (owner, ownerStorage, includeLegacy) => {
   const lsSupported = isLocalStorageSupported()
-  moveSessionCookie(prefixedName(SCOOKIE_PREFIX, owner), owner, ownerStorage)
-  if (includeLegacy) {
-    moveSessionCookie(SCOOKIE_PREFIX + '_' + owner, owner, ownerStorage)
-  }
   for (const key of ACCOUNT_SCOPED_KEYS) {
     const sources = includeLegacy ? [prefixedName(key, owner), key] : [prefixedName(key, owner)]
     for (const source of sources) {
@@ -219,6 +220,10 @@ const moveAccountKeys = (owner, ownerStorage, includeLegacy) => {
       }
       moveCookie(source, key, owner, ownerStorage, lsSupported)
     }
+  }
+  moveSessionCookie(prefixedName(SCOOKIE_PREFIX, owner), owner, ownerStorage)
+  if (includeLegacy) {
+    moveSessionCookie(SCOOKIE_PREFIX + '_' + owner, owner, ownerStorage)
   }
 }
 
@@ -315,9 +320,11 @@ const deleteAccountStorage = (accountIds, broadDomain) => {
   if (accountIds.length === 0) {
     return []
   }
-  // exact SDK names only: the host app may own other `...:{id}` keys
   const owners = new Map()
-  accountIds.forEach(id => SDK_STORAGE_KEYS.forEach(key => owners.set(scopedName(key, id), id)))
+  accountIds.forEach(id => SDK_STORAGE_KEYS.forEach(key => {
+    owners.set(scopedName(key, id), id)
+    owners.set(prefixedName(key, id), id)
+  }))
   if (isLocalStorageSupported()) {
     Object.keys(localStorage).filter(key => owners.has(key)).forEach(key => {
       localStorage.removeItem(key)
