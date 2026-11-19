@@ -36,7 +36,6 @@ import {
   VARIABLES,
   GCOOKIE_NAME,
   QUALIFIED_CAMPAIGNS,
-  BLOCK_REQUEST_COOKIE,
   ISOLATE_COOKIE,
   ENABLE_TV_CONTROLS,
   WZRK_GEO,
@@ -1070,11 +1069,8 @@ export default class CleverTap {
 
     // Recover from sticky WZRK_BLOCK (e.g. CSP/network failed before gcookie was set).
     // - Pending OUL in WZRK_L: keep block, replay OUL only (bypasses block via fireRequest).
-    // - No pending OUL: clear stale block so pageChanged can bootstrap identity again.
-    if (
-      this.#instanceManager.state.blockRequest === true &&
-      !isValueValid(this.#device.gcookie)
-    ) {
+    // - No pending OUL and no gcookie: clear stale block so pageChanged can bootstrap identity again.
+    if (this.#instanceManager.state.blockRequest === true) {
       const oulRequestNs = this.#instanceManager.storage.getMetaProp('OUL_REQUESTS') || []
       const backupMap = this.#instanceManager.storage.readFromLSorCookie(LCOOKIE_NAME) || {}
       const hasPendingOULBackup = oulRequestNs.some(
@@ -1084,7 +1080,7 @@ export default class CleverTap {
       if (hasPendingOULBackup) {
         this.#logger.debug('WZRK_BLOCK set with pending OUL backup; replaying OUL to establish identity')
         this.#request.processBackupEvents(true)
-      } else {
+      } else if (!isValueValid(this.#device.gcookie)) {
         this.#logger.debug('Clearing stale WZRK_BLOCK; no gcookie and no pending OUL')
         this.#instanceManager.state.blockRequest = false
       }

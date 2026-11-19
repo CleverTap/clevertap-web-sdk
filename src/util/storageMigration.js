@@ -190,7 +190,7 @@ const moveCookie = (source, key, owner, ownerStorage, lsSupported) => {
     }
   } else if (localStorage.getItem(scopedName(key, owner)) == null) {
     // written in cookie-only mode, localStorage works now: keep the value there
-    ownerStorage.save(key, value)
+    ownerStorage.save(key, existing ?? value)
   }
   expireCookie(source, broadDomain)
 }
