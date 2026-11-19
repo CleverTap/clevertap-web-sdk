@@ -15,7 +15,7 @@ export class StorageManager {
   /**
    * Every read/write helper takes an optional trailing `prefixed` flag (default true).
    * Prefixed access goes through the default instance's InstanceStorageManager, i.e. the
-   * key is stored as `{accountId}:{key}`. Pass `prefixed = false` for the few keys that are
+   * key is stored as `{key}:{accountId}`. Pass `prefixed = false` for the few keys that are
    * not account specific (e.g. WZRK_GEO, the accounts registry, the migration flag) so they
    * are read/written with the raw key.
    */

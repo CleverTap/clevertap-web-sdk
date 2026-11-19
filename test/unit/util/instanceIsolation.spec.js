@@ -49,8 +49,8 @@ describe('per instance isolation of previously shared helpers', () => {
 
     expect(getCampaignObject(sk1)).toMatchObject({ wsc: 5, tc: 2 })
     expect(getCampaignObject(eu1)).toEqual({})
-    expect(localStorage.getItem(SK1 + ':' + CAMP_COOKIE_NAME)).not.toBeNull()
-    expect(localStorage.getItem(EU1 + ':' + CAMP_COOKIE_NAME)).toBeNull()
+    expect(localStorage.getItem(CAMP_COOKIE_NAME + ':' + SK1)).not.toBeNull()
+    expect(localStorage.getItem(CAMP_COOKIE_NAME + ':' + EU1)).toBeNull()
     expect(localStorage.getItem(CAMP_COOKIE_NAME)).toBeNull()
   })
 
