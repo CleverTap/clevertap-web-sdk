@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.2.2] 19th November 2026
+- Added debug mode for qualified campaigns.
+
 ## [3.2.1] 15th November 2026
 - Fixed ARP not updating the identified profile id (j) after login.
 
