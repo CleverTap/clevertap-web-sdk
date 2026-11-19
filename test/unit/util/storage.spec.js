@@ -323,7 +323,7 @@ describe('util/storage', function () {
       test('read/write are prefixed with the default account id by default', () => {
         StorageManager.saveToLSorCookie(GCOOKIE_NAME, 'guid-1')
 
-        expect(localStorage.getItem('ACC-DEF:' + GCOOKIE_NAME)).not.toBeNull()
+        expect(localStorage.getItem(GCOOKIE_NAME + ':ACC-DEF')).not.toBeNull()
         expect(localStorage.getItem(GCOOKIE_NAME)).toBeNull()
         expect(StorageManager.readFromLSorCookie(GCOOKIE_NAME)).toBe('guid-1')
         // same data as the default instance storage sees
@@ -332,16 +332,16 @@ describe('util/storage', function () {
 
       test('save/read/remove honour the prefix', () => {
         StorageManager.save('foo', 'bar')
-        expect(localStorage.getItem('ACC-DEF:foo')).toBe('bar')
+        expect(localStorage.getItem('foo:ACC-DEF')).toBe('bar')
         expect(StorageManager.read('foo')).toBe('bar')
 
         StorageManager.remove('foo')
-        expect(localStorage.getItem('ACC-DEF:foo')).toBeNull()
+        expect(localStorage.getItem('foo:ACC-DEF')).toBeNull()
       })
 
       test('cookies are prefixed by default', () => {
         StorageManager.createCookie('foo', 'bar', 0, window.location.hostname)
-        expect(document.cookie).toContain('ACC-DEF:foo=bar')
+        expect(document.cookie).toContain('foo:ACC-DEF=bar')
         expect(StorageManager.readCookie('foo')).toBe('bar')
 
         StorageManager.removeCookie('foo', window.location.hostname)
@@ -351,7 +351,7 @@ describe('util/storage', function () {
       test('prefixed = false reads/writes the raw key', () => {
         StorageManager.save(WZRK_GEO, 'true', false)
         expect(localStorage.getItem(WZRK_GEO)).toBe('true')
-        expect(localStorage.getItem('ACC-DEF:' + WZRK_GEO)).toBeNull()
+        expect(localStorage.getItem(WZRK_GEO + ':ACC-DEF')).toBeNull()
         expect(StorageManager.read(WZRK_GEO, false)).toBe(true)
         expect(StorageManager.read(WZRK_GEO)).toBeNull()
 
