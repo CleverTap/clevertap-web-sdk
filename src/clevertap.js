@@ -37,11 +37,12 @@ import {
   GCOOKIE_NAME,
   QUALIFIED_CAMPAIGNS,
   QUALIFIED_CAMPAIGNS_DEBUG,
-  BLOCK_REQUEST_COOKIE,
   ISOLATE_COOKIE,
   ENABLE_TV_CONTROLS,
-  WZRK_GEO
+  WZRK_GEO,
+  LCOOKIE_NAME
 } from './util/constants'
+import { isValueValid } from './util/datatypes'
 import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct, getMuteExpiry, isMuted } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
@@ -59,7 +60,7 @@ import { setServerKey } from './modules/webPushPrompt/prompt'
 import encryption from './modules/security/Encryption'
 import InstanceManager from './util/instanceManager'
 import InstanceStorageManager from './util/instanceStorageManager'
-import { migrateLegacyStorage, registerActiveAccount, removeAccounts, syncActiveAccounts } from './util/storageMigration'
+import { migrateLegacyStorage, migratePrefixedStorage, registerActiveAccount, removeAccounts, syncActiveAccounts } from './util/storageMigration'
 import { Encryption } from './modules/security/Encryption'
 import { checkCustomHtmlNativeDisplayPreview } from './util/campaignRender/nativeDisplay'
 import { checkWebPopupPreview } from './util/campaignRender/webPopup'
@@ -925,9 +926,10 @@ export default class CleverTap {
   }
 
   /**
-   * Binds the instance storage to its account so every key is stored as `{accountId}:KEY`,
-   * sets the encryption key and, for the default instance, moves legacy un-prefixed data
-   * to the prefixed keys (see util/storageMigration). Runs once per instance.
+   * Binds the instance storage to its account so every key is stored as `KEY:{accountId}`,
+   * sets the encryption key and moves older data to it (see util/storageMigration):
+   * the bare keys of the default instance (before v3.2.0) and the `{accountId}:KEY`
+   * keys of any instance (v3.2.0 - v3.2.1). Runs once per instance.
    */
   #bindStorageToAccount (accountId) {
     if (!accountId || this.#storageBound) {
@@ -940,6 +942,7 @@ export default class CleverTap {
     if (this.#instanceManager.isDefault) {
       migrateLegacyStorage(storage, accountId, this.#logger)
     }
+    migratePrefixedStorage(storage, accountId, this.#logger)
     // npm flow: persist the constructor's enableTVControls value now that storage is bound,
     // so a flag left over from an earlier session does not stay on
     if (this.#tvControlsConfig !== undefined) {
@@ -1070,12 +1073,25 @@ export default class CleverTap {
       this.#instanceManager.enableEncryptionInTransit = config.enableEncryptionInTransit
     }
 
-    // Only process OUL backup events if BLOCK_REQUEST_COOKIE is set
-    // This ensures user identity is established before other events
-    if (this.#instanceManager.storage.readFromLSorCookie(BLOCK_REQUEST_COOKIE) === true) {
-      this.#logger.debug('Processing OUL backup events first to establish user identity')
-      this.#request.processBackupEvents(true)
+    // Recover from sticky WZRK_BLOCK (e.g. CSP/network failed before gcookie was set).
+    // - Pending OUL in WZRK_L: keep block, replay OUL only (bypasses block via fireRequest).
+    // - No pending OUL and no gcookie: clear stale block so pageChanged can bootstrap identity again.
+    if (this.#instanceManager.state.blockRequest === true) {
+      const oulRequestNs = this.#instanceManager.storage.getMetaProp('OUL_REQUESTS') || []
+      const backupMap = this.#instanceManager.storage.readFromLSorCookie(LCOOKIE_NAME) || {}
+      const hasPendingOULBackup = oulRequestNs.some(
+        (rn) => backupMap[rn] != null || backupMap[String(rn)] != null
+      )
+
+      if (hasPendingOULBackup) {
+        this.#logger.debug('WZRK_BLOCK set with pending OUL backup; replaying OUL to establish identity')
+        this.#request.processBackupEvents(true)
+      } else if (!isValueValid(this.#device.gcookie)) {
+        this.#logger.debug('Clearing stale WZRK_BLOCK; no gcookie and no pending OUL')
+        this.#instanceManager.state.blockRequest = false
+      }
     }
+
     const currLocation = location.href
     const urlParams = getURLParams(currLocation.toLowerCase())
 

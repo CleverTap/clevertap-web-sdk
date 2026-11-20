@@ -1,8 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [3.2.2] 19th November 2026
+## [3.3.1] 20th November 2026
 - Added debug mode for qualified campaigns.
+
+## [3.3.0] 19th November 2026
+- Account-scoped storage keys and cookies are now named `KEY:{accountId}` (e.g. `WZRK_G:{accountId}`) instead of `{accountId}:KEY`, so allow-lists matching `WZRK_*` keep working. Existing data in either older format is migrated automatically.
 
 ## [3.2.1] 15th November 2026
 - Fixed ARP not updating the identified profile id (j) after login.
