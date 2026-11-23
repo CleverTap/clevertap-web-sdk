@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.3.1] 23rd November 2026
+- Added server-side session support for Visual Editor (auth via signed handle; save/preview via LC APIs).
+
 ## [3.3.0] 19th November 2026
 - Account-scoped storage keys and cookies are now named `KEY:{accountId}` (e.g. `WZRK_G:{accountId}`) instead of `{accountId}:KEY`, so allow-lists matching `WZRK_*` keep working. Existing data in either older format is migrated automatically.
 
@@ -22,9 +25,6 @@ All notable changes to this project will be documented in this file.
 ## [3.1.0] 13th October 2026
 - Capped WZRK_L backup queue at 2MB and dropped backups older than 3 days to prevent localStorage bloat.
 - Added 'Recommendations' support for Web channels(Web Popup, Web Native Display,Web Inbox).
-
-## [3.0.4] 8th October 2026
-- Added server-side session support for Visual Editor (auth via signed handle; save/preview via LC APIs).
 
 ## [3.0.3] 7th September 2026
 - Fixed the frequency capping logic.
