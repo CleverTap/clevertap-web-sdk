@@ -1043,13 +1043,9 @@ export default class CleverTap {
       this.#instanceManager.storage.saveToLSorCookie(ACCOUNT_ID, accountId)
       this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
-
     registerActiveAccount(this.#account.id)
 
-    handleActionMode(this.#logger, this.#account.id)
-    checkCustomHtmlNativeDisplayPreview(this.#logger)
-    checkWebPopupPreview()
-    this.#session.cookieName = SCOOKIE_PREFIX
+    // Region / targetDomain must be applied before Visual Editor modes resolve the LC host.
     if (region) {
       this.#account.region = region
     }
@@ -1059,6 +1055,10 @@ export default class CleverTap {
     if (token) {
       this.#account.token = token
     }
+    handleActionMode(this.#logger, this.#account)
+    checkCustomHtmlNativeDisplayPreview(this.#logger)
+    checkWebPopupPreview()
+    this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
     }
