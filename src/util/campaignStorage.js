@@ -9,10 +9,20 @@ import {
   CAMP_COOKIE_NAME,
   singleQuoteRegex,
   GCOOKIE_NAME,
-  CAMP_COOKIE_G
+  CAMP_COOKIE_G,
+  QUALIFIED_CAMPAIGNS_DEBUG
 } from './constants'
 import { getToday } from './datetime'
 import { isValueValid, safeJSONParse } from './datatypes'
+
+// Qualified campaigns (WZRK_QC) are recorded only while this tab has the debug marker set
+export const isQualifiedCampaignsDebugEnabled = () => {
+  try {
+    return sessionStorage.getItem(QUALIFIED_CAMPAIGNS_DEBUG) != null
+  } catch (e) {
+    return false
+  }
+}
 
 export const getCampaignObject = (storage = StorageManager) => {
   let finalcampObj = {}
