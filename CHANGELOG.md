@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.3.0] 19th November 2026
+- Account-scoped storage keys and cookies are now named `KEY:{accountId}` (e.g. `WZRK_G:{accountId}`) instead of `{accountId}:KEY`, so allow-lists matching `WZRK_*` keep working. Existing data in either older format is migrated automatically.
+
+## [3.2.1] 15th November 2026
+- Fixed ARP not updating the identified profile id (j) after login.
+
 ## [3.2.0] 10th November 2026
 - Added `CleverTap.removeStaleInstances()` to clear SDK storage of inactive accounts.
 - Migrated existing accounts' un-prefixed storage keys to account-scoped keys.

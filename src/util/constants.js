@@ -33,6 +33,9 @@ export const LRU_CACHE = 'WZRK_X'
 export const LRU_CACHE_SIZE = 100
 export const LRU_COOKIE_LIMIT = 5
 export const IS_OUL = 'isOUL'
+export const ARP_I_KEY = 'i_n'
+export const ARP_J_KEY = 'j_n'
+export const ARP_ENCODED_ZERO_ID = 'Zw=='
 export const EVT_PUSH = 'push'
 export const EVT_PING = 'ping'
 export const COOKIE_EXPIRY = 86400 * 365 // 1 Year in seconds
@@ -80,7 +83,7 @@ export const ENCRYPTION_KEY_NAME = 'WZRK_ENCRYPTION_KEY'
 export const INITIAL_RETRY_DELAY_MS = 1000
 export const MAX_RETRY_DELAY_MS = 30 * 60 * 1000 // 30 minutes
 
-// Storage migration (unprefixed default-account keys -> `{accountId}:KEY`).
+// Storage migration (unprefixed default-account keys -> `KEY:{accountId}`).
 // Stored un-prefixed. Present only while a migration is in progress.
 export const STORAGE_MIGRATION_FLAG = 'WZRK_MIGRATED'
 // Global (un-prefixed) list of account IDs that have been created in this browser.
