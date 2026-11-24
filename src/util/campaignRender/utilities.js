@@ -1,7 +1,8 @@
 import {
   getCampaignObject,
   saveCampaignObject,
-  closeIframe
+  closeIframe,
+  isQualifiedCampaignsDebugEnabled
 } from '../campaignStorage'
 import {
   CAMP_COOKIE_G,
@@ -840,8 +841,8 @@ export function addScriptTo (script, target = 'body') {
 }
 
 export function addCampaignToLocalStorage (campaign, region = 'eu1', accountId) {
-  /* No Need to store campaigns in local storage in preview mode */
-  if (campaign?.display?.preview === true) {
+  /* Store only while debugging is enabled via setQualifiedCampaignsDebug, and never in preview mode */
+  if (!isQualifiedCampaignsDebugEnabled() || campaign?.display?.preview === true) {
     return
   }
 

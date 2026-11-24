@@ -36,6 +36,7 @@ import {
   VARIABLES,
   GCOOKIE_NAME,
   QUALIFIED_CAMPAIGNS,
+  QUALIFIED_CAMPAIGNS_DEBUG,
   ISOLATE_COOKIE,
   ENABLE_TV_CONTROLS,
   WZRK_GEO,
@@ -46,6 +47,7 @@ import { EMBED_ERROR } from './util/messages'
 import { StorageManager, $ct, getMuteExpiry, isMuted } from './util/storage'
 import { addToURL, getDomain, getURLParams } from './util/url'
 import { getCampaignObjForLc, setEnum, handleEmailSubscription, closeIframe, dismissActiveCampaigns, registerCampaignDivMap, initDiscardedEventsFromStorage } from './util/clevertap'
+import { isQualifiedCampaignsDebugEnabled } from './util/campaignStorage'
 import { compressData } from './util/encoder'
 import Privacy from './modules/privacy'
 import NotificationHandler from './modules/notification'
@@ -1001,6 +1003,10 @@ export default class CleverTap {
       this.#instanceManager.storage.saveToLSorCookie(ISOLATE_COOKIE, true)
     }
 
+    if (!isQualifiedCampaignsDebugEnabled()) {
+      this.#instanceManager.storage.remove(QUALIFIED_CAMPAIGNS)
+    }
+
     if (this.#onloadcalled === 1) {
       // already initailsed
       return
@@ -1037,13 +1043,9 @@ export default class CleverTap {
       this.#instanceManager.storage.saveToLSorCookie(ACCOUNT_ID, accountId)
       this.#logger.debug('CT Initialized with Account ID: ' + this.#account.id)
     }
-
     registerActiveAccount(this.#account.id)
 
-    handleActionMode(this.#logger, this.#account.id)
-    checkCustomHtmlNativeDisplayPreview(this.#logger)
-    checkWebPopupPreview()
-    this.#session.cookieName = SCOOKIE_PREFIX
+    // Region / targetDomain must be applied before Visual Editor modes resolve the LC host.
     if (region) {
       this.#account.region = region
     }
@@ -1053,6 +1055,10 @@ export default class CleverTap {
     if (token) {
       this.#account.token = token
     }
+    handleActionMode(this.#logger, this.#account)
+    checkCustomHtmlNativeDisplayPreview(this.#logger)
+    checkWebPopupPreview()
+    this.#session.cookieName = SCOOKIE_PREFIX + '_' + this.#account.id
     if (config?.customId) {
       this.createCustomIdIfValid(config.customId)
     }
@@ -1476,6 +1482,23 @@ export default class CleverTap {
       return existingCampaign
     } catch (e) {
       return null
+    }
+  }
+
+  /*
+     Turns recording of qualified campaigns (read via getAllQualifiedCampaignDetails) on or off
+     for the current browser tab. Turning it off also deletes what was recorded.
+  */
+  setQualifiedCampaignsDebug (enabled) {
+    try {
+      if (enabled === true) {
+        sessionStorage.setItem(QUALIFIED_CAMPAIGNS_DEBUG, '')
+      } else {
+        sessionStorage.removeItem(QUALIFIED_CAMPAIGNS_DEBUG)
+        this.#instanceManager.storage.remove(QUALIFIED_CAMPAIGNS)
+      }
+    } catch (e) {
+      this.#logger.debug('Unable to update qualified campaigns debug mode: ' + e)
     }
   }
 }
