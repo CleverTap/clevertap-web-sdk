@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [3.3.1] 24th November 2026
+- Added server-side session support for Visual Editor (auth via signed handle; save/preview via LC APIs).
+- Added debug mode for qualified campaigns.
+
 ## [3.3.0] 19th November 2026
 - Account-scoped storage keys and cookies are now named `KEY:{accountId}` (e.g. `WZRK_G:{accountId}`) instead of `{accountId}:KEY`, so allow-lists matching `WZRK_*` keep working. Existing data in either older format is migrated automatically.
 

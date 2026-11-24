@@ -9,7 +9,8 @@ import { compressData } from '../../src/util/encoder'
 import { EMBED_ERROR } from '../../src/util/messages'
 import { getURLParams, getDomain, addToURL } from '../../src/util/url'
 import { StorageManager, $ct } from '../../src/util/storage'
-import { CONTINUOUS_PING_FREQ_IN_MILLIS, FIRST_PING_FREQ_IN_MILLIS } from '../../src/util/constants'
+import { CONTINUOUS_PING_FREQ_IN_MILLIS, FIRST_PING_FREQ_IN_MILLIS, QUALIFIED_CAMPAIGNS, QUALIFIED_CAMPAIGNS_DEBUG } from '../../src/util/constants'
+import { isQualifiedCampaignsDebugEnabled } from '../../src/util/campaignStorage'
 import UserLoginHandler from '../../src/modules/userLogin'
 import { validateCustomCleverTapID } from '../../src/util/helpers'
 import RequestDispatcher from '../../src/util/requestDispatcher'
@@ -493,6 +494,50 @@ describe('clevertap.js', function () {
       clevertap.init(accountId)
       expect(store.WZRK_TV_CONTROLS).toBe(true)
       expect(tvNavInitCalls()).toBe(1)
+    })
+  })
+
+  describe('qualified campaigns debug', () => {
+    let removeMock
+
+    beforeEach(() => {
+      mockSessionObject.getSessionCookieObject.mockReturnValue({})
+      sessionStorage.clear()
+      removeMock = jest.spyOn(InstanceStorageManager.prototype, 'remove')
+    })
+
+    afterEach(() => {
+      removeMock.mockRestore()
+    })
+
+    test('init deletes WZRK_QC when debugging is off', () => {
+      isQualifiedCampaignsDebugEnabled.mockReturnValue(false)
+      const clevertap = new Clevertap()
+      clevertap.init(accountId)
+      expect(removeMock).toHaveBeenCalledWith(QUALIFIED_CAMPAIGNS)
+    })
+
+    test('init keeps WZRK_QC when debugging is on', () => {
+      isQualifiedCampaignsDebugEnabled.mockReturnValue(true)
+      const clevertap = new Clevertap()
+      clevertap.init(accountId)
+      expect(removeMock).not.toHaveBeenCalledWith(QUALIFIED_CAMPAIGNS)
+    })
+
+    test('setQualifiedCampaignsDebug(true) sets the tab marker', () => {
+      const clevertap = new Clevertap()
+      clevertap.setQualifiedCampaignsDebug(true)
+      expect(sessionStorage.getItem(QUALIFIED_CAMPAIGNS_DEBUG)).toBe('')
+    })
+
+    test('setQualifiedCampaignsDebug(false) clears the marker and deletes WZRK_QC', () => {
+      sessionStorage.setItem(QUALIFIED_CAMPAIGNS_DEBUG, '')
+      const clevertap = new Clevertap()
+      clevertap.init(accountId)
+      removeMock.mockClear()
+      clevertap.setQualifiedCampaignsDebug(false)
+      expect(sessionStorage.getItem(QUALIFIED_CAMPAIGNS_DEBUG)).toBeNull()
+      expect(removeMock).toHaveBeenCalledWith(QUALIFIED_CAMPAIGNS)
     })
   })
 
